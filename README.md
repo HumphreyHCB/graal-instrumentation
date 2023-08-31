@@ -6,6 +6,9 @@
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/phases/Phase.java
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/core/phases/HighTier.java
 - [ ] add custom instrumentation nodes into the IR
+  - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/graph/Graph.java
+  - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/nodes/StructuredGraph.java
+  - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/graph/Node.java
 - [ ] Install a shutdown hook, to dump the instrumentation 
 - [ ] build and test with mx
   - https://github.com/graalvm/mx
