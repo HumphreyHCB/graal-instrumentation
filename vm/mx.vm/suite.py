@@ -33,7 +33,7 @@ suite = {
                 "name": "graal-nodejs",
                 "subdir": True,
                 "dynamic": True,
-                "version": "d0f359c29ec97722301997359ee878ea053da19e",
+                "version": "39d8f35138f892aeb200e9a8ed43f5533f3c4d31",
                 "urls" : [
                     {"url" : "https://github.com/graalvm/graaljs.git", "kind" : "git"},
                 ]
@@ -42,14 +42,14 @@ suite = {
                 "name": "graal-js",
                 "subdir": True,
                 "dynamic": True,
-                "version": "d0f359c29ec97722301997359ee878ea053da19e",
+                "version": "39d8f35138f892aeb200e9a8ed43f5533f3c4d31",
                 "urls": [
                     {"url": "https://github.com/graalvm/graaljs.git", "kind" : "git"},
                 ]
             },
             {
                 "name": "truffleruby",
-                "version": "2ed10973e791d80ca7333f2a7eba543e23bd2c6c",
+                "version": "4c27ab012054c1a0e7dbff338d0a7b5282114816",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/oracle/truffleruby.git", "kind": "git"},
@@ -65,7 +65,7 @@ suite = {
             },
             {
                 "name": "graalpython",
-                "version": "f42da6d958171905ddc00e26bd7b0ce52dca732a",
+                "version": "cbb9985782bf0f68969ae6f2eb6101fd02eb4db4",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/graalvm/graalpython.git", "kind": "git"},
@@ -83,6 +83,19 @@ suite = {
     },
 
     "projects": {
+        "org.graalvm.maven.downloader" : {
+            "subDir" : "src",
+            "sourceDirs" : ["src"],
+            "javaCompliance" : "17+",
+            "license" : "UPL",
+            "dependencies": [
+                "sdk:NATIVEIMAGE",
+            ],
+            "requires": [
+                "java.logging",
+                "java.xml",
+            ],
+        },
         "org.graalvm.component.installer" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
@@ -191,6 +204,17 @@ suite = {
     },
 
     "distributions": {
+        "MAVEN_DOWNLOADER": {
+            "defaultBuild": False,
+            "mainClass": "org.graalvm.maven.downloader.Main",
+            "dependencies": [
+                "org.graalvm.maven.downloader",
+            ],
+            "distDependencies": [
+                "sdk:NATIVEIMAGE",
+            ],
+            "maven": False,
+        },
         "INSTALLER": {
             "subDir": "src",
             "mainClass": "org.graalvm.component.installer.ComponentInstaller",
