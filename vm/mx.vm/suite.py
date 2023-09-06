@@ -49,7 +49,7 @@ suite = {
             },
             {
                 "name": "truffleruby",
-                "version": "4c27ab012054c1a0e7dbff338d0a7b5282114816",
+                "version": "1459478a3d067d2c6fc81226d6cf4df6ae9e21d0",
                 "dynamic": True,
                 "urls": [
                     {"url": "https://github.com/oracle/truffleruby.git", "kind": "git"},
@@ -83,19 +83,6 @@ suite = {
     },
 
     "projects": {
-        "org.graalvm.maven.downloader" : {
-            "subDir" : "src",
-            "sourceDirs" : ["src"],
-            "javaCompliance" : "17+",
-            "license" : "UPL",
-            "dependencies": [
-                "sdk:NATIVEIMAGE",
-            ],
-            "requires": [
-                "java.logging",
-                "java.xml",
-            ],
-        },
         "org.graalvm.component.installer" : {
             "subDir" : "src",
             "sourceDirs" : ["src"],
@@ -204,17 +191,6 @@ suite = {
     },
 
     "distributions": {
-        "MAVEN_DOWNLOADER": {
-            "defaultBuild": False,
-            "mainClass": "org.graalvm.maven.downloader.Main",
-            "dependencies": [
-                "org.graalvm.maven.downloader",
-            ],
-            "distDependencies": [
-                "sdk:NATIVEIMAGE",
-            ],
-            "maven": False,
-        },
         "INSTALLER": {
             "subDir": "src",
             "mainClass": "org.graalvm.component.installer.ComponentInstaller",
