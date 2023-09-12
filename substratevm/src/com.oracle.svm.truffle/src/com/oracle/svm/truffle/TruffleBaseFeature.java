@@ -320,6 +320,9 @@ public final class TruffleBaseFeature implements InternalFeature {
         // pre-initialize TruffleLogger$LoggerCache.INSTANCE
         invokeStaticMethod("com.oracle.truffle.api.TruffleLogger$LoggerCache", "getInstance", Collections.emptyList());
 
+        // enable InternalResourceCacheSymbol entry point for shared library path lookup
+        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCacheSymbol", "initialize", List.of());
+
         profilingEnabled = false;
     }
 
@@ -345,6 +348,7 @@ public final class TruffleBaseFeature implements InternalFeature {
                         Collections.emptyList());
         invokeStaticMethod("com.oracle.truffle.polyglot.InstrumentCache", "resetNativeImageState",
                         Collections.emptyList());
+        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCache", "resetNativeImageState", List.of());
         invokeStaticMethod("org.graalvm.polyglot.Engine$ImplHolder", "resetPreInitializedEngine",
                         Collections.emptyList());
         invokeStaticMethod("com.oracle.truffle.api.impl.TruffleLocator", "resetNativeImageState",
@@ -502,7 +506,6 @@ public final class TruffleBaseFeature implements InternalFeature {
     @Override
     public void afterAnalysis(AfterAnalysisAccess access) {
         markAsUnsafeAccessed = null;
-        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCache", "resetNativeImageState", List.of());
     }
 
     public static void preInitializeEngine() {
@@ -1368,23 +1371,36 @@ final class Target_com_oracle_truffle_polyglot_LanguageCache {
 final class Target_com_oracle_truffle_polyglot_InternalResourceCache {
 
     /*
-     * The field is also reset explicitly in InternalResourceCache.resetFileSystemNativeImageState.
-     * However, the explicit reset comes too late for the String-must-not-contain-the-home-directory
-     * verification in DisallowedImageHeapObjectFeature, so we also do the implicit reset using a
-     * substitution.
+     * The field cannot be reset from the #afterAnalysis(). The reset comes too late for the
+     * String-must-not-contain-the-home-directory verification in DisallowedImageHeapObjectFeature,
+     * so we do the implicit reset using a substitution.
      */
     @Alias @RecomputeFieldValue(kind = Kind.Reset) //
     private static volatile Pair<Path, Boolean> cacheRoot;
+
+    @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = UseInternalResourcesComputer.class, isFinal = true) //
+    private static boolean useInternalResources;
+
+    private static final class UseInternalResourcesComputer implements FieldValueTransformerWithAvailability {
+        @Override
+        public ValueAvailability valueAvailability() {
+            return ValueAvailability.BeforeAnalysis;
+        }
+
+        @Override
+        public Object transform(Object receiver, Object originalValue) {
+            return TruffleBaseFeature.Options.CopyLanguageResources.getValue();
+        }
+    }
 }
 
 @TargetClass(className = "com.oracle.truffle.polyglot.InternalResourceCache$ResettableCachedRoot", onlyWith = TruffleBaseFeature.IsEnabled.class)
 final class Target_com_oracle_truffle_polyglot_InternalResourceCache_ResettableCachedRoot {
 
     /*
-     * The field is also reset explicitly in InternalResourceCache.resetFileSystemNativeImageState.
-     * However, the explicit reset comes too late for the String-must-not-contain-the-home-directory
-     * verification in DisallowedImageHeapObjectFeature, so we also do the implicit reset using a
-     * substitution.
+     * The field cannot be reset from the #afterAnalysis(). The reset comes too late for the
+     * String-must-not-contain-the-home-directory verification in DisallowedImageHeapObjectFeature,
+     * so we do the implicit reset using a substitution.
      */
     @Alias @RecomputeFieldValue(kind = Kind.Reset) //
     private volatile Path resourceCacheRoot;
