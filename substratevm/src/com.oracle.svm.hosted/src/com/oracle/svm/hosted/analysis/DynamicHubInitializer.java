@@ -70,7 +70,6 @@ public class DynamicHubInitializer {
 
     private final Field dynamicHubClassInitializationInfoField;
     private final Field dynamicHubArrayHubField;
-    private final Field dynamicHubSignatureField;
     private final Field dynamicHubInterfacesEncodingField;
     private final Field dynamicHubAnnotationsEnumConstantsReferenceField;
 
@@ -84,7 +83,6 @@ public class DynamicHubInitializer {
 
         dynamicHubClassInitializationInfoField = ReflectionUtil.lookupField(DynamicHub.class, "classInitializationInfo");
         dynamicHubArrayHubField = ReflectionUtil.lookupField(DynamicHub.class, "arrayHub");
-        dynamicHubSignatureField = ReflectionUtil.lookupField(DynamicHub.class, "signature");
         dynamicHubInterfacesEncodingField = ReflectionUtil.lookupField(DynamicHub.class, "interfacesEncoding");
         dynamicHubAnnotationsEnumConstantsReferenceField = ReflectionUtil.lookupField(DynamicHub.class, "enumConstantsReference");
     }
@@ -106,7 +104,7 @@ public class DynamicHubInitializer {
         heapScanner.rescanObject(hub, OtherReason.HUB);
 
         buildClassInitializationInfo(heapScanner, type, hub);
-        fillSignature(heapScanner, type, hub);
+        fillSignature(type, hub);
 
         if (type.getJavaKind() == JavaKind.Object) {
             if (type.isArray()) {
@@ -245,7 +243,7 @@ public class DynamicHubInitializer {
 
     private static final Method getSignature = ReflectionUtil.lookupMethod(Class.class, "getGenericSignature0");
 
-    private void fillSignature(ImageHeapScanner heapScanner, AnalysisType type, DynamicHub hub) {
+    private static void fillSignature(AnalysisType type, DynamicHub hub) {
         AnalysisError.guarantee(hub.getSignature() == null, "Signature already computed for %s.", type.toJavaName(true));
         Class<?> javaClass = type.getJavaClass();
         String signature;
@@ -255,7 +253,6 @@ public class DynamicHubInitializer {
             throw GraalError.shouldNotReachHere(e); // ExcludeFromJacocoGeneratedReport
         }
         hub.setSignature(signature);
-        heapScanner.rescanField(hub, dynamicHubSignatureField);
     }
 
     class InterfacesEncodingKey {

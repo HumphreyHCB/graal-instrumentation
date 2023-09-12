@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,20 +22,15 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package com.oracle.svm.core.reflect.target;
+package com.oracle.svm.core.jdk;
 
-import com.oracle.svm.core.annotate.Delete;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.jdk.JDK21OrLater;
+import java.util.function.BooleanSupplier;
 
-/**
- * Method handle base field accessor. This class must not become reachable because we have our own
- * unsafe-based field accessor code
- * {@link com.oracle.svm.core.reflect.fieldaccessor.UnsafeFieldAccessorFactory}.
- *
- * @see com.oracle.svm.core.reflect.fieldaccessor
- */
-@TargetClass(className = "jdk.internal.reflect.MethodHandleFieldAccessorImpl", onlyWith = JDK21OrLater.class)
-@Delete
-public final class Target_jdk_internal_reflect_MethodHandleFieldAccessorImpl {
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
+
+public class JDK20OrLater implements BooleanSupplier {
+    @Override
+    public boolean getAsBoolean() {
+        return JavaVersionUtil.JAVA_SPEC >= 20;
+    }
 }

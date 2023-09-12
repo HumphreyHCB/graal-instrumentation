@@ -24,12 +24,13 @@
  */
 package com.oracle.svm.hosted.jdk;
 
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 
 @AutomaticallyRegisteredFeature
 public class JDKInitializationFeature implements InternalFeature {
@@ -173,6 +174,8 @@ public class JDKInitializationFeature implements InternalFeature {
 
         rci.rerunInitialization("jdk.internal.misc.InnocuousThread", "Contains a thread group INNOCUOUSTHREADGROUP.");
 
-        rci.rerunInitialization("sun.nio.ch.Poller", "Contains an InnocuousThread.");
+        if (JavaVersionUtil.JAVA_SPEC >= 19) {
+            rci.rerunInitialization("sun.nio.ch.Poller", "Contains an InnocuousThread.");
+        }
     }
 }

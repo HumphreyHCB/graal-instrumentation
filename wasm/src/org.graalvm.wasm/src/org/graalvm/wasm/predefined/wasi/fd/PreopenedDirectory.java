@@ -91,22 +91,17 @@ final class PreopenedDirectory {
         this.virtualPathLength = this.virtualPath.getPath().length();
     }
 
-    private static String getRelativePath(TruffleFile virtualFile, TruffleFile rootPath, int rootPathLength) {
-        String virtualPath = virtualFile.getPath();
-        final int virtualFileLength = virtualPath.length();
+    private static String getRelativePath(TruffleFile virtualFile, int rootPathLength) {
+        final int virtualFileLength = virtualFile.getPath().length();
         if (virtualFileLength == rootPathLength) {
             return "";
         }
         if (rootPathLength == 1) {
-            if (rootPath.isAbsolute()) {
-                // root path, no trailing slash
-                return virtualPath.substring(1);
-            } else if (rootPath.getPath().equals(".")) {
-                return virtualPath;
-            }
+            // root path, no trailing slash
+            return virtualFile.getPath().substring(1);
         }
         // remove trailing slash
-        return virtualPath.substring(rootPathLength + 1);
+        return virtualFile.getPath().substring(rootPathLength + 1);
     }
 
     /**
@@ -119,7 +114,7 @@ final class PreopenedDirectory {
         final TruffleFile result = virtualFile.normalize();
 
         // Checks that the given path did not resolve to a file outside virtualRoot.
-        return result.startsWith(virtualPath) || (!result.isAbsolute() && virtualPathLength == 1 && virtualPath.getPath().equals(".")) ? result : null;
+        return result.startsWith(virtualPath) ? result : null;
     }
 
     /**
@@ -144,7 +139,7 @@ final class PreopenedDirectory {
 
         final TruffleFile resolvedVirtualTruffleFile = containedVirtualFile(virtualTruffleFile);
         if (resolvedVirtualTruffleFile != null) {
-            final String relativePathToRoot = getRelativePath(resolvedVirtualTruffleFile, virtualPath, virtualPathLength);
+            final String relativePathToRoot = getRelativePath(resolvedVirtualTruffleFile, virtualPathLength);
             return containedHostFile(hostPath.resolve(relativePathToRoot));
         }
         return null;
@@ -159,7 +154,7 @@ final class PreopenedDirectory {
 
         final TruffleFile resolvedHostTruffleFile = containedHostFile(hostTruffleFile);
         if (resolvedHostTruffleFile != null) {
-            final String resolvedPathToRoot = getRelativePath(resolvedHostTruffleFile, hostPath, hostPathLength);
+            final String resolvedPathToRoot = getRelativePath(resolvedHostTruffleFile, hostPathLength);
             return containedVirtualFile(virtualPath.resolve(resolvedPathToRoot));
         }
         return null;

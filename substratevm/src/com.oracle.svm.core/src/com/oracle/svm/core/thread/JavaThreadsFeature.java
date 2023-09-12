@@ -27,6 +27,7 @@ package com.oracle.svm.core.thread;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -67,8 +68,12 @@ class JavaThreadsFeature implements InternalFeature {
          * This currently only means that we don't support setting custom values for
          * java.lang.ScopedValue.cacheSize at runtime.
          */
-        RuntimeClassInitialization.initializeAtBuildTime("java.lang.ScopedValue");
-        RuntimeClassInitialization.initializeAtBuildTime("java.lang.ScopedValue$Cache");
+        if (JavaVersionUtil.JAVA_SPEC <= 20) {
+            RuntimeClassInitialization.initializeAtBuildTime("jdk.incubator.concurrent");
+        } else {
+            RuntimeClassInitialization.initializeAtBuildTime("java.lang.ScopedValue");
+            RuntimeClassInitialization.initializeAtBuildTime("java.lang.ScopedValue$Cache");
+        }
     }
 
     private Object collectReachableObjects(Object original) {

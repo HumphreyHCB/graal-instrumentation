@@ -998,10 +998,13 @@ def register_polyglot_isolate_distributions(register_distribution, language_id, 
             'tag': ['default', 'public'],
         },
     }
-    # The graal-enterprise suite may not be fully loaded.
-    # We cannot look up the TRUFFLE_ENTERPRISE distribution to resolve its license
-    # We pass directly the license id
-    licenses.update(['GFTC'])
+    # the graal-enterprise may not be fully loaded
+    # we need to use suiteDict to get the license
+    graal_enterprise = mx.suite('graal-enterprise')
+    graal_enterprise_license = graal_enterprise.suiteDict.get('defaultLicense')
+    if isinstance(graal_enterprise_license, str):
+        graal_enterprise_license = [graal_enterprise_license]
+    licenses.update(graal_enterprise_license)
     meta_pom_dist = mx_pomdistribution.POMDistribution(
         suite=owner_suite,
         name=isolate_dist_name,

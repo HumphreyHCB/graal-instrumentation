@@ -769,12 +769,6 @@ suite = {
     },
 
     "MAVEN_DOWNLOADER": {
-      "moduleInfo" : {
-        "name" : "org.graalvm.maven.downloader",
-        "exports" : [
-          "org.graalvm.maven.downloader",
-        ],
-      },
       "defaultBuild": False,
       "mainClass": "org.graalvm.maven.downloader.Main",
       "dependencies": [

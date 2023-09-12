@@ -26,6 +26,7 @@ package com.oracle.svm.core.windows;
 
 import java.io.FileDescriptor;
 
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.type.CCharPointer;
@@ -55,7 +56,9 @@ import com.oracle.svm.core.windows.headers.WinSock;
 class WindowsNativeLibraryFeature implements InternalFeature {
     @Override
     public void duringSetup(DuringSetupAccess access) {
-        NativeLibrarySupport.singleton().preregisterUninitializedBuiltinLibrary("extnet");
+        if (JavaVersionUtil.JAVA_SPEC >= 19) {
+            NativeLibrarySupport.singleton().preregisterUninitializedBuiltinLibrary("extnet");
+        }
     }
 }
 
@@ -97,8 +100,10 @@ class WindowsNativeLibrarySupport extends JNIPlatformNativeLibrarySupport {
         } else {
             NativeLibrarySupport.singleton().registerInitializedBuiltinLibrary("net");
         }
-        NativeLibrarySupport.singleton().registerInitializedBuiltinLibrary("extnet");
-        System.loadLibrary("extnet");
+        if (JavaVersionUtil.JAVA_SPEC >= 19) {
+            NativeLibrarySupport.singleton().registerInitializedBuiltinLibrary("extnet");
+            System.loadLibrary("extnet");
+        }
     }
 
     @Override

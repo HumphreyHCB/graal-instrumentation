@@ -122,8 +122,6 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
     private PolyglotValueDispatch disconnectedBigIntegerHostValue;
     private volatile Object defaultFileSystemContext;
 
-    private static volatile AbstractPolyglotImpl isolatePolyglot;
-
     /**
      * Internal method do not use.
      */
@@ -160,16 +158,6 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
         return (PolyglotImpl) polyglot;
     }
 
-    static AbstractPolyglotImpl findIsolatePolyglot() {
-        return isolatePolyglot;
-    }
-
-    static void setIsolatePolyglot(AbstractPolyglotImpl instance) {
-        assert instance != null;
-        assert isolatePolyglot == null;
-        isolatePolyglot = instance;
-    }
-
     PolyglotEngineImpl getPreinitializedEngine() {
         return preInitializedEngineRef.get();
     }
@@ -186,19 +174,11 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
     @Override
     public Object initializeModuleToUnnamedAccess(Lookup unnamedLookup, Object unnamedAccess, Object unnamedAPIAccess, Object unnamedIOAccess, Object unnamedManagementAccess) {
         ModuleToUnnamedBridge bridge = ModuleToUnnamedBridge.create(unnamedLookup, unnamedAccess, unnamedAPIAccess, unnamedIOAccess, unnamedManagementAccess);
-        AbstractPolyglotImpl impl = getRootImpl();
-        while (impl != null) {
-            initializeModuleToUnnamedBridge(impl, bridge);
-            impl = impl.getNextOrNull();
-        }
+        setConstructors(Objects.requireNonNull(bridge.getAPIAccess()));
+        setIO(Objects.requireNonNull(bridge.getIOAccess()));
+        setMonitoring(Objects.requireNonNull(bridge.getManagementAccess()));
+        initialize();
         return bridge.getModuleAccess();
-    }
-
-    private static void initializeModuleToUnnamedBridge(AbstractPolyglotImpl impl, ModuleToUnnamedBridge bridge) {
-        impl.setConstructors(Objects.requireNonNull(bridge.getAPIAccess()));
-        impl.setIO(Objects.requireNonNull(bridge.getIOAccess()));
-        impl.setMonitoring(Objects.requireNonNull(bridge.getManagementAccess()));
-        impl.initialize();
     }
 
     @Override

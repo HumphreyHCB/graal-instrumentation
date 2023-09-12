@@ -25,6 +25,8 @@
 
 package org.graalvm.compiler.hotspot.test;
 
+import java.util.Arrays;
+
 import org.graalvm.compiler.bytecode.Bytecode;
 import org.graalvm.compiler.bytecode.BytecodeDisassembler;
 import org.graalvm.compiler.bytecode.BytecodeStream;
@@ -34,11 +36,13 @@ import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.core.test.GraalCompilerTest;
 import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.debug.GraalError;
+import org.graalvm.compiler.debug.TTY;
 import org.graalvm.compiler.hotspot.CompilationTask;
 import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
 import org.graalvm.compiler.hotspot.HotSpotGraalCompiler;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
 import org.graalvm.compiler.java.BciBlockMapping;
+import org.graalvm.compiler.java.BciBlockMapping.BciBlock;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.StructuredGraph.AllowAssumptions;
 import org.graalvm.compiler.options.OptionValues;
@@ -50,9 +54,6 @@ import jdk.vm.ci.hotspot.HotSpotCompilationRequestResult;
 import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class GraalOSRTestBase extends GraalCompilerTest {
 
@@ -93,30 +94,32 @@ public abstract class GraalOSRTestBase extends GraalCompilerTest {
     }
 
     /**
-     * Returns the target BCIs of all bytecode backedges.
+     * Returns the target BCI of the first bytecode backedge. This is where HotSpot triggers
+     * on-stack-replacement in case the backedge counter overflows.
      */
-    public int[] getBackedgeBCIs(DebugContext debug, ResolvedJavaMethod method) {
+    static int getBackedgeBCI(DebugContext debug, ResolvedJavaMethod method) {
         Bytecode code = new ResolvedJavaMethodBytecode(method);
         BytecodeStream stream = new BytecodeStream(code.getCode());
         OptionValues options = debug.getOptions();
         BciBlockMapping bciBlockMapping = BciBlockMapping.create(stream, code, options, debug, true);
 
-        List<Integer> backedgeBcis = new ArrayList<>();
-        for (BciBlockMapping.BciBlock block : bciBlockMapping.getBlocks()) {
+        for (BciBlock block : bciBlockMapping.getBlocks()) {
             if (block.getStartBci() != -1) {
                 int bci = block.getEndBci();
-                for (BciBlockMapping.BciBlock succ : block.getSuccessors()) {
+                for (BciBlock succ : block.getSuccessors()) {
                     if (succ.getStartBci() != -1) {
                         int succBci = succ.getStartBci();
                         if (succBci < bci) {
                             // back edge
-                            backedgeBcis.add(succBci);
+                            return succBci;
                         }
                     }
                 }
             }
         }
-        return backedgeBcis.stream().mapToInt(Integer::intValue).toArray();
+        TTY.println("Cannot find loop back edge with bytecode loops at:%s", Arrays.toString(bciBlockMapping.getLoopHeaders()));
+        TTY.println(new BytecodeDisassembler().disassemble(code));
+        return -1;
     }
 
     protected static void checkResult(Result result) {
@@ -127,10 +130,6 @@ public abstract class GraalOSRTestBase extends GraalCompilerTest {
     }
 
     protected void compileOSR(OptionValues options, ResolvedJavaMethod method) {
-        compileOSR(options, method, true);
-    }
-
-    protected void compileOSR(OptionValues options, ResolvedJavaMethod method, boolean expectBackedge) {
         OptionValues goptions = options;
         // Silence diagnostics for permanent bailout errors as they
         // are expected for some OSR tests.
@@ -140,16 +139,9 @@ public abstract class GraalOSRTestBase extends GraalCompilerTest {
         // ensure eager resolving
         StructuredGraph graph = parseEager(method, AllowAssumptions.YES, goptions);
         DebugContext debug = graph.getDebug();
-        int[] backedgeBCIs = getBackedgeBCIs(debug, method);
-        if (expectBackedge && backedgeBCIs.length == 0) {
-            Bytecode code = new ResolvedJavaMethodBytecode(method);
-            throw new AssertionError(String.format("Cannot find any loop back edges in %s:%n%s", method.format("%H.%n(%p)"),
-                            new BytecodeDisassembler().disassemble(code)));
-
-        }
-        for (int bci : backedgeBCIs) {
-            compile(debug, method, bci);
-        }
+        int bci = getBackedgeBCI(debug, method);
+        assert bci != -1;
+        compile(debug, method, bci);
     }
 
     protected enum ReturnValue {

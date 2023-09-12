@@ -755,8 +755,6 @@ public abstract class Accessor {
         public abstract TruffleFile getInternalResource(Object owner, String resourceId) throws IOException;
 
         public abstract Collection<String> getResourceIds(String componentId);
-
-        public abstract void setIsolatePolyglot(AbstractPolyglotImpl instance);
     }
 
     public abstract static class LanguageSupport extends Support {

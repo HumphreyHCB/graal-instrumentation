@@ -27,6 +27,7 @@ package com.oracle.svm.truffle;
 import java.util.Iterator;
 import java.util.List;
 
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 
@@ -66,6 +67,10 @@ public class TruffleJFRFeature implements InternalFeature {
     }
 
     private static boolean isEnabled() {
-        return ImageSingletons.contains(TruffleFeature.class) && ImageSingletons.contains(JfrFeature.class);
+        /*
+         * GR-38866: Does not work on JDK 17 due to the Truffle module not being open to the JFR
+         * module, but the problematic code was removed for later JDKs.
+         */
+        return ImageSingletons.contains(TruffleFeature.class) && ImageSingletons.contains(JfrFeature.class) && JavaVersionUtil.JAVA_SPEC > 17;
     }
 }
