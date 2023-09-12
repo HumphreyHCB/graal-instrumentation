@@ -108,7 +108,7 @@ public class ObjectScanner {
             fields = fieldsList;
         }
         for (AnalysisField field : fields) {
-            if (Modifier.isStatic(field.getModifiers()) && field.isRead()) {
+            if (Modifier.isStatic(field.getModifiers()) && field.getJavaKind() == JavaKind.Object && field.isRead()) {
                 execute(() -> scanRootField(field));
             }
         }
@@ -292,14 +292,13 @@ public class ObjectScanner {
         if (value.isNull() || value.getJavaKind().isPrimitive() || bb.getMetaAccess().isInstanceOf(value, WordBase.class)) {
             return;
         }
-        JavaConstant unwrappedValue = maybeUnwrap(value);
-        Object valueObj = unwrappedValue instanceof ImageHeapConstant ? unwrappedValue : constantAsObject(bb, unwrappedValue);
+        Object valueObj = (value instanceof ImageHeapConstant) ? value : constantAsObject(bb, value);
         if (scannedObjects.putAndAcquire(valueObj) == null) {
             try {
-                scanningObserver.forScannedConstant(unwrappedValue, reason);
+                scanningObserver.forScannedConstant(value, reason);
             } finally {
                 scannedObjects.release(valueObj);
-                WorklistEntry worklistEntry = new WorklistEntry(unwrappedValue, reason);
+                WorklistEntry worklistEntry = new WorklistEntry(value, reason);
                 if (executor != null) {
                     executor.execute(debug -> doScan(worklistEntry));
                 } else {
@@ -387,22 +386,12 @@ public class ObjectScanner {
             return "null";
         }
         AnalysisType type = bb.getMetaAccess().lookupJavaType(constant);
-        JavaConstant hosted = constant;
-        if (constant instanceof ImageHeapConstant heapConstant) {
-            JavaConstant hostedObject = heapConstant.getHostedObject();
-            if (hostedObject == null) {
-                // Checkstyle: allow Class.getSimpleName
-                return constant.getClass().getSimpleName() + "<" + type.toJavaName() + ">";
-                // Checkstyle: disallow Class.getSimpleName
-            }
-            hosted = hostedObject;
+        if (constant instanceof ImageHeapConstant) {
+            // Checkstyle: allow Class.getSimpleName
+            return constant.getClass().getSimpleName() + "<" + type.toJavaName() + ">";
+            // Checkstyle: disallow Class.getSimpleName
         }
-
-        if (hosted.getJavaKind().isPrimitive()) {
-            return hosted.toValueString();
-        }
-
-        Object obj = constantAsObject(bb, hosted);
+        Object obj = constantAsObject(bb, constant);
         String str = type.toJavaName() + '@' + Integer.toHexString(System.identityHashCode(obj));
         if (appendToString) {
             try {
@@ -661,21 +650,15 @@ public class ObjectScanner {
 
     public static class ArrayScan extends ScanReason {
         final AnalysisType arrayType;
-        final int idx;
 
         public ArrayScan(AnalysisType arrayType, JavaConstant array, ScanReason previous) {
-            this(arrayType, array, previous, -1);
-        }
-
-        public ArrayScan(AnalysisType arrayType, JavaConstant array, ScanReason previous, int idx) {
             super(previous, array);
             this.arrayType = arrayType;
-            this.idx = idx;
         }
 
         @Override
         public String toString(BigBang bb) {
-            return "indexing into array " + asString(bb, constant) + (idx != -1 ? " at index " + idx : "");
+            return "indexing into array " + asString(bb, constant);
         }
 
         @Override

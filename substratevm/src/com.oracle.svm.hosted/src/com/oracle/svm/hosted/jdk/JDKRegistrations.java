@@ -87,8 +87,8 @@ class JDKRegistrations extends JNIRegistrationUtil implements InternalFeature {
 
     private static void registerInfoCmpResources(BeforeAnalysisAccess access) {
         /*
-         * A JDK reduced via jlink might not have this class, so we must use a reflective class
-         * lookup.
+         * GR-43733: Replace reflective class lookup with class literal when removing JDK 17
+         * support.
          */
         Class<?> infoCmpClazz = ReflectionUtil.lookupClass(true, "jdk.internal.org.jline.utils.InfoCmp");
 

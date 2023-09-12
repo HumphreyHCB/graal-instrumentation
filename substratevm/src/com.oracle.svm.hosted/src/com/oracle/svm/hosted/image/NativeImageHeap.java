@@ -370,9 +370,16 @@ public final class NativeImageHeap implements ImageHeap {
         VMError.guarantee(identityHashCode != 0, "0 is used as a marker value for 'hash code not yet computed'");
 
         Object objectConstant = hUniverse.getSnippetReflection().asObject(Object.class, uncompressed);
-        ImageHeapScanner.maybeForceHashCodeComputation(objectConstant);
         if (objectConstant instanceof String stringConstant) {
             handleImageString(stringConstant);
+        } else if (objectConstant instanceof Enum<?> enumConstant) {
+            /*
+             * Starting with JDK 21, Enum caches the identity hash code in a separate hash field. We
+             * want to allow Enum values to be manually marked as immutable objects, so we eagerly
+             * initialize the hash field. This is safe because Enum.hashCode() is a final method,
+             * i.e., cannot be overwritten by the user.
+             */
+            forceHashCodeComputation(enumConstant);
         }
 
         final ObjectInfo existing = getConstantInfo(uncompressed);
@@ -432,11 +439,21 @@ public final class NativeImageHeap implements ImageHeap {
     }
 
     private void handleImageString(final String str) {
+        forceHashCodeComputation(str);
         if (HostedStringDeduplication.isInternedString(str)) {
             /* The string is interned by the host VM, so it must also be interned in our image. */
             assert internedStrings.containsKey(str) || internStringsPhase.isAllowed() : "Should not intern string during phase " + internStringsPhase.toString();
             internedStrings.put(str, str);
         }
+    }
+
+    /**
+     * For immutable Strings and other objects in the native image heap, force eager computation of
+     * the hash field.
+     */
+    @SuppressFBWarnings(value = "RV_RETURN_VALUE_IGNORED", justification = "eager hash field computation")
+    private static void forceHashCodeComputation(Object object) {
+        object.hashCode();
     }
 
     /**

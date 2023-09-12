@@ -1350,6 +1350,7 @@ public final class DynamicHub implements AnnotatedElement, java.lang.reflect.Typ
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     @Platforms(InternalPlatform.NATIVE_ONLY.class)
     private static Class<?> forName(String className, Class<?> caller) throws Throwable {
         return forName(className, true, caller.getClassLoader(), caller);
@@ -1362,6 +1363,7 @@ public final class DynamicHub implements AnnotatedElement, java.lang.reflect.Typ
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     @Platforms(InternalPlatform.NATIVE_ONLY.class)
     private static Class<?> forName(@SuppressWarnings("unused") Module module, String className, Class<?> caller) throws Throwable {
         /*
@@ -1381,6 +1383,7 @@ public final class DynamicHub implements AnnotatedElement, java.lang.reflect.Typ
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     private static Class<?> forName(String name, boolean initialize, ClassLoader loader, @SuppressWarnings("unused") Class<?> caller) throws Throwable {
         if (name == null) {
             throw new NullPointerException();

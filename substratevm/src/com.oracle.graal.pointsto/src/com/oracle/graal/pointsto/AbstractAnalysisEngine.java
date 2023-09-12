@@ -201,7 +201,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     protected abstract CompletionExecutor.Timing getTiming();
 
     @SuppressWarnings("try")
-    private boolean analysisModified() {
+    private boolean analysisModified() throws InterruptedException {
         boolean analysisModified;
         try (Timer.StopTimer ignored = verifyHeapTimer.start()) {
             /*

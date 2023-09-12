@@ -101,10 +101,6 @@ public class InvocationPlugins {
     public static class InvocationPluginReceiver implements InvocationPlugin.Receiver {
         private final GraphBuilderContext parser;
         private ValueNode[] args;
-        /**
-         * Caches the null checked receiver value. If still {@code null} after application of a
-         * plugin, then the plugin never called {@link #get(boolean)} with {@code true}.
-         */
         private ValueNode value;
 
         public InvocationPluginReceiver(GraphBuilderContext parser) {
@@ -132,32 +128,12 @@ public class InvocationPlugins {
         }
 
         public InvocationPluginReceiver init(ResolvedJavaMethod targetMethod, ValueNode[] newArgs) {
-            this.value = null;
             if (!targetMethod.isStatic()) {
                 this.args = newArgs;
+                this.value = null;
                 return this;
             }
-            this.args = null;
             return null;
-        }
-
-        @Override
-        public ValueNode requireNonNull() {
-            if (value == null) {
-                GraalError.guarantee(args != null, "target method is static");
-                if (!StampTool.isPointerNonNull(args[0])) {
-                    throw new GraalError("receiver might be null: %s", value);
-                }
-                value = args[0];
-            }
-            return value;
-        }
-
-        /**
-         * Determines if {@link #get(boolean)} was called with {@code true}.
-         */
-        public boolean nullCheckPerformed() {
-            return value != null;
         }
     }
 

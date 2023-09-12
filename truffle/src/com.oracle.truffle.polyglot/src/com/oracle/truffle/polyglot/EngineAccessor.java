@@ -2010,12 +2010,7 @@ final class EngineAccessor extends Accessor {
 
         @Override
         public AutoCloseable createPolyglotThreadScope() {
-            AbstractPolyglotImpl impl = PolyglotImpl.findIsolatePolyglot();
-            if (impl != null) {
-                return impl.createThreadScope();
-            } else {
-                return null;
-            }
+            return PolyglotImpl.findInstance().getRootImpl().createThreadScope();
         }
 
         @Override
@@ -2138,11 +2133,6 @@ final class EngineAccessor extends Accessor {
                 }
             }
             throw new IllegalArgumentException(componentId);
-        }
-
-        @Override
-        public void setIsolatePolyglot(AbstractPolyglotImpl instance) {
-            PolyglotImpl.setIsolatePolyglot(instance);
         }
     }
 

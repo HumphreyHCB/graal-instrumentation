@@ -26,10 +26,19 @@ package com.oracle.svm.core.jdk;
 
 import java.nio.ByteBuffer;
 
+import org.graalvm.compiler.core.common.NumUtil;
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
+
 import com.oracle.svm.core.SubstrateUtil;
 
 public class DirectByteBufferUtil {
     public static ByteBuffer allocate(long addr, long cap) {
-        return SubstrateUtil.cast(new Target_java_nio_DirectByteBuffer(addr, cap), ByteBuffer.class);
+        Target_java_nio_DirectByteBuffer result;
+        if (JavaVersionUtil.JAVA_SPEC <= 20) {
+            result = new Target_java_nio_DirectByteBuffer(addr, NumUtil.safeToInt(cap));
+        } else {
+            result = new Target_java_nio_DirectByteBuffer(addr, cap);
+        }
+        return SubstrateUtil.cast(result, ByteBuffer.class);
     }
 }

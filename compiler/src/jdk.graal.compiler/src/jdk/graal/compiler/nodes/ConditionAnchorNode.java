@@ -89,6 +89,8 @@ public final class ConditionAnchorNode extends FixedWithNextNode implements Cano
                 return new ValueAnchorNode();
             } else {
                 return null;
+            } else {
+                return new ValueAnchorNode(null);
             }
         }
         if (tool.allUsagesAvailable() && this.hasNoUsages()) {

@@ -769,9 +769,6 @@ public class SubstrateGraphBuilderPlugins {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode classNode, ValueNode nameNode) {
                 if (classNode.isConstant() && nameNode.isConstant()) {
-                    // Emits a null-check for the otherwise unused receiver
-                    receiver.get();
-
                     /* If the class and field name arguments are constant. */
                     Class<?> clazz = snippetReflection.asObject(Class.class, classNode.asJavaConstant());
                     String fieldName = snippetReflection.asObject(String.class, nameNode.asJavaConstant());
@@ -798,9 +795,6 @@ public class SubstrateGraphBuilderPlugins {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode fieldNode) {
                 if (fieldNode.isConstant()) {
-                    // Emits a null-check for the otherwise unused receiver
-                    receiver.get();
-
                     Field targetField = snippetReflection.asObject(Field.class, fieldNode.asJavaConstant());
                     return processFieldOffset(b, targetField, reason, isSunMiscUnsafe);
                 }
@@ -811,9 +805,6 @@ public class SubstrateGraphBuilderPlugins {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode fieldNode) {
                 if (fieldNode.isConstant()) {
-                    // Emits a null-check for the otherwise unused receiver
-                    receiver.get();
-
                     Field targetField = snippetReflection.asObject(Field.class, fieldNode.asJavaConstant());
                     return processStaticFieldBase(b, targetField, isSunMiscUnsafe);
                 }
@@ -825,9 +816,6 @@ public class SubstrateGraphBuilderPlugins {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode fieldNode) {
                 if (fieldNode.isConstant()) {
-                    // Emits a null-check for the otherwise unused receiver
-                    receiver.get();
-
                     Field targetField = snippetReflection.asObject(Field.class, fieldNode.asJavaConstant());
                     return processFieldOffset(b, targetField, reason, isSunMiscUnsafe);
                 }
@@ -1111,7 +1099,6 @@ public class SubstrateGraphBuilderPlugins {
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver) {
                 JavaConstant constantReceiver = receiver.get(false).asJavaConstant();
                 if (constantReceiver != null) {
-                    receiver.requireNonNull();
                     ResolvedJavaType type = b.getConstantReflection().asJavaType(constantReceiver);
                     if (type != null) {
                         /*
@@ -1257,8 +1244,7 @@ public class SubstrateGraphBuilderPlugins {
         Registration r = new Registration(plugins, ReferenceAccessImpl.class);
         r.register(new RequiredInvocationPlugin("getCompressedRepresentation", Receiver.class, Object.class) {
             @Override
-            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode objectNode) {
-                receiver.requireNonNull();
+            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver unused, ValueNode objectNode) {
                 if (ReferenceAccess.singleton().haveCompressedReferences()) {
                     ValueNode compressedObj = SubstrateCompressionNode.compress(b.getGraph(), objectNode, ImageSingletons.lookup(CompressEncoding.class));
                     JavaKind compressedIntKind = JavaKind.fromWordSize(ConfigurationValues.getObjectLayout().getReferenceSize());
@@ -1272,8 +1258,7 @@ public class SubstrateGraphBuilderPlugins {
         });
         r.register(new RequiredInvocationPlugin("uncompressReference", Receiver.class, UnsignedWord.class) {
             @Override
-            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode wordNode) {
-                receiver.requireNonNull();
+            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver unused, ValueNode wordNode) {
                 if (ReferenceAccess.singleton().haveCompressedReferences()) {
                     CompressEncoding encoding = ImageSingletons.lookup(CompressEncoding.class);
                     JavaKind compressedIntKind = JavaKind.fromWordSize(ConfigurationValues.getObjectLayout().getReferenceSize());

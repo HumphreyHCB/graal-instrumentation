@@ -186,21 +186,19 @@ public abstract class LoweringPhase extends BasePhase<CoreProviders> {
 
         @Override
         public GuardingNode createGuard(FixedNode before, LogicNode condition, DeoptimizationReason deoptReason, DeoptimizationAction action, Speculation speculation, boolean negated,
-                        NodeSourcePosition noDeoptSuccessorPosition) {
+                        NodeSourcePosition noDeoptSucccessorPosition) {
             StructuredGraph graph = before.graph();
             if (OptEliminateGuards.getValue(graph.getOptions())) {
-                for (GuardNode usage : condition.usages().filter(GuardNode.class)) {
-                    if (!activeGuards.isNew(usage) && activeGuards.isMarked(usage) && usage.isNegated() == negated) {
-                        ValueNode anchor = usage.getAnchor().asNode();
-                        if (before.graph().isAfterStage(StageFlag.VALUE_PROXY_REMOVAL) ||
-                                        !nodeMap.isNew(anchor) && nodeMap.get(anchor).isInSameOrOuterLoopOf(nodeMap.get(before))) {
-                            return usage;
-                        }
+                for (Node usage : condition.usages()) {
+                    if (!activeGuards.isNew(usage) && activeGuards.isMarked(usage) && ((GuardNode) usage).isNegated() == negated &&
+                                    (before.graph().isAfterStage(StageFlag.VALUE_PROXY_REMOVAL) ||
+                                                    nodeMap.get(((GuardNode) usage).getAnchor().asNode()).isInSameOrOuterLoopOf(nodeMap.get(before)))) {
+                        return (GuardNode) usage;
                     }
                 }
             }
             if (!condition.graph().getGuardsStage().allowsFloatingGuards()) {
-                FixedGuardNode fixedGuard = graph.add(new FixedGuardNode(condition, deoptReason, action, speculation, negated, noDeoptSuccessorPosition));
+                FixedGuardNode fixedGuard = graph.add(new FixedGuardNode(condition, deoptReason, action, speculation, negated, noDeoptSucccessorPosition));
                 graph.addBeforeFixed(before, fixedGuard);
                 DummyGuardHandle handle = graph.add(new DummyGuardHandle(fixedGuard));
                 fixedGuard.lower(this);
@@ -208,7 +206,7 @@ public abstract class LoweringPhase extends BasePhase<CoreProviders> {
                 handle.safeDelete();
                 return result;
             } else {
-                GuardNode newGuard = graph.unique(new GuardNode(condition, guardAnchor, deoptReason, action, negated, speculation, noDeoptSuccessorPosition));
+                GuardNode newGuard = graph.unique(new GuardNode(condition, guardAnchor, deoptReason, action, negated, speculation, noDeoptSucccessorPosition));
                 if (OptEliminateGuards.getValue(graph.getOptions())) {
                     activeGuards.markAndGrow(newGuard);
                 }

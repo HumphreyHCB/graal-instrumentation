@@ -34,7 +34,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 
-@TargetClass(className = "java.lang.foreign.MemorySegment")
+@TargetClass(className = "java.lang.foreign.MemorySegment", onlyWith = JDK19OrLater.class)
 @SuppressWarnings("unused")
 final class Target_java_lang_foreign_MemorySegment {
     @TargetElement(onlyWith = ForeignDisabled.class)
@@ -44,25 +44,39 @@ final class Target_java_lang_foreign_MemorySegment {
     }
 }
 
-@TargetClass(className = "java.nio.DirectByteBufferR")
+@TargetClass(className = "java.nio.DirectByteBuffer", onlyWith = JDK19OrLater.class)
 @SuppressWarnings("unused")
-final class Target_java_nio_DirectByteBufferR {
+final class Target_java_nio_DirectByteBuffer_JDK19OrLater {
 
     @Alias
-    protected Target_java_nio_DirectByteBufferR(int cap, long addr, FileDescriptor fd, Runnable unmapper, boolean isSync, Target_java_lang_foreign_MemorySegment segment) {
+    protected Target_java_nio_DirectByteBuffer_JDK19OrLater(int cap, long addr, FileDescriptor fd, Runnable unmapper, boolean isSync,
+                    Target_java_lang_foreign_MemorySegment_JDK19OrLater segment) {
     }
+
 }
 
-@TargetClass(className = "sun.nio.ch.Util")
-final class Target_sun_nio_ch_Util {
+@TargetClass(className = "java.nio.DirectByteBufferR", onlyWith = JDK19OrLater.class)
+@SuppressWarnings("unused")
+final class Target_java_nio_DirectByteBufferR_JDK19OrLater {
+
+    @Alias
+    protected Target_java_nio_DirectByteBufferR_JDK19OrLater(int cap, long addr, FileDescriptor fd, Runnable unmapper, boolean isSync,
+                    Target_java_lang_foreign_MemorySegment_JDK19OrLater segment) {
+    }
+
+}
+
+@TargetClass(className = "sun.nio.ch.Util", onlyWith = JDK19OrLater.class)
+final class Target_sun_nio_ch_Util_JDK19OrLater {
 
     @Substitute
     private static MappedByteBuffer newMappedByteBuffer(int size, long addr, FileDescriptor fd, Runnable unmapper, boolean isSync) {
-        return SubstrateUtil.cast(new Target_java_nio_DirectByteBuffer(size, addr, fd, unmapper, isSync, null), MappedByteBuffer.class);
+        return SubstrateUtil.cast(new Target_java_nio_DirectByteBuffer_JDK19OrLater(size, addr, fd, unmapper, isSync, null), MappedByteBuffer.class);
     }
 
     @Substitute
     static MappedByteBuffer newMappedByteBufferR(int size, long addr, FileDescriptor fd, Runnable unmapper, boolean isSync) {
-        return SubstrateUtil.cast(new Target_java_nio_DirectByteBufferR(size, addr, fd, unmapper, isSync, null), MappedByteBuffer.class);
+        return SubstrateUtil.cast(new Target_java_nio_DirectByteBufferR_JDK19OrLater(size, addr, fd, unmapper, isSync, null), MappedByteBuffer.class);
     }
+
 }

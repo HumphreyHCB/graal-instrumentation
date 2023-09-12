@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.hosted.jdk;
 
+import org.graalvm.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;

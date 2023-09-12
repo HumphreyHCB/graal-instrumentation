@@ -30,18 +30,14 @@ import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.ObjectScanner;
-import com.oracle.graal.pointsto.ObjectScanningObserver;
 import com.oracle.graal.pointsto.heap.HeapSnapshotVerifier;
 import com.oracle.graal.pointsto.heap.ImageHeap;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapScanner;
-import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
-import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.util.CompletionExecutor;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.SVMHost;
-import com.oracle.svm.hosted.ameta.AnalysisConstantReflectionProvider;
 
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;

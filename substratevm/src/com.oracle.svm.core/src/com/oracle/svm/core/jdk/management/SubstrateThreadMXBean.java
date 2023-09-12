@@ -31,6 +31,7 @@ import java.util.Objects;
 
 import javax.management.ObjectName;
 
+import com.oracle.svm.core.thread.ThreadCpuTimeSupport;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -39,7 +40,6 @@ import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.jdk.UninterruptibleUtils.AtomicInteger;
 import com.oracle.svm.core.jdk.UninterruptibleUtils.AtomicLong;
 import com.oracle.svm.core.thread.PlatformThreads;
-import com.oracle.svm.core.thread.ThreadCpuTimeSupport;
 
 import sun.management.Util;
 
@@ -128,7 +128,6 @@ public final class SubstrateThreadMXBean implements com.sun.management.ThreadMXB
     }
 
     @Override
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public int getPeakThreadCount() {
         return peakThreadCount.get();
     }
@@ -139,13 +138,11 @@ public final class SubstrateThreadMXBean implements com.sun.management.ThreadMXB
     }
 
     @Override
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public long getTotalStartedThreadCount() {
         return totalStartedThreadCount.get();
     }
 
     @Override
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public int getDaemonThreadCount() {
         return daemonThreadCount.get();
     }

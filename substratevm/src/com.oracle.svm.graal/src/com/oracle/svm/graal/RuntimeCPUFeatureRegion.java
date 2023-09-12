@@ -95,7 +95,6 @@ class RuntimeCPUFeatureRegionFeature implements InternalFeature {
         r.register(new InvocationPlugin.RequiredInlineOnlyInvocationPlugin("leave", InvocationPlugin.Receiver.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver) {
-                receiver.requireNonNull();
                 b.add(new CPUFeatureRegionLeaveNode());
                 return true;
             }

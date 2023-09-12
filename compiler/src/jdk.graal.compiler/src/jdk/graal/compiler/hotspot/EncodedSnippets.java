@@ -123,7 +123,7 @@ public class EncodedSnippets {
 
         @Override
         int getStartOffset(Class<?> receiverClass) {
-            assert receiverClass == null : receiverClass;
+            assert receiverClass == null;
             return startOffset;
         }
     }

@@ -343,9 +343,6 @@ public final class TruffleBaseFeature implements InternalFeature {
         // pre-initialize TruffleLogger$LoggerCache.INSTANCE
         invokeStaticMethod("com.oracle.truffle.api.TruffleLogger$LoggerCache", "getInstance", Collections.emptyList());
 
-        // enable InternalResourceCacheSymbol entry point for shared library path lookup
-        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCacheSymbol", "initialize", List.of());
-
         profilingEnabled = false;
     }
 
@@ -415,7 +412,6 @@ public final class TruffleBaseFeature implements InternalFeature {
                         Collections.emptyList());
         invokeStaticMethod("com.oracle.truffle.polyglot.InstrumentCache", "resetNativeImageState",
                         Collections.emptyList());
-        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCache", "resetNativeImageState", List.of());
         invokeStaticMethod("org.graalvm.polyglot.Engine$ImplHolder", "resetPreInitializedEngine",
                         Collections.emptyList());
         invokeStaticMethod("com.oracle.truffle.api.impl.TruffleLocator", "resetNativeImageState",
@@ -608,6 +604,7 @@ public final class TruffleBaseFeature implements InternalFeature {
     @Override
     public void afterAnalysis(AfterAnalysisAccess access) {
         markAsUnsafeAccessed = null;
+        invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCache", "resetNativeImageState", List.of());
     }
 
     public static void preInitializeEngine() {

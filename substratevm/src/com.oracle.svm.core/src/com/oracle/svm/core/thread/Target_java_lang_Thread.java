@@ -49,8 +49,10 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.jdk.JDK21OrEarlier;
+import com.oracle.svm.core.jdk.JDK21OrLater;
 import com.oracle.svm.core.jdk.JDK22OrLater;
 import com.oracle.svm.core.monitor.MonitorSupport;
+import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.core.util.VMError;
 
 @TargetClass(Thread.class)
@@ -62,9 +64,15 @@ public final class Target_java_lang_Thread {
     static StackTraceElement[] EMPTY_STACK_TRACE;
 
     @Alias //
+    @TargetElement(onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class}) //
+    static int NO_THREAD_LOCALS;
+
+    @Alias //
+    @TargetElement(onlyWith = JDK19OrLater.class) //
     static int NO_INHERIT_THREAD_LOCALS;
 
     @Alias //
+    @TargetElement(onlyWith = JDK20OrLater.class) //
     static Object NEW_THREAD_BINDINGS;
     // Checkstyle: resume
 
@@ -95,19 +103,56 @@ public final class Target_java_lang_Thread {
     @Alias//
     volatile String name;
 
+    @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    int priority;
+
+    /* Whether or not the thread is a daemon . */
+    @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    boolean daemon;
+
+    /* What will be run. */
+    @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    Runnable target;
+
+    /* The group of this thread */
+    @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    ThreadGroup group;
+
     @Alias//
     Target_java_lang_ThreadLocal_ThreadLocalMap threadLocals = null;
 
     @Alias//
     Target_java_lang_ThreadLocal_ThreadLocalMap inheritableThreadLocals = null;
 
+    /*
+     * The requested stack size for this thread, or 0 if the creator did not specify a stack size.
+     * It is up to the VM to do whatever it likes with this number; some VMs will ignore it.
+     */
     @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    long stackSize;
+
+    @Alias //
+    @TargetElement(onlyWith = JDK19OrLater.class)//
     Target_java_lang_Thread_FieldHolder holder;
 
     /* Thread ID */
     @Alias //
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = ThreadIdRecomputation.class) //
     public long tid;
+
+    /** We have our own atomic number in {@link JavaThreads#threadSeqNumber}. */
+    @Delete //
+    @TargetElement(onlyWith = JDK17OrEarlier.class)//
+    static long threadSeqNumber;
+    /** We have our own atomic number in {@link JavaThreads#threadInitNumber}. */
+    @Delete//
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    static int threadInitNumber;
 
     /*
      * For unstarted threads created during image generation like the main thread, we do not want to
@@ -118,9 +163,23 @@ public final class Target_java_lang_Thread {
     public AccessControlContext inheritedAccessControlContext;
 
     @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = ThreadStatusRecomputation.class) //
+    volatile int threadStatus;
+
+    @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    Object blockerLock;
+    @Alias //
+    @TargetElement(onlyWith = JDK19OrLater.class) //
     Object interruptLock;
 
     @Alias //
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    volatile Target_sun_nio_ch_Interruptible blocker;
+
+    @Alias //
+    @TargetElement(onlyWith = JDK19OrLater.class) //
     volatile Target_sun_nio_ch_Interruptible nioBlocker;
 
     /** @see JavaThreads#setCurrentThreadLockHelper */
@@ -129,18 +188,57 @@ public final class Target_java_lang_Thread {
     Object lockHelper;
 
     @Inject //
+    @TargetElement(onlyWith = JDK19OrLater.class) //
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset) //
     Object[] scopedValueCache;
 
     @Alias //
+    @TargetElement(onlyWith = JDK20OrLater.class) //
     Object scopedValueBindings;
 
     @Alias
     @Platforms(InternalPlatform.NATIVE_ONLY.class)
     native void setPriority(int newPriority);
 
+    @Alias
+    @TargetElement(onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class})
+    static native boolean isSupportedClassLoader(ClassLoader loader);
+
+    @Substitute
+    public ClassLoader getContextClassLoader() {
+        if (JavaVersionUtil.JAVA_SPEC >= 19 && JavaVersionUtil.JAVA_SPEC <= 20 && !isSupportedClassLoader(contextClassLoader)) {
+            return ClassLoader.getSystemClassLoader();
+        }
+        return contextClassLoader;
+    }
+
+    @Substitute
+    public void setContextClassLoader(ClassLoader cl) {
+        if (JavaVersionUtil.JAVA_SPEC >= 19 && JavaVersionUtil.JAVA_SPEC <= 20 && !isSupportedClassLoader(contextClassLoader)) {
+            throw new UnsupportedOperationException("The context class loader cannot be set");
+        }
+        contextClassLoader = cl;
+    }
+
+    /** Replace "synchronized" modifier with delegation to an atomic increment. */
+    @Substitute
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    static long nextThreadID() {
+        return JavaThreads.threadSeqNumber.incrementAndGet();
+    }
+
+    /** Replace "synchronized" modifier with delegation to an atomic increment. */
+    @Substitute
+    @TargetElement(onlyWith = JDK17OrEarlier.class) //
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    private static int nextThreadNum() {
+        return JavaThreads.threadInitNumber.incrementAndGet();
+    }
+
     @AnnotateOriginal
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    @TargetElement(onlyWith = JDK19OrLater.class)
     public native boolean isVirtual();
 
     @Alias
@@ -158,9 +256,14 @@ public final class Target_java_lang_Thread {
         JavaThreads.initThreadFields(this, nonnullGroup, null, 0, Thread.NORM_PRIORITY, asDaemon);
         PlatformThreads.setThreadStatus(JavaThreads.fromTarget(this), ThreadStatus.RUNNABLE);
 
-        tid = Target_java_lang_Thread_ThreadIdentifiers.next();
-        interruptLock = new Object();
-        name = (withName != null) ? withName : ("System-" + JavaThreads.nextThreadNum());
+        if (JavaVersionUtil.JAVA_SPEC >= 19) {
+            tid = Target_java_lang_Thread_ThreadIdentifiers.next();
+            interruptLock = new Object();
+        } else {
+            tid = nextThreadID();
+            blockerLock = new Object();
+        }
+        name = (withName != null) ? withName : ("System-" + nextThreadNum());
         contextClassLoader = ClassLoader.getSystemClassLoader();
     }
 
@@ -176,6 +279,7 @@ public final class Target_java_lang_Thread {
 
     @AnnotateOriginal
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    @TargetElement(onlyWith = JDK19OrLater.class)
     static native ThreadGroup virtualThreadGroup();
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -183,6 +287,7 @@ public final class Target_java_lang_Thread {
     public native boolean isDaemon();
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     static Thread currentCarrierThread() {
         Thread thread = PlatformThreads.currentThread.get();
         assert thread != null : "Thread has not been set yet";
@@ -208,12 +313,33 @@ public final class Target_java_lang_Thread {
 
     @SuppressWarnings("static-method")
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     void setCurrentThread(Thread thread) {
         JavaThreads.setCurrentThread(JavaThreads.fromTarget(this), thread);
     }
 
     @Substitute
     @SuppressWarnings({"unused"})
+    @TargetElement(onlyWith = JDK17OrEarlier.class)
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    private Target_java_lang_Thread(
+                    ThreadGroup g,
+                    Runnable target,
+                    String name,
+                    long stackSize,
+                    AccessControlContext acc,
+                    boolean inheritThreadLocals) {
+        /* Non-0 instance field initialization. */
+        this.blockerLock = new Object();
+        /* Injected Target_java_lang_Thread instance field initialization. */
+        this.threadData = new ThreadData();
+        /* Initialize the rest of the Thread object. */
+        JavaThreads.initializeNewThread(this, g, target, name, stackSize, acc, true, inheritThreadLocals);
+    }
+
+    @Substitute
+    @SuppressWarnings({"unused"})
+    @TargetElement(onlyWith = JDK19OrLater.class)
     @Platforms(InternalPlatform.NATIVE_ONLY.class)
     private Target_java_lang_Thread(
                     ThreadGroup g,
@@ -228,19 +354,24 @@ public final class Target_java_lang_Thread {
         this.threadData = new ThreadData();
 
         String nameLocal = (name != null) ? name : genThreadName();
+        boolean allowThreadLocals = JavaVersionUtil.JAVA_SPEC >= 21 || (characteristics & NO_THREAD_LOCALS) == 0;
         boolean inheritThreadLocals = (characteristics & NO_INHERIT_THREAD_LOCALS) == 0;
-        JavaThreads.initializeNewThread(this, g, target, nameLocal, stackSize, acc, inheritThreadLocals);
+        JavaThreads.initializeNewThread(this, g, target, nameLocal, stackSize, acc, allowThreadLocals, inheritThreadLocals);
 
-        this.scopedValueBindings = NEW_THREAD_BINDINGS;
+        if (JavaVersionUtil.JAVA_SPEC >= 20) {
+            this.scopedValueBindings = NEW_THREAD_BINDINGS;
+        }
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     static String genThreadName() {
         return "Thread-" + JavaThreads.threadInitNumber.incrementAndGet();
     }
 
     /** This constructor is called only by {@code VirtualThread}. */
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     private Target_java_lang_Thread(String name, int characteristics, boolean bound) {
         if (bound) {
             this.threadData = new ThreadData();
@@ -253,8 +384,9 @@ public final class Target_java_lang_Thread {
         this.tid = Target_java_lang_Thread_ThreadIdentifiers.next();
         this.inheritedAccessControlContext = Target_java_lang_Thread_Constants.NO_PERMISSIONS_ACC;
 
+        boolean allowThreadLocals = JavaVersionUtil.JAVA_SPEC >= 21 || (characteristics & NO_THREAD_LOCALS) == 0;
         boolean inheritThreadLocals = (characteristics & NO_INHERIT_THREAD_LOCALS) == 0;
-        JavaThreads.initNewThreadLocalsAndLoader(this, inheritThreadLocals, Thread.currentThread());
+        JavaThreads.initNewThreadLocalsAndLoader(this, allowThreadLocals, inheritThreadLocals, Thread.currentThread());
 
         this.scopedValueBindings = NEW_THREAD_BINDINGS;
 
@@ -348,6 +480,27 @@ public final class Target_java_lang_Thread {
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrEarlier.class)
+    @SuppressWarnings({"static-method"})
+    private void stop0(Object o) {
+        throw VMError.unsupportedFeature("The deprecated method Thread.stop is not supported");
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK19OrEarlier.class)
+    @SuppressWarnings({"static-method"})
+    private void suspend0() {
+        throw VMError.unsupportedFeature("The deprecated method Thread.suspend is not supported");
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK19OrEarlier.class)
+    @SuppressWarnings({"static-method"})
+    private void resume0() {
+        throw VMError.unsupportedFeature("The deprecated method Thread.resume is not supported");
+    }
+
+    @Substitute
     @TargetElement(onlyWith = JDK21OrEarlier.class)
     @SuppressWarnings({"static-method"})
     private int countStackFrames() {
@@ -370,18 +523,54 @@ public final class Target_java_lang_Thread {
     private static native Thread[] getThreads();
 
     @Substitute
+    @TargetElement(onlyWith = JDK17OrEarlier.class)
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    private boolean isAlive() {
+        return PlatformThreads.isAlive(JavaThreads.fromTarget(this));
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class})
+    private boolean isAlive0() {
+        return PlatformThreads.isAlive(JavaThreads.fromTarget(this));
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK21OrLater.class)
     private boolean alive() {
         return PlatformThreads.isAlive(JavaThreads.fromTarget(this));
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK17OrEarlier.class)
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    private static void yield() {
+        PlatformThreads.singleton().yieldCurrent();
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     private static void yield0() {
         // Virtual threads are handled in yield()
         PlatformThreads.singleton().yieldCurrent();
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrEarlier.class)
+    @TargetElement(onlyWith = JDK17OrEarlier.class)
+    @Platforms(InternalPlatform.NATIVE_ONLY.class)
+    private static void sleep(long millis) throws InterruptedException {
+        PlatformThreads.sleep(TimeUtils.millisToNanos(millis));
+    }
+
+    @Substitute
+    @TargetElement(name = "sleep0", onlyWith = {JDK19OrLater.class, JDK20OrEarlier.class})
+    private static void sleep0JDK20(long millis) throws InterruptedException {
+        // Virtual threads are handled in sleep()
+        PlatformThreads.sleep(TimeUtils.millisToNanos(millis));
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = {JDK21OrLater.class, JDK21OrEarlier.class})
     private static void sleep0(long nanos) throws InterruptedException {
         // Virtual threads are handled in sleep()
         PlatformThreads.sleep(nanos);
@@ -417,6 +606,7 @@ public final class Target_java_lang_Thread {
 
     /** @see com.oracle.svm.core.jdk.StackTraceUtils#asyncGetStackTrace */
     @Delete
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native StackTraceElement[] asyncGetStackTrace();
 
     @Substitute
@@ -426,6 +616,7 @@ public final class Target_java_lang_Thread {
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     private static Thread[] getAllThreads() {
         return PlatformThreads.getAllThreads();
     }
@@ -440,9 +631,11 @@ public final class Target_java_lang_Thread {
     }
 
     @Alias
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native void setInterrupt();
 
     @Alias //
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native void clearInterrupt();
 
     /** Carrier threads only: the current innermost continuation. */
@@ -450,16 +643,31 @@ public final class Target_java_lang_Thread {
     Target_jdk_internal_vm_Continuation cont;
 
     @Substitute
+    @TargetElement(onlyWith = {JDK19OrLater.class, JDK19OrEarlier.class})
+    static Object[] extentLocalCache() {
+        return JavaThreads.toTarget(currentCarrierThread()).scopedValueCache;
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = {JDK19OrLater.class, JDK19OrEarlier.class})
+    static void setExtentLocalCache(Object[] cache) {
+        JavaThreads.toTarget(currentCarrierThread()).scopedValueCache = cache;
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK20OrLater.class)
     static Object[] scopedValueCache() {
         return JavaThreads.toTarget(currentCarrierThread()).scopedValueCache;
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDK20OrLater.class)
     static void setScopedValueCache(Object[] cache) {
         JavaThreads.toTarget(currentCarrierThread()).scopedValueCache = cache;
     }
 
     @Alias
+    @TargetElement(onlyWith = JDK20OrLater.class)
     static native Object scopedValueBindings();
 
     /**
@@ -483,6 +691,7 @@ public final class Target_java_lang_Thread {
      */
     @Substitute
     @Uninterruptible(reason = "Must not call other methods which can trigger a stack overflow.", callerMustBe = true)
+    @TargetElement(onlyWith = JDK20OrLater.class)
     static void setScopedValueBindings(Object bindings) {
         Target_java_lang_Thread thread = SubstrateUtil.cast(PlatformThreads.currentThread.get(), Target_java_lang_Thread.class);
         if (thread.vthread != null) {
@@ -502,6 +711,7 @@ public final class Target_java_lang_Thread {
      * method.
      */
     @Delete
+    @TargetElement(onlyWith = JDK20OrLater.class)
     static native Object findScopedValueBindings();
 
     @Substitute
@@ -510,6 +720,7 @@ public final class Target_java_lang_Thread {
     }
 
     @Alias
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native Thread.State threadState();
 
     /**
@@ -523,6 +734,7 @@ public final class Target_java_lang_Thread {
      * be made uninterruptible.
      */
     @Substitute
+    @TargetElement(onlyWith = JDK19OrLater.class)
     boolean isTerminated() {
         return (holder.threadStatus & JVMTI_THREAD_STATE_TERMINATED) != 0;
     }
@@ -532,16 +744,18 @@ public final class Target_java_lang_Thread {
     static volatile UncaughtExceptionHandler defaultUncaughtExceptionHandler;
 
     @Alias
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native Target_jdk_internal_vm_ThreadContainer threadContainer();
 
     @Alias
+    @TargetElement(onlyWith = JDK19OrLater.class)
     native long threadId();
 
     @Delete
     static native long getNextThreadIdOffset();
 }
 
-@TargetClass(value = Thread.class, innerClass = "Constants")
+@TargetClass(value = Thread.class, innerClass = "Constants", onlyWith = JDK19OrLater.class)
 final class Target_java_lang_Thread_Constants {
     // Checkstyle: stop
     @SuppressWarnings("removal") //
@@ -551,7 +765,7 @@ final class Target_java_lang_Thread_Constants {
     // Checkstyle: resume
 }
 
-@TargetClass(value = Thread.class, innerClass = "FieldHolder")
+@TargetClass(value = Thread.class, innerClass = "FieldHolder", onlyWith = JDK19OrLater.class)
 @SuppressWarnings("unused")
 final class Target_java_lang_Thread_FieldHolder {
     @Alias //

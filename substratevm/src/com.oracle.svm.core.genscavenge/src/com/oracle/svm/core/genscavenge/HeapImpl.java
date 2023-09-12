@@ -324,7 +324,6 @@ public final class HeapImpl extends Heap {
     }
 
     @Override
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public int getClassCount() {
         return imageHeapInfo.dynamicHubCount;
     }

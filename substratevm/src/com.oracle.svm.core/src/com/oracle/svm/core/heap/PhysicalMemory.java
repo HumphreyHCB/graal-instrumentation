@@ -54,7 +54,6 @@ public class PhysicalMemory {
     private static final UnsignedWord UNSET_SENTINEL = UnsignedUtils.MAX_VALUE;
     private static UnsignedWord cachedSize = UNSET_SENTINEL;
 
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static boolean isInitialized() {
         return cachedSize != UNSET_SENTINEL;
     }
@@ -111,7 +110,6 @@ public class PhysicalMemory {
      * Returns the size of physical memory in bytes that has been previously cached. This method
      * must not be called if {@link #isInitialized()} is still false.
      */
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static UnsignedWord getCachedSize() {
         VMError.guarantee(isInitialized(), "Cached physical memory size is not available");
         return cachedSize;

@@ -847,9 +847,7 @@ public class StandardGraphBuilderPlugins {
         r.register(new InvocationPlugin("isDigit", Receiver.class, int.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode ch) {
-                // Side effect of call below is to add a receiver null check if required
-                receiver.get();
-
+                b.nullCheckedValue(receiver.get());
                 ValueNode sub = b.add(SubNode.create(ch, ConstantNode.forInt('0'), NodeView.DEFAULT));
                 LogicNode isDigit = b.add(IntegerBelowNode.create(sub, ConstantNode.forInt(10), NodeView.DEFAULT));
                 b.addPush(JavaKind.Boolean, ConditionalNode.create(isDigit, NodeView.DEFAULT));

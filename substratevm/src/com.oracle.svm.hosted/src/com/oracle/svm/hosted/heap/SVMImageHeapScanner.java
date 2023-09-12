@@ -68,8 +68,6 @@ public class SVMImageHeapScanner extends ImageHeapScanner {
     private final Class<?> economicMapImpl;
     private final Field economicMapImplEntriesField;
     private final Field economicMapImplHashArrayField;
-    private final Field economicMapImplTotalEntriesField;
-    private final Field economicMapImplDeletedEntriesField;
     private final ReflectionHostedSupport reflectionSupport;
     private final Class<?> memberNameClass;
     private final MethodHandleFeature methodHandleSupport;
@@ -85,8 +83,6 @@ public class SVMImageHeapScanner extends ImageHeapScanner {
         economicMapImpl = getClass("org.graalvm.collections.EconomicMapImpl");
         economicMapImplEntriesField = ReflectionUtil.lookupField(economicMapImpl, "entries");
         economicMapImplHashArrayField = ReflectionUtil.lookupField(economicMapImpl, "hashArray");
-        economicMapImplTotalEntriesField = ReflectionUtil.lookupField(economicMapImpl, "totalEntries");
-        economicMapImplDeletedEntriesField = ReflectionUtil.lookupField(economicMapImpl, "deletedEntries");
         ImageSingletons.add(ImageHeapScanner.class, this);
         reflectionSupport = ImageSingletons.lookup(ReflectionHostedSupport.class);
         memberNameClass = getClass("java.lang.invoke.MemberName");
@@ -156,8 +152,6 @@ public class SVMImageHeapScanner extends ImageHeapScanner {
         if (map.getClass() == economicMapImpl) {
             rescanField(map, economicMapImplEntriesField);
             rescanField(map, economicMapImplHashArrayField);
-            rescanField(map, economicMapImplTotalEntriesField);
-            rescanField(map, economicMapImplDeletedEntriesField);
         }
 
     }

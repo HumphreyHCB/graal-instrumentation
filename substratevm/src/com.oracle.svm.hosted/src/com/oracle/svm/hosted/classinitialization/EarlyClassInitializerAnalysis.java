@@ -122,7 +122,7 @@ final class EarlyClassInitializerAnalysis {
 
     @SuppressWarnings("try")
     boolean canInitializeWithoutSideEffects(Class<?> clazz, Set<Class<?>> existingAnalyzedClasses) {
-        if (Proxy.isProxyClass(clazz)) {
+        if (JavaVersionUtil.JAVA_SPEC >= 19 && Proxy.isProxyClass(clazz)) {
             /*
              * The checks below consider proxy class initialization as of JDK 19 to have side
              * effects because it accesses Class.classLoader and System.allowSecurityManager, but

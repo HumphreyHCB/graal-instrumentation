@@ -761,8 +761,6 @@ public abstract class Accessor {
         public abstract Path getEngineResource(Object polyglotEngine, String resourceId) throws IOException;
 
         public abstract Collection<String> getResourceIds(String componentId);
-
-        public abstract void setIsolatePolyglot(AbstractPolyglotImpl instance);
     }
 
     public abstract static class LanguageSupport extends Support {

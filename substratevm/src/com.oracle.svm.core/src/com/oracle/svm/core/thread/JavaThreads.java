@@ -32,8 +32,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
-import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.impl.InternalPlatform;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.WordFactory;
 
@@ -100,16 +98,6 @@ public final class JavaThreads {
     @SuppressFBWarnings(value = "BC", justification = "Cast for @TargetClass")
     static Target_java_lang_Thread toTarget(Thread thread) {
         return Target_java_lang_Thread.class.cast(thread);
-    }
-
-    @Platforms(InternalPlatform.NATIVE_ONLY.class)
-    static long nextThreadID() {
-        return JavaThreads.threadSeqNumber.incrementAndGet();
-    }
-
-    @Platforms(InternalPlatform.NATIVE_ONLY.class)
-    static int nextThreadNum() {
-        return JavaThreads.threadInitNumber.incrementAndGet();
     }
 
     /**
@@ -324,6 +312,7 @@ public final class JavaThreads {
                     String name,
                     long stackSize,
                     AccessControlContext acc,
+                    boolean allowThreadLocals,
                     boolean inheritThreadLocals) {
         if (name == null) {
             throw new NullPointerException("The name cannot be null");
@@ -349,24 +338,56 @@ public final class JavaThreads {
 
         tjlt.inheritedAccessControlContext = acc != null ? acc : AccessController.getContext();
 
-        initNewThreadLocalsAndLoader(tjlt, inheritThreadLocals, parent);
+        initNewThreadLocalsAndLoader(tjlt, allowThreadLocals, inheritThreadLocals, parent);
 
         /* Set thread ID */
-        tjlt.tid = nextThreadID();
+        tjlt.tid = Target_java_lang_Thread.nextThreadID();
     }
 
     static void initThreadFields(Target_java_lang_Thread tjlt, ThreadGroup group, Runnable target, long stackSize, int priority, boolean daemon) {
-        assert tjlt.holder == null;
-        tjlt.holder = new Target_java_lang_Thread_FieldHolder(group, target, stackSize, priority, daemon);
+        if (JavaVersionUtil.JAVA_SPEC >= 19) {
+            assert tjlt.holder == null;
+            tjlt.holder = new Target_java_lang_Thread_FieldHolder(group, target, stackSize, priority, daemon);
+        } else {
+            tjlt.group = group;
+            tjlt.priority = priority;
+            tjlt.daemon = daemon;
+            tjlt.target = target;
+            tjlt.setPriority(priority);
+
+            /* Stash the specified stack size in case the VM cares */
+            tjlt.stackSize = stackSize;
+        }
     }
 
-    static void initNewThreadLocalsAndLoader(Target_java_lang_Thread tjlt, boolean inheritThreadLocals, Thread parent) {
-        if (inheritThreadLocals) {
+    static void initNewThreadLocalsAndLoader(Target_java_lang_Thread tjlt, boolean allowThreadLocals, boolean inheritThreadLocals, Thread parent) {
+        if (JavaVersionUtil.JAVA_SPEC >= 19 && JavaVersionUtil.JAVA_SPEC <= 20 && !allowThreadLocals) {
+            tjlt.threadLocals = Target_java_lang_ThreadLocal_ThreadLocalMap.NOT_SUPPORTED;
+            tjlt.inheritableThreadLocals = Target_java_lang_ThreadLocal_ThreadLocalMap.NOT_SUPPORTED;
+            tjlt.contextClassLoader = Target_java_lang_Thread_Constants.NOT_SUPPORTED_CLASSLOADER;
+        } else if (inheritThreadLocals) {
             Target_java_lang_ThreadLocal_ThreadLocalMap parentMap = toTarget(parent).inheritableThreadLocals;
-            if (parentMap != null && parentMap.size() > 0) {
-                tjlt.inheritableThreadLocals = Target_java_lang_ThreadLocal.createInheritedMap(parentMap);
+            if (parentMap != null) {
+                boolean inherit = false;
+                if (JavaVersionUtil.JAVA_SPEC < 19) {
+                    inherit = true;
+                } else if (parentMap.size() > 0) {
+                    if (JavaVersionUtil.JAVA_SPEC > 20) {
+                        inherit = true;
+                    } else {
+                        inherit = parentMap != Target_java_lang_ThreadLocal_ThreadLocalMap.NOT_SUPPORTED;
+                    }
+                }
+                if (inherit) {
+                    tjlt.inheritableThreadLocals = Target_java_lang_ThreadLocal.createInheritedMap(parentMap);
+                }
             }
-            tjlt.contextClassLoader = parent.getContextClassLoader();
+            ClassLoader parentLoader = parent.getContextClassLoader();
+            if (JavaVersionUtil.JAVA_SPEC < 19 || JavaVersionUtil.JAVA_SPEC > 20 || parentLoader != Target_java_lang_Thread_Constants.NOT_SUPPORTED_CLASSLOADER) {
+                tjlt.contextClassLoader = parentLoader;
+            } else {
+                tjlt.contextClassLoader = ClassLoader.getSystemClassLoader();
+            }
         } else {
             tjlt.contextClassLoader = ClassLoader.getSystemClassLoader();
         }
@@ -438,4 +459,19 @@ public final class JavaThreads {
         Target_java_lang_Thread tjlt = SubstrateUtil.cast(thread, Target_java_lang_Thread.class);
         return (tjlt.vthread != null) ? tjlt.vthread : thread;
     }
+}
+
+/* GR-43733: this class can be removed when we drop the JDK 17 support. */
+@TargetClass(className = "jdk.internal.event.ThreadSleepEvent", onlyWith = JDK19OrLater.class)
+final class Target_jdk_internal_event_ThreadSleepEvent {
+    @Alias public long time;
+
+    @Alias
+    public static native boolean isTurnedOn();
+
+    @Alias
+    public native void begin();
+
+    @Alias
+    public native void commit();
 }

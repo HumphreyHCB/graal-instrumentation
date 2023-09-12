@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.core.monitor;
 
+import java.lang.ref.ReferenceQueue;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,6 +47,8 @@ import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.heap.RestrictHeapAccess.Access;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.DynamicHubCompanion;
+import com.oracle.svm.core.jdk.JDK17OrEarlier;
+import com.oracle.svm.core.jdk.JDK19OrLater;
 import com.oracle.svm.core.jfr.JfrTicks;
 import com.oracle.svm.core.jfr.events.JavaMonitorInflateEvent;
 import com.oracle.svm.core.monitor.JavaMonitorQueuedSynchronizer.JavaMonitorConditionObject;
@@ -114,6 +117,13 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
              * java.lang.ref.ReferenceQueue internally.
              */
             HashSet<Class<?>> monitorTypes = new HashSet<>();
+            if (JavaVersionUtil.JAVA_SPEC <= 17) {
+                /*
+                 * Until JDK 17, the ReferenceQueue uses the inner static class Lock for all its
+                 * locking needs.
+                 */
+                monitorTypes.add(Class.forName("java.lang.ref.ReferenceQueue$Lock"));
+            }
             /* The WeakIdentityHashMap also synchronizes on its internal ReferenceQueue field. */
             monitorTypes.add(java.lang.ref.ReferenceQueue.class);
 
@@ -350,7 +360,7 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
     @Override
     protected void doWait(Object obj, long timeoutMillis) throws InterruptedException {
         /*
-         * Our monitor implementation does not pin virtual threads, so avoid
+         * JDK 19 and later: our monitor implementation does not pin virtual threads, so avoid
          * jdk.internal.misc.Blocker which expects and asserts that a virtual thread is pinned
          * unless the thread is pinned for other reasons. Also, we get interrupted on the virtual
          * thread instead of the carrier thread, which clears the carrier thread's interrupt status
@@ -469,6 +479,8 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
     }
 
     protected JavaMonitor getOrCreateMonitorFromMap(Object obj, boolean createIfNotExisting, MonitorInflationCause cause) {
+        assert JavaVersionUtil.JAVA_SPEC > 17 ||
+                        obj.getClass() != Target_java_lang_ref_ReferenceQueue_Lock.class : "ReferenceQueue.Lock must have a monitor field or we can deadlock accessing WeakIdentityHashMap below";
         VMError.guarantee(!additionalMonitorsLock.isHeldByCurrentThread(),
                         "Recursive manipulation of the additionalMonitors map can lead to table corruptions and double insertion of a monitor for the same object");
 
@@ -498,7 +510,11 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
     }
 }
 
-@TargetClass(className = "jdk.internal.misc.Blocker")
+@TargetClass(value = ReferenceQueue.class, innerClass = "Lock", onlyWith = JDK17OrEarlier.class)
+final class Target_java_lang_ref_ReferenceQueue_Lock {
+}
+
+@TargetClass(className = "jdk.internal.misc.Blocker", onlyWith = JDK19OrLater.class)
 final class Target_jdk_internal_misc_Blocker {
     @Alias
     public static native long begin();

@@ -38,7 +38,6 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.oracle.svm.core.jfr.JfrEvent;
 import com.oracle.svm.core.util.TimeUtils;
 
 import jdk.jfr.Recording;
@@ -52,7 +51,7 @@ public class TestThreadCPULoadEvent extends JfrRecordingTest {
 
     @Test
     public void test() throws Throwable {
-        String[] events = new String[]{JfrEvent.ThreadCPULoad.getName()};
+        String[] events = new String[]{"jdk.ThreadCPULoad"};
         Recording recording = startRecording(events);
 
         WeakReference<Thread> thread1 = createAndStartBusyWaitThread(THREAD_NAME_1, 10, 250);
