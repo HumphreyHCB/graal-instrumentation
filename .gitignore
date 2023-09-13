@@ -61,3 +61,8 @@ visualizer/IdealGraphVisualizer/nbplatform/
 /.src-rev
 *.interp
 *.tokens
+/labs-openjdk-17-master
+compiler/src/jdk.internal.vm.compiler/src/jdk/
+!compiler/MyJDKJarLib.jar
+localcmd.txt
+!compiler/graal_dumps/Dump 1789902.bgv

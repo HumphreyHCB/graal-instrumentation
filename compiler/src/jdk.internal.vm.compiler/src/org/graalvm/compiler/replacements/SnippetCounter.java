@@ -87,7 +87,8 @@ public final class SnippetCounter implements Comparable<SnippetCounter> {
                 double percent = total == 0D ? 0D : ((double) (c.value * 100)) / total;
                 buf.append(String.format(formatString, c.name, percent, c.value, c.description));
             }
-            buf.append(String.format(formatString, "TOTAL", 100.0D, total, ""));
+            //System.out.println(total);
+            //buf.append(String.format(formatString, "TOTAL", 100.0D, total, ""));
 
             return buf.toString();
         }

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -23,36 +24,38 @@
  * questions.
  */
 
-public class HelloWorld {
+//import org.graalvm.compiler.hotspot.meta.HumphreysCache;
+
+
+public class ClockTest {
         public volatile static int number = 0;
+        //public static TestingHumphreysCache hc;
 
         public static void main(String[] args) {
+
+                //hc = new TestingHumphreysCache();
+                //hc.start();
                 driver();
-                // MathsExample me = new MathsExample();
-                // me.mathstest();
+                //hc.print();
         }
 
         public static void driver() {
-                for (int i = 0; i < 2_500_000; i++) {
+                for (int i = 0; i < 250_000; i++) {
                         number = printInt(number);
-                        System.out.println(number);
+                        System.err.println(number);
                 }
-                // MathsExample me = new MathsExample();
-                // me.mandelbrot(200);
 
         }
 
         public static int printInt(int number) {
                 for (int i = 0; i < 10; i++) {
-                        number = inc(number);
-                        System.out.println("Hello World " + number);
-
+                        HumphreyCache.dummyPrint();
+                        System.err.println("Hello World" + number);
                 }
                 return number;
         }
 
-        public static int inc(int number) {
-                return number + 1;
+        public static long CurrentTime() {
+                return System.nanoTime();
         }
-
 }

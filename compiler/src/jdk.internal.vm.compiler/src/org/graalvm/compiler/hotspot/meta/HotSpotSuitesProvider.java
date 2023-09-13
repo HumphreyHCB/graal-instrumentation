@@ -48,6 +48,7 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.BarrierSetVerificationPhase;
+import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.phases.common.UseTrappingNullChecksPhase;
 import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
@@ -55,8 +56,12 @@ import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.Suites;
 import org.graalvm.compiler.phases.tiers.SuitesCreator;
+import org.graalvm.compiler.replacements.GraphKit;
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
+import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
  * HotSpot implementation of {@link SuitesCreator}.
@@ -67,6 +72,9 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
     protected final HotSpotGraalRuntimeProvider runtime;
 
     protected final SuitesCreator defaultSuitesCreator;
+    final Group group;
+
+
 
     @SuppressWarnings("this-escape")
     public HotSpotSuitesProvider(SuitesCreator defaultSuitesCreator, GraalHotSpotVMConfig config, HotSpotGraalRuntimeProvider runtime) {
@@ -74,6 +82,12 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         this.config = config;
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
+
+        // my stuff
+        this.group = runtime.createSnippetCounterGroup("Humphrey's Group");
+
+        
+        
     }
 
     @Override
@@ -98,6 +112,17 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
+        //
+        // This needs to live in its own method for clairty
+        //
+        //ResolvedJavaMethod method = new BuboMetaTools().findMethod(System.out.getClass(), "println", runtime.getHostBackend().getMetaAccess());
+        ResolvedJavaMethod method = new BuboMetaTools().findMethod(HumphreysCache.class, "dummyPrint", runtime.getHostBackend().getMetaAccess());
+        ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
+        position.add(new CustomInstrumentationPhase(group, method));   
+        //
+        //
+        //
+
         return suites;
     }
 
