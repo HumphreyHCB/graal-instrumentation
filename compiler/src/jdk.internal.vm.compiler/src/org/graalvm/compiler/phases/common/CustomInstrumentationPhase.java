@@ -41,16 +41,13 @@ import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.NodeFlood;
 import org.graalvm.compiler.nodes.AbstractEndNode;
-import org.graalvm.compiler.nodes.GraphState;
-import org.graalvm.compiler.nodes.GuardNode;
+import org.graalvm.compiler.nodes.BeginNode; 
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
-import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
 import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.phases.tiers.MidTierContext;
 
 /**
  * Adds safepoints to loops.
@@ -100,12 +97,23 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
         //}
         // keep it simple, come back to this 
 
-            for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
-                for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
+            // for (BeginNode BeginNode : graph.getNodes(BeginNode.TYPE)) {           
+            //             try (DebugCloseable s = BeginNode.withNodeSourcePosition()) {
+            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+            //                 graph.addAfterFixed(BeginNode, CustomInstrumentationNode);
+            //             }                
+            // }
 
+            for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
+
+
+                for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
+                        
                         try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
                             CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                            //graph.addBeforeFixed(loopEndNode.loopBegin(), CustomInstrumentationNode);
                             graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
+                            
                         }
                     
                 }

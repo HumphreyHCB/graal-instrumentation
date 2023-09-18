@@ -42,7 +42,7 @@ import org.graalvm.compiler.nodes.spi.NodeLIRBuilderTool;
           cyclesRationale = "read",
           size = SIZE_1)
 // @formatter:on
-public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNode implements Lowerable, LIRLowerable {
+public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNode implements Lowerable, LIRLowerable{
 
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
 
@@ -52,7 +52,7 @@ public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNo
 
     @Override
     public void generate(NodeLIRBuilderTool gen) {
-        gen.state(this);
+        //gen.state(this);
     }
 
     @Override
