@@ -29,13 +29,18 @@ import java.util.Optional;
 
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
+import org.graalvm.compiler.nodes.IfNode;
 import org.graalvm.compiler.nodes.GraphState.StageFlag;
+import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
 import org.graalvm.compiler.nodes.SafepointNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
+import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
+
+import jdk.vm.ci.meta.Value;
 
 import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.graph.Node;
@@ -43,6 +48,7 @@ import org.graalvm.compiler.graph.NodeFlood;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode; 
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
+import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
@@ -97,23 +103,23 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
         //}
         // keep it simple, come back to this 
 
-            // for (BeginNode BeginNode : graph.getNodes(BeginNode.TYPE)) {           
-            //             try (DebugCloseable s = BeginNode.withNodeSourcePosition()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-            //                 graph.addAfterFixed(BeginNode, CustomInstrumentationNode);
-            //             }                
-            // }
-
+    
             for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
 
-
+                for (FixedNode node :  loopBeginNode.getBlockNodes()) {
+                    if (node.getClass().equals(IfNode.class)) {
+                         IfNode ifnode = ((IfNode)node);
+                         CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                         graph.addAfterFixed(ifnode.getSuccessor(true), CustomInstrumentationNode);
+                    }
+                }
+               
                 for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
                         
                         try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
                             CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-                            //graph.addBeforeFixed(loopEndNode.loopBegin(), CustomInstrumentationNode);
                             graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
-                            
+
                         }
                     
                 }
