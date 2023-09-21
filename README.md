@@ -2,19 +2,20 @@
 - [x] read the following:
   - https://ssw.jku.at/General/Staff/GD/APPLC-2013-paper_12.pdf
   - https://dl.acm.org/doi/10.1145/2542142.2542143
-- [ ] add your own phase into the phase list
+- [x] add your own phase into the phase list
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/phases/Phase.java
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/core/phases/HighTier.java
-- [ ] add custom instrumentation nodes into the IR
+- [x] add custom instrumentation nodes into the IR
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/graph/Graph.java
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/nodes/StructuredGraph.java
   - https://github.com/oracle/graal/blob/master/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/graph/Node.java
-- [ ] Install a shutdown hook, to dump the instrumentation 
+- [x] Install a shutdown hook, to dump the instrumentation 
 - [x] build and test with mx
   - https://github.com/graalvm/mx
 - [x] use the IGV tools to look at graphs
   - https://www.graalvm.org/latest/tools/igv/
   - to dump IR of specific methods ``mx -v benchmark dacapo:lusearch -- --jvm=server --jvm-config=graal-core -Dgraal.Dump=:4 -Dgraal.PrintGraph=Network -Dgraal.MethodFilter='java.lang.String.equals' -- -n 2``
+- [ ] get custom nodes to do something meaningful, such as implement a counter
 
 
 
