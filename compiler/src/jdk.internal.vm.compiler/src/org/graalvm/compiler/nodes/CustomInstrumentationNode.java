@@ -34,6 +34,7 @@ import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
+import org.graalvm.compiler.nodes.spi.LoweringTool;
 import org.graalvm.compiler.nodes.spi.NodeLIRBuilderTool;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.SnippetCounterNode;
@@ -52,7 +53,7 @@ import jdk.vm.ci.meta.*;
           cyclesRationale = "read",
           size = SIZE_1)
 // @formatter:on
-public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNode implements Lowerable, LIRLowerable{
+public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
 
@@ -60,22 +61,37 @@ public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNo
         super(TYPE, StampFactory.forVoid());
     }
 
+    //@Override
+    //public void generate(NodeLIRBuilderTool gen) {
+
+        // //gen.state(this);
+        // ConstantNode constNextInt = new ConstantNode(JavaConstant.forInt(1), StampFactory.intValue());
+        // constNextInt.asNode();
+        // SnippetCounter sc = new SnippetCounter(new Group("My counter group"), "my counter", "HI this is my counter");
+        // SnippetCounterNode scn = new SnippetCounterNode(sc, constNextInt);
+        // //sc.add(1);
+        // //scn.increment(sc);
+
+        // Register register = new Register(NOT_ITERABLE, NOT_ITERABLE, null, null);
+        // LIRKind kind = gen.getLIRGeneratorTool().getLIRKind(scn.getIncrement().stamp);
+        // Value result = register.asValue(kind);
+
+        // gen.setResult(constNextInt.asNode(), result);
+    //}
+
     @Override
-    public void generate(NodeLIRBuilderTool gen) {
+    public void lower(LoweringTool tool) {
+        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
+        SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(new SnippetCounter(new Group("My counter group"), "my counter", "This is my counter ..."), constNextInt));
+        graph().replaceFixed(this, snippetCounter);
+        snippetCounter.lower(tool);
+        
+    }
 
-        //gen.state(this);
-        ConstantNode constNextInt = new ConstantNode(JavaConstant.forInt(1), StampFactory.intValue());
-        constNextInt.asNode();
-        SnippetCounter sc = new SnippetCounter(new Group("My counter group"), "my counter", "HI this is my counter");
-        SnippetCounterNode scn = new SnippetCounterNode(sc, constNextInt);
-        //sc.add(1);
-        //scn.increment(sc);
-
-        Register register = new Register(NOT_ITERABLE, NOT_ITERABLE, null, null);
-        LIRKind kind = gen.getLIRGeneratorTool().getLIRKind(scn.getIncrement().stamp);
-        Value result = register.asValue(kind);
-
-        gen.setResult(constNextInt.asNode(), result);
+    @Override
+    public void generate(NodeLIRBuilderTool generator) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'generate'");
     }
 
     // LIRKind kind = generator.getLIRGeneratorTool().getLIRKind(stamp());
@@ -88,8 +104,4 @@ public final class CustomInstrumentationNode extends DeoptimizingFixedWithNextNo
     // }
     // generator.setResult(this, result);
 
-    @Override
-    public boolean canDeoptimize() {
-        return true;
-    }
 }
