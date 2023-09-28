@@ -57,11 +57,13 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
 
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
     //public static SnippetCounterNode snippetCounter;
+    //public final SnippetCounter counter;
+    //public final Group group;
 
     public CustomInstrumentationNode() {
         super(TYPE, StampFactory.forVoid());
-        //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value()));
-        //Runtime.getRuntime().addShutdownHook(printingHook);
+        //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value() + " mod count : " + snippetCounter.modCount()));
+        //Runtime.getRuntime().addShutdownHook(printingHook); 
     }
 
     //@Override 

@@ -27,18 +27,25 @@ package org.graalvm.compiler.phases.common;
 
 import java.util.Optional;
 
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
+
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
 import org.graalvm.compiler.nodes.IfNode;
+import org.graalvm.compiler.nodes.Invoke;
+import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.GraphState.StageFlag;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
 import org.graalvm.compiler.nodes.SafepointNode;
+import org.graalvm.compiler.nodes.StartNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
+import org.graalvm.compiler.replacements.SnippetCounter;
+import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
 
 import jdk.vm.ci.meta.Value;
 
@@ -57,7 +64,7 @@ import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 
 /**
- * Adds safepoints to loops.
+ * Adds CustomInstrumentation to loops.
  */
 public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
 
@@ -99,19 +106,21 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, MidTierContext context) {
-        //if (optional && Options.DisablCIP.getValue(graph.getOptions())) {
-        //    return;
-        //}
-        // keep it simple, come back to this 
+        //Group counter = new Group("Humphrey: My counter group");
+        //Group counter = null;
+        //SnippetCounter counter = new SnippetCounter(new Group("Humphrey: My counter group"), "Humphrey: my counter", "Humphrey: This is my counter ...");
+         //CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(counter));
+            for (StartNode  startNodes : graph.getNodes(StartNode.TYPE)) {
+                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                graph.addAfterFixed(startNodes, CustomInstrumentationNode);
+                
+            }
 
-    
             for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
 
                 for (FixedNode node :  loopBeginNode.getBlockNodes()) {
-                    System.out.println("First loop: " + node.toString());
                     // find all if nodes follwoing the loop begiun
                     if (node.getClass().equals(IfNode.class)) {
-                         System.out.println("in loop loop: " + node.toString());
                          IfNode ifnode = ((IfNode)node);
                          // find all of the begin nodes that follow the if
                          for (Node sucnode  : ifnode.cfgSuccessors()) {
