@@ -56,12 +56,15 @@ import jdk.vm.ci.meta.*;
 public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
+    //public static SnippetCounterNode snippetCounter;
 
     public CustomInstrumentationNode() {
         super(TYPE, StampFactory.forVoid());
+        //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value()));
+        //Runtime.getRuntime().addShutdownHook(printingHook);
     }
 
-    //@Override
+    //@Override 
     //public void generate(NodeLIRBuilderTool gen) {
 
         // //gen.state(this);
@@ -82,7 +85,8 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     @Override
     public void lower(LoweringTool tool) {
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(new SnippetCounter(new Group("My counter group"), "my counter", "This is my counter ..."), constNextInt));
+        SnippetCounter counter = new SnippetCounter(new Group("Humphrey: My counter group"), "Humphrey: my counter", "Humphrey: This is my counter ...");
+        SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
         snippetCounter.lower(tool);
         
@@ -91,7 +95,7 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     @Override
     public void generate(NodeLIRBuilderTool generator) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'generate'");
+        throw new UnsupportedOperationException("Unimplemented method 'generate'");     
     }
 
     // LIRKind kind = generator.getLIRGeneratorTool().getLIRKind(stamp());

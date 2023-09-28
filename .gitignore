@@ -64,3 +64,4 @@ visualizer/IdealGraphVisualizer/nbplatform/
 /labs-openjdk-17-master
 compiler/src/jdk.internal.vm.compiler/src/jdk/
 !compiler/MyJDKJarLib.jar
+localcmd.txt
