@@ -49,6 +49,7 @@ import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode; 
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
 import org.graalvm.compiler.nodes.FixedNode;
+import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
@@ -107,10 +108,16 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
             for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
 
                 for (FixedNode node :  loopBeginNode.getBlockNodes()) {
+                    System.out.println("First loop: " + node.toString());
+                    // find all if nodes follwoing the loop begiun
                     if (node.getClass().equals(IfNode.class)) {
+                         System.out.println("in loop loop: " + node.toString());
                          IfNode ifnode = ((IfNode)node);
-                         CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-                         graph.addAfterFixed(ifnode.getSuccessor(true), CustomInstrumentationNode);
+                         // find all of the begin nodes that follow the if
+                         for (Node sucnode  : ifnode.cfgSuccessors()) {
+                            CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                            graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
+                         }
                     }
                 }
                
