@@ -106,40 +106,40 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, MidTierContext context) {
-        //Group counter = new Group("Humphrey: My counter group");
-        //Group counter = null;
+        Group group2 = new Group("HumphreyGroup");
+        Group group = null;
         //SnippetCounter counter = new SnippetCounter(new Group("Humphrey: My counter group"), "Humphrey: my counter", "Humphrey: This is my counter ...");
-         //CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(counter));
+        //CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(counter));
             for (StartNode  startNodes : graph.getNodes(StartNode.TYPE)) {
-                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
                 graph.addAfterFixed(startNodes, CustomInstrumentationNode);
                 
             }
 
-            for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
+            // for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
 
-                for (FixedNode node :  loopBeginNode.getBlockNodes()) {
-                    // find all if nodes follwoing the loop begiun
-                    if (node.getClass().equals(IfNode.class)) {
-                         IfNode ifnode = ((IfNode)node);
-                         // find all of the begin nodes that follow the if
-                         for (Node sucnode  : ifnode.cfgSuccessors()) {
-                            CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-                            graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
-                         }
-                    }
-                }
+            //     for (FixedNode node :  loopBeginNode.getBlockNodes()) {
+            //         // find all if nodes follwoing the loop begiun
+            //         if (node.getClass().equals(IfNode.class)) {
+            //              IfNode ifnode = ((IfNode)node);
+            //              // find all of the begin nodes that follow the if
+            //              for (Node sucnode  : ifnode.cfgSuccessors()) {
+            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
+            //                 graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
+            //              }
+            //         }
+            //     }
                
-                for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
+            //     for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
                         
-                        try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
-                            CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-                            graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
+            //             try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
+            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
+            //                 graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
 
-                        }
+            //             }
                     
-                }
-            }
+            //     }
+            // }
         
     }
 

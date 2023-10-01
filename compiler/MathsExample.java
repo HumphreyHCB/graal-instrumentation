@@ -23,26 +23,15 @@
  * questions.
  */
 
-public class HelloWorld {
-        public volatile static int number = 0;
+public class MathsExample {
     public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
-                driver();                
+        for (int i = 0; i < 1_000_000; i++) {
+                System.out.println(add(i));
+        }
+                
         }
 
+        public static int add(int number) {
+               return  100 + number;
         }
-
-    public static void driver() {
-                number = printInt(number);
-                System.err.println(number);
-        }
-    
-
-public static int printInt(int number) {
-                for(int i=0; i < 1_000_000; i++) {
-                        number += i;
-        System.err.println("Hello World" + number );
-                }
-                return number;
-}
 }

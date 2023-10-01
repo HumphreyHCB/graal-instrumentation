@@ -58,10 +58,11 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
     //public static SnippetCounterNode snippetCounter;
     //public final SnippetCounter counter;
-    //public final Group group;
+    public final Group group;
 
-    public CustomInstrumentationNode() {
+    public CustomInstrumentationNode(Group pgroup) {
         super(TYPE, StampFactory.forVoid());
+        group = pgroup;
         //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value() + " mod count : " + snippetCounter.modCount()));
         //Runtime.getRuntime().addShutdownHook(printingHook); 
     }
@@ -87,7 +88,7 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     @Override
     public void lower(LoweringTool tool) {
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(new Group("Humphrey: My counter group"), "Humphrey: my counter", "Humphrey: This is my counter ...");
+        SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup"), "Humphrey: my counter", "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
         snippetCounter.lower(tool);
