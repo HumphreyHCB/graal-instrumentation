@@ -53,7 +53,8 @@ import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.NodeFlood;
 import org.graalvm.compiler.nodes.AbstractEndNode;
-import org.graalvm.compiler.nodes.BeginNode; 
+import org.graalvm.compiler.nodes.BeginNode;
+import org.graalvm.compiler.nodes.CallTargetNode;
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
 import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
@@ -66,7 +67,7 @@ import org.graalvm.compiler.phases.tiers.HighTierContext;
 /**
  * Adds CustomInstrumentation to loops.
  */
-public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
+public class CustomInstrumentationPhase extends BasePhase<HighTierContext> {
 
     public static class Options {
 
@@ -105,16 +106,13 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
 
     @Override
     @SuppressWarnings("try")
-    protected void run(StructuredGraph graph, MidTierContext context) {
-        Group group2 = new Group("HumphreyGroup");
-        Group group = null;
-        //SnippetCounter counter = new SnippetCounter(new Group("Humphrey: My counter group"), "Humphrey: my counter", "Humphrey: This is my counter ...");
-        //CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(counter));
-            for (StartNode  startNodes : graph.getNodes(StartNode.TYPE)) {
-                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
-                graph.addAfterFixed(startNodes, CustomInstrumentationNode);
-                
+    protected void run(StructuredGraph graph, HighTierContext context) {
+
+            for (Invoke invokes : graph.getInvokes()) {
+                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
+                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);               
             }
+            
 
             // for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
 
@@ -124,7 +122,7 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
             //              IfNode ifnode = ((IfNode)node);
             //              // find all of the begin nodes that follow the if
             //              for (Node sucnode  : ifnode.cfgSuccessors()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
+            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
             //                 graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
             //              }
             //         }
@@ -133,7 +131,7 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
             //     for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
                         
             //             try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(group));
+            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
             //                 graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
 
             //             }
@@ -142,5 +140,6 @@ public class CustomInstrumentationPhase extends BasePhase<MidTierContext> {
             // }
         
     }
+
 
 }

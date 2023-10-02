@@ -27,6 +27,8 @@ package org.graalvm.compiler.nodes;
 import static org.graalvm.compiler.nodeinfo.NodeCycles.CYCLES_2;
 import static org.graalvm.compiler.nodeinfo.NodeSize.SIZE_1;
 
+import java.util.Random;
+
 import org.graalvm.compiler.core.common.LIRKind;
 import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
@@ -58,11 +60,10 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
     //public static SnippetCounterNode snippetCounter;
     //public final SnippetCounter counter;
-    public final Group group;
 
-    public CustomInstrumentationNode(Group pgroup) {
+
+    public CustomInstrumentationNode() {
         super(TYPE, StampFactory.forVoid());
-        group = pgroup;
         //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value() + " mod count : " + snippetCounter.modCount()));
         //Runtime.getRuntime().addShutdownHook(printingHook); 
     }
@@ -91,7 +92,7 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
         SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup"), "Humphrey: my counter", "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
-        snippetCounter.lower(tool);
+        //snippetCounter.lower(tool);
         
     }
 
