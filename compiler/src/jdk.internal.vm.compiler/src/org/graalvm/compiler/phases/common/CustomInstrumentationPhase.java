@@ -109,35 +109,12 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext> {
     protected void run(StructuredGraph graph, HighTierContext context) {
 
             for (Invoke invokes : graph.getInvokes()) {
-                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);               
+                try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
+                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName()));
+                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);  
+                }             
             }
             
-
-            // for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
-
-            //     for (FixedNode node :  loopBeginNode.getBlockNodes()) {
-            //         // find all if nodes follwoing the loop begiun
-            //         if (node.getClass().equals(IfNode.class)) {
-            //              IfNode ifnode = ((IfNode)node);
-            //              // find all of the begin nodes that follow the if
-            //              for (Node sucnode  : ifnode.cfgSuccessors()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-            //                 graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
-            //              }
-            //         }
-            //     }
-               
-            //     for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
-                        
-            //             try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode());
-            //                 graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
-
-            //             }
-                    
-            //     }
-            // }
         
     }
 

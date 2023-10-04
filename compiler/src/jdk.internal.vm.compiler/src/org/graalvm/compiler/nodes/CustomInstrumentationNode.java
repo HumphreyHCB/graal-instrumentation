@@ -58,38 +58,20 @@ import jdk.vm.ci.meta.*;
 public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
     public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
-    //public static SnippetCounterNode snippetCounter;
-    //public final SnippetCounter counter;
 
+    private final String Method;
 
-    public CustomInstrumentationNode() {
+    public CustomInstrumentationNode(String methodName) {
         super(TYPE, StampFactory.forVoid());
-        //Thread printingHook = new Thread(() -> System.out.println("Ussage is : "+ snippetCounter.getUsageCount() +" Counter is " + snippetCounter.getCounter().value() + " mod count : " + snippetCounter.modCount()));
-        //Runtime.getRuntime().addShutdownHook(printingHook); 
+        Method = methodName;
+
     }
 
-    //@Override 
-    //public void generate(NodeLIRBuilderTool gen) {
-
-        // //gen.state(this);
-        // ConstantNode constNextInt = new ConstantNode(JavaConstant.forInt(1), StampFactory.intValue());
-        // constNextInt.asNode();
-        // SnippetCounter sc = new SnippetCounter(new Group("My counter group"), "my counter", "HI this is my counter");
-        // SnippetCounterNode scn = new SnippetCounterNode(sc, constNextInt);
-        // //sc.add(1);
-        // //scn.increment(sc);
-
-        // Register register = new Register(NOT_ITERABLE, NOT_ITERABLE, null, null);
-        // LIRKind kind = gen.getLIRGeneratorTool().getLIRKind(scn.getIncrement().stamp);
-        // Value result = register.asValue(kind);
-
-        // gen.setResult(constNextInt.asNode(), result);
-    //}
 
     @Override
     public void lower(LoweringTool tool) {
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup"), "Humphrey: my counter", "Humphrey: This is my counter ...");
+        SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup Method: " + Method), "Humphrey: my counter", "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
         //snippetCounter.lower(tool);
@@ -102,14 +84,5 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
         throw new UnsupportedOperationException("Unimplemented method 'generate'");     
     }
 
-    // LIRKind kind = generator.getLIRGeneratorTool().getLIRKind(stamp());
-    // Value result = register.asValue(kind);
-    // if (incoming) {
-    //     generator.getLIRGeneratorTool().emitIncomingValues(new Value[] { result });
-    // }
-    // if (!directUse) {
-    //     result = generator.getLIRGeneratorTool().emitMove(result);
-    // }
-    // generator.setResult(this, result);
-
+    
 }

@@ -26,23 +26,26 @@
 public class HelloWorld {
         public volatile static int number = 0;
     public static void main(String[] args) {
-        for (int i = 0; i < 100; i++) {
                 driver();                
         }
 
-        }
-
     public static void driver() {
+        for (int i = 0; i < 1000; i++) {
                 number = printInt(number);
                 System.err.println(number);
         }
+
+        }
     
 
-public static int printInt(int number) {
-                for(int i=0; i < 1_000_0; i++) {
-                        number += i;
-        System.err.println("Hello World" + number );
-                }
-                return number;
-}
+        public static int printInt(int number) {
+                        for(int i=0; i < 1_000; i++) {
+                                number = inc(number);
+                                System.err.println("Hello World" + number );
+                        }
+                        return number;
+        }
+        public static int inc(int number) {
+                return number + 1;
+        }
 }
