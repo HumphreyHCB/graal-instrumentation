@@ -27,8 +27,11 @@ package org.graalvm.compiler.nodes;
 import static org.graalvm.compiler.nodeinfo.NodeCycles.CYCLES_2;
 import static org.graalvm.compiler.nodeinfo.NodeSize.SIZE_1;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
+import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.core.common.LIRKind;
 import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
@@ -52,7 +55,7 @@ import jdk.vm.ci.meta.*;
  */
 // @formatter:off
 @NodeInfo(cycles = CYCLES_2,
-          cyclesRationale = "read",
+          cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
 public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
@@ -70,8 +73,10 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
 
     @Override
     public void lower(LoweringTool tool) {
-        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup Method: " + Method), "Humphrey: my counter", "Humphrey: This is my counter ...");
+        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forUnsignedInteger(32)));
+        //SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup Method: " + Method), "Humphrey: my counter", "Humphrey: This is my counter ...");
+
+        SnippetCounter counter = new SnippetCounter(new Group("Humphrey's Group"), ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
         //snippetCounter.lower(tool);
