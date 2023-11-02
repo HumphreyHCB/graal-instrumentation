@@ -74,8 +74,6 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
     @Override
     public void lower(LoweringTool tool) {
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forUnsignedInteger(32)));
-        //SnippetCounter counter = new SnippetCounter(new Group("HumphreyGroup Method: " + Method), "Humphrey: my counter", "Humphrey: This is my counter ...");
-
         SnippetCounter counter = new SnippetCounter(new Group("Humphrey's Group"), ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
