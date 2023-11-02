@@ -36,6 +36,7 @@ import org.graalvm.compiler.core.common.LIRKind;
 import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.graph.NodeClass;
+import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
@@ -64,17 +65,27 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
 
     private final String Method;
 
-    public CustomInstrumentationNode(String methodName) {
+    private Group group;
+
+    public CustomInstrumentationNode(String methodName, Group group) {
         super(TYPE, StampFactory.forVoid());
         Method = methodName;
+        this.group = group;
 
     }
 
 
     @Override
     public void lower(LoweringTool tool) {
+
+        // Group group = new Group("HumphreysGroup");
+
+        // if (snippetCounterGroups != null) {
+        //     snippetCounterGroups.add(group);
+        // }
+
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(new Group("Humphrey's Group"), ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
+        SnippetCounter counter = new SnippetCounter(group, ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
         //snippetCounter.lower(tool);

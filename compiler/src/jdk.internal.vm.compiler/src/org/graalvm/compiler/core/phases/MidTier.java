@@ -36,7 +36,6 @@ import static org.graalvm.compiler.core.common.SpectrePHTMitigations.GuardTarget
 import static org.graalvm.compiler.core.common.SpectrePHTMitigations.NonDeoptGuardTargets;
 import static org.graalvm.compiler.core.common.SpectrePHTMitigations.Options.SpectrePHTBarriers;
 
-import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.loop.phases.LoopFullUnrollPhase;
 import org.graalvm.compiler.loop.phases.LoopPartialUnrollPhase;

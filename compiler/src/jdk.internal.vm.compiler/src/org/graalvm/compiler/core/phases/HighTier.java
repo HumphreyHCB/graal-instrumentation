@@ -72,7 +72,10 @@ public class HighTier extends BaseTier<HighTierContext> {
     public HighTier(OptionValues options) {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
-        appendPhase(new CustomInstrumentationPhase());
+
+
+        //HotSpotSuitesProvider 
+        //appendPhase(new CustomInstrumentationPhase(options));
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
             appendPhase(new DeadCodeEliminationPhase(Optional));

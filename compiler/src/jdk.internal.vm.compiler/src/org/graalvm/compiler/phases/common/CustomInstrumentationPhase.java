@@ -25,10 +25,18 @@
 package org.graalvm.compiler.phases.common;
 
 
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
-
+import org.graalvm.compiler.core.CompilationWrapper.ExceptionAction;
+import org.graalvm.compiler.core.Instrumentation;
+import org.graalvm.compiler.core.common.CompilationIdentifier;
+import org.graalvm.compiler.core.common.GraalOptions;
+import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
 import org.graalvm.compiler.nodes.IfNode;
@@ -47,11 +55,19 @@ import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
 
+import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.Value;
 
 import org.graalvm.compiler.debug.DebugContext;
+import org.graalvm.compiler.debug.DebugHandlersFactory;
+import org.graalvm.compiler.debug.DiagnosticsOutputDirectory;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.NodeFlood;
+import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
+import org.graalvm.compiler.hotspot.HotSpotBackend;
+import org.graalvm.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
+import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
+import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
@@ -61,13 +77,14 @@ import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
+import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 
 /**
  * Adds CustomInstrumentation to loops.
  */
-public class CustomInstrumentationPhase extends BasePhase<HighTierContext> {
+public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
 
     public static class Options {
 
@@ -97,9 +114,11 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext> {
     }
 
     private final boolean optional;
+    private final SnippetCounter.Group group;
 
-    public CustomInstrumentationPhase() {
-        //this.optional = optionality == Optionality.Optional;
+
+    public CustomInstrumentationPhase(SnippetCounter.Group group) {
+        this.group = group;
         optional = true;
     }
 
@@ -110,13 +129,14 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext> {
 
             for (Invoke invokes : graph.getInvokes()) {
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName()));
+                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName(),group));
                 graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);  
                 }             
             }
             
         
     }
+
 
 
 }

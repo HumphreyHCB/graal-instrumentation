@@ -48,6 +48,7 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.BarrierSetVerificationPhase;
+import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.phases.common.UseTrappingNullChecksPhase;
 import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
@@ -55,6 +56,7 @@ import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.Suites;
 import org.graalvm.compiler.phases.tiers.SuitesCreator;
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
 
 import jdk.vm.ci.code.Architecture;
 
@@ -74,6 +76,11 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         this.config = config;
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
+
+        Group group = runtime.createSnippetCounterGroup("MyGroup");
+        defaultGraphBuilderSuite.appendPhase(new CustomInstrumentationPhase(group));
+
+        
     }
 
     @Override
