@@ -77,6 +77,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
 
+        
+
         Group group = runtime.createSnippetCounterGroup("MyGroup");
         defaultGraphBuilderSuite.appendPhase(new CustomInstrumentationPhase(group));
 
@@ -105,6 +107,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
+        // Group group = runtime.createSnippetCounterGroup("MyGroup");
+        // suites.getHighTier().appendPhase(new CustomInstrumentationPhase(group));
         return suites;
     }
 

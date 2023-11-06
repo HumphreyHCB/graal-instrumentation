@@ -84,7 +84,7 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
         //     snippetCounterGroups.add(group);
         // }
 
-        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forUnsignedInteger(32)));
+        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
         SnippetCounter counter = new SnippetCounter(group, ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
         SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
         graph().replaceFixed(this, snippetCounter);
