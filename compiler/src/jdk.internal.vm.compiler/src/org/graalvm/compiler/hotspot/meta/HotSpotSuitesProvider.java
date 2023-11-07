@@ -57,6 +57,7 @@ import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.Suites;
 import org.graalvm.compiler.phases.tiers.SuitesCreator;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
+import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
 import jdk.vm.ci.code.Architecture;
 
@@ -69,6 +70,7 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
     protected final HotSpotGraalRuntimeProvider runtime;
 
     protected final SuitesCreator defaultSuitesCreator;
+    final Group group;
 
     @SuppressWarnings("this-escape")
     public HotSpotSuitesProvider(SuitesCreator defaultSuitesCreator, GraalHotSpotVMConfig config, HotSpotGraalRuntimeProvider runtime) {
@@ -79,8 +81,9 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
 
         
 
-        Group group = runtime.createSnippetCounterGroup("MyGroup");
-        defaultGraphBuilderSuite.appendPhase(new CustomInstrumentationPhase(group));
+        this.group = runtime.createSnippetCounterGroup("Humphrey's Group");
+        //defaultGraphBuilderSuite.addBeforeLast(new CustomInstrumentationPhase(group));
+        //defaultGraphBuilderSuite.appendPhase(new CustomInstrumentationPhase(group));
 
         
     }
@@ -107,8 +110,9 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
-        // Group group = runtime.createSnippetCounterGroup("MyGroup");
-        // suites.getHighTier().appendPhase(new CustomInstrumentationPhase(group));
+
+        ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
+        position.add(new CustomInstrumentationPhase(group));
         return suites;
     }
 
