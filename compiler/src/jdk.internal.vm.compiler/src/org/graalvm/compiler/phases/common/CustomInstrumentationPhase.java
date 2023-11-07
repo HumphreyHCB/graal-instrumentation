@@ -54,8 +54,10 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
+import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Value;
 
 import org.graalvm.compiler.debug.DebugContext;
@@ -127,7 +129,19 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, HighTierContext context) {
 
+            for (ResolvedJavaMethod method : graph.getMethods()) {
+                System.out.println("ResolvedJavaMethod  "+method.getName());
+                
+            }
+  
+            for (ResolvedMethodHandleCallTargetNode methodcall : graph.getNodes(ResolvedMethodHandleCallTargetNode.TYPE)) {
+                System.out.println("ResolvedMethodHandleCallTargetNode  "+methodcall.targetName());
+                                System.out.println("ResolvedMethodHandleCallTargetNode  toString"+methodcall.toString());
+            }
+
+
             for (Invoke invokes : graph.getInvokes()) {
+                System.out.println(invokes.callTarget().targetName());
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName(),group));
                 graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);  

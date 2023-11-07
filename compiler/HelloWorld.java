@@ -26,7 +26,9 @@
 public class HelloWorld {
         public volatile static int number = 0;
     public static void main(String[] args) {
-                driver();                
+                driver();
+                MathsExample me = new MathsExample();
+                me.mathstest();                
         }
 
     public static void driver() {

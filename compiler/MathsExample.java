@@ -30,6 +30,12 @@ public class MathsExample {
         }
                 
         }
+public static void mathstest(){
+        for (int i = 0; i < 1_000_000; i++) {
+                System.out.println(add(i));
+        }
+
+}
 
         public static int add(int number) {
                return  100 + number;
