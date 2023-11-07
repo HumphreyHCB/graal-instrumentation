@@ -55,6 +55,7 @@ import org.graalvm.compiler.phases.common.inlining.InliningPhase;
 import org.graalvm.compiler.phases.common.inlining.policy.GreedyInliningPolicy;
 import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.virtual.phases.ea.FinalPartialEscapePhase;
 import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
 
@@ -74,8 +75,7 @@ public class HighTier extends BaseTier<HighTierContext> {
         appendPhase(canonicalizer);
 
 
-        //HotSpotSuitesProvider 
-        //appendPhase(new CustomInstrumentationPhase(options));
+        //appendPhase(new CustomInstrumentationPhase(new Group("sss")));
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
             appendPhase(new DeadCodeEliminationPhase(Optional));
