@@ -30,7 +30,7 @@ public class HelloWorld {
         }
 
     public static void driver() {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10; i++) {
                 number = printInt(number);
                 System.err.println(number);
         }
@@ -39,7 +39,7 @@ public class HelloWorld {
     
 
         public static int printInt(int number) {
-                        for(int i=0; i < 1_000; i++) {
+                        for(int i=0; i < 1_000_000; i++) {
                                 number = inc(number);
                                 System.err.println("Hello World" + number );
                         }
