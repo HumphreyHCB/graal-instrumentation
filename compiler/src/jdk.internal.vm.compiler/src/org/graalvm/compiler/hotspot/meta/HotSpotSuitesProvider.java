@@ -78,9 +78,6 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         this.config = config;
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
-
-        
-
         this.group = runtime.createSnippetCounterGroup("Humphrey's Group");
         //defaultGraphBuilderSuite.addBeforeLast(new CustomInstrumentationPhase(group));
         //defaultGraphBuilderSuite.appendPhase(new CustomInstrumentationPhase(group));
