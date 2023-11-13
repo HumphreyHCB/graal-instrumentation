@@ -71,18 +71,11 @@ public final class CustomInstrumentationNode extends FixedWithNextNode implement
         super(TYPE, StampFactory.forVoid());
         Method = methodName;
         this.group = group;
-
     }
 
 
     @Override
     public void lower(LoweringTool tool) {
-
-        // Group group = new Group("HumphreysGroup");
-
-        // if (snippetCounterGroups != null) {
-        //     snippetCounterGroups.add(group);
-        // }
 
         ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
         SnippetCounter counter = new SnippetCounter(group, ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
