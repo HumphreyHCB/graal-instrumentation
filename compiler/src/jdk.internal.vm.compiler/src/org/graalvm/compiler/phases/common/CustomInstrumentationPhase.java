@@ -159,33 +159,6 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);  
                 }             
             }
-
-            // for (LoopBeginNode loopBeginNode : graph.getNodes(LoopBeginNode.TYPE)) {
-
-            //     for (FixedNode node :  loopBeginNode.getBlockNodes()) {
-            //         //System.out.println("First loop: " + node.toString());
-            //         // find all if nodes follwoing the loop begiun
-            //         if (node.getClass().equals(IfNode.class)) {
-            //              //System.out.println("in loop loop: " + node.toString());
-            //              IfNode ifnode = ((IfNode)node);
-            //              // find all of the begin nodes that follow the if
-            //              for (Node sucnode  : ifnode.cfgSuccessors()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(sucnode.toString() + sucnode.getDebug().toString(),group));
-            //                 graph.addAfterFixed((FixedWithNextNode) sucnode, CustomInstrumentationNode);
-            //              }
-            //         }
-            //     }
-               
-            //     for (LoopEndNode loopEndNode : loopBeginNode.loopEnds()) {
-                        
-            //             try (DebugCloseable s = loopEndNode.withNodeSourcePosition()) {
-            //                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(loopEndNode.toString(),group));
-            //                 graph.addBeforeFixed(loopEndNode, CustomInstrumentationNode);
-
-            //             }
-                    
-            //     }
-            // }
             
         
     }
