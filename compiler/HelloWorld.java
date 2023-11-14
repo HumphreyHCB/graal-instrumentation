@@ -32,7 +32,7 @@ public class HelloWorld {
         }
 
     public static void driver() {
-        for (int i = 0; i < 1_000_000; i++) {
+        for (int i = 0; i < 250_000; i++) {
                 number = printInt(number);
                 System.err.println(number);
         }

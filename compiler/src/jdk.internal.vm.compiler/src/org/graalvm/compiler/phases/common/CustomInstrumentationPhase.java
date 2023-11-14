@@ -55,6 +55,7 @@ import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.replacements.SnippetCounter;
+import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
 import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 
@@ -75,6 +76,7 @@ import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
+import org.graalvm.compiler.nodes.CustomDebugNode;
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
 import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
@@ -151,14 +153,17 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             //     System.out.println("Node  toString "+methodcall.toString());
             // }
 
-
             for (Invoke invokes : graph.getInvokes()) {
                 //System.out.println(invokes.callTarget().targetName());
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName(),group));
-                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);  
+                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
+                //LogNode log = graph.add(new LogNode("Hello", null,null,null));
+                //graph.addBeforeFixed(invokes.asFixedNode(), log);  
+
                 }             
             }
+            
             
         
     }

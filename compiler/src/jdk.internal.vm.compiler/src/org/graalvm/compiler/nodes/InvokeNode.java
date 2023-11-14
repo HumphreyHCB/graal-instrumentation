@@ -95,10 +95,6 @@ public final class InvokeNode extends AbstractMemoryCheckpoint implements Invoke
         this.polymorphic = false;
         this.inlineControl = InlineControl.Normal;
         this.identity = identity;
-        String methodName = callTarget.targetMethod.getName();
-        if (methodName == "println") {
-            System.out.println("aa");
-        }
     }
 
     @Override

@@ -60,40 +60,30 @@ import jdk.vm.ci.meta.*;
           cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
-public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
+public final class CustomDebugNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
-    public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
+    public static final NodeClass<CustomDebugNode> TYPE = NodeClass.create(CustomDebugNode.class);
 
-    private final String Method;
 
-    private Group group;
-
-    public CustomInstrumentationNode(String methodName, Group group) {
+    public CustomDebugNode() {
         super(TYPE, StampFactory.forVoid());
-        Method = methodName;
-        this.group = group;
     }
 
 
     @Override
     public void lower(LoweringTool tool) {
 
-        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(group, ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
-        SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
-        graph().replaceFixed(this, snippetCounter);
-        
-        //look at log node sniipets
-        LogNode log = graph().add(new LogNode("The Current Value of the Counter is: " , new ConstantNode(JavaConstant.forLong(snippetCounter.getCounter().value()), StampFactory.forUnsignedInteger(32)) ,null,null));
+        //snippetCounter.lower(tool);
 
-        graph().addBeforeFixed(snippetCounter.asFixedNode(), log);  
+         LogNode ln = new LogNode("Hello", null,null,null);
+         graph().replaceFixed(this, ln);
         
     }
 
     @Override
     public void generate(NodeLIRBuilderTool generator) {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'generate'");     
+        //throw new UnsupportedOperationException("Unimplemented method 'generate'");     
     }
 
     
