@@ -76,6 +76,7 @@ import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
+import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.CustomDebugNode;
 import org.graalvm.compiler.nodes.CustomInstrumentationNode;
 import org.graalvm.compiler.nodes.FixedNode;
@@ -133,33 +134,14 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, HighTierContext context) {
 
-            // for (ResolvedJavaMethod method : graph.getMethods()) {               
-            //     System.out.println("ResolvedJavaMethod  "+method.getName());
-            // }
-
-
-            // for (Node node : graph.getNodes()) {
-            //     System.out.println("Node  " + node.toString());
-            //     //System.out.println("Node  asJavaConstant " + methodcall.asNode().asJavaConstant().toString());
-            //     //System.out.println("Node  getNodeSourcePosition " + methodcall.getNodeSourcePosition().toString());
-            //     //System.out.println("Node  DebugProperties" + node.getDebugProperties());
-
-            // }
-
-
-            // for (StartNode methodcall : graph.getNodes(StartNode.TYPE)) {
-            //     System.out.println("Node  " + methodcall.getDebugProperties());
-            //     System.out.println("Node  getCurrentScopeName " + methodcall.getDebug().getCurrentScopeName());
-            //     System.out.println("Node  toString "+methodcall.toString());
-            // }
-
             for (Invoke invokes : graph.getInvokes()) {
-                //System.out.println(invokes.callTarget().targetName());
+
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
                 CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName(),group));
-                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
-                //LogNode log = graph.add(new LogNode("Hello", null,null,null));
-                //graph.addBeforeFixed(invokes.asFixedNode(), log);  
+                //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
+                CustomClockLogNode customClockLogNode = graph.add(new CustomClockLogNode());
+                graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNode);
+
 
                 }             
             }

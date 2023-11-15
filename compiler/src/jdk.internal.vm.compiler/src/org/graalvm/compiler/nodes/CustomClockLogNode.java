@@ -38,7 +38,9 @@ import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
 import org.graalvm.compiler.lir.Variable;
+import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
+import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
@@ -54,6 +56,8 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.Value;
 import jdk.vm.ci.meta.*;
 
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
+
 /**
  * Marks a position in the graph where a node should be emitted.
  */
@@ -62,41 +66,24 @@ import jdk.vm.ci.meta.*;
           cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
-public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
+public final class CustomClockLogNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
-    public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
+    public static final NodeClass<CustomClockLogNode> TYPE = NodeClass.create(CustomClockLogNode.class);
 
-    private final String Method;
 
-    private Group group;
-
-    public CustomInstrumentationNode(String methodName, Group group) {
+    public CustomClockLogNode() {
         super(TYPE, StampFactory.forVoid());
-        Method = methodName;
-        this.group = group;
     }
 
 
     @Override
     public void lower(LoweringTool tool) {
-
-        ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        SnippetCounter counter = new SnippetCounter(group, ("Humphrey Method: " + Method), "Humphrey: This is my counter ...");
-        SnippetCounterNode snippetCounter = graph().add(new SnippetCounterNode(counter, constNextInt));
-        graph().replaceFixed(this, snippetCounter);
-        
-
-        
-        //LogNode log = graph().add(new LogNode(" The Current Value of the Counter is: %ld" , snippetCounter));
-
-        //graph().addBeforeFixed(snippetCounter.asFixedNode(), log);  
-
+        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        graph().replaceFixed(this, javaCurrentCPUtime);
     }
 
     @Override
     public void generate(NodeLIRBuilderTool generator) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'generate'");     
     }
 
     
