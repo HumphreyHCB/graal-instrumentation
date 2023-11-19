@@ -31,16 +31,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.graalvm.compiler.bytecode.ResolvedJavaMethodBytecodeProvider;
 import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.core.common.LIRKind;
 import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
+import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProvider;
 import org.graalvm.compiler.lir.Variable;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
+import org.graalvm.compiler.nodes.calc.AddNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
+import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
@@ -52,8 +56,11 @@ import org.graalvm.compiler.replacements.nodes.LogNode;
 
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterValue;
+import jdk.vm.ci.hotspot.HotSpotCompiledNmethod;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.Value;
+import jdk.vm.ci.runtime.JVMCI;
+import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.meta.*;
 
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
@@ -79,7 +86,17 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
     @Override
     public void lower(LoweringTool tool) {
         ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
-        graph().replaceFixed(this, javaCurrentCPUtime);
+        graph().replaceFixed(this, javaCurrentCPUtime);        
+        // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" , javaCurrentCPUtime));
+
+        // graph().addBeforeFixed(javaCurrentCPUtime, log);  
+        //CallTargetNode CTN = new CallTargetNode() {};
+        //InvokeNode in = new InvokeNode(null, NOT_ITERABLE
+        // ResolvedJavaMethod method = new ResolvedJavaMethod();
+        // ResolvedJavaMethodBytecodeProvider sad = new ResolvedJavaMethodBytecodeProvider();
+        // HotSpotForeignCallsProvider
+        // MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, initCounter.getMethod(), new ValueNode[0], returnStamp, null));
+        // InvokeNode invoke = graph().add(new InvokeNode(callTarget, 0));
     }
 
     @Override

@@ -78,7 +78,7 @@ import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
 import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.CustomDebugNode;
-import org.graalvm.compiler.nodes.CustomInstrumentationNode;
+import org.graalvm.compiler.nodes.CustomInstrumentationCounterNode;
 import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.options.Option;
@@ -137,10 +137,12 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (Invoke invokes : graph.getInvokes()) {
 
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-                CustomInstrumentationNode CustomInstrumentationNode = graph.add(new CustomInstrumentationNode(invokes.callTarget().targetName(),group));
-                //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
-                CustomClockLogNode customClockLogNode = graph.add(new CustomClockLogNode());
-                graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNode);
+                CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
+                graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
+                CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode());
+                CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
+                graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
+                //graph.addBeforeFixed((FixedNode) invokes.asFixedNode().predecessor(), customClockLogNodeA);
 
 
                 }             
