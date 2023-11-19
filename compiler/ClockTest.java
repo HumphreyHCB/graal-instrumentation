@@ -25,9 +25,14 @@
 
 public class ClockTest {
         public volatile static int number = 0;
+        public static HumphreysCache hc;
 
         public static void main(String[] args) {
+
+                hc = new HumphreysCache();
+                hc.start();
                 driver();
+                hc.print();
         }
 
         public static void driver() {
@@ -35,14 +40,12 @@ public class ClockTest {
                         number = printInt(number);
                         System.err.println(number);
                 }
-                MathsExample me = new MathsExample();
-                me.mandelbrot(200);
 
         }
 
         public static int printInt(int number) {
                 for (int i = 0; i < 10; i++) {
-                        System.nanoTime();
+                        hc.add(System.nanoTime());
                         System.err.println("Hello World" + number);
                 }
                 return number;
