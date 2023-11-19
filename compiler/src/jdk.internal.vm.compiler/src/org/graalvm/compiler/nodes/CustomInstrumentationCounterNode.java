@@ -62,15 +62,15 @@ import jdk.vm.ci.meta.*;
           cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
-public final class CustomInstrumentationNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
+public final class CustomInstrumentationCounterNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
 
-    public static final NodeClass<CustomInstrumentationNode> TYPE = NodeClass.create(CustomInstrumentationNode.class);
+    public static final NodeClass<CustomInstrumentationCounterNode> TYPE = NodeClass.create(CustomInstrumentationCounterNode.class);
 
     private final String Method;
 
     private Group group;
 
-    public CustomInstrumentationNode(String methodName, Group group) {
+    public CustomInstrumentationCounterNode(String methodName, Group group) {
         super(TYPE, StampFactory.forVoid());
         Method = methodName;
         this.group = group;
