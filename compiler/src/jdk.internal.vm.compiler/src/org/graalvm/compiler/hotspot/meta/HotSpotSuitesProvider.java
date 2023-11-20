@@ -60,6 +60,7 @@ import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
  * HotSpot implementation of {@link SuitesCreator}.
@@ -105,9 +106,16 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
-
+        //
+        // This needs to live in its own method for clairty
+        //
+        ResolvedJavaMethod method = new BuboMetaTools().findMethod(HumphreysCache.class, "dummyPrint", runtime.getHostBackend().getMetaAccess());
         ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        position.add(new CustomInstrumentationPhase(group));
+        position.add(new CustomInstrumentationPhase(group, method));
+        //
+        //
+        //
+
         return suites;
     }
 
