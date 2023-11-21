@@ -102,7 +102,7 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
          MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
          InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
          invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
-           
+         //invokeNode.hasSideEffect()
         graph().replaceFixed(this, invokeNode);
 
     }
