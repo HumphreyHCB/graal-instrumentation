@@ -1,17 +1,17 @@
 import java.lang.Thread;
 
-public class HumphreysCache extends Thread {
+public class TestingHumphreysCache extends Thread {
         
         public static long[] Buffer;
         public static int pointer;
 
-        public HumphreysCache() {
+        public TestingHumphreysCache() {
                 Buffer = new long[3_000_000];
                 pointer = 0;
 
         }
 
-        public void add(long item)
+        public static void add(long item)
         {
                 Buffer[pointer] = item;
                 pointer++;
@@ -21,7 +21,7 @@ public class HumphreysCache extends Thread {
         public void print(){
 
                 for (long l : Buffer) {
-                        System.out.print(l);
+                        System.out.print(" "+ l + " ");
                 }
         }
 

@@ -52,6 +52,8 @@ import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
 import org.graalvm.compiler.nodes.spi.NodeLIRBuilderTool;
+import org.graalvm.compiler.nodes.util.GraphUtil;
+import org.graalvm.compiler.replacements.InvocationPluginHelper;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.SnippetCounterNode;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
@@ -88,14 +90,20 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
     @Override
     public void lower(LoweringTool tool) {
-        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
-        graph().replaceFixed(this, javaCurrentCPUtime);        
+        //ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        //graph().replaceFixed(this, javaCurrentCPUtime);        
         // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" , javaCurrentCPUtime));
         // graph().addBeforeFixed(javaCurrentCPUtime, log);
+        //GraphBuilderContext
         
-        // MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
-        // InvokeNode invoke = graph().add(new InvokeNode(callTarget, 0));
-        //graph().addBeforeFixed(javaCurrentCPUtime, invoke);
+
+         
+
+         MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
+         InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
+         invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
+           
+        graph().replaceFixed(this, invokeNode);
 
     }
 

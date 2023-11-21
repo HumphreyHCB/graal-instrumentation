@@ -23,14 +23,16 @@
  * questions.
  */
 
+//import org.graalvm.compiler.hotspot.meta.HumphreysCache;
+
 public class ClockTest {
         public volatile static int number = 0;
-        public static HumphreysCache hc;
+        public static TestingHumphreysCache hc;
 
         public static void main(String[] args) {
 
-                hc = new HumphreysCache();
-                hc.start();
+                hc = new TestingHumphreysCache();
+                //hc.start();
                 driver();
                 hc.print();
         }
@@ -45,7 +47,7 @@ public class ClockTest {
 
         public static int printInt(int number) {
                 for (int i = 0; i < 10; i++) {
-                        hc.add(System.nanoTime());
+                        TestingHumphreysCache.add(System.nanoTime());
                         System.err.println("Hello World" + number);
                 }
                 return number;

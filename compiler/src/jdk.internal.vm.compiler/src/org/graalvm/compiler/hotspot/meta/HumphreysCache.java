@@ -12,11 +12,11 @@ public class HumphreysCache extends Thread {
                 pointer = 0;
 
         }
-        public void dummyPrint(){
+        public static void dummyPrint(){
                 System.out.println("In Humphrey Cache");
         }
-        
-        public void add(long item)
+
+        public static void add(long item)
         {
                 Buffer[pointer] = item;
                 pointer++;
