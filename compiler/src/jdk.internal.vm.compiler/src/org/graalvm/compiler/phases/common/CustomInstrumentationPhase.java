@@ -139,9 +139,9 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (Invoke invokes : graph.getInvokes()) {
 
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-                CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
+                //CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
                 //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
-                CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode(method));
+                //CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode(method));
                 CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode(method));
                 graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
                 //graph.addBeforeFixed((FixedNode) invokes.asFixedNode().predecessor(), customClockLogNodeA);
@@ -149,6 +149,7 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
 
                 }             
             }
+
             
             
         

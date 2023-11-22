@@ -94,16 +94,13 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         //graph().replaceFixed(this, javaCurrentCPUtime);        
         // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" , javaCurrentCPUtime));
         // graph().addBeforeFixed(javaCurrentCPUtime, log);
-        //GraphBuilderContext
-        
-
          
-
          MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
-         InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
+         CustomInvokeNode invokeNode = graph().add(new CustomInvokeNode(callTarget, 0));
+         graph().replaceFixed(this, invokeNode);
          invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
          //invokeNode.hasSideEffect()
-        graph().replaceFixed(this, invokeNode);
+
 
     }
 
