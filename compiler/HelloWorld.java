@@ -25,31 +25,38 @@
 
 public class HelloWorld {
         public volatile static int number = 0;
-    public static void main(String[] args) {
+
+        public static void main(String[] args) {
                 driver();
-                //MathsExample me = new MathsExample();
-                //me.mathstest();                
+                // MathsExample me = new MathsExample();
+                // me.mathstest();
         }
 
-    public static void driver() {
-        for (int i = 0; i < 250_000; i++) {
-                number = printInt(number);
-                System.err.println(number);
-        }
-                MathsExample me = new MathsExample();
-                me.mandelbrot(200);   
+        public static void driver() {
+                for (int i = 0; i < 2_500_000; i++) {
+                        number = printInt(number);
+                        System.out.println(number);
+                }
+                // MathsExample me = new MathsExample();
+                // me.mandelbrot(200);
 
         }
-    
 
         public static int printInt(int number) {
-                        for(int i=0; i < 10; i++) {
-                                number = inc(number);
-                                System.err.println("Hello World" + number );
-                        }
-                        return number;
+                for (int i = 0; i < 10; i++) {
+                        number = inc(number);
+                        dummyPrint();
+                        System.out.println("Hello World" + number);
+
+                }
+                return number;
         }
+
         public static int inc(int number) {
                 return number + 1;
+        }
+
+        public static void dummyPrint() {
+                System.out.println("DUmmyPrint");
         }
 }

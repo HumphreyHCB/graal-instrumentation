@@ -27,6 +27,7 @@ package org.graalvm.compiler.nodes;
 import static org.graalvm.compiler.nodeinfo.NodeCycles.CYCLES_2;
 import static org.graalvm.compiler.nodeinfo.NodeSize.SIZE_1;
 
+import java.lang.reflect.InvocationHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -42,6 +43,7 @@ import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
 import org.graalvm.compiler.hotspot.meta.BuboMetaTools;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProvider;
 import org.graalvm.compiler.hotspot.meta.HumphreysCache;
+import org.graalvm.compiler.hotspot.replacements.DigestBaseSnippets;
 import org.graalvm.compiler.lir.Variable;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
@@ -56,6 +58,8 @@ import org.graalvm.compiler.nodes.util.GraphUtil;
 import org.graalvm.compiler.replacements.InvocationPluginHelper;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.SnippetCounterNode;
+import org.graalvm.compiler.replacements.SnippetSubstitutionInvocationPlugin;
+import org.graalvm.compiler.replacements.StringLatin1Snippets;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.replacements.nodes.LogNode;
 
@@ -76,31 +80,31 @@ import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.
           cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
-public final class CustomClockLogNode extends FixedWithNextNode implements Lowerable, LIRLowerable{
+public final class CustomClockLogNode extends FixedWithNextNode implements Lowerable, LIRLowerable {
 
     public static final NodeClass<CustomClockLogNode> TYPE = NodeClass.create(CustomClockLogNode.class);
 
-    private final ResolvedJavaMethod method;
+    private ResolvedJavaMethod method;
 
     public CustomClockLogNode(ResolvedJavaMethod method) {
         super(TYPE, StampFactory.forVoid());
         this.method = method;
     }
 
-
     @Override
     public void lower(LoweringTool tool) {
-        //ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
-        //graph().replaceFixed(this, javaCurrentCPUtime);        
-        // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" , javaCurrentCPUtime));
+        // ForeignCallNode javaCurrentCPUtime = graph().add(new
+        // ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        // graph().replaceFixed(this, javaCurrentCPUtime);
+        // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" ,
+        // javaCurrentCPUtime));
         // graph().addBeforeFixed(javaCurrentCPUtime, log);
-         
-         MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
-         CustomInvokeNode invokeNode = graph().add(new CustomInvokeNode(callTarget, 0));
-         graph().replaceFixed(this, invokeNode);
-         invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
-         //invokeNode.hasSideEffect()
 
+        // have a look at /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/hotspot/amd64/AMD64HotSpotForeignCallsProvider.java
+        MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Special, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
+        InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
+        graph().replaceFixed(this, invokeNode);
+        invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
 
     }
 
@@ -108,5 +112,4 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
     public void generate(NodeLIRBuilderTool generator) {
     }
 
-    
 }

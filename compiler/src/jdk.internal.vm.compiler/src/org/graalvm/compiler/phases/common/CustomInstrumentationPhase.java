@@ -37,6 +37,8 @@ import org.graalvm.compiler.core.CompilationWrapper.ExceptionAction;
 import org.graalvm.compiler.core.Instrumentation;
 import org.graalvm.compiler.core.common.CompilationIdentifier;
 import org.graalvm.compiler.core.common.GraalOptions;
+import org.graalvm.compiler.core.common.type.StampFactory;
+import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
@@ -46,8 +48,10 @@ import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.GraphState.StageFlag;
 import org.graalvm.compiler.nodes.extended.OSRStartNode;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
+import org.graalvm.compiler.nodes.util.GraphUtil;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
+import org.graalvm.compiler.nodes.ReturnNode;
 import org.graalvm.compiler.nodes.SafepointNode;
 import org.graalvm.compiler.nodes.StartNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
@@ -59,6 +63,7 @@ import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
 import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 
+import jdk.jshell.Snippet;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Value;
@@ -73,6 +78,7 @@ import org.graalvm.compiler.hotspot.HotSpotBackend;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
 import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
+import org.graalvm.compiler.hotspot.stubs.SnippetStub;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
@@ -87,6 +93,7 @@ import org.graalvm.compiler.options.OptionType;
 import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
+import org.graalvm.compiler.phases.tiers.LowTierContext;
 
 /**
  * Adds CustomInstrumentation to loops.
@@ -122,7 +129,7 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
 
     private final boolean optional;
     private final SnippetCounter.Group group;
-    private final ResolvedJavaMethod method;
+    private  ResolvedJavaMethod method;
 
 
     public CustomInstrumentationPhase(SnippetCounter.Group group, ResolvedJavaMethod method) {
@@ -142,19 +149,17 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 //CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
                 //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
                 //CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode(method));
+                SnippetStub
                 CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode(method));
                 graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
-                //graph.addBeforeFixed((FixedNode) invokes.asFixedNode().predecessor(), customClockLogNodeA);
+
 
 
                 }             
             }
 
             
-            
         
     }
-
-
 
 }

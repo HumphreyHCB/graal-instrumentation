@@ -1,4 +1,4 @@
-
+package org.graalvm.compiler.hotspot.meta;
 /*
  * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -29,11 +29,11 @@
 
 public class ClockTest {
         public volatile static int number = 0;
-        //public static TestingHumphreysCache hc;
+        //public static HumphreysCache hc;
 
         public static void main(String[] args) {
 
-                //hc = new TestingHumphreysCache();
+                //hc = new HumphreysCache();
                 //hc.start();
                 driver();
                 //hc.print();
@@ -49,7 +49,7 @@ public class ClockTest {
 
         public static int printInt(int number) {
                 for (int i = 0; i < 10; i++) {
-                        HumphreyCache.dummyPrint();
+                        HumphreysCache.dummyPrint();
                         System.err.println("Hello World" + number);
                 }
                 return number;

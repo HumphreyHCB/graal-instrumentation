@@ -42,6 +42,7 @@ public class BuboMetaTools {
             if (m.getName().equals(methodName)) {
                 assert reflectionMethod == null : "More than one method with name " + methodName + " in class " + declaringClass.getName();
                 reflectionMethod = m;
+                continue;
             }
         }
         assert reflectionMethod != null : "No method with name " + methodName + " in class " + declaringClass.getName();

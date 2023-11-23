@@ -56,6 +56,7 @@ import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.Suites;
 import org.graalvm.compiler.phases.tiers.SuitesCreator;
+import org.graalvm.compiler.replacements.GraphKit;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
@@ -73,13 +74,18 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
     protected final SuitesCreator defaultSuitesCreator;
     final Group group;
 
+
+
     @SuppressWarnings("this-escape")
     public HotSpotSuitesProvider(SuitesCreator defaultSuitesCreator, GraalHotSpotVMConfig config, HotSpotGraalRuntimeProvider runtime) {
         this.defaultSuitesCreator = defaultSuitesCreator;
         this.config = config;
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
+
+        // my stuff
         this.group = runtime.createSnippetCounterGroup("Humphrey's Group");
+
         
         
     }
@@ -109,11 +115,10 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         //
         // This needs to live in its own method for clairty
         //
-        HumphreysCache hc = new HumphreysCache();
-        hc.start();
+        //ResolvedJavaMethod method = new BuboMetaTools().findMethod(System.out.getClass(), "println", runtime.getHostBackend().getMetaAccess());
         ResolvedJavaMethod method = new BuboMetaTools().findMethod(HumphreysCache.class, "dummyPrint", runtime.getHostBackend().getMetaAccess());
         ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        position.add(new CustomInstrumentationPhase(group, method));
+        position.add(new CustomInstrumentationPhase(group, method));   
         //
         //
         //
