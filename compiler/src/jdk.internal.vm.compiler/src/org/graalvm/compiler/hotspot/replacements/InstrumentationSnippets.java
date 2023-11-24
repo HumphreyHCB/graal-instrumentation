@@ -61,7 +61,7 @@ public final class InstrumentationSnippets extends AbstractTemplates implements 
 		//TODO Auto-generated constructor stub
 	}
     
-	public static final ForeignCallDescriptor INSTRUMENTATION_METHOD = SnippetRuntime.findForeignCall(InstrumentationSnippets.class, "instrumentation", false);
+	//public static final ForeignCallDescriptor INSTRUMENTATION_METHOD = SnippetRuntime.findForeignCall(InstrumentationSnippets.class, "instrumentation", false);
 
     //@NeverInline("Method in instrumentation exclusion list")
     //@Uninterruptible(reason = "Cannot leave inconsistent state.", mayBeInlined = false)
@@ -69,7 +69,6 @@ public final class InstrumentationSnippets extends AbstractTemplates implements 
     private static void instrumentation() { 
         System.out.println("Instrumentation Snippet Call");
 
-        BoxingSnippets
 
     }
 

@@ -197,6 +197,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
+    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class);
+
     /**
      * Signature of an unsafe {@link System#arraycopy} stub.
      *
@@ -482,6 +484,17 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
             linkForeignCall(options, providers, SHAREDRUNTIME_NOTIFY_JVMTI_VTHREAD_MOUNT, c.jvmtiVThreadMount, DONT_PREPEND_THREAD);
             linkForeignCall(options, providers, SHAREDRUNTIME_NOTIFY_JVMTI_VTHREAD_UNMOUNT, c.jvmtiVThreadUnmount, DONT_PREPEND_THREAD);
         }
+
+        // INSTRUMENTATION CALL
+        //
+        //new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, any(), "SnippetDummyPrint", void.class, Word.class)
+        //Word.class);
+
+        link(new InstrumentationCallStub("SnippetDummyPrint", options, providers, registerStubCall(TestDummyPrint, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
+        
+        //
+        //
+        //
 
         link(new ExceptionHandlerStub(options, providers, foreignCalls.get(EXCEPTION_HANDLER.getSignature())));
         link(new UnwindExceptionToCallerStub(options, providers,

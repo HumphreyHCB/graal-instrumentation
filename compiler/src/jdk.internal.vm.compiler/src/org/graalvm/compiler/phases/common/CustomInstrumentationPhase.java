@@ -63,7 +63,6 @@ import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
 import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 
-import jdk.jshell.Snippet;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Value;
@@ -149,13 +148,11 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 //CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
                 //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
                 //CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode(method));
-                SnippetStub
+                //SnippetStub
                 CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode(method));
                 graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
-
-
-
-                }             
+                
+                }          
             }
 
             

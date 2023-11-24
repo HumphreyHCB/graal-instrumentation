@@ -45,8 +45,7 @@ public class HelloWorld {
         public static int printInt(int number) {
                 for (int i = 0; i < 10; i++) {
                         number = inc(number);
-                        dummyPrint();
-                        System.out.println("Hello World" + number);
+                        System.out.println("Hello World " + number);
 
                 }
                 return number;
@@ -56,7 +55,4 @@ public class HelloWorld {
                 return number + 1;
         }
 
-        public static void dummyPrint() {
-                System.out.println("DUmmyPrint");
-        }
 }

@@ -71,6 +71,7 @@ import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.meta.*;
 
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.TestDummyPrint;;
 
 /**
  * Marks a position in the graph where a node should be emitted.
@@ -93,18 +94,22 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
     @Override
     public void lower(LoweringTool tool) {
-        // ForeignCallNode javaCurrentCPUtime = graph().add(new
-        // ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        // ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
         // graph().replaceFixed(this, javaCurrentCPUtime);
         // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" ,
         // javaCurrentCPUtime));
         // graph().addBeforeFixed(javaCurrentCPUtime, log);
 
         // have a look at /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/hotspot/amd64/AMD64HotSpotForeignCallsProvider.java
-        MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Special, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
-        InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
-        graph().replaceFixed(this, invokeNode);
-        invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
+        // MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Special, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
+        // InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
+        // graph().replaceFixed(this, invokeNode);
+        // invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
+
+        
+        
+        ForeignCallNode dummycall = graph().add(new ForeignCallNode(TestDummyPrint, EMPTY_ARRAY));
+        graph().replaceFixed(this, dummycall);
 
     }
 
