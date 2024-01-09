@@ -1,0 +1,9 @@
+{
+    "java.project.sourcePaths": [
+        "compiler/src/jdk.internal.vm.compiler/src"
+    ],
+    "java.project.referencedLibraries": [
+        "/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/MyJDKJarLib.jar"
+    ],
+    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable"
+}

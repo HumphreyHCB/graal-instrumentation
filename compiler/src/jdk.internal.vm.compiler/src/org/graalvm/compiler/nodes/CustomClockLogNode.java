@@ -94,8 +94,8 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
     @Override
     public void lower(LoweringTool tool) {
-        // ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
-        // graph().replaceFixed(this, javaCurrentCPUtime);
+        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        graph().replaceFixed(this, javaCurrentCPUtime);
         // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" ,
         // javaCurrentCPUtime));
         // graph().addBeforeFixed(javaCurrentCPUtime, log);
@@ -107,9 +107,10 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         // invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
 
         
-        
-        ForeignCallNode dummycall = graph().add(new ForeignCallNode(TestDummyPrint, EMPTY_ARRAY));
-        graph().replaceFixed(this, dummycall);
+        //ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
+        //ValueNode intNode = constNextInt;
+        ForeignCallNode dummycall = graph().add(new ForeignCallNode(TestDummyPrint, javaCurrentCPUtime));
+        graph().addAfterFixed(javaCurrentCPUtime, dummycall);
 
     }
 

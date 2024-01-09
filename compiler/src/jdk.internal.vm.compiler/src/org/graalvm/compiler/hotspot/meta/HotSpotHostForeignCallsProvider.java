@@ -113,6 +113,7 @@ import org.graalvm.compiler.core.common.spi.ForeignCallsProvider;
 import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
 import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
+import org.graalvm.compiler.hotspot.replacements.InstrumentationSnippets;
 import org.graalvm.compiler.hotspot.replacements.arraycopy.CheckcastArrayCopyCallNode;
 import org.graalvm.compiler.hotspot.stubs.ArrayStoreExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.ClassCastExceptionStub;
@@ -197,9 +198,9 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
-    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class);
+    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class, int.class);
 
-    /**
+    /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.
      *
      * The signature is equivalent to {@link sun.misc.Unsafe#copyMemory(long, long, long)}. For the
@@ -491,8 +492,9 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         //Word.class);
 
         link(new InstrumentationCallStub("SnippetDummyPrint", options, providers, registerStubCall(TestDummyPrint, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
-        
-        //
+        //link(new InstrumentationSnippets( options, providers );
+    
+        //registerStubCall(INSTRUMENTATION_METHOD, DESTROYS_ALL_CALLER_SAVE_REGISTERS)
         //
         //
 

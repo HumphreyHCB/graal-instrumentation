@@ -27,6 +27,8 @@ package org.graalvm.compiler.hotspot.replacements;
 import static org.graalvm.compiler.api.directives.GraalDirectives.SLOWPATH_PROBABILITY;
 import static org.graalvm.compiler.api.directives.GraalDirectives.injectBranchProbability;
 import static org.graalvm.compiler.hotspot.stubs.StubUtil.VM_MESSAGE_C;
+import static org.graalvm.compiler.hotspot.stubs.StubUtil.printf;
+import static org.graalvm.compiler.hotspot.stubs.StubUtil.decipher;
 import static org.graalvm.compiler.replacements.SnippetTemplate.DEFAULT_REPLACER;
 
 import org.graalvm.compiler.api.replacements.Snippet;
@@ -49,25 +51,42 @@ import org.graalvm.compiler.replacements.SnippetTemplate.AbstractTemplates;
 import org.graalvm.compiler.replacements.SnippetTemplate.Arguments;
 import org.graalvm.compiler.replacements.SnippetTemplate.SnippetInfo;
 import org.graalvm.compiler.replacements.BoxingSnippets;
+import org.graalvm.compiler.replacements.SnippetTemplate;
 import org.graalvm.compiler.replacements.Snippets;
 import org.graalvm.compiler.replacements.nodes.AssertionNode;
 import org.graalvm.compiler.replacements.nodes.CStringConstant;
 import org.graalvm.compiler.word.Word;
+import org.graalvm.word.LocationIdentity;
+import org.graalvm.word.Pointer;
+import org.graalvm.word.WordFactory;
 
 public final class InstrumentationSnippets extends AbstractTemplates implements Snippets {
+
+    public static class Templates extends SnippetTemplate.AbstractTemplates {
+
+        public final SnippetTemplate.SnippetInfo instrumentation;
+
+        @SuppressWarnings("this-escape")
+        public Templates(OptionValues options, Providers providers) {
+            super(options, providers);
+
+            this.instrumentation = snippet(providers, InstrumentationSnippets.class, "instrumentation");
+        }
+    }
 
     protected InstrumentationSnippets(OptionValues options, Providers providers) {
 		super(options, providers);
 		//TODO Auto-generated constructor stub
 	}
     
-	//public static final ForeignCallDescriptor INSTRUMENTATION_METHOD = SnippetRuntime.findForeignCall(InstrumentationSnippets.class, "instrumentation", false);
 
-    //@NeverInline("Method in instrumentation exclusion list")
-    //@Uninterruptible(reason = "Cannot leave inconsistent state.", mayBeInlined = false)
-    //@SubstrateForeignCallTarget(stubCallingConvention = false, fullyUninterruptible = true)
-    private static void instrumentation() { 
-        System.out.println("Instrumentation Snippet Call");
+    @Snippet
+    public static void instrumentation(int time) { 
+       //Word wordtest = HotSpotReplacementsUtil.loadWordFromObject(time,0);
+        //printf("FROM THE PRINT F", wordtest.rawValue());
+        //decipher(time);
+        printf("FROM THE PRINT F %i", time);
+        //System.out.println("Instrumentation Snippet Call");
 
 
     }

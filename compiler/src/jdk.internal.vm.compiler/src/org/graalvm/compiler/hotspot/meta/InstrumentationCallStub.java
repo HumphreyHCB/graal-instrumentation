@@ -37,7 +37,7 @@ import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode.BinaryOpe
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode;
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
 
-
+import static org.graalvm.compiler.hotspot.replacements.InstrumentationSnippets.instrumentation;
 
 /**
  * 
@@ -50,8 +50,16 @@ public class InstrumentationCallStub extends SnippetStub {
 
     
     @Snippet
-    public static void SnippetDummyPrint() {
-        printf("Dummy Print Made my a SnippetStub");
+    public static void SnippetDummyPrint(int time) {
+
+        printf("\n");
+        //printf("\n ");
+        instrumentation(time);
+        
+    }
+
+    public static int getCPUTime(){
+        return (int) System.currentTimeMillis();
     }
 
 }
