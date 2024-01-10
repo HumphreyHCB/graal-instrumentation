@@ -198,7 +198,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
-    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class, int.class);
+    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class, long.class);
 
     /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.

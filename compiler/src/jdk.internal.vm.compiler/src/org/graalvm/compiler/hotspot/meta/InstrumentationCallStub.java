@@ -26,6 +26,10 @@ package org.graalvm.compiler.hotspot.meta;
 
 import static org.graalvm.compiler.hotspot.stubs.StubUtil.printf;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import org.graalvm.compiler.api.replacements.Snippet;
 import org.graalvm.compiler.debug.GraalError;
 import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
@@ -36,6 +40,8 @@ import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode;
 import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode.BinaryOperation;
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode;
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
+
+
 
 import static org.graalvm.compiler.hotspot.replacements.InstrumentationSnippets.instrumentation;
 
@@ -50,7 +56,7 @@ public class InstrumentationCallStub extends SnippetStub {
 
     
     @Snippet
-    public static void SnippetDummyPrint(int time) {
+    public static void SnippetDummyPrint(long time) {
 
         printf("\n");
         //printf("\n ");
@@ -58,8 +64,9 @@ public class InstrumentationCallStub extends SnippetStub {
         
     }
 
-    public static int getCPUTime(){
-        return (int) System.currentTimeMillis();
+
+    public static long getCPUTime(){
+        return System.currentTimeMillis();
     }
 
 }

@@ -81,10 +81,10 @@ public final class InstrumentationSnippets extends AbstractTemplates implements 
     
 
     @Snippet
-    public static void instrumentation(int time) { 
+    public static void instrumentation(long time) { 
        //Word wordtest = HotSpotReplacementsUtil.loadWordFromObject(time,0);
         //printf("FROM THE PRINT F", wordtest.rawValue());
-        //decipher(time);
+        decipher(time);
         printf("FROM THE PRINT F %i", time);
         //System.out.println("Instrumentation Snippet Call");
 

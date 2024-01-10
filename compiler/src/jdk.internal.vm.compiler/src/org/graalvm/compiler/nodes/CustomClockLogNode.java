@@ -70,6 +70,7 @@ import jdk.vm.ci.runtime.JVMCI;
 import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.meta.*;
 
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.TestDummyPrint;;
 
@@ -94,7 +95,7 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
     @Override
     public void lower(LoweringTool tool) {
-        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_NANOS, EMPTY_ARRAY));
+        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
         graph().replaceFixed(this, javaCurrentCPUtime);
         // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" ,
         // javaCurrentCPUtime));
