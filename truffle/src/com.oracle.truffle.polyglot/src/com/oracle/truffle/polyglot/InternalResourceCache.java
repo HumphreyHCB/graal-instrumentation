@@ -297,19 +297,6 @@ final class InternalResourceCache {
      * {@code TruffleBaseFeature#afterAnalysis}.
      */
     static void resetNativeImageState() {
-        cacheRoot = null;
-        for (LanguageCache language : LanguageCache.languages().values()) {
-            for (String resourceId : language.getResourceIds()) {
-                InternalResourceCache cache = language.getResourceCache(resourceId);
-                cache.resetFileSystemNativeImageState();
-            }
-        }
-        for (InstrumentCache instrument : InstrumentCache.load()) {
-            for (String resourceId : instrument.getResourceIds()) {
-                InternalResourceCache cache = instrument.getResourceCache(resourceId);
-                cache.resetFileSystemNativeImageState();
-            }
-        }
         nativeImageCache.clear();
     }
 
@@ -514,5 +501,37 @@ final class InternalResourceCache {
             }
             return res;
         }
+    }
+}
+
+/**
+ * A C entry point utilized for determining the shared library's location. This entry point is
+ * explicitly activated by the {@code TruffleBaseFeature} through reflective invocation of the
+ * {@link InternalResourceCacheSymbol#initialize()} method.
+ */
+final class InternalResourceCacheSymbol implements BooleanSupplier {
+
+    static final CEntryPointLiteral<CFunctionPointer> SYMBOL = CEntryPointLiteral.create(InternalResourceCacheSymbol.class,
+                    "internalResourceCacheSymbol", IsolateThread.class);
+
+    private InternalResourceCacheSymbol() {
+    }
+
+    @Override
+    public boolean getAsBoolean() {
+        return ImageSingletons.contains(InternalResourceCacheSymbol.class);
+    }
+
+    /**
+     * Enables {@link #internalResourceCacheSymbol(IsolateThread)} entrypoint. Called reflectively
+     * by the {@code TruffleBaseFeature#afterRegistration()}.
+     */
+    static void initialize() {
+        ImageSingletons.add(InternalResourceCacheSymbol.class, new InternalResourceCacheSymbol());
+    }
+
+    @CEntryPoint(name = "graal_resource_cache_symbol", publishAs = CEntryPoint.Publish.SymbolOnly, include = InternalResourceCacheSymbol.class)
+    @SuppressWarnings("unused")
+    private static void internalResourceCacheSymbol(IsolateThread thread) {
     }
 }

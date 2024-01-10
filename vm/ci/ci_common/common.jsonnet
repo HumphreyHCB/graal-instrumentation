@@ -308,7 +308,7 @@ local devkits = graal_common.devkits;
   maven_deploy_base_functions: {
     dynamic_ce_imports(os, arch)::
       local legacy_imports = '/tools,/compiler,/graal-js,/espresso,/substratevm';
-      local ce_windows_imports = legacy_imports + ',/wasm,/sulong,graalpython';
+      local ce_windows_imports = legacy_imports + ',/vm,/wasm,/sulong,graalpython';
       local non_windows_imports = ',truffleruby';
 
       if (os == 'windows') then
@@ -328,6 +328,7 @@ local devkits = graal_common.devkits;
         '--suite', 'substratevm',
       ];
       local ce_windows_suites = legacy_suites + [
+        '--suite', 'vm',
         '--suite', 'wasm',
         '--suite', 'sulong',
         '--suite', 'graalpython'
@@ -371,9 +372,9 @@ local devkits = graal_common.devkits;
       + $.maven_deploy_base_functions.ce_suites(os,arch)
       + extra_mx_args
       + self.mvn_args
-      + vm.maven_deploy_base_functions.licenses()
+      + ['--licenses', $.maven_deploy_base_functions.ce_licenses()]
       + (if dry_run then ['--dry-run'] else [])
-      + repo_strings,
+      + extra_args,
     ],
 
     deploy_ee(os, arch, reduced, dry_run, extra_args, extra_mx_args=[]):: [
@@ -390,9 +391,9 @@ local devkits = graal_common.devkits;
       self.mx_cmd_base_only_native(os, arch, reduced)
       + extra_mx_args
       + self.mvn_args_only_native
-      + vm.maven_deploy_base_functions.licenses()
+      + ['--licenses', $.maven_deploy_base_functions.ce_licenses()]
       + (if dry_run then ['--dry-run'] else [])
-      + repo_strings,
+      + extra_args,
     ],
 
     run_block(os, arch, dry_run, remote_mvn_repo, remote_non_mvn_repo, local_repo, main_platform, other_platforms, mvn_artifacts=true, mvn_bundle=true, mvn_reduced_bundle=true)::

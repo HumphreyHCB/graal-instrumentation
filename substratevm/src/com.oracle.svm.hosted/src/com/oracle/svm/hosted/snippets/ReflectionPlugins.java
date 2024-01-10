@@ -424,6 +424,8 @@ public final class ReflectionPlugins {
         if (PredefinedClassesSupport.isPredefined(clazz)) {
             return false;
         }
+        receiver.requireNonNull();
+
         return pushConstant(b, targetMethod, clazz::getName, JavaKind.Object, clazz.getClassLoader(), true) != null;
     }
 
@@ -511,6 +513,9 @@ public final class ReflectionPlugins {
         Supplier<String> targetParameters = () -> (receiverValue == null ? "" : receiverValue + "; ") +
                         Stream.of(argValues).map(arg -> arg instanceof Object[] ? Arrays.toString((Object[]) arg) : Objects.toString(arg)).collect(Collectors.joining(", "));
 
+        if (receiver != null) {
+            receiver.requireNonNull();
+        }
         Object returnValue;
         try {
             returnValue = reflectionMethod.invoke(receiverValue, argValues);
@@ -558,6 +563,7 @@ public final class ReflectionPlugins {
         if (receiverValue == null || receiverValue == NULL_MARKER) {
             return false;
         }
+        receiver.requireNonNull();
 
         b.add(ReachabilityRegistrationNode.create(() -> registerForRuntimeReflection((T) receiverValue, registrationCallback), reason));
         return true;

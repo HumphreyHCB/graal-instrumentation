@@ -85,6 +85,7 @@ import com.oracle.svm.core.heap.ReferenceHandlerThread;
 import com.oracle.svm.core.heap.VMOperationInfos;
 import com.oracle.svm.core.jdk.StackTraceUtils;
 import com.oracle.svm.core.jdk.UninterruptibleUtils;
+import com.oracle.svm.core.jfr.HasJfrSupport;
 import com.oracle.svm.core.locks.VMMutex;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.monitor.MonitorSupport;
@@ -112,11 +113,8 @@ import jdk.internal.misc.Unsafe;
  * @see JavaThreads
  */
 public abstract class PlatformThreads {
-    private static final Field FIELDHOLDER_STATUS_FIELD = (JavaVersionUtil.JAVA_SPEC >= 19 && ImageInfo.inImageCode())
+    private static final Field FIELDHOLDER_STATUS_FIELD = ImageInfo.inImageCode()
                     ? ReflectionUtil.lookupField(Target_java_lang_Thread_FieldHolder.class, "threadStatus")
-                    : null;
-    private static final Field THREAD_STATUS_FIELD = (JavaVersionUtil.JAVA_SPEC < 19 && ImageInfo.inImageCode())
-                    ? ReflectionUtil.lookupField(Target_java_lang_Thread.class, "threadStatus")
                     : null;
 
     @Fold
@@ -433,12 +431,6 @@ public abstract class PlatformThreads {
 
         /* If the thread was manually started, finish initializing it. */
         if (manuallyStarted) {
-            final ThreadGroup group = thread.getThreadGroup();
-            if (JavaVersionUtil.JAVA_SPEC < 19 && !(VirtualThreads.isSupported() && VirtualThreads.singleton().isVirtual(thread))) {
-                toTarget(group).addUnstarted();
-                toTarget(group).add(thread);
-            }
-
             if (!thread.isDaemon()) {
                 nonDaemonThreads.incrementAndGet();
             }
@@ -607,7 +599,7 @@ public abstract class PlatformThreads {
                 }
             } else {
                 Target_java_lang_Thread tjlt = toTarget(thread);
-                Runnable target = JavaVersionUtil.JAVA_SPEC >= 19 ? tjlt.holder.task : tjlt.target;
+                Runnable target = tjlt.holder.task;
                 if (Target_java_util_concurrent_ThreadPoolExecutor_Worker.class.isInstance(target)) {
                     ThreadPoolExecutor executor = SubstrateUtil.cast(target, Target_java_util_concurrent_ThreadPoolExecutor_Worker.class).executor;
                     if (executor != null && (executor.getClass() == ThreadPoolExecutor.class || executor.getClass() == ScheduledThreadPoolExecutor.class)) {
@@ -943,8 +935,8 @@ public abstract class PlatformThreads {
      */
     static void sleep(long nanos) throws InterruptedException {
         assert !isCurrentThreadVirtual();
-        if (com.oracle.svm.core.jfr.HasJfrSupport.get() && Target_jdk_internal_event_ThreadSleepEvent.isTurnedOn()) {
-            Target_jdk_internal_event_ThreadSleepEvent event = new Target_jdk_internal_event_ThreadSleepEvent();
+        if (HasJfrSupport.get() && ThreadSleepEvent.isTurnedOn()) {
+            ThreadSleepEvent event = new ThreadSleepEvent();
             try {
                 event.time = nanos;
                 event.begin();
@@ -1032,25 +1024,17 @@ public abstract class PlatformThreads {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static int getThreadStatus(Thread thread) {
         assert !isVirtual(thread);
-        return (JavaVersionUtil.JAVA_SPEC >= 19) ? toTarget(thread).holder.threadStatus : toTarget(thread).threadStatus;
+        return toTarget(thread).holder.threadStatus;
     }
 
     public static void setThreadStatus(Thread thread, int threadStatus) {
         assert !isVirtual(thread);
-        if (JavaVersionUtil.JAVA_SPEC >= 19) {
-            toTarget(thread).holder.threadStatus = threadStatus;
-        } else {
-            toTarget(thread).threadStatus = threadStatus;
-        }
+        toTarget(thread).holder.threadStatus = threadStatus;
     }
 
     static boolean compareAndSetThreadStatus(Thread thread, int expectedStatus, int newStatus) {
         assert !isVirtual(thread);
-        if (JavaVersionUtil.JAVA_SPEC >= 19) {
-            return Unsafe.getUnsafe().compareAndSetInt(toTarget(thread).holder, Unsafe.getUnsafe().objectFieldOffset(FIELDHOLDER_STATUS_FIELD), expectedStatus, newStatus);
-        } else {
-            return Unsafe.getUnsafe().compareAndSetInt(thread, Unsafe.getUnsafe().objectFieldOffset(THREAD_STATUS_FIELD), expectedStatus, newStatus);
-        }
+        return Unsafe.getUnsafe().compareAndSetInt(toTarget(thread).holder, Unsafe.getUnsafe().objectFieldOffset(FIELDHOLDER_STATUS_FIELD), expectedStatus, newStatus);
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -1205,14 +1189,8 @@ public abstract class PlatformThreads {
     static void blockedOn(Target_sun_nio_ch_Interruptible b) {
         assert !isCurrentThreadVirtual();
         Target_java_lang_Thread me = toTarget(currentThread.get());
-        if (JavaVersionUtil.JAVA_SPEC >= 19) {
-            synchronized (me.interruptLock) {
-                me.nioBlocker = b;
-            }
-        } else {
-            synchronized (me.blockerLock) {
-                me.blocker = b;
-            }
+        synchronized (me.interruptLock) {
+            me.nioBlocker = b;
         }
     }
 

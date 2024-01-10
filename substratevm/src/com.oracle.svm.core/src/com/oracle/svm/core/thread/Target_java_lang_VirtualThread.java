@@ -59,10 +59,6 @@ import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 
 @TargetClass(className = "java.lang.VirtualThread")
 public final class Target_java_lang_VirtualThread {
-    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)//
-    @TargetElement(onlyWith = JDK20OrEarlier.class)//
-    private static boolean notifyJvmtiEvents;
-
     // Checkstyle: stop
     @Alias static int NEW;
     @Alias static int STARTED;
@@ -192,35 +188,30 @@ public final class Target_java_lang_VirtualThread {
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrLater.class)
     @SuppressWarnings({"static-method", "unused"})
     private void notifyJvmtiStart() {
         // unimplemented (GR-46126)
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrLater.class)
     @SuppressWarnings({"static-method", "unused"})
     private void notifyJvmtiEnd() {
         // unimplemented (GR-46126)
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrLater.class)
     @SuppressWarnings({"static-method", "unused"})
     private void notifyJvmtiMount(boolean hide) {
         // unimplemented (GR-45392)
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrLater.class)
     @SuppressWarnings({"static-method", "unused"})
     private void notifyJvmtiUnmount(boolean hide) {
         // unimplemented (GR-45392)
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDK21OrLater.class)
     @SuppressWarnings({"static-method", "unused"})
     private void notifyJvmtiHideFrames(boolean hide) {
         // unimplemented (GR-45392)

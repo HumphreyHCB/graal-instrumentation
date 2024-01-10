@@ -97,13 +97,13 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 public class ReflectionFeature implements InternalFeature, ReflectionSubstitutionSupport {
 
     /**
-     * The CallerSensitiveAdapter mechanism of the JDK (introduced after JDK 17) is a formalization
-     * of {@link CallerSensitive} methods: the "caller sensitive adapter for a
-     * {@link CallerSensitive} method is a method with the same name and same signature (except for
-     * a trailing Class parameter). When a {@link CallerSensitive} method is invoked via reflection
-     * or a method handle, then the adapter is invoked instead and the caller class is passed in
-     * explicitly. This avoids corner cases where {@link Reflection#getCallerClass} returns an
-     * internal method of the reflection / method handle implementation.
+     * The CallerSensitiveAdapter mechanism of the JDK is a formalization of {@link CallerSensitive}
+     * methods: the "caller sensitive adapter for a {@link CallerSensitive} method is a method with
+     * the same name and same signature (except for a trailing Class parameter). When a
+     * {@link CallerSensitive} method is invoked via reflection or a method handle, then the adapter
+     * is invoked instead and the caller class is passed in explicitly. This avoids corner cases
+     * where {@link Reflection#getCallerClass} returns an internal method of the reflection / method
+     * handle implementation.
      */
     private static final Method findCallerSensitiveAdapterMethod = ReflectionUtil.lookupMethod(ReflectionUtil.lookupClass(false, "jdk.internal.reflect.DirectMethodHandleAccessor"),
                     "findCSMethodAdapter", Method.class);
@@ -176,16 +176,14 @@ public class ReflectionFeature implements InternalFeature, ReflectionSubstitutio
                 expandSignature = asMethodPointer(analysisAccess.getMetaAccess().lookupJavaMethod(methodHandleInvokeErrorMethod));
             } else {
                 Method target = (Method) member;
-                if (JavaVersionUtil.JAVA_SPEC > 17) {
-                    try {
-                        Method adapter = (Method) findCallerSensitiveAdapterMethod.invoke(null, member);
-                        if (adapter != null) {
-                            target = adapter;
-                            callerSensitiveAdapter = true;
-                        }
-                    } catch (ReflectiveOperationException ex) {
-                        throw VMError.shouldNotReachHere(ex);
+                try {
+                    Method adapter = (Method) findCallerSensitiveAdapterMethod.invoke(null, member);
+                    if (adapter != null) {
+                        target = adapter;
+                        callerSensitiveAdapter = true;
                     }
+                } catch (ReflectiveOperationException ex) {
+                    throw VMError.shouldNotReachHere(ex);
                 }
                 expandSignature = createExpandSignatureMethod(target, callerSensitiveAdapter);
                 targetMethod = analysisAccess.getMetaAccess().lookupJavaMethod(target);

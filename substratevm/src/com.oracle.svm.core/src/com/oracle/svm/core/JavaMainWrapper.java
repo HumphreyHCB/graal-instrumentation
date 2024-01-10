@@ -187,9 +187,6 @@ public class JavaMainWrapper {
      * 445: Unnamed Classes and Instance Main Methods (Preview).
      */
     public static boolean instanceMainMethodSupported() {
-        if (JavaVersionUtil.JAVA_SPEC < 21) {
-            return false;
-        }
         var previewFeature = ReflectionUtil.lookupClass(true, "jdk.internal.misc.PreviewFeatures");
         try {
             return previewFeature != null && (Boolean) previewFeature.getDeclaredMethod("isEnabled").invoke(null);
