@@ -22,34 +22,42 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.graal.compiler.core.phases;
+package org.graalvm.compiler.core.phases;
 
-import static jdk.graal.compiler.phases.common.DeadCodeEliminationPhase.Optionality.Optional;
+import static org.graalvm.compiler.core.common.GraalOptions.ConditionalElimination;
+import static org.graalvm.compiler.core.common.GraalOptions.EarlyGVN;
+import static org.graalvm.compiler.core.common.GraalOptions.LoopPeeling;
+import static org.graalvm.compiler.core.common.GraalOptions.LoopUnswitch;
+import static org.graalvm.compiler.core.common.GraalOptions.OptConvertDeoptsToGuards;
+import static org.graalvm.compiler.core.common.GraalOptions.OptReadElimination;
+import static org.graalvm.compiler.core.common.GraalOptions.PartialEscapeAnalysis;
+import static org.graalvm.compiler.phases.common.DeadCodeEliminationPhase.Optionality.Optional;
 
-import jdk.graal.compiler.core.common.GraalOptions;
-import jdk.graal.compiler.loop.phases.ConvertDeoptimizeToGuardPhase;
-import jdk.graal.compiler.loop.phases.LoopFullUnrollPhase;
-import jdk.graal.compiler.loop.phases.LoopPeelingPhase;
-import jdk.graal.compiler.loop.phases.LoopUnswitchingPhase;
-import jdk.graal.compiler.nodes.loop.DefaultLoopPolicies;
-import jdk.graal.compiler.nodes.loop.LoopPolicies;
-import jdk.graal.compiler.options.Option;
-import jdk.graal.compiler.options.OptionKey;
-import jdk.graal.compiler.options.OptionType;
-import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.phases.common.BoxNodeIdentityPhase;
-import jdk.graal.compiler.phases.common.BoxNodeOptimizationPhase;
-import jdk.graal.compiler.phases.common.CanonicalizerPhase;
-import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
-import jdk.graal.compiler.phases.common.DisableOverflownCountedLoopsPhase;
-import jdk.graal.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase;
-import jdk.graal.compiler.phases.common.HighTierLoweringPhase;
-import jdk.graal.compiler.phases.common.IterativeConditionalEliminationPhase;
-import jdk.graal.compiler.phases.common.inlining.InliningPhase;
-import jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy;
-import jdk.graal.compiler.phases.tiers.HighTierContext;
-import jdk.graal.compiler.virtual.phases.ea.FinalPartialEscapePhase;
-import jdk.graal.compiler.virtual.phases.ea.ReadEliminationPhase;
+import org.graalvm.compiler.loop.phases.ConvertDeoptimizeToGuardPhase;
+import org.graalvm.compiler.loop.phases.LoopFullUnrollPhase;
+import org.graalvm.compiler.loop.phases.LoopPeelingPhase;
+import org.graalvm.compiler.loop.phases.LoopUnswitchingPhase;
+import org.graalvm.compiler.nodes.loop.DefaultLoopPolicies;
+import org.graalvm.compiler.nodes.loop.LoopPolicies;
+import org.graalvm.compiler.options.Option;
+import org.graalvm.compiler.options.OptionKey;
+import org.graalvm.compiler.options.OptionType;
+import org.graalvm.compiler.options.OptionValues;
+import org.graalvm.compiler.phases.common.BoxNodeIdentityPhase;
+import org.graalvm.compiler.phases.common.BoxNodeOptimizationPhase;
+import org.graalvm.compiler.phases.common.CanonicalizerPhase;
+import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
+import org.graalvm.compiler.phases.common.DisableOverflownCountedLoopsPhase;
+import org.graalvm.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase;
+import org.graalvm.compiler.phases.common.HighTierLoweringPhase;
+import org.graalvm.compiler.phases.common.IterativeConditionalEliminationPhase;
+import org.graalvm.compiler.phases.common.inlining.InliningPhase;
+import org.graalvm.compiler.phases.common.inlining.policy.GreedyInliningPolicy;
+import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
+import org.graalvm.compiler.phases.tiers.HighTierContext;
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
+import org.graalvm.compiler.virtual.phases.ea.FinalPartialEscapePhase;
+import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
 
 public class HighTier extends BaseTier<HighTierContext> {
 
@@ -66,6 +74,8 @@ public class HighTier extends BaseTier<HighTierContext> {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
 
+
+        //appendPhase(new CustomInstrumentationPhase(new Group("sss")));
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
             appendPhase(new DeadCodeEliminationPhase(Optional));
@@ -73,26 +83,26 @@ public class HighTier extends BaseTier<HighTierContext> {
 
         appendPhase(new DisableOverflownCountedLoopsPhase());
 
-        if (GraalOptions.OptConvertDeoptsToGuards.getValue(options)) {
+        if (OptConvertDeoptsToGuards.getValue(options)) {
             appendPhase(new ConvertDeoptimizeToGuardPhase(canonicalizer));
         }
 
-        if (GraalOptions.ConditionalElimination.getValue(options)) {
+        if (ConditionalElimination.getValue(options)) {
             appendPhase(new IterativeConditionalEliminationPhase(canonicalizer, false));
         }
 
-        if (GraalOptions.EarlyGVN.getValue(options)) {
+        if (EarlyGVN.getValue(options)) {
             appendPhase(new DominatorBasedGlobalValueNumberingPhase(canonicalizer));
         }
 
         LoopPolicies loopPolicies = createLoopPolicies(options);
         appendPhase(new LoopFullUnrollPhase(canonicalizer, loopPolicies));
 
-        if (GraalOptions.LoopPeeling.getValue(options)) {
+        if (LoopPeeling.getValue(options)) {
             appendPhase(new LoopPeelingPhase(loopPolicies, canonicalizer));
         }
 
-        if (GraalOptions.LoopUnswitch.getValue(options)) {
+        if (LoopUnswitch.getValue(options)) {
             appendPhase(new LoopUnswitchingPhase(loopPolicies, canonicalizer));
         }
 
@@ -100,14 +110,13 @@ public class HighTier extends BaseTier<HighTierContext> {
         // PartialEscapePhase and BoxNodeOptimizationPhase).
         appendPhase(new BoxNodeIdentityPhase());
 
-        if (GraalOptions.PartialEscapeAnalysis.getValue(options)) {
+        if (PartialEscapeAnalysis.getValue(options)) {
             appendPhase(new FinalPartialEscapePhase(true, canonicalizer, null, options));
         }
 
-        if (GraalOptions.OptReadElimination.getValue(options)) {
+        if (OptReadElimination.getValue(options)) {
             appendPhase(new ReadEliminationPhase(canonicalizer));
         }
-
         appendPhase(new BoxNodeOptimizationPhase(canonicalizer));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }

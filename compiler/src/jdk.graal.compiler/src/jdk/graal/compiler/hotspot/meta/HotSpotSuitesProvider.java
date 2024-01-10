@@ -22,42 +22,46 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package jdk.graal.compiler.hotspot.meta;
+package org.graalvm.compiler.hotspot.meta;
 
 import java.util.ListIterator;
 import java.util.Optional;
 
-import jdk.graal.compiler.debug.Assertions;
-import jdk.graal.compiler.hotspot.GraalHotSpotVMConfig;
-import jdk.graal.compiler.hotspot.HotSpotGraalRuntime;
-import jdk.graal.compiler.hotspot.HotSpotGraalRuntimeProvider;
-import jdk.graal.compiler.hotspot.HotSpotGraphBuilderPhase;
-import jdk.graal.compiler.hotspot.lir.HotSpotZapRegistersPhase;
-import jdk.graal.compiler.hotspot.lir.VerifyMaxRegisterSizePhase;
-import jdk.graal.compiler.java.GraphBuilderPhase;
-import jdk.graal.compiler.java.SuitesProviderBase;
-import jdk.graal.compiler.lir.phases.LIRSuites;
-import jdk.graal.compiler.nodes.EncodedGraph;
-import jdk.graal.compiler.nodes.GraphEncoder;
-import jdk.graal.compiler.nodes.GraphState;
-import jdk.graal.compiler.nodes.SimplifyingGraphDecoder;
-import jdk.graal.compiler.nodes.StructuredGraph;
-import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
-import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
-import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.phases.BasePhase;
-import jdk.graal.compiler.phases.PhaseSuite;
-import jdk.graal.compiler.phases.common.AddressLoweringPhase;
-import jdk.graal.compiler.phases.common.BarrierSetVerificationPhase;
-import jdk.graal.compiler.phases.common.UseTrappingNullChecksPhase;
-import jdk.graal.compiler.phases.common.WriteBarrierAdditionPhase;
-import jdk.graal.compiler.phases.tiers.HighTierContext;
-import jdk.graal.compiler.phases.tiers.LowTierContext;
-import jdk.graal.compiler.phases.tiers.MidTierContext;
-import jdk.graal.compiler.phases.tiers.Suites;
-import jdk.graal.compiler.phases.tiers.SuitesCreator;
+import org.graalvm.compiler.debug.Assertions;
+import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
+import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
+import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
+import org.graalvm.compiler.hotspot.lir.HotSpotZapRegistersPhase;
+import org.graalvm.compiler.hotspot.lir.VerifyMaxRegisterSizePhase;
+import org.graalvm.compiler.java.GraphBuilderPhase;
+import org.graalvm.compiler.java.SuitesProviderBase;
+import org.graalvm.compiler.lir.phases.LIRSuites;
+import org.graalvm.compiler.nodes.EncodedGraph;
+import org.graalvm.compiler.nodes.GraphEncoder;
+import org.graalvm.compiler.nodes.GraphState;
+import org.graalvm.compiler.nodes.SimplifyingGraphDecoder;
+import org.graalvm.compiler.nodes.StructuredGraph;
+import org.graalvm.compiler.nodes.StructuredGraph.AllowAssumptions;
+import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
+import org.graalvm.compiler.options.OptionValues;
+import org.graalvm.compiler.phases.BasePhase;
+import org.graalvm.compiler.phases.PhaseSuite;
+import org.graalvm.compiler.phases.common.AddressLoweringPhase;
+import org.graalvm.compiler.phases.common.BarrierSetVerificationPhase;
+import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
+import org.graalvm.compiler.phases.common.UseTrappingNullChecksPhase;
+import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
+import org.graalvm.compiler.phases.tiers.HighTierContext;
+import org.graalvm.compiler.phases.tiers.LowTierContext;
+import org.graalvm.compiler.phases.tiers.MidTierContext;
+import org.graalvm.compiler.phases.tiers.Suites;
+import org.graalvm.compiler.phases.tiers.SuitesCreator;
+import org.graalvm.compiler.replacements.GraphKit;
+import org.graalvm.compiler.replacements.SnippetCounter.Group;
+import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
  * HotSpot implementation of {@link SuitesCreator}.
@@ -68,6 +72,9 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
     protected final HotSpotGraalRuntimeProvider runtime;
 
     protected final SuitesCreator defaultSuitesCreator;
+    final Group group;
+
+
 
     @SuppressWarnings("this-escape")
     public HotSpotSuitesProvider(SuitesCreator defaultSuitesCreator, GraalHotSpotVMConfig config, HotSpotGraalRuntimeProvider runtime) {
@@ -75,6 +82,12 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         this.config = config;
         this.runtime = runtime;
         this.defaultGraphBuilderSuite = createGraphBuilderSuite();
+
+        // my stuff
+        this.group = runtime.createSnippetCounterGroup("Humphrey's Group");
+
+        
+        
     }
 
     @Override
@@ -99,6 +112,17 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
+        //
+        // This needs to live in its own method for clairty
+        //
+        //ResolvedJavaMethod method = new BuboMetaTools().findMethod(System.out.getClass(), "println", runtime.getHostBackend().getMetaAccess());
+        ResolvedJavaMethod method = new BuboMetaTools().findMethod(HumphreysCache.class, "dummyPrint", runtime.getHostBackend().getMetaAccess());
+        ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
+        position.add(new CustomInstrumentationPhase(group, method));   
+        //
+        //
+        //
+
         return suites;
     }
 
@@ -155,7 +179,7 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         PhaseSuite<HighTierContext> newGbs = gbs.copy();
         GraphBuilderPhase graphBuilderPhase = (GraphBuilderPhase) newGbs.findPhase(GraphBuilderPhase.class).previous();
         GraphBuilderConfiguration graphBuilderConfig = graphBuilderPhase.getGraphBuilderConfig();
-        GraphBuilderPhase newGraphBuilderPhase = new HotSpotGraphBuilderPhase(graphBuilderConfig.withNodeSourcePosition(true));
+        GraphBuilderPhase newGraphBuilderPhase = new GraphBuilderPhase(graphBuilderConfig.withNodeSourcePosition(true));
         newGbs.findPhase(GraphBuilderPhase.class).set(newGraphBuilderPhase);
         return newGbs;
     }

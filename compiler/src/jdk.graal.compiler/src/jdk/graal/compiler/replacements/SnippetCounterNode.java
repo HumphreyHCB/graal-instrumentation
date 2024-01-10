@@ -72,7 +72,7 @@ public class SnippetCounterNode extends FixedWithNextNode implements Lowerable {
     protected final SnippetCounter counter;
 
     public SnippetCounterNode(SnippetCounter counter, ValueNode increment) {
-        super(TYPE, StampFactory.forVoid());
+        super(TYPE, StampFactory.nonZeroLong());
         this.counter = counter;
         this.increment = increment;
     }
@@ -139,9 +139,10 @@ public class SnippetCounterNode extends FixedWithNextNode implements Lowerable {
         }
 
         @Snippet
-        public static void add(@ConstantParameter SnippetCounter counter, int increment) {
+        public static long add(@ConstantParameter SnippetCounter counter, int increment) {
             long loadedValue = ObjectAccess.readLong(counter, countOffset(), SNIPPET_COUNTER_LOCATION);
             ObjectAccess.writeLong(counter, countOffset(), loadedValue + increment, SNIPPET_COUNTER_LOCATION);
+            return loadedValue + increment;
         }
 
         public static class Templates extends AbstractTemplates {
