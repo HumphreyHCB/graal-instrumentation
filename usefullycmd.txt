@@ -5,3 +5,9 @@ MX_BUILD_EXPLODED=true mx --java-home /home/hburchell/Downloads/labsjdk-ce-17.0.
 // run
 
 mx --java-home /home/hburchell/Downloads/labsjdk-ce-17.0.9+4-jvmci-23.0-b17-linux-amd64/labsjdk-ce-17.0.9-jvmci-23.0-b17 vm -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dgraal.Dump -XX:+UseJVMCICompiler -Dgraal.SnippetCounters=true -Dgraal.Counters= -XX:CompileOnly=HelloWorld -XX:-TieredCompilation HelloWorld 2> /dev/null
+
+// for vscode, you will need to make a java project, and add my custom jar with extra libs, and add all the jars here
+// sdk/mxbuild/dists
+// truffle/mxbuild/dists
+// my need to build
+// same for truffle dir
