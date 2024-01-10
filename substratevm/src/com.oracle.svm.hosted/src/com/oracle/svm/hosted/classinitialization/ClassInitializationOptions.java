@@ -31,12 +31,13 @@ import static com.oracle.svm.hosted.classinitialization.InitKind.SEPARATOR;
 
 import java.util.function.Function;
 
-import org.graalvm.compiler.options.Option;
-import org.graalvm.compiler.options.OptionType;
-
 import com.oracle.svm.core.option.APIOption;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.LocatableMultiOptionValue;
+import com.oracle.svm.util.LogUtils;
+
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionType;
 
 public final class ClassInitializationOptions {
 
@@ -91,7 +92,8 @@ public final class ClassInitializationOptions {
     @Option(help = "A comma-separated list of classes appended with their initialization strategy (':build_time', ':rerun', or ':run_time')", type = OptionType.User)//
     public static final HostedOptionKey<LocatableMultiOptionValue.Strings> ClassInitialization = new HostedOptionKey<>(LocatableMultiOptionValue.Strings.build());
 
-    @Option(help = "Instead of abort, only warn if --initialize-at-build-time= is used.", type = OptionType.Debug)//
+    @Option(help = "Instead of abort, only warn if --initialize-at-build-time= is used.", type = OptionType.Debug, //
+                    deprecated = true, deprecationMessage = "This option was introduced to simplify migration to GraalVM 23.0 and will be removed in a future release")//
     public static final HostedOptionKey<Boolean> AllowDeprecatedInitializeAllClassesAtBuildTime = new HostedOptionKey<>(false);
 
     @Option(help = "Prints class initialization info for all classes detected by analysis.", type = OptionType.Debug)//
@@ -100,9 +102,14 @@ public final class ClassInitializationOptions {
     @Option(help = "Assert class initialization is specified for all classes.", type = OptionType.Debug)//
     public static final HostedOptionKey<Boolean> AssertInitializationSpecifiedForAllClasses = new HostedOptionKey<>(false);
 
-    @Option(help = "Use the old class initialization strategy that does not allow all classes to be used at image build time.", type = OptionType.Expert, //
-                    deprecated = true, deprecationMessage = "Temporary flag to restore the class initialization behavior of older GraalVM versions. The old class initialization strategy will be removed in a future version of GraalVM.") //
-    public static final HostedOptionKey<Boolean> UseDeprecatedOldClassInitialization = new HostedOptionKey<>(false);
+    @APIOption(name = "strict-image-heap", deprecated = "'--strict-image-heap' is now the default. You can remove the option.") //
+    @Option(help = "Enable the strict image heap mode that allows all classes to be used at build-time but also requires types of all objects in the heap to be explicitly marked for build-time initialization.", //
+                    type = OptionType.User, deprecated = true, deprecationMessage = "This option was introduced to simplify migration to GraalVM 24.0 and will be removed in a future release") //
+    public static final HostedOptionKey<Boolean> StrictImageHeap = new HostedOptionKey<>(true, k -> {
+        if (k.hasBeenSet() && Boolean.FALSE.equals(k.getValue())) {
+            LogUtils.warning("The non-strict image heap mode should be avoided as it is deprecated and marked for removal.");
+        }
+    });
 
     @Option(help = "Simulate the effects of class initializer at image build time, to avoid class initialization at run time.", type = OptionType.Expert)//
     public static final HostedOptionKey<Boolean> SimulateClassInitializer = new HostedOptionKey<>(true);

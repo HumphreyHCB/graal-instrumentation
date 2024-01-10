@@ -29,46 +29,13 @@ import static com.oracle.svm.core.util.VMError.shouldNotReachHereUnexpectedInput
 
 import java.util.Arrays;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.calc.FloatConvert;
-import org.graalvm.compiler.core.common.memory.BarrierType;
-import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
-import org.graalvm.compiler.core.common.type.IntegerStamp;
-import org.graalvm.compiler.core.common.type.Stamp;
-import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.core.common.type.StampPair;
-import org.graalvm.compiler.nodes.CallTargetNode;
-import org.graalvm.compiler.nodes.CallTargetNode.InvokeKind;
-import org.graalvm.compiler.nodes.ConstantNode;
-import org.graalvm.compiler.nodes.IndirectCallTargetNode;
-import org.graalvm.compiler.nodes.LogicNode;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.nodes.calc.AddNode;
-import org.graalvm.compiler.nodes.calc.AndNode;
-import org.graalvm.compiler.nodes.calc.ConditionalNode;
-import org.graalvm.compiler.nodes.calc.FloatConvertNode;
-import org.graalvm.compiler.nodes.calc.IntegerEqualsNode;
-import org.graalvm.compiler.nodes.calc.LeftShiftNode;
-import org.graalvm.compiler.nodes.calc.MulNode;
-import org.graalvm.compiler.nodes.calc.NarrowNode;
-import org.graalvm.compiler.nodes.calc.OrNode;
-import org.graalvm.compiler.nodes.calc.RightShiftNode;
-import org.graalvm.compiler.nodes.calc.SignExtendNode;
-import org.graalvm.compiler.nodes.calc.ZeroExtendNode;
-import org.graalvm.compiler.nodes.extended.JavaReadNode;
-import org.graalvm.compiler.nodes.extended.JavaWriteNode;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderContext;
-import org.graalvm.compiler.nodes.graphbuilderconf.NodePlugin;
-import org.graalvm.compiler.nodes.memory.address.AddressNode;
-import org.graalvm.compiler.nodes.memory.address.OffsetAddressNode;
-import org.graalvm.compiler.word.WordTypes;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.word.LocationIdentity;
 
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
+import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.c.InvokeJavaFunctionPointer;
 import com.oracle.svm.core.c.struct.CInterfaceLocationIdentity;
@@ -90,9 +57,40 @@ import com.oracle.svm.hosted.c.info.StructInfo;
 import com.oracle.svm.hosted.code.CEntryPointCallStubSupport;
 import com.oracle.svm.hosted.code.CEntryPointJavaCallStubMethod;
 import com.oracle.svm.hosted.code.CFunctionPointerCallStubSupport;
-import com.oracle.svm.hosted.meta.HostedMetaAccess;
-import com.oracle.svm.hosted.meta.HostedMethod;
 
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.core.common.calc.FloatConvert;
+import jdk.graal.compiler.core.common.memory.BarrierType;
+import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
+import jdk.graal.compiler.core.common.type.IntegerStamp;
+import jdk.graal.compiler.core.common.type.Stamp;
+import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.core.common.type.StampPair;
+import jdk.graal.compiler.nodes.CallTargetNode;
+import jdk.graal.compiler.nodes.CallTargetNode.InvokeKind;
+import jdk.graal.compiler.nodes.ConstantNode;
+import jdk.graal.compiler.nodes.IndirectCallTargetNode;
+import jdk.graal.compiler.nodes.LogicNode;
+import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.nodes.ValueNode;
+import jdk.graal.compiler.nodes.calc.AddNode;
+import jdk.graal.compiler.nodes.calc.AndNode;
+import jdk.graal.compiler.nodes.calc.ConditionalNode;
+import jdk.graal.compiler.nodes.calc.FloatConvertNode;
+import jdk.graal.compiler.nodes.calc.IntegerEqualsNode;
+import jdk.graal.compiler.nodes.calc.LeftShiftNode;
+import jdk.graal.compiler.nodes.calc.MulNode;
+import jdk.graal.compiler.nodes.calc.NarrowNode;
+import jdk.graal.compiler.nodes.calc.OrNode;
+import jdk.graal.compiler.nodes.calc.RightShiftNode;
+import jdk.graal.compiler.nodes.calc.SignExtendNode;
+import jdk.graal.compiler.nodes.calc.ZeroExtendNode;
+import jdk.graal.compiler.nodes.extended.JavaReadNode;
+import jdk.graal.compiler.nodes.extended.JavaWriteNode;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
+import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
+import jdk.graal.compiler.nodes.memory.address.AddressNode;
+import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.MetaAccessProvider;
@@ -100,22 +98,20 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 public class CInterfaceInvocationPlugin implements NodePlugin {
-    private final WordTypes wordTypes;
-
     private final NativeLibraries nativeLibs;
 
     private final ResolvedJavaType functionPointerType;
     private final SnippetReflectionProvider snippetReflection;
 
-    public CInterfaceInvocationPlugin(MetaAccessProvider metaAccess, SnippetReflectionProvider snippetReflection, WordTypes wordTypes, NativeLibraries nativeLibs) {
-        this.wordTypes = wordTypes;
+    public CInterfaceInvocationPlugin(MetaAccessProvider metaAccess, SnippetReflectionProvider snippetReflection, NativeLibraries nativeLibs) {
         this.nativeLibs = nativeLibs;
         this.functionPointerType = metaAccess.lookupJavaType(CFunctionPointer.class);
         this.snippetReflection = snippetReflection;
     }
 
     @Override
-    public boolean handleInvoke(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args) {
+    public boolean handleInvoke(GraphBuilderContext b, ResolvedJavaMethod m, ValueNode[] args) {
+        AnalysisMethod method = (AnalysisMethod) m;
         ElementInfo methodInfo = nativeLibs.findElementInfo(method);
         if (methodInfo instanceof AccessorInfo) {
             ElementInfo parentInfo = methodInfo.getParent();
@@ -140,13 +136,8 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         } else if (method.getAnnotation(InvokeJavaFunctionPointer.class) != null) {
             return replaceJavaFunctionPointerInvoke(b, method, args);
         } else if (method.getAnnotation(CEntryPoint.class) != null) {
-            AnalysisMethod aMethod = (AnalysisMethod) (method instanceof HostedMethod ? ((HostedMethod) method).getWrapped() : method);
-            assert !(aMethod.getWrapped() instanceof CEntryPointJavaCallStubMethod) : "Call stub should never have a @CEntryPoint annotation";
-            ResolvedJavaMethod stub = CEntryPointCallStubSupport.singleton().registerJavaStubForMethod(aMethod);
-            if (method instanceof HostedMethod) {
-                HostedMetaAccess hMetaAccess = (HostedMetaAccess) b.getMetaAccess();
-                stub = hMetaAccess.getUniverse().lookup(stub);
-            }
+            assert !(method.getWrapped() instanceof CEntryPointJavaCallStubMethod) : "Call stub should never have a @CEntryPoint annotation";
+            AnalysisMethod stub = CEntryPointCallStubSupport.singleton().registerJavaStubForMethod(method);
             assert !b.getMethod().equals(stub) : "Plugin should not be called for the invoke in the stub itself";
             b.handleReplacedInvoke(InvokeKind.Static, stub, args, false);
             return true;
@@ -155,19 +146,19 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         }
     }
 
-    private boolean replaceOffsetOf(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args, AccessorInfo accessorInfo, int displacement) {
+    private boolean replaceOffsetOf(GraphBuilderContext b, AnalysisMethod method, ValueNode[] args, AccessorInfo accessorInfo, int displacement) {
         /*
          * A method annotated with @OffsetOf can be static, but does not need to be. If it is
          * non-static, we just ignore the receiver.
          */
         assert args.length == accessorInfo.parameterCount(!method.isStatic());
 
-        JavaKind kind = wordTypes.asKind(b.getInvokeReturnType());
+        JavaKind kind = b.getWordTypes().asKind(b.getInvokeReturnType());
         b.addPush(pushKind(method), ConstantNode.forIntegerKind(kind, displacement, b.getGraph()));
         return true;
     }
 
-    private boolean replaceAccessor(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args, AccessorInfo accessorInfo, int displacement) {
+    private boolean replaceAccessor(GraphBuilderContext b, AnalysisMethod method, ValueNode[] args, AccessorInfo accessorInfo, int displacement) {
         StructuredGraph graph = b.getGraph();
         SizableInfo sizableInfo = (SizableInfo) accessorInfo.getParent();
         int elementSize = sizableInfo.getSizeInfo().getProperty();
@@ -186,7 +177,7 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
                 return true;
             }
             case GETTER: {
-                JavaKind resultKind = wordTypes.asKind(b.getInvokeReturnType());
+                JavaKind resultKind = b.getWordTypes().asKind(b.getInvokeReturnType());
                 JavaKind readKind = kindFromSize(elementSize, resultKind);
                 if (readKind == JavaKind.Object) {
                     assert resultKind == JavaKind.Object;
@@ -232,7 +223,7 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         }
     }
 
-    private boolean replaceBitfieldAccessor(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args, StructBitfieldInfo bitfieldInfo, AccessorInfo accessorInfo) {
+    private boolean replaceBitfieldAccessor(GraphBuilderContext b, AnalysisMethod method, ValueNode[] args, StructBitfieldInfo bitfieldInfo, AccessorInfo accessorInfo) {
         int byteOffset = bitfieldInfo.getByteOffsetInfo().getProperty();
         int startBit = bitfieldInfo.getStartBitInfo().getProperty();
         int endBit = bitfieldInfo.getEndBitInfo().getProperty();
@@ -316,7 +307,7 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
                     cur = graph.unique(new RightShiftNode(cur, ConstantNode.forInt(computeBits - numBits, graph)));
                 }
 
-                JavaKind resultKind = wordTypes.asKind(b.getInvokeReturnType());
+                JavaKind resultKind = b.getWordTypes().asKind(b.getInvokeReturnType());
                 b.push(pushKind(method), adaptPrimitiveType(graph, cur, computeKind, resultKind == JavaKind.Boolean ? resultKind : resultKind.getStackKind(), isUnsigned));
                 return true;
             }
@@ -389,7 +380,7 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         return graph.addOrUniqueWithInputs(new OffsetAddressNode(base, makeOffset(graph, args, accessorInfo, displacement, indexScaling)));
     }
 
-    private static LocationIdentity makeLocationIdentity(GraphBuilderContext b, SnippetReflectionProvider snippetReflection, ResolvedJavaMethod method, ValueNode[] args, AccessorInfo accessorInfo) {
+    private static LocationIdentity makeLocationIdentity(GraphBuilderContext b, SnippetReflectionProvider snippetReflection, AnalysisMethod method, ValueNode[] args, AccessorInfo accessorInfo) {
         LocationIdentity locationIdentity;
         if (accessorInfo.hasLocationIdentityParameter()) {
             ValueNode locationIdentityNode = args[accessorInfo.locationIdentityParameterNumber(true)];
@@ -471,9 +462,9 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         throw shouldNotReachHere("Unsupported size: " + sizeInBytes);
     }
 
-    private boolean replaceConstant(GraphBuilderContext b, ResolvedJavaMethod method, ConstantInfo constantInfo) {
+    private boolean replaceConstant(GraphBuilderContext b, AnalysisMethod method, ConstantInfo constantInfo) {
         Object value = constantInfo.getValueInfo().getProperty();
-        JavaKind kind = wordTypes.asKind(b.getInvokeReturnType());
+        JavaKind kind = b.getWordTypes().asKind(b.getInvokeReturnType());
 
         ConstantNode valueNode;
         switch (constantInfo.getKind()) {
@@ -499,10 +490,8 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         return true;
     }
 
-    private boolean replaceCFunctionPointerInvoke(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args) {
-        boolean hosted = method instanceof HostedMethod;
-        AnalysisMethod aMethod = (AnalysisMethod) (hosted ? ((HostedMethod) method).getWrapped() : method);
-        if (CFunctionPointerCallStubSupport.singleton().isStub(aMethod)) {
+    private boolean replaceCFunctionPointerInvoke(GraphBuilderContext b, AnalysisMethod method, ValueNode[] args) {
+        if (CFunctionPointerCallStubSupport.singleton().isStub(method)) {
             return false;
         }
         if (!functionPointerType.isAssignableFrom(method.getDeclaringClass())) {
@@ -510,15 +499,12 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
                             " must be in a type that extends " + CFunctionPointer.class.getSimpleName(), method).getMessage());
         }
         assert b.getInvokeKind() == InvokeKind.Interface;
-        ResolvedJavaMethod stub = CFunctionPointerCallStubSupport.singleton().getOrCreateStubForMethod(aMethod);
-        if (hosted) {
-            stub = ((HostedMetaAccess) b.getMetaAccess()).getUniverse().lookup(stub);
-        }
+        AnalysisMethod stub = CFunctionPointerCallStubSupport.singleton().getOrCreateStubForMethod(method);
         b.handleReplacedInvoke(InvokeKind.Static, stub, args, false);
         return true;
     }
 
-    private boolean replaceJavaFunctionPointerInvoke(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args) {
+    private boolean replaceJavaFunctionPointerInvoke(GraphBuilderContext b, AnalysisMethod method, ValueNode[] args) {
         if (!functionPointerType.isAssignableFrom(method.getDeclaringClass())) {
             throw UserError.abort(new CInterfaceError("Function pointer invocation method " + method.format("%H.%n(%p)") +
                             " must be in a type that extends " + CFunctionPointer.class.getSimpleName(), method).getMessage());
@@ -533,8 +519,8 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         assert argsWithoutReceiver.length == parameterTypes.length;
 
         Stamp returnStamp;
-        if (wordTypes.isWord(b.getInvokeReturnType())) {
-            returnStamp = wordTypes.getWordStamp((ResolvedJavaType) b.getInvokeReturnType());
+        if (b.getWordTypes().isWord(b.getInvokeReturnType())) {
+            returnStamp = b.getWordTypes().getWordStamp((AnalysisType) b.getInvokeReturnType());
         } else {
             returnStamp = b.getInvokeReturnStamp(null).getTrustedStamp();
         }
@@ -545,7 +531,7 @@ public class CInterfaceInvocationPlugin implements NodePlugin {
         return true;
     }
 
-    public static JavaKind pushKind(ResolvedJavaMethod method) {
+    public static JavaKind pushKind(AnalysisMethod method) {
         return method.getSignature().getReturnKind().getStackKind();
     }
 }

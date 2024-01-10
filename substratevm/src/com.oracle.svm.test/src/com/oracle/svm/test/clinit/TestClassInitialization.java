@@ -612,7 +612,7 @@ class BoxingMustBeSimulated {
         System.arraycopy(shorts, 1, S1, 2, 5);
         System.arraycopy(S1, 3, S1, 5, 5);
 
-        Object[] objects = {"42", "43", "44", "45", "46", "47", "48"};
+        Object[] objects = {"42", null, "44", "45", null, "47", "48"};
         O1 = Arrays.copyOf(objects, 3);
         O2 = Arrays.copyOfRange(objects, 3, 6, String[].class);
     }
@@ -727,8 +727,8 @@ abstract class TestClassInitializationFeature implements Feature {
 }
 
 /**
- * For testing with {@link ClassInitializationOptions#UseDeprecatedOldClassInitialization} set to
- * true and simulation of class initializer disabled.
+ * For testing with {@link ClassInitializationOptions#StrictImageHeap} set to false and simulation
+ * of class initializer disabled.
  */
 class TestClassInitializationFeatureOldPolicyFeature extends TestClassInitializationFeature {
 
@@ -765,8 +765,8 @@ class TestClassInitializationFeatureOldPolicyFeature extends TestClassInitializa
 }
 
 /**
- * For testing with {@link ClassInitializationOptions#UseDeprecatedOldClassInitialization} set to
- * false and simulation of class initializer enabled.
+ * For testing with {@link ClassInitializationOptions#StrictImageHeap} set to true and simulation of
+ * class initializer enabled.
  */
 class TestClassInitializationFeatureNewPolicyFeature extends TestClassInitializationFeature {
     @Override
@@ -943,8 +943,8 @@ public class TestClassInitialization {
         assertSame(Short.class, BoxingMustBeSimulated.defaultValue(short.class).getClass());
         assertSame(Float.class, BoxingMustBeSimulated.defaultValue(float.class).getClass());
         assertTrue(Arrays.equals((short[]) BoxingMustBeSimulated.S1, new short[]{0, 0, 43, 44, 45, 44, 45, 46, 47, 0, 0, 0}));
-        assertTrue(Arrays.equals((Object[]) BoxingMustBeSimulated.O1, new Object[]{"42", "43", "44"}));
-        assertTrue(Arrays.equals((Object[]) BoxingMustBeSimulated.O2, new String[]{"45", "46", "47"}));
+        assertTrue(Arrays.equals((Object[]) BoxingMustBeSimulated.O1, new Object[]{"42", null, "44"}));
+        assertTrue(Arrays.equals((Object[]) BoxingMustBeSimulated.O2, new String[]{"45", null, "47"}));
 
         /*
          * The unsafe field offset lookup is constant folded at image build time, which also

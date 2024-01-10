@@ -32,7 +32,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.URL;
-import java.util.ArrayList;
+import java.security.Permission;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -41,22 +41,16 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode;
-import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode.BinaryOperation;
-import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode;
-import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.FieldValueTransformer;
 import org.graalvm.nativeimage.impl.InternalPlatform;
 
-import com.oracle.svm.core.Containers;
 import com.oracle.svm.core.NeverInline;
-import com.oracle.svm.core.SubstrateOptions;
+import com.oracle.svm.core.Processor;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.annotate.Alias;
@@ -78,6 +72,10 @@ import com.oracle.svm.core.thread.VMOperation;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.replacements.nodes.BinaryMathIntrinsicNode;
+import jdk.graal.compiler.replacements.nodes.BinaryMathIntrinsicNode.BinaryOperation;
+import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode;
+import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
 import jdk.internal.loader.ClassLoaderValue;
 import jdk.internal.module.ServicesCatalog;
 
@@ -187,73 +185,6 @@ final class Target_java_lang_String {
     @Alias //
     int hash;
 
-    /**
-     * This is a copy of String.split from the JDK, but with the fastpath loop factored out into a
-     * separate method. This allows inlining and constant folding of the condition for call sites
-     * where the regex is a constant (which is a common usage pattern).
-     *
-     * JDK-8262994 should make that refactoring in OpenJDK, after which this substitution can be
-     * removed.
-     */
-    @Substitute
-    public String[] split(String regex, int limit) {
-        /*
-         * fastpath if the regex is a (1) one-char String and this character is not one of the
-         * RegEx's meta characters ".$|()[{^?*+\\", or (2) two-char String and the first char is the
-         * backslash and the second is not the ascii digit or ascii letter.
-         */
-        char ch = 0;
-        if (((regex.length() == 1 &&
-                        ".$|()[{^?*+\\".indexOf(ch = regex.charAt(0)) == -1) ||
-                        (regex.length() == 2 &&
-                                        regex.charAt(0) == '\\' &&
-                                        (((ch = regex.charAt(1)) - '0') | ('9' - ch)) < 0 &&
-                                        ((ch - 'a') | ('z' - ch)) < 0 &&
-                                        ((ch - 'A') | ('Z' - ch)) < 0)) &&
-                        (ch < Character.MIN_HIGH_SURROGATE ||
-                                        ch > Character.MAX_LOW_SURROGATE)) {
-            return StringHelper.simpleSplit(SubstrateUtil.cast(this, String.class), limit, ch);
-        }
-        return Pattern.compile(regex).split(SubstrateUtil.cast(this, String.class), limit);
-    }
-}
-
-final class StringHelper {
-    static String[] simpleSplit(String that, int limit, char ch) {
-        int off = 0;
-        int next = 0;
-        boolean limited = limit > 0;
-        ArrayList<String> list = new ArrayList<>();
-        while ((next = that.indexOf(ch, off)) != -1) {
-            if (!limited || list.size() < limit - 1) {
-                list.add(that.substring(off, next));
-                off = next + 1;
-            } else {    // last one
-                // assert (list.size() == limit - 1);
-                int last = that.length();
-                list.add(that.substring(off, last));
-                off = last;
-                break;
-            }
-        }
-        // If no match was found, return this
-        if (off == 0) {
-            return new String[]{that};
-        }
-        // Add remaining segment
-        if (!limited || list.size() < limit) {
-            list.add(that.substring(off, that.length()));
-        }
-        // Construct result
-        int resultSize = list.size();
-        if (limit == 0) {
-            while (resultSize > 0 && list.get(resultSize - 1).isEmpty()) {
-                resultSize--;
-            }
-        }
-        String[] result = new String[resultSize];
-        return list.subList(0, resultSize).toArray(result);
-    }
 }
 
 @TargetClass(className = "java.lang.StringLatin1")
@@ -276,6 +207,11 @@ final class Target_java_lang_StringUTF16 {
 @Platforms(InternalPlatform.NATIVE_ONLY.class)
 @SuppressWarnings({"unused"})
 final class Target_java_lang_Throwable {
+
+    @Alias //
+    @TargetElement(onlyWith = JDK22OrLater.class) //
+    @RecomputeFieldValue(kind = Kind.FromAlias, isFinal = true) //
+    static boolean jfrTracing = false;
 
     @Alias @RecomputeFieldValue(kind = Reset)//
     Object backtrace;
@@ -399,16 +335,7 @@ final class Target_java_lang_Runtime {
     @Substitute
     @Platforms(InternalPlatform.PLATFORM_JNI.class)
     private int availableProcessors() {
-        int optionValue = SubstrateOptions.ActiveProcessorCount.getValue();
-        if (optionValue > 0) {
-            return optionValue;
-        }
-
-        if (SubstrateOptions.MultiThreaded.getValue()) {
-            return Containers.activeProcessorCount();
-        } else {
-            return 1;
-        }
+        return Processor.singleton().getActiveProcessorCount();
     }
 }
 
@@ -481,23 +408,34 @@ final class Target_java_lang_System {
     @Alias
     private static native void checkKey(String key);
 
-    /*
-     * Note that there is no substitution for getSecurityManager, but instead getSecurityManager it
-     * is intrinsified in SubstrateGraphBuilderPlugins to always return null. This allows better
-     * constant folding of SecurityManager code already during static analysis.
+    /**
+     * Force System.Never in case it was set at build time via the `-Djava.security.manager=allow`
+     * passed to the image builder.
+     */
+    @Alias @RecomputeFieldValue(kind = Kind.FromAlias, isFinal = true) //
+    private static int allowSecurityManager = 1;
+
+    /**
+     * We do not support the {@link SecurityManager} so this method must throw a
+     * {@link SecurityException} when 'java.security.manager' is set to anything but
+     * <code>disallow</code>.
+     * 
+     * @see System#setSecurityManager(SecurityManager)
+     * @see SecurityManager
      */
     @Substitute
-    private static void setSecurityManager(SecurityManager s) {
-        if (s != null) {
-            /*
-             * We deliberately treat this as a non-recoverable fatal error. We want to prevent bugs
-             * where an exception is silently ignored by an application and then necessary security
-             * checks are not in place.
-             */
-            throw VMError.shouldNotReachHere("Installing a SecurityManager is not yet supported");
+    private static void setSecurityManager(SecurityManager sm) {
+        if (sm != null) {
+            /* Read the property collected at isolate creation as that is what happens on the JVM */
+            String smp = SystemPropertiesSupport.singleton().getSavedProperties().get("java.security.manager");
+            if (smp != null && !smp.equals("disallow")) {
+                throw new SecurityException("Setting the SecurityManager is not supported by Native Image");
+            } else {
+                throw new UnsupportedOperationException(
+                                "The Security Manager is deprecated and will be removed in a future release");
+            }
         }
     }
-
 }
 
 final class NotAArch64 implements BooleanSupplier {
@@ -638,6 +576,10 @@ final class Target_jdk_internal_loader_ClassLoaders {
 
 @TargetClass(value = jdk.internal.loader.BootLoader.class)
 final class Target_jdk_internal_loader_BootLoader {
+    // Checkstyle: stop
+    @Delete //
+    static String JAVA_HOME;
+    // Checkstyle: resume
 
     @Substitute
     static Package getDefinedPackage(String name) {
@@ -700,6 +642,14 @@ final class Target_jdk_internal_loader_BootLoader {
     // Checkstyle: stop
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = ClassLoaderValueMapFieldValueTransformer.class, isFinal = true)//
     static ConcurrentHashMap<?, ?> CLASS_LOADER_VALUE_MAP;
+    // Checkstyle: resume
+}
+
+@TargetClass(value = jdk.internal.logger.LoggerFinderLoader.class)
+final class Target_jdk_internal_logger_LoggerFinderLoader {
+    // Checkstyle: stop
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset, isFinal = true)//
+    static Permission READ_PERMISSION;
     // Checkstyle: resume
 }
 

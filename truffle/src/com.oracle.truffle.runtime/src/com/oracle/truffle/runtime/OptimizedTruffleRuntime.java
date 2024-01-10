@@ -70,6 +70,7 @@ import java.util.stream.Collectors;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.UnmodifiableEconomicMap;
+import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionCategory;
 import org.graalvm.options.OptionDescriptor;
@@ -168,6 +169,10 @@ import jdk.vm.ci.services.Services;
 public abstract class OptimizedTruffleRuntime implements TruffleRuntime, TruffleCompilerRuntime {
 
     private static final int JAVA_SPECIFICATION_VERSION = Runtime.version().feature();
+    public static final Version MIN_COMPILER_VERSION = Version.create(23, 1, 2);
+    public static final int MIN_JDK_VERSION = 21;
+    public static final int MAX_JDK_VERSION = 25;
+    public static final Version NEXT_VERSION_UPDATE = Version.create(25, 1);
 
     /**
      * Used only to reset state for native image compilation.
@@ -961,7 +966,7 @@ public abstract class OptimizedTruffleRuntime implements TruffleRuntime, Truffle
         // so that compilation errors or effects are still properly waited for.
         boolean interrupted = false;
         try {
-            while (true) {
+            while (true) { // TERMINATION ARGUMENT: busy loop
                 try {
                     task.awaitCompletion();
                     break;
@@ -1034,10 +1039,10 @@ public abstract class OptimizedTruffleRuntime implements TruffleRuntime, Truffle
         } else {
             ServiceLoader<T> runtimeLoader = ServiceLoader.load(service, runtimeClassLoader);
             /*
-             * The Graal module (i.e., jdk.internal.vm.compiler) is loaded by the platform class
-             * loader. Its module dependencies such as Truffle are supplied via --module-path which
-             * means they are loaded by the app class loader. As such, we need to search the app
-             * class loader path as well.
+             * The Graal module (i.e., jdk.graal.compiler) is loaded by the platform class loader.
+             * Its module dependencies such as Truffle are supplied via --module-path which means
+             * they are loaded by the app class loader. As such, we need to search the app class
+             * loader path as well.
              */
             return List.of(runtimeLoader, appLoader);
         }
@@ -1045,7 +1050,7 @@ public abstract class OptimizedTruffleRuntime implements TruffleRuntime, Truffle
 
     @SuppressWarnings("deprecation")
     private static com.oracle.truffle.api.object.LayoutFactory selectObjectLayoutFactory(Iterable<? extends Iterable<com.oracle.truffle.api.object.LayoutFactory>> availableLayoutFactories) {
-        String layoutFactoryImplName = Services.getSavedProperties().get("truffle.object.LayoutFactory");
+        String layoutFactoryImplName = Services.getSavedProperty("truffle.object.LayoutFactory");
         com.oracle.truffle.api.object.LayoutFactory bestLayoutFactory = null;
         for (Iterable<com.oracle.truffle.api.object.LayoutFactory> currentLayoutFactories : availableLayoutFactories) {
             for (com.oracle.truffle.api.object.LayoutFactory currentLayoutFactory : currentLayoutFactories) {

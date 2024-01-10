@@ -24,17 +24,17 @@
  */
 package com.oracle.svm.core.stack;
 
-import org.graalvm.compiler.api.replacements.Fold;
-import org.graalvm.compiler.options.Option;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.word.UnsignedWord;
-import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.thread.VMOperation;
 import com.oracle.svm.core.threadlocal.FastThreadLocalWord;
+
+import jdk.graal.compiler.api.replacements.Fold;
+import jdk.graal.compiler.options.Option;
 
 /**
  * This interface provides functions related to stack overflow checking that are invoked by other
@@ -88,10 +88,6 @@ public interface StackOverflowCheck {
     interface PlatformSupport {
         @Fold
         static PlatformSupport singleton() {
-            if (ImageSingletons.contains(OSSupport.class)) {
-                assert !ImageSingletons.contains(PlatformSupport.class);
-                return ImageSingletons.lookup(OSSupport.class);
-            }
             return ImageSingletons.lookup(PlatformSupport.class);
         }
 
@@ -113,27 +109,6 @@ public interface StackOverflowCheck {
         boolean lookupStack(WordPointer stackBasePtr, WordPointer stackEndPtr);
     }
 
-    /* Only used by legacy code, will be removed as part of GR-48332. */
-    interface OSSupport extends PlatformSupport {
-        /** The highest address of the stack or zero if not supported. */
-        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-        default UnsignedWord lookupStackBase() {
-            return WordFactory.zero();
-        }
-
-        /** The lowest address of the stack. */
-        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-        UnsignedWord lookupStackEnd();
-
-        @Override
-        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-        default boolean lookupStack(WordPointer stackBasePtr, WordPointer stackEndPtr) {
-            stackBasePtr.write(lookupStackBase());
-            stackEndPtr.write(lookupStackEnd());
-            return true;
-        }
-    }
-
     @Fold
     static StackOverflowCheck singleton() {
         return ImageSingletons.lookup(StackOverflowCheck.class);
@@ -141,8 +116,8 @@ public interface StackOverflowCheck {
 
     /**
      * Called for each thread when the thread is attached to the VM. The method is called very
-     * early, before the the heap is set up. Therefore, the implementation is severly limited to
-     * only operate on C memory and calling C functions.
+     * early, before the heap is set up. Therefore, the implementation is severely limited to only
+     * operate on C memory and calling C functions.
      */
     @Uninterruptible(reason = "Called while thread is being attached to the VM, i.e., when the thread state is not yet set up.")
     boolean initialize();

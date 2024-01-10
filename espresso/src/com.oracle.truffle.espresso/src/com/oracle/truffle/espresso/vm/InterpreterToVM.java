@@ -114,7 +114,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
     }
 
     @TruffleBoundary
-    private static String outOfBoundsMessage(int index, int length) {
+    public static String outOfBoundsMessage(int index, int length) {
         return "Index " + index + " out of bounds for length " + length;
     }
 
@@ -664,6 +664,10 @@ public final class InterpreterToVM extends ContextAccessImpl {
                             int bci = espressoNode.readBCI(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY));
                             frames.add(new VM.EspressoStackElement(method, bci));
                             count++;
+                        } else {
+                            if (count == 0 && !DefaultHiddenFramesFilter.INSTANCE.include(method)) {
+                                frames.markTopFrameHidden();
+                            }
                         }
                     }
                 }

@@ -24,15 +24,10 @@
  */
 package com.oracle.svm.hosted.classinitialization;
 
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderContext;
-import org.graalvm.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.NodePlugin;
 import org.graalvm.nativeimage.AnnotationAccess;
 
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
+import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysis;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
 import com.oracle.svm.core.ParsingReason;
@@ -41,7 +36,15 @@ import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.phases.ConstantFoldLoadFieldPlugin;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils;
 
-import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.graal.compiler.graph.Node;
+import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.nodes.CallTargetNode;
+import jdk.graal.compiler.nodes.FixedWithNextNode;
+import jdk.graal.compiler.nodes.ValueNode;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
+import jdk.graal.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
+import jdk.graal.compiler.nodes.spi.CoreProviders;
 
 /**
  * This class is necessary because simulation of class initializer is based on
@@ -86,7 +89,12 @@ public final class SimulateClassInitializerPolicy extends InlineBeforeAnalysisPo
         }
 
         @Override
-        public boolean processNode(AnalysisMetaAccess metaAccess, ResolvedJavaMethod method, Node node) {
+        public boolean processNode(AnalysisMetaAccess metaAccess, AnalysisMethod method, Node node) {
+            return true;
+        }
+
+        @Override
+        public boolean processNonInlinedInvoke(CoreProviders providers, CallTargetNode node) {
             return true;
         }
 
@@ -107,7 +115,7 @@ public final class SimulateClassInitializerPolicy extends InlineBeforeAnalysisPo
     }
 
     @Override
-    protected boolean shouldInlineInvoke(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args) {
+    protected boolean shouldInlineInvoke(GraphBuilderContext b, AbstractPolicyScope policyScope, AnalysisMethod method, ValueNode[] args) {
         if (b.getDepth() > support.maxInlineDepth) {
             /* Safeguard against excessive inlining, for example endless recursion. */
             return false;
@@ -134,12 +142,12 @@ public final class SimulateClassInitializerPolicy extends InlineBeforeAnalysisPo
     }
 
     @Override
-    protected InlineInvokePlugin.InlineInfo createInvokeInfo(ResolvedJavaMethod method) {
+    protected InlineInvokePlugin.InlineInfo createInvokeInfo(AnalysisMethod method) {
         return InlineInvokePlugin.InlineInfo.createStandardInlineInfo(method);
     }
 
     @Override
-    protected FixedWithNextNode processInvokeArgs(ResolvedJavaMethod targetMethod, FixedWithNextNode insertionPoint, ValueNode[] arguments) {
+    protected FixedWithNextNode processInvokeArgs(AnalysisMethod targetMethod, FixedWithNextNode insertionPoint, ValueNode[] arguments, NodeSourcePosition sourcePosition) {
         // No action is needed
         return insertionPoint;
     }
@@ -153,8 +161,7 @@ public final class SimulateClassInitializerPolicy extends InlineBeforeAnalysisPo
     }
 
     @Override
-    protected AbstractPolicyScope openCalleeScope(AbstractPolicyScope o, AnalysisMetaAccess metaAccess,
-                    ResolvedJavaMethod method, boolean[] constArgsWithReceiver, boolean intrinsifiedMethodHandle) {
+    protected AbstractPolicyScope openCalleeScope(AbstractPolicyScope o, AnalysisMethod method) {
         var outer = (SimulateClassInitializerInlineScope) o;
         return new SimulateClassInitializerInlineScope(outer.accumulativeCounters, outer.inliningDepth + 1);
     }

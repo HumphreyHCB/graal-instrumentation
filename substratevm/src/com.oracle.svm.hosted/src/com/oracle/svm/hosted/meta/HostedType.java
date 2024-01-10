@@ -238,11 +238,6 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
 
     @Override
     public final boolean isInitialized() {
-        if (!wrapped.isReachable()) {
-            /* Workaround until ParseOnce can always be enabled. */
-            return wrapped.isInitialized();
-        }
-
         /*
          * Note that we do not delegate to wrapped.isInitialized here: when a class initializer is
          * simulated at image build time, then AnalysisType.isInitialized() returns false but
@@ -353,7 +348,6 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
 
     @Override
     public final boolean isInstance(JavaConstant obj) {
-        assert universe.lookup(obj) == obj : "constant should not have analysis-universe dependent value";
         return wrapped.isInstance(obj);
     }
 

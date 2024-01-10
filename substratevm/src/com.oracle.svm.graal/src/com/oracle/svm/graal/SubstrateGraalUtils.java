@@ -31,23 +31,23 @@ import java.io.PrintStream;
 import java.util.EnumMap;
 import java.util.Map;
 
-import org.graalvm.compiler.code.CompilationResult;
-import org.graalvm.compiler.core.CompilationWatchDog;
-import org.graalvm.compiler.core.CompilationWrapper;
-import org.graalvm.compiler.core.CompilationWrapper.ExceptionAction;
-import org.graalvm.compiler.core.GraalCompiler;
-import org.graalvm.compiler.core.common.CompilationIdentifier;
-import org.graalvm.compiler.core.target.Backend;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.Indent;
-import org.graalvm.compiler.debug.TTY;
-import org.graalvm.compiler.lir.asm.CompilationResultBuilderFactory;
-import org.graalvm.compiler.lir.phases.LIRSuites;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.options.Option;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.OptimisticOptimizations;
-import org.graalvm.compiler.phases.tiers.Suites;
+import jdk.graal.compiler.code.CompilationResult;
+import jdk.graal.compiler.core.CompilationWatchDog;
+import jdk.graal.compiler.core.CompilationWrapper;
+import jdk.graal.compiler.core.CompilationWrapper.ExceptionAction;
+import jdk.graal.compiler.core.GraalCompiler;
+import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.target.Backend;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.debug.Indent;
+import jdk.graal.compiler.debug.TTY;
+import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
+import jdk.graal.compiler.lir.phases.LIRSuites;
+import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.phases.OptimisticOptimizations;
+import jdk.graal.compiler.phases.tiers.Suites;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.svm.core.CPUFeatureAccess;
@@ -65,7 +65,7 @@ public class SubstrateGraalUtils {
 
     /** Does the compilation of the method and returns the compilation result. */
     public static CompilationResult compile(DebugContext debug, final SubstrateMethod method) {
-        return doCompile(debug, GraalSupport.getRuntimeConfig(), GraalSupport.getLIRSuites(), method);
+        return doCompile(debug, TruffleRuntimeCompilationSupport.getRuntimeConfig(), TruffleRuntimeCompilationSupport.getLIRSuites(), method);
     }
 
     private static final Map<ExceptionAction, Integer> compilationProblemsPerAction = new EnumMap<>(ExceptionAction.class);
@@ -85,7 +85,7 @@ public class SubstrateGraalUtils {
         String methodString = method.format("%H.%n(%p)");
         SubstrateCompilationIdentifier compilationId = new SubstrateCompilationIdentifier(method);
 
-        return new CompilationWrapper<CompilationResult>(GraalSupport.get().getDebugOutputDirectory(), compilationProblemsPerAction) {
+        return new CompilationWrapper<CompilationResult>(TruffleRuntimeCompilationSupport.get().getDebugOutputDirectory(), compilationProblemsPerAction) {
             @SuppressWarnings({"unchecked", "unused"})
             <E extends Throwable> RuntimeException silenceThrowable(Class<E> type, Throwable ex) throws E {
                 throw (E) ex;
@@ -100,8 +100,8 @@ public class SubstrateGraalUtils {
             @Override
             protected CompilationResult performCompilation(DebugContext debug) {
                 try (CompilationWatchDog watchdog = CompilationWatchDog.watch(compilationId, debug.getOptions(), false, COMPILATION_WATCH_DOG_EVENT_HANDLER)) {
-                    StructuredGraph graph = GraalSupport.decodeGraph(debug, null, compilationId, method, null);
-                    return compileGraph(runtimeConfig, GraalSupport.getMatchingSuitesForGraph(graph), lirSuites, method, graph);
+                    StructuredGraph graph = TruffleRuntimeCompilationSupport.decodeGraph(debug, null, compilationId, method, null);
+                    return compileGraph(runtimeConfig, TruffleRuntimeCompilationSupport.getMatchingSuitesForGraph(graph), lirSuites, method, graph);
                 }
             }
 
@@ -113,7 +113,7 @@ public class SubstrateGraalUtils {
             @SuppressWarnings("hiding")
             @Override
             protected DebugContext createRetryDebugContext(DebugContext initialDebug, OptionValues options, PrintStream logStream) {
-                return GraalSupport.get().openDebugContext(options, compilationId, method, logStream);
+                return TruffleRuntimeCompilationSupport.get().openDebugContext(options, compilationId, method, logStream);
             }
 
             @Override
@@ -150,7 +150,8 @@ public class SubstrateGraalUtils {
     }
 
     public static CompilationResult compileGraph(final SharedMethod method, final StructuredGraph graph) {
-        return compileGraph(GraalSupport.getRuntimeConfig(), GraalSupport.getMatchingSuitesForGraph(graph), GraalSupport.getLIRSuites(), method, graph);
+        return compileGraph(TruffleRuntimeCompilationSupport.getRuntimeConfig(), TruffleRuntimeCompilationSupport.getMatchingSuitesForGraph(graph), TruffleRuntimeCompilationSupport.getLIRSuites(),
+                        method, graph);
     }
 
     public static class Options {

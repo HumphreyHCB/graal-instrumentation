@@ -10,7 +10,6 @@
   groups:: {
     open_suites:: unique_suites([$.awfy, $.dacapo, $.scala_dacapo, $.renaissance]),
     spec_suites:: unique_suites([$.specjvm2008, $.specjbb2015]),
-    legacy_and_secondary_suites:: unique_suites([$.renaissance_0_11, $.renaissance_legacy]),
     jmh_micros_suites:: unique_suites([$.micros_graal_dist, $.micros_misc_graal_dist , $.micros_shootout_graal_dist]),
     graal_internals_suites:: unique_suites([$.micros_graal_whitebox]),
     special_suites:: unique_suites([$.dacapo_size_variants, $.scala_dacapo_size_variants, $.specjbb2015_full_machine]),
@@ -132,34 +131,7 @@
     max_jdk_version:: max_jdk_version
   },
 
-  renaissance: self.renaissance_template() + {
-    # [JDK-8303076] [GR-44499] requires extra stack size for C1
-    extra_vm_args+:: if self.platform == "c1" then ["-Xss1090K"] else []
-  },
-
-  renaissance_0_11: self.renaissance_template(suite_version="0.11.0", suite_name="renaissance-0-11", max_jdk_version=11) + {
-    environment+: {
-      "SPARK_LOCAL_IP": "127.0.0.1"
-    }
-  },
-
-  renaissance_legacy: cc.compiler_benchmark + c.heap.default + {
-    suite:: "renaissance-legacy",
-    downloads+: {
-      "RENAISSANCE_LEGACY": { name: "renaissance", version: "0.1" }
-    },
-    environment+: {
-      "SPARK_LOCAL_IP": "127.0.0.1"
-    },
-    run+: [
-      self.benchmark_cmd + ["renaissance-legacy:*", "--"] + self.extra_vm_args
-    ],
-    timelimit: "2:45:00",
-    forks_batches:: 4,
-    forks_timelimit:: "06:30:00",
-    min_jdk_version:: 8,
-    max_jdk_version:: 11
-  },
+  renaissance: self.renaissance_template(),
 
   specjbb2015: cc.compiler_benchmark + c.heap.large_with_large_young_gen + {
     suite:: "specjbb2015",
@@ -197,9 +169,6 @@
     run+: [
       self.benchmark_cmd + ["specjvm2008:*", "--"] + self.extra_vm_args + ["--", "-ikv", "-it", "240s", "-wt", "120s"]
     ],
-    teardown+: [
-      ["rm", "-r", "${SPECJVM2008}/results"]
-    ],
     timelimit: "3:00:00",
     forks_batches:: 5,
     forks_timelimit:: "06:00:00",
@@ -232,22 +201,6 @@
       self.benchmark_cmd + ["shopcart-wrk:mixed-huge"]                   + hwlocBind_16C_32T + ["--"] + self.extra_vm_args + ["-Xms1024m", "-Xmx8192m", "-XX:ActiveProcessorCount=32", "-XX:MaxDirectMemorySize=8192m"],
       bench_upload,
 
-      # tika-wrk odt
-      self.benchmark_cmd + ["tika-wrk:odt-tiny"]                         + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms32m",   "-Xmx150m",  "-XX:ActiveProcessorCount=1"],
-      bench_upload,
-      self.benchmark_cmd + ["tika-wrk:odt-small"]                        + hwlocBind_2C_2T   + ["--"] + self.extra_vm_args + ["-Xms64m",   "-Xmx250m",  "-XX:ActiveProcessorCount=2"],
-      bench_upload,
-      self.benchmark_cmd + ["tika-wrk:odt-medium"]                       + hwlocBind_4C_4T   + ["--"] + self.extra_vm_args + ["-Xms128m",  "-Xmx600m",  "-XX:ActiveProcessorCount=4"],
-      bench_upload,
-
-      # tika-wrk pdf
-      self.benchmark_cmd + ["tika-wrk:pdf-tiny"]                         + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms20m",   "-Xmx80m",   "-XX:ActiveProcessorCount=1"],
-      bench_upload,
-      self.benchmark_cmd + ["tika-wrk:pdf-small"]                        + hwlocBind_2C_2T   + ["--"] + self.extra_vm_args + ["-Xms40m",   "-Xmx200m",  "-XX:ActiveProcessorCount=2"],
-      bench_upload,
-      self.benchmark_cmd + ["tika-wrk:pdf-medium"]                       + hwlocBind_4C_4T   + ["--"] + self.extra_vm_args + ["-Xms80m",   "-Xmx500m",  "-XX:ActiveProcessorCount=4"],
-      bench_upload,
-
       # petclinic-wrk
       self.benchmark_cmd + ["petclinic-wrk:mixed-tiny"]                  + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms32m",   "-Xmx100m",  "-XX:ActiveProcessorCount=1"],
       bench_upload,
@@ -255,7 +208,7 @@
       bench_upload,
       self.benchmark_cmd + ["petclinic-wrk:mixed-medium"]                + hwlocBind_4C_4T   + ["--"] + self.extra_vm_args + ["-Xms80m",   "-Xmx256m",  "-XX:ActiveProcessorCount=4"],
       bench_upload,
-      self.benchmark_cmd + ["petclinic-wrk:mixed-large"]                 + hwlocBind_16C_16T + ["--"] + self.extra_vm_args + ["-Xms320m",  "-Xmx1280m", "-XX:ActiveProcessorCount=16"],
+      self.benchmark_cmd + ["petclinic-wrk:mixed-large"]                 + hwlocBind_16C_16T + ["--"] + self.extra_vm_args + ["-Xms128m",  "-Xmx512m", "-XX:ActiveProcessorCount=16"],
       bench_upload,
       self.benchmark_cmd + ["petclinic-wrk:mixed-huge"]                  + hwlocBind_16C_32T + ["--"] + self.extra_vm_args + ["-Xms640m",  "-Xmx3072m", "-XX:ActiveProcessorCount=32"],
       bench_upload,
@@ -263,13 +216,10 @@
       # helloworld-wrk
       self.benchmark_cmd + ["micronaut-helloworld-wrk:helloworld"]       + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms8m",    "-Xmx64m",   "-XX:ActiveProcessorCount=1", "-XX:MaxDirectMemorySize=256m"],
       bench_upload,
-      self.benchmark_cmd + ["quarkus-helloworld-wrk:helloworld"]         + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms8m",    "-Xmx64m",   "-XX:ActiveProcessorCount=1", "-XX:MaxDirectMemorySize=256m"],
-      bench_upload,
       self.benchmark_cmd + ["spring-helloworld-wrk:helloworld"]          + hwlocBind_1C_1T   + ["--"] + self.extra_vm_args + ["-Xms8m",    "-Xmx64m",   "-XX:ActiveProcessorCount=1", "-XX:MaxDirectMemorySize=256m"],
       bench_upload
     ],
     timelimit: "7:00:00",
-    restricted_archs:: ["amd64"],  # load testers only work on amd64 at the moment: GR-35619
     min_jdk_version:: 11,
     max_jdk_version:: null
   },
@@ -278,9 +228,9 @@
   micros_graal_whitebox: cc.compiler_benchmark + c.heap.default + {
     suite:: "micros-graal-whitebox",
     run+: [
-      self.benchmark_cmd + ["jmh-whitebox:*", "--"] + self.extra_vm_args
+      self.benchmark_cmd + ["jmh-whitebox:*", "--"] + self.extra_vm_args + ["--", "jdk.graal.compiler"]
     ],
-    timelimit: "3:00:00",
+    timelimit: "6:00:00",
     min_jdk_version:: 8,
     max_jdk_version:: null
   },

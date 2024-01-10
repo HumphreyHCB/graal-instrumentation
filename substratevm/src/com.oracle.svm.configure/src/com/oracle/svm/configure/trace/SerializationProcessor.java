@@ -30,7 +30,7 @@ import static com.oracle.svm.configure.trace.LazyValueUtils.lazyValue;
 import java.util.List;
 
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.compiler.java.LambdaUtils;
+import jdk.graal.compiler.java.LambdaUtils;
 import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 import com.oracle.svm.configure.config.ConfigurationSet;
@@ -55,7 +55,7 @@ public class SerializationProcessor extends AbstractProcessor {
         List<?> args = (List<?>) entry.get("args");
         SerializationConfiguration serializationConfiguration = configurationSet.getSerializationConfiguration();
 
-        if ("ObjectStreamClass.<init>".equals(function)) {
+        if ("ObjectStreamClass.<init>".equals(function) || "ObjectInputStream.readClassDescriptor".equals(function)) {
             expectSize(args, 2);
 
             if (advisor.shouldIgnore(LazyValueUtils.lazyValue((String) args.get(0)), LazyValueUtils.lazyValue(null), false)) {

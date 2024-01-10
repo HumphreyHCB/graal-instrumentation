@@ -27,7 +27,6 @@ package com.oracle.svm.core.jfr;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-import org.graalvm.compiler.api.replacements.Fold;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.ProcessProperties;
@@ -41,10 +40,14 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.jdk.JDK22OrLater;
 import com.oracle.svm.core.jfr.traceid.JfrTraceId;
+import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.api.replacements.Fold;
 import jdk.jfr.internal.JVM;
+import jdk.jfr.internal.LogLevel;
 import jdk.jfr.internal.LogTag;
+import jdk.jfr.internal.Logger;
 
 @SuppressWarnings({"static-method", "unused"})
 @TargetClass(value = jdk.jfr.internal.JVM.class, onlyWith = HasJfrSupport.class)
@@ -147,12 +150,35 @@ public final class Target_jdk_jfr_internal_JVM {
     @Substitute
     @Uninterruptible(reason = "Needed for SubstrateJVM.getStackTraceId().")
     @TargetElement(onlyWith = JDK22OrLater.class)
-    public static long getStackTraceId(int skipCount) {
+    public static long getStackTraceId(int skipCount, long stackFilterId) {
         /*
          * The result is only valid until the epoch changes but this is fine because EventWriter
          * instances are invalidated when the epoch changes.
          */
         return SubstrateJVM.get().getStackTraceId(skipCount);
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK22OrLater.class)
+    public static long registerStackFilter(String[] classes, String[] methods) {
+        throw VMError.unimplemented("JFR StackFilters are not yet supported.");
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDK22OrLater.class)
+    public static void unregisterStackFilter(long stackFilterId) {
+        throw VMError.unimplemented("JFR StackFilters are not yet supported.");
+    }
+
+    /**
+     * As of 22+27, This method is both used to set cutoff tick values for leak profiling and
+     * for @Deprecated events.
+     */
+    @Substitute
+    @TargetElement(onlyWith = JDK22OrLater.class)
+    public static void setMiscellaneous(long eventTypeId, long value) {
+        Logger.log(LogTag.JFR_SETTING, LogLevel.WARN, "@Deprecated JFR events, and leak profiling are not yet supported.");
+        /* Explicitly don't throw an exception (would result in an unspecific warning). */
     }
 
     /** See {@link JVM#getThreadId}. */
@@ -435,19 +461,19 @@ public final class Target_jdk_jfr_internal_JVM {
     @Substitute
     @TargetElement(onlyWith = JDK22OrLater.class)
     public static void include(Thread thread) {
-        SubstrateJVM.get().setExcluded(thread, false);
+        JfrThreadLocal.setExcluded(thread, false);
     }
 
     @Substitute
     @TargetElement(onlyWith = JDK22OrLater.class)
     public static void exclude(Thread thread) {
-        SubstrateJVM.get().setExcluded(thread, true);
+        JfrThreadLocal.setExcluded(thread, true);
     }
 
     @Substitute
     @TargetElement(onlyWith = JDK22OrLater.class)
     public static boolean isExcluded(Thread thread) {
-        return SubstrateJVM.get().isExcluded(thread);
+        return JfrThreadLocal.isThreadExcluded(thread);
     }
 
     @Substitute

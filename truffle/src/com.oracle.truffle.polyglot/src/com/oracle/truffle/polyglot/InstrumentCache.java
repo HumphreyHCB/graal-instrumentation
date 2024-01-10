@@ -170,7 +170,7 @@ final class InstrumentCache {
         Map<String, Map<String, Supplier<InternalResourceCache>>> optionalResources = InternalResourceCache.loadOptionalInternalResources(suppliers);
         for (AbstractClassLoaderSupplier supplier : suppliers) {
             ClassLoader loader = supplier.get();
-            if (loader == null || !isValidLoader(loader)) {
+            if (loader == null) {
                 continue;
             }
             usesTruffleClassLoader |= truffleClassLoader == loader;
@@ -249,15 +249,6 @@ final class InstrumentCache {
         }
     }
 
-    private static boolean isValidLoader(ClassLoader loader) {
-        try {
-            Class<?> truffleInstrumentClassAsSeenByLoader = Class.forName(TruffleInstrument.class.getName(), true, loader);
-            return truffleInstrumentClassAsSeenByLoader == TruffleInstrument.class;
-        } catch (ClassNotFoundException ex) {
-            return false;
-        }
-    }
-
     String getId() {
         return id;
     }
@@ -292,6 +283,10 @@ final class InstrumentCache {
 
     Collection<String> getResourceIds() {
         return internalResources.keySet();
+    }
+
+    Collection<InternalResourceCache> getResources() {
+        return internalResources.values();
     }
 
     String getWebsite() {

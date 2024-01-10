@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.graalvm.compiler.options.Option;
+import jdk.graal.compiler.options.Option;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -47,6 +47,7 @@ import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.option.HostedOptionKey;
+import com.oracle.svm.core.util.VMError;
 
 public final class FileSystemProviderSupport {
 
@@ -421,6 +422,11 @@ class UserDirAccessors {
         return Platform.includedIn(Platform.WINDOWS.class)
                         ? that.normalize(System.getProperty("user.dir"))
                         : SystemPropertiesSupport.singleton().userDir();
+    }
+
+    @SuppressWarnings("unused")
+    static void setUserDir(Target_java_io_FileSystem that, String value) {
+        throw VMError.shouldNotReachHere("Field userDir is initialized at build time");
     }
 }
 

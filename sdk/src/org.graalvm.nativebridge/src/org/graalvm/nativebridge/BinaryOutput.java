@@ -199,7 +199,7 @@ public abstract class BinaryOutput {
      */
     public final void writeUTF(String string) throws IllegalArgumentException {
         int len = string.length();
-        int utfLen = 0;
+        long utfLen = 0;
         int c;
         int count = 0;
 
@@ -220,12 +220,12 @@ public abstract class BinaryOutput {
         int headerSize;
         if (utfLen > MAX_SHORT_LENGTH) {
             headerSize = Integer.BYTES;
-            ensureBufferSize(headerSize, utfLen);
+            ensureBufferSize(headerSize, (int) utfLen);
             tempDecodingBuffer[count++] = (byte) ((LARGE_STRING_TAG | (utfLen >>> 24)) & 0xff);
             tempDecodingBuffer[count++] = (byte) ((utfLen >>> 16) & 0xFF);
         } else {
             headerSize = Short.BYTES;
-            ensureBufferSize(headerSize, utfLen);
+            ensureBufferSize(headerSize, (int) utfLen);
         }
         tempDecodingBuffer[count++] = (byte) ((utfLen >>> 8) & 0xFF);
         tempDecodingBuffer[count++] = (byte) (utfLen & 0xFF);
@@ -252,7 +252,7 @@ public abstract class BinaryOutput {
                 tempDecodingBuffer[count++] = (byte) (0x80 | (c & 0x3F));
             }
         }
-        write(tempDecodingBuffer, 0, headerSize + utfLen);
+        write(tempDecodingBuffer, 0, (int) (headerSize + utfLen));
     }
 
     /**
@@ -270,7 +270,7 @@ public abstract class BinaryOutput {
         if (value == null) {
             return true;
         }
-        return value instanceof Object[] || value == null || value instanceof Boolean || value instanceof Byte ||
+        return value instanceof Object[] || value instanceof Boolean || value instanceof Byte ||
                         value instanceof Short || value instanceof Character || value instanceof Integer ||
                         value instanceof Long || value instanceof Float || value instanceof Double || value instanceof String;
     }
@@ -285,8 +285,7 @@ public abstract class BinaryOutput {
      * @see #isTypedValue(Object) to find out whether a value can be serialized.
      */
     public final void writeTypedValue(Object value) throws IllegalArgumentException {
-        if (value instanceof Object[]) {
-            Object[] arr = (Object[]) value;
+        if (value instanceof Object[] arr) {
             writeByte(ARRAY);
             writeInt(arr.length);
             for (Object arrElement : arr) {

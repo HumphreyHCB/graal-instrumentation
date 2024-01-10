@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,19 +24,19 @@
  */
 package com.oracle.svm.core;
 
+import java.io.Console;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.graalvm.compiler.graph.Node.NodeIntrinsic;
-import org.graalvm.compiler.java.LambdaUtils;
-import org.graalvm.compiler.nodes.BreakpointNode;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.type.CCharPointer;
@@ -54,6 +54,9 @@ import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.util.StringUtil;
 
+import jdk.graal.compiler.graph.Node.NodeIntrinsic;
+import jdk.graal.compiler.java.LambdaUtils;
+import jdk.graal.compiler.nodes.BreakpointNode;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
@@ -102,8 +105,26 @@ public class SubstrateUtil {
         return Services.IS_IN_NATIVE_IMAGE;
     }
 
+    private static final Method IS_TERMINAL_METHOD = ReflectionUtil.lookupMethod(true, Console.class, "isTerminal");
+
+    private static boolean isTTY() {
+        Console console = System.console();
+        if (console == null) {
+            return false;
+        }
+        if (IS_TERMINAL_METHOD != null) {
+            try {
+                return (boolean) IS_TERMINAL_METHOD.invoke(console);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new Error(e);
+            }
+        } else {
+            return true;
+        }
+    }
+
     public static boolean isRunningInCI() {
-        return System.console() == null || System.getenv("CI") != null;
+        return !isTTY() || System.getenv("CI") != null;
     }
 
     /**
@@ -392,7 +413,7 @@ public class SubstrateUtil {
             }
         }
         String mangled = out.toString();
-        assert mangled.matches("[a-zA-Z\\._][a-zA-Z0-9_]*");
+        assert mangled.matches("[a-zA-Z\\._][a-zA-Z0-9_]*") : mangled;
         /*-
          * To demangle, the following pipeline works for me (assuming no multi-byte characters):
          *
@@ -433,5 +454,31 @@ public class SubstrateUtil {
         long mostSigBits = new BigInteger(digest.substring(0, 16), 16).longValue();
         long leastSigBits = new BigInteger(digest.substring(16), 16).longValue();
         return new UUID(mostSigBits, leastSigBits);
+    }
+
+    public static Class<?> toUnboxedClass(Class<?> clazz) {
+        return toUnboxedClassWithDefault(clazz, clazz);
+    }
+
+    public static Class<?> toUnboxedClassWithDefault(Class<?> clazz, Class<?> defaultClass) {
+        if (clazz == Boolean.class) {
+            return boolean.class;
+        } else if (clazz == Byte.class) {
+            return byte.class;
+        } else if (clazz == Short.class) {
+            return short.class;
+        } else if (clazz == Character.class) {
+            return char.class;
+        } else if (clazz == Integer.class) {
+            return int.class;
+        } else if (clazz == Long.class) {
+            return long.class;
+        } else if (clazz == Float.class) {
+            return float.class;
+        } else if (clazz == Double.class) {
+            return double.class;
+        } else {
+            return defaultClass;
+        }
     }
 }

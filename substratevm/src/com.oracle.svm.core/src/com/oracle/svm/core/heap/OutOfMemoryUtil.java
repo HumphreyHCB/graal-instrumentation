@@ -24,6 +24,11 @@
  */
 package com.oracle.svm.core.heap;
 
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.LogHandler;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.impl.InternalPlatform;
+
 import com.oracle.svm.core.SubstrateGCOptions;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
@@ -35,8 +40,13 @@ import com.oracle.svm.core.jdk.UninterruptibleUtils.AtomicBoolean;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.util.VMError;
 
+/**
+ * This class must be used for {@link OutOfMemoryError}s that are thrown because the VM is out of
+ * Java heap memory. Other {@link OutOfMemoryError}s (e.g., when we run out of native memory) can be
+ * thrown directly.
+ */
 public class OutOfMemoryUtil {
-    private static final OutOfMemoryError OUT_OF_MEMORY_ERROR = new OutOfMemoryError("Garbage-collected heap size exceeded.");
+    private static final OutOfMemoryError OUT_OF_MEMORY_ERROR = new OutOfMemoryError("Garbage-collected heap size exceeded. Consider increasing the maximum Java heap size, for example with '-Xmx'.");
 
     /**
      * Guard to ensure heap dump on OOME is performed at most once.
@@ -63,6 +73,16 @@ public class OutOfMemoryUtil {
                 VMError.shouldNotReachHere("ExitOnOutOfMemoryError can only be used if the LibC support is present.");
             }
         }
+
+        if (SubstrateGCOptions.ReportFatalErrorOnOutOfMemoryError.getValue()) {
+            if (Platform.includedIn(InternalPlatform.NATIVE_ONLY.class)) {
+                Log.log().string("Reporting Fatal Error due to java.lang.OutOfMemoryError: ").exception(error);
+            } else {
+                Log.log().string("Reporting Fatal Error due to java.lang.OutOfMemoryError").newline();
+            }
+            ImageSingletons.lookup(LogHandler.class).fatalError();
+        }
+
         throw error;
     }
 }

@@ -90,15 +90,23 @@
 #define VM_ARG_PREFIX "--vm."
 #define VM_CP_ARG_PREFIX "--vm.cp="
 #define VM_CLASSPATH_ARG_PREFIX "--vm.classpath="
+#define VM_P_ARG_PREFIX "--vm.p="
 #define VM_MODULE_PATH_ARG_PREFIX "--vm.-module-path="
+#define VM_LIBRARY_PATH_ARG_PREFIX "--vm.Djava.library.path="
+
 #define VM_ARG_OFFSET (sizeof(VM_ARG_PREFIX)-1)
 #define VM_CP_ARG_OFFSET (sizeof(VM_CP_ARG_PREFIX)-1)
 #define VM_CLASSPATH_ARG_OFFSET (sizeof(VM_CLASSPATH_ARG_PREFIX)-1)
+#define VM_P_ARG_OFFSET (sizeof(VM_P_ARG_PREFIX)-1)
 #define VM_MODULE_PATH_ARG_OFFSET (sizeof(VM_MODULE_PATH_ARG_PREFIX)-1)
+#define VM_LIBRARY_PATH_ARG_OFFSET (sizeof(VM_LIBRARY_PATH_ARG_PREFIX)-1)
+
 #define IS_VM_ARG(ARG) (ARG.rfind(VM_ARG_PREFIX, 0) != std::string::npos)
 #define IS_VM_CP_ARG(ARG) (ARG.rfind(VM_CP_ARG_PREFIX, 0) != std::string::npos)
 #define IS_VM_CLASSPATH_ARG(ARG) (ARG.rfind(VM_CLASSPATH_ARG_PREFIX, 0) != std::string::npos)
+#define IS_VM_P_ARG(ARG) (ARG.rfind(VM_P_ARG_PREFIX, 0) != std::string::npos)
 #define IS_VM_MODULE_PATH_ARG(ARG) (ARG.rfind(VM_MODULE_PATH_ARG_PREFIX, 0) != std::string::npos)
+#define IS_VM_LIBRARY_PATH_ARG(ARG) (ARG.rfind(VM_LIBRARY_PATH_ARG_PREFIX, 0) != std::string::npos)
 
 #define NMT_ARG_NAME "XX:NativeMemoryTracking"
 #define NMT_ENV_NAME "NMT_LEVEL_"
@@ -150,11 +158,14 @@
 
 typedef jint(*CreateJVM)(JavaVM **, void **, void *);
 extern char **environ;
-bool debug = false;
-bool relaunch = false;
+
+static bool debug = false;
+static bool relaunch = false;
+static bool found_switch_to_jvm_flag = false;
+static const char *svm_error = NULL;
 
 /* platform-independent environment setter, use empty value to clear */
-int setenv(std::string key, std::string value) {
+static int setenv(std::string key, std::string value) {
     if (debug) {
         std::cout << "Setting env variable " << key << "=" << value << std::endl;
     }
@@ -181,13 +192,13 @@ int setenv(std::string key, std::string value) {
 }
 
 /* check if file exists */
-bool exists(std::string filename) {
+static bool exists(std::string filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
 /* get the path to the current executable */
-std::string exe_path() {
+static std::string exe_path() {
     #if defined (__linux__)
         char *realPath = realpath("/proc/self/exe", NULL);
     #elif defined (__APPLE__)
@@ -205,7 +216,7 @@ std::string exe_path() {
 }
 
 /* get the directory of the current executable */
-std::string exe_directory() {
+static std::string exe_directory() {
     char *path = strdup(exe_path().c_str());
     #if defined (_WIN32)
         // get the directory part
@@ -243,7 +254,7 @@ static std::string canonicalize(std::string path) {
  * via the JavaRuntimeSupport.framework (JRS), which will fall back to the
  * system JRE and fail if none is installed
  */
-void *load_jli_lib(std::string exeDir) {
+static void *load_jli_lib(std::string exeDir) {
     std::stringstream libjliPath;
     libjliPath << exeDir << DIR_SEP_STR << LIBJLI_RELPATH_STR;
     return dlopen(libjliPath.str().c_str(), RTLD_NOW);
@@ -252,7 +263,7 @@ void *load_jli_lib(std::string exeDir) {
 
 /* load the language library (either native library or libjvm) and return a
  * pointer to the JNI_CreateJavaVM function */
-CreateJVM load_vm_lib(std::string liblangPath) {
+static CreateJVM load_vm_lib(std::string liblangPath) {
     if (debug) {
         std::cout << "Loading library " << liblangPath << std::endl;
     }
@@ -274,7 +285,7 @@ CreateJVM load_vm_lib(std::string liblangPath) {
     return NULL;
 }
 
-std::string vm_path(std::string exeDir, bool jvmMode) {
+static std::string vm_path(std::string exeDir, bool jvmMode) {
     std::stringstream liblangPath;
     if (jvmMode) {
         liblangPath << exeDir << DIR_SEP_STR << LIBJVM_RELPATH_STR;
@@ -289,22 +300,33 @@ std::string vm_path(std::string exeDir, bool jvmMode) {
     return liblangPath.str();
 }
 
-void parse_vm_option(std::vector<std::string> *vmArgs, std::stringstream *cp, std::stringstream *modulePath, std::string option) {
+static void parse_vm_option(
+        std::vector<std::string> *vmArgs,
+        std::stringstream *cp,
+        std::stringstream *modulePath,
+        std::stringstream *libraryPath,
+        std::string option) {
     if (IS_VM_CP_ARG(option)) {
         *cp << CP_SEP_STR << option.substr(VM_CP_ARG_OFFSET);
     } else if (IS_VM_CLASSPATH_ARG(option)) {
         *cp << CP_SEP_STR << option.substr(VM_CLASSPATH_ARG_OFFSET);
+    } else if (IS_VM_P_ARG(option)) {
+        *modulePath << CP_SEP_STR << option.substr(VM_P_ARG_OFFSET);
     } else if (IS_VM_MODULE_PATH_ARG(option)) {
         *modulePath << CP_SEP_STR << option.substr(VM_MODULE_PATH_ARG_OFFSET);
+    } else if (IS_VM_LIBRARY_PATH_ARG(option)) {
+        *libraryPath << CP_SEP_STR << option.substr(VM_LIBRARY_PATH_ARG_OFFSET);
     } else if (IS_VM_ARG(option)) {
         std::stringstream opt;
         opt << '-' << option.substr(VM_ARG_OFFSET);
         vmArgs->push_back(opt.str());
+    } else if (option == "--jvm") {
+        found_switch_to_jvm_flag = true;
     }
 }
 
 /* parse the VM arguments that should be passed to JNI_CreateJavaVM */
-void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs *vmInitArgs, bool jvmMode) {
+static void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs *vmInitArgs, bool jvmMode) {
     std::vector<std::string> vmArgs;
 
     /* check if vm args have been set on relaunch already */
@@ -344,20 +366,6 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
 
     /* construct classpath - only needed for jvm mode */
     std::stringstream cp;
-    cp << "-Djava.class.path=";
-    #ifdef LAUNCHER_CLASSPATH
-    if (jvmMode) {
-        /* add the launcher classpath */
-        const char *launcherCpEntries[] = LAUNCHER_CLASSPATH;
-        int launcherCpCnt = sizeof(launcherCpEntries) / sizeof(*launcherCpEntries);
-        for (int i = 0; i < launcherCpCnt; i++) {
-            cp << exeDir << DIR_SEP_STR << launcherCpEntries[i];
-            if (i < launcherCpCnt-1) {
-                cp << CP_SEP_STR;
-            }
-        }
-    }
-    #endif
 
     /* construct module path - only needed for jvm mode */
     std::stringstream modulePath;
@@ -394,7 +402,7 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
             if (dir) {
                 std::string canonicalDir = canonicalize(absoluteDir);
                 struct dirent* entry;
-                while (entry = readdir(dir)) {
+                while ((entry = readdir(dir))) {
                     char* name = entry->d_name;
                     if (name[0] != '.') {
                         modulePath << CP_SEP_STR << canonicalDir << DIR_SEP_STR << name;
@@ -424,22 +432,16 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
     }
     #endif
 
+    /* construct java.library.path - only needed for jvm mode */
+    std::stringstream libraryPath;
     #ifdef LAUNCHER_LIBRARY_PATH
     if (jvmMode) {
-        /* construct java.library.path - only needed for jvm mode */
-        std::stringstream libraryPath;
-        libraryPath << "-Djava.library.path=";
         /* add the library path */
         const char *launcherLibraryPathEntries[] = LAUNCHER_LIBRARY_PATH;
         int launcherLibraryPathCnt = sizeof(launcherLibraryPathEntries) / sizeof(*launcherLibraryPathEntries);
         for (int i = 0; i < launcherLibraryPathCnt; i++) {
-            libraryPath << exeDir << DIR_SEP_STR << launcherLibraryPathEntries[i];
-            if (i < launcherLibraryPathCnt-1) {
-                libraryPath << CP_SEP_STR;
-            }
+            libraryPath << CP_SEP_STR << exeDir << DIR_SEP_STR << launcherLibraryPathEntries[i];
         }
-        /* TODO: this overrides -Djava.library.path=, but it should accept a CLI --vm.Djava.library.path= */
-        vmArgs.push_back(libraryPath.str());
     }
     #endif
 
@@ -479,7 +481,7 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
     const char *launcherDefaultVmArgs[] = LAUNCHER_DEFAULT_VM_ARGS;
     for (int i = 0; i < sizeof(launcherDefaultVmArgs)/sizeof(char*); i++) {
         if (IS_VM_ARG(std::string(launcherDefaultVmArgs[i]))) {
-            parse_vm_option(&vmArgs, &cp, &modulePath, launcherDefaultVmArgs[i]);
+            parse_vm_option(&vmArgs, &cp, &modulePath, &libraryPath, launcherDefaultVmArgs[i]);
         }
     }
     #endif
@@ -487,7 +489,7 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
     /* handle CLI arguments */
     if (!vmArgInfo) {
         for (int i = 0; i < argc; i++) {
-            parse_vm_option(&vmArgs, &cp, &modulePath, std::string(argv[i]));
+            parse_vm_option(&vmArgs, &cp, &modulePath, &libraryPath, std::string(argv[i]));
         }
     }
 
@@ -505,7 +507,7 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
                 std::cerr << "VM arguments specified: " << vmArgCount << " but argument " << i << "missing" << std::endl;
                 break;
             }
-            parse_vm_option(&vmArgs, &cp, &modulePath, std::string(cur));
+            parse_vm_option(&vmArgs, &cp, &modulePath, &libraryPath, std::string(cur));
             /* clean up env variable */
             setenv(envKey, "");
         }
@@ -527,16 +529,21 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
         size_t next = 0;
         while ((next = optionLine.find(" ", last)) != std::string::npos) {
             std::string option = optionLine.substr(last, next-last);
-            parse_vm_option(&vmArgs, &cp, &modulePath, option);
+            parse_vm_option(&vmArgs, &cp, &modulePath, &libraryPath, option);
             last = next + 1;
         };
-        parse_vm_option(&vmArgs, &cp, &modulePath, optionLine.substr(last));
+        parse_vm_option(&vmArgs, &cp, &modulePath, &libraryPath, optionLine.substr(last));
     }
     #endif
 
     /* set classpath and module path arguments - only needed for jvm mode */
     if (jvmMode) {
-        vmArgs.push_back(cp.str());
+        if (!cp.str().empty()) {
+            vmArgs.push_back("-Djava.class.path=" + cp.str().substr(1));
+        }
+        if (!libraryPath.str().empty()) {
+            vmArgs.push_back("-Djava.library.path=" + libraryPath.str().substr(1));
+        }
 #ifdef LAUNCHER_MODULE_PATH
         vmArgs.push_back(modulePath.str());
         vmArgs.push_back("-Djdk.module.main=" LAUNCHER_MAIN_MODULE_STR);
@@ -544,9 +551,17 @@ void parse_vm_options(int argc, char **argv, std::string exeDir, JavaVMInitArgs 
 #endif
     }
 
-    vmInitArgs->options = new JavaVMOption[vmArgs.size()];
-    vmInitArgs->nOptions = vmArgs.size();
+    jint nOptions = jvmMode ? vmArgs.size() : 1 + vmArgs.size();
+    vmInitArgs->options = new JavaVMOption[nOptions];
+    vmInitArgs->nOptions = nOptions;
     JavaVMOption *curOpt = vmInitArgs->options;
+
+    if (!jvmMode) {
+        curOpt->optionString = strdup("_createvm_errorstr");
+        curOpt->extraInfo = &svm_error;
+        curOpt++;
+    }
+
     for(const auto& arg: vmArgs) {
         if (debug) {
             std::cout << "Setting VM argument " << arg << std::endl;
@@ -674,7 +689,11 @@ static int jvm_main_thread(int argc, char *argv[], std::string exeDir, bool jvmM
     vmInitArgs.nOptions = 0;
     parse_vm_options(argc, argv, exeDir, &vmInitArgs, jvmMode);
     vmInitArgs.version = JNI_VERSION_9;
-    vmInitArgs.ignoreUnrecognized = true;
+    /* In general we want to validate VM arguments.
+     * But we must disable it for the case there is a native library and we saw a --jvm argument,
+     * as the VM arguments are then JVM VM arguments and not SVM VM arguments.
+     * In that case we validate them after the execve() when running in --jvm mode. */
+    vmInitArgs.ignoreUnrecognized = found_switch_to_jvm_flag && !jvmMode;
 
     /* load VM library - after parsing arguments s.t. NMT
      * tracking variable is already set */
@@ -686,6 +705,11 @@ static int jvm_main_thread(int argc, char *argv[], std::string exeDir, bool jvmM
 
     int res = createVM(&vm, (void**)&env, &vmInitArgs);
     if (res != JNI_OK) {
+        if (svm_error != NULL) {
+            std::cerr << svm_error << std::endl;
+            free((void*) svm_error);
+            svm_error = NULL;
+        }
         std::cerr << "Creation of the VM failed." << std::endl;
         return -1;
     }

@@ -29,13 +29,13 @@ import java.nio.ByteBuffer;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.UnmodifiableMapCursor;
-import org.graalvm.compiler.code.CompilationResult;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DebugContext.Builder;
-import org.graalvm.compiler.debug.DebugOptions;
-import org.graalvm.compiler.options.OptionKey;
-import org.graalvm.compiler.options.OptionsParser;
-import org.graalvm.compiler.printer.GraalDebugHandlersFactory;
+import jdk.graal.compiler.code.CompilationResult;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.debug.DebugContext.Builder;
+import jdk.graal.compiler.debug.DebugOptions;
+import jdk.graal.compiler.options.OptionKey;
+import jdk.graal.compiler.options.OptionsParser;
+import jdk.graal.compiler.printer.GraalDebugHandlersFactory;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.Isolates;
 import org.graalvm.nativeimage.Isolates.CreateIsolateParameters;
@@ -53,7 +53,7 @@ import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.option.RuntimeOptionKey;
 import com.oracle.svm.core.option.RuntimeOptionValues;
 import com.oracle.svm.core.os.MemoryProtectionProvider;
-import com.oracle.svm.graal.GraalSupport;
+import com.oracle.svm.graal.TruffleRuntimeCompilationSupport;
 import com.oracle.svm.graal.SubstrateGraalUtils;
 import com.oracle.svm.graal.meta.SubstrateMethod;
 
@@ -114,8 +114,8 @@ public final class IsolatedGraalUtils {
         IsolatedCompileContext.set(new IsolatedCompileContext(clientIsolate));
 
         SubstrateMethod method = ImageHeapObjects.deref(methodRef);
-        DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(GraalSupport.getRuntimeConfig().getSnippetReflection())).build();
-        CompilationResult compilationResult = SubstrateGraalUtils.doCompile(debug, GraalSupport.getRuntimeConfig(), GraalSupport.getLIRSuites(), method);
+        DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(TruffleRuntimeCompilationSupport.getRuntimeConfig().getSnippetReflection())).build();
+        CompilationResult compilationResult = SubstrateGraalUtils.doCompile(debug, TruffleRuntimeCompilationSupport.getRuntimeConfig(), TruffleRuntimeCompilationSupport.getLIRSuites(), method);
         ClientHandle<SubstrateInstalledCode> installedCodeHandle = IsolatedRuntimeCodeInstaller.installInClientIsolate(
                         methodRef, compilationResult, IsolatedHandles.nullHandle());
         Log.log().string("Code for " + method.format("%H.%n(%p)") + ": " + compilationResult.getTargetCodeSize() + " bytes").newline();
@@ -132,7 +132,7 @@ public final class IsolatedGraalUtils {
             Isolates.tearDownIsolate(context);
             IsolatedCompileClient.set(null);
         } else {
-            try (DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(GraalSupport.getRuntimeConfig().getSnippetReflection())).build()) {
+            try (DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(TruffleRuntimeCompilationSupport.getRuntimeConfig().getSnippetReflection())).build()) {
                 SubstrateGraalUtils.compile(debug, method);
             }
         }
@@ -143,8 +143,8 @@ public final class IsolatedGraalUtils {
                     @SuppressWarnings("unused") @CEntryPoint.IsolateThreadContext CompilerIsolateThread isolate, ClientIsolateThread clientIsolate, ImageHeapRef<SubstrateMethod> methodRef) {
 
         IsolatedCompileContext.set(new IsolatedCompileContext(clientIsolate));
-        try (DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(GraalSupport.getRuntimeConfig().getSnippetReflection())).build()) {
-            SubstrateGraalUtils.doCompile(debug, GraalSupport.getRuntimeConfig(), GraalSupport.getLIRSuites(), ImageHeapObjects.deref(methodRef));
+        try (DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(TruffleRuntimeCompilationSupport.getRuntimeConfig().getSnippetReflection())).build()) {
+            SubstrateGraalUtils.doCompile(debug, TruffleRuntimeCompilationSupport.getRuntimeConfig(), TruffleRuntimeCompilationSupport.getLIRSuites(), ImageHeapObjects.deref(methodRef));
         }
         IsolatedCompileContext.set(null);
     }

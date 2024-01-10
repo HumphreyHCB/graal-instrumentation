@@ -24,11 +24,9 @@
  */
 package com.oracle.svm.core.jfr;
 
-import java.lang.reflect.Field;
 import java.util.List;
 
-import org.graalvm.compiler.api.replacements.Fold;
-import org.graalvm.compiler.core.common.NumUtil;
+import com.oracle.svm.core.log.Log;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platform;
@@ -42,11 +40,14 @@ import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.jfr.logging.JfrLogging;
 import com.oracle.svm.core.jfr.sampler.JfrExecutionSampler;
 import com.oracle.svm.core.sampler.SamplerBufferPool;
+import com.oracle.svm.core.sampler.SubstrateSigprofHandler;
 import com.oracle.svm.core.thread.JavaThreads;
 import com.oracle.svm.core.thread.JavaVMOperation;
 import com.oracle.svm.core.thread.VMThreads;
 import com.oracle.svm.core.util.VMError;
 
+import jdk.graal.compiler.api.replacements.Fold;
+import jdk.graal.compiler.core.common.NumUtil;
 import jdk.internal.event.Event;
 import jdk.jfr.Configuration;
 import jdk.jfr.internal.JVM;
@@ -92,7 +93,7 @@ public class SubstrateJVM {
     private String dumpPath;
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public SubstrateJVM(List<Configuration> configurations) {
+    public SubstrateJVM(List<Configuration> configurations, boolean writeFile) {
         this.knownConfigurations = configurations;
 
         options = new JfrOptionSet();
@@ -112,7 +113,7 @@ public class SubstrateJVM {
         threadLocal = new JfrThreadLocal();
         globalMemory = new JfrGlobalMemory();
         samplerBufferPool = new SamplerBufferPool();
-        unlockedChunkWriter = new JfrChunkWriter(globalMemory, stackTraceRepo, methodRepo, typeRepo, symbolRepo, threadRepo);
+        unlockedChunkWriter = writeFile ? new JfrChunkFileWriter(globalMemory, stackTraceRepo, methodRepo, typeRepo, symbolRepo, threadRepo) : new JfrChunkNoWriter();
         recorderThread = new JfrRecorderThread(globalMemory, unlockedChunkWriter);
 
         jfrLogging = new JfrLogging();
@@ -186,16 +187,6 @@ public class SubstrateJVM {
         return get().jfrLogging;
     }
 
-    public static Object getHandler(Class<? extends jdk.internal.event.Event> eventClass) {
-        try {
-            Field f = eventClass.getDeclaredField("eventHandler");
-            f.setAccessible(true);
-            return f.get(null);
-        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException e) {
-            throw new InternalError("Could not access event handler");
-        }
-    }
-
     @Uninterruptible(reason = "Prevent races with VM operations that start/stop recording.", callerMustBe = true)
     protected boolean isRecording() {
         return recording;
@@ -240,12 +231,6 @@ public class SubstrateJVM {
 
         JfrTeardownOperation vmOp = new JfrTeardownOperation();
         vmOp.enqueue();
-
-        try {
-            recorderThread.join();
-        } catch (InterruptedException e) {
-            throw VMError.shouldNotReachHere(e);
-        }
 
         return true;
     }
@@ -524,8 +509,13 @@ public class SubstrateJVM {
     @Uninterruptible(reason = "Accesses a native JFR buffer.")
     public long commit(long nextPosition) {
         assert nextPosition != 0 : "invariant";
-        JfrBuffer current = threadLocal.getJavaBuffer();
-        assert current.isNonNull() : "invariant";
+
+        JfrBuffer current = threadLocal.getExistingJavaBuffer();
+        if (current.isNull()) {
+            /* This is a commit for a recording session that is no longer active - ignore it. */
+            return nextPosition;
+        }
+
         Pointer next = WordFactory.pointer(nextPosition);
         assert next.aboveOrEqual(current.getCommittedPos()) : "invariant";
         assert next.belowOrEqual(JfrBufferAccess.getDataEnd(current)) : "invariant";
@@ -697,15 +687,6 @@ public class SubstrateJVM {
         return DynamicHub.fromClass(eventClass).getJfrEventConfiguration();
     }
 
-    public void setExcluded(Thread thread, boolean excluded) {
-        JfrThreadLocal.setExcluded(thread, excluded);
-    }
-
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    public boolean isExcluded(Thread thread) {
-        return JfrThreadLocal.isThreadExcluded(thread);
-    }
-
     private static class JfrBeginRecordingOperation extends JavaVMOperation {
         JfrBeginRecordingOperation() {
             super(VMOperationInfos.get(JfrBeginRecordingOperation.class, "JFR begin recording", SystemEffect.SAFEPOINT));
@@ -736,6 +717,10 @@ public class SubstrateJVM {
             SubstrateJVM.get().recording = false;
             JfrExecutionSampler.singleton().update();
 
+            if (SubstrateSigprofHandler.Options.JfrBasedExecutionSamplerStatistics.getValue()) {
+                printSamplerStatistics();
+            }
+
             /* No further JFR events are emitted, so free some JFR-related buffers. */
             for (IsolateThread isolateThread = VMThreads.firstThread(); isolateThread.isNonNull(); isolateThread = VMThreads.nextThread(isolateThread)) {
                 JfrThreadLocal.stopRecording(isolateThread, false);
@@ -749,6 +734,20 @@ public class SubstrateJVM {
             SubstrateJVM.getSamplerBufferPool().teardown();
             SubstrateJVM.getGlobalMemory().clear();
         }
+    }
+
+    private static void printSamplerStatistics() {
+        long missedSamples = 0;
+        long unparseableStacks = 0;
+        for (IsolateThread isolateThread = VMThreads.firstThread(); isolateThread.isNonNull(); isolateThread = VMThreads.nextThread(isolateThread)) {
+            missedSamples += JfrThreadLocal.getMissedSamples(isolateThread);
+            unparseableStacks += JfrThreadLocal.getUnparseableStacks(isolateThread);
+        }
+
+        Log log = Log.log();
+        log.string("JFR sampler statistics").indent(true);
+        log.string("Missed samples: ").unsigned(missedSamples).newline();
+        log.string("Unparseable stacks: ").unsigned(unparseableStacks).indent(false);
     }
 
     private class JfrTeardownOperation extends JavaVMOperation {

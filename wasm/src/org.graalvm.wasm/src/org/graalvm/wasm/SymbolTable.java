@@ -50,6 +50,7 @@ import static org.graalvm.wasm.WasmMath.minUnsigned;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.EconomicSet;
@@ -60,11 +61,11 @@ import org.graalvm.wasm.exception.Failure;
 import org.graalvm.wasm.exception.WasmException;
 import org.graalvm.wasm.globals.WasmGlobal;
 import org.graalvm.wasm.memory.WasmMemory;
+import org.graalvm.wasm.memory.WasmMemoryFactory;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import org.graalvm.wasm.memory.WasmMemoryFactory;
 
 /**
  * Contains the symbol information of a module.
@@ -80,7 +81,6 @@ public abstract class SymbolTable {
     private static final byte GLOBAL_MUTABLE_BIT = 0x01;
     private static final byte GLOBAL_EXPORT_BIT = 0x02;
     private static final byte GLOBAL_INITIALIZED_BIT = 0x04;
-    private static final byte GLOBAL_REFERENCE_BIT = 0x08;
     private static final byte GLOBAL_IMPORTED_BIT = 0x10;
     private static final byte GLOBAL_FUNCTION_INITIALIZER_BIT = 0x20;
 
@@ -202,11 +202,14 @@ public abstract class SymbolTable {
          */
         public final boolean shared;
 
-        public MemoryInfo(long initialSize, long maximumSize, boolean indexType64, boolean shared) {
+        public final Class<? extends WasmMemory> memoryImpl;
+
+        public MemoryInfo(long initialSize, long maximumSize, boolean indexType64, boolean shared, Class<? extends WasmMemory> memoryImpl) {
             this.initialSize = initialSize;
             this.maximumSize = maximumSize;
             this.indexType64 = indexType64;
             this.shared = shared;
+            this.memoryImpl = Objects.requireNonNull(memoryImpl);
         }
     }
 
@@ -307,7 +310,7 @@ public abstract class SymbolTable {
     /**
      * The values or indices used for initializing globals.
      */
-    @CompilationFinal(dimensions = 1) private long[] globalInitializers;
+    @CompilationFinal(dimensions = 1) private Object[] globalInitializers;
 
     /**
      * The bytecodes used for initializing globals.
@@ -425,7 +428,7 @@ public abstract class SymbolTable {
         this.exportedFunctionsByIndex = EconomicMap.create();
         this.startFunctionIndex = -1;
         this.globalTypes = new byte[2 * INITIAL_GLOBALS_SIZE];
-        this.globalInitializers = new long[INITIAL_GLOBALS_SIZE];
+        this.globalInitializers = new Object[INITIAL_GLOBALS_SIZE];
         this.globalInitializersBytecode = new byte[INITIAL_GLOBALS_BYTECODE_SIZE][];
         this.importedGlobals = EconomicMap.create();
         this.exportedGlobals = EconomicMap.create();
@@ -606,7 +609,7 @@ public abstract class SymbolTable {
         this.startFunctionIndex = functionIndex;
     }
 
-    int numFunctions() {
+    public int numFunctions() {
         return numFunctions;
     }
 
@@ -746,7 +749,7 @@ public abstract class SymbolTable {
     private void ensureGlobalsCapacity(int index) {
         while (index >= globalInitializers.length) {
             final byte[] nGlobalTypes = new byte[globalTypes.length * 2];
-            final long[] nGlobalInitializers = new long[globalInitializers.length * 2];
+            final Object[] nGlobalInitializers = new Object[globalInitializers.length * 2];
             System.arraycopy(globalTypes, 0, nGlobalTypes, 0, globalTypes.length);
             System.arraycopy(globalInitializers, 0, nGlobalInitializers, 0, globalInitializers.length);
             globalTypes = nGlobalTypes;
@@ -766,7 +769,7 @@ public abstract class SymbolTable {
      * Allocates a global index in the symbol table, for a global variable that was already
      * allocated.
      */
-    void allocateGlobal(int index, byte valueType, byte mutability, boolean initialized, boolean isReference, boolean imported, byte[] initBytecode, long initialValue) {
+    void allocateGlobal(int index, byte valueType, byte mutability, boolean initialized, boolean imported, byte[] initBytecode, Object initialValue) {
         assert (valueType & 0xff) == valueType;
         checkNotParsed();
         ensureGlobalsCapacity(index);
@@ -781,9 +784,6 @@ public abstract class SymbolTable {
         }
         if (initialized) {
             flags |= GLOBAL_INITIALIZED_BIT;
-        }
-        if (isReference) {
-            flags |= GLOBAL_REFERENCE_BIT;
         }
         if (imported) {
             flags |= GLOBAL_IMPORTED_BIT;
@@ -804,19 +804,17 @@ public abstract class SymbolTable {
     void declareExternalGlobal(int index, WasmGlobal global) {
         final byte valueType = global.getValueType().byteValue();
         final byte mutability = global.isMutable() ? GlobalModifier.MUTABLE : GlobalModifier.CONSTANT;
-        allocateGlobal(index, valueType, mutability, false, false, false, null, 0);
+        allocateGlobal(index, valueType, mutability, false, false, null, null);
         module().addLinkAction((context, instance) -> {
-            final GlobalRegistry globals = context.globals();
-            final int address = globals.allocateExternalGlobal(global);
+            final int address = context.globals().allocateExternalGlobal(global);
             instance.setGlobalAddress(index, address);
         });
     }
 
-    void declareGlobal(int index, byte valueType, byte mutability, boolean initialized, boolean isReference, byte[] initBytecode, long initialValue) {
-        allocateGlobal(index, valueType, mutability, initialized, isReference, false, initBytecode, initialValue);
+    void declareGlobal(int index, byte valueType, byte mutability, boolean initialized, byte[] initBytecode, Object initialValue) {
+        allocateGlobal(index, valueType, mutability, initialized, false, initBytecode, initialValue);
         module().addLinkAction((context, instance) -> {
-            final GlobalRegistry globals = context.globals();
-            final int address = globals.allocateGlobal();
+            final int address = context.globals().allocateGlobal();
             instance.setGlobalAddress(index, address);
         });
     }
@@ -825,7 +823,7 @@ public abstract class SymbolTable {
         final ImportDescriptor descriptor = new ImportDescriptor(moduleName, globalName, ImportIdentifier.GLOBAL);
         importedGlobals.put(index, descriptor);
         importSymbol(descriptor);
-        allocateGlobal(index, valueType, mutability, false, false, true, null, 0);
+        allocateGlobal(index, valueType, mutability, false, true, null, null);
         module().addLinkAction((context, instance) -> instance.setGlobalAddress(index, UNINITIALIZED_ADDRESS));
         module().addLinkAction((context, instance) -> context.linker().resolveGlobalImport(context, instance, descriptor, index, valueType, mutability));
     }
@@ -867,10 +865,6 @@ public abstract class SymbolTable {
         return (globalTypes[2 * index + 1] & GLOBAL_INITIALIZED_BIT) != 0;
     }
 
-    public boolean globalIsReference(int index) {
-        return (globalTypes[2 * index + 1] & GLOBAL_REFERENCE_BIT) != 0;
-    }
-
     public byte[] globalInitializerBytecode(int index) {
         if ((globalTypes[2 * index + 1] & GLOBAL_FUNCTION_INITIALIZER_BIT) != 0) {
             return null;
@@ -879,7 +873,7 @@ public abstract class SymbolTable {
         }
     }
 
-    public long globalInitialValue(int index) {
+    public Object globalInitialValue(int index) {
         if ((globalTypes[2 * index + 1] & GLOBAL_FUNCTION_INITIALIZER_BIT) != 0) {
             return globalInitializers[index];
         } else {
@@ -920,14 +914,11 @@ public abstract class SymbolTable {
         exportGlobal(name, index);
     }
 
-    public void declareExportedGlobalWithValue(String name, int index, byte valueType, byte mutability, long value) {
+    public void declareExportedGlobalWithValue(String name, int index, byte valueType, byte mutability, Object value) {
         checkNotParsed();
-        declareGlobal(index, valueType, mutability, true, false, null, 0);
+        declareGlobal(index, valueType, mutability, true, null, value);
         exportGlobal(name, index);
-        module().addLinkAction((context, instance) -> {
-            final int address = instance.globalAddress(index);
-            context.globals().storeLong(address, value);
-        });
+        module().addLinkAction((context, instance) -> context.globals().store(valueType, instance.globalAddress(index), value));
     }
 
     private void ensureTableCapacity(int index) {
@@ -1047,18 +1038,22 @@ public abstract class SymbolTable {
         }
     }
 
-    public void allocateMemory(int index, long declaredMinSize, long declaredMaxSize, boolean indexType64, boolean shared, boolean multiMemory) {
+    private long maxAllowedSize(long declaredMaxSize, boolean indexType64) {
+        return minUnsigned(declaredMaxSize, module().limits().memoryInstanceSizeLimit(indexType64));
+    }
+
+    public void allocateMemory(int index, long declaredMinSize, long declaredMaxSize, boolean indexType64, boolean shared, boolean multiMemory, boolean useUnsafeMemory) {
         checkNotParsed();
-        addMemory(index, declaredMinSize, declaredMaxSize, indexType64, shared, multiMemory);
+        final long maxAllowedSize = maxAllowedSize(declaredMaxSize, indexType64);
+        addMemory(index, declaredMinSize, declaredMaxSize, maxAllowedSize, indexType64, shared, multiMemory, useUnsafeMemory);
         module().addLinkAction((context, instance) -> {
-            final long maxAllowedSize = minUnsigned(declaredMaxSize, module().limits().memoryInstanceSizeLimit(indexType64));
             module().limits().checkMemoryInstanceSize(declaredMinSize, indexType64);
             final WasmMemory wasmMemory;
             if (context.getContextOptions().memoryOverheadMode()) {
                 // Initialize an empty memory when in memory overhead mode.
-                wasmMemory = WasmMemoryFactory.createMemory(0, 0, 0, false, false, context.getContextOptions().useUnsafeMemory());
+                wasmMemory = WasmMemoryFactory.createMemory(0, 0, 0, false, false, useUnsafeMemory);
             } else {
-                wasmMemory = WasmMemoryFactory.createMemory(declaredMinSize, declaredMaxSize, maxAllowedSize, indexType64, shared, context.getContextOptions().useUnsafeMemory());
+                wasmMemory = WasmMemoryFactory.createMemory(declaredMinSize, declaredMaxSize, maxAllowedSize, indexType64, shared, useUnsafeMemory);
             }
             final int memoryAddress = context.memories().register(wasmMemory);
             final WasmMemory allocatedMemory = context.memories().memory(memoryAddress);
@@ -1068,7 +1063,8 @@ public abstract class SymbolTable {
 
     public void allocateExternalMemory(int index, WasmMemory externalMemory, boolean multiMemory) {
         checkNotParsed();
-        addMemory(index, externalMemory.declaredMinSize(), externalMemory.declaredMaxSize(), externalMemory.hasIndexType64(), externalMemory.isShared(), multiMemory);
+        addMemory(index, externalMemory.declaredMinSize(), externalMemory.declaredMaxSize(), externalMemory.maxAllowedSize(),
+                        externalMemory.hasIndexType64(), externalMemory.isShared(), multiMemory, externalMemory.isUnsafe());
         module().addLinkAction((context, instance) -> {
             final int memoryIndex = context.memories().registerExternal(externalMemory);
             final WasmMemory allocatedMemory = context.memories().memory(memoryIndex);
@@ -1076,22 +1072,23 @@ public abstract class SymbolTable {
         });
     }
 
-    public void importMemory(String moduleName, String memoryName, int index, long initSize, long maxSize, boolean typeIndex64, boolean shared, boolean multiMemory) {
+    public void importMemory(String moduleName, String memoryName, int index, long initSize, long maxSize, boolean typeIndex64, boolean shared, boolean multiMemory, boolean useUnsafeMemory) {
         checkNotParsed();
-        addMemory(index, initSize, maxSize, typeIndex64, shared, multiMemory);
+        addMemory(index, initSize, maxSize, maxAllowedSize(maxSize, typeIndex64), typeIndex64, shared, multiMemory, useUnsafeMemory);
         final ImportDescriptor importedMemory = new ImportDescriptor(moduleName, memoryName, ImportIdentifier.MEMORY);
         importedMemories.put(index, importedMemory);
         importSymbol(importedMemory);
         module().addLinkAction((context, instance) -> context.linker().resolveMemoryImport(context, instance, importedMemory, index, initSize, maxSize, typeIndex64, shared));
     }
 
-    void addMemory(int index, long minSize, long maxSize, boolean indexType64, boolean shared, boolean multiMemory) {
+    void addMemory(int index, long minSize, long maxSize, long maxAllowedSize, boolean indexType64, boolean shared, boolean multiMemory, boolean useUnsafeMemory) {
         if (!multiMemory) {
             assertTrue(importedMemories.size() == 0, "A memory has already been imported in the module.", Failure.MULTIPLE_MEMORIES);
             assertTrue(memoryCount == 0, "A memory has already been declared in the module.", Failure.MULTIPLE_MEMORIES);
         }
         ensureMemoryCapacity(index);
-        final MemoryInfo memory = new MemoryInfo(minSize, maxSize, indexType64, shared);
+        var memoryImpl = WasmMemoryFactory.getMemoryImplementation(maxAllowedSize, useUnsafeMemory);
+        final MemoryInfo memory = new MemoryInfo(minSize, maxSize, indexType64, shared, memoryImpl);
         memories[index] = memory;
         memoryCount++;
     }
@@ -1149,6 +1146,16 @@ public abstract class SymbolTable {
     public boolean memoryIsShared(int index) {
         final MemoryInfo memory = memories[index];
         return memory.shared;
+    }
+
+    public final WasmMemory castMemory(WasmMemory memoryInstance, int index) {
+        final MemoryInfo memory = memories[index];
+        return CompilerDirectives.castExact(memoryInstance, memory.memoryImpl);
+    }
+
+    public final WasmMemory memory(WasmInstance moduleInstance, int index) {
+        final WasmMemory memoryInstance = moduleInstance.memory(index);
+        return castMemory(memoryInstance, index);
     }
 
     void allocateCustomSection(String name, int offset, int length) {

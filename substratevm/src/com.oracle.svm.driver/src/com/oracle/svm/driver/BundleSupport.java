@@ -228,7 +228,7 @@ final class BundleSupport {
     void createDockerfile(Path dockerfile) {
         nativeImage.showVerboseMessage(nativeImage.isVerbose(), BUNDLE_INFO_MESSAGE_PREFIX + "Creating default Dockerfile for native-image bundle.");
         String dockerfileText = DEFAULT_DOCKERFILE;
-        if (nativeImage.staticExecutable && nativeImage.libC.equals("musl")) {
+        if (nativeImage.staticExecutable && "musl".equals(nativeImage.targetLibC)) {
             dockerfileText += System.lineSeparator() + DEFAULT_DOCKERFILE_MUSLIB;
         }
         try {
@@ -860,8 +860,8 @@ final class BundleSupport {
     private static final String substitutionMapDstField = "dst";
 
     private static void printPathMapping(Map.Entry<Path, Path> entry, JsonWriter w) throws IOException {
-        w.append('{').quote(substitutionMapSrcField).append(':').quote(entry.getKey());
-        w.append(',').quote(substitutionMapDstField).append(':').quote(entry.getValue());
+        w.append('{').quote(substitutionMapSrcField).append(':').printValue(entry.getKey());
+        w.append(',').quote(substitutionMapDstField).append(':').printValue(entry.getValue());
         w.append('}');
     }
 

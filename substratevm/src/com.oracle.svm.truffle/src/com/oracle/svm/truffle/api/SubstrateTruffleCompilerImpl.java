@@ -27,29 +27,29 @@ package com.oracle.svm.truffle.api;
 import java.io.PrintStream;
 import java.util.Map;
 
-import org.graalvm.compiler.code.CompilationResult;
-import org.graalvm.compiler.core.CompilationWrapper;
-import org.graalvm.compiler.core.common.CompilationIdentifier;
-import org.graalvm.compiler.core.target.Backend;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DiagnosticsOutputDirectory;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.PhaseSuite;
-import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.truffle.compiler.PartialEvaluator;
-import org.graalvm.compiler.truffle.compiler.TruffleCompilationIdentifier;
-import org.graalvm.compiler.truffle.compiler.TruffleCompilerConfiguration;
-import org.graalvm.compiler.truffle.compiler.TruffleCompilerImpl;
-import org.graalvm.compiler.truffle.compiler.TruffleCompilerOptions;
-import org.graalvm.compiler.truffle.compiler.TruffleTierConfiguration;
-import org.graalvm.compiler.truffle.compiler.phases.InstrumentationSuite;
-import org.graalvm.compiler.truffle.compiler.phases.TruffleTier;
+import jdk.graal.compiler.code.CompilationResult;
+import jdk.graal.compiler.core.CompilationWrapper;
+import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.target.Backend;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.debug.DiagnosticsOutputDirectory;
+import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.phases.PhaseSuite;
+import jdk.graal.compiler.phases.tiers.HighTierContext;
+import jdk.graal.compiler.truffle.PartialEvaluator;
+import jdk.graal.compiler.truffle.TruffleCompilationIdentifier;
+import jdk.graal.compiler.truffle.TruffleCompilerConfiguration;
+import jdk.graal.compiler.truffle.TruffleCompilerImpl;
+import jdk.graal.compiler.truffle.TruffleCompilerOptions;
+import jdk.graal.compiler.truffle.TruffleTierConfiguration;
+import jdk.graal.compiler.truffle.phases.InstrumentationSuite;
+import jdk.graal.compiler.truffle.phases.TruffleTier;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.graal.code.SubstrateCompilationResult;
 import com.oracle.svm.core.option.RuntimeOptionValues;
-import com.oracle.svm.graal.GraalSupport;
+import com.oracle.svm.graal.TruffleRuntimeCompilationSupport;
 import com.oracle.svm.graal.SubstrateGraalUtils;
 import com.oracle.svm.truffle.SubstrateTruffleCompilationIdentifier;
 import com.oracle.svm.truffle.TruffleSupport;
@@ -112,17 +112,17 @@ public class SubstrateTruffleCompilerImpl extends TruffleCompilerImpl implements
 
     @Override
     public DebugContext createDebugContext(OptionValues options, CompilationIdentifier compilationId, TruffleCompilable callTarget, PrintStream logStream) {
-        return GraalSupport.get().openDebugContext(options, compilationId, callTarget, logStream);
+        return TruffleRuntimeCompilationSupport.get().openDebugContext(options, compilationId, callTarget, logStream);
     }
 
     @Override
     protected DiagnosticsOutputDirectory getDebugOutputDirectory() {
-        return GraalSupport.get().getDebugOutputDirectory();
+        return TruffleRuntimeCompilationSupport.get().getDebugOutputDirectory();
     }
 
     @Override
     protected Map<CompilationWrapper.ExceptionAction, Integer> getCompilationProblemsPerAction() {
-        return GraalSupport.get().getCompilationProblemsPerAction();
+        return TruffleRuntimeCompilationSupport.get().getCompilationProblemsPerAction();
     }
 
     @Override

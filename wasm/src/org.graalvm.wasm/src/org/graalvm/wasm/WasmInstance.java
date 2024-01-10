@@ -42,6 +42,7 @@ package org.graalvm.wasm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import org.graalvm.wasm.api.Sequence;
 import org.graalvm.wasm.constants.GlobalModifier;
@@ -62,12 +63,14 @@ import com.oracle.truffle.api.library.ExportMessage;
 @SuppressWarnings("static-method")
 public final class WasmInstance extends RuntimeState implements TruffleObject {
 
+    private List<BiConsumer<WasmContext, WasmInstance>> linkActions;
+
     public WasmInstance(WasmContext context, WasmModule module) {
         this(context, module, module.numFunctions(), module.droppedDataInstanceOffset());
     }
 
     public WasmInstance(WasmContext context, WasmModule module, int numberOfFunctions) {
-        super(context, module, numberOfFunctions, 0);
+        this(context, module, numberOfFunctions, 0);
     }
 
     private WasmInstance(WasmContext context, WasmModule module, int numberOfFunctions, int droppedDataInstanceAddress) {
@@ -102,6 +105,27 @@ public final class WasmInstance extends RuntimeState implements TruffleObject {
 
     private void ensureLinked() {
         WasmContext.get(null).linker().tryLink(this);
+    }
+
+    public List<BiConsumer<WasmContext, WasmInstance>> linkActions() {
+        return linkActions;
+    }
+
+    public List<BiConsumer<WasmContext, WasmInstance>> createLinkActions() {
+        return linkActions = module().getOrRecreateLinkActions();
+    }
+
+    public void addLinkAction(BiConsumer<WasmContext, WasmInstance> action) {
+        linkActions.add(action);
+    }
+
+    public void removeLinkActions() {
+        this.linkActions = null;
+    }
+
+    @Override
+    protected WasmInstance instance() {
+        return this;
     }
 
     @ExportMessage
@@ -203,6 +227,8 @@ public final class WasmInstance extends RuntimeState implements TruffleObject {
                 return Float.intBitsToFloat(globals.loadAsInt(address));
             case WasmType.F64_TYPE:
                 return Double.longBitsToDouble(globals.loadAsLong(address));
+            case WasmType.V128_TYPE:
+                return globals.loadAsVector128(address);
             case WasmType.FUNCREF_TYPE:
             case WasmType.EXTERNREF_TYPE:
                 return globals.loadAsReference(address);

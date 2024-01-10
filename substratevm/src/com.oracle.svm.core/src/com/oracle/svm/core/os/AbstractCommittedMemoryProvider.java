@@ -32,7 +32,6 @@ import static org.graalvm.word.WordFactory.nullPointer;
 
 import java.util.EnumSet;
 
-import org.graalvm.compiler.api.replacements.Fold;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
@@ -42,9 +41,12 @@ import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.c.function.CEntryPointErrors;
 import com.oracle.svm.core.code.RuntimeCodeCache;
+import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.util.UnsignedUtils;
 import com.oracle.svm.core.util.VMError;
+
+import jdk.graal.compiler.api.replacements.Fold;
 
 public abstract class AbstractCommittedMemoryProvider implements CommittedMemoryProvider {
     @Fold
@@ -56,7 +58,6 @@ public abstract class AbstractCommittedMemoryProvider implements CommittedMemory
     @Uninterruptible(reason = "Still being initialized.")
     protected static int protectSingleIsolateImageHeap() {
         assert !SubstrateOptions.SpawnIsolates.getValue() : "Must be handled by ImageHeapProvider when SpawnIsolates is enabled";
-        assert Heap.getHeap().getImageHeapNullRegionSize() == 0 : "A null region only makes sense with a heap base.";
         Pointer heapBegin = IMAGE_HEAP_BEGIN.get();
         if (Heap.getHeap().getImageHeapOffsetInAddressSpace() != 0) {
             return CEntryPointErrors.MAP_HEAP_FAILED;
@@ -110,7 +111,7 @@ public abstract class AbstractCommittedMemoryProvider implements CommittedMemory
 
     @Override
     public Pointer allocateUnalignedChunk(UnsignedWord nbytes) {
-        return allocate(nbytes, WordFactory.unsigned(1), false);
+        return allocate(nbytes, getAlignmentForUnalignedChunks(), false);
     }
 
     @Override
@@ -171,6 +172,16 @@ public abstract class AbstractCommittedMemoryProvider implements CommittedMemory
         if (VirtualMemoryProvider.get().free(start, nbytes) == 0) {
             tracker.untrack(nbytes);
         }
+    }
+
+    /**
+     * Unaligned chunks also need some minimal alignment - otherwise, the data in the chunk header
+     * or the Java heap object within the unaligned chunk would be misaligned.
+     */
+    @Fold
+    protected static UnsignedWord getAlignmentForUnalignedChunks() {
+        int alignment = Math.max(ConfigurationValues.getTarget().wordSize, ConfigurationValues.getObjectLayout().getAlignment());
+        return WordFactory.unsigned(alignment);
     }
 
     private final VirtualMemoryTracker tracker = new VirtualMemoryTracker();

@@ -24,17 +24,14 @@
  */
 package com.oracle.svm.hosted;
 
-import static com.oracle.graal.pointsto.util.AnalysisError.shouldNotReachHere;
-
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -48,34 +45,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
-import org.graalvm.compiler.core.common.spi.ForeignCallDescriptor;
-import org.graalvm.compiler.core.common.spi.ForeignCallsProvider;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.MethodFilter;
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.java.GraphBuilderPhase.Instance;
-import org.graalvm.compiler.nodes.StaticDeoptimizingNode;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.nodes.extended.UnsafeAccessNode;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
-import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
-import org.graalvm.compiler.nodes.java.AccessFieldNode;
-import org.graalvm.compiler.nodes.java.AccessMonitorNode;
-import org.graalvm.compiler.options.Option;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.OptimisticOptimizations;
-import org.graalvm.compiler.phases.common.BoxNodeIdentityPhase;
-import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.c.function.RelocatedPointer;
 
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.PointsToAnalysis;
@@ -83,13 +58,11 @@ import com.oracle.graal.pointsto.api.HostVM;
 import com.oracle.graal.pointsto.api.PointstoOptions;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
 import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
-import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
-import com.oracle.graal.pointsto.meta.FieldValueComputer;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
@@ -101,6 +74,8 @@ import com.oracle.svm.core.NeverInlineTrivial;
 import com.oracle.svm.core.RuntimeAssertionsSupport;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateOptions.OptimizationLevel;
+import com.oracle.svm.core.annotate.InjectAccessors;
+import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.classinitialization.EnsureClassInitializedNode;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallLinkage;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
@@ -109,8 +84,6 @@ import com.oracle.svm.core.graal.thread.VMThreadLocalAccess;
 import com.oracle.svm.core.heap.StoredContinuation;
 import com.oracle.svm.core.heap.Target_java_lang_ref_Reference;
 import com.oracle.svm.core.heap.UnknownClass;
-import com.oracle.svm.core.heap.UnknownObjectField;
-import com.oracle.svm.core.heap.UnknownPrimitiveField;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.HubType;
 import com.oracle.svm.core.hub.ReferenceType;
@@ -118,10 +91,12 @@ import com.oracle.svm.core.jdk.InternalVMMethod;
 import com.oracle.svm.core.jdk.LambdaFormHiddenMethod;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
-import com.oracle.svm.core.thread.Continuation;
+import com.oracle.svm.core.thread.ContinuationSupport;
+import com.oracle.svm.core.util.Counter;
 import com.oracle.svm.core.util.HostedStringDeduplication;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.analysis.CustomTypeFieldHandler;
+import com.oracle.svm.hosted.ameta.FieldValueInterceptionSupport;
+import com.oracle.svm.hosted.analysis.NativeImagePointsToAnalysis;
 import com.oracle.svm.hosted.analysis.SVMParsingSupport;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationOptions;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
@@ -133,15 +108,38 @@ import com.oracle.svm.hosted.heap.PodSupport;
 import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
+import com.oracle.svm.hosted.meta.RelocatableConstant;
 import com.oracle.svm.hosted.phases.AnalysisGraphBuilderPhase;
 import com.oracle.svm.hosted.phases.ImplicitAssertionsPhase;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisGraphDecoderImpl;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyImpl;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils;
-import com.oracle.svm.hosted.substitute.UnsafeAutomaticSubstitutionProcessor;
+import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
+import com.oracle.svm.hosted.substitute.AutomaticUnsafeTransformationSupport;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
+import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.debug.MethodFilter;
+import jdk.graal.compiler.graph.Node;
+import jdk.graal.compiler.java.GraphBuilderPhase.Instance;
+import jdk.graal.compiler.nodes.StaticDeoptimizingNode;
+import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.nodes.ValueNode;
+import jdk.graal.compiler.nodes.extended.UnsafeAccessNode;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
+import jdk.graal.compiler.nodes.graphbuilderconf.IntrinsicContext;
+import jdk.graal.compiler.nodes.java.AccessFieldNode;
+import jdk.graal.compiler.nodes.java.AccessMonitorNode;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.phases.OptimisticOptimizations;
+import jdk.graal.compiler.phases.common.BoxNodeIdentityPhase;
+import jdk.graal.compiler.phases.common.CanonicalizerPhase;
+import jdk.graal.compiler.virtual.phases.ea.PartialEscapePhase;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.ResolvedJavaField;
@@ -157,7 +155,7 @@ public class SVMHost extends HostVM {
     private final ClassInitializationSupport classInitializationSupport;
     private final LinkAtBuildTimeSupport linkAtBuildTimeSupport;
     private final HostedStringDeduplication stringTable;
-    private final UnsafeAutomaticSubstitutionProcessor automaticSubstitutions;
+    private final AutomaticUnsafeTransformationSupport automaticUnsafeTransformations;
 
     /**
      * Optionally keep the Graal graphs alive during analysis. This increases the memory footprint
@@ -179,15 +177,16 @@ public class SVMHost extends HostVM {
     private final SVMParsingSupport parsingSupport;
     private final InlineBeforeAnalysisPolicy inlineBeforeAnalysisPolicy;
 
+    private final FieldValueInterceptionSupport fieldValueInterceptionSupport;
+
     @SuppressWarnings("this-escape")
-    public SVMHost(OptionValues options, ClassLoader classLoader, ClassInitializationSupport classInitializationSupport,
-                    UnsafeAutomaticSubstitutionProcessor automaticSubstitutions, Platform platform) {
-        super(options, classLoader);
+    public SVMHost(OptionValues options, ImageClassLoader loader, ClassInitializationSupport classInitializationSupport, AnnotationSubstitutionProcessor annotationSubstitutions) {
+        super(options, loader.getClassLoader());
         this.classInitializationSupport = classInitializationSupport;
         this.stringTable = HostedStringDeduplication.singleton();
         this.forbiddenTypes = setupForbiddenTypes(options);
-        this.automaticSubstitutions = automaticSubstitutions;
-        this.platform = platform;
+        this.automaticUnsafeTransformations = new AutomaticUnsafeTransformationSupport(options, annotationSubstitutions, loader);
+        this.platform = loader.platform;
         this.linkAtBuildTimeSupport = LinkAtBuildTimeSupport.singleton();
         if (ImageSingletons.contains(MultiMethodAnalysisPolicy.class)) {
             multiMethodAnalysisPolicy = ImageSingletons.lookup(MultiMethodAnalysisPolicy.class);
@@ -204,6 +203,8 @@ public class SVMHost extends HostVM {
         } else {
             parsingSupport = null;
         }
+        fieldValueInterceptionSupport = new FieldValueInterceptionSupport(annotationSubstitutions);
+        ImageSingletons.add(FieldValueInterceptionSupport.class, fieldValueInterceptionSupport);
     }
 
     protected InlineBeforeAnalysisPolicyUtils getInlineBeforeAnalysisPolicyUtils() {
@@ -261,7 +262,7 @@ public class SVMHost extends HostVM {
     @Override
     public Instance createGraphBuilderPhase(HostedProviders builderProviders, GraphBuilderConfiguration graphBuilderConfig, OptimisticOptimizations optimisticOpts,
                     IntrinsicContext initialIntrinsicContext) {
-        return new AnalysisGraphBuilderPhase(builderProviders, graphBuilderConfig, optimisticOpts, initialIntrinsicContext, builderProviders.getWordTypes(), this);
+        return new AnalysisGraphBuilderPhase(builderProviders, graphBuilderConfig, optimisticOpts, initialIntrinsicContext, this);
     }
 
     @Override
@@ -270,8 +271,13 @@ public class SVMHost extends HostVM {
     }
 
     @Override
-    public boolean isRelocatedPointer(UniverseMetaAccess metaAccess, JavaConstant constant) {
-        return metaAccess.isInstanceOf(constant, RelocatedPointer.class);
+    public void recordActivity() {
+        DeadlockWatchdog.singleton().recordActivity();
+    }
+
+    @Override
+    public boolean isRelocatedPointer(JavaConstant constant) {
+        return constant instanceof RelocatableConstant;
     }
 
     @Override
@@ -298,7 +304,7 @@ public class SVMHost extends HostVM {
     }
 
     @Override
-    public void onTypeReachable(AnalysisType analysisType) {
+    public void onTypeReachable(BigBang bb, AnalysisType analysisType) {
         if (!analysisType.isReachable()) {
             throw VMError.shouldNotReachHere("Registering and initializing a type that was not yet marked as reachable: " + analysisType);
         }
@@ -310,7 +316,7 @@ public class SVMHost extends HostVM {
         classInitializationSupport.maybeInitializeAtBuildTime(analysisType);
 
         /* Compute the automatic substitutions. */
-        automaticSubstitutions.computeSubstitutions(this, GraalAccess.getOriginalProviders().getMetaAccess().lookupJavaType(analysisType.getJavaClass()));
+        automaticUnsafeTransformations.computeTransformations(bb, this, GraalAccess.getOriginalProviders().getMetaAccess().lookupJavaType(analysisType.getJavaClass()));
     }
 
     @Override
@@ -321,13 +327,11 @@ public class SVMHost extends HostVM {
         return initializedAtBuildTime;
     }
 
-    private final boolean parseOnce = SubstrateOptions.parseOnce();
-
     @Override
     public GraphBuilderConfiguration updateGraphBuilderConfiguration(GraphBuilderConfiguration config, AnalysisMethod method) {
-        GraphBuilderConfiguration updatedConfig = config.withRetainLocalVariables(retainLocalVariables()).withUnresolvedIsError(linkAtBuildTimeSupport.linkAtBuildTime(method.getDeclaringClass()))
-                        .withFullInfopoints(
-                                        SubstrateOptions.getSourceLevelDebug() && SubstrateOptions.getSourceLevelDebugFilter().test(method.getDeclaringClass().toJavaName()));
+        GraphBuilderConfiguration updatedConfig = config
+                        .withRetainLocalVariables(retainLocalVariables())
+                        .withFullInfopoints(SubstrateOptions.getSourceLevelDebug() && SubstrateOptions.getSourceLevelDebugFilter().test(method.getDeclaringClass().toJavaName()));
         if (parsingSupport != null) {
             return parsingSupport.updateGraphBuilderConfiguration(updatedConfig, method);
         }
@@ -335,22 +339,12 @@ public class SVMHost extends HostVM {
     }
 
     private boolean retainLocalVariables() {
-        if (parseOnce) {
-            /*
-             * Disabling liveness analysis preserves the values of local variables beyond the
-             * bytecode-liveness. This greatly helps debugging. Note that when local variable
-             * numbers are reused by javac, local variables can still be assigned to illegal values.
-             */
-            return SubstrateOptions.optimizationLevel() == OptimizationLevel.O0;
-
-        } else {
-            /*
-             * We want to always disable the liveness analysis, since we want the points-to analysis
-             * to be as conservative as possible. The analysis results can then be used with the
-             * liveness analysis enabled or disabled.
-             */
-            return true;
-        }
+        /*
+         * Disabling liveness analysis preserves the values of local variables beyond the
+         * bytecode-liveness. This greatly helps debugging. Note that when local variable numbers
+         * are reused by javac, local variables can still be assigned to illegal values.
+         */
+        return SubstrateOptions.optimizationLevel() == OptimizationLevel.O0;
     }
 
     @Override
@@ -418,10 +412,21 @@ public class SVMHost extends HostVM {
         boolean isSealed = javaClass.isSealed();
         boolean isVMInternal = type.isAnnotationPresent(InternalVMMethod.class);
         boolean isLambdaFormHidden = type.isAnnotationPresent(LambdaFormHiddenMethod.class);
+        boolean isLinked = type.isLinked();
 
         return new DynamicHub(javaClass, className, computeHubType(type), computeReferenceType(type), superHub, componentHub, sourceFileName, modifiers, hubClassLoader,
-                        isHidden, isRecord, nestHost, assertionStatus, type.hasDefaultMethods(), type.declaresDefaultMethods(), isSealed, isVMInternal, isLambdaFormHidden, simpleBinaryName,
-                        getDeclaringClass(javaClass));
+                        isHidden, isRecord, nestHost, assertionStatus, type.hasDefaultMethods(), type.declaresDefaultMethods(), isSealed, isVMInternal, isLambdaFormHidden, isLinked, simpleBinaryName,
+                        getDeclaringClass(javaClass), getSignature(javaClass));
+    }
+
+    private static final Method getSignature = ReflectionUtil.lookupMethod(Class.class, "getGenericSignature0");
+
+    private String getSignature(Class<?> javaClass) {
+        try {
+            return (String) getSignature.invoke(javaClass);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw GraalError.shouldNotReachHere(e); // ExcludeFromJacocoGeneratedReport
+        }
     }
 
     private final Method getDeclaringClass0 = ReflectionUtil.lookupMethod(Class.class, "getDeclaringClass0");
@@ -480,10 +485,6 @@ public class SVMHost extends HostVM {
         return classInitializationSupport;
     }
 
-    public UnsafeAutomaticSubstitutionProcessor getAutomaticSubstitutionProcessor() {
-        return automaticSubstitutions;
-    }
-
     private static int computeHubType(AnalysisType type) {
         if (type.isArray()) {
             if (type.getComponentType().isPrimitive() || type.getComponentType().isWordType()) {
@@ -496,7 +497,7 @@ public class SVMHost extends HostVM {
                 return HubType.REFERENCE_INSTANCE;
             } else if (PodSupport.isPresent() && PodSupport.singleton().isPodClass(type.getJavaClass())) {
                 return HubType.POD_INSTANCE;
-            } else if (Continuation.isSupported() && type.getJavaClass() == StoredContinuation.class) {
+            } else if (ContinuationSupport.isSupported() && type.getJavaClass() == StoredContinuation.class) {
                 return HubType.STORED_CONTINUATION_INSTANCE;
             }
             assert !Target_java_lang_ref_Reference.class.isAssignableFrom(type.getJavaClass()) : "should not see substitution type here";
@@ -548,31 +549,27 @@ public class SVMHost extends HostVM {
                 graph.getGraphState().configureExplicitExceptionsNoDeoptIfNecessary();
             }
 
-            if (parseOnce) {
-                if (!SubstrateCompilationDirectives.isRuntimeCompiledMethod(method)) {
-                    /*
-                     * Runtime compiled methods should not have assertions. If they do, then they
-                     * should be caught via the blocklist instead of being converted to bytecode
-                     * exceptions.
-                     */
-                    new ImplicitAssertionsPhase().apply(graph, getProviders(method.getMultiMethodKey()));
-                }
-                UninterruptibleAnnotationChecker.checkAfterParsing(method, graph);
-
-                optimizeAfterParsing(bb, method, graph);
+            if (!SubstrateCompilationDirectives.isRuntimeCompiledMethod(method)) {
                 /*
-                 * Do a complete Canonicalizer run once before graph encoding, to clean up any
-                 * leftover uncanonicalized nodes.
+                 * Runtime compiled methods should not have assertions. If they do, then they should
+                 * be caught via the blocklist instead of being converted to bytecode exceptions.
                  */
-                CanonicalizerPhase.create().apply(graph, getProviders(method.getMultiMethodKey()));
-                /*
-                 * To avoid keeping the whole Graal graphs alive in production use cases, we extract
-                 * the necessary bits of information and store them in secondary storage maps.
-                 */
-                if (InliningUtilities.isTrivialMethod(graph)) {
-                    analysisTrivialMethods.put(method, true);
-                }
+                new ImplicitAssertionsPhase().apply(graph, getProviders(method.getMultiMethodKey()));
+            }
+            UninterruptibleAnnotationChecker.checkAfterParsing(method, graph);
 
+            optimizeAfterParsing(bb, method, graph);
+            /*
+             * Do a complete Canonicalizer run once before graph encoding, to clean up any leftover
+             * uncanonicalized nodes.
+             */
+            CanonicalizerPhase.create().apply(graph, getProviders(method.getMultiMethodKey()));
+            /*
+             * To avoid keeping the whole Graal graphs alive in production use cases, we extract the
+             * necessary bits of information and store them in secondary storage maps.
+             */
+            if (InliningUtilities.isTrivialMethod(graph)) {
+                analysisTrivialMethods.put(method, true);
             }
 
             super.methodAfterParsingHook(bb, method, graph);
@@ -630,15 +627,6 @@ public class SVMHost extends HostVM {
              * verification features.
              */
             analysisGraphs.put(method, graph);
-        }
-        /*
-         * To avoid keeping the whole Graal graphs alive in production use cases, we extract the
-         * necessary bits of information and store them in secondary storage maps.
-         */
-        if (!parseOnce) {
-            if (InliningUtilities.isTrivialMethod(graph)) {
-                analysisTrivialMethods.put(method, true);
-            }
         }
         for (Node n : graph.getNodes()) {
             if (n instanceof StackValueNode) {
@@ -754,7 +742,8 @@ public class SVMHost extends HostVM {
     }
 
     public static class Options {
-        @Option(help = "Enable the behavior of old GraalVM versions. When enabled, interfaces not available for the current platform are filtered.")//
+        @Option(help = "Enable the behavior of old GraalVM versions. When enabled, interfaces not available for the current platform are filtered.", //
+                        deprecated = true, deprecationMessage = "This option was introduced to simplify migration to GraalVM 21.2 and will be removed in a future release")//
         public static final HostedOptionKey<Boolean> PlatformInterfaceCompatibilityMode = new HostedOptionKey<>(false);
     }
 
@@ -821,6 +810,35 @@ public class SVMHost extends HostVM {
             }
         }
         return false;
+    }
+
+    @Override
+    public boolean isFieldIncluded(BigBang bb, Field field) {
+        /*
+         * Fields of type CGlobalData can use a CGlobalDataFactory which must not be reachable at
+         * run time
+         */
+        if (field.getType().equals(CGlobalData.class)) {
+            return false;
+        }
+        /* This field cannot be written to (see documentation) */
+        if (field.equals(ReflectionUtil.lookupField(Counter.Group.class, "enabled"))) {
+            return false;
+        }
+        /* Fields with those names are not allowed in the image */
+        if (NativeImageGenerator.checkName(field.getType().getName() + "." + field.getName()) != null) {
+            return false;
+        }
+        /* Fields from this package should not be in the image */
+        if (field.getDeclaringClass().getName().startsWith("jdk.graal.compiler")) {
+            return false;
+        }
+        /* Fields that are deleted or substituted should not be in the image */
+        if (bb instanceof NativeImagePointsToAnalysis nativeImagePointsToAnalysis) {
+            AnnotationSubstitutionProcessor annotationSubstitutionProcessor = nativeImagePointsToAnalysis.getAnnotationSubstitutionProcessor();
+            return !annotationSubstitutionProcessor.isDeleted(field) && !annotationSubstitutionProcessor.isAnnotationPresent(field, InjectAccessors.class);
+        }
+        return super.isFieldIncluded(bb, field);
     }
 
     private final List<BiPredicate<AnalysisMethod, AnalysisMethod>> neverInlineTrivialHandlers = new CopyOnWriteArrayList<>();
@@ -958,77 +976,6 @@ public class SVMHost extends HostVM {
          * methods.
          */
         return method.isOriginalMethod() && !SubstrateCompilationDirectives.singleton().isRegisteredForDeoptTesting(method);
-    }
-
-    @Override
-    public FieldValueComputer createFieldValueComputer(AnalysisField field) {
-        UnknownObjectField unknownObjectField = field.getAnnotation(UnknownObjectField.class);
-        if (unknownObjectField != null) {
-            return createObjectFieldValueComputer(field, unknownObjectField);
-        }
-        UnknownPrimitiveField unknownPrimitiveField = field.getAnnotation(UnknownPrimitiveField.class);
-        if (unknownPrimitiveField != null) {
-            return createPrimitiveFieldValueComputer(field, unknownPrimitiveField);
-        }
-        return null;
-    }
-
-    private static FieldValueComputer createObjectFieldValueComputer(AnalysisField field, UnknownObjectField unknownValueField) {
-        return new FieldValueComputer() {
-            final BooleanSupplier availability = ReflectionUtil.newInstance(unknownValueField.availability());
-
-            @Override
-            public boolean isAvailable() {
-                return availability.getAsBoolean();
-            }
-
-            @Override
-            public Class<?>[] types() {
-                return extractAnnotationTypes(field, unknownValueField.types(), unknownValueField.fullyQualifiedTypes());
-            }
-
-            @Override
-            public boolean canBeNull() {
-                return unknownValueField.canBeNull();
-            }
-        };
-    }
-
-    private static FieldValueComputer createPrimitiveFieldValueComputer(AnalysisField field, UnknownPrimitiveField unknownValueField) {
-        return new FieldValueComputer() {
-            final BooleanSupplier availability = ReflectionUtil.newInstance(unknownValueField.availability());
-
-            @Override
-            public boolean isAvailable() {
-                return availability.getAsBoolean();
-            }
-
-            @Override
-            public Class<?>[] types() {
-                return new Class<?>[]{field.getType().getJavaClass()};
-            }
-        };
-    }
-
-    private static Class<?>[] extractAnnotationTypes(AnalysisField field, Class<?>[] types, String[] fullyQualifiedTypes) {
-        List<Class<?>> annotationTypes = new ArrayList<>(Arrays.asList(types));
-        for (String annotationTypeName : fullyQualifiedTypes) {
-            try {
-                Class<?> annotationType = Class.forName(annotationTypeName);
-                annotationTypes.add(annotationType);
-            } catch (ClassNotFoundException e) {
-                throw shouldNotReachHere("Specified computed value type not found " + annotationTypeName);
-            }
-        }
-
-        if (annotationTypes.isEmpty()) {
-            /* If no types are specified fallback to the field declared type. */
-            AnalysisType fieldType = field.getType();
-            VMError.guarantee(CustomTypeFieldHandler.isConcreteType(fieldType), "Illegal use of @UnknownObjectField annotation on field %s. " +
-                            "The field type must be concrete or the annotation must declare a concrete type.", field);
-            annotationTypes.add(fieldType.getJavaClass());
-        }
-        return annotationTypes.toArray(new Class<?>[0]);
     }
 
     public SimulateClassInitializerSupport createSimulateClassInitializerSupport(AnalysisMetaAccess aMetaAccess) {

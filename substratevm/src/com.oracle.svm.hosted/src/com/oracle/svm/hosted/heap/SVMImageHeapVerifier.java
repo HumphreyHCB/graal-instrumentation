@@ -24,6 +24,8 @@
  */
 package com.oracle.svm.hosted.heap;
 
+import java.util.Map;
+
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.graal.pointsto.BigBang;
@@ -31,14 +33,17 @@ import com.oracle.graal.pointsto.ObjectScanner;
 import com.oracle.graal.pointsto.ObjectScanningObserver;
 import com.oracle.graal.pointsto.heap.HeapSnapshotVerifier;
 import com.oracle.graal.pointsto.heap.ImageHeap;
+import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapScanner;
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.util.CompletionExecutor;
+import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.ameta.AnalysisConstantReflectionProvider;
 
+import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
 
 public class SVMImageHeapVerifier extends HeapSnapshotVerifier {
@@ -47,8 +52,8 @@ public class SVMImageHeapVerifier extends HeapSnapshotVerifier {
     }
 
     @Override
-    public boolean checkHeapSnapshot(UniverseMetaAccess metaAccess, CompletionExecutor executor, String phase, boolean forAnalysis) {
-        return super.checkHeapSnapshot(metaAccess, executor, phase, forAnalysis) || imageStateModified();
+    public boolean checkHeapSnapshot(UniverseMetaAccess metaAccess, CompletionExecutor executor, String phase, boolean forAnalysis, Map<Constant, Object> embeddedConstants) {
+        return super.checkHeapSnapshot(metaAccess, executor, phase, forAnalysis, embeddedConstants) || imageStateModified();
     }
 
     /**
@@ -95,7 +100,12 @@ public class SVMImageHeapVerifier extends HeapSnapshotVerifier {
         @Override
         protected JavaConstant readFieldValue(AnalysisField field, JavaConstant receiver) {
             AnalysisConstantReflectionProvider constantReflectionProvider = (AnalysisConstantReflectionProvider) bb.getConstantReflectionProvider();
-            return constantReflectionProvider.readValue(metaAccess, field, receiver, true);
+            /*
+             * The verifier compares the hosted values with the ones from the shadow heap, so the
+             * constant reflection must not return shadow heap values.
+             */
+            VMError.guarantee(!(receiver instanceof ImageHeapConstant));
+            return constantReflectionProvider.readHostedFieldValue(metaAccess, field, receiver);
         }
     }
 

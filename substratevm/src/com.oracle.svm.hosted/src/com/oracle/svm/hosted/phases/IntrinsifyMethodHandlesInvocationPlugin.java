@@ -24,14 +24,12 @@
  */
 package com.oracle.svm.hosted.phases;
 
-import static org.graalvm.compiler.nodes.graphbuilderconf.InlineInvokePlugin.InlineInfo.createStandardInlineInfo;
+import static jdk.graal.compiler.nodes.graphbuilderconf.InlineInvokePlugin.InlineInfo.createStandardInlineInfo;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.invoke.WrongMethodTypeException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,74 +38,6 @@ import java.util.stream.StreamSupport;
 
 import org.graalvm.collections.Pair;
 import org.graalvm.collections.UnmodifiableEconomicMap;
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.spi.MetaAccessExtensionProvider;
-import org.graalvm.compiler.core.common.type.ObjectStamp;
-import org.graalvm.compiler.core.common.type.PrimitiveStamp;
-import org.graalvm.compiler.core.common.type.Stamp;
-import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.core.common.type.StampPair;
-import org.graalvm.compiler.core.common.type.TypeReference;
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.GraalError;
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.graph.NodeClass;
-import org.graalvm.compiler.graph.NodeMap;
-import org.graalvm.compiler.java.BytecodeParser;
-import org.graalvm.compiler.java.GraphBuilderPhase;
-import org.graalvm.compiler.nodeinfo.NodeCycles;
-import org.graalvm.compiler.nodeinfo.NodeInfo;
-import org.graalvm.compiler.nodeinfo.NodeSize;
-import org.graalvm.compiler.nodes.AbstractBeginNode;
-import org.graalvm.compiler.nodes.ArithmeticOperation;
-import org.graalvm.compiler.nodes.BeginNode;
-import org.graalvm.compiler.nodes.CallTargetNode.InvokeKind;
-import org.graalvm.compiler.nodes.ConstantNode;
-import org.graalvm.compiler.nodes.FixedGuardNode;
-import org.graalvm.compiler.nodes.FixedNode;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
-import org.graalvm.compiler.nodes.InvokeNode;
-import org.graalvm.compiler.nodes.LogicNode;
-import org.graalvm.compiler.nodes.NodeView;
-import org.graalvm.compiler.nodes.ParameterNode;
-import org.graalvm.compiler.nodes.PhiNode;
-import org.graalvm.compiler.nodes.PiNode;
-import org.graalvm.compiler.nodes.ReturnNode;
-import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.ValueNode;
-import org.graalvm.compiler.nodes.calc.FloatingNode;
-import org.graalvm.compiler.nodes.calc.IsNullNode;
-import org.graalvm.compiler.nodes.extended.AnchoringNode;
-import org.graalvm.compiler.nodes.extended.BytecodeExceptionNode.BytecodeExceptionKind;
-import org.graalvm.compiler.nodes.graphbuilderconf.ClassInitializationPlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Plugins;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderContext;
-import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderTool;
-import org.graalvm.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.InvocationPlugin.OptionalInvocationPlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.InvocationPlugin.Receiver;
-import org.graalvm.compiler.nodes.graphbuilderconf.InvocationPlugin.RequiredInvocationPlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.InvocationPlugins;
-import org.graalvm.compiler.nodes.graphbuilderconf.InvocationPlugins.Registration;
-import org.graalvm.compiler.nodes.graphbuilderconf.NodePlugin;
-import org.graalvm.compiler.nodes.graphbuilderconf.ParameterPlugin;
-import org.graalvm.compiler.nodes.java.FinalFieldBarrierNode;
-import org.graalvm.compiler.nodes.java.InstanceOfNode;
-import org.graalvm.compiler.nodes.java.LoadFieldNode;
-import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
-import org.graalvm.compiler.nodes.java.NewArrayNode;
-import org.graalvm.compiler.nodes.java.NewInstanceNode;
-import org.graalvm.compiler.nodes.java.StoreFieldNode;
-import org.graalvm.compiler.nodes.spi.Replacements;
-import org.graalvm.compiler.nodes.type.StampTool;
-import org.graalvm.compiler.phases.OptimisticOptimizations;
-import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.phases.util.Providers;
-import org.graalvm.compiler.replacements.InlineDuringParsingPlugin;
-import org.graalvm.compiler.replacements.MethodHandlePlugin;
-import org.graalvm.compiler.word.WordOperationPlugin;
-import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -124,11 +54,77 @@ import com.oracle.svm.core.jdk.VarHandleFeature;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.meta.HostedMethod;
+import com.oracle.svm.hosted.meta.HostedSnippetReflectionProvider;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
-import com.oracle.svm.hosted.snippets.IntrinsificationPluginRegistry;
-import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.core.common.spi.MetaAccessExtensionProvider;
+import jdk.graal.compiler.core.common.type.ObjectStamp;
+import jdk.graal.compiler.core.common.type.PrimitiveStamp;
+import jdk.graal.compiler.core.common.type.Stamp;
+import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.core.common.type.StampPair;
+import jdk.graal.compiler.core.common.type.TypeReference;
+import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.graph.Node;
+import jdk.graal.compiler.graph.NodeClass;
+import jdk.graal.compiler.graph.NodeMap;
+import jdk.graal.compiler.java.BytecodeParser;
+import jdk.graal.compiler.java.GraphBuilderPhase;
+import jdk.graal.compiler.nodeinfo.NodeCycles;
+import jdk.graal.compiler.nodeinfo.NodeInfo;
+import jdk.graal.compiler.nodeinfo.NodeSize;
+import jdk.graal.compiler.nodes.AbstractBeginNode;
+import jdk.graal.compiler.nodes.ArithmeticOperation;
+import jdk.graal.compiler.nodes.BeginNode;
+import jdk.graal.compiler.nodes.CallTargetNode.InvokeKind;
+import jdk.graal.compiler.nodes.ConstantNode;
+import jdk.graal.compiler.nodes.FixedGuardNode;
+import jdk.graal.compiler.nodes.FixedNode;
+import jdk.graal.compiler.nodes.FixedWithNextNode;
+import jdk.graal.compiler.nodes.InvokeNode;
+import jdk.graal.compiler.nodes.LogicNode;
+import jdk.graal.compiler.nodes.NodeView;
+import jdk.graal.compiler.nodes.ParameterNode;
+import jdk.graal.compiler.nodes.PhiNode;
+import jdk.graal.compiler.nodes.PiNode;
+import jdk.graal.compiler.nodes.ReturnNode;
+import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.nodes.ValueNode;
+import jdk.graal.compiler.nodes.calc.FloatingNode;
+import jdk.graal.compiler.nodes.calc.IsNullNode;
+import jdk.graal.compiler.nodes.extended.AnchoringNode;
+import jdk.graal.compiler.nodes.extended.BytecodeExceptionNode.BytecodeExceptionKind;
+import jdk.graal.compiler.nodes.graphbuilderconf.ClassInitializationPlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Plugins;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderTool;
+import jdk.graal.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin.OptionalInvocationPlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin.Receiver;
+import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin.RequiredInvocationPlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
+import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.Registration;
+import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
+import jdk.graal.compiler.nodes.graphbuilderconf.ParameterPlugin;
+import jdk.graal.compiler.nodes.java.FinalFieldBarrierNode;
+import jdk.graal.compiler.nodes.java.InstanceOfNode;
+import jdk.graal.compiler.nodes.java.LoadFieldNode;
+import jdk.graal.compiler.nodes.java.MethodCallTargetNode;
+import jdk.graal.compiler.nodes.java.NewArrayNode;
+import jdk.graal.compiler.nodes.java.NewInstanceNode;
+import jdk.graal.compiler.nodes.java.StoreFieldNode;
+import jdk.graal.compiler.nodes.spi.Replacements;
+import jdk.graal.compiler.nodes.type.StampTool;
+import jdk.graal.compiler.phases.OptimisticOptimizations;
+import jdk.graal.compiler.phases.common.CanonicalizerPhase;
+import jdk.graal.compiler.phases.util.Providers;
+import jdk.graal.compiler.replacements.InlineDuringParsingPlugin;
+import jdk.graal.compiler.replacements.MethodHandlePlugin;
+import jdk.graal.compiler.word.WordOperationPlugin;
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.DeoptimizationReason;
@@ -142,9 +138,7 @@ import jdk.vm.ci.meta.ResolvedJavaType;
 
 /**
  * Legacy code which will be replaced by the more general method handle intrinsification and
- * inlining in {@link com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder} once
- * {@link com.oracle.svm.core.SubstrateOptions#parseOnce()} is always on, including when JIT
- * compilation is enabled.
+ * inlining in {@link com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder}.
  *
  * Support for method handles that can be reduced to a plain invocation. This is enough to support
  * the method handles used for Java 8 Lambda expressions. Support for arbitrary method handles is
@@ -178,54 +172,30 @@ import jdk.vm.ci.meta.ResolvedJavaType;
  */
 public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
 
-    private static final Field varHandleVFormField;
-    private static final Method varFormInitMethod;
-    private static final Method varHandleGetMethodHandleMethod;
-
-    static {
-        varHandleVFormField = ReflectionUtil.lookupField(VarHandle.class, "vform");
-        try {
-            Class<?> varFormClass = Class.forName("java.lang.invoke.VarForm");
-            varFormInitMethod = ReflectionUtil.lookupMethod(varFormClass, "getMethodType_V", int.class);
-            varHandleGetMethodHandleMethod = ReflectionUtil.lookupMethod(VarHandle.class, "getMethodHandle", int.class);
-        } catch (ClassNotFoundException ex) {
-            throw VMError.shouldNotReachHere(ex);
-        }
-    }
-
-    public static class IntrinsificationRegistry extends IntrinsificationPluginRegistry {
-    }
-
     private final ParsingReason reason;
     private final Providers parsingProviders;
     private final HostedProviders universeProviders;
     private final AnalysisUniverse aUniverse;
     private final HostedUniverse hUniverse;
+    private final HostedSnippetReflectionProvider hostedSnippetReflection;
 
     private final ClassInitializationPlugin classInitializationPlugin;
-
-    private final IntrinsificationRegistry intrinsificationRegistry;
 
     private final ResolvedJavaType methodHandleType;
     private final ResolvedJavaType varHandleType;
 
-    public IntrinsifyMethodHandlesInvocationPlugin(ParsingReason reason, HostedProviders providers, AnalysisUniverse aUniverse, HostedUniverse hUniverse) {
+    public IntrinsifyMethodHandlesInvocationPlugin(ParsingReason reason, HostedSnippetReflectionProvider hostedSnippetReflection, HostedProviders providers, AnalysisUniverse aUniverse,
+                    HostedUniverse hUniverse) {
         this.reason = reason;
         this.aUniverse = aUniverse;
         this.hUniverse = hUniverse;
         this.universeProviders = providers;
+        this.hostedSnippetReflection = hostedSnippetReflection;
 
         Providers originalProviders = GraalAccess.getOriginalProviders();
         this.parsingProviders = new Providers(originalProviders).copyWith(new MethodHandlesMetaAccessExtensionProvider());
 
         this.classInitializationPlugin = new SubstrateClassInitializationPlugin((SVMHost) aUniverse.hostVM());
-
-        if (reason == ParsingReason.PointsToAnalysis) {
-            intrinsificationRegistry = new IntrinsificationRegistry();
-            ImageSingletons.add(IntrinsificationRegistry.class, intrinsificationRegistry);
-        } else {
-            intrinsificationRegistry = ImageSingletons.lookup(IntrinsificationRegistry.class);
-        }
 
         methodHandleType = universeProviders.getMetaAccess().lookupJavaType(MethodHandle.class);
         varHandleType = universeProviders.getMetaAccess().lookupJavaType(VarHandle.class);
@@ -329,48 +299,7 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
             if (args.length < 1 || !args[0].isJavaConstant() || !isVarHandle(args[0])) {
                 return false;
             }
-
-            try {
-                /*
-                 * The field VarHandle.vform.methodType_V_table is a @Stable field but initialized
-                 * lazily on first access. Therefore, constant folding can happen only after
-                 * initialization has happened. We force initialization by invoking the method
-                 * VarHandle.vform.getMethodType_V(0).
-                 */
-                VarHandle varHandle = aUniverse.getSnippetReflection().asObject(VarHandle.class, args[0].asJavaConstant());
-                Object varForm = varHandleVFormField.get(varHandle);
-                varFormInitMethod.invoke(varForm, 0);
-
-                /*
-                 * The AccessMode used for the access that we are going to intrinsify is hidden in a
-                 * AccessDescriptor object that is also passed in as a parameter to the intrinsified
-                 * method. Initializing all AccessMode enum values is easier than trying to extract
-                 * the actual AccessMode.
-                 */
-                for (VarHandle.AccessMode accessMode : VarHandle.AccessMode.values()) {
-                    /*
-                     * Force initialization of the @Stable field VarHandle.vform.memberName_table.
-                     * Starting with JDK 17, this field is lazily initialized.
-                     */
-                    boolean isAccessModeSupported = varHandle.isAccessModeSupported(accessMode);
-                    /*
-                     * Force initialization of the @Stable field
-                     * VarHandle.typesAndInvokers.methodType_table.
-                     */
-                    varHandle.accessModeType(accessMode);
-
-                    if (isAccessModeSupported) {
-                        /*
-                         * Force initialization of the @Stable field VarHandle.methodHandleTable (or
-                         * VarHandle.typesAndInvokers.methodHandle_tabel on JDK <= 17) .
-                         */
-                        varHandleGetMethodHandleMethod.invoke(varHandle, accessMode.ordinal());
-                    }
-                }
-            } catch (ReflectiveOperationException ex) {
-                throw VMError.shouldNotReachHere(ex);
-            }
-
+            VarHandleFeature.eagerlyInitializeVarHandle(hostedSnippetReflection.asObject(VarHandle.class, args[0].asJavaConstant()));
             return true;
         } else {
             return false;
@@ -590,14 +519,6 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
 
     @SuppressWarnings("try")
     private boolean processInvokeWithMethodHandle(GraphBuilderContext b, Replacements replacements, ResolvedJavaMethod methodHandleMethod, ValueNode[] methodHandleArguments) {
-        /*
-         * When parsing for compilation, we must not intrinsify method handles that were not
-         * intrinsified during analysis. Otherwise new code that was not seen as reachable by the
-         * static analysis would be compiled.
-         */
-        if (!reason.duringAnalysis() && intrinsificationRegistry.get(b.getMethod(), b.bci()) != Boolean.TRUE) {
-            return false;
-        }
         Plugins graphBuilderPlugins = new Plugins(parsingProviders.getReplacements().getGraphBuilderPlugins());
 
         registerInvocationPlugins(graphBuilderPlugins.getInvocationPlugins(), replacements);
@@ -645,14 +566,6 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
             Transplanter transplanter = new Transplanter(b, transplanted);
             try {
                 transplanter.graph(graph);
-
-                if (reason.duringAnalysis()) {
-                    /*
-                     * Successfully intrinsified during analysis, remember that we can intrinsify
-                     * when parsing for compilation.
-                     */
-                    intrinsificationRegistry.add(b.getMethod(), b.bci(), Boolean.TRUE);
-                }
                 return true;
             } catch (AbortTransplantException ex) {
                 /*
@@ -980,18 +893,6 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
             } else {
                 throw bailout();
             }
-
-            if (tConstant.getJavaKind() == JavaKind.Object) {
-                /*
-                 * The object replacer are not invoked when parsing in the HotSpot universe, so we
-                 * also need to do call the replacer here.
-                 */
-                Object oldObject = aUniverse.getSnippetReflection().asObject(Object.class, tConstant);
-                Object newObject = aUniverse.replaceObject(oldObject);
-                if (newObject != oldObject) {
-                    return aUniverse.getSnippetReflection().forObject(newObject);
-                }
-            }
             return tConstant;
         }
 
@@ -1058,11 +959,18 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
     }
 
     private JavaConstant lookup(JavaConstant constant) {
+        /* Redirect constant lookup through the shadow heap. */
         return aUniverse.lookup(constant);
     }
 
     private JavaConstant toOriginal(JavaConstant constant) {
-        return aUniverse.toHosted(constant);
+        if (constant == null) {
+            return null;
+        } else if (constant.getJavaKind().isObject() && !constant.isNull()) {
+            return GraalAccess.getOriginalSnippetReflection().forObject(hostedSnippetReflection.asObject(Object.class, constant));
+        } else {
+            return constant;
+        }
     }
 
     private static ResolvedJavaMethod toOriginal(ResolvedJavaMethod method) {

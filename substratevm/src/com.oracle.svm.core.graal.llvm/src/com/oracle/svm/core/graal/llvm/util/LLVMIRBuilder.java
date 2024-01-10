@@ -30,16 +30,16 @@ import static com.oracle.svm.core.graal.llvm.util.LLVMUtils.TRUE;
 import static com.oracle.svm.core.graal.llvm.util.LLVMUtils.dumpTypes;
 import static com.oracle.svm.core.graal.llvm.util.LLVMUtils.dumpValues;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHereUnexpectedInput;
-import static org.graalvm.compiler.debug.GraalError.shouldNotReachHere;
+import static jdk.graal.compiler.debug.GraalError.shouldNotReachHere;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.graalvm.compiler.core.common.NumUtil;
-import org.graalvm.compiler.core.common.calc.Condition;
-import org.graalvm.compiler.core.common.calc.FloatConvert;
-import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
+import jdk.graal.compiler.core.common.NumUtil;
+import jdk.graal.compiler.core.common.calc.Condition;
+import jdk.graal.compiler.core.common.calc.FloatConvert;
+import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
 
 import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.SubstrateOptions;
@@ -1119,6 +1119,10 @@ public class LLVMIRBuilder implements AutoCloseable {
 
     public LLVMValueRef buildBswap(LLVMValueRef a) {
         return buildIntrinsicOp("bswap", a);
+    }
+
+    public LLVMValueRef buildBitReverse(LLVMValueRef a) {
+        return buildIntrinsicOp("bitreverse", a);
     }
 
     // LLVM fptosi instruction returns poison if the input is NaN or outside the integer range.

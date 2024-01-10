@@ -24,7 +24,7 @@
  */
 package com.oracle.svm.hosted.ameta;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
@@ -70,7 +70,8 @@ final class AnalysisMethodHandleAccessProvider implements MethodHandleAccessProv
         if (originalMethodHandle == null) {
             return null;
         }
-        ResolvedJavaMethod originalTarget = originalMethodHandleAccess.resolveInvokeBasicTarget(originalMethodHandle, forceBytecodeGeneration);
+        // In Native Image, bytecode generation is permissible.
+        ResolvedJavaMethod originalTarget = originalMethodHandleAccess.resolveInvokeBasicTarget(originalMethodHandle, true);
         return analysisUniverse.lookup(originalTarget);
     }
 

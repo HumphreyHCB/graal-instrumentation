@@ -28,8 +28,11 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
+import com.oracle.svm.core.TypeResult;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.hosted.FeatureImpl.AfterRegistrationAccessImpl;
+import com.oracle.svm.hosted.ImageClassLoader;
 
 @AutomaticallyRegisteredFeature
 public class JDKInitializationFeature implements InternalFeature {
@@ -174,5 +177,39 @@ public class JDKInitializationFeature implements InternalFeature {
         rci.rerunInitialization("jdk.internal.misc.InnocuousThread", "Contains a thread group INNOCUOUSTHREADGROUP.");
 
         rci.rerunInitialization("sun.nio.ch.Poller", "Contains an InnocuousThread.");
+        rci.rerunInitialization("jdk.internal.jimage", "Pulls in direct byte buffers");
+
+        rci.rerunInitialization("sun.net.www.protocol.jrt.JavaRuntimeURLConnection", "Pulls in jimage reader");
+
+        rci.rerunInitialization("sun.launcher.LauncherHelper", "Pulls in jimage reader");
+
+        rci.initializeAtRunTime("jdk.internal.foreign.abi.fallback.LibFallback$NativeConstants", "Fails build-time initialization");
+        rci.initializeAtRunTime("jdk.internal.foreign.abi.fallback.FFIType", "Fails build-time initialization");
+        rci.initializeAtRunTime("jdk.internal.foreign.abi.fallback.FFIABI", "Fails build-time initialization");
+        rci.initializeAtRunTime("sun.reflect.misc.Trampoline", "Fails build-time initialization");
+
+        rci.initializeAtRunTime("com.sun.org.apache.xml.internal.serialize.HTMLdtd", "Fails build-time initialization");
+
+        rci.rerunInitialization("sun.security.ssl.SSLContextImpl$DefaultSSLContextHolder", "Stores secure random");
+        rci.rerunInitialization("sun.security.ssl.SSLSocketFactoryImpl", "Stores secure random");
+        rci.rerunInitialization("sun.security.provider.certpath.ssl.SSLServerCertStore", "Stores secure random");
+
+        rci.rerunInitialization("jdk.internal.foreign.SystemLookup$WindowsFallbackSymbols", "Does not work on non-Windows modular images");
+
+        rci.rerunInitialization("jdk.internal.logger.LoggerFinderLoader", "Contains a static field with a FilePermission value");
+
+        /*
+         * The local class Holder in FallbackLinker#getInstance fails the build time initialization
+         * starting JDK 22. There is no way to obtain a list of local classes using reflection. They
+         * are thus accessed by name. According to the code in Check.localClassName, the identifier
+         * in the name should be continuous.
+         */
+        ImageClassLoader imageClassLoader = ((AfterRegistrationAccessImpl) access).getImageClassLoader();
+        int i = 1;
+        TypeResult<Class<?>> currentHolderClass = imageClassLoader.findClass("jdk.internal.foreign.abi.fallback.FallbackLinker$%dHolder".formatted(i));
+        while (currentHolderClass.isPresent()) {
+            rci.initializeAtRunTime(currentHolderClass.get(), "Fails build-time initialization");
+            currentHolderClass = imageClassLoader.findClass("jdk.internal.foreign.abi.fallback.FallbackLinker$%dHolder".formatted(i++));
+        }
     }
 }

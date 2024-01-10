@@ -24,22 +24,22 @@
  */
 package com.oracle.svm.core.graal.thread;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.LIRKind;
-import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.graph.NodeClass;
-import org.graalvm.compiler.nodeinfo.NodeCycles;
-import org.graalvm.compiler.nodeinfo.NodeInfo;
-import org.graalvm.compiler.nodeinfo.NodeSize;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
-import org.graalvm.compiler.nodes.NodeView;
-import org.graalvm.compiler.nodes.spi.LIRLowerable;
-import org.graalvm.compiler.nodes.spi.NodeLIRBuilderTool;
-import org.graalvm.compiler.phases.util.Providers;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.svm.core.threadlocal.VMThreadLocalInfo;
 import com.oracle.svm.core.threadlocal.VMThreadLocalSTSupport;
+
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.graph.NodeClass;
+import jdk.graal.compiler.nodeinfo.NodeCycles;
+import jdk.graal.compiler.nodeinfo.NodeInfo;
+import jdk.graal.compiler.nodeinfo.NodeSize;
+import jdk.graal.compiler.nodes.FixedWithNextNode;
+import jdk.graal.compiler.nodes.NodeView;
+import jdk.graal.compiler.nodes.spi.LIRLowerable;
+import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
 
 @NodeInfo(cycles = NodeCycles.CYCLES_0, size = NodeSize.SIZE_1)
 public class VMThreadLocalSTHolderNode extends FixedWithNextNode implements LIRLowerable {
@@ -64,7 +64,7 @@ public class VMThreadLocalSTHolderNode extends FixedWithNextNode implements LIRL
         } else {
             holder = ImageSingletons.lookup(VMThreadLocalSTSupport.class).primitiveThreadLocals;
         }
-        SnippetReflectionProvider snippetReflection = ((Providers) gen.getLIRGeneratorTool().getProviders()).getSnippetReflection();
+        SnippetReflectionProvider snippetReflection = gen.getLIRGeneratorTool().getSnippetReflection();
         LIRKind kind = gen.getLIRGeneratorTool().getLIRKind(stamp(NodeView.DEFAULT));
         gen.setResult(this, gen.getLIRGeneratorTool().emitLoadConstant(kind, snippetReflection.forObject(holder)));
     }

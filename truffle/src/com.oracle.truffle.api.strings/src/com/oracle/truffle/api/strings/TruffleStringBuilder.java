@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -50,7 +50,6 @@ import static com.oracle.truffle.api.strings.TStringGuards.isUnsupportedEncoding
 
 import java.util.Arrays;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -215,7 +214,6 @@ public abstract sealed class TruffleStringBuilder permits TruffleStringBuilderGe
      */
     static TruffleStringBuilderGeneric createGeneric(Encoding encoding, int initialCapacity) {
         if (encoding == Encoding.UTF_8 || encoding == Encoding.UTF_16 || encoding == Encoding.UTF_32) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw InternalErrors.illegalArgument("use createUTF* methods for UTF encodings!");
         }
         return new TruffleStringBuilderGeneric(encoding, initialCapacity);
@@ -1023,11 +1021,11 @@ public abstract sealed class TruffleStringBuilder permits TruffleStringBuilderGe
 
         @Specialization
         static void append(Node node, TruffleStringBuilderGeneric sb, AbstractTruffleString a,
-                        @Cached @Shared TruffleString.ToIndexableNode toIndexableNode,
+                        @Cached @Exclusive TruffleString.ToIndexableNode toIndexableNode,
                         @Cached @Exclusive TStringInternalNodes.GetPreciseCodeRangeNode getPreciseCodeRangeNode,
                         @Cached @Exclusive TStringInternalNodes.GetCodePointLengthNode getCodePointLengthNode,
-                        @Cached @Shared InlinedBranchProfile bufferGrowProfile,
-                        @Cached @Shared InlinedBranchProfile errorProfile) {
+                        @Cached @Exclusive InlinedBranchProfile bufferGrowProfile,
+                        @Cached @Exclusive InlinedBranchProfile errorProfile) {
             if (a.length() == 0) {
                 return;
             }
@@ -1197,13 +1195,13 @@ public abstract sealed class TruffleStringBuilder permits TruffleStringBuilderGe
         @Specialization
         static void append(TruffleStringBuilderGeneric sb, AbstractTruffleString a, int fromIndex, int length,
                         @Bind("this") Node node,
-                        @Cached @Shared TruffleString.ToIndexableNode toIndexableNode,
+                        @Cached @Exclusive TruffleString.ToIndexableNode toIndexableNode,
                         @Cached TStringInternalNodes.GetCodePointLengthNode getCodePointLengthNode,
                         @Cached TStringInternalNodes.GetPreciseCodeRangeNode getPreciseCodeRangeNode,
                         @Cached TStringInternalNodes.CalcStringAttributesNode calcAttributesNode,
                         @Cached InlinedConditionProfile calcAttrsProfile,
-                        @Cached @Shared InlinedBranchProfile bufferGrowProfile,
-                        @Cached @Shared InlinedBranchProfile errorProfile) {
+                        @Cached @Exclusive InlinedBranchProfile bufferGrowProfile,
+                        @Cached @Exclusive InlinedBranchProfile errorProfile) {
             if (length == 0) {
                 return;
             }

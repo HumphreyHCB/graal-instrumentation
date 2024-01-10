@@ -24,10 +24,10 @@
  */
 package com.oracle.svm.graal;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.api.runtime.GraalRuntime;
-import org.graalvm.compiler.core.target.Backend;
-import org.graalvm.compiler.runtime.RuntimeProvider;
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.api.runtime.GraalRuntime;
+import jdk.graal.compiler.core.target.Backend;
+import jdk.graal.compiler.runtime.RuntimeProvider;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
@@ -55,7 +55,7 @@ public class SubstrateGraalRuntime implements GraalRuntime, RuntimeProvider {
         if (clazz == RuntimeProvider.class) {
             return (T) this;
         } else if (clazz == SnippetReflectionProvider.class) {
-            return (T) GraalSupport.getRuntimeConfig().getSnippetReflection();
+            return (T) TruffleRuntimeCompilationSupport.getRuntimeConfig().getSnippetReflection();
         } else if (clazz == StackIntrospection.class) {
             return (T) SubstrateStackIntrospection.SINGLETON;
         }
@@ -64,13 +64,13 @@ public class SubstrateGraalRuntime implements GraalRuntime, RuntimeProvider {
 
     @Override
     public Backend getHostBackend() {
-        return GraalSupport.getRuntimeConfig().getBackendForNormalMethod();
+        return TruffleRuntimeCompilationSupport.getRuntimeConfig().getBackendForNormalMethod();
     }
 
     @Override
     public <T extends Architecture> Backend getBackend(Class<T> arch) {
-        assert arch.isInstance(GraalSupport.getRuntimeConfig().getBackendForNormalMethod().getTarget().arch);
-        return GraalSupport.getRuntimeConfig().getBackendForNormalMethod();
+        assert arch.isInstance(TruffleRuntimeCompilationSupport.getRuntimeConfig().getBackendForNormalMethod().getTarget().arch);
+        return TruffleRuntimeCompilationSupport.getRuntimeConfig().getBackendForNormalMethod();
     }
 
     @Override

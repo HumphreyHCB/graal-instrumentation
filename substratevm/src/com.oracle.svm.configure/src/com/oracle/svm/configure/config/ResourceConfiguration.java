@@ -27,7 +27,6 @@ package com.oracle.svm.configure.config;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -38,17 +37,15 @@ import java.util.regex.Pattern;
 import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 import com.oracle.svm.configure.ConfigurationBase;
-import com.oracle.svm.core.util.json.JsonPrinter;
-import com.oracle.svm.core.util.json.JsonWriter;
 import com.oracle.svm.core.configure.ConditionalElement;
 import com.oracle.svm.core.configure.ConfigurationParser;
 import com.oracle.svm.core.configure.ResourceConfigurationParser;
 import com.oracle.svm.core.configure.ResourcesRegistry;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.core.util.json.JsonPrinter;
+import com.oracle.svm.core.util.json.JsonWriter;
 
 public final class ResourceConfiguration extends ConfigurationBase<ResourceConfiguration, ResourceConfiguration.Predicate> {
-
-    private static final String PROPERTY_BUNDLE = "java.util.PropertyResourceBundle";
 
     public static class ParserAdapter implements ResourcesRegistry {
 
@@ -61,6 +58,11 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
         @Override
         public void addResources(ConfigurationCondition condition, String pattern) {
             configuration.addResourcePattern(condition, pattern);
+        }
+
+        @Override
+        public void addResource(Module module, String resourcePath) {
+            throw VMError.shouldNotReachHere("Unused function.");
         }
 
         @Override
@@ -190,18 +192,9 @@ public final class ResourceConfiguration extends ConfigurationBase<ResourceConfi
         getOrCreateBundleConfig(condition, basename).classNames.add(className);
     }
 
-    public void addBundle(ConfigurationCondition condition, List<String> classNames, List<String> locales, String baseName) {
-        assert classNames.size() == locales.size() : "Each bundle should be represented by both classname and locale";
+    public void addBundle(ConfigurationCondition condition, String baseName, String queriedLocale) {
         BundleConfiguration config = getOrCreateBundleConfig(condition, baseName);
-        for (int i = 0; i < classNames.size(); i++) {
-            String className = classNames.get(i);
-            String localeTag = locales.get(i);
-            if (!className.equals(PROPERTY_BUNDLE)) {
-                config.classNames.add(className);
-            } else {
-                config.locales.add(localeTag);
-            }
-        }
+        config.locales.add(queriedLocale);
     }
 
     private BundleConfiguration getOrCreateBundleConfig(ConfigurationCondition condition, String baseName) {

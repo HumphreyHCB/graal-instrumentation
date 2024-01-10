@@ -100,6 +100,21 @@ try (Context context = Context.newBuilder("js")
 }
 ```
 
+Since Polyglot version 23.1, the isolated and untrusted policy also requires isolated images of the languages to be specified on the class or module path.
+Isolated versions of the languages can be downloaded from Maven using the following dependency:
+
+```xml
+<dependency>
+    <groupId>org.graalvm.polyglot</groupId>
+    <artifactId>js-isolate</artifactId>
+    <version>${graalvm.version}</version>
+    <type>pom</type>
+</dependency>
+```
+
+The [embedding guide](../reference-manual/embed-languages/#polyglot-isolates) contains more details on using polyglot isolate dependencies.
+
+
 ### Untrusted Policy
 
 The [UNTRUSTED](https://www.graalvm.org/sdk/javadoc/org/graalvm/polyglot/SandboxPolicy.html#UNTRUSTED) sandboxing policy builds on top of the ISOLATED policy and is intended to mitigate risks from running actual untrusted code.
@@ -122,7 +137,7 @@ try (Context context = Context.newBuilder("js")
                               .out(new ByteArrayOutputStream())
                               .err(new ByteArrayOutputStream())
                               .allowHostAccess(HostAccess.UNTRUSTED)
-                              .option("engine.MaxIsolateMemory", "8MB")
+                              .option("engine.MaxIsolateMemory", "1024MB")
                               .option("sandbox.MaxHeapMemory", "128MB")
                               .option("sandbox.MaxCPUTime","2s")
                               .option("sandbox.MaxStatements","50000")

@@ -29,21 +29,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Function;
 
-import org.graalvm.compiler.api.replacements.SnippetReflectionProvider;
-import org.graalvm.compiler.core.common.spi.ConstantFieldProvider;
-import org.graalvm.compiler.core.common.spi.ForeignCallsProvider;
-import org.graalvm.compiler.core.common.spi.MetaAccessExtensionProvider;
-import org.graalvm.compiler.debug.DebugHandlersFactory;
-import org.graalvm.compiler.nodes.spi.LoopsDataProvider;
-import org.graalvm.compiler.nodes.spi.LoweringProvider;
-import org.graalvm.compiler.nodes.spi.PlatformConfigurationProvider;
-import org.graalvm.compiler.nodes.spi.Replacements;
-import org.graalvm.compiler.nodes.spi.StampProvider;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.util.Providers;
-import org.graalvm.compiler.printer.GraalDebugHandlersFactory;
-import org.graalvm.compiler.serviceprovider.GraalServices;
-import org.graalvm.compiler.word.WordTypes;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
@@ -63,6 +48,21 @@ import com.oracle.svm.hosted.HostedConfiguration;
 import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 
+import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.core.common.spi.ConstantFieldProvider;
+import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
+import jdk.graal.compiler.core.common.spi.MetaAccessExtensionProvider;
+import jdk.graal.compiler.debug.DebugHandlersFactory;
+import jdk.graal.compiler.nodes.spi.LoopsDataProvider;
+import jdk.graal.compiler.nodes.spi.LoweringProvider;
+import jdk.graal.compiler.nodes.spi.PlatformConfigurationProvider;
+import jdk.graal.compiler.nodes.spi.Replacements;
+import jdk.graal.compiler.nodes.spi.StampProvider;
+import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.phases.util.Providers;
+import jdk.graal.compiler.printer.GraalDebugHandlersFactory;
+import jdk.graal.compiler.serviceprovider.GraalServices;
+import jdk.graal.compiler.word.WordTypes;
 import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.code.RegisterConfig;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
@@ -76,10 +76,11 @@ public abstract class SharedRuntimeConfigurationBuilder {
     protected final ClassInitializationSupport classInitializationSupport;
     protected final LoopsDataProvider originalLoopsDataProvider;
     protected final SubstratePlatformConfigurationProvider platformConfig;
+    protected final SnippetReflectionProvider snippetReflection;
 
     public SharedRuntimeConfigurationBuilder(OptionValues options, SVMHost hostVM, UniverseMetaAccess metaAccess, Function<Providers, SubstrateBackend> backendProvider,
                     ClassInitializationSupport classInitializationSupport, LoopsDataProvider originalLoopsDataProvider,
-                    SubstratePlatformConfigurationProvider platformConfig) {
+                    SubstratePlatformConfigurationProvider platformConfig, SnippetReflectionProvider snippetReflection) {
         this.options = options;
         this.hostVM = hostVM;
         this.metaAccess = metaAccess;
@@ -87,6 +88,7 @@ public abstract class SharedRuntimeConfigurationBuilder {
         this.classInitializationSupport = classInitializationSupport;
         this.originalLoopsDataProvider = originalLoopsDataProvider;
         this.platformConfig = platformConfig;
+        this.snippetReflection = snippetReflection;
     }
 
     public final RuntimeConfiguration build() {
@@ -117,11 +119,13 @@ public abstract class SharedRuntimeConfigurationBuilder {
 
         LoopsDataProvider loopsDataProvider = originalLoopsDataProvider;
 
-        SnippetReflectionProvider snippetReflection = createSnippetReflectionProvider(wordTypes);
-
         Providers p = createProviders(null, constantReflection, constantFieldProvider, foreignCalls, lowerer, null, stampProvider, snippetReflection, platformConfig, metaAccessExtensionProvider,
                         wordTypes, loopsDataProvider);
 
+        /*
+         * Use the snippet reflection provider during image building replacement. It will be
+         * replaced by the GraalGraphObjectReplacer for run time compilation.
+         */
         Replacements replacements = createReplacements(p, snippetReflection);
         p = (Providers) replacements.getProviders();
 
@@ -143,7 +147,7 @@ public abstract class SharedRuntimeConfigurationBuilder {
             }
         }
 
-        return new RuntimeConfiguration(p, snippetReflection, backends, wordTypes, handlers);
+        return new RuntimeConfiguration(p, snippetReflection, backends, handlers);
     }
 
     protected abstract Providers createProviders(CodeCacheProvider codeCache, ConstantReflectionProvider constantReflection, ConstantFieldProvider constantFieldProvider,
@@ -164,8 +168,6 @@ public abstract class SharedRuntimeConfigurationBuilder {
     }
 
     protected abstract LoweringProvider createLoweringProvider(ForeignCallsProvider foreignCalls, MetaAccessExtensionProvider metaAccessExtensionProvider);
-
-    protected abstract SnippetReflectionProvider createSnippetReflectionProvider(WordTypes wordTypes);
 
     protected abstract Replacements createReplacements(Providers p, SnippetReflectionProvider snippetReflection);
 

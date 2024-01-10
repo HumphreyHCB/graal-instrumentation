@@ -24,7 +24,6 @@
  */
 package com.oracle.svm.core.jfr;
 
-import org.graalvm.compiler.api.replacements.Fold;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platform;
@@ -52,6 +51,10 @@ import com.oracle.svm.core.threadlocal.FastThreadLocalInt;
 import com.oracle.svm.core.threadlocal.FastThreadLocalLong;
 import com.oracle.svm.core.threadlocal.FastThreadLocalObject;
 import com.oracle.svm.core.threadlocal.FastThreadLocalWord;
+
+import jdk.graal.compiler.api.replacements.Fold;
+
+import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 
 /**
  * This class holds various JFR-specific thread local values.
@@ -229,7 +232,7 @@ public class JfrThreadLocal implements ThreadListener {
      * moment, only the current thread may be excluded/included. See GR-44616.
      */
     public static void setExcluded(Thread thread, boolean excluded) {
-        if (thread == null || !thread.equals(Thread.currentThread())) {
+        if (thread == null || thread != JavaThreads.getCurrentThreadOrNull()) {
             return;
         }
         IsolateThread currentIsolateThread = CurrentIsolate.getCurrentThread();
@@ -247,7 +250,7 @@ public class JfrThreadLocal implements ThreadListener {
      * thread, see {@link PlatformThreads#ensureCurrentAssigned(String, ThreadGroup, boolean)} where
      * a {@link Thread} object must be created before it can be assigned to the current thread. This
      * may happen during shutdown in {@link JavaMainWrapper}. Therefore, this method must account
-     * for the case where {@link Thread#currentThread()} returns null.
+     * for the case where {@link JavaThreads#getCurrentThreadOrNull()} returns null.
      */
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static boolean isThreadExcluded(Thread thread) {
@@ -286,7 +289,7 @@ public class JfrThreadLocal implements ThreadListener {
             throw new OutOfMemoryError("OOME for thread local buffer");
         }
 
-        Target_jdk_jfr_internal_event_EventWriter result = JfrEventWriterAccess.newEventWriter(buffer, isThreadExcluded(Thread.currentThread()));
+        Target_jdk_jfr_internal_event_EventWriter result = JfrEventWriterAccess.newEventWriter(buffer, isThreadExcluded(JavaThreads.getCurrentThreadOrNull()));
         javaEventWriter.set(result);
         return result;
     }
@@ -315,6 +318,11 @@ public class JfrThreadLocal implements ThreadListener {
         }
 
         return buffer;
+    }
+
+    @Uninterruptible(reason = "Accesses a JFR buffer.")
+    public JfrBuffer getExistingJavaBuffer() {
+        return javaBuffer.get();
     }
 
     @Uninterruptible(reason = "Accesses a JFR buffer.")
@@ -469,6 +477,11 @@ public class JfrThreadLocal implements ThreadListener {
         return missedSamples.get();
     }
 
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public static long getMissedSamples(IsolateThread thread) {
+        return missedSamples.get(thread);
+    }
+
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static void increaseUnparseableStacks() {
         unparseableStacks.set(getUnparseableStacks() + 1);
@@ -477,6 +490,11 @@ public class JfrThreadLocal implements ThreadListener {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static long getUnparseableStacks() {
         return unparseableStacks.get();
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public static long getUnparseableStacks(IsolateThread thread) {
+        return unparseableStacks.get(thread);
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
