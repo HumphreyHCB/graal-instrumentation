@@ -60,6 +60,7 @@ import org.graalvm.word.LocationIdentity;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.WordFactory;
 
+
 public final class InstrumentationSnippets extends AbstractTemplates implements Snippets {
 
     public static class Templates extends SnippetTemplate.AbstractTemplates {
@@ -84,8 +85,9 @@ public final class InstrumentationSnippets extends AbstractTemplates implements 
     public static void instrumentation(long time) { 
        //Word wordtest = HotSpotReplacementsUtil.loadWordFromObject(time,0);
         //printf("FROM THE PRINT F", wordtest.rawValue());
-        decipher(time);
-        printf("FROM THE PRINT F %i", time);
+        //decipher(time);
+        //HumphreysCache.add(time);
+        printf("FROM THE PRINT F %lu", time);
         //System.out.println("Instrumentation Snippet Call");
 
 
