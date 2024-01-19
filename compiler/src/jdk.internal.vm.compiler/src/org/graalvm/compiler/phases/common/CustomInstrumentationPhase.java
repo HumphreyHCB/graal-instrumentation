@@ -128,13 +128,11 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
 
     private final boolean optional;
     private final SnippetCounter.Group group;
-    private  ResolvedJavaMethod method;
 
 
-    public CustomInstrumentationPhase(SnippetCounter.Group group, ResolvedJavaMethod method) {
+    public CustomInstrumentationPhase(SnippetCounter.Group group) {
         this.group = group;
         optional = true;
-        this.method = method;
     }
 
 
@@ -145,11 +143,11 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (Invoke invokes : graph.getInvokes()) {
 
                 try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-                //CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
-                //graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
+                // CustomInstrumentationCounterNode CustomInstrumentationNode = graph.add(new CustomInstrumentationCounterNode(invokes.callTarget().targetName(),group));
+                // graph.addBeforeFixed(invokes.asFixedNode(), CustomInstrumentationNode);
                 //CustomClockLogNode customClockLogNodeA = graph.add(new CustomClockLogNode(method));
                 //SnippetStub
-                CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode(method));
+                CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
                 graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
                 
                 }          
