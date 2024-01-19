@@ -115,10 +115,6 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
          // ForeignCallNode node = graph().add(new ForeignCallNode(HotSpotHostForeignCallsProvider.TestForeignCalls.createStubCallDescriptor(JavaKind.Object), javaCurrentCPUtime));
         graph().addAfterFixed(javaCurrentCPUtime, node);
         
-        //ValueNode[] targetArguments = new ValueNode[3];
-        //targetArguments[0] = thread; // theread , not sure whats that needs to be
-        //targetArguments[1] = ConstantNode.forConstant(tool.getproviders.getStampProvider().createMethodStamp(), javaMethod.getEncoding(), providers.getMetaAccess(), kit.getGraph());
-        //targetArguments[2] = ConstantNode.defaultForKind(JavaKind.Long, kit.getGraph());
 
         // ForeignCallNode CacheAdd = graph().add(new ForeignCallNode(AddtoInstrumentationCache, javaCurrentCPUtime));
         // graph().addAfterFixed(javaCurrentCPUtime, CacheAdd);
