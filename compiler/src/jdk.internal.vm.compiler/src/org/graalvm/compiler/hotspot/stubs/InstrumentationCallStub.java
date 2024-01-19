@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package org.graalvm.compiler.hotspot.meta;
+package org.graalvm.compiler.hotspot.stubs;
 
 import static org.graalvm.compiler.hotspot.stubs.StubUtil.printf;
 
@@ -34,7 +34,6 @@ import org.graalvm.compiler.api.replacements.Snippet;
 import org.graalvm.compiler.debug.GraalError;
 import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
 import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
-import org.graalvm.compiler.hotspot.stubs.SnippetStub;
 import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.options.OptionValues;
@@ -43,14 +42,7 @@ import org.graalvm.compiler.replacements.nodes.BinaryMathIntrinsicNode.BinaryOpe
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode;
 import org.graalvm.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
 
-import static org.graalvm.compiler.hotspot.meta.BuboCache.pointer;
-import static org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Transition.SAFEPOINT;
-import static org.graalvm.compiler.hotspot.meta.BuboCache.incPointer;
-//import static org.graalvm.compiler.hotspot.meta.BuboCache.Buffer;
 
-
-
-import static org.graalvm.compiler.hotspot.replacements.InstrumentationSnippets.instrumentation;
 
 /**
  * 
@@ -60,24 +52,17 @@ public class InstrumentationCallStub extends SnippetStub {
 
     public InstrumentationCallStub(String methodName, OptionValues options, HotSpotProviders providers, HotSpotForeignCallLinkage linkage) {
         super(methodName, options, providers, linkage);
-        //BUBO_ADD
-
-
-        
     }
 
     
     @Snippet
     public static void addToBuboCache(long time) {
-        //providers.getForeignCalls().invokeJavaMethodStub(options, providers, BUBO_ADD, providers.getConfig().invokeJavaMethodAddress, method);
         printf("\n The following value should be added to the buffer %lu \n", time);
-        //instrumentation(time);
         
     }
 
 
     public static long getCPUTime(long time){
-
         return System.currentTimeMillis() + time;
     }
 

@@ -112,15 +112,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
                 position.add(new BarrierSetVerificationPhase());
             }
         }
-        //
-        // This needs to live in its own method for clairty
-        //
-        //ResolvedJavaMethod method = new BuboMetaTools().findMethod(System.out.getClass(), "println", runtime.getHostBackend().getMetaAccess());
-        ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        position.add(new CustomInstrumentationPhase(group));   
-        //
-        //
-        //
+
+        addCustomInstrumentationPhase(suites);
 
         return suites;
     }
@@ -129,6 +122,13 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         PhaseSuite<HighTierContext> suite = defaultSuitesCreator.getDefaultGraphBuilderSuite().copy();
         assert appendGraphEncoderTest(suite);
         return suite;
+    }
+
+    private void addCustomInstrumentationPhase(Suites suites){
+
+        ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
+        position.add(new CustomInstrumentationPhase(group));   
+
     }
 
     /**

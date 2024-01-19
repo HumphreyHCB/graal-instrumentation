@@ -113,7 +113,6 @@ import org.graalvm.compiler.core.common.spi.ForeignCallsProvider;
 import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
 import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
-import org.graalvm.compiler.hotspot.replacements.InstrumentationSnippets;
 import org.graalvm.compiler.hotspot.replacements.arraycopy.CheckcastArrayCopyCallNode;
 import org.graalvm.compiler.hotspot.stubs.ArrayStoreExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.ClassCastExceptionStub;
@@ -121,6 +120,7 @@ import org.graalvm.compiler.hotspot.stubs.CreateExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.DivisionByZeroExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.ExceptionHandlerStub;
 import org.graalvm.compiler.hotspot.stubs.IllegalArgumentExceptionArgumentIsNotAnArrayStub;
+import org.graalvm.compiler.hotspot.stubs.InstrumentationCallStub;
 import org.graalvm.compiler.hotspot.stubs.IntegerExactOverflowExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.IntrinsicStubsGen;
 import org.graalvm.compiler.hotspot.stubs.LongExactOverflowExceptionStub;
@@ -262,8 +262,6 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         static Object objectReturnsObject(Object arg) {
-            BuboCache.add(System.currentTimeMillis());
-            System.out.println("Humphrey From TestClass !!!!!!!!!!!!!!!!!!!!!!!!!");
             return arg;
         }
     }
@@ -348,7 +346,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
             invokeJavaMethodStub(options, providers, desc, invokeJavaMethodAddress, method);
         }
 
-        // Here is where you can reigster your own javamethodss
+        // Here is where you can reigster your own java Methods
         ResolvedJavaMethod dummyPrintmethod = findMethod(providers.getMetaAccess(), BuboCache.class, dummyPrintdesc.getName());
         invokeJavaMethodStub(options, providers, dummyPrintdesc, invokeJavaMethodAddress, dummyPrintmethod);
 
@@ -496,16 +494,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         // INSTRUMENTATION CALL
-        //
-        //new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, any(), "SnippetDummyPrint", void.class, Word.class)
-        //Word.class);
-
         link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
-        //link(new InstrumentationSnippets( options, providers );
-    
-        //registerStubCall(INSTRUMENTATION_METHOD, DESTROYS_ALL_CALLER_SAVE_REGISTERS)
-        //
-        //
 
         link(new ExceptionHandlerStub(options, providers, foreignCalls.get(EXCEPTION_HANDLER.getSignature())));
         link(new UnwindExceptionToCallerStub(options, providers,

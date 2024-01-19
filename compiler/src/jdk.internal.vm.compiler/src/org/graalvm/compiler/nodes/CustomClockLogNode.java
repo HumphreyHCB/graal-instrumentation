@@ -105,22 +105,9 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
         graph().replaceFixed(this, javaCurrentCPUtime);
 
-
-        // have a look at /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/hotspot/amd64/AMD64HotSpotForeignCallsProvider.java
-        // MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Special, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
-        // InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
-        // graph().replaceFixed(this, invokeNode);
-        // invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
-         ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));
-         // ForeignCallNode node = graph().add(new ForeignCallNode(HotSpotHostForeignCallsProvider.TestForeignCalls.createStubCallDescriptor(JavaKind.Object), javaCurrentCPUtime));
+        ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));
         graph().addAfterFixed(javaCurrentCPUtime, node);
         
-
-        // ForeignCallNode CacheAdd = graph().add(new ForeignCallNode(AddtoInstrumentationCache, javaCurrentCPUtime));
-        // graph().addAfterFixed(javaCurrentCPUtime, CacheAdd);
-
-
-
     }
 
     @Override
