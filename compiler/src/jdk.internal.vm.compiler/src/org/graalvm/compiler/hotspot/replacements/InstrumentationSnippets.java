@@ -83,14 +83,8 @@ public final class InstrumentationSnippets extends AbstractTemplates implements 
 
     @Snippet
     public static void instrumentation(long time) { 
-       //Word wordtest = HotSpotReplacementsUtil.loadWordFromObject(time,0);
-        //printf("FROM THE PRINT F", wordtest.rawValue());
-        //decipher(time);
-        //HumphreysCache.add(time);
-        printf("FROM THE PRINT F %lu", time);
-        //System.out.println("Instrumentation Snippet Call");
-
-
+        //addToBuboCache(time);
+        printf("The following value should be added to the buffer %lu", time);
     }
 
 }
