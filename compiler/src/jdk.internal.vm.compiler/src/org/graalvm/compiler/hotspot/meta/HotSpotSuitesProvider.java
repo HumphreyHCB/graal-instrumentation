@@ -116,9 +116,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
         // This needs to live in its own method for clairty
         //
         //ResolvedJavaMethod method = new BuboMetaTools().findMethod(System.out.getClass(), "println", runtime.getHostBackend().getMetaAccess());
-        ResolvedJavaMethod method = new BuboMetaTools().findMethod(HumphreysCache.class, "dummyPrint", runtime.getHostBackend().getMetaAccess());
         ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        position.add(new CustomInstrumentationPhase(group, method));   
+        position.add(new CustomInstrumentationPhase(group));   
         //
         //
         //
