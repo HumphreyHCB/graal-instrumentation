@@ -198,8 +198,9 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
-    public static final HotSpotForeignCallDescriptor TestDummyPrint = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, REEXECUTABLE, NO_LOCATIONS, "SnippetDummyPrint", void.class, long.class);
-
+    public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
+    public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", JavaKind.Void.getClass(), JavaKind.Long.getClass());
+    public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", JavaKind.Void.getClass(), JavaKind.Long.getClass());
     /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.
      *
@@ -225,7 +226,6 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
          * Kinds for which foreign call stubs are created when building the libgraal image.
          */
         public static final JavaKind[] KINDS = {JavaKind.Boolean, JavaKind.Byte, JavaKind.Short, JavaKind.Char, JavaKind.Int, JavaKind.Long, JavaKind.Object};
-
         /**
          * Creates a {@link HotSpotForeignCallDescriptor} for a foreign call stub to a method named
          * {@code <kind>Returns<Kind>} (e.g., "byteReturnsByte") with a signature of
@@ -262,6 +262,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         static Object objectReturnsObject(Object arg) {
+            BuboCache.add(System.currentTimeMillis());
+            System.out.println("Humphrey From TestClass !!!!!!!!!!!!!!!!!!!!!!!!!");
             return arg;
         }
     }
@@ -345,6 +347,13 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
             ResolvedJavaMethod method = findMethod(providers.getMetaAccess(), TestForeignCalls.class, desc.getName());
             invokeJavaMethodStub(options, providers, desc, invokeJavaMethodAddress, method);
         }
+
+        // Here is where you can reigster your own javamethodss
+        ResolvedJavaMethod dummyPrintmethod = findMethod(providers.getMetaAccess(), BuboCache.class, dummyPrintdesc.getName());
+        invokeJavaMethodStub(options, providers, dummyPrintdesc, invokeJavaMethodAddress, dummyPrintmethod);
+
+        ResolvedJavaMethod cacheAddmethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_DESCRIPTOR.getName());
+        invokeJavaMethodStub(options, providers, BUBU_CACHE_DESCRIPTOR, invokeJavaMethodAddress, cacheAddmethod);
     }
 
     private void registerArraycopyDescriptor(EconomicMap<Long, ForeignCallDescriptor> descMap, JavaKind kind, boolean aligned, boolean disjoint, boolean uninit, LocationIdentity killedLocation,
@@ -491,7 +500,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         //new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, any(), "SnippetDummyPrint", void.class, Word.class)
         //Word.class);
 
-        link(new InstrumentationCallStub("SnippetDummyPrint", options, providers, registerStubCall(TestDummyPrint, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
+        link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
         //link(new InstrumentationSnippets( options, providers );
     
         //registerStubCall(INSTRUMENTATION_METHOD, DESTROYS_ALL_CALLER_SAVE_REGISTERS)

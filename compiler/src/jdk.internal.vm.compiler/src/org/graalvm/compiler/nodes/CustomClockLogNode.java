@@ -41,8 +41,12 @@ import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
 import org.graalvm.compiler.hotspot.meta.BuboMetaTools;
+import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProvider;
-import org.graalvm.compiler.hotspot.meta.HumphreysCache;
+import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProviderImpl;
+import org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider;
+import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Reexecutability;
+import org.graalvm.compiler.hotspot.meta.BuboCache;
 import org.graalvm.compiler.hotspot.replacements.DigestBaseSnippets;
 import org.graalvm.compiler.lir.Variable;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
@@ -70,9 +74,14 @@ import jdk.vm.ci.runtime.JVMCI;
 import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.meta.*;
 
+import static org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Transition.SAFEPOINT;
+import static org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProviderImpl.NO_LOCATIONS;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.AddtoInstrumentationCache;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.INVOKE_STATIC_METHOD_ONE_ARG;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.TestDummyPrint;;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.dummyPrintdesc;
 
 /**
  * Marks a position in the graph where a node should be emitted.
@@ -86,32 +95,35 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
     public static final NodeClass<CustomClockLogNode> TYPE = NodeClass.create(CustomClockLogNode.class);
 
-    private ResolvedJavaMethod method;
 
-    public CustomClockLogNode(ResolvedJavaMethod method) {
+    public CustomClockLogNode() {
         super(TYPE, StampFactory.forVoid());
-        this.method = method;
     }
 
     @Override
     public void lower(LoweringTool tool) {
         ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
         graph().replaceFixed(this, javaCurrentCPUtime);
-        // LogNode log = graph().add(new LogNode(" The Current CPU time is: %ld" ,
-        // javaCurrentCPUtime));
-        // graph().addBeforeFixed(javaCurrentCPUtime, log);
+
 
         // have a look at /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/src/jdk.internal.vm.compiler/src/org/graalvm/compiler/hotspot/amd64/AMD64HotSpotForeignCallsProvider.java
         // MethodCallTargetNode callTarget = graph().add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Special, method, new ValueNode[0], StampPair.createSingle(StampFactory.forVoid()), null));
         // InvokeNode invokeNode = graph().add(new InvokeNode(callTarget, 0));
         // graph().replaceFixed(this, invokeNode);
         // invokeNode.setStateAfter(GraphUtil.findLastFrameState(invokeNode));
-
+         ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));
+         // ForeignCallNode node = graph().add(new ForeignCallNode(HotSpotHostForeignCallsProvider.TestForeignCalls.createStubCallDescriptor(JavaKind.Object), javaCurrentCPUtime));
+        graph().addAfterFixed(javaCurrentCPUtime, node);
         
-        //ConstantNode constNextInt = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forUnsignedInteger(32)));
-        //ValueNode intNode = constNextInt;
-        ForeignCallNode dummycall = graph().add(new ForeignCallNode(TestDummyPrint, javaCurrentCPUtime));
-        graph().addAfterFixed(javaCurrentCPUtime, dummycall);
+        //ValueNode[] targetArguments = new ValueNode[3];
+        //targetArguments[0] = thread; // theread , not sure whats that needs to be
+        //targetArguments[1] = ConstantNode.forConstant(tool.getproviders.getStampProvider().createMethodStamp(), javaMethod.getEncoding(), providers.getMetaAccess(), kit.getGraph());
+        //targetArguments[2] = ConstantNode.defaultForKind(JavaKind.Long, kit.getGraph());
+
+        // ForeignCallNode CacheAdd = graph().add(new ForeignCallNode(AddtoInstrumentationCache, javaCurrentCPUtime));
+        // graph().addAfterFixed(javaCurrentCPUtime, CacheAdd);
+
+
 
     }
 
