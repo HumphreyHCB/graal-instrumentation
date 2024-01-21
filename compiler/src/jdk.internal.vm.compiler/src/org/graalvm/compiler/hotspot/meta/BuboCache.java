@@ -8,7 +8,7 @@ public class BuboCache extends Thread {
         public static int pointer;
 
         public BuboCache() {
-                Buffer = new long[3_000_000];
+                Buffer = new long[900_000_000];
                 pointer = 0;
 
         }
