@@ -25,6 +25,10 @@
 package org.graalvm.compiler.phases.common;
 
 
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +50,8 @@ import org.graalvm.compiler.nodes.IfNode;
 import org.graalvm.compiler.nodes.Invoke;
 import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.GraphState.StageFlag;
+import org.graalvm.compiler.nodes.calc.SubNode;
+import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.extended.OSRStartNode;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.util.GraphUtil;
@@ -139,18 +145,48 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, HighTierContext context) {
+            ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
+            ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+            graph.addAfterFixed(graph.start(), startTime);
 
-            for (Invoke invokes : graph.getInvokes()) {
-
-                try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-                CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
-                graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
+            int pointer = 0;
+            for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
                 
+                try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+                //graph.compilationId();
+                ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+                graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
+                returnNodesTime[pointer] = javaCurrentCPUtime;
+                pointer++;
                 }          
             }
+
+            for (ForeignCallNode valueNode : returnNodesTime) {
+                //LogNode ln = graph.add(new LogNode("LAST CALL: %ld     Start call: %ld ", valueNode, startTime));
+                //graph.addAfterFixed(valueNode,ln);
+                SubNode nn = graph.addWithoutUnique(new SubNode(valueNode,startTime));
+
+                ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, nn));
+                graph.addAfterFixed(valueNode, node);
+            }
+
 
             
         
     }
+
+    // @Override
+    // @SuppressWarnings("try")
+    // protected void run(StructuredGraph graph, HighTierContext context) {
+    //         for (Invoke invokes : graph.getInvokes()) {
+                
+    //             try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
+    //             //graph.compilationId();
+    //             CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
+    //             graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
+                
+    //             }          
+    //         } 
+    // }
 
 }
