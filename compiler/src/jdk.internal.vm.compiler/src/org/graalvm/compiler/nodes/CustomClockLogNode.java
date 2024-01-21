@@ -52,6 +52,8 @@ import org.graalvm.compiler.lir.Variable;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
 import org.graalvm.compiler.nodes.calc.AddNode;
+import org.graalvm.compiler.nodes.calc.NegateNode;
+import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
@@ -105,6 +107,9 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
         graph().replaceFixed(this, javaCurrentCPUtime);
 
+        //ValueNode vn = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(1695700000000L), StampFactory.forKind(JavaKind.Long)));
+        
+        //SubNode nn = graph().addWithoutUnique(new SubNode(javaCurrentCPUtime, vn));
         ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));
         graph().addAfterFixed(javaCurrentCPUtime, node);
         
