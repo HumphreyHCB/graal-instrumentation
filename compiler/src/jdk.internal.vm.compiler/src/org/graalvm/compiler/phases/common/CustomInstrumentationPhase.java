@@ -28,6 +28,7 @@ package org.graalvm.compiler.phases.common;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
+import static org.graalvm.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubIntrinsic;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
+import org.graalvm.compiler.replacements.arraycopy.ArrayCopyNode;
 import org.graalvm.compiler.core.CompilationWrapper.ExceptionAction;
 import org.graalvm.compiler.core.Instrumentation;
 import org.graalvm.compiler.core.common.CompilationIdentifier;
@@ -54,6 +56,7 @@ import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.extended.OSRStartNode;
 import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
+import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.nodes.util.GraphUtil;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
@@ -71,6 +74,7 @@ import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNod
 
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Value;
 
 import org.graalvm.compiler.debug.DebugContext;
@@ -171,7 +175,11 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 ValueNode[] args = new ValueNode[2];
                 args[0] = ID;
                 args[1] = Time;
-                ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, args));
+                
+                ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
+                NewArrayNode array = graph.add(new NewArrayNode( context.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
+                graph.addBeforeFixed(valueNode, array);
+                ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
                 graph.addAfterFixed(valueNode, node);
             }
 
