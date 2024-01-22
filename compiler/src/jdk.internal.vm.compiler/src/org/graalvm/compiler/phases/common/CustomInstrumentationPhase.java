@@ -87,6 +87,7 @@ import org.graalvm.compiler.hotspot.stubs.SnippetStub;
 import org.graalvm.compiler.nodes.AbstractEndNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.CallTargetNode;
+import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.CustomDebugNode;
 import org.graalvm.compiler.nodes.CustomInstrumentationCounterNode;
@@ -99,7 +100,8 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
-
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.JavaConstant;
 /**
  * Adds CustomInstrumentation to loops.
  */
@@ -164,9 +166,12 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (ForeignCallNode valueNode : returnNodesTime) {
                 //LogNode ln = graph.add(new LogNode("LAST CALL: %ld     Start call: %ld ", valueNode, startTime));
                 //graph.addAfterFixed(valueNode,ln);
-                SubNode nn = graph.addWithoutUnique(new SubNode(valueNode,startTime));
-
-                ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, nn));
+                SubNode Time = graph.addWithoutUnique(new SubNode(valueNode,startTime));
+                ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(160L), StampFactory.forKind(JavaKind.Long)));
+                ValueNode[] args = new ValueNode[2];
+                args[0] = ID;
+                args[1] = Time;
+                ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, args));
                 graph.addAfterFixed(valueNode, node);
             }
 
@@ -182,7 +187,7 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 
     //             try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
     //             //graph.compilationId();
-    //             CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
+//                 CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
     //             graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
                 
     //             }          
