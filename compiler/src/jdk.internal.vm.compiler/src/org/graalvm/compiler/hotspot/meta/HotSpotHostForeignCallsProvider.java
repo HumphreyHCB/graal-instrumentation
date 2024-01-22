@@ -199,8 +199,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
                     void.class, long.class, long.class);
 
     public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
-    public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", JavaKind.Void.getClass(), JavaKind.Long.getClass());
-    public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", JavaKind.Void.getClass(), JavaKind.Object.getClass());
+    public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", Void.class, Object.class);
+    public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", Void.class, Object.class);
     /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.
      *
