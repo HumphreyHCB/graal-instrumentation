@@ -8,7 +8,7 @@ public class BuboCache extends Thread {
         public static int pointer;
 
         public BuboCache() {
-                Buffer = new long[900_000_000];
+                Buffer = new long[180_000_000];
                 pointer = 0;
 
         }
@@ -25,9 +25,11 @@ public class BuboCache extends Thread {
                 pointer++;
         }
 
-        public static void add(long item)
+        public static void add(long[] item)
         {
-                Buffer[pointer] = item;
+                Buffer[pointer] = item[0];
+                pointer++;
+                Buffer[pointer] = item[1];
                 pointer++;
 
         }
@@ -37,7 +39,8 @@ public class BuboCache extends Thread {
                         System.out.println("Buffer is empty! :(");
                 }
                 for (int i = 0; i < pointer; i++) {
-                        System.out.println(Buffer[i]);
+                        System.out.println(Buffer[i] + "," + Buffer[i+1]);
+                        i++;
                 }
         }
 
