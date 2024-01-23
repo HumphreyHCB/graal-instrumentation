@@ -28,6 +28,8 @@ package org.graalvm.compiler.phases.common;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
 import java.util.Optional;
+
+import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
@@ -40,6 +42,7 @@ import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.replacements.SnippetCounter;
+import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
@@ -100,7 +103,6 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
                 
                 try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-                //graph.compilationId();
                 ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
                 graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
                 returnNodesTime[pointer] = javaCurrentCPUtime;
@@ -109,8 +111,10 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             }
 
             for (ForeignCallNode valueNode : returnNodesTime) {
+
+                Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).replace("HotSpotCompilation-", ""));
                 SubNode Time = graph.addWithoutUnique(new SubNode(valueNode,startTime));
-                ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(160L), StampFactory.forKind(JavaKind.Long)));
+                ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
                 // create and array and add to the graph
                 ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
@@ -130,7 +134,7 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 // send the array off to be added to the cache
                 ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
                 graph.addAfterFixed(valueNode, node);
-            }
+           }
     }
 
 }
