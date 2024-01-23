@@ -110,11 +110,15 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 }          
             }
 
+            // get comp ID
+            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).replace("HotSpotCompilation-", ""));
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
+            
             for (ForeignCallNode valueNode : returnNodesTime) {
 
-                Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).replace("HotSpotCompilation-", ""));
+                
                 SubNode Time = graph.addWithoutUnique(new SubNode(valueNode,startTime));
-                ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
+                
 
                 // create and array and add to the graph
                 ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
