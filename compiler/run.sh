@@ -9,7 +9,7 @@ mx --java-home \
   -Dgraal.CompilationFailureAction="Print"   \
   -XX:+UseJVMCICompiler  \
   -XX:CompileOnly=HelloWorld -XX:-TieredCompilation --add-exports \
-  jdk.internal.vm.compiler/org.graalvm.compiler.hotspot.meta=ALL-UNNAMED \
+  jdk.internal.vm.compiler/org.graalvm.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler \
   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
   HelloWorld 
