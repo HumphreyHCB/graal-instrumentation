@@ -2,13 +2,18 @@ package org.graalvm.compiler.hotspot.meta.Bubo;
 
 import java.lang.Thread;
 
+/**
+ * BuboCache thread buffer, this is called viva a Forgien call
+ * see Custom Instrumentation Phase to see where its called.
+ */
+
 public class BuboCache extends Thread {
         
         public static long[] Buffer;
         public static int pointer;
 
         public BuboCache() {
-                Buffer = new long[180_000_000];
+                Buffer = new long[250_000_000];
                 pointer = 0;
 
         }
