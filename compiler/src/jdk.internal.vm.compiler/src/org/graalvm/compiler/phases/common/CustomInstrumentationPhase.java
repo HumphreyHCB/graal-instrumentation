@@ -111,9 +111,9 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             }
 
             // get comp ID
-            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).replace("HotSpotCompilation-", ""));
+            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).replace("HotSpotCompilation-", "").replace("HotSpotOSRCompilation-", ""));
             ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
-            
+
             for (ForeignCallNode valueNode : returnNodesTime) {
 
                 
