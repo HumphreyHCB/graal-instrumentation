@@ -26,84 +26,25 @@ package org.graalvm.compiler.phases.common;
 
 
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
-import static org.graalvm.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubIntrinsic;
-
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
-
-import org.graalvm.compiler.replacements.SnippetCounter.Group;
-import org.graalvm.compiler.replacements.arraycopy.ArrayCopyNode;
-import org.graalvm.compiler.core.CompilationWrapper.ExceptionAction;
-import org.graalvm.compiler.core.Instrumentation;
-import org.graalvm.compiler.core.common.CompilationIdentifier;
-import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.core.common.type.StampPair;
-import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.nodes.GraphState;
-import org.graalvm.compiler.nodes.IfNode;
-import org.graalvm.compiler.nodes.Invoke;
-import org.graalvm.compiler.nodes.InvokeNode;
-import org.graalvm.compiler.nodes.GraphState.StageFlag;
 import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
-import org.graalvm.compiler.nodes.extended.OSRStartNode;
-import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
-import org.graalvm.compiler.nodes.util.GraphUtil;
-import org.graalvm.compiler.nodes.LoopBeginNode;
-import org.graalvm.compiler.nodes.LoopEndNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.ReturnNode;
-import org.graalvm.compiler.nodes.SafepointNode;
-import org.graalvm.compiler.nodes.StartNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.phases.BasePhase;
-import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.replacements.SnippetCounter;
-import org.graalvm.compiler.replacements.nodes.LogNode;
-import org.graalvm.compiler.replacements.nodes.MethodHandleNode;
-import org.graalvm.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
-
-import jdk.vm.ci.code.Architecture;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.Value;
-
-import org.graalvm.compiler.debug.DebugContext;
-import org.graalvm.compiler.debug.DebugHandlersFactory;
-import org.graalvm.compiler.debug.DiagnosticsOutputDirectory;
-import org.graalvm.compiler.graph.Node;
-import org.graalvm.compiler.graph.NodeFlood;
-import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
-import org.graalvm.compiler.hotspot.HotSpotBackend;
-import org.graalvm.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
-import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
-import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
-import org.graalvm.compiler.hotspot.stubs.SnippetStub;
-import org.graalvm.compiler.nodes.AbstractEndNode;
-import org.graalvm.compiler.nodes.BeginNode;
-import org.graalvm.compiler.nodes.CallTargetNode;
 import org.graalvm.compiler.nodes.ConstantNode;
-import org.graalvm.compiler.nodes.CustomClockLogNode;
-import org.graalvm.compiler.nodes.CustomDebugNode;
-import org.graalvm.compiler.nodes.CustomInstrumentationCounterNode;
-import org.graalvm.compiler.nodes.FixedNode;
-import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
-import org.graalvm.compiler.options.OptionValues;
-import org.graalvm.compiler.phases.Phase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.phases.tiers.LowTierContext;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaConstant;
 /**
@@ -168,38 +109,28 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             }
 
             for (ForeignCallNode valueNode : returnNodesTime) {
-                //LogNode ln = graph.add(new LogNode("LAST CALL: %ld     Start call: %ld ", valueNode, startTime));
-                //graph.addAfterFixed(valueNode,ln);
                 SubNode Time = graph.addWithoutUnique(new SubNode(valueNode,startTime));
                 ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(160L), StampFactory.forKind(JavaKind.Long)));
-                ValueNode[] args = new ValueNode[2];
-                args[0] = ID;
-                args[1] = Time;
-                
+
+                // create and array and add to the graph
                 ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
                 NewArrayNode array = graph.add(new NewArrayNode( context.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
                 graph.addBeforeFixed(valueNode, array);
+
+                // add the ID to the first index in the array
+                ValueNode IDindex = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
+                StoreIndexedNode storeID = graph.add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
+                graph.addAfterFixed(array, storeID);
+
+                // add the time to the array 
+                ValueNode Timeindex = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                StoreIndexedNode storeTime = graph.add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
+                graph.addAfterFixed(storeID, storeTime);
+
+                // send the array off to be added to the cache
                 ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
                 graph.addAfterFixed(valueNode, node);
             }
-
-
-            
-        
     }
-
-    // @Override
-    // @SuppressWarnings("try")
-    // protected void run(StructuredGraph graph, HighTierContext context) {
-    //         for (Invoke invokes : graph.getInvokes()) {
-                
-    //             try (DebugCloseable s = invokes.asFixedNode().withNodeSourcePosition()) {
-    //             //graph.compilationId();
-//                 CustomClockLogNode customClockLogNodeB = graph.add(new CustomClockLogNode());
-    //             graph.addBeforeFixed(invokes.asFixedNode(), customClockLogNodeB);
-                
-    //             }          
-    //         } 
-    // }
 
 }
