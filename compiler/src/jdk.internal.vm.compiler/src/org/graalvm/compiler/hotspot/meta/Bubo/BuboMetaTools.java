@@ -1,4 +1,4 @@
-package org.graalvm.compiler.hotspot.meta;
+package org.graalvm.compiler.hotspot.meta.Bubo;
 
 import static org.graalvm.compiler.core.common.CompilationRequestIdentifier.asCompilationRequest;
 

@@ -40,13 +40,13 @@ import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
-import org.graalvm.compiler.hotspot.meta.BuboMetaTools;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProvider;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProviderImpl;
 import org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboMetaTools;
 import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Reexecutability;
-import org.graalvm.compiler.hotspot.meta.BuboCache;
 import org.graalvm.compiler.hotspot.replacements.DigestBaseSnippets;
 import org.graalvm.compiler.lir.Variable;
 import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
@@ -107,7 +107,7 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
         graph().replaceFixed(this, javaCurrentCPUtime);
 
-        //ValueNode vn = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(1695700000000L), StampFactory.forKind(JavaKind.Long)));
+        ValueNode vn = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(1695700000000L), StampFactory.forKind(JavaKind.Long)));
         
         //SubNode nn = graph().addWithoutUnique(new SubNode(javaCurrentCPUtime, vn));
         ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));

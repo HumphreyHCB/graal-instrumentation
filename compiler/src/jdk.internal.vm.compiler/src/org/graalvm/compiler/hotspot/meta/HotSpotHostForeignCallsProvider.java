@@ -113,6 +113,7 @@ import org.graalvm.compiler.core.common.spi.ForeignCallsProvider;
 import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
 import org.graalvm.compiler.hotspot.HotSpotForeignCallLinkage;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntimeProvider;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.hotspot.replacements.arraycopy.CheckcastArrayCopyCallNode;
 import org.graalvm.compiler.hotspot.stubs.ArrayStoreExceptionStub;
 import org.graalvm.compiler.hotspot.stubs.ClassCastExceptionStub;
