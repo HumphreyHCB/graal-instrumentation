@@ -1,6 +1,7 @@
 package org.graalvm.compiler.hotspot.meta.Bubo;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -50,9 +51,6 @@ public class BuboPrinter {
         int counter = 0;
 
         for (int key : data.keySet()) {
-            if (counter== 11) {
-                break; // very wastfull, find a better way
-            }
             long fraction = (long) (((float) data.get(key)/sum) * 100);
             String bars = "";
             String spaces = "";
@@ -76,7 +74,7 @@ public class BuboPrinter {
 
     public static BigDecimal round(float d, int decimalPlace) {
     BigDecimal bd = new BigDecimal(Float.toString(d));
-    bd = bd.setScale(decimalPlace, BigDecimal.ROUND_HALF_UP);      
+    bd = bd.setScale(decimalPlace, RoundingMode.HALF_UP);
     return bd;
 }
 }
