@@ -13,8 +13,8 @@ public class BuboPrinter {
 
     public static void main(String[] args) {
 
-        HashMap<Integer, Long> data = BuboDataReader.readData("compiler/output.csv");
-        printPercentageBar(orderDataByTime(data));
+        //HashMap<Integer, Long> data = BuboDataReader.readData("compiler/output.csv");
+        //printPercentageBar(orderDataByTime(data));
 
     }
 
@@ -41,7 +41,7 @@ public class BuboPrinter {
 
     }
 
-    public static void printPercentageBar(HashMap<Integer, Long> data){
+    public static void printPercentageBar(HashMap<Integer, Long> data, HashMap<Integer, String> methods){
         long sum = 0;
         for (Long vars : data.values()) {
             sum+=vars;
@@ -62,9 +62,12 @@ public class BuboPrinter {
             for (int i = 0; i < 100 - fraction; i++) {
                 spaces+= " ";
             }
-           
+           if (methods.containsKey(key)) {
+            System.err.println("Method : " + methods.get(key) +" Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
+           }
+           else{
             System.err.println("Method : " + key +" Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
-
+           }
 
             counter++;
         }

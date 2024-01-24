@@ -34,6 +34,7 @@ import org.graalvm.compiler.code.CompilationResult;
 import org.graalvm.compiler.core.CompilationWatchDog;
 import org.graalvm.compiler.core.GraalCompiler;
 import org.graalvm.compiler.core.common.CompilationIdentifier;
+import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.util.CompilationAlarm;
 import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.debug.DebugContext.Activation;
@@ -42,6 +43,7 @@ import org.graalvm.compiler.debug.DebugOptions;
 import org.graalvm.compiler.hotspot.CompilationCounters.Options;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
 import org.graalvm.compiler.hotspot.meta.HotSpotProviders;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import org.graalvm.compiler.hotspot.phases.OnStackReplacementPhase;
 import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.java.StableMethodNameFormatter;
@@ -126,7 +128,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             if (graalRuntime.isShutdown()) {
                 return HotSpotCompilationRequestResult.failure(String.format("Shutdown entered"), true);
             }
-
+            
             ResolvedJavaMethod method = request.getMethod();
 
             if (graalRuntime.isBootstrapping()) {
@@ -143,7 +145,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             HotSpotCompilationRequest hsRequest = (HotSpotCompilationRequest) request;
             CompilationTask task = new CompilationTask(jvmciRuntime, this, hsRequest, true, shouldRetainLocalVariables(hsRequest.getJvmciEnv()), installAsDefault);
             OptionValues options = task.filterOptions(initialOptions);
-
+            
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             boolean oneIsolatePerCompilation = Services.IS_IN_NATIVE_IMAGE &&
                             config.getFlag("JVMCIThreadsPerNativeLibraryRuntime", Integer.class, 0) == 1 &&
@@ -159,10 +161,19 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                                 Activation a = debug.activate()) {
                     r = task.runCompilation(debug);
                 }
+                addMethodToCache(task.getCompilationIdentifier());
                 assert r != null;
                 return r;
             }
         }
+    }
+
+    private void addMethodToCache(CompilationIdentifier id){
+        // this would be a good place to do a check for should we instumentat
+        String[] idComponents = id.toString(Verbosity.ID).split("-");
+        BuboMethodCache.add(Integer.parseInt(idComponents[1]), id.toString(Verbosity.NAME));
+
+
     }
 
     private boolean shouldRetainLocalVariables(long envAddress) {
