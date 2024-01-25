@@ -170,8 +170,8 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
 
     private void addMethodToCache(CompilationIdentifier id){
         // this would be a good place to do a check for should we instumentat
-        String[] idComponents = id.toString(Verbosity.ID).split("-");
-        BuboMethodCache.add(Integer.parseInt(idComponents[1]), id.toString(Verbosity.NAME));
+
+        BuboMethodCache.add(id.toString(Verbosity.ID) + " " + id.toString(Verbosity.NAME));
 
 
     }
