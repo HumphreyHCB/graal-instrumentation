@@ -53,7 +53,6 @@ import org.graalvm.compiler.phases.common.HighTierLoweringPhase;
 import org.graalvm.compiler.phases.common.IterativeConditionalEliminationPhase;
 import org.graalvm.compiler.phases.common.inlining.InliningPhase;
 import org.graalvm.compiler.phases.common.inlining.policy.GreedyInliningPolicy;
-import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.virtual.phases.ea.FinalPartialEscapePhase;
