@@ -43,11 +43,15 @@ public class BuboPrinter {
     }
 
     public static void printPercentageBar(HashMap<Integer, Long> data, HashMap<Integer, String> methods){
+
         long sum = 0;
         for (Long vars : data.values()) {
             sum+=vars;
         }
 
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+        
         int counter = 0;
 
         for (int key : data.keySet()) {
