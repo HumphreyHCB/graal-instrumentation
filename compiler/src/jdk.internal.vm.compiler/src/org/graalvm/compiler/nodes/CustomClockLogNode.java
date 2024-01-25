@@ -27,66 +27,24 @@ package org.graalvm.compiler.nodes;
 import static org.graalvm.compiler.nodeinfo.NodeCycles.CYCLES_2;
 import static org.graalvm.compiler.nodeinfo.NodeSize.SIZE_1;
 
-import java.lang.reflect.InvocationHandler;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import org.graalvm.compiler.bytecode.ResolvedJavaMethodBytecodeProvider;
-import org.graalvm.compiler.core.common.GraalOptions;
-import org.graalvm.compiler.core.common.LIRKind;
-import org.graalvm.compiler.core.common.type.Stamp;
+import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.graph.NodeClass;
-import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
-import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor;
-import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProvider;
-import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProviderImpl;
-import org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider;
-import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
-import org.graalvm.compiler.hotspot.meta.Bubo.BuboMetaTools;
-import org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Reexecutability;
-import org.graalvm.compiler.hotspot.replacements.DigestBaseSnippets;
-import org.graalvm.compiler.lir.Variable;
-import org.graalvm.compiler.lir.gen.LIRGeneratorTool;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
-import org.graalvm.compiler.nodes.calc.AddNode;
-import org.graalvm.compiler.nodes.calc.NegateNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
-import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
+import org.graalvm.compiler.nodes.java.NewArrayNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.spi.LIRLowerable;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
 import org.graalvm.compiler.nodes.spi.NodeLIRBuilderTool;
-import org.graalvm.compiler.nodes.util.GraphUtil;
-import org.graalvm.compiler.replacements.InvocationPluginHelper;
-import org.graalvm.compiler.replacements.SnippetCounter;
-import org.graalvm.compiler.replacements.SnippetCounterNode;
-import org.graalvm.compiler.replacements.SnippetSubstitutionInvocationPlugin;
-import org.graalvm.compiler.replacements.StringLatin1Snippets;
-import org.graalvm.compiler.replacements.SnippetCounter.Group;
-import org.graalvm.compiler.replacements.nodes.LogNode;
-
-import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterValue;
-import jdk.vm.ci.hotspot.HotSpotCompiledNmethod;
-import jdk.vm.ci.runtime.JVMCI;
-import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.meta.*;
 
-import static org.graalvm.compiler.hotspot.meta.HotSpotForeignCallDescriptor.Transition.SAFEPOINT;
-import static org.graalvm.compiler.hotspot.meta.HotSpotForeignCallsProviderImpl.NO_LOCATIONS;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.AddtoInstrumentationCache;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.INVOKE_STATIC_METHOD_ONE_ARG;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.dummyPrintdesc;
 
 /**
- * Marks a position in the graph where a node should be emitted.
+ * Marks a position in the graph() where a node should be emitted.
  */
 // @formatter:off
 @NodeInfo(cycles = CYCLES_2,
@@ -96,23 +54,43 @@ import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.
 public final class CustomClockLogNode extends FixedWithNextNode implements Lowerable, LIRLowerable {
 
     public static final NodeClass<CustomClockLogNode> TYPE = NodeClass.create(CustomClockLogNode.class);
+    
+    @Input
+    private SubNode Time;
 
-
-    public CustomClockLogNode() {
+    public CustomClockLogNode(SubNode Time) {
         super(TYPE, StampFactory.forVoid());
+        this.Time = Time;
     }
 
     @Override
     public void lower(LoweringTool tool) {
-        ForeignCallNode javaCurrentCPUtime = graph().add(new ForeignCallNode(JAVA_TIME_MILLIS, EMPTY_ARRAY));
-        graph().replaceFixed(this, javaCurrentCPUtime);
+        Long id = Long.parseLong(graph().compilationId().toString(Verbosity.ID).split("-")[1]);
+        ValueNode ID = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
-        ValueNode vn = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(1695700000000L), StampFactory.forKind(JavaKind.Long)));
+
+        // create and array and add to the graph()
+        ValueNode length = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
+        NewArrayNode array = graph().add(new NewArrayNode( tool.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
+        graph().replaceFixed(this, array);
+
+        // add the ID to the first index in the array
+        ValueNode IDindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
+        StoreIndexedNode storeID = graph().add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
+        graph().addAfterFixed(array, storeID);
         
-        //SubNode nn = graph().addWithoutUnique(new SubNode(javaCurrentCPUtime, vn));
-        ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, javaCurrentCPUtime));
-        graph().addAfterFixed(javaCurrentCPUtime, node);
-        
+
+
+        // add the time to the array 
+        ValueNode Timeindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+        StoreIndexedNode storeTime = graph().add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
+        graph().addAfterFixed(storeID, storeTime);
+
+
+        // send the array off to be added to the cache
+        ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
+        graph().addAfterFixed(storeTime, node);
+
     }
 
     @Override
