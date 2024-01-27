@@ -4,7 +4,7 @@
 mx --java-home \
 /home/hburchell/Downloads/labsjdk-ce-17.0.9+4-jvmci-23.0-b17-linux-amd64/labsjdk-ce-17.0.9-jvmci-23.0-b17 \
  vm \
- -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI  \
+ -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dgraal.EnableProfiler=true \
  -Dgraal.Dump="*" -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true \
   -Dgraal.CompilationFailureAction="Print"   \
   -XX:+UseJVMCICompiler  \

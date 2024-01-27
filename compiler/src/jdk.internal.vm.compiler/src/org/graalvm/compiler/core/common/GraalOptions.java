@@ -295,4 +295,7 @@ public final class GraalOptions {
 
     @Option(help = "Perform checks that guards and deopts aren't introduced in graphs that should handle exceptions explicitly", type = OptionType.Debug)
     public static final OptionKey<Boolean> StrictDeoptInsertionChecks = new OptionKey<>(false);
+
+    @Option(help = "Enable Instrumeneation to collect profile information", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableProfiler = new OptionKey<>(false);
 }

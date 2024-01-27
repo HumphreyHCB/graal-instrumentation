@@ -27,6 +27,7 @@ package org.graalvm.compiler.hotspot.meta;
 import java.util.ListIterator;
 import java.util.Optional;
 
+import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.debug.Assertions;
 import org.graalvm.compiler.hotspot.GraalHotSpotVMConfig;
 import org.graalvm.compiler.hotspot.HotSpotGraalRuntime;
@@ -113,7 +114,9 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
             }
         }
 
-        addCustomInstrumentationPhase(suites);
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            addCustomInstrumentationPhase(suites);
+        }
 
         return suites;
     }

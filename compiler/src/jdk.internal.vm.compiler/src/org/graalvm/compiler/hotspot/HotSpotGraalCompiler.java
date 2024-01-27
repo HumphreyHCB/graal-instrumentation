@@ -34,6 +34,7 @@ import org.graalvm.compiler.code.CompilationResult;
 import org.graalvm.compiler.core.CompilationWatchDog;
 import org.graalvm.compiler.core.GraalCompiler;
 import org.graalvm.compiler.core.common.CompilationIdentifier;
+import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.util.CompilationAlarm;
 import org.graalvm.compiler.debug.DebugContext;
@@ -160,7 +161,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                                 Activation a = debug.activate()) {
                     r = task.runCompilation(debug);
                 }
-                addMethodToCache(task.getCompilationIdentifier());
+                if (GraalOptions.EnableProfiler.getValue(options)) {
+                    addMethodToCache(task.getCompilationIdentifier());   
+                }
                 assert r != null;
                 return r;
             }
