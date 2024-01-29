@@ -113,21 +113,21 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 }          
             }
             // get comp ID
-            // Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-            // ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
+            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
-            for (ForeignCallNode valueNode : returnNodesTime) {
+            for (ForeignCallNode returnNode : returnNodesTime) {
 
                 
-                SubNode Time = graph.addWithoutUnique(new SubNode(valueNode,startTime));
+                SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
                 
-                CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time));
-                graph.addAfterFixed(valueNode, logClock);
+                CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time,returnNode));
+                graph.addAfterFixed(returnNode, logClock);
 
-                // create and array and add to the graph
+                // //create and array and add to the graph
                 // ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
                 // NewArrayNode array = graph.add(new NewArrayNode( context.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
-                // graph.addBeforeFixed(valueNode, array);
+                // graph.addBeforeFixed(returnNode, array);
 
                 // // add the ID to the first index in the array
                 // ValueNode IDindex = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
@@ -141,7 +141,7 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
 
                 // // send the array off to be added to the cache
                 // ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
-                // graph.addAfterFixed(valueNode, node);
+                // graph.addAfterFixed(returnNode, node);
            }
     }
 
