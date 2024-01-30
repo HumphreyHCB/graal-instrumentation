@@ -86,11 +86,9 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
     }
 
     private final boolean optional;
-    private final SnippetCounter.Group group;
 
 
-    public CustomInstrumentationPhase(SnippetCounter.Group group) {
-        this.group = group;
+    public CustomInstrumentationPhase() {
         optional = true;
     }
 

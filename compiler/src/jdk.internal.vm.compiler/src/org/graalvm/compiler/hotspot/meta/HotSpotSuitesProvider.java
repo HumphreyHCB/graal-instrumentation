@@ -130,7 +130,7 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
     private void addCustomInstrumentationPhase(Suites suites){
 
         ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        position.add(new CustomInstrumentationPhase(group));   
+        position.add(new CustomInstrumentationPhase());   
         //suites.getLowTier().addBeforeLast(new CustomInstrumentationPhase(group));
     }
 
