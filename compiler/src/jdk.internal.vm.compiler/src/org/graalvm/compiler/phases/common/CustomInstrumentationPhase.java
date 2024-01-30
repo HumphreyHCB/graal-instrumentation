@@ -113,8 +113,8 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 }          
             }
             // get comp ID
-            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
+            //Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+            //ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
             for (ForeignCallNode returnNode : returnNodesTime) {
 
@@ -123,25 +123,6 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 
                 CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time,returnNode));
                 graph.addAfterFixed(returnNode, logClock);
-
-                // //create and array and add to the graph
-                // ValueNode length = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
-                // NewArrayNode array = graph.add(new NewArrayNode( context.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
-                // graph.addBeforeFixed(returnNode, array);
-
-                // // add the ID to the first index in the array
-                // ValueNode IDindex = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
-                // StoreIndexedNode storeID = graph.add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
-                // graph.addAfterFixed(array, storeID);
-
-                // // add the time to the array 
-                // ValueNode Timeindex = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                // StoreIndexedNode storeTime = graph.add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
-                // graph.addAfterFixed(storeID, storeTime);
-
-                // // send the array off to be added to the cache
-                // ForeignCallNode node = graph.add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
-                // graph.addAfterFixed(returnNode, node);
            }
     }
 

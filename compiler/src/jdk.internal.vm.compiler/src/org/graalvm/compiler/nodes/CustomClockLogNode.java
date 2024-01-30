@@ -96,6 +96,10 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
                 // send the array off to be added to the cache
                 ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
                 graph().addAfterFixed(returnNode, node);
+                graph().replaceFixed(this, node);
+
+                storeID.lower(tool);
+                storeTime.lower(tool);
 
     }
 
