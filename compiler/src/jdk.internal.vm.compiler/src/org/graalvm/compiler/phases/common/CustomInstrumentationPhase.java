@@ -32,10 +32,14 @@ import java.util.Optional;
 import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.debug.DebugCloseable;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.nodes.GraphState;
+import org.graalvm.compiler.nodes.calc.AddNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
+import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.ReturnNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
@@ -52,6 +56,7 @@ import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
 
 import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.JavaConstant;
 /**
  * Adds CustomInstrumentation to loops.
@@ -115,12 +120,41 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             //ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
             for (ForeignCallNode returnNode : returnNodesTime) {
-
+                //context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"));
                 
                 SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
+
+                try {
+                ValueNode read = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
+                LoadFieldNode lfn = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
+                graph.addAfterFixed(startTime, lfn);
+                //LogNode ln = graph.add(new LogNode(" The message is %ld ", lfn));
+                ValueNode add1 = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                AddNode addNode = graph.addWithoutUnique(new AddNode(lfn, add1));
+                StoreFieldNode add1toPointer =  graph.add(new StoreFieldNode(read, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer")), addNode));
+                graph.addAfterFixed(lfn, add1toPointer);
+                //GraphUtil.findLastFrameState(invoke)
+
+
+                ValueNode longvalue = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1111), StampFactory.forKind(JavaKind.Long)));
+                LoadFieldNode arrayBuffer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+                graph.addAfterFixed(startTime, arrayBuffer);
                 
-                CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time,returnNode));
-                graph.addAfterFixed(returnNode, logClock);
+                StoreIndexedNode a = graph.add(new StoreIndexedNode(arrayBuffer, addNode, null, null, JavaKind.Long, longvalue));
+                graph.addAfterFixed(arrayBuffer,a);
+
+                StoreFieldNode addArrayBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), arrayBuffer));
+                graph.addAfterFixed(a,addArrayBack);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // TODO: handle exception
+                }
+
+
+
+                //CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time,returnNode));
+                //graph.addAfterFixed(returnNode, logClock);
            }
     }
 
