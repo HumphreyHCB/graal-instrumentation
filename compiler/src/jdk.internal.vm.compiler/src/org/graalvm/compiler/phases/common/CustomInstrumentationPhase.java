@@ -116,35 +116,44 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                 }          
             }
             // get comp ID
-            //Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-            //ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
+            Long id = Long.parseLong(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
             for (ForeignCallNode returnNode : returnNodesTime) {
-                //context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"));
                 
                 SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
 
-                try {
-                ValueNode read = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
-                LoadFieldNode lfn = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
-                graph.addAfterFixed(startTime, lfn);
-                //LogNode ln = graph.add(new LogNode(" The message is %ld ", lfn));
-                ValueNode add1 = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                AddNode addNode = graph.addWithoutUnique(new AddNode(lfn, add1));
-                StoreFieldNode add1toPointer =  graph.add(new StoreFieldNode(read, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer")), addNode));
-                graph.addAfterFixed(lfn, add1toPointer);
-                //GraphUtil.findLastFrameState(invoke)
+                 try {
+                    //Read the buffer form the static class
+                LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+                graph.addAfterFixed(returnNode, readBuffer);
 
+                // read the pointer from the static class
+                LoadFieldNode readPointer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
+                graph.addAfterFixed(readBuffer, readPointer);
 
-                ValueNode longvalue = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1111), StampFactory.forKind(JavaKind.Long)));
-                LoadFieldNode arrayBuffer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                graph.addAfterFixed(startTime, arrayBuffer);
-                
-                StoreIndexedNode a = graph.add(new StoreIndexedNode(arrayBuffer, addNode, null, null, JavaKind.Long, longvalue));
-                graph.addAfterFixed(arrayBuffer,a);
+                // write to the read buffer the ID using the pointer as the index
+                StoreIndexedNode writeToBufferID = graph.add(new StoreIndexedNode(readBuffer, readPointer.asNode(), null, null, JavaKind.Long, ID));
+                graph.addAfterFixed(readPointer,writeToBufferID);
 
-                StoreFieldNode addArrayBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), arrayBuffer));
-                graph.addAfterFixed(a,addArrayBack);
+                // add one to the pointer
+                ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                AddNode pointerPlus1 = graph.addWithoutUnique(new AddNode(readPointer, one));
+
+                // write to the buffer the time using the incremented pointer
+                StoreIndexedNode writeToBufferTime = graph.add(new StoreIndexedNode(readBuffer, pointerPlus1, null, null, JavaKind.Long, Time));
+                graph.addAfterFixed(writeToBufferID,writeToBufferTime);
+
+                // write the changed buffer back to the static class
+                StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
+                graph.addAfterFixed(writeToBufferTime,WriteBufferBack);
+
+                    // add one for the pointer again
+                AddNode pointerPlus2 = graph.addWithoutUnique(new AddNode(pointerPlus1, one));
+
+                    // write the pointer back to the static class
+                StoreFieldNode WritePointerBack =  graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer")), pointerPlus2));
+                graph.addAfterFixed(WriteBufferBack, WritePointerBack);
 
                 } catch (Exception e) {
                     e.printStackTrace();
