@@ -31,10 +31,14 @@ import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.graph.NodeClass;
 import org.graalvm.compiler.graph.Node.Input;
+import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
+import org.graalvm.compiler.nodes.calc.AddNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
+import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.memory.MemoryAccess;
 import org.graalvm.compiler.nodes.memory.MemoryKill;
@@ -78,28 +82,78 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         ValueNode ID = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
 
-                //create and array and add to the graph
-                ValueNode length = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
-                NewArrayNode array = graph().add(new NewArrayNode( tool.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
-                graph().addBeforeFixed(returnNode, array);
+                // //create and array and add to the graph
+                // ValueNode length = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
+                // NewArrayNode array = graph().add(new NewArrayNode( tool.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
+                // graph().addBeforeFixed(returnNode, array);
 
-                // add the ID to the first index in the array
-                ValueNode IDindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
-                StoreIndexedNode storeID = graph().add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
-                graph().addAfterFixed(array, storeID);
+                // // add the ID to the first index in the array
+                // ValueNode IDindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
+                // StoreIndexedNode storeID = graph().add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
+                // graph().addAfterFixed(array, storeID);
 
-                // add the time to the array 
-                ValueNode Timeindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                StoreIndexedNode storeTime = graph().add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
-                graph().addAfterFixed(storeID, storeTime);
+                // // add the time to the array 
+                // ValueNode Timeindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                // StoreIndexedNode storeTime = graph().add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
+                // graph().addAfterFixed(storeID, storeTime);
 
-                // send the array off to be added to the cache
-                ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
-                graph().addAfterFixed(returnNode, node);
-                graph().replaceFixed(this, node);
+                // // send the array off to be added to the cache
+                // ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
+                // graph().addAfterFixed(returnNode, node);
+                // graph().replaceFixed(this, node);
 
-                storeID.lower(tool);
-                storeTime.lower(tool);
+                // storeID.lower(tool);
+                // storeTime.lower(tool);
+
+
+                try {
+                    
+
+                LoadFieldNode readBuffer = graph().add(LoadFieldNode.create(null, null, tool.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+                graph().addAfterFixed(returnNode, readBuffer);
+
+                LoadFieldNode readPointer = graph().add(LoadFieldNode.create(null, null, tool.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
+                graph().addAfterFixed(readBuffer, readPointer);
+
+                StoreIndexedNode writeToBufferID = graph().add(new StoreIndexedNode(readBuffer, readPointer.asNode(), null, null, JavaKind.Long, ID));
+                graph().addAfterFixed(readPointer,writeToBufferID);
+
+                ValueNode one = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                AddNode pointerPlus1 = graph().addWithoutUnique(new AddNode(readPointer, one));
+
+                StoreIndexedNode writeToBufferTime = graph().add(new StoreIndexedNode(readBuffer, pointerPlus1, null, null, JavaKind.Long, Time));
+                graph().addAfterFixed(writeToBufferID,writeToBufferTime);
+
+                StoreFieldNode WriteBufferBack = graph().add(new StoreFieldNode(null, tool.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
+                graph().addAfterFixed(writeToBufferTime,WriteBufferBack);
+
+
+                AddNode pointerPlus2 = graph().addWithoutUnique(new AddNode(pointerPlus1, one));
+
+
+                StoreFieldNode WritePointerBack =  graph().add(new StoreFieldNode(null, tool.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer")), pointerPlus2));
+                graph().addAfterFixed(WriteBufferBack, WritePointerBack);
+
+                graph().replaceFixed(this, WritePointerBack);
+                
+                readBuffer.lower(tool);
+                readPointer.lower(tool);
+
+                writeToBufferID.lower(tool);
+                writeToBufferTime.lower(tool);
+                WriteBufferBack.lower(tool);
+                WritePointerBack.lower(tool);
+
+
+            } catch (Exception e) {
+
+                e.printStackTrace();
+                // TODO: handle exception
+            }
+
+
+
+
 
     }
 
