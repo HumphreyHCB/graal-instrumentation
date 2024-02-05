@@ -133,7 +133,7 @@ public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
     @Override
     protected void run(StructuredGraph graph, CoreProviders context) {
         lower(graph, context, LoweringMode.LOWERING);
-        //assert checkPostLowering(graph, context);
+        assert checkPostLowering(graph, context);
         
     }
 
@@ -185,14 +185,14 @@ public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
      *            lowered
      * @throws AssertionError if the check fails
      */
-    // private boolean checkPostLowering(StructuredGraph graph, CoreProviders context) {
-    //     Mark expectedMark = graph.getMark();
-    //     lower(graph, context, LoweringMode.VERIFY_LOWERING);
-    //     Mark mark = graph.getMark();
-    //     assert mark.equals(expectedMark) || graph.getNewNodes(mark).count() == 0 : graph + ": a second round in the current lowering phase introduced these new nodes: " +
-    //                     graph.getNewNodes(expectedMark).snapshot();
-    //     return true;
-    // }
+    private boolean checkPostLowering(StructuredGraph graph, CoreProviders context) {
+        Mark expectedMark = graph.getMark();
+        lower(graph, context, LoweringMode.VERIFY_LOWERING);
+        Mark mark = graph.getMark();
+        assert mark.equals(expectedMark) || graph.getNewNodes(mark).count() == 0 : graph + ": a second round in the current lowering phase introduced these new nodes: " +
+                        graph.getNewNodes(expectedMark).snapshot();
+        return true;
+    }
 
     // private class ProcessFrame extends Frame<ProcessFrame> {
     //     private final NodeBitMap activeGuards;
