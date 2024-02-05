@@ -628,6 +628,7 @@ public final class GraphState {
         ADDRESS_LOWERING,
         FINAL_CANONICALIZATION,
         TARGET_VECTOR_LOWERING,
+        CUSTOMINSTRUMENTATION_TIER,
     }
 
     /**

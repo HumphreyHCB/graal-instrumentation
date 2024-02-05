@@ -66,7 +66,9 @@ public interface LoweringTool extends CoreProviders {
     enum StandardLoweringStage implements LoweringStage {
         HIGH_TIER,
         MID_TIER,
-        LOW_TIER;
+        LOW_TIER,
+        CUSTOMINSTRUMENTATION_TIER;
+        
 
         public final TimerKey timer;
 

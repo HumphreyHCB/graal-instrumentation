@@ -46,6 +46,8 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.common.BoxNodeIdentityPhase;
 import org.graalvm.compiler.phases.common.BoxNodeOptimizationPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
+import org.graalvm.compiler.phases.common.CustomInstrumentationLoweringPhase;
+import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
 import org.graalvm.compiler.phases.common.DisableOverflownCountedLoopsPhase;
 import org.graalvm.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase;
@@ -117,6 +119,8 @@ public class HighTier extends BaseTier<HighTierContext> {
             appendPhase(new ReadEliminationPhase(canonicalizer));
         }
         appendPhase(new BoxNodeOptimizationPhase(canonicalizer));
+        appendPhase(new CustomInstrumentationPhase());
+        appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }
 

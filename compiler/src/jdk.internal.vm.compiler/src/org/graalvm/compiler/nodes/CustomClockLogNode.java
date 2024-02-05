@@ -81,7 +81,6 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         Long id = Long.parseLong(graph().compilationId().toString(Verbosity.ID).split("-")[1]);
         ValueNode ID = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
-
                 // //create and array and add to the graph
                 // ValueNode length = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
                 // NewArrayNode array = graph().add(new NewArrayNode( tool.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
@@ -114,8 +113,8 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
                 LoadFieldNode readPointer = graph().add(LoadFieldNode.create(null, null, tool.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
                 graph().addAfterFixed(readBuffer, readPointer);
-
-                StoreIndexedNode writeToBufferID = graph().add(new StoreIndexedNode(readBuffer, readPointer.asNode(), null, null, JavaKind.Long, ID));
+                    
+                StoreIndexedNode writeToBufferID = graph().add(new StoreIndexedNode(readBuffer, readPointer, null, null, JavaKind.Long, ID));
                 graph().addAfterFixed(readPointer,writeToBufferID);
 
                 ValueNode one = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
@@ -136,13 +135,14 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
 
                 graph().replaceFixed(this, WritePointerBack);
                 
-                readBuffer.lower(tool);
-                readPointer.lower(tool);
-
-                writeToBufferID.lower(tool);
-                writeToBufferTime.lower(tool);
-                WriteBufferBack.lower(tool);
-                WritePointerBack.lower(tool);
+                // readBuffer.lower(tool);
+                // readPointer.lower(tool);
+                
+                // writeToBufferID.lower(tool);
+                // writeToBufferTime.lower(tool);
+                
+                // WriteBufferBack.lower(tool);
+                // WritePointerBack.lower(tool);
 
 
             } catch (Exception e) {
