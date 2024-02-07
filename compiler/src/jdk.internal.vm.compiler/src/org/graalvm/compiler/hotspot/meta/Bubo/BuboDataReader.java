@@ -17,6 +17,18 @@ public class BuboDataReader {
         }
     }
 
+    public static HashMap<Integer, Long> convertToHashMap(long[][] data, int pointer, int bufferPointer) {
+        HashMap<Integer, Long> LargehashMap = new HashMap<>();
+        
+        for (int i = 0; i < bufferPointer - 1; i++) {
+            LargehashMap.putAll(convertToHashMap(data[i], 250_000_000));
+        }
+        LargehashMap.putAll(convertToHashMap(data[bufferPointer], pointer));
+
+        return LargehashMap;
+
+    }
+
     public static HashMap<Integer, Long> convertToHashMap(long[] data, int pointer) {
         // Check if the length of the array is even (pairs of ID and number)
         if (data.length % 2 != 0) {

@@ -7,16 +7,26 @@ import java.lang.Thread;
  * see Custom Instrumentation Phase to see where its called.
  */
 
-public class BuboCache extends Thread {
+ public class BuboCache extends Thread {
         
         public static long[] Buffer;
         public static int pointer;
+        public static int BufferPointer;
+        public static long[][] BufferArray;
 
         public BuboCache() {
-                Buffer = new long[250_000_000];
+                BufferArray = new long[5][250_000_000];
+                BufferPointer = 0;
                 pointer = 0;
-
+                Buffer = BufferArray[BufferPointer];
         }
+
+        public static void rotateBuffer() {
+                BufferPointer++;
+                Buffer = BufferArray[BufferPointer];
+                pointer = 0;
+        }
+
         public static void dummyPrint(long useless){
                 System.out.println("In Humphrey Cache, Dumy print");
         }
@@ -36,6 +46,10 @@ public class BuboCache extends Thread {
                 pointer++;
                 Buffer[pointer] = item[1];
                 pointer++;
+
+                if (pointer > 250_000_000) {
+                        rotateBuffer();   
+                }
 
         }
 
