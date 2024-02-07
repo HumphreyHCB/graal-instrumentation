@@ -202,6 +202,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
     public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", Void.class, Object.class);
     public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", Void.class, Object.class);
+    public static final HotSpotForeignCallDescriptor BUBU_CACHE_ROTATEBUFFER = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "rotateBuffer", Void.class, Object.class);
+ 
     /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.
      *
@@ -353,6 +355,9 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
 
         ResolvedJavaMethod cacheAddmethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_DESCRIPTOR.getName());
         invokeJavaMethodStub(options, providers, BUBU_CACHE_DESCRIPTOR, invokeJavaMethodAddress, cacheAddmethod);
+
+        ResolvedJavaMethod rotateBuffermethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_ROTATEBUFFER.getName());
+        invokeJavaMethodStub(options, providers, BUBU_CACHE_ROTATEBUFFER, invokeJavaMethodAddress, rotateBuffermethod);
     }
 
     private void registerArraycopyDescriptor(EconomicMap<Long, ForeignCallDescriptor> descMap, JavaKind kind, boolean aligned, boolean disjoint, boolean uninit, LocationIdentity killedLocation,
