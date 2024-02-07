@@ -32,10 +32,15 @@ import java.util.Optional;
 import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.debug.DebugCloseable;
+import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.nodes.GraphState;
+import org.graalvm.compiler.nodes.IfNode;
+import org.graalvm.compiler.nodes.MergeNode;
 import org.graalvm.compiler.nodes.calc.AddNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
+import org.graalvm.compiler.nodes.debug.ControlFlowAnchorNode;
+import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
@@ -49,8 +54,14 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.common.LoweringPhase.LoweringToolImpl;
 import org.graalvm.compiler.replacements.SnippetCounter;
 import org.graalvm.compiler.replacements.nodes.LogNode;
+
+
+import org.graalvm.compiler.nodes.AbstractBeginNode;
+import org.graalvm.compiler.nodes.AbstractMergeNode;
+import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.CustomClockLogNode;
+import org.graalvm.compiler.nodes.EndNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
@@ -108,6 +119,34 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
             ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
             graph.addAfterFixed(graph.start(), startTime);
+
+
+            EndNode trueEnd = graph.add(new EndNode());
+            EndNode falseEnd = graph.add(new EndNode());
+    
+            BeginNode trueBegin = graph.add(new BeginNode());
+            trueBegin.setNext(trueEnd);
+            BeginNode falseBegin = graph.add(new BeginNode());
+            falseBegin.setNext(falseEnd);
+
+            // condition is currently null, hence the crash
+            IfNode shouldBufferRotate = graph.add(new IfNode(null, trueBegin, falseBegin, BranchProbabilityNode.NOT_FREQUENT_PROFILE));
+            
+
+            MergeNode merge = graph.add(new MergeNode());
+            merge.addForwardEnd(trueEnd);
+            merge.addForwardEnd(falseEnd);
+            
+            graph.start().setNext(shouldBufferRotate);
+            merge.setNext(startTime);
+
+            //graph.addAfterFixed(startTime,shouldBufferRotate);
+            //merge.setNext(startTime);
+            //merge.setNext(startTime);
+
+            //graph.addAfterFixed(merge, returnNodes);
+
+
 
             int pointer = 0;
             for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {

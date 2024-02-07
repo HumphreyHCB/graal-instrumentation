@@ -34,7 +34,10 @@ import org.graalvm.compiler.graph.Node.Input;
 import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.nodeinfo.NodeInfo;
 import org.graalvm.compiler.nodes.calc.AddNode;
+import org.graalvm.compiler.nodes.calc.IntegerEqualsNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
+import org.graalvm.compiler.nodes.calc.IntegerLessThanNode.LessThanOp;
+import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
@@ -51,6 +54,7 @@ import org.graalvm.word.LocationIdentity;
 import jdk.vm.ci.meta.*;
 
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
+import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_ROTATEBUFFER;
 
 /**
  * Marks a position in the graph() where a node should be emitted.
@@ -81,30 +85,6 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
         Long id = Long.parseLong(graph().compilationId().toString(Verbosity.ID).split("-")[1]);
         ValueNode ID = graph().addWithoutUnique(new ConstantNode(JavaConstant.forLong(id), StampFactory.forKind(JavaKind.Long)));
 
-                // //create and array and add to the graph
-                // ValueNode length = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
-                // NewArrayNode array = graph().add(new NewArrayNode( tool.getMetaAccess().lookupJavaType(Long.TYPE), length, true));
-                // graph().addBeforeFixed(returnNode, array);
-
-                // // add the ID to the first index in the array
-                // ValueNode IDindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
-                // StoreIndexedNode storeID = graph().add(new StoreIndexedNode(array, IDindex, null, null, JavaKind.Long, ID));
-                // graph().addAfterFixed(array, storeID);
-
-                // // add the time to the array 
-                // ValueNode Timeindex = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                // StoreIndexedNode storeTime = graph().add(new StoreIndexedNode(array, Timeindex, null, null, JavaKind.Long, Time));
-                // graph().addAfterFixed(storeID, storeTime);
-
-                // // send the array off to be added to the cache
-                // ForeignCallNode node = graph().add(new ForeignCallNode(BUBU_CACHE_DESCRIPTOR, array));
-                // graph().addAfterFixed(returnNode, node);
-                // graph().replaceFixed(this, node);
-
-                // storeID.lower(tool);
-                // storeTime.lower(tool);
-
-
                 try {
                     
 
@@ -134,6 +114,19 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
                 graph().addAfterFixed(WriteBufferBack, WritePointerBack);
 
                 graph().replaceFixed(this, WritePointerBack);
+                
+
+                ValueNode pointerMax = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(250_000_000), StampFactory.forKind(JavaKind.Int)));
+                IntegerEqualsNode doesPointerEquallMax = graph().add(new IntegerEqualsNode(pointerPlus2, pointerMax));
+                //graph().addAfterFixed(WritePointerBack, doesPointerEquallMax);
+                
+                ForeignCallNode rotateBufferCall = graph().add(new ForeignCallNode(BUBU_CACHE_ROTATEBUFFER, ValueNode.EMPTY_ARRAY));
+                //graph().addAfterFixed(WritePointerBack, rotateBufferCall);
+                
+                
+                
+                //graph().addAfterFixed(WritePointerBack, rotateBufferCall);
+
                 
                 // readBuffer.lower(tool);
                 // readPointer.lower(tool);
