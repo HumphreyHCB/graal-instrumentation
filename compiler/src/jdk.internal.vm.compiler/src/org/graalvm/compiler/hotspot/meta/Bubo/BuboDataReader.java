@@ -19,11 +19,27 @@ public class BuboDataReader {
 
     public static HashMap<Integer, Long> convertToHashMap(long[][] data, int pointer, int bufferPointer) {
         HashMap<Integer, Long> LargehashMap = new HashMap<>();
-        
+        HashMap<Integer, Long> temp = new HashMap<>();
         for (int i = 0; i < bufferPointer - 1; i++) {
-            LargehashMap.putAll(convertToHashMap(data[i], 250_000_000));
+            temp = convertToHashMap(data[i], 250_000_000);
+            for (int key : temp.keySet()) {
+                if (LargehashMap.containsKey(key)) {
+                    LargehashMap.put(key, LargehashMap.get(key) + temp.get(key));
+                }
+                else{
+                    LargehashMap.put(key, temp.get(key));
+                }
+            }
         }
-        LargehashMap.putAll(convertToHashMap(data[bufferPointer], pointer));
+        temp = convertToHashMap(data[bufferPointer], pointer);
+        for (int key : temp.keySet()) {
+            if (LargehashMap.containsKey(key)) {
+                LargehashMap.put(key, LargehashMap.get(key) + temp.get(key));
+            }
+            else{
+                LargehashMap.put(key, temp.get(key));
+            }
+        }
 
         return LargehashMap;
 
@@ -42,7 +58,13 @@ public class BuboDataReader {
         for (int i = 0; i < pointer; i += 2) {
             int id = (int) data[i];
             long number = data[i + 1];
-            hashMap.put(id, number);
+            if (hashMap.containsKey(id)) {
+                hashMap.put(id, hashMap.get(id) + number);
+            }
+            else{
+                hashMap.put(id, number);
+            }
+            
         }
 
         return hashMap;
