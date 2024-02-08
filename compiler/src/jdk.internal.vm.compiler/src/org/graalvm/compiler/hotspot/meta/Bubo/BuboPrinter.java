@@ -55,21 +55,23 @@ public class BuboPrinter {
         int counter = 0;
 
         for (int key : data.keySet()) {
-            long fraction = (long) (((float) data.get(key)/sum) * 100);
+            long fraction = (long) (((float) data.get(key)/sum) * 50);
             String bars = "";
             String spaces = "";
             for (int i = 0; i < fraction; i++) {
                 bars+= "|";
             }
-            for (int i = 0; i < 100 - fraction; i++) {
+            for (int i = 0; i < 50 - fraction; i++) {
                 spaces+= " ";
             }
            if (methods.containsKey(key)) {
-            System.err.println("Method : " + methods.get(key) +" Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
+            System.out.print("\n Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
+            System.err.print("Method : " + methods.get(key) );
            }
            else{
-            System.err.println("Method : " + key +" Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
-           }
+            System.out.print("\n Percentage {" +bars + spaces + "} " + round(((float) data.get(key)/sum) * 100,2) + "% ");
+            System.err.print("Method(ID) : " + key );
+        }
 
             counter++;
         }
