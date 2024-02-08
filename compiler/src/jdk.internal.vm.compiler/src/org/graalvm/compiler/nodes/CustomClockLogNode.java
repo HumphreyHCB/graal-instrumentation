@@ -116,11 +116,34 @@ public final class CustomClockLogNode extends FixedWithNextNode implements Lower
                 graph().replaceFixed(this, WritePointerBack);
                 
 
-                ValueNode pointerMax = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(250_000_000), StampFactory.forKind(JavaKind.Int)));
-                IntegerEqualsNode doesPointerEquallMax = graph().add(new IntegerEqualsNode(pointerPlus2, pointerMax));
+                // EndNode trueEnd = graph().addWithoutUnique(new EndNode());
+                // EndNode falseEnd = graph().addWithoutUnique(new EndNode());
+        
+                // BeginNode trueBegin = graph().addWithoutUnique(new BeginNode());
+                // trueBegin.setNext(trueEnd);
+                // BeginNode falseBegin = graph().addWithoutUnique(new BeginNode());
+                // falseBegin.setNext(falseEnd);
+
+                // ValueNode pointerMax = graph().addWithoutUnique(new ConstantNode(JavaConstant.forInt(250_000_000), StampFactory.forKind(JavaKind.Int)));
+                // IntegerEqualsNode doesPointerEquallMax = graph().add(new IntegerEqualsNode(pointerPlus2, pointerMax));
+    
+                // // condition is currently null, hence the crash
+                // IfNode shouldBufferRotate = graph().add(new IfNode(doesPointerEquallMax, trueBegin, falseBegin, BranchProbabilityNode.NOT_FREQUENT_PROFILE));
+                
+    
+                // MergeNode merge = graph().add(new MergeNode());
+                // merge.addForwardEnd(trueEnd);
+                // merge.addForwardEnd(falseEnd);
+                
+                // writeToBufferTime.setNext(shouldBufferRotate);
+                // merge.setNext(WritePointerBack);
+
+
+
+               
                 //graph().addAfterFixed(WritePointerBack, doesPointerEquallMax);
                 
-                ForeignCallNode rotateBufferCall = graph().add(new ForeignCallNode(BUBU_CACHE_ROTATEBUFFER, ValueNode.EMPTY_ARRAY));
+                //ForeignCallNode rotateBufferCall = graph().add(new ForeignCallNode(BUBU_CACHE_ROTATEBUFFER, ValueNode.EMPTY_ARRAY));
                 //graph().addAfterFixed(WritePointerBack, rotateBufferCall);
                 
                 
