@@ -33,6 +33,7 @@ import static org.graalvm.compiler.core.common.GraalOptions.OptReadElimination;
 import static org.graalvm.compiler.core.common.GraalOptions.PartialEscapeAnalysis;
 import static org.graalvm.compiler.phases.common.DeadCodeEliminationPhase.Optionality.Optional;
 
+import org.graalvm.compiler.core.common.GraalOptions;
 import org.graalvm.compiler.loop.phases.ConvertDeoptimizeToGuardPhase;
 import org.graalvm.compiler.loop.phases.LoopFullUnrollPhase;
 import org.graalvm.compiler.loop.phases.LoopPeelingPhase;
@@ -119,8 +120,10 @@ public class HighTier extends BaseTier<HighTierContext> {
             appendPhase(new ReadEliminationPhase(canonicalizer));
         }
         appendPhase(new BoxNodeOptimizationPhase(canonicalizer));
-        appendPhase(new CustomInstrumentationPhase());
-        appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            appendPhase(new CustomInstrumentationPhase());
+        }
+        //appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }
 
