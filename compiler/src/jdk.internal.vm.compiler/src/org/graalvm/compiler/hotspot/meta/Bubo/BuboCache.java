@@ -23,6 +23,9 @@ import java.lang.Thread;
 
         public static void rotateBuffer() {
                 BufferPointer++;
+                if (BufferPointer >= 5) {
+                        throw new ArrayIndexOutOfBoundsException("We have reached the max of the buffer");
+                }
                 Buffer = BufferArray[BufferPointer];
                 pointer = 0;
         }
