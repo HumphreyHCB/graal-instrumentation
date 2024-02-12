@@ -25,8 +25,6 @@
 package org.graalvm.compiler.phases.common;
 
 
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_ROTATEBUFFER;
 import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_NANOS;
 import java.util.Optional;
 
@@ -45,6 +43,7 @@ import org.graalvm.compiler.nodes.debug.ControlFlowAnchorNode;
 import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
+import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
@@ -142,39 +141,29 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
             for (ForeignCallNode returnNode : returnNodesTime) {
                 
                   SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
-                  StoreFieldNode WritePointerBack = null;
-                  AddNode pointerPlus2 = null;
+
                  try {
                     //Read the buffer form the static class
                 LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
                 graph.addAfterFixed(returnNode, readBuffer);
 
-                // read the pointer from the static class
-                LoadFieldNode readPointer = graph.add(LoadFieldNode.create(null, null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"))));
-                graph.addAfterFixed(readBuffer, readPointer);
+
+                //read the value currently store in the eleiment of the ID
+                LoadIndexedNode readCurrentValueAtIndex = graph.add(new LoadIndexedNode(null, readBuffer, ID, null, JavaKind.Long));
+                graph.addAfterFixed(readBuffer,readCurrentValueAtIndex);
+                
+                //Aggergate the the time with the current value of this index
+                AddNode aggergatedValue = graph.addWithoutUnique(new AddNode(readCurrentValueAtIndex, Time));
 
                 // write to the read buffer the ID using the pointer as the index
-                StoreIndexedNode writeToBufferID = graph.add(new StoreIndexedNode(readBuffer, readPointer.asNode(), null, null, JavaKind.Long, ID));
-                graph.addAfterFixed(readPointer,writeToBufferID);
+                StoreIndexedNode writeToBufferID = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, aggergatedValue));
+                graph.addAfterFixed(readCurrentValueAtIndex ,writeToBufferID);
 
-                // add one to the pointer
-                ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                AddNode pointerPlus1 = graph.addWithoutUnique(new AddNode(readPointer, one));
-
-                // write to the buffer the time using the incremented pointer
-                StoreIndexedNode writeToBufferTime = graph.add(new StoreIndexedNode(readBuffer, pointerPlus1, null, null, JavaKind.Long, Time));
-                graph.addAfterFixed(writeToBufferID,writeToBufferTime);
 
                 // write the changed buffer back to the static class
                 StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
-                graph.addAfterFixed(writeToBufferTime,WriteBufferBack);
+                graph.addAfterFixed(writeToBufferID,WriteBufferBack);
 
-                    // add one for the pointer again
-                pointerPlus2 = graph.addWithoutUnique(new AddNode(pointerPlus1, one));
-
-                    // write the pointer back to the static class
-                WritePointerBack =  graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer")), pointerPlus2));
-                graph.addAfterFixed(WriteBufferBack, WritePointerBack);
 
 
                 } catch (Exception e) {
@@ -182,45 +171,6 @@ public class CustomInstrumentationPhase extends BasePhase<HighTierContext>  {
                     // TODO: handle exception
                 }
 
-                // make the Bones of the If ( The Begining and the end)
-                EndNode trueEnd = graph.add(new EndNode());
-                EndNode falseEnd = graph.add(new EndNode());
-                
-                // set the Begins to point to the ends
-                BeginNode trueBegin = graph.add(new BeginNode());
-                trueBegin.setNext(trueEnd);
-                BeginNode falseBegin = graph.add(new BeginNode());
-                falseBegin.setNext(falseEnd);
-
-                //Build our Condidtion
-                ValueNode pointerMax = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(250_000_000), StampFactory.forKind(JavaKind.Int)));
-                IntegerEqualsNode doesPointerEquallMax = graph.addWithoutUnique(new IntegerEqualsNode(pointerPlus2, pointerMax));
-    
-                // Build the if
-                IfNode shouldBufferRotate = graph.add(new IfNode(doesPointerEquallMax, trueBegin, falseBegin, BranchProbabilityNode.NOT_FREQUENT_PROFILE));
-                
-                // make the Merge, and make sure it points back to the two end nodes
-                MergeNode merge = graph.add(new MergeNode());
-                merge.addForwardEnd(trueEnd);
-                merge.addForwardEnd(falseEnd);
-
-                // in this case we want to make a call if true
-                ForeignCallNode rotateBufferCall = graph.add(new ForeignCallNode(BUBU_CACHE_ROTATEBUFFER, ValueNode.EMPTY_ARRAY));
-                graph.addAfterFixed(trueBegin, rotateBufferCall);
-
-                // store the next node before we set next
-                FixedNode tempNext = WritePointerBack.next();
-
-                // set the node to point at the If & and set
-                WritePointerBack.setNext(shouldBufferRotate);
-                merge.setNext(tempNext);
-                
-
-                // CustomClockLogNode logClock = graph.add(new CustomClockLogNode(Time,returnNode));
-                // graph.addAfterFixed(returnNode, logClock);
-
-
-                    
 
            }
     }
