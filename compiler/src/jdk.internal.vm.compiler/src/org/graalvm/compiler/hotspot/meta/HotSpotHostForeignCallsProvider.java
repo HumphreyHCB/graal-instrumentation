@@ -199,10 +199,10 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
-    public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
-    public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", Void.class, Object.class);
-    public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", Void.class, Object.class);
-    public static final HotSpotForeignCallDescriptor BUBU_CACHE_ROTATEBUFFER = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "rotateBuffer", Void.class, Object.class);
+    // public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
+    // public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", Void.class, Object.class);
+    // public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", Void.class, Object.class);
+    // public static final HotSpotForeignCallDescriptor BUBU_CACHE_ROTATEBUFFER = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "rotateBuffer", Void.class, Object.class);
  
     /**instrumentation
      * Signature of an unsafe {@link System#arraycopy} stub.
@@ -349,15 +349,15 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
             invokeJavaMethodStub(options, providers, desc, invokeJavaMethodAddress, method);
         }
 
-        // Here is where you can reigster your own java Methods
-        ResolvedJavaMethod dummyPrintmethod = findMethod(providers.getMetaAccess(), BuboCache.class, dummyPrintdesc.getName());
-        invokeJavaMethodStub(options, providers, dummyPrintdesc, invokeJavaMethodAddress, dummyPrintmethod);
+        // // Here is where you can reigster your own java Methods
+        // ResolvedJavaMethod dummyPrintmethod = findMethod(providers.getMetaAccess(), BuboCache.class, dummyPrintdesc.getName());
+        // invokeJavaMethodStub(options, providers, dummyPrintdesc, invokeJavaMethodAddress, dummyPrintmethod);
 
-        ResolvedJavaMethod cacheAddmethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_DESCRIPTOR.getName());
-        invokeJavaMethodStub(options, providers, BUBU_CACHE_DESCRIPTOR, invokeJavaMethodAddress, cacheAddmethod);
+        // ResolvedJavaMethod cacheAddmethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_DESCRIPTOR.getName());
+        // invokeJavaMethodStub(options, providers, BUBU_CACHE_DESCRIPTOR, invokeJavaMethodAddress, cacheAddmethod);
 
-        ResolvedJavaMethod rotateBuffermethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_ROTATEBUFFER.getName());
-        invokeJavaMethodStub(options, providers, BUBU_CACHE_ROTATEBUFFER, invokeJavaMethodAddress, rotateBuffermethod);
+        // ResolvedJavaMethod rotateBuffermethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_ROTATEBUFFER.getName());
+        // invokeJavaMethodStub(options, providers, BUBU_CACHE_ROTATEBUFFER, invokeJavaMethodAddress, rotateBuffermethod);
     }
 
     private void registerArraycopyDescriptor(EconomicMap<Long, ForeignCallDescriptor> descMap, JavaKind kind, boolean aligned, boolean disjoint, boolean uninit, LocationIdentity killedLocation,
@@ -500,7 +500,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         // INSTRUMENTATION CALL
-        link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
+        //link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
 
         link(new ExceptionHandlerStub(options, providers, foreignCalls.get(EXCEPTION_HANDLER.getSignature())));
         link(new UnwindExceptionToCallerStub(options, providers,
