@@ -53,8 +53,8 @@ import org.graalvm.word.LocationIdentity;
 
 import jdk.vm.ci.meta.*;
 
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
-import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_ROTATEBUFFER;
+// import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_DESCRIPTOR;
+// import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.BUBU_CACHE_ROTATEBUFFER;
 
 /**
  * Marks a position in the graph() where a node should be emitted.
