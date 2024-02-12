@@ -1,7 +1,9 @@
 package org.graalvm.compiler.hotspot.meta.Bubo;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -16,6 +18,29 @@ public class BuboDataReader {
             System.out.println("ID: " + id + ", CPU Time: " + dataMap.get(id));
         }
     }
+
+    public static void DumpToFile(long[][] data, int pointer, int bufferPointer, String filename) {
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            for (int i = 0; i <= bufferPointer -1; i++) {
+                for (int j = 0; j < data[i].length; j++) {
+                    writer.write(data[i][j] + " ");
+                    writer.newLine();
+                }
+            }
+            for (int j = 0; j <= pointer; j++) {
+                writer.write(data[bufferPointer][j] + " ");
+                writer.newLine();
+            }
+
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+
 
     public static HashMap<Integer, Long> convertToHashMap(long[][] data, int pointer, int bufferPointer) {
         HashMap<Integer, Long> LargehashMap = new HashMap<>();
