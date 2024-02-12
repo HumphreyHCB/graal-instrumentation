@@ -41,6 +41,44 @@ public class BuboPrinter {
                         ));
 
     }
+    public static void printPercentageBar(long[] data, HashMap<Integer, String> methods, Long TotalSpenttime){
+
+
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+        long sum = 0;
+        HashMap<Integer, Long> timmings = new HashMap<>();
+        for (int index : methods.keySet()) {
+            sum+=data[index];
+            timmings.put(index, data[index]);
+        }
+
+        timmings = orderDataByTime(timmings);
+
+        String bars = "";
+        String spaces = "";
+        long fraction = 0;
+        for (int index : timmings.keySet()) {
+            fraction = (long) (((float) data[index]/sum) * 50);
+            bars = "";
+            spaces = "";
+
+            for (int i = 0; i < fraction; i++) {
+                bars+= "|";
+            }
+            for (int i = 0; i < 50 - fraction; i++) {
+                spaces+= " ";
+            }
+
+            System.out.print("\n Percentage {" +bars + spaces + "} " + round(((float) data[index]/sum) * 100,2) + "% ");
+            System.err.print("Method : " + methods.get(index) );
+
+
+        }
+        }
+
+    
+    
 
     public static void printPercentageBar(HashMap<Integer, Long> data, HashMap<Integer, String> methods){
 
