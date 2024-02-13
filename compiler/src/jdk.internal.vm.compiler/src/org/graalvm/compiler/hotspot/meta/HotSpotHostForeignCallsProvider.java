@@ -199,8 +199,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
     public static final HotSpotForeignCallDescriptor Z_ARRAY_BARRIER = new HotSpotForeignCallDescriptor(LEAF_NO_VZERO, NOT_REEXECUTABLE, NO_LOCATIONS, "load_barrier_on_oop_array",
                     void.class, long.class, long.class);
 
-    // public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
-    // public static final HotSpotForeignCallDescriptor dummyPrintdesc = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "dummyPrint", Void.class, Object.class);
+     public static final HotSpotForeignCallDescriptor AddtoInstrumentationCache = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "addToBuboCache", void.class, long.class);
+    public static final HotSpotForeignCallDescriptor TEST_PRINT_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "TestPrint", Void.class, Object.class);
     // public static final HotSpotForeignCallDescriptor BUBU_CACHE_DESCRIPTOR = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "add", Void.class, Object.class);
     // public static final HotSpotForeignCallDescriptor BUBU_CACHE_ROTATEBUFFER = new HotSpotForeignCallDescriptor(SAFEPOINT, REEXECUTABLE, NO_LOCATIONS, "rotateBuffer", Void.class, Object.class);
  
@@ -350,8 +350,8 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         // // Here is where you can reigster your own java Methods
-        // ResolvedJavaMethod dummyPrintmethod = findMethod(providers.getMetaAccess(), BuboCache.class, dummyPrintdesc.getName());
-        // invokeJavaMethodStub(options, providers, dummyPrintdesc, invokeJavaMethodAddress, dummyPrintmethod);
+        ResolvedJavaMethod testPrint = findMethod(providers.getMetaAccess(), BuboCache.class, TEST_PRINT_DESCRIPTOR.getName());
+        invokeJavaMethodStub(options, providers, TEST_PRINT_DESCRIPTOR, invokeJavaMethodAddress, testPrint);
 
         // ResolvedJavaMethod cacheAddmethod = findMethod(providers.getMetaAccess(), BuboCache.class, BUBU_CACHE_DESCRIPTOR.getName());
         // invokeJavaMethodStub(options, providers, BUBU_CACHE_DESCRIPTOR, invokeJavaMethodAddress, cacheAddmethod);
@@ -500,7 +500,7 @@ public abstract class HotSpotHostForeignCallsProvider extends HotSpotForeignCall
         }
 
         // INSTRUMENTATION CALL
-        //link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
+        link(new InstrumentationCallStub("addToBuboCache", options, providers, registerStubCall(AddtoInstrumentationCache, DESTROYS_ALL_CALLER_SAVE_REGISTERS)));
 
         link(new ExceptionHandlerStub(options, providers, foreignCalls.get(EXCEPTION_HANDLER.getSignature())));
         link(new UnwindExceptionToCallerStub(options, providers,

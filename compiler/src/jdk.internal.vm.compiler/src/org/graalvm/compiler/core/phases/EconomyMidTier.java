@@ -25,6 +25,8 @@
 package org.graalvm.compiler.core.phases;
 
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
+import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
+import org.graalvm.compiler.phases.common.CustomLateMidPhase;
 import org.graalvm.compiler.phases.common.FrameStateAssignmentPhase;
 import org.graalvm.compiler.phases.common.GuardLoweringPhase;
 import org.graalvm.compiler.phases.common.LoopSafepointInsertionPhase;
@@ -38,6 +40,8 @@ public class EconomyMidTier extends BaseTier<MidTierContext> {
     @SuppressWarnings("this-escape")
     public EconomyMidTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
+        //appendPhase(new CustomLateMidPhase());
+        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
         appendPhase(new RemoveValueProxyPhase(canonicalizer));
         appendPhase(new LoopSafepointInsertionPhase());
         appendPhase(new GuardLoweringPhase());

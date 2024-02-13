@@ -120,9 +120,9 @@ public class HighTier extends BaseTier<HighTierContext> {
             appendPhase(new ReadEliminationPhase(canonicalizer));
         }
         appendPhase(new BoxNodeOptimizationPhase(canonicalizer));
-        if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new CustomInstrumentationPhase());
-        }
+        // if (GraalOptions.EnableProfiler.getValue(options)) {
+        //     appendPhase(new CustomInstrumentationPhase());
+        // }
         //appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }

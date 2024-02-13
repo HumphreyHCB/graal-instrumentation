@@ -37,6 +37,7 @@ import org.graalvm.compiler.hotspot.lir.VerifyMaxRegisterSizePhase;
 import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.java.SuitesProviderBase;
 import org.graalvm.compiler.lir.phases.LIRSuites;
+import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.EncodedGraph;
 import org.graalvm.compiler.nodes.GraphEncoder;
 import org.graalvm.compiler.nodes.GraphState;
@@ -50,6 +51,11 @@ import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.BarrierSetVerificationPhase;
 import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
+import org.graalvm.compiler.phases.common.CustomLateHighPhase;
+import org.graalvm.compiler.phases.common.CustomLateLowPhase;
+import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
+import org.graalvm.compiler.phases.common.CustomLateMidPhase;
+import org.graalvm.compiler.phases.common.LowTierLoweringPhase;
 import org.graalvm.compiler.phases.common.UseTrappingNullChecksPhase;
 import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
@@ -114,6 +120,10 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
             }
         }
 
+        ListIterator<BasePhase<? super LowTierContext>> position = suites.getLowTier().findPhase(LowTierLoweringPhase.class); 
+        position.add(new CustomLateLowPhase(group));   
+        //suites.getLowTier().appendPhase(new CustomLateLowPhase(group));
+
         if (GraalOptions.EnableProfiler.getValue(options)) {
             addCustomInstrumentationPhase(suites);
         }
@@ -129,8 +139,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
 
     private void addCustomInstrumentationPhase(Suites suites){
 
-        //ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
-        //position.add(new CustomInstrumentationPhase());   
+        // ListIterator<BasePhase<? super HighTierContext>> position = suites.getHighTier().findPhase(PartialEscapePhase.class); 
+        // position.add(new CustomInstrumentationPhase());   
         //suites.getLowTier().addBeforeLast(new CustomInstrumentationPhase(group));
     }
 

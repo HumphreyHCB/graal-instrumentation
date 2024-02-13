@@ -15,6 +15,9 @@ import java.lang.Thread;
                 Buffer = new long[200_000];;
         }
 
+        public static void TestPrint(char Unused) {
+                System.out.print("Test Print From Static Class");
+        }
 
 
 }
