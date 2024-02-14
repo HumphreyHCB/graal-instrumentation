@@ -35,13 +35,16 @@ import org.graalvm.compiler.phases.common.RemoveValueProxyPhase;
 import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 
+import org.graalvm.compiler.phases.common.HighTierLoweringPhase;
+
 public class EconomyMidTier extends BaseTier<MidTierContext> {
 
     @SuppressWarnings("this-escape")
     public EconomyMidTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
-        //appendPhase(new CustomLateMidPhase());
-        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
+        //appendPhase(new CustomLateMidPhase(null));
+        //appendPhase(new HighTierLoweringPhase(canonicalizer, true));
+        // appendPhase(new CustomLateLoweringPhase(canonicalizer));
         appendPhase(new RemoveValueProxyPhase(canonicalizer));
         appendPhase(new LoopSafepointInsertionPhase());
         appendPhase(new GuardLoweringPhase());

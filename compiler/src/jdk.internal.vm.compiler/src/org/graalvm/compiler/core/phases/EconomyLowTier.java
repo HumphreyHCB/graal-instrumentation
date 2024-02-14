@@ -33,6 +33,7 @@ import org.graalvm.compiler.phases.common.CustomLateLowPhase;
 import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
 import org.graalvm.compiler.phases.common.ExpandLogicPhase;
 import org.graalvm.compiler.phases.common.LowTierLoweringPhase;
+import org.graalvm.compiler.phases.common.MidTierLoweringPhase;
 import org.graalvm.compiler.phases.schedule.SchedulePhase;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.common.CustomLateMidPhase;
@@ -43,8 +44,10 @@ public class EconomyLowTier extends BaseTier<LowTierContext> {
     @SuppressWarnings("this-escape")
     public EconomyLowTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
+        appendPhase(new CustomLateLowPhase(null));
+        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
+
         appendPhase(new LowTierLoweringPhase(canonicalizer));
-        appendPhase(new CustomLateLoweringPhase(canonicalizer));
         appendPhase(new ExpandLogicPhase(canonicalizer));
 
         if (Assertions.assertionsEnabled()) {
@@ -58,7 +61,7 @@ public class EconomyLowTier extends BaseTier<LowTierContext> {
          */
         appendPhase(new PlaceholderPhase<LowTierContext>(AddressLoweringPhase.class));
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
-        //appendPhase(new CustomLateLowPhase());
-        // appendPhase(new CustomLateLoweringPhase(canonicalizer));
+
+
     }
 }

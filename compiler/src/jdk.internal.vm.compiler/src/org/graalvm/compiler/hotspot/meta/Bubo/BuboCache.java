@@ -9,10 +9,12 @@ import java.lang.Thread;
 
  public class BuboCache extends Thread {
         
-        public static long[] Buffer;
+        public static int[] Buffer;
+        public static int pointer;
 
         public BuboCache() {
-                Buffer = new long[200_000];;
+                Buffer = new int[200_000];
+                pointer = 1;
         }
 
         public static void TestPrint(char Unused) {

@@ -120,8 +120,8 @@ public class HotSpotSuitesProvider extends SuitesProviderBase {
             }
         }
 
-        ListIterator<BasePhase<? super LowTierContext>> position = suites.getLowTier().findPhase(LowTierLoweringPhase.class); 
-        position.add(new CustomLateLowPhase(group));   
+        // ListIterator<BasePhase<? super LowTierContext>> position = suites.getLowTier().findPhase(LowTierLoweringPhase.class); 
+        // position.add(new CustomLateLowPhase(group));   
         //suites.getLowTier().appendPhase(new CustomLateLowPhase(group));
 
         if (GraalOptions.EnableProfiler.getValue(options)) {

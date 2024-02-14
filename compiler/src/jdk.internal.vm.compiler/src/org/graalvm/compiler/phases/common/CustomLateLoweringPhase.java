@@ -43,7 +43,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.graalvm.collections.EconomicSet;
+import org.graalvm.compiler.core.common.memory.BarrierType;
+import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
 import org.graalvm.compiler.core.common.type.StampFactory;
+import org.graalvm.compiler.core.common.type.TypeReference;
 import org.graalvm.compiler.debug.CounterKey;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.debug.DebugContext;
@@ -72,6 +75,7 @@ import org.graalvm.compiler.nodes.GraphState.StageFlag;
 import org.graalvm.compiler.nodes.GuardNode;
 import org.graalvm.compiler.nodes.LogicNode;
 import org.graalvm.compiler.nodes.LoopExitNode;
+import org.graalvm.compiler.nodes.NamedLocationIdentity;
 import org.graalvm.compiler.nodes.PhiNode;
 import org.graalvm.compiler.nodes.ProxyNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
@@ -80,21 +84,31 @@ import org.graalvm.compiler.nodes.UnreachableBeginNode;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.nodes.WithExceptionNode;
 import org.graalvm.compiler.nodes.calc.FloatingNode;
+import org.graalvm.compiler.nodes.calc.IsNullNode;
 import org.graalvm.compiler.nodes.cfg.HIRBlock;
 import org.graalvm.compiler.nodes.extended.AnchoringNode;
+import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCall;
 import org.graalvm.compiler.nodes.extended.GuardedNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.java.InstanceOfNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
+import org.graalvm.compiler.nodes.java.LoadIndexedNode;
+import org.graalvm.compiler.nodes.java.StoreFieldNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.memory.MemoryAccess;
 import org.graalvm.compiler.nodes.memory.MemoryKill;
 import org.graalvm.compiler.nodes.memory.MemoryMapNode;
 import org.graalvm.compiler.nodes.memory.MultiMemoryKill;
 import org.graalvm.compiler.nodes.memory.SideEffectFreeWriteNode;
+import org.graalvm.compiler.nodes.memory.WriteNode;
+import org.graalvm.compiler.nodes.memory.address.AddressNode;
 import org.graalvm.compiler.nodes.memory.SingleMemoryKill;
 import org.graalvm.compiler.nodes.spi.CoreProviders;
 import org.graalvm.compiler.nodes.spi.CoreProvidersDelegate;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
+import org.graalvm.compiler.nodes.type.StampTool;
 import org.graalvm.compiler.nodes.virtual.CommitAllocationNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
@@ -103,12 +117,15 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.common.util.EconomicSetNodeEventListener;
 import org.graalvm.compiler.phases.schedule.SchedulePhase;
+import org.graalvm.compiler.replacements.DefaultJavaLoweringProvider;
 import org.graalvm.compiler.replacements.SnippetCounterNode;
 import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.word.LocationIdentity;
 
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.SpeculationLog.Speculation;
 
@@ -142,14 +159,35 @@ public class CustomLateLoweringPhase extends LoweringPhase  {
     @SuppressWarnings("try")
     private void lower(StructuredGraph graph, CoreProviders context, LoweringMode mode) {
         final LoweringToolImpl loweringTool = new LoweringToolImpl(context, null, null, null, null);
-            
-        for (Node node : graph.getNodes()) {
-            if (node instanceof SnippetCounterNode) {
-                SnippetCounterNode logNode = (SnippetCounterNode) node;
+        //DefaultJavaLoweringProvider a = new DefaultJavaLoweringProvider(context.getMetaAccess(),context.getForeignCalls(),context.getPlatformConfigurationProvider(),context.getMetaAccessExtensionProvider(), null, false);
+
+        
+
+        for (Node node : graph.getNodes().filter(LoadFieldNode.class)) {
+            LoadFieldNode logNode = (LoadFieldNode) node;
                 logNode.lower(loweringTool);
             }
-         }          
-        }
+
+            // for (Node node : graph.getNodes().filter(LoadIndexedNode.class)) {
+            //     LoadIndexedNode logNode = (LoadIndexedNode) node;
+            //     logNode.lower(loweringTool);
+                
+            // }
+
+            // for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
+            //     StoreIndexedNode logNode = (StoreIndexedNode) node;
+            //     context.getLowerer().lower(logNode, loweringTool);
+            // }
+
+            for (Node node : graph.getNodes().filter(StoreFieldNode.class)) {
+                StoreFieldNode logNode = (StoreFieldNode) node;
+                logNode.lower(loweringTool);
+            }
+         }
+         
+         
+        
+
 
 
         // boolean immutableSchedule = mode == LoweringMode.VERIFY_LOWERING;
@@ -243,7 +281,83 @@ public class CustomLateLoweringPhase extends LoweringPhase  {
     //     }
     // }
 
-    
+    // public void lowerStoreIndexedNode(StoreIndexedNode storeIndexed, LoweringTool tool) {
+    //     int arrayBaseOffset = tool.getMetaAccess().getArrayBaseOffset(storeIndexed.elementKind());
+    //     lowerStoreIndexedNode(storeIndexed, tool, arrayBaseOffset);
+    // }
 
+    // public void lowerStoreIndexedNode(StoreIndexedNode storeIndexed, LoweringTool tool, int arrayBaseOffset) {
+    //     StructuredGraph graph = storeIndexed.graph();
+
+    //     ValueNode value = storeIndexed.value();
+    //     ValueNode array = storeIndexed.array();
+
+    //     array = createNullCheckedValue(array, storeIndexed, tool);
+
+    //     GuardingNode boundsCheck = getBoundsCheck(storeIndexed, array, tool);
+
+    //     JavaKind storageKind = storeIndexed.elementKind();
+
+    //     LogicNode condition = null;
+    //     if (storeIndexed.getStoreCheck() == null && storageKind == JavaKind.Object && !StampTool.isPointerAlwaysNull(value)) {
+    //         /* Array store check. */
+    //         TypeReference arrayType = StampTool.typeReferenceOrNull(array);
+    //         if (arrayType != null && arrayType.isExact()) {
+    //             ResolvedJavaType elementType = arrayType.getType().getComponentType();
+    //             if (!elementType.isJavaLangObject()) {
+    //                 TypeReference typeReference = TypeReference.createTrusted(storeIndexed.graph().getAssumptions(), elementType);
+    //                 LogicNode typeTest = graph.addOrUniqueWithInputs(InstanceOfNode.create(typeReference, value));
+    //                 condition = LogicNode.or(graph.unique(IsNullNode.create(value)), typeTest, BranchProbabilityNode.NOT_LIKELY_PROFILE);
+    //             }
+    //         } else {
+    //             /*
+    //              * The guard on the read hub should be the null check of the array that was
+    //              * introduced earlier.
+    //              */
+                
+    //             ValueNode arrayClass = createReadHub(graph, array, tool);
+    //             boolean isKnownObjectArray = arrayType != null && !arrayType.getType().getComponentType().isPrimitive();
+    //             ValueNode componentHub = createReadArrayComponentHub(graph, arrayClass, isKnownObjectArray, storeIndexed);
+    //             LogicNode typeTest = graph.unique(InstanceOfDynamicNode.create(graph.getAssumptions(), tool.getConstantReflection(), componentHub, value, false));
+    //             condition = LogicNode.or(graph.unique(IsNullNode.create(value)), typeTest, BranchProbabilityNode.NOT_LIKELY_PROFILE);
+    //         }
+    //         if (condition != null && condition.isTautology()) {
+    //             // Skip unnecessary guards
+    //             condition = null;
+    //         }
+    //     }
+    //     BarrierType barrierType = barrierSet.arrayWriteBarrierType(storageKind);
+    //     ValueNode positiveIndex = createPositiveIndex(graph, storeIndexed.index(), boundsCheck);
+    //     AddressNode address = createArrayAddress(graph, array, arrayBaseOffset, storageKind, positiveIndex);
+    //     WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(storageKind), implicitStoreConvert(graph, storageKind, value),
+    //                     barrierType, MemoryOrderMode.PLAIN));
+    //     memoryWrite.setGuard(boundsCheck);
+    //     if (condition != null) {
+    //         tool.createGuard(storeIndexed, condition, DeoptimizationReason.ArrayStoreException, DeoptimizationAction.InvalidateReprofile);
+    //     }
+    //     memoryWrite.setStateAfter(storeIndexed.stateAfter());
+    //     graph.replaceFixedWithFixed(storeIndexed, memoryWrite);
+    // }
+
+    // protected ValueNode createNullCheckedValue(ValueNode object, FixedNode before, LoweringTool tool) {
+    //     GuardingNode nullCheck = createNullCheck(object, before, tool);
+    //     if (nullCheck == null) {
+    //         return object;
+    //     }
+    //     return before.graph().addOrUnique(PiNode.create(object, (object.stamp(NodeView.DEFAULT)).join(StampFactory.objectNonNull()), (ValueNode) nullCheck));
+    // }
+
+    // protected GuardingNode getBoundsCheck(AccessIndexedNode n, ValueNode array, LoweringTool tool) {
+    //     if (n.getBoundsCheck() != null) {
+    //         return n.getBoundsCheck();
+    //     }
+    //     StructuredGraph graph = n.graph();
+    //     ValueNode arrayLength = readOrCreateArrayLength(n, array, tool, graph);
+    //     LogicNode boundsCheck = IntegerBelowNode.create(n.index(), arrayLength, NodeView.DEFAULT);
+    //     if (boundsCheck.isTautology()) {
+    //         return null;
+    //     }
+    //     return tool.createGuard(n, graph.addOrUniqueWithInputs(boundsCheck), BoundsCheckException, InvalidateReprofile);
+    // }
 
 }

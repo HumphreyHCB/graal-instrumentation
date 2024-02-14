@@ -37,10 +37,10 @@ public class EconomyHighTier extends BaseTier<HighTierContext> {
     public EconomyHighTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
-        //appendPhase(new CustomLateHighPhase());
+        //appendPhase(new CustomLateHighPhase(null));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
-        //appendPhase(new CustomLateHighPhase());
-        // appendPhase(new CustomLateLoweringPhase(canonicalizer));
+        //appendPhase(new CustomLateHighPhase(null));
+        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
     }
 }
 
