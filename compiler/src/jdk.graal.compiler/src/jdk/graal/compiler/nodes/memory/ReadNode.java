@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,13 +51,12 @@ import jdk.graal.compiler.nodes.FieldLocationIdentity;
 import jdk.graal.compiler.nodes.FixedWithNextNode;
 import jdk.graal.compiler.nodes.FrameState;
 import jdk.graal.compiler.nodes.NodeView;
-import jdk.graal.compiler.nodes.PiNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.calc.NarrowNode;
 import jdk.graal.compiler.nodes.calc.ZeroExtendNode;
 import jdk.graal.compiler.nodes.extended.GuardingNode;
-import jdk.graal.compiler.nodes.extended.ValueAnchorNode;
+import jdk.graal.compiler.nodes.java.ArrayLengthNode;
 import jdk.graal.compiler.nodes.memory.address.AddressNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.nodes.spi.ArrayLengthProvider;
@@ -138,8 +137,21 @@ public class ReadNode extends FloatableAccessNode
 
     @Override
     public Node canonical(CanonicalizerTool tool) {
-        if (tool.allUsagesAvailable() && hasNoUsages()) {
-            // Read without usages or guard can be safely removed.
+        if (!getUsedAsNullCheck() && tool.allUsagesAvailable() && hasNoUsages()) {
+            /**
+             * Read without usages or guard can be safely removed as long as it does not act as the
+             * null check for dominated memory accesses.
+             *
+             * <pre>
+             * readWithNullCheck(object.a);
+             * read(object.b);
+             * read(object.c);
+             * </pre>
+             *
+             * In this pattern the first read is the null check for the dominated reads of b and c.
+             * Thus, the read of a must not be removed after fix reads phase even if it has no
+             * usages.
+             */
             return null;
         }
         if (canCanonicalizeRead()) {
@@ -166,15 +178,7 @@ public class ReadNode extends FloatableAccessNode
                 ValueNode length = GraphUtil.arrayLength(objAddress.getBase(), ArrayLengthProvider.FindLengthMode.CANONICALIZE_READ, constantReflection);
                 if (length != null) {
                     StructuredGraph graph = graph();
-                    ValueNode replacement = length;
-                    if (!length.isConstant() && length.stamp(NodeView.DEFAULT).canBeImprovedWith(StampFactory.positiveInt())) {
-                        ValueAnchorNode g = graph.add(new ValueAnchorNode());
-                        graph.addAfterFixed(this, g);
-                        replacement = graph.addWithoutUnique(new PiNode(length, StampFactory.positiveInt(), g));
-                    }
-                    if (!replacement.isAlive()) {
-                        replacement = graph.addOrUnique(replacement);
-                    }
+                    ValueNode replacement = ArrayLengthNode.maybeAddPositivePi(length, this);
                     graph.replaceFixedWithFloating(this, replacement);
                 }
             }

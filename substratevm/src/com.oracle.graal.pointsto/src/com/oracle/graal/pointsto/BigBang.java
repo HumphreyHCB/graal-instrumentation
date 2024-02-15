@@ -90,8 +90,6 @@ public interface BigBang extends ReachabilityAnalysis {
 
     DebugContext getDebug();
 
-    boolean extendedAsserts();
-
     void runAnalysis(DebugContext debug, Function<AnalysisUniverse, Boolean> duringAnalysisAction) throws InterruptedException;
 
     boolean trackPrimitiveValues();
@@ -137,6 +135,7 @@ public interface BigBang extends ReachabilityAnalysis {
         return null;
     }
 
+    @SuppressWarnings("unused")
     default void registerTypeForBaseImage(Class<?> cls) {
 
     }

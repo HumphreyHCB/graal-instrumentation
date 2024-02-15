@@ -65,7 +65,6 @@ import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.GraalAccess;
 import com.oracle.graal.pointsto.util.ParallelExecutionException;
 import com.oracle.svm.common.meta.MultiMethod;
-import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.ParsingReason;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.config.ConfigurationValues;
@@ -88,6 +87,7 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.graal.GraalSupport;
 import com.oracle.svm.graal.SubstrateGraalRuntime;
+import com.oracle.svm.graal.SubstrateGraalUtils;
 import com.oracle.svm.graal.TruffleRuntimeCompilationSupport;
 import com.oracle.svm.graal.hosted.DeoptimizationFeature;
 import com.oracle.svm.graal.hosted.FieldsOffsetsFeature;
@@ -145,6 +145,7 @@ import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.tiers.Suites;
 import jdk.graal.compiler.phases.util.Providers;
 import jdk.graal.compiler.truffle.phases.DeoptimizeOnExceptionPhase;
+import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -363,7 +364,7 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         DuringSetupAccessImpl config = (DuringSetupAccessImpl) c;
         AnalysisMetaAccess aMetaAccess = config.getMetaAccess();
-        SubstrateWordTypes wordTypes = new SubstrateWordTypes(aMetaAccess, FrameAccess.getWordKind());
+        SubstrateWordTypes wordTypes = new SubstrateWordTypes(aMetaAccess, ConfigurationValues.getWordKind());
         SubstrateProviders substrateProviders = ImageSingletons.lookup(SubstrateGraalCompilerSetup.class).getSubstrateProviders(aMetaAccess, wordTypes);
         objectReplacer = new GraalGraphObjectReplacer(config.getUniverse(), substrateProviders, universeFactory);
         config.registerObjectReplacer(objectReplacer);
@@ -385,8 +386,9 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
         hostedProviders = new HostedProviders(runtimeProviders.getMetaAccess(), runtimeProviders.getCodeCache(), runtimeProviders.getConstantReflection(),
                         runtimeProviders.getConstantFieldProvider(),
                         runtimeProviders.getForeignCalls(), runtimeProviders.getLowerer(), runtimeProviders.getReplacements(), runtimeProviders.getStampProvider(),
-                        runtimeConfig.getSnippetReflection(), runtimeProviders.getWordTypes(), runtimeProviders.getPlatformConfigurationProvider(), new GraphPrepareMetaAccessExtensionProvider(),
-                        runtimeProviders.getLoopsDataProvider());
+                        runtimeConfig.getProviders().getSnippetReflection(), runtimeProviders.getWordTypes(), runtimeProviders.getPlatformConfigurationProvider(),
+                        new GraphPrepareMetaAccessExtensionProvider(),
+                        runtimeProviders.getLoopsDataProvider(), runtimeProviders.getIdentityHashCodeProvider());
 
         FeatureHandler featureHandler = config.getFeatureHandler();
         final boolean supportsStubBasedPlugins = !SubstrateOptions.useLLVMBackend();
@@ -399,9 +401,9 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
                         new RuntimeCompiledMethodSupport.RuntimeCompilationGraphEncoder(ConfigurationValues.getTarget().arch, config.getUniverse().getHeapScanner()));
 
         featureHandler.forEachGraalFeature(feature -> feature.registerCodeObserver(runtimeConfig));
-        Suites suites = NativeImageGenerator.createSuites(featureHandler, runtimeConfig, runtimeConfig.getSnippetReflection(), false);
+        Suites suites = NativeImageGenerator.createSuites(featureHandler, runtimeConfig, false);
         LIRSuites lirSuites = NativeImageGenerator.createLIRSuites(featureHandler, runtimeConfig.getProviders(), false);
-        Suites firstTierSuites = NativeImageGenerator.createFirstTierSuites(featureHandler, runtimeConfig, runtimeConfig.getSnippetReflection(), false);
+        Suites firstTierSuites = NativeImageGenerator.createFirstTierSuites(featureHandler, runtimeConfig, false);
         LIRSuites firstTierLirSuites = NativeImageGenerator.createFirstTierLIRSuites(featureHandler, runtimeConfig.getProviders(), false);
 
         TruffleRuntimeCompilationSupport.setRuntimeConfig(runtimeConfig, suites, lirSuites, firstTierSuites, firstTierLirSuites);
@@ -432,10 +434,22 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
         for (NodeClass<?> nodeClass : replacements.getSnippetNodeClasses()) {
             config.getMetaAccess().lookupJavaType(nodeClass.getClazz()).registerAsAllocated("All " + NodeClass.class.getName() + " classes are marked as instantiated eagerly.");
         }
+
+        /*
+         * The snippet graphs are prepared for runtime compilation by the
+         * RuntimeCompilationGraphEncoder, so constants are represented as SubstrateObjectConstant.
+         * Get back the ImageHeapConstant.
+         */
+        Function<Object, Object> objectTransformer = (object) -> {
+            if (object instanceof JavaConstant constant) {
+                return SubstrateGraalUtils.runtimeToHosted(constant, config.getUniverse().getHeapScanner());
+            }
+            return object;
+        };
         /*
          * Ensure runtime snippet graphs are analyzed.
          */
-        NativeImageGenerator.performSnippetGraphAnalysis(config.getBigBang(), replacements, config.getBigBang().getOptions());
+        NativeImageGenerator.performSnippetGraphAnalysis(config.getBigBang(), replacements, config.getBigBang().getOptions(), objectTransformer);
 
         /*
          * Ensure that all snippet methods have their SubstrateMethod object created by the object
@@ -569,13 +583,11 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         checkMaxRuntimeCompiledMethods(treeInfo);
 
-        boolean foundError = false;
         if (t instanceof ParallelExecutionException exception) {
             for (var e : exception.getExceptions()) {
                 if (e instanceof AnalysisError.ParsingError parsingError) {
                     AnalysisMethod errorMethod = parsingError.getMethod();
                     if (errorMethod.isDeoptTarget() || SubstrateCompilationDirectives.isRuntimeCompiledMethod(errorMethod)) {
-                        foundError = true;
                         AnalysisMethod failingRuntimeMethod = null;
                         if (SubstrateCompilationDirectives.isRuntimeCompiledMethod(errorMethod)) {
                             failingRuntimeMethod = errorMethod;
@@ -593,10 +605,6 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
                     }
                 }
             }
-        }
-
-        if (foundError) {
-            throw VMError.shouldNotReachHere("Analysis failed while parsing deopt and/or runtime methods");
         }
     }
 
@@ -751,6 +759,13 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
             }
 
             return true;
+        }
+
+        @Override
+        public void afterParsingHook(AnalysisMethod method, StructuredGraph graph) {
+            if (method.isDeoptTarget()) {
+                new RuntimeCompiledMethodSupport.ConvertMacroNodes().apply(graph);
+            }
         }
 
         @Override

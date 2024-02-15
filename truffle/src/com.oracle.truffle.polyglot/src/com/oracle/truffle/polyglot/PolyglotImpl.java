@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -113,14 +113,18 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
 
     static final String TRUFFLE_VERSION;
     static {
-        InputStream in = PolyglotImpl.class.getResourceAsStream("/META-INF/graalvm/org.graalvm.truffle/version");
-        if (in == null) {
-            throw new InternalError("Truffle API must have a version file.");
-        }
-        try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-            TRUFFLE_VERSION = r.readLine();
-        } catch (IOException ioe) {
-            throw new InternalError(ioe);
+        if (Boolean.getBoolean("polyglotimpl.DisableVersionChecks")) {
+            TRUFFLE_VERSION = null;
+        } else {
+            InputStream in = PolyglotImpl.class.getResourceAsStream("/META-INF/graalvm/org.graalvm.truffle/version");
+            if (in == null) {
+                throw new InternalError("Truffle API must have a version file.");
+            }
+            try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                TRUFFLE_VERSION = r.readLine();
+            } catch (IOException ioe) {
+                throw new InternalError(ioe);
+            }
         }
     }
 

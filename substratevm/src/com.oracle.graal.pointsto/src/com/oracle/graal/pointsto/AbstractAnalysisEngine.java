@@ -77,7 +77,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     protected final AnalysisMetaAccess metaAccess;
     protected final AnalysisPolicy analysisPolicy;
 
-    protected final Boolean extendedAsserts;
     protected final int maxConstantObjectsPerType;
     protected final boolean profileConstantObjects;
     protected final boolean optimizeReturnedParameter;
@@ -120,7 +119,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         this.verifyHeapTimer = timerCollection.get(TimerCollection.Registry.VERIFY_HEAP);
         this.analysisTimer = timerCollection.get(TimerCollection.Registry.ANALYSIS);
 
-        this.extendedAsserts = PointstoOptions.ExtendedAsserts.getValue(options);
         maxConstantObjectsPerType = PointstoOptions.MaxConstantObjectsPerType.getValue(options);
         profileConstantObjects = PointstoOptions.ProfileConstantObjects.getValue(options);
         optimizeReturnedParameter = PointstoOptions.OptimizeReturnedParameter.getValue(options);
@@ -186,7 +184,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
                      */
                     boolean pendingOperations = executor.getPostedOperations() > 0;
                     if (pendingOperations) {
-                        System.out.println("Found pending operations, continuing analysis.");
                         continue;
                     }
                     /* Outer analysis loop is done. Check if heap verification modifies analysis. */
@@ -241,11 +238,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         StatisticsPrinter.print(out, "total_analysis_time_ms", analysisTimer.getTotalTime());
 
         StatisticsPrinter.printLast(out, "total_memory_bytes", analysisTimer.getTotalMemory());
-    }
-
-    @Override
-    public boolean extendedAsserts() {
-        return extendedAsserts;
     }
 
     public int maxConstantObjectsPerType() {

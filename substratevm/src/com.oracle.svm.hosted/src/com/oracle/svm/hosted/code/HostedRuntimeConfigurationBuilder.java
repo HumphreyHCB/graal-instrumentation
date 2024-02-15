@@ -30,7 +30,6 @@ import com.oracle.svm.core.graal.code.SubstrateBackendFactory;
 import com.oracle.svm.core.graal.code.SubstratePlatformConfigurationProvider;
 import com.oracle.svm.core.graal.meta.SubstrateLoweringProvider;
 import com.oracle.svm.hosted.SVMHost;
-import com.oracle.svm.hosted.ameta.AnalysisConstantReflectionProvider;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 import com.oracle.svm.hosted.meta.HostedConstantFieldProvider;
 import com.oracle.svm.hosted.meta.HostedConstantReflectionProvider;
@@ -43,6 +42,7 @@ import jdk.graal.compiler.bytecode.ResolvedJavaMethodBytecodeProvider;
 import jdk.graal.compiler.core.common.spi.ConstantFieldProvider;
 import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
 import jdk.graal.compiler.core.common.spi.MetaAccessExtensionProvider;
+import jdk.graal.compiler.nodes.spi.IdentityHashCodeProvider;
 import jdk.graal.compiler.nodes.spi.LoopsDataProvider;
 import jdk.graal.compiler.nodes.spi.LoweringProvider;
 import jdk.graal.compiler.nodes.spi.PlatformConfigurationProvider;
@@ -70,15 +70,16 @@ public class HostedRuntimeConfigurationBuilder extends SharedRuntimeConfiguratio
 
     @Override
     protected Providers createProviders(CodeCacheProvider codeCache, ConstantReflectionProvider constantReflection, ConstantFieldProvider constantFieldProvider, ForeignCallsProvider foreignCalls,
-                    LoweringProvider lowerer, Replacements replacements, StampProvider stampProvider, SnippetReflectionProvider snippetReflection,
-                    PlatformConfigurationProvider platformConfigurationProvider, MetaAccessExtensionProvider metaAccessExtensionProvider, WordTypes wordTypes, LoopsDataProvider loopsDataProvider) {
-        return new HostedProviders(metaAccess, codeCache, constantReflection, constantFieldProvider, foreignCalls, lowerer, replacements, stampProvider, snippetReflection,
-                        wordTypes, platformConfigurationProvider, metaAccessExtensionProvider, loopsDataProvider);
+                    LoweringProvider lowerer, Replacements replacements, StampProvider stampProvider, SnippetReflectionProvider reflectionProvider,
+                    PlatformConfigurationProvider platformConfigurationProvider, MetaAccessExtensionProvider metaAccessExtensionProvider, WordTypes wordTypes, LoopsDataProvider loopsDataProvider,
+                    IdentityHashCodeProvider identityHashCodeProvider) {
+        return new HostedProviders(metaAccess, codeCache, constantReflection, constantFieldProvider, foreignCalls, lowerer, replacements, stampProvider, reflectionProvider,
+                        wordTypes, platformConfigurationProvider, metaAccessExtensionProvider, loopsDataProvider, identityHashCodeProvider);
     }
 
     @Override
     protected ConstantReflectionProvider createConstantReflectionProvider() {
-        return new HostedConstantReflectionProvider(hostVM, (AnalysisConstantReflectionProvider) analysisProviders.getConstantReflection(), universe, (HostedMetaAccess) metaAccess);
+        return new HostedConstantReflectionProvider(universe, (HostedMetaAccess) metaAccess);
     }
 
     @Override
@@ -92,13 +93,18 @@ public class HostedRuntimeConfigurationBuilder extends SharedRuntimeConfiguratio
     }
 
     @Override
-    protected Replacements createReplacements(Providers p, SnippetReflectionProvider reflectionProvider) {
+    protected Replacements createReplacements(Providers p) {
         BytecodeProvider bytecodeProvider = new ResolvedJavaMethodBytecodeProvider();
-        return new HostedReplacements(universe, p, reflectionProvider, ConfigurationValues.getTarget(), analysisProviders, bytecodeProvider);
+        return new HostedReplacements(universe, p, ConfigurationValues.getTarget(), analysisProviders, bytecodeProvider);
     }
 
     @Override
     protected CodeCacheProvider createCodeCacheProvider(RegisterConfig registerConfig) {
         return new HostedCodeCacheProvider(ConfigurationValues.getTarget(), registerConfig);
+    }
+
+    @Override
+    protected IdentityHashCodeProvider createIdentityHashCodeProvider() {
+        return analysisProviders.getIdentityHashCodeProvider();
     }
 }

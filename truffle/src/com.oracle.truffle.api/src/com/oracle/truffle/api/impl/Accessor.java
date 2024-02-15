@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -373,6 +373,8 @@ public abstract class Accessor {
 
         public abstract Map<String, InstrumentInfo> getInstruments(Object polyglotObject);
 
+        public abstract boolean isInstrumentReadyForContextEvents(Object polyglotInstrument);
+
         public abstract Object createPolyglotSourceSection(Object polyglotObject, Object source, SourceSection sectionImpl);
 
         public abstract <T> T lookup(InstrumentInfo info, Class<T> serviceClass);
@@ -511,6 +513,8 @@ public abstract class Accessor {
         public abstract TruffleLogger getLogger(Object polyglotInstrument, String name);
 
         public abstract LogRecord createLogRecord(Object loggerCache, Level level, String loggerName, String message, String className, String methodName, Object[] parameters, Throwable thrown);
+
+        public abstract boolean isContextBoundLogger(Object loggerCache);
 
         public abstract Object getOuterContext(Object polyglotContext);
 

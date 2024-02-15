@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -2843,7 +2843,10 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
             }
             if (parent == null) {
                 if (!this.config.logLevels.isEmpty()) {
-                    EngineAccessor.LANGUAGE.configureLoggers(this, null, getAllLoggers());
+                    Object defaultLoggers = EngineAccessor.LANGUAGE.getDefaultLoggers();
+                    Object engineLoggers = engine.getEngineLoggers();
+                    Object[] loggersToRecompute = engineLoggers != null ? new Object[]{defaultLoggers, engineLoggers} : new Object[]{defaultLoggers};
+                    EngineAccessor.LANGUAGE.configureLoggers(this, null, loggersToRecompute);
                 }
                 if (this.config.logHandler != null && !PolyglotLoggers.haveSameTarget(this.config.logHandler, engine.logHandler)) {
                     this.config.logHandler.close();
@@ -3653,7 +3656,7 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         if (contextLoggers != null) {
             allLoggers.add(contextLoggers);
         }
-        return allLoggers.toArray(new Object[allLoggers.size()]);
+        return allLoggers.toArray(new Object[0]);
     }
 
     static class ContextWeakReference extends WeakReference<PolyglotContextImpl> {

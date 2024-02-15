@@ -47,9 +47,9 @@ import com.oracle.graal.pointsto.ObjectScanner;
 import com.oracle.graal.pointsto.api.HostVM;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
 import com.oracle.graal.pointsto.heap.HeapSnapshotVerifier;
-import com.oracle.graal.pointsto.heap.ImageHeapConstant;
+import com.oracle.graal.pointsto.heap.HostedValuesProvider;
 import com.oracle.graal.pointsto.heap.ImageHeapScanner;
-import com.oracle.graal.pointsto.infrastructure.AnalysisConstantPool;
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
 import com.oracle.graal.pointsto.infrastructure.SubstitutionProcessor;
 import com.oracle.graal.pointsto.infrastructure.Universe;
@@ -57,7 +57,6 @@ import com.oracle.graal.pointsto.infrastructure.WrappedConstantPool;
 import com.oracle.graal.pointsto.infrastructure.WrappedJavaType;
 import com.oracle.graal.pointsto.meta.AnalysisType.UsageKind;
 import com.oracle.graal.pointsto.util.AnalysisError;
-import com.oracle.graal.pointsto.util.GraalAccess;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
@@ -115,7 +114,6 @@ public class AnalysisUniverse implements Universe {
     private SubstitutionProcessor[] featureNativeSubstitutions;
 
     private final MetaAccessProvider originalMetaAccess;
-    private final SnippetReflectionProvider snippetReflection;
     private final AnalysisFactory analysisFactory;
     private final AnnotationExtractor annotationExtractor;
 
@@ -136,13 +134,12 @@ public class AnalysisUniverse implements Universe {
 
     @SuppressWarnings("unchecked")
     public AnalysisUniverse(HostVM hostVM, JavaKind wordKind, AnalysisPolicy analysisPolicy, SubstitutionProcessor substitutions, MetaAccessProvider originalMetaAccess,
-                    SnippetReflectionProvider snippetReflection, AnalysisFactory analysisFactory, AnnotationExtractor annotationExtractor) {
+                    AnalysisFactory analysisFactory, AnnotationExtractor annotationExtractor) {
         this.hostVM = hostVM;
         this.wordKind = wordKind;
         this.analysisPolicy = analysisPolicy;
         this.substitutions = substitutions;
         this.originalMetaAccess = originalMetaAccess;
-        this.snippetReflection = snippetReflection;
         this.analysisFactory = analysisFactory;
         this.annotationExtractor = annotationExtractor;
 
@@ -278,7 +275,7 @@ public class AnalysisUniverse implements Universe {
         }
 
         try {
-            JavaKind storageKind = originalMetaAccess.lookupJavaType(WordBase.class).isAssignableFrom(substitutions.resolve(type)) ? wordKind : type.getJavaKind();
+            JavaKind storageKind = originalMetaAccess.lookupJavaType(WordBase.class).isAssignableFrom(OriginalClassProvider.getOriginalType(type)) ? wordKind : type.getJavaKind();
             AnalysisType newValue = analysisFactory.createType(this, type, storageKind, objectClass, cloneableClass);
 
             synchronized (this) {
@@ -472,7 +469,7 @@ public class AnalysisUniverse implements Universe {
         assert !(defaultAccessingClass instanceof WrappedJavaType) : defaultAccessingClass;
         WrappedConstantPool result = constantPools.get(constantPool);
         if (result == null) {
-            WrappedConstantPool newValue = new AnalysisConstantPool(this, constantPool, defaultAccessingClass);
+            WrappedConstantPool newValue = new WrappedConstantPool(this, constantPool, defaultAccessingClass);
             WrappedConstantPool oldValue = constantPools.putIfAbsent(constantPool, newValue);
             result = oldValue != null ? oldValue : newValue;
         }
@@ -484,44 +481,7 @@ public class AnalysisUniverse implements Universe {
         if (constant == null || constant.isNull() || constant.getJavaKind().isPrimitive()) {
             return constant;
         }
-        return heapScanner.createImageHeapConstant(fromHosted(constant), ObjectScanner.OtherReason.UNKNOWN);
-    }
-
-    /**
-     * Convert a hosted HotSpotObjectConstant into a SubstrateObjectConstant.
-     */
-    public JavaConstant fromHosted(JavaConstant constant) {
-        if (constant == null) {
-            return null;
-        } else if (constant.getJavaKind().isObject() && !constant.isNull()) {
-            Object original = GraalAccess.getOriginalSnippetReflection().asObject(Object.class, constant);
-            if (original instanceof ImageHeapConstant) {
-                /*
-                 * The value is an ImageHeapObject, i.e., it already has a build time
-                 * representation, so there is no need to re-wrap it. The value likely comes from
-                 * reading a field of a normal object that is referencing a simulated object. The
-                 * originalConstantReflection provider is not aware of simulated constants, and it
-                 * always wraps them into a HotSpotObjectConstant when reading fields.
-                 */
-                return (JavaConstant) original;
-            }
-            return snippetReflection.forObject(original);
-        } else {
-            return constant;
-        }
-    }
-
-    /**
-     * Convert a hosted SubstrateObjectConstant into a HotSpotObjectConstant.
-     */
-    public JavaConstant toHosted(JavaConstant constant) {
-        if (constant == null) {
-            return null;
-        } else if (constant.getJavaKind().isObject() && !constant.isNull()) {
-            return GraalAccess.getOriginalSnippetReflection().forObject(snippetReflection.asObject(Object.class, constant));
-        } else {
-            return constant;
-        }
+        return heapScanner.createImageHeapConstant(getHostedValuesProvider().interceptHosted(constant), ObjectScanner.OtherReason.UNKNOWN);
     }
 
     public List<AnalysisType> getTypes() {
@@ -672,12 +632,7 @@ public class AnalysisUniverse implements Universe {
 
     @Override
     public SnippetReflectionProvider getSnippetReflection() {
-        return snippetReflection;
-    }
-
-    @Override
-    public ResolvedJavaMethod resolveSubstitution(ResolvedJavaMethod method) {
-        return substitutions.resolve(method);
+        return bb.getSnippetReflectionProvider();
     }
 
     @Override
@@ -738,6 +693,10 @@ public class AnalysisUniverse implements Universe {
 
     public ImageHeapScanner getHeapScanner() {
         return heapScanner;
+    }
+
+    public HostedValuesProvider getHostedValuesProvider() {
+        return heapScanner.getHostedValuesProvider();
     }
 
     public void setHeapVerifier(HeapSnapshotVerifier heapVerifier) {

@@ -31,6 +31,22 @@ import java.io.PrintStream;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.graalvm.nativeimage.ImageSingletons;
+
+import com.oracle.graal.pointsto.heap.ImageHeapConstant;
+import com.oracle.graal.pointsto.heap.ImageHeapScanner;
+import com.oracle.graal.pointsto.util.GraalAccess;
+import com.oracle.svm.core.CPUFeatureAccess;
+import com.oracle.svm.core.SubstrateUtil;
+import com.oracle.svm.core.graal.code.SubstrateCompilationIdentifier;
+import com.oracle.svm.core.graal.code.SubstrateCompilationResult;
+import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
+import com.oracle.svm.core.meta.SharedMethod;
+import com.oracle.svm.core.meta.SubstrateObjectConstant;
+import com.oracle.svm.core.option.RuntimeOptionKey;
+import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.graal.meta.SubstrateMethod;
+
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.core.CompilationWatchDog;
 import jdk.graal.compiler.core.CompilationWrapper;
@@ -48,18 +64,9 @@ import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.tiers.Suites;
-import org.graalvm.nativeimage.ImageSingletons;
-
-import com.oracle.svm.core.CPUFeatureAccess;
-import com.oracle.svm.core.SubstrateUtil;
-import com.oracle.svm.core.graal.code.SubstrateCompilationIdentifier;
-import com.oracle.svm.core.graal.code.SubstrateCompilationResult;
-import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
-import com.oracle.svm.core.meta.SharedMethod;
-import com.oracle.svm.core.option.RuntimeOptionKey;
-import com.oracle.svm.graal.meta.SubstrateMethod;
-
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.hotspot.HotSpotObjectConstant;
+import jdk.vm.ci.meta.JavaConstant;
 
 public class SubstrateGraalUtils {
 
@@ -188,4 +195,39 @@ public class SubstrateGraalUtils {
             }
         }
     }
+
+    /** Prepares a hosted {@link JavaConstant} for runtime compilation. */
+    public static JavaConstant hostedToRuntime(JavaConstant constant) {
+        if (constant instanceof ImageHeapConstant heapConstant) {
+            return hostedToRuntime(heapConstant);
+        }
+        return constant;
+    }
+
+    /**
+     * Prepares a hosted {@link ImageHeapConstant} for runtime compilation: it unwraps the
+     * {@link HotSpotObjectConstant} and wraps the hosted object into a
+     * {@link SubstrateObjectConstant}. We reuse the identity hash code of the heap constant.
+     */
+    public static JavaConstant hostedToRuntime(ImageHeapConstant heapConstant) {
+        JavaConstant hostedConstant = heapConstant.getHostedObject();
+        VMError.guarantee(hostedConstant instanceof HotSpotObjectConstant, "Expected to find HotSpotObjectConstant, found %s", hostedConstant);
+        Object hostedObject = GraalAccess.getOriginalSnippetReflection().asObject(Object.class, hostedConstant);
+        return SubstrateObjectConstant.forObject(hostedObject, heapConstant.getIdentityHashCode());
+    }
+
+    /**
+     * Transforms a {@link SubstrateObjectConstant} from an encoded graph into an
+     * {@link ImageHeapConstant} for hosted processing: it unwraps the hosted object from the
+     * {@link SubstrateObjectConstant}, wraps it into an {@link HotSpotObjectConstant}, then
+     * redirects the lookup through the {@link ImageHeapScanner}.
+     */
+    public static JavaConstant runtimeToHosted(JavaConstant constant, ImageHeapScanner scanner) {
+        if (constant instanceof SubstrateObjectConstant) {
+            JavaConstant hostedConstant = GraalAccess.getOriginalSnippetReflection().forObject(SubstrateObjectConstant.asObject(constant));
+            return scanner.getImageHeapConstant(hostedConstant);
+        }
+        return constant;
+    }
+
 }

@@ -26,7 +26,7 @@ package com.oracle.svm.core.jfr;
 
 import java.util.List;
 
-import com.oracle.svm.core.log.Log;
+import com.oracle.svm.core.sampler.SamplerStatistics;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platform;
@@ -37,8 +37,13 @@ import org.graalvm.word.WordFactory;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.heap.VMOperationInfos;
 import com.oracle.svm.core.hub.DynamicHub;
+import com.oracle.svm.core.jfr.events.JfrAllocationEvents;
 import com.oracle.svm.core.jfr.logging.JfrLogging;
+import com.oracle.svm.core.jfr.oldobject.JfrOldObjectProfiler;
+import com.oracle.svm.core.jfr.oldobject.JfrOldObjectRepository;
 import com.oracle.svm.core.jfr.sampler.JfrExecutionSampler;
+import com.oracle.svm.core.jfr.throttling.JfrEventThrottling;
+import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.sampler.SamplerBufferPool;
 import com.oracle.svm.core.sampler.SubstrateSigprofHandler;
 import com.oracle.svm.core.thread.JavaThreads;
@@ -70,18 +75,23 @@ public class SubstrateJVM {
     private final List<Configuration> knownConfigurations;
     private final JfrOptionSet options;
     private final JfrNativeEventSetting[] eventSettings;
+
     private final JfrSymbolRepository symbolRepo;
     private final JfrTypeRepository typeRepo;
     private final JfrThreadRepository threadRepo;
     private final JfrStackTraceRepository stackTraceRepo;
     private final JfrMethodRepository methodRepo;
+    private final JfrOldObjectRepository oldObjectRepo;
+
     private final JfrThreadLocal threadLocal;
     private final JfrGlobalMemory globalMemory;
     private final SamplerBufferPool samplerBufferPool;
     private final JfrUnlockedChunkWriter unlockedChunkWriter;
     private final JfrRecorderThread recorderThread;
+    private final JfrOldObjectProfiler oldObjectProfiler;
 
     private final JfrLogging jfrLogging;
+    private final JfrEventThrottling eventThrottler;
 
     private boolean initialized;
     /*
@@ -104,19 +114,22 @@ public class SubstrateJVM {
             eventSettings[i] = new JfrNativeEventSetting();
         }
 
-        stackTraceRepo = new JfrStackTraceRepository();
         symbolRepo = new JfrSymbolRepository();
         typeRepo = new JfrTypeRepository();
         threadRepo = new JfrThreadRepository();
+        stackTraceRepo = new JfrStackTraceRepository();
         methodRepo = new JfrMethodRepository();
+        oldObjectRepo = new JfrOldObjectRepository();
 
         threadLocal = new JfrThreadLocal();
         globalMemory = new JfrGlobalMemory();
         samplerBufferPool = new SamplerBufferPool();
-        unlockedChunkWriter = writeFile ? new JfrChunkFileWriter(globalMemory, stackTraceRepo, methodRepo, typeRepo, symbolRepo, threadRepo) : new JfrChunkNoWriter();
+        unlockedChunkWriter = writeFile ? new JfrChunkFileWriter(globalMemory, stackTraceRepo, methodRepo, typeRepo, symbolRepo, threadRepo, oldObjectRepo) : new JfrChunkNoWriter();
         recorderThread = new JfrRecorderThread(globalMemory, unlockedChunkWriter);
+        oldObjectProfiler = new JfrOldObjectProfiler();
 
         jfrLogging = new JfrLogging();
+        eventThrottler = new JfrEventThrottling();
 
         initialized = false;
         recording = false;
@@ -183,8 +196,23 @@ public class SubstrateJVM {
     }
 
     @Fold
-    public static JfrLogging getJfrLogging() {
+    public static JfrLogging getLogging() {
         return get().jfrLogging;
+    }
+
+    @Fold
+    public static JfrOldObjectProfiler getOldObjectProfiler() {
+        return get().oldObjectProfiler;
+    }
+
+    @Fold
+    public static JfrOldObjectRepository getOldObjectRepository() {
+        return get().oldObjectRepo;
+    }
+
+    @Fold
+    public static JfrEventThrottling getEventThrottling() {
+        return get().eventThrottler;
     }
 
     @Uninterruptible(reason = "Prevent races with VM operations that start/stop recording.", callerMustBe = true)
@@ -209,6 +237,7 @@ public class SubstrateJVM {
         threadLocal.initialize(options.threadBufferSize.getValue());
         globalMemory.initialize(options.globalBufferSize.getValue(), options.globalBufferCount.getValue());
         unlockedChunkWriter.initialize(options.maxChunkSize.getValue());
+        stackTraceRepo.setStackTraceDepth(NumUtil.safeToInt(options.stackDepth.getValue()));
 
         recorderThread.start();
 
@@ -444,7 +473,7 @@ public class SubstrateJVM {
      * See {@link JVM#setStackDepth}.
      */
     public void setStackDepth(int depth) {
-        stackTraceRepo.setStackTraceDepth(depth);
+        options.stackDepth.setUserValue(depth);
     }
 
     /**
@@ -584,6 +613,13 @@ public class SubstrateJVM {
         }
     }
 
+    /**
+     * See {@link JVM#emitOldObjectSamples(long, boolean, boolean)}.
+     */
+    void emitOldObjectSamples(long cutoff, boolean emitAll, boolean skipBFS) {
+        oldObjectProfiler.emit(cutoff, emitAll, skipBFS);
+    }
+
     public long getChunkStartNanos() {
         JfrChunkWriter chunkWriter = unlockedChunkWriter.lock();
         try {
@@ -658,6 +694,13 @@ public class SubstrateJVM {
     }
 
     /**
+     * See {@link JVM#setThrottle}.
+     */
+    public boolean setThrottle(long eventTypeId, long eventSampleSize, long periodMs) {
+        return eventThrottler.setThrottle(eventTypeId, eventSampleSize, periodMs);
+    }
+
+    /**
      * See {@link JVM#setThreshold}.
      */
     public boolean setThreshold(long eventTypeId, long ticks) {
@@ -694,6 +737,9 @@ public class SubstrateJVM {
 
         @Override
         protected void operate() {
+            SubstrateJVM.getOldObjectProfiler().reset();
+            JfrAllocationEvents.reset();
+
             SubstrateJVM.get().recording = true;
             /* Recording is enabled, so JFR events can be triggered at any time. */
             SubstrateJVM.getThreadRepo().registerRunningThreads();
@@ -733,12 +779,13 @@ public class SubstrateJVM {
             SubstrateJVM.getThreadLocal().teardown();
             SubstrateJVM.getSamplerBufferPool().teardown();
             SubstrateJVM.getGlobalMemory().clear();
+            SubstrateJVM.getOldObjectProfiler().teardown();
         }
     }
 
     private static void printSamplerStatistics() {
-        long missedSamples = 0;
-        long unparseableStacks = 0;
+        long missedSamples = SamplerStatistics.singleton().getMissedSamples();
+        long unparseableStacks = SamplerStatistics.singleton().getUnparseableSamples();
         for (IsolateThread isolateThread = VMThreads.firstThread(); isolateThread.isNonNull(); isolateThread = VMThreads.nextThread(isolateThread)) {
             missedSamples += JfrThreadLocal.getMissedSamples(isolateThread);
             unparseableStacks += JfrThreadLocal.getUnparseableStacks(isolateThread);
@@ -767,6 +814,7 @@ public class SubstrateJVM {
             stackTraceRepo.teardown();
             methodRepo.teardown();
             typeRepo.teardown();
+            oldObjectRepo.teardown();
 
             initialized = false;
         }

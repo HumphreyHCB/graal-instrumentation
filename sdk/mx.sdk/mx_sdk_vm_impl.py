@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -899,7 +899,7 @@ else:
     LayoutSuper = mx.LayoutTARDistribution
 
 
-class GraalVmLayoutDistribution(BaseGraalVmLayoutDistribution, LayoutSuper):  # pylint: disable=R0901
+class AbstractGraalVmLayoutDistribution(BaseGraalVmLayoutDistribution):
     def __init__(self, base_name, theLicense=None, stage1=False, components=None, include_native_image_resources_filelists=None, add_component_dependencies=True, is_graalvm=True, add_jdk_base=True, allow_incomplete_launchers=False, **kw_args):
         self.base_name = base_name
         _include_native_image_resources_filelists = not stage1 if include_native_image_resources_filelists is None else include_native_image_resources_filelists
@@ -907,7 +907,7 @@ class GraalVmLayoutDistribution(BaseGraalVmLayoutDistribution, LayoutSuper):  # 
         if components is None:
             components_with_dependencies = []
         elif add_component_dependencies:
-            components_with_dependencies = GraalVmLayoutDistribution._add_dependencies(components)
+            components_with_dependencies = AbstractGraalVmLayoutDistribution._add_dependencies(components)
         else:
             components_with_dependencies = components
 
@@ -924,7 +924,7 @@ class GraalVmLayoutDistribution(BaseGraalVmLayoutDistribution, LayoutSuper):  # 
             base_dir = base_name.lower().replace('_', '-')
             self.vm_config_name = None
 
-        super(GraalVmLayoutDistribution, self).__init__(
+        super(AbstractGraalVmLayoutDistribution, self).__init__(
             suite=_suite,
             name=name,
             deps=[],
@@ -963,13 +963,32 @@ class GraalVmLayoutDistribution(BaseGraalVmLayoutDistribution, LayoutSuper):  # 
             }
 
     def remoteName(self, platform=None):
-        remote_name = super(GraalVmLayoutDistribution, self).remoteName(platform=platform)
+        remote_name = super(AbstractGraalVmLayoutDistribution, self).remoteName(platform=platform)
         # maven artifactId cannot contain '+'
         # Example: 'graalvm-community-openjdk-17.0.7+4.1-linux-amd64' -> 'graalvm-community-openjdk-17.0.7-4.1-linux-amd64'
         return remote_name.replace('+', '-')
 
+
+class GraalVmLayoutDistribution(AbstractGraalVmLayoutDistribution, LayoutSuper):  # pylint: disable=R0901
+    def __init__(self, base_name, **kw_args):
+        super(GraalVmLayoutDistribution, self).__init__(base_name, **kw_args)
+
     def getBuildTask(self, args):
         return GraalVmLayoutDistributionTask(args, self, 'latest_graalvm', 'latest_graalvm_home')
+
+
+class GraalVmLayoutCompressedTARDistribution(AbstractGraalVmLayoutDistribution, mx.LayoutTARDistribution):  # pylint: disable=R0901
+    def __init__(self, base_name, **kw_args):
+        super(GraalVmLayoutCompressedTARDistribution, self).__init__(base_name, compress=True, **kw_args)
+
+    def compress_locally(self):
+        return True
+
+    def compress_remotely(self):
+        return True
+
+    def getBuildTask(self, args):
+        return GraalVmLayoutDistributionTask(args, self)
 
 
 def _components_set(components=None, stage1=False):
@@ -1055,9 +1074,15 @@ def _get_graalvm_configuration(base_name, components=None, stage1=False):
 
 
 class GraalVmLayoutDistributionTask(BaseGraalVmLayoutDistributionTask):
-    def __init__(self, args, dist, root_link_name, home_link_name):
-        self._root_link_path = join(_suite.dir, root_link_name)
-        self._home_link_path = join(_suite.dir, home_link_name)
+    def __init__(self, args, dist, root_link_name=None, home_link_name=None):
+        """
+        :type args: list[str]
+        :type dist: AbstractGraalVmLayoutDistribution
+        :type root_link_name: str or None
+        :type home_link_name: str or None
+        """
+        self._root_link_path = join(_suite.dir, root_link_name) if root_link_name is not None else None
+        self._home_link_path = join(_suite.dir, home_link_name) if home_link_name is not None else None
         self._library_projects = None
         super(GraalVmLayoutDistributionTask, self).__init__(args, dist)
 
@@ -1066,8 +1091,10 @@ class GraalVmLayoutDistributionTask(BaseGraalVmLayoutDistributionTask):
             mx.warn('Skip adding symlink to ' + self._home_link_target() + ' (Platform Windows)')
             return
         self._rm_link()
-        os.symlink(self._root_link_target(), self._root_link_path)
-        os.symlink(self._home_link_target(), self._home_link_path)
+        if self._root_link_path is not None:
+            os.symlink(self._root_link_target(), self._root_link_path)
+        if self._home_link_path is not None:
+            os.symlink(self._home_link_target(), self._home_link_path)
 
     def _root_link_target(self):
         return relpath(self.subject.output, _suite.dir)
@@ -1079,7 +1106,7 @@ class GraalVmLayoutDistributionTask(BaseGraalVmLayoutDistributionTask):
         if mx.get_os() == 'windows':
             return
         for l in [self._root_link_path, self._home_link_path]:
-            if os.path.lexists(l):
+            if l is not None and os.path.lexists(l):
                 os.unlink(l)
 
     def needsBuild(self, newestInput):
@@ -1088,6 +1115,8 @@ class GraalVmLayoutDistributionTask(BaseGraalVmLayoutDistributionTask):
             return sup
         if mx.get_os() != 'windows' and self.subject == get_final_graalvm_distribution():
             for link_path, link_target in [(self._root_link_path, self._root_link_target()), (self._home_link_path, self._home_link_target())]:
+                if link_path is None:
+                    continue
                 if not os.path.lexists(link_path):
                     return True, '{} does not exist'.format(link_path)
                 link_file = mx.TimeStampFile(link_path, False)
@@ -1224,10 +1253,7 @@ class SvmSupport(object):
     def is_pgo_supported(self):
         return self.is_ee_supported()
 
-    search_tool = 'strings'
-    has_search_tool = shutil.which(search_tool) is not None
-
-    def native_image(self, build_args, output_file, out=None, err=None, find_bad_strings=False):
+    def native_image(self, build_args, output_file, out=None, err=None):
         assert self._svm_supported
         stage1 = get_stage1_graalvm_distribution()
         native_image_project_name = GraalVmLauncher.launcher_project_name(mx_sdk.LauncherConfig(mx.exe_suffix('native-image'), [], "", []), stage1=True)
@@ -1239,20 +1265,6 @@ class SvmSupport(object):
         ])
 
         mx.run(native_image_command, nonZeroIsFatal=True, out=out, err=err)
-
-        if find_bad_strings and not mx.is_windows():
-            if not self.__class__.has_search_tool:
-                mx.abort(f"Searching for strings requires '{self.__class__.search_tool}' executable.")
-            try:
-                strings_in_image = subprocess.check_output([self.__class__.search_tool, output_file], stderr=None).decode().strip().split('\n')
-                bad_strings = (output_directory, dirname(native_image_bin))
-                for entry in strings_in_image:
-                    for bad_string in bad_strings:
-                        if bad_string in entry:
-                            mx.abort(f"Found forbidden string '{bad_string}' in native image {output_file}.")
-
-            except subprocess.CalledProcessError:
-                mx.abort(f"Using '{self.__class__.search_tool}' to search for strings in native image {output_file} failed.")
 
     def is_debug_supported(self):
         return self._debug_supported
@@ -2402,7 +2414,7 @@ class GraalVmSVMNativeImageBuildTask(GraalVmNativeImageBuildTask):
         mx.ensure_dir_exists(dirname(output_file))
 
         # Disable build server (different Java properties on each build prevent server reuse)
-        self.svm_support.native_image(build_args, output_file, find_bad_strings=True)
+        self.svm_support.native_image(build_args, output_file)
 
         with open(self._get_command_file(), 'w') as f:
             f.writelines((l + os.linesep for l in build_args))
@@ -2890,8 +2902,7 @@ class GraalVmStandaloneComponent(LayoutSuper):  # pylint: disable=R0901
                         'path': None,
                     })
                     # additional JDK libraries need to be in the launcher's directory
-                    destination = path_prefix + '/bin/' if mx.is_windows() else dirname(launcher_dest) + '/'
-                    layout.setdefault(destination, []).append({
+                    layout.setdefault(dirname(launcher_dest) + '/', []).append({
                         'source_type': 'dependency',
                         'dependency': dependency,
                         'exclude': [],
@@ -2939,8 +2950,7 @@ class GraalVmStandaloneComponent(LayoutSuper):  # pylint: disable=R0901
                         })
                         if not _skip_libraries(library_config):
                             # additional JDK libraries need to be in the library's directory
-                            destination = path_prefix + '/bin/' if mx.is_windows() else dirname(library_dest) + '/'
-                            layout.setdefault(destination, []).append({
+                            layout.setdefault(dirname(library_dest) + '/', []).append({
                                 'source_type': 'dependency',
                                 'dependency': dependency,
                                 'exclude': [],

@@ -39,16 +39,14 @@ import java.util.stream.StreamSupport;
 import org.graalvm.collections.Pair;
 import org.graalvm.collections.UnmodifiableEconomicMap;
 
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.infrastructure.UniverseMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
-import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.graal.pointsto.phases.NoClassInitializationPlugin;
 import com.oracle.graal.pointsto.util.GraalAccess;
-import com.oracle.svm.core.FrameAccess;
-import com.oracle.svm.core.ParsingReason;
-import com.oracle.svm.core.graal.phases.TrustedInterfaceTypePlugin;
+import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.graal.word.SubstrateWordTypes;
 import com.oracle.svm.core.jdk.VarHandleFeature;
 import com.oracle.svm.core.util.VMError;
@@ -71,6 +69,7 @@ import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.NodeClass;
 import jdk.graal.compiler.graph.NodeMap;
+import jdk.graal.compiler.hotspot.HotSpotGraphBuilderInstance;
 import jdk.graal.compiler.java.BytecodeParser;
 import jdk.graal.compiler.java.GraphBuilderPhase;
 import jdk.graal.compiler.nodeinfo.NodeCycles;
@@ -172,7 +171,6 @@ import jdk.vm.ci.meta.ResolvedJavaType;
  */
 public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
 
-    private final ParsingReason reason;
     private final Providers parsingProviders;
     private final HostedProviders universeProviders;
     private final AnalysisUniverse aUniverse;
@@ -184,9 +182,8 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
     private final ResolvedJavaType methodHandleType;
     private final ResolvedJavaType varHandleType;
 
-    public IntrinsifyMethodHandlesInvocationPlugin(ParsingReason reason, HostedSnippetReflectionProvider hostedSnippetReflection, HostedProviders providers, AnalysisUniverse aUniverse,
+    public IntrinsifyMethodHandlesInvocationPlugin(HostedSnippetReflectionProvider hostedSnippetReflection, HostedProviders providers, AnalysisUniverse aUniverse,
                     HostedUniverse hUniverse) {
-        this.reason = reason;
         this.aUniverse = aUniverse;
         this.hUniverse = hUniverse;
         this.universeProviders = providers;
@@ -353,7 +350,7 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
                 if (argType != null) {
                     // TODO For trustInterfaces = false, we cannot be more specific here
                     // (i.e. we cannot use TypeReference.createExactTrusted here)
-                    TypeReference typeref = TypeReference.createWithoutAssumptions(toOriginalWithResolve(argType));
+                    TypeReference typeref = TypeReference.createWithoutAssumptions(OriginalClassProvider.getOriginalType(argType));
                     argStamp = StampTool.isPointerNonNull(argStamp) ? StampFactory.objectNonNull(typeref) : StampFactory.object(typeref);
                 }
                 return new ParameterNode(index, StampPair.createSingle(argStamp));
@@ -532,22 +529,20 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
         SnippetReflectionProvider originalSnippetReflection = GraalAccess.getOriginalSnippetReflection();
         ConstantReflectionProvider originalConstantReflection = GraalAccess.getOriginalProviders().getConstantReflection();
         WordOperationPlugin wordOperationPlugin = new WordOperationPlugin(originalSnippetReflection, originalConstantReflection,
-                        new SubstrateWordTypes(parsingProviders.getMetaAccess(), FrameAccess.getWordKind()),
+                        new SubstrateWordTypes(parsingProviders.getMetaAccess(), ConfigurationValues.getWordKind()),
                         parsingProviders.getPlatformConfigurationProvider().getBarrierSet());
         graphBuilderPlugins.appendInlineInvokePlugin(wordOperationPlugin);
         graphBuilderPlugins.appendTypePlugin(wordOperationPlugin);
-        graphBuilderPlugins.appendTypePlugin(new TrustedInterfaceTypePlugin());
         graphBuilderPlugins.appendNodePlugin(wordOperationPlugin);
         graphBuilderPlugins.setClassInitializationPlugin(new NoClassInitializationPlugin());
 
         GraphBuilderConfiguration graphBuilderConfig = GraphBuilderConfiguration.getSnippetDefault(graphBuilderPlugins);
-        GraphBuilderPhase.Instance graphBuilder = new GraphBuilderPhase.Instance(parsingProviders, graphBuilderConfig, OptimisticOptimizations.NONE, null);
+        GraphBuilderPhase.Instance graphBuilder = new HotSpotGraphBuilderInstance(parsingProviders, graphBuilderConfig, OptimisticOptimizations.NONE, null);
 
         DebugContext debug = b.getDebug();
-        StructuredGraph graph = new StructuredGraph.Builder(b.getOptions(), debug)
-                        .method(toOriginal(methodHandleMethod))
-                        .recordInlinedMethods(false)
-                        .build();
+        StructuredGraph graph = new StructuredGraph.Builder(b.getOptions(), debug) //
+                        .method(toOriginal(methodHandleMethod)) //
+                        .recordInlinedMethods(false).build();
         try (DebugContext.Scope s = debug.scope("IntrinsifyMethodHandles", graph)) {
             graphBuilder.apply(graph);
             /*
@@ -980,16 +975,6 @@ public class IntrinsifyMethodHandlesInvocationPlugin implements NodePlugin {
             return ((AnalysisMethod) method).wrapped;
         } else {
             return method;
-        }
-    }
-
-    private static ResolvedJavaType toOriginalWithResolve(ResolvedJavaType type) {
-        if (type instanceof HostedType) {
-            return ((HostedType) type).getWrapped().getWrappedWithResolve();
-        } else if (type instanceof AnalysisType) {
-            return ((AnalysisType) type).getWrappedWithResolve();
-        } else {
-            return type;
         }
     }
 }

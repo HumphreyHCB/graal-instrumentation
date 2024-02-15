@@ -305,6 +305,7 @@ suite = {
                     "jdk.internal.reflect",
                     "jdk.internal.vm",
                     "jdk.internal.util",
+                    "jdk.internal.org.objectweb.asm",
                 ],
                 "java.management": [
                     "com.sun.jmx.mbeanserver",
@@ -690,6 +691,8 @@ suite = {
                 ],
             },
             "javaCompliance" : "22+",
+            # GR-51699
+            "forceJavac": True,
             "annotationProcessors": [
                 "compiler:GRAAL_PROCESSOR",
                 "SVM_PROCESSOR",
@@ -718,6 +721,8 @@ suite = {
                 ],
             },
             "javaCompliance" : "22+",
+            # GR-51699
+            "forceJavac": True,
             "annotationProcessors": [
                 "compiler:GRAAL_PROCESSOR",
                 "SVM_PROCESSOR",
@@ -1455,6 +1460,7 @@ suite = {
                             org.graalvm.nativeimage.foreign,
                             org.graalvm.truffle.runtime.svm,
                             com.oracle.truffle.enterprise.svm""",
+                    "com.oracle.svm.hosted.c.libc to com.oracle.graal.sandbox",
                 ],
                 "opens" : [
                     "com.oracle.svm.core                          to jdk.graal.compiler",

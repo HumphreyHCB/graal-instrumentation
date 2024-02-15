@@ -35,8 +35,8 @@ import java.util.logging.FileHandler;
 import java.util.logging.SimpleFormatter;
 import java.util.regex.Pattern;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.test.SubprocessTestUtils;
-import com.oracle.truffle.api.test.SubprocessTestUtils.Subprocess;
 import com.oracle.truffle.runtime.OptimizedTruffleRuntime;
 import com.oracle.truffle.runtime.OptimizedCallTarget;
 
@@ -44,7 +44,6 @@ import jdk.graal.compiler.truffle.test.nodes.AbstractTestNode;
 import jdk.graal.compiler.truffle.test.nodes.RootTestNode;
 import org.graalvm.polyglot.Context;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.oracle.truffle.api.CompilerAsserts;
@@ -52,6 +51,8 @@ import com.oracle.truffle.api.OptimizationFailedException;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
+
+import static com.oracle.truffle.api.test.SubprocessTestUtils.markForRemoval;
 
 public class ExceptionActionTest extends TestWithPolyglotOptions {
 
@@ -62,17 +63,6 @@ public class ExceptionActionTest extends TestWithPolyglotOptions {
     };
 
     static Object nonConstant;
-
-    @BeforeClass
-    public static void setUp() {
-        // All ExceptionActionTest's tests are executed in the spawned subprocess. The
-        // PermanentBailoutNode is used only by the code running in the subprocess. Needless
-        // PermanentBailoutNode initialization in the parent process will cause ExceptionActionTest
-        // failure when running with the engine.ExceptionAction=Throw.
-        if (SubprocessTestUtils.isSubprocess()) {
-            createPermanentBailoutNode().getCallTarget().call();
-        }
-    }
 
     @Test
     public void testDefault() throws Exception {
@@ -127,6 +117,30 @@ public class ExceptionActionTest extends TestWithPolyglotOptions {
     }
 
     @Test
+    public void testPermanentBailoutThrowWithGraalExitVM() throws Exception {
+        BiConsumer<String, String> verifier = (log, output) -> {
+            Assert.assertFalse(formatMessage("Unexpected bailout.", log, output), hasBailout(log));
+            Assert.assertFalse(formatMessage("Unexpected exit.", log, output), hasExit(log));
+            Assert.assertTrue(formatMessage("Expected OptimizationFailedException.", log, output), hasOptFailedException(log));
+        };
+        executeInSubProcess(verifier, ExceptionActionTest::createPermanentBailoutNode,
+                        new String[]{
+                                        "-Djdk.graal.CompilationFailureAction=ExitVM",
+                                        "-Djdk.graal.CompilationBailoutAsFailure=true",
+                                        /*
+                                         * The test validates that Truffle compilation uses
+                                         * CompilationFailureAction#Throw even when the Graal
+                                         * CompilationFailureAction option is set to ExitVM. To
+                                         * ensure test stability, we disable JVMCI host
+                                         * compilations, as they may lead to bailouts and random
+                                         * test failures, as observed in issue GR-51840.
+                                         */
+                                        "-XX:-UseJVMCICompiler",
+                        },
+                        "engine.CompilationFailureAction", "Throw");
+    }
+
+    @Test
     public void testNonPermanentBailout() throws Exception {
         BiConsumer<String, String> verifier = (log, output) -> {
             Assert.assertFalse(formatMessage("Unexpected bailout.", log, output), hasBailout(log));
@@ -155,17 +169,15 @@ public class ExceptionActionTest extends TestWithPolyglotOptions {
         executeInSubProcess(verifier, ExceptionActionTest::createPermanentBailoutNode, new String[0], contextOptions);
     }
 
-    private void executeInSubProcess(BiConsumer<String, String> verifier, Supplier<RootNode> rootNodeFactory, String[] additionalVmOptions, String... contextOptions)
+    private void executeInSubProcess(BiConsumer<String, String> verifier, Supplier<RootNode> rootNodeFactory, String[] appendVmOptions, String... contextOptions)
                     throws IOException, InterruptedException {
         Path log = SubprocessTestUtils.isSubprocess() ? null : File.createTempFile("compiler", ".log").toPath();
-        Subprocess subprocess = null;
-        boolean success = false;
         try {
-            String[] useVMOptions = Arrays.copyOf(additionalVmOptions, additionalVmOptions.length + 2);
+            String[] useVMOptions = Arrays.copyOf(appendVmOptions, appendVmOptions.length + 2);
             useVMOptions[useVMOptions.length - 2] = String.format("-D%s=%s", LOG_FILE_PROPERTY, log);
             // Prevent graal graph dumping for ExceptionAction#Diagnose
-            useVMOptions[useVMOptions.length - 1] = "-Djdk.graal.Dump=Truffle:0";
-            subprocess = SubprocessTestUtils.executeInSubprocess(ExceptionActionTest.class, () -> {
+            useVMOptions[useVMOptions.length - 1] = markForRemoval("-Djdk.graal.Dump");
+            SubprocessTestUtils.newBuilder(ExceptionActionTest.class, () -> {
                 setupContext(contextOptions);
                 OptimizedCallTarget target = (OptimizedCallTarget) rootNodeFactory.get().getCallTarget();
                 try {
@@ -176,15 +188,17 @@ public class ExceptionActionTest extends TestWithPolyglotOptions {
                         OptimizedTruffleRuntime.getRuntime().log(target, optFailedException.getClass().getName());
                     }
                 }
-            }, false, useVMOptions);
-            success = true;
+            }).failOnNonZeroExit(false).postfixVmOption(useVMOptions).onExit((p) -> {
+                try {
+                    String logContent = String.join("\n", Files.readAllLines(log));
+                    String output = String.join("\n", p.output);
+                    verifier.accept(logContent, output);
+                } catch (IOException ioe) {
+                    throw CompilerDirectives.shouldNotReachHere(ioe);
+                }
+            }).run();
         } finally {
             if (log != null) {
-                if (success) {
-                    String logContent = String.join("\n", Files.readAllLines(log));
-                    String output = String.join("\n", subprocess.output);
-                    verifier.accept(logContent, output);
-                }
                 Files.deleteIfExists(log);
             }
         }

@@ -187,10 +187,7 @@ class NativeImageDebugInfoProvider extends NativeImageDebugInfoProviderBase impl
             } else {
                 javaType = method.getDeclaringClass();
             }
-            Class<?> clazz = null;
-            if (javaType instanceof OriginalClassProvider) {
-                clazz = ((OriginalClassProvider) javaType).getJavaClass();
-            }
+            Class<?> clazz = OriginalClassProvider.getJavaClass(javaType);
             SourceManager sourceManager = ImageSingletons.lookup(SourceManager.class);
             try (DebugContext.Scope s = debugContext.scope("DebugFileInfo", javaType)) {
                 fullFilePath = sourceManager.findAndCacheSource(javaType, clazz, debugContext);
@@ -2620,11 +2617,6 @@ class NativeImageDebugInfoProvider extends NativeImageDebugInfoProviderBase impl
         @Override
         public long getOffset() {
             return objectInfo.getOffset();
-        }
-
-        @Override
-        public long getAddress() {
-            return objectInfo.getAddress();
         }
 
         @Override

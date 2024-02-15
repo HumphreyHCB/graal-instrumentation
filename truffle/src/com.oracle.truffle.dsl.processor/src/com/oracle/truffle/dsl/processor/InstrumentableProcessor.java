@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,6 +69,7 @@ import javax.tools.Diagnostic.Kind;
 
 import com.oracle.truffle.dsl.processor.generator.GeneratorUtils;
 import com.oracle.truffle.dsl.processor.java.ElementUtils;
+import com.oracle.truffle.dsl.processor.java.compiler.CompilerFactory;
 import com.oracle.truffle.dsl.processor.java.model.CodeAnnotationMirror;
 import com.oracle.truffle.dsl.processor.java.model.CodeExecutableElement;
 import com.oracle.truffle.dsl.processor.java.model.CodeTree;
@@ -378,7 +379,7 @@ public final class InstrumentableProcessor extends AbstractProcessor {
         List<ExecutableElement> wrappedMethods = new ArrayList<>();
         List<ExecutableElement> wrappedExecuteMethods = new ArrayList<>();
         List<ExecutableElement> wrappedResumeMethods = isResume ? new ArrayList<>() : Collections.emptyList();
-        List<? extends Element> elementList = context.getEnvironment().getElementUtils().getAllMembers(sourceType);
+        List<? extends Element> elementList = CompilerFactory.getCompiler(sourceType).getAllMembersInDeclarationOrder(context.getEnvironment(), sourceType);
 
         ExecutableElement genericExecuteDelegate = null;
         ExecutableElement genericResumeDelegate = null;

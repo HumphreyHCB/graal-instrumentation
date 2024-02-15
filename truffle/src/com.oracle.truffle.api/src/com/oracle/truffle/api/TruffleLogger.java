@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -982,6 +982,7 @@ public final class TruffleLogger {
         }
 
         synchronized boolean isLoggable(final String loggerName, final Level level) {
+
             final Set<String> toRemove = collectRemovedLevels();
             if (!toRemove.isEmpty()) {
                 reconfigure(Collections.emptyMap(), toRemove);
@@ -1132,11 +1133,19 @@ public final class TruffleLogger {
 
         private Set<String> collectRemovedLevels() {
             assert Thread.holdsLock(this);
-            final Set<String> toRemove = new HashSet<>();
-            ContextWeakReference ref;
-            while ((ref = (ContextWeakReference) contextsRefQueue.poll()) != null) {
-                activeContexts.remove(ref);
-                toRemove.addAll(ref.configuredLoggers.keySet());
+            Set<String> toRemove = new HashSet<>();
+            /*
+             * Context-bound loggers are designed to operate within a single context and should not
+             * be reconfigured when the context is closed or subject to garbage collection.
+             * Preserving the log levels after the context is closed serves the purpose of detecting
+             * code where the logger is misused and logs after the context closure.
+             */
+            if (!LanguageAccessor.ENGINE.isContextBoundLogger(getSPI())) {
+                ContextWeakReference ref;
+                while ((ref = (ContextWeakReference) contextsRefQueue.poll()) != null) {
+                    activeContexts.remove(ref);
+                    toRemove.addAll(ref.configuredLoggers.keySet());
+                }
             }
             return toRemove;
         }

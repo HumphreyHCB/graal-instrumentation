@@ -58,6 +58,7 @@ import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.heap.ImageHeapArray;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapInstance;
+import com.oracle.graal.pointsto.heap.ImageHeapScanner;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
@@ -68,7 +69,6 @@ import com.oracle.svm.hosted.classinitialization.SimulateClassInitializerPolicy.
 import com.oracle.svm.hosted.fieldfolding.IsStaticFinalFieldInitializedNode;
 import com.oracle.svm.hosted.fieldfolding.MarkStaticFinalFieldInitializedNode;
 
-import jdk.graal.compiler.core.common.type.TypedConstant;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.AbstractBeginNode;
@@ -295,6 +295,10 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
                 return ConstantNode.forConstant(currentValue, metaAccess);
             }
         }
+        var intrinsified = support.fieldValueInterceptionSupport.tryIntrinsifyFieldLoad(providers, node);
+        if (intrinsified != null) {
+            return intrinsified;
+        }
         return node;
     }
 
@@ -304,8 +308,8 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
         int idx = asIntegerOrMinusOne(node.index());
 
         if (array != null && value != null && idx >= 0 && idx < array.getLength()) {
-            var componentType = array.getType(metaAccess).getComponentType();
-            if (node.elementKind().isPrimitive() || value.isNull() || componentType.isAssignableFrom(((TypedConstant) value).getType(metaAccess))) {
+            var componentType = array.getType().getComponentType();
+            if (node.elementKind().isPrimitive() || value.isNull() || componentType.isAssignableFrom(((ImageHeapConstant) value).getType())) {
                 array.setElement(idx, adaptForImageHeap(value, componentType.getStorageKind()));
                 return null;
             }
@@ -339,8 +343,8 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
             return false;
         }
 
-        var sourceComponentType = source.getType(metaAccess).getComponentType();
-        var destComponentType = dest.getType(metaAccess).getComponentType();
+        var sourceComponentType = source.getType().getComponentType();
+        var destComponentType = dest.getType().getComponentType();
         if (sourceComponentType.getJavaKind() != destComponentType.getJavaKind()) {
             return false;
         }
@@ -348,7 +352,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
             for (int i = 0; i < length; i++) {
                 var elementValue = (JavaConstant) source.getElement(sourcePos + i);
                 if (elementValue.isNonNull()) {
-                    var elementValueType = ((TypedConstant) elementValue).getType(metaAccess);
+                    var elementValueType = ((ImageHeapConstant) elementValue).getType();
                     if (!destComponentType.isAssignableFrom(elementValueType)) {
                         return false;
                     }
@@ -438,7 +442,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
     private ValueNode handleNewInstanceNode(SimulateClassInitializerInlineScope countersScope, NewInstanceNode node) {
         var type = (AnalysisType) node.instanceClass();
         if (accumulateNewInstanceSize(countersScope, type, node)) {
-            var instance = new ImageHeapInstance(type);
+            var instance = new ImageHeapInstance(type, getIdentityHashCode());
             for (var field : type.getInstanceFields(true)) {
                 var aField = (AnalysisField) field;
                 instance.setFieldValue(aField, JavaConstant.defaultForKind(aField.getStorageKind()));
@@ -460,7 +464,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
     }
 
     protected ImageHeapArray createNewArray(AnalysisType arrayType, int length) {
-        var array = ImageHeapArray.create(arrayType, length);
+        var array = ImageHeapArray.create(arrayType, length, getIdentityHashCode());
         var defaultValue = JavaConstant.defaultForKind(arrayType.getComponentType().getStorageKind());
         for (int i = 0; i < length; i++) {
             array.setElement(i, defaultValue);
@@ -500,7 +504,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
         }
         var nextArrayType = curArrayType.getComponentType();
 
-        var array = ImageHeapArray.create(curArrayType, dimensions[curDimension]);
+        var array = ImageHeapArray.create(curArrayType, dimensions[curDimension], getIdentityHashCode());
         for (int i = 0; i < curLength; i++) {
             array.setElement(i, createNewMultiArray(nextArrayType, nextDimension, dimensions));
         }
@@ -535,10 +539,10 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
     private ValueNode handleObjectClone(SimulateClassInitializerInlineScope countersScope, ObjectClone node) {
         var originalImageHeapConstant = asActiveImageHeapConstant(node.getObject());
         if (originalImageHeapConstant != null) {
-            var type = originalImageHeapConstant.getType(metaAccess);
+            var type = originalImageHeapConstant.getType();
             if ((originalImageHeapConstant instanceof ImageHeapArray originalArray && accumulateNewArraySize(countersScope, type, originalArray.getLength(), node.asNode())) ||
                             (type.isCloneableWithAllocation() && accumulateNewInstanceSize(countersScope, type, node.asNode()))) {
-                var cloned = originalImageHeapConstant.forObjectClone();
+                var cloned = originalImageHeapConstant.forObjectClone(getIdentityHashCode());
                 currentActiveObjects.add(cloned);
                 return ConstantNode.forConstant(cloned, metaAccess);
             }
@@ -553,7 +557,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
             var arrayType = (AnalysisType) metaAccess.lookupJavaType(original);
             Integer length = providers.getConstantReflection().readArrayLength(original);
             if (length != null && accumulateNewArraySize(countersScope, arrayType, length, node.asNode())) {
-                var array = ImageHeapArray.create(arrayType, length);
+                var array = ImageHeapArray.create(arrayType, length, getIdentityHashCode());
                 for (int i = 0; i < length; i++) {
                     array.setElement(i, adaptForImageHeap(providers.getConstantReflection().readArrayElement(original, i), arrayType.getComponentType().getStorageKind()));
                 }
@@ -615,7 +619,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
         if (!accumulateNewInstanceSize(countersScope, type, reason)) {
             return false;
         }
-        var instance = new ImageHeapInstance(type);
+        var instance = new ImageHeapInstance(type, getIdentityHashCode());
         for (int j = 0; j < virtualInstance.entryCount(); j++) {
             var entry = lookupConstantEntry(j, entries);
             if (entry == null) {
@@ -639,7 +643,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
         if (!accumulateNewArraySize(countersScope, arrayType, length, reason)) {
             return false;
         }
-        var array = ImageHeapArray.create(arrayType, length);
+        var array = ImageHeapArray.create(arrayType, length, getIdentityHashCode());
         for (int j = 0; j < length; j++) {
             var entry = lookupConstantEntry(j, entries);
             if (entry == null) {
@@ -654,6 +658,10 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
         allVirtualObjects.put(virtualArray, array);
         currentActiveObjects.add(array);
         return true;
+    }
+
+    private int getIdentityHashCode() {
+        return ImageHeapScanner.getIdentityHashCode(null, providers.getIdentityHashCodeProvider());
     }
 
     private JavaConstant lookupConstantEntry(int index, List<ValueNode> entries) {
@@ -741,7 +749,7 @@ public class SimulateClassInitializerGraphDecoder extends InlineBeforeAnalysisGr
      * sub-integer types are often just integer constants in the Graal IR, i.e., we cannot rely on
      * the JavaKind of the constant to match the type of the field or array.
      */
-    private JavaConstant adaptForImageHeap(JavaConstant value, JavaKind storageKind) {
+    private static JavaConstant adaptForImageHeap(JavaConstant value, JavaKind storageKind) {
         if (value.getJavaKind() != storageKind) {
             assert value instanceof PrimitiveConstant && value.getJavaKind().getStackKind() == storageKind.getStackKind() : "only sub-int values can have a mismatch of the JavaKind: " +
                             value.getJavaKind() + ", " + storageKind;

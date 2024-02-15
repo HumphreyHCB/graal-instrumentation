@@ -286,16 +286,16 @@ final class Target_jdk_jfr_internal_JVM_JDK21 {
         return SubstrateJVM.get().setCutoff(eventTypeId, cutoffTicks);
     }
 
+    /** See {@link JVM#setThrottle}. */
     @Substitute
     public boolean setThrottle(long eventTypeId, long eventSampleSize, long periodMs) {
-        // Not supported but this method is called during JFR startup, so we can't throw an error.
-        return true;
+        return SubstrateJVM.get().setThrottle(eventTypeId, eventSampleSize, periodMs);
     }
 
     /** See {@link JVM#emitOldObjectSamples}. */
     @Substitute
     public void emitOldObjectSamples(long cutoff, boolean emitAll, boolean skipBFS) {
-        // Not supported but this method is called during JFR shutdown, so we can't throw an error.
+        SubstrateJVM.get().emitOldObjectSamples(cutoff, emitAll, skipBFS);
     }
 
     /** See {@link JVM#shouldRotateDisk}. */
