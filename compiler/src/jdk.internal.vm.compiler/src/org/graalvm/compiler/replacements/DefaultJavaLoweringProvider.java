@@ -541,7 +541,8 @@ public abstract class DefaultJavaLoweringProvider implements LoweringProvider {
         JavaKind elementKind = loadIndexed.elementKind();
         Stamp loadStamp = loadStamp(loadIndexed.stamp(NodeView.DEFAULT), elementKind);
 
-        GuardingNode boundsCheck = getBoundsCheck(loadIndexed, array, tool);
+        //GuardingNode boundsCheck = getBoundsCheck(loadIndexed, array, tool);
+        GuardingNode boundsCheck = loadIndexed.getBoundsCheck();
         ValueNode index = loadIndexed.index();
         if (SpectrePHTIndexMasking.getValue(graph.getOptions())) {
             index = graph.addOrUniqueWithInputs(proxyIndex(loadIndexed, index, array, tool));
@@ -569,9 +570,10 @@ public abstract class DefaultJavaLoweringProvider implements LoweringProvider {
         ValueNode value = storeIndexed.value();
         ValueNode array = storeIndexed.array();
 
-        array = this.createNullCheckedValue(array, storeIndexed, tool);
+        //array = this.createNullCheckedValue(array, storeIndexed, tool);
 
-        GuardingNode boundsCheck = getBoundsCheck(storeIndexed, array, tool);
+        //GuardingNode boundsCheck = getBoundsCheck(storeIndexed, array, tool);
+        GuardingNode boundsCheck = storeIndexed.getBoundsCheck();
 
         JavaKind storageKind = storeIndexed.elementKind();
 
