@@ -85,6 +85,10 @@ import org.graalvm.compiler.nodes.extended.AnchoringNode;
 import org.graalvm.compiler.nodes.extended.ForeignCall;
 import org.graalvm.compiler.nodes.extended.GuardedNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
+import org.graalvm.compiler.nodes.java.LoadIndexedNode;
+import org.graalvm.compiler.nodes.java.StoreFieldNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.memory.MemoryAccess;
 import org.graalvm.compiler.nodes.memory.MemoryKill;
 import org.graalvm.compiler.nodes.memory.MemoryMapNode;
@@ -141,12 +145,26 @@ public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
     private void lower(StructuredGraph graph, CoreProviders context, LoweringMode mode) {
         final LoweringToolImpl loweringTool = new LoweringToolImpl(context, null, null, null, null);
             
-        for (Node node : graph.getNodes()) {
-            if (node instanceof CustomClockLogNode) {
-                CustomClockLogNode clocknode = (CustomClockLogNode) node;
-                clocknode.lower(loweringTool);
+        for (Node node : graph.getNodes().filter(LoadFieldNode.class)) {
+            LoadFieldNode logNode = (LoadFieldNode) node;
+                logNode.lower(loweringTool);
             }
-         }          
+
+            for (Node node : graph.getNodes().filter(LoadIndexedNode.class)) {
+                LoadIndexedNode logNode = (LoadIndexedNode) node;
+                logNode.lower(loweringTool);
+                
+            }
+
+            for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
+                StoreIndexedNode logNode = (StoreIndexedNode) node;
+                context.getLowerer().lower(logNode, loweringTool);
+            }
+
+            for (Node node : graph.getNodes().filter(StoreFieldNode.class)) {
+                StoreFieldNode logNode = (StoreFieldNode) node;
+                logNode.lower(loweringTool);
+            }
         }
 
 
