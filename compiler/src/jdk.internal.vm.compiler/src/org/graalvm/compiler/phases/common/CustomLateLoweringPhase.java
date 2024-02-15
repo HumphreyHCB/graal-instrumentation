@@ -174,10 +174,10 @@ public class CustomLateLoweringPhase extends LoweringPhase  {
                 
             // }
 
-            // for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
-            //     StoreIndexedNode logNode = (StoreIndexedNode) node;
-            //     context.getLowerer().lower(logNode, loweringTool);
-            // }
+            for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
+                StoreIndexedNode logNode = (StoreIndexedNode) node;
+                context.getLowerer().lower(logNode, loweringTool);
+            }
 
             for (Node node : graph.getNodes().filter(StoreFieldNode.class)) {
                 StoreFieldNode logNode = (StoreFieldNode) node;

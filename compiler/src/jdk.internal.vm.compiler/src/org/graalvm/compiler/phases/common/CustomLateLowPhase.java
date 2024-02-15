@@ -175,14 +175,17 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
                     // Read the buffer form the static class
                     LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
                             context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                    graph.addBeforeFixed(returnNode, readBuffer);
+                    graph.addAfterFixed(returnNode, readBuffer);
                     
-                     AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID, context.getTarget() ,context.getMetaAccess());
-                     WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
-                     graph.addAfterFixed(readBuffer, memoryWrite);
-                    
+                    StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, Time));
+                    graph.addAfterFixed(readBuffer, store);
+                    // AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID, context.getTarget() ,context.getMetaAccess());
+                     //WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
+                    //JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, false));
+                    // graph.addAfterFixed(readBuffer, memoryWrite);
 
 
+                    // lowerJavaWriteNode(memoryWrite);
                 } catch (Exception e) {
                     e.printStackTrace();
                     // TODO: handle exception

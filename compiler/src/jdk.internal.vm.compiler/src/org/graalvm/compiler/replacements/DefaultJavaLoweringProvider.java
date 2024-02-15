@@ -569,9 +569,10 @@ public abstract class DefaultJavaLoweringProvider implements LoweringProvider {
         ValueNode value = storeIndexed.value();
         ValueNode array = storeIndexed.array();
 
-        array = this.createNullCheckedValue(array, storeIndexed, tool);
+        //array = this.createNullCheckedValue(array, storeIndexed, tool);
 
-        GuardingNode boundsCheck = getBoundsCheck(storeIndexed, array, tool);
+        //GuardingNode boundsCheck = getBoundsCheck(storeIndexed, array, tool);
+        GuardingNode boundsCheck = storeIndexed.getBoundsCheck();
 
         JavaKind storageKind = storeIndexed.elementKind();
 
