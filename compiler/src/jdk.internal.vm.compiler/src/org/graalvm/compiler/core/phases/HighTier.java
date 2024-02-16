@@ -49,6 +49,7 @@ import org.graalvm.compiler.phases.common.BoxNodeOptimizationPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
 import org.graalvm.compiler.phases.common.CustomInstrumentationLoweringPhase;
 import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
+import org.graalvm.compiler.phases.common.CustomLateHighPhase;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
 import org.graalvm.compiler.phases.common.DisableOverflownCountedLoopsPhase;
 import org.graalvm.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase;
@@ -76,8 +77,7 @@ public class HighTier extends BaseTier<HighTierContext> {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
 
-
-        //appendPhase(new CustomInstrumentationPhase(new Group("sss")));
+        appendPhase(new CustomLateHighPhase(null));
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
             appendPhase(new DeadCodeEliminationPhase(Optional));
@@ -124,6 +124,7 @@ public class HighTier extends BaseTier<HighTierContext> {
         //     appendPhase(new CustomInstrumentationPhase());
         // }
         //appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
+
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }
 

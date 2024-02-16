@@ -133,53 +133,41 @@ public class CustomLateMidPhase extends BasePhase<MidTierContext>  {
     protected void run(StructuredGraph graph, MidTierContext context) {
 
 
-        ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
-        ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-        graph.addAfterFixed(graph.start(), startTime);
+        
+
+        //  ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
+        // ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+        // graph.addAfterFixed(graph.start(), startTime);
 
 
 
         int pointer = 0;
         for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
-            
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
+            ValueNode DummyLong = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1111L), StampFactory.forKind(JavaKind.Long)));
             try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-            ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-            graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
-            returnNodesTime[pointer] = javaCurrentCPUtime;
-            pointer++;
+                try {
+                LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
+                context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+                graph.addBeforeFixed(returnNode, readBuffer);
+                
+                StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, DummyLong));
+                graph.addAfterFixed(readBuffer, store);
+
+
+                // // write the changed buffer back to the static class
+                // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
+                // graph.addAfterFixed(store,WriteBufferBack);
+                }catch(Exception e){
+                    e.printStackTrace();
+                }
+            // ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+            // graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
+            // returnNodesTime[pointer] = javaCurrentCPUtime;
+            // pointer++;
             }          
         }
 
-
-        // get comp ID
-        int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-        ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
-
-        for (ForeignCallNode returnNode : returnNodesTime) {
-
-            SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
-
-            try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-
-                try {
-                    // Read the buffer form the static class
-                    LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-                            context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                    graph.addAfterFixed(returnNode, readBuffer);
-                    
-                     AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID, context.getTarget() ,context.getMetaAccess());
-                     WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
-                     graph.addAfterFixed(readBuffer, memoryWrite);
-                    
-
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // TODO: handle exception
-                }
-
-            }
-        }
 
 
     }

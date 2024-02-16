@@ -46,6 +46,7 @@ import org.graalvm.compiler.phases.common.PropagateDeoptimizeProbabilityPhase;
 import org.graalvm.compiler.phases.schedule.SchedulePhase;
 import org.graalvm.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
+import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
 
 public class LowTier extends BaseTier<LowTierContext> {
 
@@ -63,6 +64,7 @@ public class LowTier extends BaseTier<LowTierContext> {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         CanonicalizerPhase canonicalizerWithoutGVN = canonicalizer.copyWithoutGVN();
         appendPhase(new CustomLateLowPhase(null));
+        //appendPhase(new ReadEliminationPhase(canonicalizer));
         if (Options.ProfileCompiledMethods.getValue(options)) {
             appendPhase(new ProfileCompiledMethodsPhase());
         }

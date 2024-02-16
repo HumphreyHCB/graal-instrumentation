@@ -45,12 +45,12 @@ public class EconomyLowTier extends BaseTier<LowTierContext> {
     @SuppressWarnings("this-escape")
     public EconomyLowTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
-        //appendPhase(new CustomLateLowPhase(null));
+        appendPhase(new CustomLateLowPhase(null));
         //appendPhase(new CustomLateLoweringPhase(canonicalizer));
 
         appendPhase(new LowTierLoweringPhase(canonicalizer));
-        appendPhase(new CustomLateLowPhase(null));
-        appendPhase(new CustomLateLoweringPhase(canonicalizer));
+        //appendPhase(new CustomLateLowPhase(null));
+        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
         appendPhase(new ExpandLogicPhase(canonicalizer));
 
         if (Assertions.assertionsEnabled()) {

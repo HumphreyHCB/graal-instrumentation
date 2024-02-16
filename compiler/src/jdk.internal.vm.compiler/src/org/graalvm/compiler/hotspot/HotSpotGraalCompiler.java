@@ -128,7 +128,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             if (graalRuntime.isShutdown()) {
                 return HotSpotCompilationRequestResult.failure(String.format("Shutdown entered"), true);
             }
-            
+
             ResolvedJavaMethod method = request.getMethod();
 
             if (graalRuntime.isBootstrapping()) {

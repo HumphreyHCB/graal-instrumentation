@@ -41,7 +41,9 @@ import org.graalvm.compiler.core.amd64.AMD64AddressNode;
 import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.memory.BarrierType;
 import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
+import org.graalvm.compiler.core.common.spi.JavaConstantFieldProvider;
 import org.graalvm.compiler.core.common.type.IntegerStamp;
+import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.graph.iterators.NodeIterable;
@@ -51,6 +53,7 @@ import org.graalvm.compiler.nodes.GraphState;
 import org.graalvm.compiler.nodes.IfNode;
 import org.graalvm.compiler.nodes.MergeNode;
 import org.graalvm.compiler.nodes.NamedLocationIdentity;
+import org.graalvm.compiler.nodes.NodeView;
 import org.graalvm.compiler.nodes.PiNode;
 import org.graalvm.compiler.nodes.calc.AddNode;
 import org.graalvm.compiler.nodes.calc.IntegerEqualsNode;
@@ -63,11 +66,13 @@ import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
 import org.graalvm.compiler.nodes.extended.JavaWriteNode;
+import org.graalvm.compiler.nodes.gc.BarrierSet;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
+import org.graalvm.compiler.nodes.memory.ReadNode;
 import org.graalvm.compiler.nodes.memory.SideEffectFreeWriteNode;
 import org.graalvm.compiler.nodes.memory.WriteNode;
 import org.graalvm.compiler.nodes.memory.address.AddressNode;
@@ -100,7 +105,12 @@ import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 
 import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
+import org.graalvm.compiler.core.common.type.ObjectStamp;
+import org.graalvm.compiler.nodes.FieldLocationIdentity;
+
+import org.graalvm.compiler.debug.GraalError;
 import jdk.vm.ci.meta.JavaConstant;
 
 import jdk.vm.ci.meta.JavaKind;
@@ -109,6 +119,7 @@ import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.CodeUtil;
 import jdk.vm.ci.code.TargetDescription;
+import jdk.vm.ci.hotspot.HotSpotResolvedJavaField;
 import jdk.vm.ci.meta.JavaConstant;
 /**
  * Adds CustomInstrumentation to loops.
@@ -139,50 +150,89 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext>  {
     protected void run(StructuredGraph graph, HighTierContext context) {
  
 
-        ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
-        ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-        graph.addAfterFixed(graph.start(), startTime);
-
-
-
-        int pointer = 0;
-        for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
+        // ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
+        // ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+        // graph.addAfterFixed(graph.start(), startTime);
+        // int pointer = 0;
+        // for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
             
-            try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-            ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-            graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
-            returnNodesTime[pointer] = javaCurrentCPUtime;
-            pointer++;
-            }          
-        }
+        //     try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+        //     ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+        //     graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
+        //     returnNodesTime[pointer] = javaCurrentCPUtime;
+        //     pointer++;
+        //     }          
+        // }
 
 
-        // get comp ID
-        int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-        ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
+        // // get comp ID
+        // int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+        // ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
-        for (ForeignCallNode returnNode : returnNodesTime) {
+        // for (ForeignCallNode returnNode : returnNodesTime) {
 
-            SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
+        //     SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
 
-            try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+        //     try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
-                try {
+                 try {
+
+                    
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+            ValueNode DummyLong = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1111L), StampFactory.forKind(JavaKind.Long)));
+    
+            // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
+            // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+            //     graph.addAfterFixed(graph.start(), readBuffer);
+
+                // ResolvedJavaField field = context.getMetaAccess().lookupJavaField(BuboCache.class.getField("pointer"));
+                // ValueNode object = staticFieldBase(graph, field, context) ;
+                // Stamp loadStamp = loadStamp(StampFactory.forKind(JavaKind.Int), getStorageKind(field,context));
+        
+                // AddressNode address = createFieldAddress(graph, object, field);
+                // ReadNode memoryRead = graph.add(new ReadNode(address, NamedLocationIdentity.ANY_LOCATION, loadStamp, null, MemoryOrderMode.PLAIN));
+                
+                // graph.addAfterFixed(graph.start(), memoryRead);
+                // LogNode log = graph.add(new LogNode("memeory read returns %d", memoryRead));
+                // graph.addAfterFixed(memoryRead, log);
+
+
+
+                // StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, DummyLong));
+                // graph.addAfterFixed(readBuffer, store);
+                
+
+                // AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID ,context.getMetaAccess());
+                // WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
+                //JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
+                // graph.addAfterFixed(readBuffer, memoryWrite);
+
+                 //lowerLoadFieldNode(readBuffer,context);
+                //lowerJavaWriteNode(memoryWrite);
+                
+                // write the changed buffer back to the static class
+                // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
+                // graph.addAfterFixed(store,WriteBufferBack);
+    
                     // Read the buffer form the static class
                     LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
                             context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                    graph.addAfterFixed(returnNode, readBuffer);
+                    graph.addAfterFixed(graph.start(), readBuffer);
                     
-                    StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, Time));
+                    StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, DummyLong));
                     graph.addAfterFixed(readBuffer, store);
+
+                        //             // write the changed buffer back to the static class
+                        // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
+                        // graph.addAfterFixed(store,WriteBufferBack);
 
                 } catch (Exception e) {
                     e.printStackTrace();
                     // TODO: handle exception
                 }
 
-            }
-        }
+        //     }
+        // }
 
 
 
@@ -200,6 +250,54 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext>  {
         ValueNode scaledIndex = graph.unique(new LeftShiftNode(wordIndex, ConstantNode.forInt(shift, graph)));
         ValueNode offset = graph.unique(new AddNode(scaledIndex, ConstantNode.forIntegerKind(JavaKind.Long, arrayBaseOffset, graph)));
         return graph.unique(new OffsetAddressNode(array, offset));
+    }
+
+    protected void lowerLoadFieldNode(LoadFieldNode loadField,  HighTierContext context ) {
+        //assert loadField.getStackKind() != JavaKind.Illegal : loadField;
+        StructuredGraph graph = loadField.graph();
+        ResolvedJavaField field = loadField.field();
+        ValueNode object = loadField.isStatic() ? staticFieldBase(graph, field, context) : loadField.object();
+        //object = createNullCheckedValue(object, loadField, tool);
+        Stamp loadStamp = loadStamp(loadField.stamp(NodeView.DEFAULT), getStorageKind(field,context));
+
+        AddressNode address = createFieldAddress(graph, object, field);
+
+        //BarrierType barrierType = context.getPlatformConfigurationProvider().getBarrierSet().fieldReadBarrierType(field, getStorageKind(field, context));
+        ReadNode memoryRead = graph.add(new ReadNode(address, overrideFieldLocationIdentity(loadField.getLocationIdentity()), loadStamp, null, loadField.getMemoryOrder()));
+        ValueNode readValue = implicitLoadConvert(graph, getStorageKind(field, context), memoryRead);
+        loadField.replaceAtUsages(readValue);
+        graph.replaceFixed(loadField, memoryRead);
+    }
+    public final JavaKind getStorageKind(ResolvedJavaField field, HighTierContext context) {
+        return getStorageKind(field.getType(), context);
+    }
+    public final JavaKind getStorageKind(JavaType type, HighTierContext context) {
+        return context.getMetaAccessExtensionProvider().getStorageKind(type);
+    }
+
+    public FieldLocationIdentity overrideFieldLocationIdentity(FieldLocationIdentity fieldIdentity) {
+        return fieldIdentity;
+    }
+
+    public ValueNode staticFieldBase(StructuredGraph graph, ResolvedJavaField f, HighTierContext context) {
+        HotSpotResolvedJavaField field = (HotSpotResolvedJavaField) f;
+        
+        JavaConstant base = context.getProviders().getConstantReflection().asJavaClass(field.getDeclaringClass());
+        return ConstantNode.forConstant(base, context.getMetaAccess(), graph);
+    }
+
+    public AddressNode createOffsetAddress(StructuredGraph graph, ValueNode object, long offset) {
+        ValueNode o = ConstantNode.forIntegerKind(JavaKind.Long, offset, graph);
+        return graph.unique(new OffsetAddressNode(object, o));
+    }
+
+    public AddressNode createFieldAddress(StructuredGraph graph, ValueNode object, ResolvedJavaField field) {
+        int offset = field.getOffset();
+        if (offset >= 0) {
+            return createOffsetAddress(graph, object, offset);
+        } else {
+            throw GraalError.shouldNotReachHere("Field is missing: " + field.getDeclaringClass().toJavaName(true) + "." + field.getName());
+        }
     }
 
     public static final IntegerStamp POSITIVE_ARRAY_INDEX_STAMP = IntegerStamp.create(32, 0, Integer.MAX_VALUE - 1);
@@ -263,6 +361,56 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext>  {
         return value;
     }
 
+    public Stamp loadStamp(Stamp stamp, JavaKind kind) {
+        return loadStamp(stamp, kind, true);
+    }
+
+    protected Stamp loadStamp(Stamp stamp, JavaKind kind, boolean compressible) {
+
+        switch (kind) {
+            case Boolean:
+            case Byte:
+                return IntegerStamp.OPS.getNarrow().foldStamp(32, 8, stamp);
+            case Char:
+            case Short:
+                return IntegerStamp.OPS.getNarrow().foldStamp(32, 16, stamp);
+        }
+        return stamp;
+    }
+
+
+
+    public final ValueNode implicitLoadConvert(StructuredGraph graph, JavaKind kind, ValueNode value) {
+        return implicitLoadConvert(graph, kind, value, true);
+    }
+
+    public ValueNode implicitLoadConvert(JavaKind kind, ValueNode value) {
+        return implicitLoadConvert(kind, value, true);
+    }
+
+    protected final ValueNode implicitLoadConvert(StructuredGraph graph, JavaKind kind, ValueNode value, boolean compressible) {
+        ValueNode ret = implicitLoadConvert(kind, value, compressible);
+        if (!ret.isAlive()) {
+            ret = graph.addOrUnique(ret);
+        }
+        return ret;
+    }
+
+    protected ValueNode implicitLoadConvert(JavaKind kind, ValueNode value, boolean compressible) {
+        // if (useCompressedOops(kind, compressible)) {
+        //     return newCompressionNode(CompressionOp.Uncompress, value);
+        // }
+
+        switch (kind) {
+            case Byte:
+            case Short:
+                return new SignExtendNode(value, 32);
+            case Boolean:
+            // case Char:
+            //     return new ZeroExtendNode(value, 32);
+        }
+        return value;
+    }
     // protected void lowerIndexAddressNode(IndexAddressNode indexAddress, HighTierContext context) {
     //     AddressNode lowered = createArrayAddress(indexAddress.graph(), indexAddress.getArray(), indexAddress.getArrayKind(), indexAddress.getElementKind(), indexAddress.getIndex(), context);
     //     indexAddress.replaceAndDelete(lowered);
