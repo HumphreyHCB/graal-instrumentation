@@ -70,10 +70,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         }
 
         appendPhase(new LowTierLoweringPhase(canonicalizer));
-
-        appendPhase(new CustomLateLowPhase(null));
-        appendPhase(new CustomLateLoweringPhase(canonicalizer));
-
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            appendPhase(new CustomLateLowPhase(null));
+            appendPhase(new CustomLateLoweringPhase(canonicalizer));
+        }
         appendPhase(new ExpandLogicPhase(canonicalizer));
 
         appendPhase(new FixReadsPhase(true,
