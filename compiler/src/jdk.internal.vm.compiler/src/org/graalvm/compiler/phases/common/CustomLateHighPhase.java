@@ -42,6 +42,7 @@ import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
 import org.graalvm.compiler.core.common.memory.BarrierType;
 import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
 import org.graalvm.compiler.core.common.spi.JavaConstantFieldProvider;
+import org.graalvm.compiler.core.common.type.BuboVoidStamp;
 import org.graalvm.compiler.core.common.type.IntegerStamp;
 import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
@@ -79,6 +80,7 @@ import org.graalvm.compiler.nodes.memory.address.AddressNode;
 import org.graalvm.compiler.nodes.memory.address.IndexAddressNode;
 import org.graalvm.compiler.nodes.memory.address.OffsetAddressNode;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
+import org.graalvm.compiler.nodes.util.GraphUtil;
 import org.graalvm.compiler.nodes.ReturnNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
@@ -177,8 +179,8 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext>  {
 
                  try {
 
-                    
-            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+            int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
             ValueNode DummyLong = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1111L), StampFactory.forKind(JavaKind.Long)));
     
             // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
@@ -218,9 +220,16 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext>  {
                     LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
                             context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
                     graph.addAfterFixed(graph.start(), readBuffer);
-                    
-                    StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, DummyLong));
-                    graph.addAfterFixed(readBuffer, store);
+
+                AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID ,context.getMetaAccess());
+                address.setStamp(StampFactory.forBuboVoid());
+                //WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
+                JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
+                graph.addAfterFixed(readBuffer, memoryWrite);
+                memoryWrite.setStateAfter(GraphUtil.findLastFrameState(readBuffer));
+
+                    // StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, DummyLong));
+                    // graph.addAfterFixed(readBuffer, store);
 
                         //             // write the changed buffer back to the static class
                         // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));

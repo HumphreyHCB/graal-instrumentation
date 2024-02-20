@@ -120,6 +120,10 @@ public class StampFactory {
         return VoidStamp.getInstance();
     }
 
+    public static Stamp forBuboVoid() {
+        return BuboVoidStamp.getInstance();
+    }
+
     public static Stamp intValue() {
         return forKind(JavaKind.Int);
     }

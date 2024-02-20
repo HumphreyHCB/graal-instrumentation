@@ -29,9 +29,12 @@ import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.
 import java.util.Optional;
 
 import org.graalvm.compiler.core.common.CompilationIdentifier.Verbosity;
+import org.graalvm.compiler.core.common.type.BuboVoidStamp;
 import org.graalvm.compiler.core.common.type.IntegerStamp;
+import org.graalvm.compiler.core.common.type.Stamp;
 import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.debug.DebugCloseable;
+import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.hotspot.meta.Bubo.BuboCache;
 import org.graalvm.compiler.hotspot.nodes.LoadIndexedPointerNode;
@@ -53,6 +56,7 @@ import org.graalvm.compiler.nodes.debug.ControlFlowAnchorNode;
 import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.extended.JavaReadNode;
 import org.graalvm.compiler.nodes.extended.JavaWriteNode;
 import org.graalvm.compiler.nodes.extended.UnsafeAccessNode;
 import org.graalvm.compiler.nodes.java.AccessIndexedNode;
@@ -61,6 +65,7 @@ import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
+import org.graalvm.compiler.nodes.memory.FloatingReadNode;
 import org.graalvm.compiler.nodes.memory.ReadNode;
 import org.graalvm.compiler.nodes.memory.SideEffectFreeWriteNode;
 import org.graalvm.compiler.nodes.memory.WriteNode;
@@ -80,7 +85,6 @@ import org.graalvm.compiler.replacements.arraycopy.ArrayCopyCallNode;
 import org.graalvm.compiler.replacements.arraycopy.ArrayCopyNode;
 import org.graalvm.compiler.replacements.nodes.ArrayIndexOfNode;
 import org.graalvm.compiler.replacements.nodes.LogNode;
-
 
 import org.graalvm.compiler.nodes.AbstractBeginNode;
 import org.graalvm.compiler.nodes.AbstractMergeNode;
@@ -141,104 +145,141 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, LowTierContext context) {
-
-
-        //  ForeignCallNode[] returnNodesTime =  new ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
-        // ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-        // graph.addAfterFixed(graph.start(), startTime);
-
-        ReadNode readBuffer = null;
-        WriteNode writeBuffer = null;
-        for (ReadNode node : graph.getNodes().filter(ReadNode.class)) {
-
-                //System.out.println("Node: " +node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All));
-                //node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All)
-                if (node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All).contains("location=BuboCache.Buffer")) {
-                    readBuffer = node;
-                }
-            }
-            
+        try {
+            WriteNode writeToRemove = null;
             for (WriteNode node : graph.getNodes().filter(WriteNode.class)) {
-
-                //System.out.println("Node: " +node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All));
-                //node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All)
-                if (node.toString(org.graalvm.compiler.nodeinfo.Verbosity.All).contains("location=Array: long")) {
-                    writeBuffer = node;
+                if (node.getAddress().stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
+                    writeToRemove = node;
+                    continue;
                 }
             }
 
-        int pointer = 0;
-        for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
-            ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
-            ValueNode DummyLong = graph.addWithoutUnique(new ConstantNode(JavaConstant.forLong(1112L), StampFactory.forKind(JavaKind.Long)));
-            //try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-                try {
-                    // Read the buffer form the static class
-                    // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-                    //         context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                    // graph.addBeforeFixed(returnNode, readBuffer);
-                    
-                    // ReadNode temp = (ReadNode) readBuffer.copyWithInputs();
-                    // graph.addBeforeFixed(returnNode, temp);
+            if (writeToRemove != null) {
 
-                    // StoreIndexedNode store = graph.add(new StoreIndexedNode(temp, ID, null, null, JavaKind.Long, DummyLong));
-                    // graph.addAfterFixed(temp, store);
+                // ForeignCallNode[] returnNodesTime = new
+                // ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
+                ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS,
+                        ValueNode.EMPTY_ARRAY));
+                graph.addAfterFixed(graph.start(), startTime);
 
-                JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, writeBuffer.getAddress(), NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
-                  graph.addBeforeFixed(returnNode, memoryWrite);
+                for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
+                    // ValueNode ID = graph.addWithoutUnique(new
+                    // ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
+                    // ValueNode DummyLong = graph.addWithoutUnique(new
+                    // ConstantNode(JavaConstant.forLong(1112L),
+                    // StampFactory.forKind(JavaKind.Long)));
+                    try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
+                        ForeignCallNode endTime = graph
+                                .add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+                        graph.addBeforeFixed(returnNode, endTime);
 
-                // // write the changed buffer back to the static class
-                // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null, context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")), readBuffer));
-                // graph.addAfterFixed(store,WriteBufferBack);
-                }catch(Exception e){
-                    e.printStackTrace();
+                        SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
+
+                        // Read the buffer form the static class
+                        // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
+                        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+                        // graph.addBeforeFixed(returnNode, readBuffer);
+
+                        // ReadNode temp = (ReadNode) readBuffer.copyWithInputs();
+                        // graph.addBeforeFixed(returnNode, temp);
+
+                        // StoreIndexedNode store = graph.add(new StoreIndexedNode(temp, ID, null, null,
+                        // JavaKind.Long, DummyLong));
+                        // graph.addAfterFixed(temp, store);
+
+                        // ReadNode temp = (ReadNode) readToRemove.copyWithInputs();
+
+                        JavaReadNode readCurrentValue = graph
+                                .add(new JavaReadNode(JavaKind.Long, writeToRemove.getAddress(),
+                                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                        graph.addAfterFixed(endTime, readCurrentValue);
+
+                        AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
+
+                        JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+                                writeToRemove.getAddress(),
+                                NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+                                false));
+                        graph.addAfterFixed(readCurrentValue, memoryWrite);
+
+                        // WriteNode temp2 = (WriteNode) writeToRemove.copyWithInputs();
+                        // temp2.setValue(aggregate);
+                        // temp2.setAddress(temp.getAddress());
+                        // graph.addAfterFixed(temp, temp2);
+
+                        // // write the changed buffer back to the static class
+                        // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null,
+                        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")),
+                        // readBuffer));
+                        // graph.addAfterFixed(store,WriteBufferBack);
+                        // graph.removeFixed(writeToRemove);
+                        // graph.removeFixed(readToRemove);
+
+                    }
+                    // ForeignCallNode javaCurrentCPUtime = graph.add(new
+                    // ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
+                    // graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
+                    // returnNodesTime[pointer] = javaCurrentCPUtime;
+                    // pointer++;
                 }
-            // ForeignCallNode javaCurrentCPUtime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-            // graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
-            // returnNodesTime[pointer] = javaCurrentCPUtime;
-            // pointer++;
-            }          
-        //}
+                //graph.removeFixed(writeToRemove);
+            }
 
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.print("ERROR: Custom Instruments Failure");
+            System.out.print("---------------------------------------------------------------------------");
+            System.out.print("---------------------------------------------------------------------------");
+            System.out.print("---------------------------------------------------------------------------");
+        }
+        // }
 
         // get comp ID
-        //int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-        //ValueNode ID = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
+        // int id =
+        // Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
+        // ValueNode ID = graph.addWithoutUnique(new
+        // ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
         // for (ForeignCallNode returnNode : returnNodesTime) {
 
-        //     SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
+        // SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
 
-        //     try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+        // try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
-        //         try {
-        //             // Read the buffer form the static class
-        //             LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-        //                     context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-        //             graph.addAfterFixed(returnNode, readBuffer);
-                    
-        //             StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null, null, JavaKind.Long, Time));
-        //             graph.addAfterFixed(readBuffer, store);
-        //             // AddressNode address = createArrayAddress(graph,readBuffer, context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID, context.getTarget() ,context.getMetaAccess());
-        //              //WriteNode memoryWrite = graph.add(new WriteNode(address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, MemoryOrderMode.PLAIN));
-        //             //JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time, BarrierType.ARRAY, false));
-        //             // graph.addAfterFixed(readBuffer, memoryWrite);
+        // try {
+        // // Read the buffer form the static class
+        // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
+        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
+        // graph.addAfterFixed(returnNode, readBuffer);
 
+        // StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null,
+        // null, JavaKind.Long, Time));
+        // graph.addAfterFixed(readBuffer, store);
+        // // AddressNode address = createArrayAddress(graph,readBuffer,
+        // context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID,
+        // context.getTarget() ,context.getMetaAccess());
+        // //WriteNode memoryWrite = graph.add(new WriteNode(address,
+        // NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time,
+        // BarrierType.ARRAY, MemoryOrderMode.PLAIN));
+        // //JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+        // address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time,
+        // BarrierType.ARRAY, false));
+        // // graph.addAfterFixed(readBuffer, memoryWrite);
 
-        //             // lowerJavaWriteNode(memoryWrite);
-        //         } catch (Exception e) {
-        //             e.printStackTrace();
-        //             // TODO: handle exception
-        //         }
-
-        //     }
+        // // lowerJavaWriteNode(memoryWrite);
+        // } catch (Exception e) {
+        // e.printStackTrace();
+        // // TODO: handle exception
         // }
 
+        // }
+        // }
 
     }
 
-    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, int arrayBaseOffset, JavaKind elementKind, ValueNode index, TargetDescription target, MetaAccessProvider  metaAccess) {
+    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, int arrayBaseOffset,
+            JavaKind elementKind, ValueNode index, TargetDescription target, MetaAccessProvider metaAccess) {
         ValueNode wordIndex;
         if (target.wordSize > 4) {
             wordIndex = graph.unique(new SignExtendNode(index, target.wordSize * 8));
@@ -248,42 +289,45 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
         }
         int shift = CodeUtil.log2(metaAccess.getArrayIndexScale(elementKind));
         ValueNode scaledIndex = graph.unique(new LeftShiftNode(wordIndex, ConstantNode.forInt(shift, graph)));
-        ValueNode offset = graph.unique(new AddNode(scaledIndex, ConstantNode.forIntegerKind(target.wordJavaKind, arrayBaseOffset, graph)));
+        ValueNode offset = graph.unique(
+                new AddNode(scaledIndex, ConstantNode.forIntegerKind(target.wordJavaKind, arrayBaseOffset, graph)));
         return graph.unique(new OffsetAddressNode(array, offset));
     }
 
-    public AddressNode createOffsetAddress(StructuredGraph graph, ValueNode object, long offset, TargetDescription target) {
+    public AddressNode createOffsetAddress(StructuredGraph graph, ValueNode object, long offset,
+            TargetDescription target) {
         ValueNode o = ConstantNode.forIntegerKind(target.wordJavaKind, offset, graph);
         return graph.unique(new OffsetAddressNode(object, o));
     }
 
-
     public static final IntegerStamp POSITIVE_ARRAY_INDEX_STAMP = IntegerStamp.create(32, 0, Integer.MAX_VALUE - 1);
 
     /**
-     * Create a PiNode on the index proving that the index is positive. On some platforms this is
+     * Create a PiNode on the index proving that the index is positive. On some
+     * platforms this is
      * important to allow the index to be used as an int in the address mode.
      */
     protected ValueNode createPositiveIndex(StructuredGraph graph, ValueNode index, GuardingNode boundsCheck) {
-        return graph.addOrUnique(PiNode.create(index, POSITIVE_ARRAY_INDEX_STAMP, boundsCheck != null ? boundsCheck.asNode() : null));
+        return graph.addOrUnique(
+                PiNode.create(index, POSITIVE_ARRAY_INDEX_STAMP, boundsCheck != null ? boundsCheck.asNode() : null));
     }
-
 
     protected void lowerJavaWriteNode(JavaWriteNode write) {
         StructuredGraph graph = write.graph();
         ValueNode value = implicitStoreConvert(graph, write.getWriteKind(), write.value(), write.isCompressible());
         WriteNode memoryWrite;
         if (write.hasSideEffect()) {
-            memoryWrite = graph.add(new WriteNode(write.getAddress(), write.getKilledLocationIdentity(), value, write.getBarrierType(), write.getMemoryOrder()));
+            memoryWrite = graph.add(new WriteNode(write.getAddress(), write.getKilledLocationIdentity(), value,
+                    write.getBarrierType(), write.getMemoryOrder()));
         } else {
             assert !write.ordersMemoryAccesses();
-            memoryWrite = graph.add(new SideEffectFreeWriteNode(write.getAddress(), write.getKilledLocationIdentity(), value, write.getBarrierType()));
+            memoryWrite = graph.add(new SideEffectFreeWriteNode(write.getAddress(), write.getKilledLocationIdentity(),
+                    value, write.getBarrierType()));
         }
         memoryWrite.setStateAfter(write.stateAfter());
         graph.replaceFixedWithFixed(write, memoryWrite);
         memoryWrite.setGuard(write.getGuard());
     }
-
 
     public final ValueNode implicitStoreConvert(StructuredGraph graph, JavaKind kind, ValueNode value) {
         return implicitStoreConvert(graph, kind, value, true);
@@ -293,7 +337,8 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
         return implicitStoreConvert(kind, value, true);
     }
 
-    protected final ValueNode implicitStoreConvert(StructuredGraph graph, JavaKind kind, ValueNode value, boolean compressible) {
+    protected final ValueNode implicitStoreConvert(StructuredGraph graph, JavaKind kind, ValueNode value,
+            boolean compressible) {
         ValueNode ret = implicitStoreConvert(kind, value, compressible);
         if (!ret.isAlive()) {
             ret = graph.addOrUnique(ret);
@@ -306,7 +351,7 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
      */
     protected ValueNode implicitStoreConvert(JavaKind kind, ValueNode value, boolean compressible) {
         // if (useCompressedOops(kind, compressible)) {
-        //     return newCompressionNode(CompressionOp.Compress, value);
+        // return newCompressionNode(CompressionOp.Compress, value);
         // }
         switch (kind) {
             case Boolean:
@@ -320,14 +365,15 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
     }
 
     protected void lowerIndexAddressNode(IndexAddressNode indexAddress, LowTierContext context) {
-        AddressNode lowered = createArrayAddress(indexAddress.graph(), indexAddress.getArray(), indexAddress.getArrayKind(), indexAddress.getElementKind(), indexAddress.getIndex(), context);
+        AddressNode lowered = createArrayAddress(indexAddress.graph(), indexAddress.getArray(),
+                indexAddress.getArrayKind(), indexAddress.getElementKind(), indexAddress.getIndex(), context);
         indexAddress.replaceAndDelete(lowered);
     }
 
-
-    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, JavaKind arrayKind, JavaKind elementKind, ValueNode index, LowTierContext context) {
+    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, JavaKind arrayKind,
+            JavaKind elementKind, ValueNode index, LowTierContext context) {
         int base = context.getMetaAccess().getArrayBaseOffset(arrayKind);
-        return createArrayAddress(graph, array, base, elementKind, index, context.getTarget(),context.getMetaAccess());
+        return createArrayAddress(graph, array, base, elementKind, index, context.getTarget(), context.getMetaAccess());
     }
 
 }

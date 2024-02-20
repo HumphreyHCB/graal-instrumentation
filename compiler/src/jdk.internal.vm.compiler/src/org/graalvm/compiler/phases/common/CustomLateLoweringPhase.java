@@ -91,6 +91,8 @@ import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCall;
 import org.graalvm.compiler.nodes.extended.GuardedNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.extended.JavaReadNode;
+import org.graalvm.compiler.nodes.extended.JavaWriteNode;
 import org.graalvm.compiler.nodes.java.InstanceOfNode;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
@@ -163,26 +165,37 @@ public class CustomLateLoweringPhase extends LoweringPhase  {
 
         
 
-        for (Node node : graph.getNodes().filter(LoadFieldNode.class)) {
-            LoadFieldNode logNode = (LoadFieldNode) node;
-                logNode.lower(loweringTool);
-            }
+        // for (Node node : graph.getNodes().filter(LoadFieldNode.class)) {
+        //     LoadFieldNode logNode = (LoadFieldNode) node;
+        //         logNode.lower(loweringTool);
+        //     }
 
-            // for (Node node : graph.getNodes().filter(LoadIndexedNode.class)) {
-            //     LoadIndexedNode logNode = (LoadIndexedNode) node;
-            //     logNode.lower(loweringTool);
+        //     // for (Node node : graph.getNodes().filter(LoadIndexedNode.class)) {
+        //     //     LoadIndexedNode logNode = (LoadIndexedNode) node;
+        //     //     logNode.lower(loweringTool);
                 
-            // }
+        //     // }
 
-            for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
-                StoreIndexedNode logNode = (StoreIndexedNode) node;
+        //     for (Node node : graph.getNodes().filter(StoreIndexedNode.class)) {
+        //         StoreIndexedNode logNode = (StoreIndexedNode) node;
+        //         context.getLowerer().lower(logNode, loweringTool);
+        //     }
+
+        //     for (Node node : graph.getNodes().filter(StoreFieldNode.class)) {
+        //         StoreFieldNode logNode = (StoreFieldNode) node;
+        //         logNode.lower(loweringTool);
+        //     }
+            for (Node node : graph.getNodes().filter(JavaReadNode.class)) {
+                JavaReadNode logNode = (JavaReadNode) node;
                 context.getLowerer().lower(logNode, loweringTool);
             }
 
-            for (Node node : graph.getNodes().filter(StoreFieldNode.class)) {
-                StoreFieldNode logNode = (StoreFieldNode) node;
+            for (Node node : graph.getNodes().filter(JavaWriteNode.class)) {
+                JavaWriteNode logNode = (JavaWriteNode) node;
                 logNode.lower(loweringTool);
             }
+
+
          }
          
          

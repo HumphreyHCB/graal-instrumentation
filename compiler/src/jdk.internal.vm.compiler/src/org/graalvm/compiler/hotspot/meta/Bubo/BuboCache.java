@@ -13,7 +13,7 @@ import java.lang.Thread;
         public static int pointer;
 
         public BuboCache() {
-                Buffer = new long[10];
+                Buffer = new long[200_000];
                 pointer = 1;
         }
 

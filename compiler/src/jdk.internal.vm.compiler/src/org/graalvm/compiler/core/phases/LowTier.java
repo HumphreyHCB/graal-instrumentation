@@ -35,6 +35,7 @@ import org.graalvm.compiler.phases.PlaceholderPhase;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
 import org.graalvm.compiler.phases.common.CustomLateLowPhase;
+import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
 import org.graalvm.compiler.phases.common.ExpandLogicPhase;
 import org.graalvm.compiler.phases.common.FinalCanonicalizerPhase;
@@ -63,13 +64,15 @@ public class LowTier extends BaseTier<LowTierContext> {
     public LowTier(OptionValues options) {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         CanonicalizerPhase canonicalizerWithoutGVN = canonicalizer.copyWithoutGVN();
-        appendPhase(new CustomLateLowPhase(null));
-        //appendPhase(new ReadEliminationPhase(canonicalizer));
+
         if (Options.ProfileCompiledMethods.getValue(options)) {
             appendPhase(new ProfileCompiledMethodsPhase());
         }
 
         appendPhase(new LowTierLoweringPhase(canonicalizer));
+
+        appendPhase(new CustomLateLowPhase(null));
+        appendPhase(new CustomLateLoweringPhase(canonicalizer));
 
         appendPhase(new ExpandLogicPhase(canonicalizer));
 
