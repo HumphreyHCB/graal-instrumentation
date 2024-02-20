@@ -189,7 +189,7 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
                     }
 
                 }
-                //graph.removeFixed(writeToRemove);
+                graph.removeFixed(writeToRemove);
             }
 
         } catch (Exception e) {
