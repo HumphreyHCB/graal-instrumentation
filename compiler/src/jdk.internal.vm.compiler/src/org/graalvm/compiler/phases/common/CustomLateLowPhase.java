@@ -156,18 +156,13 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
             if (writeToRemove != null) {
 
-                // ForeignCallNode[] returnNodesTime = new
-                // ForeignCallNode[graph.getNodes(ReturnNode.TYPE).count()];
+
                 ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS,
                         ValueNode.EMPTY_ARRAY));
                 graph.addAfterFixed(graph.start(), startTime);
 
                 for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
-                    // ValueNode ID = graph.addWithoutUnique(new
-                    // ConstantNode(JavaConstant.forInt(2), StampFactory.forKind(JavaKind.Int)));
-                    // ValueNode DummyLong = graph.addWithoutUnique(new
-                    // ConstantNode(JavaConstant.forLong(1112L),
-                    // StampFactory.forKind(JavaKind.Long)));
+
                     try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
                         ForeignCallNode endTime = graph
@@ -176,19 +171,7 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
-                        // Read the buffer form the static class
-                        // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-                        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-                        // graph.addBeforeFixed(returnNode, readBuffer);
 
-                        // ReadNode temp = (ReadNode) readBuffer.copyWithInputs();
-                        // graph.addBeforeFixed(returnNode, temp);
-
-                        // StoreIndexedNode store = graph.add(new StoreIndexedNode(temp, ID, null, null,
-                        // JavaKind.Long, DummyLong));
-                        // graph.addAfterFixed(temp, store);
-
-                        // ReadNode temp = (ReadNode) readToRemove.copyWithInputs();
 
                         JavaReadNode readCurrentValue = graph
                                 .add(new JavaReadNode(JavaKind.Long, writeToRemove.getAddress(),
@@ -203,25 +186,8 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
                                 false));
                         graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                        // WriteNode temp2 = (WriteNode) writeToRemove.copyWithInputs();
-                        // temp2.setValue(aggregate);
-                        // temp2.setAddress(temp.getAddress());
-                        // graph.addAfterFixed(temp, temp2);
-
-                        // // write the changed buffer back to the static class
-                        // StoreFieldNode WriteBufferBack = graph.add(new StoreFieldNode(null,
-                        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer")),
-                        // readBuffer));
-                        // graph.addAfterFixed(store,WriteBufferBack);
-                        // graph.removeFixed(writeToRemove);
-                        // graph.removeFixed(readToRemove);
-
                     }
-                    // ForeignCallNode javaCurrentCPUtime = graph.add(new
-                    // ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
-                    // graph.addBeforeFixed(returnNode, javaCurrentCPUtime);
-                    // returnNodesTime[pointer] = javaCurrentCPUtime;
-                    // pointer++;
+
                 }
                 //graph.removeFixed(writeToRemove);
             }
@@ -233,48 +199,6 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
             System.out.print("---------------------------------------------------------------------------");
             System.out.print("---------------------------------------------------------------------------");
         }
-        // }
-
-        // get comp ID
-        // int id =
-        // Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-        // ValueNode ID = graph.addWithoutUnique(new
-        // ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
-
-        // for (ForeignCallNode returnNode : returnNodesTime) {
-
-        // SubNode Time = graph.addWithoutUnique(new SubNode(returnNode,startTime));
-
-        // try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
-
-        // try {
-        // // Read the buffer form the static class
-        // LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-        // context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
-        // graph.addAfterFixed(returnNode, readBuffer);
-
-        // StoreIndexedNode store = graph.add(new StoreIndexedNode(readBuffer, ID, null,
-        // null, JavaKind.Long, Time));
-        // graph.addAfterFixed(readBuffer, store);
-        // // AddressNode address = createArrayAddress(graph,readBuffer,
-        // context.getMetaAccess().getArrayBaseOffset(JavaKind.Long),JavaKind.Long ,ID,
-        // context.getTarget() ,context.getMetaAccess());
-        // //WriteNode memoryWrite = graph.add(new WriteNode(address,
-        // NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time,
-        // BarrierType.ARRAY, MemoryOrderMode.PLAIN));
-        // //JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-        // address, NamedLocationIdentity.getArrayLocation(JavaKind.Long), Time,
-        // BarrierType.ARRAY, false));
-        // // graph.addAfterFixed(readBuffer, memoryWrite);
-
-        // // lowerJavaWriteNode(memoryWrite);
-        // } catch (Exception e) {
-        // e.printStackTrace();
-        // // TODO: handle exception
-        // }
-
-        // }
-        // }
 
     }
 
