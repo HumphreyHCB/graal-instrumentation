@@ -64,11 +64,6 @@ public class LowTier extends BaseTier<LowTierContext> {
     public LowTier(OptionValues options) {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         CanonicalizerPhase canonicalizerWithoutGVN = canonicalizer.copyWithoutGVN();
-
-        if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new CustomLateLowPhase(null));
-            appendPhase(new CustomLateLoweringPhase(canonicalizer));
-        }
         
         if (Options.ProfileCompiledMethods.getValue(options)) {
             appendPhase(new ProfileCompiledMethodsPhase());
@@ -76,6 +71,11 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new LowTierLoweringPhase(canonicalizer));
 
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            appendPhase(new CustomLateLowPhase(null));
+            appendPhase(new CustomLateLoweringPhase(canonicalizer));
+        }
+        
         appendPhase(new ExpandLogicPhase(canonicalizer));
 
         appendPhase(new FixReadsPhase(true,
