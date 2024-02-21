@@ -31,6 +31,7 @@ import static org.graalvm.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.
 import static org.graalvm.compiler.hotspot.replacements.Log.LOG_OBJECT;
 import static org.graalvm.compiler.hotspot.replacements.Log.LOG_PRIMITIVE;
 import static org.graalvm.compiler.hotspot.replacements.Log.LOG_PRINTF;
+import static org.graalvm.compiler.nodeinfo.InputType.Anchor;
 
 import java.util.Optional;
 
@@ -61,15 +62,21 @@ import org.graalvm.compiler.nodes.calc.LeftShiftNode;
 import org.graalvm.compiler.nodes.calc.NarrowNode;
 import org.graalvm.compiler.nodes.calc.SignExtendNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
+import org.graalvm.compiler.nodes.debug.BlackholeNode;
 import org.graalvm.compiler.nodes.debug.ControlFlowAnchorNode;
+import org.graalvm.compiler.nodes.extended.AnchoringNode;
 import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCallNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.extended.JavaReadNode;
 import org.graalvm.compiler.nodes.extended.JavaWriteNode;
 import org.graalvm.compiler.nodes.gc.BarrierSet;
+import org.graalvm.compiler.nodes.gc.G1PostWriteBarrier;
+import org.graalvm.compiler.nodes.gc.WriteBarrier;
 import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
+import org.graalvm.compiler.nodes.java.ReachabilityFenceNode;
 import org.graalvm.compiler.nodes.java.StoreFieldNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.memory.ReadNode;
@@ -98,6 +105,7 @@ import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.EndNode;
 import org.graalvm.compiler.nodes.FixedNode;
+import org.graalvm.compiler.nodes.FloatingAnchoredNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
 import org.graalvm.compiler.options.OptionType;
@@ -152,27 +160,47 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext> {
     protected void run(StructuredGraph graph, HighTierContext context) {
 
         try {
-
+            
+            ReturnNode returnNode = null;
+            for (ReturnNode node : graph.getNodes().filter(ReturnNode.class)) {
+                    returnNode = node;
+                    continue;
+                
+            }
             int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
             ValueNode ID = graph
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
             ValueNode DummyLong = graph.addWithoutUnique(
-                    new ConstantNode(JavaConstant.forLong(1111L), StampFactory.forKind(JavaKind.Long)));
+                    new ConstantNode(JavaConstant.forLong(1L), StampFactory.forKind(JavaKind.Long)));
 
             // Read the buffer form the static class
             LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
                     context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
             graph.addAfterFixed(graph.start(), readBuffer);
+            //graph.addBeforeFixed(returnNode, readBuffer);
 
             AddressNode address = createArrayAddress(graph, readBuffer,
                     context.getMetaAccess().getArrayBaseOffset(JavaKind.Long), JavaKind.Long, ID,
                     context.getMetaAccess());
             address.setStamp(StampFactory.forBuboVoid());
 
-            JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address,
-                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
+            // JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address,
+            //         NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
+
+
+            //G1PostWriteBarrier barrier = graph.add(new G1PostWriteBarrier(address, memoryWrite, false, false));
+            JavaReadNode memoryWrite = graph.add(new JavaReadNode(JavaKind.Long, address,
+            NamedLocationIdentity.getArrayLocation(JavaKind.Long), BarrierType.ARRAY, null, false));
+            
             graph.addAfterFixed(readBuffer, memoryWrite);
-            memoryWrite.setStateAfter(GraphUtil.findLastFrameState(readBuffer));
+            //memoryWrite.setStateAfter(GraphUtil.findLastFrameState(readBuffer));
+            ValueNode[] list = new ValueNode[]{address};
+            ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
+            graph.addAfterFixed(memoryWrite, fenceNode);
+            // JavaReadNode memoryread = graph.add(new JavaReadNode(JavaKind.Long, address,
+            // NamedLocationIdentity.getArrayLocation(JavaKind.Long), BarrierType.ARRAY, null, false));
+            // graph.addAfterFixed(memoryWrite, memoryread);
+
 
         } catch (Exception e) {
             e.printStackTrace();
