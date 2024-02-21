@@ -161,45 +161,29 @@ public class CustomLateHighPhase extends BasePhase<HighTierContext> {
 
         try {
             
-            ReturnNode returnNode = null;
-            for (ReturnNode node : graph.getNodes().filter(ReturnNode.class)) {
-                    returnNode = node;
-                    continue;
-                
-            }
             int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
             ValueNode ID = graph
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
-            ValueNode DummyLong = graph.addWithoutUnique(
-                    new ConstantNode(JavaConstant.forLong(1L), StampFactory.forKind(JavaKind.Long)));
 
             // Read the buffer form the static class
             LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
                     context.getMetaAccess().lookupJavaField(BuboCache.class.getField("Buffer"))));
             graph.addAfterFixed(graph.start(), readBuffer);
-            //graph.addBeforeFixed(returnNode, readBuffer);
 
             AddressNode address = createArrayAddress(graph, readBuffer,
                     context.getMetaAccess().getArrayBaseOffset(JavaKind.Long), JavaKind.Long, ID,
                     context.getMetaAccess());
             address.setStamp(StampFactory.forBuboVoid());
 
-            // JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, address,
-            //         NamedLocationIdentity.getArrayLocation(JavaKind.Long), DummyLong, BarrierType.ARRAY, false));
 
-
-            //G1PostWriteBarrier barrier = graph.add(new G1PostWriteBarrier(address, memoryWrite, false, false));
             JavaReadNode memoryWrite = graph.add(new JavaReadNode(JavaKind.Long, address,
             NamedLocationIdentity.getArrayLocation(JavaKind.Long), BarrierType.ARRAY, null, false));
             
             graph.addAfterFixed(readBuffer, memoryWrite);
-            //memoryWrite.setStateAfter(GraphUtil.findLastFrameState(readBuffer));
+            
             ValueNode[] list = new ValueNode[]{address};
             ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
             graph.addAfterFixed(memoryWrite, fenceNode);
-            // JavaReadNode memoryread = graph.add(new JavaReadNode(JavaKind.Long, address,
-            // NamedLocationIdentity.getArrayLocation(JavaKind.Long), BarrierType.ARRAY, null, false));
-            // graph.addAfterFixed(memoryWrite, memoryread);
 
 
         } catch (Exception e) {

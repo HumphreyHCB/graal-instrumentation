@@ -149,21 +149,6 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, LowTierContext context) {
         try {
-            // WriteNode writeToRemove = null;
-            // for (WriteNode node : graph.getNodes().filter(WriteNode.class)) {
-            //     if (node.getAddress().stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-            //         writeToRemove = node;
-            //         continue;
-            //     }
-            // }
-
-            // FloatingReadNode writeToRemove = null;
-            // for (FloatingReadNode node : graph.getNodes().filter(FloatingReadNode.class)) {
-            //     if (node.getAddress().stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-            //         writeToRemove = node;
-            //         continue;
-            //     }
-            // }
 
             OffsetAddressNode addressNode = null;
             for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
@@ -175,13 +160,9 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
             if (addressNode != null) {
 
-                //graph.start().removeUsage(writeToRemove);
-
-                
                 ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS,
                         ValueNode.EMPTY_ARRAY));
                 graph.addAfterFixed(graph.start(), startTime);
-
 
                 for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
 
@@ -193,17 +174,15 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
-
-
                         JavaReadNode readCurrentValue = graph
                                 .add(new JavaReadNode(JavaKind.Long, addressNode,
                                         NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
                         graph.addAfterFixed(endTime, readCurrentValue);
-                        
+
                         AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
                         JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                        addressNode,
+                                addressNode,
                                 NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
                                 false));
                         graph.addAfterFixed(readCurrentValue, memoryWrite);
@@ -212,37 +191,7 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
                 }
 
-                // for (ConstantNode node : writeToRemove.inputs().filter(ConstantNode.class)) {
-                //     node.safeDelete();                    
-                //     // node.removeUsage(writeToRemove);
-                // } 
-                // System.out.println("the method is " + graph.compilationId().toString(Verbosity.NAME));
-
-                // for (Node iterable_element : graph.start().usages()) {
-                //     System.out.println("StartNode uses 1 : " + iterable_element.getClass());
-                // }
-
-                // for (Node iterable_element : writeToRemove.usages().snapshot()) {
-                //     //System.out.println("Trying to remove " + iterable_element.getClass());
-                //     iterable_element.removeUsage(writeToRemove);
-                // }
-                // for (Node iterable_element : writeToRemove.usages().snapshot()) {
-                //     System.out.println("Trying to remove 2" + iterable_element.getClass());
-                //     iterable_element.removeUsage(writeToRemove);
-                // }
-
-                // for (Node iterable_element : graph.getNodes()) {
-                //     if (iterable_element.removeUsage(writeToRemove)) {
-                //         System.out.println("Found a another node to rmove" + iterable_element.getClass());
-                //     }
-                // }
-                // for (Node iterable_element : graph.start().usages()) {
-                //     System.out.println("StartNode uses 2 : " + iterable_element.getClass());
-                // }
-
-                
-
-                //graph.removeFixed(writeToRemove);
+                // graph.removeFixed(writeToRemove);
             }
 
         } catch (Exception e) {
