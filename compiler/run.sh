@@ -1,7 +1,7 @@
 #! /bin/bash
 
 
-mx  --java-home \
+mx --java-home \
 /home/hburchell/Downloads/labsjdk-ce-17.0.9+4-jvmci-23.0-b17-linux-amd64/labsjdk-ce-17.0.9-jvmci-23.0-b17 \
  vm  \
  -Dgraal.Dump=:2 -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true -Dgraal.EnableProfiler=true \
@@ -12,7 +12,11 @@ mx  --java-home \
   jdk.internal.vm.compiler/org.graalvm.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  Harness DeltaBlue 10000 6000 
+  Harness DeltaBlue 1200 6000  
+
+#  HelloWorld 
+  
+#  Harness DeltaBlue 1200 6000 
 
   
 # -XX:-UseOnStackReplacement
