@@ -105,7 +105,6 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
 
     @Override
     public CompilationRequestResult compileMethod(CompilationRequest request) {
-        System.out.println("Humphrey compiler compiling " + request.getMethod());
         return compileMethod(this, request);
     }
 
