@@ -47,9 +47,7 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.common.BoxNodeIdentityPhase;
 import org.graalvm.compiler.phases.common.BoxNodeOptimizationPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.phases.common.CustomInstrumentationLoweringPhase;
-import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
-import org.graalvm.compiler.phases.common.CustomLateHighPhase;
+import org.graalvm.compiler.phases.common.BuboInstrumentationHighTierPhase;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
 import org.graalvm.compiler.phases.common.DisableOverflownCountedLoopsPhase;
 import org.graalvm.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase;
@@ -58,7 +56,6 @@ import org.graalvm.compiler.phases.common.IterativeConditionalEliminationPhase;
 import org.graalvm.compiler.phases.common.inlining.InliningPhase;
 import org.graalvm.compiler.phases.common.inlining.policy.GreedyInliningPolicy;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.replacements.SnippetCounter.Group;
 import org.graalvm.compiler.virtual.phases.ea.FinalPartialEscapePhase;
 import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
 
@@ -77,7 +74,7 @@ public class HighTier extends BaseTier<HighTierContext> {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
         if (GraalOptions.EnableProfiler.getValue(options)) {
-        appendPhase(new CustomLateHighPhase(null));
+        appendPhase(new BuboInstrumentationHighTierPhase());
         }
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
@@ -121,10 +118,6 @@ public class HighTier extends BaseTier<HighTierContext> {
             appendPhase(new ReadEliminationPhase(canonicalizer));
         }
         appendPhase(new BoxNodeOptimizationPhase(canonicalizer));
-        // if (GraalOptions.EnableProfiler.getValue(options)) {
-        //     appendPhase(new CustomInstrumentationPhase());
-        // }
-        //appendPhase(new CustomInstrumentationLoweringPhase(canonicalizer, true));
 
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }

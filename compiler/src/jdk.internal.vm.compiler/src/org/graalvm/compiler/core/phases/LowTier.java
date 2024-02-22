@@ -34,8 +34,8 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.PlaceholderPhase;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.phases.common.CustomLateLowPhase;
-import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
+import org.graalvm.compiler.phases.common.BuboInstrumentationLowTierPhase;
+import org.graalvm.compiler.phases.common.BuboInstrumentationLoweringPhase;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
 import org.graalvm.compiler.phases.common.ExpandLogicPhase;
 import org.graalvm.compiler.phases.common.FinalCanonicalizerPhase;
@@ -47,7 +47,6 @@ import org.graalvm.compiler.phases.common.PropagateDeoptimizeProbabilityPhase;
 import org.graalvm.compiler.phases.schedule.SchedulePhase;
 import org.graalvm.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
-import org.graalvm.compiler.virtual.phases.ea.ReadEliminationPhase;
 
 public class LowTier extends BaseTier<LowTierContext> {
 
@@ -72,8 +71,8 @@ public class LowTier extends BaseTier<LowTierContext> {
         appendPhase(new LowTierLoweringPhase(canonicalizer));
 
         if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new CustomLateLowPhase(null));
-            appendPhase(new CustomLateLoweringPhase(canonicalizer));
+            appendPhase(new BuboInstrumentationLowTierPhase());
+            appendPhase(new BuboInstrumentationLoweringPhase(canonicalizer));
         }
         
         appendPhase(new ExpandLogicPhase(canonicalizer));

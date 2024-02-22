@@ -43,7 +43,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.graalvm.collections.EconomicSet;
+import org.graalvm.compiler.core.common.memory.BarrierType;
+import org.graalvm.compiler.core.common.memory.MemoryOrderMode;
 import org.graalvm.compiler.core.common.type.StampFactory;
+import org.graalvm.compiler.core.common.type.TypeReference;
 import org.graalvm.compiler.debug.CounterKey;
 import org.graalvm.compiler.debug.DebugCloseable;
 import org.graalvm.compiler.debug.DebugContext;
@@ -72,6 +75,7 @@ import org.graalvm.compiler.nodes.GraphState.StageFlag;
 import org.graalvm.compiler.nodes.GuardNode;
 import org.graalvm.compiler.nodes.LogicNode;
 import org.graalvm.compiler.nodes.LoopExitNode;
+import org.graalvm.compiler.nodes.NamedLocationIdentity;
 import org.graalvm.compiler.nodes.PhiNode;
 import org.graalvm.compiler.nodes.ProxyNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
@@ -80,21 +84,33 @@ import org.graalvm.compiler.nodes.UnreachableBeginNode;
 import org.graalvm.compiler.nodes.ValueNode;
 import org.graalvm.compiler.nodes.WithExceptionNode;
 import org.graalvm.compiler.nodes.calc.FloatingNode;
+import org.graalvm.compiler.nodes.calc.IsNullNode;
 import org.graalvm.compiler.nodes.cfg.HIRBlock;
 import org.graalvm.compiler.nodes.extended.AnchoringNode;
+import org.graalvm.compiler.nodes.extended.BranchProbabilityNode;
 import org.graalvm.compiler.nodes.extended.ForeignCall;
 import org.graalvm.compiler.nodes.extended.GuardedNode;
 import org.graalvm.compiler.nodes.extended.GuardingNode;
+import org.graalvm.compiler.nodes.extended.JavaReadNode;
+import org.graalvm.compiler.nodes.extended.JavaWriteNode;
+import org.graalvm.compiler.nodes.java.InstanceOfNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
+import org.graalvm.compiler.nodes.java.LoadIndexedNode;
+import org.graalvm.compiler.nodes.java.StoreFieldNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.nodes.memory.MemoryAccess;
 import org.graalvm.compiler.nodes.memory.MemoryKill;
 import org.graalvm.compiler.nodes.memory.MemoryMapNode;
 import org.graalvm.compiler.nodes.memory.MultiMemoryKill;
 import org.graalvm.compiler.nodes.memory.SideEffectFreeWriteNode;
+import org.graalvm.compiler.nodes.memory.WriteNode;
+import org.graalvm.compiler.nodes.memory.address.AddressNode;
 import org.graalvm.compiler.nodes.memory.SingleMemoryKill;
 import org.graalvm.compiler.nodes.spi.CoreProviders;
 import org.graalvm.compiler.nodes.spi.CoreProvidersDelegate;
 import org.graalvm.compiler.nodes.spi.Lowerable;
 import org.graalvm.compiler.nodes.spi.LoweringTool;
+import org.graalvm.compiler.nodes.type.StampTool;
 import org.graalvm.compiler.nodes.virtual.CommitAllocationNode;
 import org.graalvm.compiler.options.Option;
 import org.graalvm.compiler.options.OptionKey;
@@ -103,26 +119,31 @@ import org.graalvm.compiler.options.OptionValues;
 import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.common.util.EconomicSetNodeEventListener;
 import org.graalvm.compiler.phases.schedule.SchedulePhase;
+import org.graalvm.compiler.replacements.DefaultJavaLoweringProvider;
+import org.graalvm.compiler.replacements.SnippetCounterNode;
+import org.graalvm.compiler.replacements.nodes.LogNode;
 import org.graalvm.word.LocationIdentity;
 
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.SpeculationLog.Speculation;
 
 /**
  * Adds CustomInstrumentation to loops.
  */
-public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
+public class BuboInstrumentationLoweringPhase extends LoweringPhase  {
 
 
 
-    public CustomInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer, boolean lowerOptimizableMacroNodes) {
-        super(canonicalizer, LoweringTool.StandardLoweringStage.HIGH_TIER, lowerOptimizableMacroNodes, StageFlag.CUSTOMINSTRUMENTATION_TIER);
+    public BuboInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer, boolean lowerOptimizableMacroNodes) {
+        super(canonicalizer, LoweringTool.StandardLoweringStage.LOW_TIER, lowerOptimizableMacroNodes, StageFlag.CUSTOMINSTRUMENTATION_TIER);
     }
 
-    public CustomInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer) {
-        super(canonicalizer, LoweringTool.StandardLoweringStage.HIGH_TIER, StageFlag.CUSTOMINSTRUMENTATION_TIER);
+    public BuboInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer) {
+        super(canonicalizer, LoweringTool.StandardLoweringStage.LOW_TIER, StageFlag.CUSTOMINSTRUMENTATION_TIER);
     }
 
     private enum LoweringMode {
@@ -140,38 +161,21 @@ public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
     @SuppressWarnings("try")
     private void lower(StructuredGraph graph, CoreProviders context, LoweringMode mode) {
         final LoweringToolImpl loweringTool = new LoweringToolImpl(context, null, null, null, null);
-            
-        for (Node node : graph.getNodes()) {
-            if (node instanceof CustomClockLogNode) {
-                CustomClockLogNode clocknode = (CustomClockLogNode) node;
-                clocknode.lower(loweringTool);
+
+            for (Node node : graph.getNodes().filter(JavaReadNode.class)) {
+                JavaReadNode logNode = (JavaReadNode) node;
+                context.getLowerer().lower(logNode, loweringTool);
             }
-         }          
-        }
+
+            for (Node node : graph.getNodes().filter(JavaWriteNode.class)) {
+                JavaWriteNode logNode = (JavaWriteNode) node;
+                logNode.lower(loweringTool);
+            }
 
 
-        // boolean immutableSchedule = mode == LoweringMode.VERIFY_LOWERING;
-        // OptionValues options = graph.getOptions();
-        // new SchedulePhase(immutableSchedule, options).apply(graph, context);
-
-        // if (Options.PrintLoweringScheduleToTTY.getValue(graph.getOptions())) {
-        //     TTY.printf("%s%n", graph.getLastSchedule().print());
-        // }
-
-        // EconomicSetNodeEventListener listener = new EconomicSetNodeEventListener();
-        // try (Graph.NodeEventScope nes = graph.trackNodeEvents(listener)) {
-        //     ScheduleResult schedule = graph.getLastSchedule();
-        //     schedule.getCFG().computePostdominators();
-        //     HIRBlock startBlock = schedule.getCFG().getStartBlock();
-        //     ProcessFrame rootFrame = new ProcessFrame(context, startBlock, graph.createNodeBitMap(), startBlock.getBeginNode(), null, schedule);
-        //     LoweringPhase.processBlock(rootFrame);
-        // }
-
-        // if (!listener.getNodes().isEmpty()) {
-        //     //canonicalizer.applyIncremental(graph, context, listener.getNodes()); // lets hope this is not important
-        // }
-        // assert graph.verify();
-    //}
+         }
+         
+        
 
 
     /**
@@ -193,55 +197,4 @@ public class CustomInstrumentationLoweringPhase extends LoweringPhase  {
                         graph.getNewNodes(expectedMark).snapshot();
         return true;
     }
-
-    // private class ProcessFrame extends Frame<ProcessFrame> {
-    //     private final NodeBitMap activeGuards;
-    //     private AnchoringNode anchor;
-    //     private final ScheduleResult schedule;
-    //     private final CoreProviders context;
-
-    //     ProcessFrame(CoreProviders context, HIRBlock block, NodeBitMap activeGuards, AnchoringNode anchor, ProcessFrame parent, ScheduleResult schedule) {
-    //         super(block, parent);
-    //         this.context = context;
-    //         this.activeGuards = activeGuards;
-    //         this.anchor = anchor;
-    //         this.schedule = schedule;
-    //     }
-
-    //     @Override
-    //     public void preprocess() {
-    //         this.anchor = process(context, block, activeGuards, anchor, schedule);
-    //     }
-
-    //     @Override
-    //     public ProcessFrame enter(HIRBlock b) {
-    //         return new ProcessFrame(context, b, activeGuards, b.getBeginNode(), this, schedule);
-    //     }
-
-    //     @Override
-    //     public Frame<?> enterAlwaysReached(HIRBlock b) {
-    //         AnchoringNode newAnchor = anchor;
-    //         if (parent != null && b.getLoop() != parent.block.getLoop() && !b.isLoopHeader()) {
-    //             // We are exiting a loop => cannot reuse the anchor without inserting loop
-    //             // proxies.
-    //             newAnchor = b.getBeginNode();
-    //         }
-    //         return new ProcessFrame(context, b, activeGuards, newAnchor, this, schedule);
-    //     }
-
-    //     @Override
-    //     public void postprocess() {
-    //         if (anchor == block.getBeginNode() && OptEliminateGuards.getValue(activeGuards.graph().getOptions())) {
-    //             for (GuardNode guard : anchor.asNode().usages().filter(GuardNode.class)) {
-    //                 if (activeGuards.isMarkedAndGrow(guard)) {
-    //                     activeGuards.clear(guard);
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    
-
-
 }

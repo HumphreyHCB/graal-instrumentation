@@ -25,9 +25,6 @@
 package org.graalvm.compiler.core.phases;
 
 import org.graalvm.compiler.phases.common.CanonicalizerPhase;
-import org.graalvm.compiler.phases.common.CustomLateHighPhase;
-import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
-import org.graalvm.compiler.phases.common.CustomLateMidPhase;
 import org.graalvm.compiler.phases.common.HighTierLoweringPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 
@@ -37,10 +34,7 @@ public class EconomyHighTier extends BaseTier<HighTierContext> {
     public EconomyHighTier() {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
-        appendPhase(new CustomLateHighPhase(null));
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
-        //appendPhase(new CustomLateHighPhase(null));
-        //appendPhase(new CustomLateLoweringPhase(canonicalizer));
     }
 }
 

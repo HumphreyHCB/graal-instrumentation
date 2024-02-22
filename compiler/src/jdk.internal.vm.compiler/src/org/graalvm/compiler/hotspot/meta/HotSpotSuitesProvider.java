@@ -37,7 +37,6 @@ import org.graalvm.compiler.hotspot.lir.VerifyMaxRegisterSizePhase;
 import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.java.SuitesProviderBase;
 import org.graalvm.compiler.lir.phases.LIRSuites;
-import org.graalvm.compiler.nodes.CustomClockLogNode;
 import org.graalvm.compiler.nodes.EncodedGraph;
 import org.graalvm.compiler.nodes.GraphEncoder;
 import org.graalvm.compiler.nodes.GraphState;
@@ -50,12 +49,6 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.AddressLoweringPhase;
 import org.graalvm.compiler.phases.common.BarrierSetVerificationPhase;
-import org.graalvm.compiler.phases.common.CustomInstrumentationPhase;
-import org.graalvm.compiler.phases.common.CustomLateHighPhase;
-import org.graalvm.compiler.phases.common.CustomLateLowPhase;
-import org.graalvm.compiler.phases.common.CustomLateLoweringPhase;
-import org.graalvm.compiler.phases.common.CustomLateMidPhase;
-import org.graalvm.compiler.phases.common.LowTierLoweringPhase;
 import org.graalvm.compiler.phases.common.UseTrappingNullChecksPhase;
 import org.graalvm.compiler.phases.common.WriteBarrierAdditionPhase;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
@@ -63,12 +56,8 @@ import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.Suites;
 import org.graalvm.compiler.phases.tiers.SuitesCreator;
-import org.graalvm.compiler.replacements.GraphKit;
 import org.graalvm.compiler.replacements.SnippetCounter.Group;
-import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
-
 import jdk.vm.ci.code.Architecture;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
  * HotSpot implementation of {@link SuitesCreator}.

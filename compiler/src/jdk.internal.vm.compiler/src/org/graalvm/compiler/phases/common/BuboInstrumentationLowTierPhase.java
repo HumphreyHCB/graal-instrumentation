@@ -122,9 +122,9 @@ import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.JavaConstant;
 
 /**
- * Adds CustomInstrumentation to loops.
+ * Adds Instrumentation to the start and end of all method compilations.
  */
-public class CustomLateLowPhase extends BasePhase<LowTierContext> {
+public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
     @Override
     public boolean checkContract() {
@@ -139,10 +139,8 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
         return ALWAYS_APPLICABLE;
     }
 
-    Group group;
 
-    public CustomLateLowPhase(Group group) {
-        this.group = group;
+    public BuboInstrumentationLowTierPhase() {
     }
 
     @Override
@@ -150,6 +148,8 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
     protected void run(StructuredGraph graph, LowTierContext context) {
         try {
 
+
+            // find the address node added in the high tier phase, using the BuboVoidStamp 
             OffsetAddressNode addressNode = null;
             for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
                 if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
@@ -160,27 +160,35 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
 
             if (addressNode != null) {
 
+                // add the starting ForeignCallNode to the start of the graph
                 ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_NANOS,
                         ValueNode.EMPTY_ARRAY));
                 graph.addAfterFixed(graph.start(), startTime);
 
+                // for each return node 
                 for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
 
                     try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
+
+                        // add the end time call
                         ForeignCallNode endTime = graph
                                 .add(new ForeignCallNode(JAVA_TIME_NANOS, ValueNode.EMPTY_ARRAY));
                         graph.addBeforeFixed(returnNode, endTime);
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
+
+                        // read the current value store in the array index
                         JavaReadNode readCurrentValue = graph
                                 .add(new JavaReadNode(JavaKind.Long, addressNode,
                                         NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
                         graph.addAfterFixed(endTime, readCurrentValue);
 
+                        // add the store time with the new time
                         AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
+                        // write this value back
                         JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
                                 addressNode,
                                 NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
@@ -202,104 +210,6 @@ public class CustomLateLowPhase extends BasePhase<LowTierContext> {
             System.out.print("---------------------------------------------------------------------------");
         }
 
-    }
-
-    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, int arrayBaseOffset,
-            JavaKind elementKind, ValueNode index, TargetDescription target, MetaAccessProvider metaAccess) {
-        ValueNode wordIndex;
-        if (target.wordSize > 4) {
-            wordIndex = graph.unique(new SignExtendNode(index, target.wordSize * 8));
-        } else {
-            assert target.wordSize == 4 : "unsupported word size";
-            wordIndex = index;
-        }
-        int shift = CodeUtil.log2(metaAccess.getArrayIndexScale(elementKind));
-        ValueNode scaledIndex = graph.unique(new LeftShiftNode(wordIndex, ConstantNode.forInt(shift, graph)));
-        ValueNode offset = graph.unique(
-                new AddNode(scaledIndex, ConstantNode.forIntegerKind(target.wordJavaKind, arrayBaseOffset, graph)));
-        return graph.unique(new OffsetAddressNode(array, offset));
-    }
-
-    public AddressNode createOffsetAddress(StructuredGraph graph, ValueNode object, long offset,
-            TargetDescription target) {
-        ValueNode o = ConstantNode.forIntegerKind(target.wordJavaKind, offset, graph);
-        return graph.unique(new OffsetAddressNode(object, o));
-    }
-
-    public static final IntegerStamp POSITIVE_ARRAY_INDEX_STAMP = IntegerStamp.create(32, 0, Integer.MAX_VALUE - 1);
-
-    /**
-     * Create a PiNode on the index proving that the index is positive. On some
-     * platforms this is
-     * important to allow the index to be used as an int in the address mode.
-     */
-    protected ValueNode createPositiveIndex(StructuredGraph graph, ValueNode index, GuardingNode boundsCheck) {
-        return graph.addOrUnique(
-                PiNode.create(index, POSITIVE_ARRAY_INDEX_STAMP, boundsCheck != null ? boundsCheck.asNode() : null));
-    }
-
-    protected void lowerJavaWriteNode(JavaWriteNode write) {
-        StructuredGraph graph = write.graph();
-        ValueNode value = implicitStoreConvert(graph, write.getWriteKind(), write.value(), write.isCompressible());
-        WriteNode memoryWrite;
-        if (write.hasSideEffect()) {
-            memoryWrite = graph.add(new WriteNode(write.getAddress(), write.getKilledLocationIdentity(), value,
-                    write.getBarrierType(), write.getMemoryOrder()));
-        } else {
-            assert !write.ordersMemoryAccesses();
-            memoryWrite = graph.add(new SideEffectFreeWriteNode(write.getAddress(), write.getKilledLocationIdentity(),
-                    value, write.getBarrierType()));
-        }
-        memoryWrite.setStateAfter(write.stateAfter());
-        graph.replaceFixedWithFixed(write, memoryWrite);
-        memoryWrite.setGuard(write.getGuard());
-    }
-
-    public final ValueNode implicitStoreConvert(StructuredGraph graph, JavaKind kind, ValueNode value) {
-        return implicitStoreConvert(graph, kind, value, true);
-    }
-
-    public ValueNode implicitStoreConvert(JavaKind kind, ValueNode value) {
-        return implicitStoreConvert(kind, value, true);
-    }
-
-    protected final ValueNode implicitStoreConvert(StructuredGraph graph, JavaKind kind, ValueNode value,
-            boolean compressible) {
-        ValueNode ret = implicitStoreConvert(kind, value, compressible);
-        if (!ret.isAlive()) {
-            ret = graph.addOrUnique(ret);
-        }
-        return ret;
-    }
-
-    /**
-     * @param compressible whether the covert should be compressible
-     */
-    protected ValueNode implicitStoreConvert(JavaKind kind, ValueNode value, boolean compressible) {
-        // if (useCompressedOops(kind, compressible)) {
-        // return newCompressionNode(CompressionOp.Compress, value);
-        // }
-        switch (kind) {
-            case Boolean:
-            case Byte:
-                return new NarrowNode(value, 8);
-            case Char:
-            case Short:
-                return new NarrowNode(value, 16);
-        }
-        return value;
-    }
-
-    protected void lowerIndexAddressNode(IndexAddressNode indexAddress, LowTierContext context) {
-        AddressNode lowered = createArrayAddress(indexAddress.graph(), indexAddress.getArray(),
-                indexAddress.getArrayKind(), indexAddress.getElementKind(), indexAddress.getIndex(), context);
-        indexAddress.replaceAndDelete(lowered);
-    }
-
-    public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, JavaKind arrayKind,
-            JavaKind elementKind, ValueNode index, LowTierContext context) {
-        int base = context.getMetaAccess().getArrayBaseOffset(arrayKind);
-        return createArrayAddress(graph, array, base, elementKind, index, context.getTarget(), context.getMetaAccess());
     }
 
 }
