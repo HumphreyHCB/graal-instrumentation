@@ -130,7 +130,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             }
 
             ResolvedJavaMethod method = request.getMethod();
-
+            
             if (graalRuntime.isBootstrapping()) {
                 if (DebugOptions.BootstrapInitializeOnly.getValue(initialOptions)) {
                     return HotSpotCompilationRequestResult.failure(String.format("Skip compilation because %s is enabled", DebugOptions.BootstrapInitializeOnly.getName()), true);
@@ -145,7 +145,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             HotSpotCompilationRequest hsRequest = (HotSpotCompilationRequest) request;
             CompilationTask task = new CompilationTask(jvmciRuntime, this, hsRequest, true, shouldRetainLocalVariables(hsRequest.getJvmciEnv()), installAsDefault);
             OptionValues options = task.filterOptions(initialOptions);
-            
+            if (GraalOptions.EnableProfiler.getValue(options)) {
+                addMethodToCache(task.getCompilationIdentifier());   
+            }
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             boolean oneIsolatePerCompilation = Services.IS_IN_NATIVE_IMAGE &&
                             config.getFlag("JVMCIThreadsPerNativeLibraryRuntime", Integer.class, 0) == 1 &&
@@ -161,9 +163,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                                 Activation a = debug.activate()) {
                     r = task.runCompilation(debug);
                 }
-                if (GraalOptions.EnableProfiler.getValue(options)) {
-                    addMethodToCache(task.getCompilationIdentifier());   
-                }
+
                 assert r != null;
                 return r;
             }
@@ -171,11 +171,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
     }
 
     private void addMethodToCache(CompilationIdentifier id){
-        // this would be a good place to do a check for should we instumentat
-
         BuboMethodCache.add(id.toString(Verbosity.ID) + " " + id.toString(Verbosity.NAME));
-
-
     }
 
     private boolean shouldRetainLocalVariables(long envAddress) {
