@@ -24,19 +24,16 @@
  */
 package com.oracle.svm.core.posix.thread;
 
-import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platform.HOSTED_ONLY;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.StackValue;
-import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.nativeimage.c.type.CTypeConversion.CCharPointerHolder;
 import org.graalvm.nativeimage.c.type.VoidPointer;
 import org.graalvm.nativeimage.c.type.WordPointer;
-import org.graalvm.nativeimage.impl.UnmanagedMemorySupport;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
@@ -50,6 +47,8 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredImageSingleton;
 import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
+import com.oracle.svm.core.memory.NativeMemory;
+import com.oracle.svm.core.nmt.NmtCategory;
 import com.oracle.svm.core.posix.PosixUtils;
 import com.oracle.svm.core.posix.headers.Errno;
 import com.oracle.svm.core.posix.headers.Pthread;
@@ -321,7 +320,7 @@ final class PosixParker extends Parker {
         // Allocate mutex and condition in a single step so that they are adjacent in memory.
         UnsignedWord mutexSize = SizeOf.unsigned(pthread_mutex_t.class);
         UnsignedWord condSize = SizeOf.unsigned(pthread_cond_t.class);
-        Pointer memory = UnmanagedMemory.malloc(mutexSize.add(condSize.multiply(2)));
+        Pointer memory = NativeMemory.malloc(mutexSize.add(condSize.multiply(2)), NmtCategory.Threading);
         mutex = (pthread_mutex_t) memory;
         relativeCond = (pthread_cond_t) memory.add(mutexSize);
         absoluteCond = (pthread_cond_t) memory.add(mutexSize).add(condSize);
@@ -354,7 +353,7 @@ final class PosixParker extends Parker {
         }
     }
 
-    @BasedOnJDKFile("src/hotspot/os/posix/os_posix.cpp#L1662-L1738")
+    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-23+10/src/hotspot/os/posix/os_posix.cpp#L1662-L1738")
     private void park0(boolean isAbsolute, long time) {
         int status = Pthread.pthread_mutex_trylock_no_transition(mutex);
         if (status == Errno.EBUSY()) {
@@ -393,7 +392,7 @@ final class PosixParker extends Parker {
     }
 
     @Override
-    @BasedOnJDKFile("src/hotspot/os/posix/os_posix.cpp#L1740-L1763")
+    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-23+10/src/hotspot/os/posix/os_posix.cpp#L1740-L1763")
     protected void unpark() {
         StackOverflowCheck.singleton().makeYellowZoneAvailable();
         try {
@@ -437,7 +436,7 @@ final class PosixParker extends Parker {
 
         status = Pthread.pthread_mutex_destroy(mutex);
         assert status == 0;
-        ImageSingletons.lookup(UnmanagedMemorySupport.class).free(mutex);
+        NativeMemory.free(mutex);
         mutex = WordFactory.nullPointer();
     }
 }
