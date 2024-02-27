@@ -33,6 +33,8 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.PlaceholderPhase;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.common.ExpandLogicPhase;
@@ -70,6 +72,12 @@ public class LowTier extends BaseTier<LowTierContext> {
         }
 
         appendPhase(new LowTierLoweringPhase(canonicalizerWithGVN));
+
+
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            appendPhase(new BuboInstrumentationLowTierPhase());
+            appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
+        }
 
         appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 

@@ -119,6 +119,9 @@ public class StampFactory {
     public static Stamp forVoid() {
         return VoidStamp.getInstance();
     }
+    public static Stamp forBuboVoid() {
+        return BuboVoidStamp.getInstance();
+    }
 
     public static Stamp intValue() {
         return forKind(JavaKind.Int);
