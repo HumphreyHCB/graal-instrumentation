@@ -1,10 +1,10 @@
 #! /bin/bash
 
-
+#/home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/bin
 mx --java-home \
- /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
+ /home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/ \
  vm  \
- -Dgraal.Dump=:2 -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true -Dgraal.EnableProfiler=true \
+ -Dgraal.EnableProfiler=true \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose \
   -XX:+UseJVMCICompiler  \
