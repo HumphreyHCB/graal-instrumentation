@@ -25,6 +25,7 @@
 package jdk.graal.compiler.phases.common;
 
 import static jdk.graal.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
+import static jdk.graal.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.FAST_JAVA_TIME_MILLIS;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -86,7 +87,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             if (addressNode != null) {
 
                 // add the starting ForeignCallNode to the start of the graph
-                ForeignCallNode startTime = graph.add(new ForeignCallNode(JAVA_TIME_MILLIS,
+                ForeignCallNode startTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS,
                         ValueNode.EMPTY_ARRAY));
                 graph.addAfterFixed(graph.start(), startTime);
 
@@ -98,7 +99,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
                         // add the end time call
                         ForeignCallNode endTime = graph
-                                .add(new ForeignCallNode(JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                                .add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
                         graph.addBeforeFixed(returnNode, endTime);
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
