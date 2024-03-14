@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugCloseable;
+import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.NodeView;
@@ -87,8 +88,8 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             if (addressNode != null) {
 
                 // add the starting ForeignCallNode to the start of the graph
-                ForeignCallNode startTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS,
-                        ValueNode.EMPTY_ARRAY));
+                //ForeignCallNode startTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                ClockTimeNode startTime = graph.add(new ClockTimeNode());
                 graph.addAfterFixed(graph.start(), startTime);
 
                 // for each return node 
@@ -98,8 +99,8 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
 
                         // add the end time call
-                        ForeignCallNode endTime = graph
-                                .add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                        //ForeignCallNode endTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                        ClockTimeNode endTime = graph.add(new ClockTimeNode());
                         graph.addBeforeFixed(returnNode, endTime);
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
