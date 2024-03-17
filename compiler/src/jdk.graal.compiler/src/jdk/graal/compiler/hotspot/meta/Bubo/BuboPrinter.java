@@ -76,7 +76,7 @@ public class BuboPrinter {
             }
 
             System.out.print(
-                    "\n Percentage {" + bars + spaces + "} " + round(((float) data[index] / sum) * 100, 2) + "% ");
+                    "\n Percentage {" + bars + spaces + "} " + (((float) data[index] / sum) * 100) + "% ");
             System.err.print("Method : " + methods.get(index));
             counter++;
         }
@@ -127,6 +127,9 @@ public class BuboPrinter {
     }
 
     public static BigDecimal round(float d, int decimalPlace) {
+        if (d == 0 || d == 0.0f) {
+            return BigDecimal.ZERO; // Return zero if the input is exactly 0
+        }
         BigDecimal bd = new BigDecimal(Float.toString(d));
         bd = bd.setScale(decimalPlace, RoundingMode.HALF_UP);
         return bd;
