@@ -24,8 +24,6 @@
  */
 package jdk.graal.compiler.phases.common;
 
-import static jdk.graal.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.JAVA_TIME_MILLIS;
-import static jdk.graal.compiler.hotspot.meta.HotSpotHostForeignCallsProvider.FAST_JAVA_TIME_MILLIS;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -36,13 +34,11 @@ import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.NodeView;
 import jdk.graal.compiler.nodes.calc.AddNode;
 import jdk.graal.compiler.nodes.calc.SubNode;
-import jdk.graal.compiler.nodes.extended.ForeignCallNode;
 import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.nodes.ReturnNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
-import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
 import jdk.vm.ci.meta.JavaKind;
@@ -102,6 +98,8 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         //ForeignCallNode endTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
                         ClockTimeNode endTime = graph.add(new ClockTimeNode());
                         graph.addBeforeFixed(returnNode, endTime);
+
+                        //ValueNode dummy = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forKind(JavaKind.Int)));
 
                         SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
