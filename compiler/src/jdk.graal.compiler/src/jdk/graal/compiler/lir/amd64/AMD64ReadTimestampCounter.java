@@ -37,7 +37,7 @@ import jdk.vm.ci.meta.AllocatableValue;
 /**
  * AMD64 rdtsc operation. The timestamp result is in EDX:EAX.
  */
-@Opcode("RDTSCP")
+@Opcode("RDTSC")
 public class AMD64ReadTimestampCounter extends AMD64LIRInstruction {
     public static final LIRInstructionClass<AMD64ReadTimestampCounter> TYPE = LIRInstructionClass.create(AMD64ReadTimestampCounter.class);
 
@@ -46,9 +46,8 @@ public class AMD64ReadTimestampCounter extends AMD64LIRInstruction {
 
     public AMD64ReadTimestampCounter() {
         super(TYPE);
-
-        this.highResult = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.DWORD));
-        this.lowResult = AMD64.rax.asValue(LIRKind.value(AMD64Kind.DWORD));
+         this.highResult = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.DWORD));
+         this.lowResult = AMD64.rax.asValue(LIRKind.value(AMD64Kind.DWORD));
     }
 
     public AllocatableValue getHighResult() {
@@ -62,6 +61,6 @@ public class AMD64ReadTimestampCounter extends AMD64LIRInstruction {
 
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
-        masm.rdtsc();;
+        masm.rdtsc();
     }
 }
