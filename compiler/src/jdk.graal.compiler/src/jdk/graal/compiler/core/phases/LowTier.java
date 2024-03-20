@@ -75,7 +75,7 @@ public class LowTier extends BaseTier<LowTierContext> {
 
 
         if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new BuboInstrumentationLowTierPhase());
+            appendPhase(new BuboInstrumentationLowTierPhase(options));
             appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
         }
 

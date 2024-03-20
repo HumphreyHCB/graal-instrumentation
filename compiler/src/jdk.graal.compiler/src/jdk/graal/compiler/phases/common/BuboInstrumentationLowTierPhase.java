@@ -37,11 +37,13 @@ import jdk.graal.compiler.nodes.calc.SubNode;
 import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
+import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
 import jdk.vm.ci.meta.JavaKind;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 
 /**
@@ -61,9 +63,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
     public Optional<NotApplicable> notApplicableTo(GraphState graphState) {
         return ALWAYS_APPLICABLE;
     }
-
-
-    public BuboInstrumentationLowTierPhase() {
+    private OptionValues options;
+    public BuboInstrumentationLowTierPhase(OptionValues options) {
+        this.options = options;
     }
 
     @Override
@@ -71,59 +73,61 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
     protected void run(StructuredGraph graph, LowTierContext context) {
         try {
 
+            if (graph.getNodeCount() >= GraalOptions.MinGraphSize.getValue(options)) {
 
-            // find the address node added in the high tier phase, using the BuboVoidStamp 
-            OffsetAddressNode addressNode = null;
-            for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
-                if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-                    addressNode = node;
-                    continue;
+                // find the address node added in the high tier phase, using the BuboVoidStamp
+                OffsetAddressNode addressNode = null;
+                for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
+                    if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
+                        addressNode = node;
+                        continue;
+                    }
                 }
-            }
 
-            if (addressNode != null) {
+                if (addressNode != null) {
 
-                // add the starting ForeignCallNode to the start of the graph
-                //ForeignCallNode startTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
-                ClockTimeNode startTime = graph.add(new ClockTimeNode());
-                graph.addAfterFixed(graph.start(), startTime);
+                    // add the starting ForeignCallNode to the start of the graph
+                    // ForeignCallNode startTime = graph.add(new
+                    // ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                    ClockTimeNode startTime = graph.add(new ClockTimeNode());
+                    graph.addAfterFixed(graph.start(), startTime);
 
-                // for each return node 
-                for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
+                    // for each return node
+                    for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
 
-                    try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+                        try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
+                            // add the end time call
+                            // ForeignCallNode endTime = graph.add(new
+                            // ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                            ClockTimeNode endTime = graph.add(new ClockTimeNode());
+                            graph.addBeforeFixed(returnNode, endTime);
 
-                        // add the end time call
-                        //ForeignCallNode endTime = graph.add(new ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
-                        ClockTimeNode endTime = graph.add(new ClockTimeNode());
-                        graph.addBeforeFixed(returnNode, endTime);
+                            // ValueNode dummy = graph.addWithoutUnique(new
+                            // ConstantNode(JavaConstant.forInt(100), StampFactory.forKind(JavaKind.Int)));
 
-                        //ValueNode dummy = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(100), StampFactory.forKind(JavaKind.Int)));
+                            SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
-                        SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
+                            // read the current value store in the array index
+                            JavaReadNode readCurrentValue = graph
+                                    .add(new JavaReadNode(JavaKind.Long, addressNode,
+                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                            graph.addAfterFixed(endTime, readCurrentValue);
 
+                            // add the store time with the new time
+                            AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
-                        // read the current value store in the array index
-                        JavaReadNode readCurrentValue = graph
-                                .add(new JavaReadNode(JavaKind.Long, addressNode,
-                                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                        graph.addAfterFixed(endTime, readCurrentValue);
+                            // write this value back
+                            JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+                                    addressNode,
+                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+                                    false));
+                            graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                        // add the store time with the new time
-                        AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
-
-                        // write this value back
-                        JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                                addressNode,
-                                NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                                false));
-                        graph.addAfterFixed(readCurrentValue, memoryWrite);
+                        }
 
                     }
-
                 }
-
                 // graph.removeFixed(writeToRemove);
             }
 

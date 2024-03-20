@@ -1,5 +1,6 @@
 package jdk.graal.compiler.nodes;
 import static jdk.graal.compiler.nodeinfo.NodeCycles.CYCLES_2;
+import static jdk.graal.compiler.nodeinfo.NodeCycles.CYCLES_32;
 import static jdk.graal.compiler.nodeinfo.NodeSize.SIZE_1;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -12,7 +13,7 @@ import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
  * The emits a call to RDTSC.
  */
 // @formatter:off
-@NodeInfo(cycles = CYCLES_2,
+@NodeInfo(cycles = CYCLES_32,
           cyclesRationale = "",
           size = SIZE_1)
 // @formatter:on
