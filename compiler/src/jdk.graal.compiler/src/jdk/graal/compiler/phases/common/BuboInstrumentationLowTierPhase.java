@@ -29,6 +29,7 @@ import java.util.Optional;
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.nodes.ClockTimeNode;
+import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.NodeView;
@@ -40,8 +41,11 @@ import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.phases.BasePhase;
+import jdk.graal.compiler.phases.contract.NodeCostUtil;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
+import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
@@ -63,7 +67,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
     public Optional<NotApplicable> notApplicableTo(GraphState graphState) {
         return ALWAYS_APPLICABLE;
     }
+
     private OptionValues options;
+
     public BuboInstrumentationLowTierPhase(OptionValues options) {
         this.options = options;
     }
@@ -73,16 +79,16 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
     protected void run(StructuredGraph graph, LowTierContext context) {
         try {
 
-            if (graph.getNodeCount() >= GraalOptions.MinGraphSize.getValue(options)) {
-
-                // find the address node added in the high tier phase, using the BuboVoidStamp
-                OffsetAddressNode addressNode = null;
-                for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
-                    if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-                        addressNode = node;
-                        continue;
-                    }
+            // find the address node added in the high tier phase, using the BuboVoidStamp
+            OffsetAddressNode addressNode = null;
+            for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
+                if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
+                    addressNode = node;
+                    continue;
                 }
+            }
+            double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
+            if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
                 if (addressNode != null) {
 
@@ -129,6 +135,28 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                     }
                 }
                 // graph.removeFixed(writeToRemove);
+            } else {
+                if (addressNode != null) {
+                // the grapgh is too expensive to fully instrument collecting time
+                // so instead we will get amout of cycles everytime it actvates
+                
+                // read the current value store in the array index
+                JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, addressNode,
+                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                graph.addAfterFixed(graph.start(), readCurrentValue);
+
+                ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
+
+                // add the estimatedCost curent value in the array
+                AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
+
+                // write this value back
+                JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+                        addressNode,
+                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+                        false));
+                graph.addAfterFixed(readCurrentValue, memoryWrite);
+                }
             }
 
         } catch (Exception e) {
