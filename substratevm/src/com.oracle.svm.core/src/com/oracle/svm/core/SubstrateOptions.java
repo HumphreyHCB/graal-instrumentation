@@ -505,7 +505,7 @@ public class SubstrateOptions {
     @Option(help = "Silence build output", type = OptionType.User)//
     public static final HostedOptionKey<Boolean> BuildOutputSilent = new HostedOptionKey<>(false);
 
-    @Option(help = "Prefix build output with '<pid>:<image name>'", type = OptionType.User)//
+    @Option(help = "Deprecated, option no longer has any effect.", type = OptionType.User, deprecated = true, deprecationMessage = "It no longer has any effect, and no replacement is available")//
     public static final HostedOptionKey<Boolean> BuildOutputPrefix = new HostedOptionKey<>(false);
 
     @Option(help = "Color build output (enabled by default if colors are supported by terminal)", type = OptionType.User, deprecated = true, deprecationMessage = "Please use '--color' instead.")//
@@ -1056,7 +1056,7 @@ public class SubstrateOptions {
     @Option(help = "Enable and disable normal processing of flags relating to experimental options.", type = OptionType.Expert, stability = OptionStability.EXPERIMENTAL) //
     public static final HostedOptionKey<Boolean> UnlockExperimentalVMOptions = new HostedOptionKey<>(false);
 
-    @Option(help = "Force using legacy method handle intrinsics.", type = Expert, deprecated = true, deprecationMessage = "This option was introduced to simplify migration to GraalVM 23.1 and will be removed in a future release") //
+    @Option(help = "Deprecated, option no longer has any effect.", deprecated = true, deprecationMessage = "It no longer has any effect, and no replacement is available")//
     public static final HostedOptionKey<Boolean> UseOldMethodHandleIntrinsics = new HostedOptionKey<>(false);
 
     @Option(help = "Include all classes, methods, and fields from given modules", type = OptionType.Debug) //
@@ -1066,7 +1066,7 @@ public class SubstrateOptions {
     public static final HostedOptionKey<LocatableMultiOptionValue.Strings> IncludeAllFromPath = new HostedOptionKey<>(LocatableMultiOptionValue.Strings.build());
 
     public static boolean includeAll() {
-        return IncludeAllFromPath.hasBeenSet() || IncludeAllFromPath.hasBeenSet();
+        return IncludeAllFromModule.hasBeenSet() || IncludeAllFromPath.hasBeenSet();
     }
 
     @Option(help = "Run layered image base layer open-world analysis. Includes all public types and methods that can be reached using normal Java access rules.")//
