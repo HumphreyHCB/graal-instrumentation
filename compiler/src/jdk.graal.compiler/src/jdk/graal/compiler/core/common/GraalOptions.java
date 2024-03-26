@@ -308,4 +308,11 @@ public final class GraalOptions {
 
     @Option(help = "AMD64 only: Replace forward jumps (jmp, jcc) with equivalent but smaller instructions if the actual jump displacement fits in one byte.", type = OptionType.Expert)
     public static final OptionKey<Boolean> OptimizeLongJumps = new OptionKey<>(false);
+  
+    @Option(help = "Enable Instrumentation to collect profile information", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableProfiler = new OptionKey<>(false);
+
+    @Option(help = "Min graph size to start instrumenting", type = OptionType.Debug)
+    public static final OptionKey<Integer> MinGraphSize = new OptionKey<>(1);
+  
 }
