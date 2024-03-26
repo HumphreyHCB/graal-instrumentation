@@ -77,6 +77,17 @@ public class VMThreadFeature implements InternalFeature {
     @Override
     public void duringSetup(DuringSetupAccess config) {
         ImageSingletons.add(VMThreadLocalSupport.class, threadLocalSupport);
+        /*
+         * While technically threadLocalCollector does not replace an object, it does collect
+         * information needed by the invocation plugin used to create VMThreadLocalAccess nodes (and
+         * also remove the original FastThreadLocal constant from the graph).
+         *
+         * It would be possible to create VMThreadLocalAccess nodes via a canonicalization phase
+         * after analysis has completed, which would have the potential benefit of reducing the
+         * number of thread locals instantiated; however, this requires careful coordination with
+         * snippet graphs, especially for runtime compilation, and likely the added complexity would
+         * outweigh the benefits.
+         */
         config.registerObjectReplacer(threadLocalCollector);
     }
 
@@ -175,7 +186,7 @@ public class VMThreadFeature implements InternalFeature {
     }
 
     private boolean handleGet(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode threadNode, boolean isVolatile) {
-        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get());
+        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get(true));
 
         LoadVMThreadLocalNode node = new LoadVMThreadLocalNode(b.getMetaAccess(), threadLocalInfo, threadNode, BarrierType.NONE, isVolatile ? MemoryOrderMode.VOLATILE : MemoryOrderMode.PLAIN);
         b.addPush(targetMethod.getSignature().getReturnKind(), node);
@@ -184,7 +195,7 @@ public class VMThreadFeature implements InternalFeature {
     }
 
     private boolean handleSet(GraphBuilderContext b, Receiver receiver, ValueNode threadNode, ValueNode valueNode, boolean isVolatile) {
-        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get());
+        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get(true));
 
         StoreVMThreadLocalNode store = b.add(new StoreVMThreadLocalNode(threadLocalInfo, threadNode, valueNode, BarrierType.NONE, isVolatile ? MemoryOrderMode.VOLATILE : MemoryOrderMode.PLAIN));
         assert store.stateAfter() != null : store + " has no state after with graph builder context " + b;
@@ -193,7 +204,7 @@ public class VMThreadFeature implements InternalFeature {
 
     private boolean handleCompareAndSet(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode threadNode, ValueNode expect,
                     ValueNode update) {
-        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get());
+        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get(true));
         CompareAndSetVMThreadLocalNode cas = new CompareAndSetVMThreadLocalNode(threadLocalInfo, threadNode, expect, update);
         b.addPush(targetMethod.getSignature().getReturnKind(), cas);
         assert cas.stateAfter() != null : cas + " has no state after with graph builder context " + b;
@@ -201,7 +212,7 @@ public class VMThreadFeature implements InternalFeature {
     }
 
     private boolean handleGetAddress(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode threadNode) {
-        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get());
+        VMThreadLocalInfo threadLocalInfo = threadLocalCollector.findInfo(b, receiver.get(true));
         b.addPush(targetMethod.getSignature().getReturnKind(), new AddressOfVMThreadLocalNode(threadLocalInfo, threadNode));
         return true;
     }

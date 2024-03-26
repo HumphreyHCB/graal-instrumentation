@@ -58,9 +58,7 @@ import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
-import jdk.graal.compiler.core.common.type.TypedConstant;
 import jdk.graal.compiler.debug.GraalError;
-import jdk.graal.compiler.nodes.spi.IdentityHashCodeProvider;
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
@@ -90,15 +88,13 @@ public abstract class ImageHeapScanner {
     protected final HostedValuesProvider hostedValuesProvider;
     protected final ConstantReflectionProvider hostedConstantReflection;
     protected final SnippetReflectionProvider hostedSnippetReflection;
-    private final IdentityHashCodeProvider identityHashCodeProvider;
 
     protected ObjectScanningObserver scanningObserver;
 
     private boolean sealed;
 
     public ImageHeapScanner(BigBang bb, ImageHeap heap, AnalysisMetaAccess aMetaAccess, SnippetReflectionProvider aSnippetReflection,
-                    ConstantReflectionProvider aConstantReflection, ObjectScanningObserver aScanningObserver, HostedValuesProvider aHostedValuesProvider,
-                    IdentityHashCodeProvider identityHashCodeProvider) {
+                    ConstantReflectionProvider aConstantReflection, ObjectScanningObserver aScanningObserver, HostedValuesProvider aHostedValuesProvider) {
         this.bb = bb;
         imageHeap = heap;
         metaAccess = aMetaAccess;
@@ -108,9 +104,12 @@ public abstract class ImageHeapScanner {
         constantReflection = aConstantReflection;
         hostedValuesProvider = aHostedValuesProvider;
         scanningObserver = aScanningObserver;
-        this.identityHashCodeProvider = identityHashCodeProvider;
         hostedConstantReflection = GraalAccess.getOriginalProviders().getConstantReflection();
         hostedSnippetReflection = GraalAccess.getOriginalProviders().getSnippetReflection();
+    }
+
+    public ConstantReflectionProvider getConstantReflection() {
+        return constantReflection;
     }
 
     public void seal() {
@@ -186,10 +185,17 @@ public abstract class ImageHeapScanner {
     }
 
     void markTypeInstantiated(AnalysisType type, ScanReason reason) {
-        if (universe.sealed() && !type.isReachable()) {
-            throw AnalysisError.shouldNotReachHere("Universe is sealed. New type reachable: " + type.toJavaName());
+        if (universe.sealed()) {
+            AnalysisError.guarantee(type.isReachable(), "The type %s should have been reachable during analysis.", type);
+            AnalysisError.guarantee(type.isInstantiated(), "The type %s should have been instantiated during analysis.", type);
+        } else {
+            /*
+             * If the type was registered as allocated, but not registered as in heap,
+             * registerTypeAsInHeap must not be executed after the universe is sealed as the
+             * contextInsensitiveAnalysisObject was cleaned up.
+             */
+            universe.getBigbang().registerTypeAsInHeap(type, reason);
         }
-        universe.getBigbang().registerTypeAsInHeap(type, reason);
     }
 
     public JavaConstant getImageHeapConstant(JavaConstant constant) {
@@ -273,12 +279,12 @@ public abstract class ImageHeapScanner {
          * Access the constant type after the replacement. Some constants may have types that should
          * not be reachable at run time and thus are replaced.
          */
-        AnalysisType type = metaAccess.lookupJavaType(constant);
+        AnalysisType type = universe.lookup(GraalAccess.getOriginalProviders().getMetaAccess().lookupJavaType(constant));
 
         if (type.isArray()) {
             Integer length = hostedValuesProvider.readArrayLength(constant);
             if (type.getComponentType().isPrimitive()) {
-                return new ImageHeapPrimitiveArray(type, constant, snippetReflection.asObject(Object.class, constant), length, getIdentityHashCode(constant, identityHashCodeProvider));
+                return new ImageHeapPrimitiveArray(type, constant, snippetReflection.asObject(Object.class, constant), length);
             } else {
                 return createImageHeapObjectArray(constant, type, length, reason);
             }
@@ -288,7 +294,7 @@ public abstract class ImageHeapScanner {
     }
 
     private ImageHeapArray createImageHeapObjectArray(JavaConstant constant, AnalysisType type, int length, ScanReason reason) {
-        ImageHeapObjectArray array = new ImageHeapObjectArray(type, constant, length, getIdentityHashCode(constant, identityHashCodeProvider));
+        ImageHeapObjectArray array = new ImageHeapObjectArray(type, constant, length);
         /* Read hosted array element values only when the array is initialized. */
         array.constantData.hostedValuesReader = new AnalysisFuture<>(() -> {
             checkSealed(reason, "Trying to materialize an ImageHeapObjectArray for %s after the ImageHeapScanner is sealed.", constant);
@@ -310,7 +316,7 @@ public abstract class ImageHeapScanner {
     }
 
     private ImageHeapInstance createImageHeapInstance(JavaConstant constant, AnalysisType type, ScanReason reason) {
-        ImageHeapInstance instance = new ImageHeapInstance(type, constant, getIdentityHashCode(constant, identityHashCodeProvider));
+        ImageHeapInstance instance = new ImageHeapInstance(type, constant);
         /* Read hosted field values only when the receiver is initialized. */
         instance.constantData.hostedValuesReader = new AnalysisFuture<>(() -> {
             checkSealed(reason, "Trying to materialize an ImageHeapInstance for %s after the ImageHeapScanner is sealed.", constant);
@@ -443,8 +449,6 @@ public abstract class ImageHeapScanner {
     private boolean doNotifyAnalysis(AnalysisField field, JavaConstant receiver, JavaConstant fieldValue, ScanReason reason) {
         boolean analysisModified = false;
         if (fieldValue.getJavaKind() == JavaKind.Object && hostVM.isRelocatedPointer(fieldValue)) {
-            /* Ensure the relocatable pointer type is analysed. */
-            ((AnalysisType) ((TypedConstant) fieldValue).getType(metaAccess)).registerAsReachable(reason);
             analysisModified = scanningObserver.forRelocatedPointerFieldValue(receiver, field, fieldValue, reason);
         } else if (fieldValue.isNull()) {
             analysisModified = scanningObserver.forNullFieldValue(receiver, field, reason);
@@ -499,7 +503,7 @@ public abstract class ImageHeapScanner {
         return analysisModified;
     }
 
-    private JavaConstant markReachable(JavaConstant constant, ScanReason reason) {
+    protected JavaConstant markReachable(JavaConstant constant, ScanReason reason) {
         return markReachable(constant, reason, null);
     }
 
@@ -513,7 +517,7 @@ public abstract class ImageHeapScanner {
     private ImageHeapConstant markReachable(ImageHeapConstant imageHeapConstant, ScanReason reason, Consumer<ScanReason> onAnalysisModified) {
         if (imageHeapConstant.markReachable(reason)) {
             /* Follow all the array elements and reachable field values asynchronously. */
-            postTask(() -> onObjectReachable(imageHeapConstant, reason, onAnalysisModified));
+            maybeRunInExecutor(unused -> onObjectReachable(imageHeapConstant, reason, onAnalysisModified));
         }
         return imageHeapConstant;
     }
@@ -527,7 +531,7 @@ public abstract class ImageHeapScanner {
         /* Simulated constants don't have a backing object and don't need to be processed. */
         if (object != null) {
             try {
-                type.notifyObjectReachable(universe.getConcurrentAnalysisAccess(), object);
+                type.notifyObjectReachable(universe.getConcurrentAnalysisAccess(), object, reason);
             } catch (UnsupportedFeatureException e) {
                 /* Enhance the unsupported feature message with the object trace and rethrow. */
                 StringBuilder backtrace = new StringBuilder();
@@ -687,6 +691,18 @@ public abstract class ImageHeapScanner {
     }
 
     /**
+     * Returns true if the provided {@code object} was seen as reachable by the static analysis.
+     */
+    public boolean isObjectReachable(Object object) {
+        var javaConstant = asConstant(Objects.requireNonNull(object));
+        Object existingTask = imageHeap.getSnapshot(javaConstant);
+        if (existingTask instanceof ImageHeapConstant imageHeapConstant) {
+            return imageHeapConstant.isReachable();
+        }
+        return false;
+    }
+
+    /**
      * Add the object to the image heap and, if the object is a collection, rescan its elements.
      */
     public void rescanObject(Object object) {
@@ -770,19 +786,6 @@ public abstract class ImageHeapScanner {
 
     protected AnalysisField lookupJavaField(String className, String fieldName) {
         return metaAccess.lookupJavaField(ReflectionUtil.lookupField(getClass(className), fieldName));
-    }
-
-    public static int getIdentityHashCode(JavaConstant constant, IdentityHashCodeProvider identityHashCodeProvider) {
-        if (constant != null) {
-            return identityHashCodeProvider.identityHashCode(constant);
-        } else {
-            /*
-             * No backing object in the heap of the image builder VM. We want a "virtual" identity
-             * hash code that has the same properties as the image builder VM, so we use the
-             * identity hash code of a new and otherwise unused object in the image builder VM.
-             */
-            return identityHashCodeProvider.identityHashCode(GraalAccess.getOriginalSnippetReflection().forObject(new Object()));
-        }
     }
 
     /**
