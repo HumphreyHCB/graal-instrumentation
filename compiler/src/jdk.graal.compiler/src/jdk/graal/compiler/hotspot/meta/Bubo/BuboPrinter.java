@@ -1,5 +1,7 @@
 package jdk.graal.compiler.hotspot.meta.Bubo;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -50,7 +52,7 @@ public class BuboPrinter {
             sum += data[index];
             timmings.put(index, data[index]);
         }
-
+        
         timmings = orderDataByTime(timmings);
         int counter = 0;
         String bars = "";
@@ -133,5 +135,27 @@ public class BuboPrinter {
         BigDecimal bd = new BigDecimal(Float.toString(d));
         bd = bd.setScale(decimalPlace, RoundingMode.HALF_UP);
         return bd;
+    }
+
+    public static void addToFile(String line) {
+         String filename = "Incount.txt";
+        String newline = System.getProperty("line.separator"); // Get the system's newline character
+
+        try {
+            // Create a FileWriter object with append mode
+            FileWriter writer = new FileWriter(filename, true);
+            
+            // Append a newline to the file
+            writer.write(newline);
+            writer.write(line);
+            
+            // Close the FileWriter
+            writer.close();
+            
+            System.out.println("Newline appended to the file successfully.");
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e.getMessage());
+        }
+        
     }
 }
