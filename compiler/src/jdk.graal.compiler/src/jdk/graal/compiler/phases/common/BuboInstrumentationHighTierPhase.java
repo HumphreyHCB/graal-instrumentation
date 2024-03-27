@@ -96,13 +96,13 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             // add a dummy read node, this node is not used beyond the adress it use will be use later on in the low teir instrumentation phase
             JavaReadNode memoryRead = graph.add(new JavaReadNode(JavaKind.Long, address,
             NamedLocationIdentity.getArrayLocation(JavaKind.Long), BarrierType.ARRAY, null, false));
-            
             graph.addAfterFixed(readBuffer, memoryRead);
             
             // add a ReachabilityFenceNode this should stop our address from being optmised out
             ValueNode[] list = new ValueNode[]{address};
             ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
             graph.addAfterFixed(memoryRead, fenceNode);
+            fenceNode.setStamp(StampFactory.forBuboVoid());
 
 
         } catch (Exception e) {
@@ -110,6 +110,10 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             // TODO: handle exception
         }
 
+    }
+
+    public static void main(String[] args) {
+        
     }
 
     public AddressNode createArrayAddress(StructuredGraph graph, ValueNode array, int arrayBaseOffset,

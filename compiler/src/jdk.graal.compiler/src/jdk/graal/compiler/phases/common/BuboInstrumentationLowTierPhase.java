@@ -37,6 +37,7 @@ import jdk.graal.compiler.nodes.calc.AddNode;
 import jdk.graal.compiler.nodes.calc.SubNode;
 import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
+import jdk.graal.compiler.nodes.java.ReachabilityFenceNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
@@ -81,9 +82,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
             // find the address node added in the high tier phase, using the BuboVoidStamp
             OffsetAddressNode addressNode = null;
-            for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
+            for (ReachabilityFenceNode node : graph.getNodes().filter(ReachabilityFenceNode.class)) {
                 if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-                    addressNode = node;
+                    for (OffsetAddressNode element : node.getValues().filter(OffsetAddressNode.class)) {
+                        addressNode = element;
+                    }
                     continue;
                 }
             }

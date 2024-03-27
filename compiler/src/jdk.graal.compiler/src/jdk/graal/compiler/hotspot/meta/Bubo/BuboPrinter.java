@@ -65,7 +65,6 @@ public class BuboPrinter {
                         "There is " + (timmings.size() - 10) + " More ( We have Not Displyed the rest for simplicity)");
                 break;
             }
-
             fraction = (long) (((float) data[index] / sum) * 50);
             bars = "";
             spaces = "";
@@ -82,6 +81,9 @@ public class BuboPrinter {
             System.err.print("Method : " + methods.get(index));
             counter++;
         }
+        // sum is cycles and TotalSpenttime is time
+        //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
+
     }
 
     public static void printPercentageBar(HashMap<Integer, Long> data, HashMap<Integer, String> methods) {

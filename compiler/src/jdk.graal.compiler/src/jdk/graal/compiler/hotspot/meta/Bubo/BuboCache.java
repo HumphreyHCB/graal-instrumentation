@@ -9,11 +9,17 @@ import java.lang.Thread;
 
  public class BuboCache extends Thread {
         
-        public static long[] Buffer;
+        public static long[] TimeBuffer;
+        public static int[] ActivationCountBuffer;
+        public static long[] CyclesBuffer;
         public static int pointer;
+        public static long[] Buffer;
 
         public BuboCache() {
                 Buffer = new long[200_000];
+                TimeBuffer = new long[200_000];
+                ActivationCountBuffer = new int[200_000];
+                CyclesBuffer = new long[200_000];
                 pointer = 1;
         }
 
