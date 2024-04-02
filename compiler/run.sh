@@ -2,12 +2,13 @@
 # -Xlog:jit+compilation
 #/home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/bin
 # /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33
+# /home/hburchell/JDKS/labsjdk-ce-22-jvmci-b02-debug/
+# /home/hburchell/JDKS/graalvm-jdk-22+36.1
 mx --java-home \
- /home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/ \
+ /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
- -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=80  \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
-  -Dgraal.CompilationFailureAction=Diagnose \
+  -Dgraal.CompilationFailureAction=Diagnose  \
   -XX:+UseJVMCICompiler  \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
@@ -16,7 +17,7 @@ mx --java-home \
   Harness DeltaBlue 300 60000  
 
 #  HelloWorld 
-  
+#   -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
 #  Harness DeltaBlue 1200 6000 
 # labsjdk-ce-21.0.2-jvmci-23.1-b33
 #  -XX:CompileOnly= -Dgraal.Dump=:2 -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true \
