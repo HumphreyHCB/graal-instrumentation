@@ -65,7 +65,6 @@ public class BuboPrinter {
                         "There is " + (timmings.size() - 10) + " More ( We have Not Displyed the rest for simplicity)");
                 break;
             }
-
             fraction = (long) (((float) data[index] / sum) * 50);
             bars = "";
             spaces = "";
@@ -82,6 +81,9 @@ public class BuboPrinter {
             System.err.print("Method : " + methods.get(index));
             counter++;
         }
+        // sum is cycles and TotalSpenttime is time
+        //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
+
     }
 
     public static void printPercentageBar(HashMap<Integer, Long> data, HashMap<Integer, String> methods) {
@@ -158,4 +160,63 @@ public class BuboPrinter {
         }
         
     }
+
+    public static void printMultiBufferDebug(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods) {
+
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+        long sum = 0;
+        HashMap<Integer, Long> timmings = new HashMap<>();
+        for (int index : methods.keySet()) {
+            if (TimeBuffer[index] != 0) {
+                sum += TimeBuffer[index];
+                timmings.put(index, TimeBuffer[index]);
+            }
+            else if (CyclesBuffer[index] != 0) {
+                sum += CyclesBuffer[index];
+                timmings.put(index, CyclesBuffer[index]);
+            }
+            else{
+                // method was comppiled but we have no infor it it
+                // maybe we look at this some point
+            }
+
+        }
+        
+        timmings = orderDataByTime(timmings);
+        int counter = 0;
+        String bars = "";
+        String spaces = "";
+        long fraction = 0;
+        for (int index : timmings.keySet()) {
+            if (counter >= 100) {
+                System.out.println("...");
+                System.out.println(
+                        "There is " + (timmings.size() - 10) + " More ( We have Not Displyed the rest for simplicity)");
+                break;
+            }
+            fraction = (long) (((float) timmings.get(index) / sum) * 50);
+            bars = "";
+            spaces = "";
+
+            for (int i = 0; i < fraction; i++) {
+                bars += "|";
+            }
+            for (int i = 0; i < 50 - fraction; i++) {
+                spaces += " ";
+            }
+
+            //System.out.print("\n Percentage {" + bars + spaces + "} " + (((float) timmings.get(index) / sum) * 100) + "% ");
+            System.out.print("\n  " + (((float) timmings.get(index) / sum) * 100) + "% ");
+            System.out.print("@ ActivationCountBuffer : " + ActivationCountBuffer[index]);
+            System.out.print("@ TimeBuffer : " + TimeBuffer[index]);
+            System.out.print("@ CyclesEstBuffer : " + CyclesBuffer[index]);
+            System.out.print("@ Method : " + methods.get(index));
+            counter++;
+        }
+        // sum is cycles and TotalSpenttime is time
+        //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
+
+    }
+
 }

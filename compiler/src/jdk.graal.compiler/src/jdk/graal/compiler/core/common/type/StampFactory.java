@@ -122,6 +122,15 @@ public class StampFactory {
     public static Stamp forBuboVoid() {
         return BuboVoidStamp.getInstance();
     }
+    public static Stamp forBuboCycleRead() {
+        return BuboCycleRead.getInstance();
+    }
+    public static Stamp forBuboActivationCountRead() {
+        return BuboActivationCountRead.getInstance();
+    }
+    public static Stamp forBuboTimeRead() {
+        return BuboTimeRead.getInstance();
+    }
 
     public static Stamp intValue() {
         return forKind(JavaKind.Int);

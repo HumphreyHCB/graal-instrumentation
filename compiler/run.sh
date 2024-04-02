@@ -5,7 +5,7 @@
 mx --java-home \
  /home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/ \
  vm  \
- -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=100  \
+ -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=80  \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose \
   -XX:+UseJVMCICompiler  \

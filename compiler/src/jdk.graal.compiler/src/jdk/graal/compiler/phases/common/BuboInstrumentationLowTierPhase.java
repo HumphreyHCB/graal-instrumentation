@@ -37,6 +37,7 @@ import jdk.graal.compiler.nodes.calc.AddNode;
 import jdk.graal.compiler.nodes.calc.SubNode;
 import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
+import jdk.graal.compiler.nodes.java.ReachabilityFenceNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
@@ -80,17 +81,40 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         try {
 
             // find the address node added in the high tier phase, using the BuboVoidStamp
-            OffsetAddressNode addressNode = null;
-            for (OffsetAddressNode node : graph.getNodes().filter(OffsetAddressNode.class)) {
+            OffsetAddressNode OldBufferAddress = null;
+            OffsetAddressNode TimeBuffer = null;
+            OffsetAddressNode ActivationCountBuffer = null;
+            OffsetAddressNode CyclesBuffer = null;
+
+            // find the ReachabilityFenceNode we inserted earlyer, and all of the address
+            // nodes it has saved
+            for (ReachabilityFenceNode node : graph.getNodes().filter(ReachabilityFenceNode.class)) {
                 if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-                    addressNode = node;
-                    continue;
+                    for (OffsetAddressNode element : node.getValues().filter(OffsetAddressNode.class)) {
+                        // Since we don't have direct stamp checks in the iteration, we assume these
+                        // nodes
+                        // are distinguished by their creation conditions outside this snippet.
+                        if (TimeBuffer == null
+                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
+                            TimeBuffer = element;
+                        } else if (ActivationCountBuffer == null
+                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
+                            ActivationCountBuffer = element;
+                        } else if (CyclesBuffer == null
+                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
+                            CyclesBuffer = element;
+                        } else if (OldBufferAddress == null
+                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboVoid())) {
+                            OldBufferAddress = element;
+                        }
+                    }
                 }
             }
-            double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
-            if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
-                if (addressNode != null) {
+            if (OldBufferAddress != null && TimeBuffer != null && ActivationCountBuffer != null
+                    && CyclesBuffer != null) {
+                double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
+                if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
                     // add the starting ForeignCallNode to the start of the graph
                     // ForeignCallNode startTime = graph.add(new
@@ -116,7 +140,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
                             // read the current value store in the array index
                             JavaReadNode readCurrentValue = graph
-                                    .add(new JavaReadNode(JavaKind.Long, addressNode,
+                                    .add(new JavaReadNode(JavaKind.Long, TimeBuffer,
                                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
                             graph.addAfterFixed(endTime, readCurrentValue);
 
@@ -125,40 +149,84 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
                             // write this value back
                             JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                                    addressNode,
+                                    TimeBuffer,
                                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
                                     false));
                             graph.addAfterFixed(readCurrentValue, memoryWrite);
 
+                            // activation writing
+                            // read the current value store in the array index
+                            JavaReadNode readCurrentValueinActivationCountBuffer = graph
+                                    .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
+                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                            graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
+
+                            ValueNode one = graph.addWithoutUnique(
+                                    new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                            // add the store time with the new time
+                            AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+
+                            // write this value back
+                            JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
+                                    ActivationCountBuffer,
+                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
+                                    false));
+                            graph.addAfterFixed(readCurrentValueinActivationCountBuffer,
+                                    memoryWriteActivationCountBuffer);
+
                         }
 
                     }
+
+                } else {
+
+                    // the grapgh is too expensive to fully instrument collecting time
+                    // so instead we will get amout of cycles everytime it actvates
+
+                    // read the current value store in the array index
+                    JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, CyclesBuffer,
+                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                    graph.addAfterFixed(graph.start(), readCurrentValue);
+
+                    ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(
+                            JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
+
+                    // add the estimatedCost curent value in the array
+                    AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
+
+                    // write this value back
+                    JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+                            CyclesBuffer,
+                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+                            false));
+                    graph.addAfterFixed(readCurrentValue, memoryWrite);
+
+                    // activation writing
+                    // read the current value store in the array index
+                    JavaReadNode readCurrentValueinActivationCountBuffer = graph
+                            .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
+                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                    graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
+
+                    ValueNode one = graph.addWithoutUnique(
+                            new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+                    // add the store time with the new time
+                    AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+
+                    // write this value back
+                    JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
+                            ActivationCountBuffer,
+                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
+                            false));
+                    graph.addAfterFixed(readCurrentValueinActivationCountBuffer, memoryWriteActivationCountBuffer);
+
                 }
-                // graph.removeFixed(writeToRemove);
             } else {
-                if (addressNode != null) {
-                // the grapgh is too expensive to fully instrument collecting time
-                // so instead we will get amout of cycles everytime it actvates
-                
-                // read the current value store in the array index
-                JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, addressNode,
-                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                graph.addAfterFixed(graph.start(), readCurrentValue);
-
-                ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
-
-                // add the estimatedCost curent value in the array
-                AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
-
-                // write this value back
-                JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                        addressNode,
-                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                        false));
-                graph.addAfterFixed(readCurrentValue, memoryWrite);
-                }
+                System.out.println("OldBufferAddress is " + (OldBufferAddress != null ? "not null" : "null"));
+                System.out.println("TimeBuffer is " + (TimeBuffer != null ? "not null" : "null"));
+                System.out.println("ActivationCountBuffer is " + (ActivationCountBuffer != null ? "not null" : "null"));
+                System.out.println("CyclesBuffer is " + (CyclesBuffer != null ? "not null" : "null"));
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             System.out.print("ERROR: Custom Instruments Failure");
