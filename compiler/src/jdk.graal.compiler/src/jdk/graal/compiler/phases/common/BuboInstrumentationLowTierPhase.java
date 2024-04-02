@@ -222,10 +222,10 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
                 }
             } else {
-                System.out.println("OldBufferAddress is " + (OldBufferAddress != null ? "not null" : "null"));
-                System.out.println("TimeBuffer is " + (TimeBuffer != null ? "not null" : "null"));
-                System.out.println("ActivationCountBuffer is " + (ActivationCountBuffer != null ? "not null" : "null"));
-                System.out.println("CyclesBuffer is " + (CyclesBuffer != null ? "not null" : "null"));
+                // System.out.println("OldBufferAddress is " + (OldBufferAddress != null ? "not null" : "null"));
+                // System.out.println("TimeBuffer is " + (TimeBuffer != null ? "not null" : "null"));
+                // System.out.println("ActivationCountBuffer is " + (ActivationCountBuffer != null ? "not null" : "null"));
+                // System.out.println("CyclesBuffer is " + (CyclesBuffer != null ? "not null" : "null"));
             }
         } catch (Exception e) {
             e.printStackTrace();

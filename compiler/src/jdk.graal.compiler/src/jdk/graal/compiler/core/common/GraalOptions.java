@@ -314,5 +314,8 @@ public final class GraalOptions {
 
     @Option(help = "Min graph size to start instrumenting", type = OptionType.Debug)
     public static final OptionKey<Integer> MinGraphSize = new OptionKey<>(1);
+
+    @Option(help = "Enable Instrumentation to count the amount of Compiled Methods", type = OptionType.Debug)
+    public static final OptionKey<Boolean> CountCompiledMethods = new OptionKey<>(false);
   
 }

@@ -142,8 +142,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             HotSpotCompilationRequest hsRequest = (HotSpotCompilationRequest) request;
             CompilationTask task = new CompilationTask(jvmciRuntime, this, hsRequest, true, shouldRetainLocalVariables(hsRequest.getJvmciEnv()), shouldUsePreciseUnresolvedDeopts(), installAsDefault);
             OptionValues options = task.filterOptions(initialOptions);
-            if (GraalOptions.EnableProfiler.getValue(options)) {
-                addMethodToCache(task.getCompilationIdentifier());   
+            if (GraalOptions.EnableProfiler.getValue(options) || GraalOptions.CountCompiledMethods.getValue(options)) {
+                addMethodToCache(task.getCompilationIdentifier());
+                System.out.println("bing");   
             }
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             boolean oneIsolatePerCompilation = Services.IS_IN_NATIVE_IMAGE &&

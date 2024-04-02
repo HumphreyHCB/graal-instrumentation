@@ -140,7 +140,7 @@ public class BuboPrinter {
     }
 
     public static void addToFile(String line) {
-         String filename = "Incount.txt";
+         String filename = "CompiledMethodCount.txt";
         String newline = System.getProperty("line.separator"); // Get the system's newline character
 
         try {
