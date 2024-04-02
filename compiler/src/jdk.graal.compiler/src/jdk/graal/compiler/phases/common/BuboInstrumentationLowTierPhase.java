@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugCloseable;
+import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.GraphState;
@@ -94,17 +95,16 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         // Since we don't have direct stamp checks in the iteration, we assume these
                         // nodes
                         // are distinguished by their creation conditions outside this snippet.
-                        if (TimeBuffer == null
-                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
+                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
                             TimeBuffer = element;
-                        } else if (ActivationCountBuffer == null
-                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
+                        }
+                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
                             ActivationCountBuffer = element;
-                        } else if (CyclesBuffer == null
-                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
+                        }
+                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
                             CyclesBuffer = element;
-                        } else if (OldBufferAddress == null
-                                && element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboVoid())) {
+                        }
+                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboVoid())) {
                             OldBufferAddress = element;
                         }
                     }
