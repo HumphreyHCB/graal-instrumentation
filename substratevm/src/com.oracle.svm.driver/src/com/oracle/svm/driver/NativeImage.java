@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -651,8 +651,8 @@ public class NativeImage {
                             ModuleFinder finder = ModuleFinder.of(classpathEntry);
                             ModuleReference ref = finder.find(forceOnModulePath).orElse(null);
                             if (ref == null) {
-                                throw showError("Failed to process ForceOnModulePath attribute: No module descriptor was not found in class-path entry: " +
-                                                classpathEntry + ".");
+                                throw showError("Failed to process ForceOnModulePath attribute: Module descriptor for the module " + forceOnModulePath +
+                                                " was not found in class-path entry: " + classpathEntry + ".");
                             }
                         } catch (FindException e) {
                             throw showError("Failed to process ForceOnModulePath attribute: Module descriptor for the module " + forceOnModulePath +
@@ -1778,7 +1778,7 @@ public class NativeImage {
     }
 
     private static void sanitizeJVMEnvironment(Map<String, String> environment, Map<String, String> imageBuilderEnvironment) {
-        Set<String> requiredKeys = new HashSet<>(List.of("PATH", "PWD", "HOME", "LANG", "LC_ALL"));
+        Set<String> requiredKeys = new HashSet<>(List.of("PATH", "PWD", "HOME", "LANG", "LANGUAGE"));
         Function<String, String> keyMapper;
         if (OS.WINDOWS.isCurrent()) {
             requiredKeys.addAll(List.of("TEMP", "INCLUDE", "LIB"));
@@ -1788,7 +1788,9 @@ public class NativeImage {
         }
         Map<String, String> restrictedEnvironment = new HashMap<>();
         environment.forEach((key, val) -> {
-            if (requiredKeys.contains(keyMapper.apply(key))) {
+            String mappedKey = keyMapper.apply(key);
+            // LC_* are locale vars that override LANG for specific categories (or all, with LC_ALL)
+            if (requiredKeys.contains(mappedKey) || mappedKey.startsWith("LC_")) {
                 restrictedEnvironment.put(key, val);
             }
         });
