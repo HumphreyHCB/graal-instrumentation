@@ -511,6 +511,8 @@ NO_INLINE static void set_cpufeatures(CPUFeatures *features, CpuidInfo *_cpuid_i
     features->fFLUSHOPT = 1;
   if (_cpuid_info->ext_cpuid1_edx.bits.rdtscp != 0)
     features->fRDTSCP = 1;
+  if (_cpuid_info->ext_cpuid1_edx.bits.rdtsc != 0)
+    features->fRDTSC = 1;
   if (_cpuid_info->sef_cpuid7_ecx.bits.rdpid != 0)
     features->fRDPID = 1;
 
