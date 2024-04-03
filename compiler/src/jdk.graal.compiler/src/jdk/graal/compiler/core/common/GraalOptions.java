@@ -317,5 +317,8 @@ public final class GraalOptions {
 
     @Option(help = "Enable Instrumentation to count the amount of Compiled Methods", type = OptionType.Debug)
     public static final OptionKey<Boolean> CountCompiledMethods = new OptionKey<>(false);
+
+    @Option(help = "Enable Bubo DebugMode to collect profile information, such as gragh stats", type = OptionType.Debug)
+    public static final OptionKey<Boolean> BuboDebugMode = new OptionKey<>(false);
   
 }
