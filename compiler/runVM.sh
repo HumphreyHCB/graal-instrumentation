@@ -3,7 +3,7 @@
 #/home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/bin
 # /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33
 mx --java-home \
- /home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/ \
+ /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
  -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
@@ -12,9 +12,8 @@ mx --java-home \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  -agentpath:/home/hburchell/Downloads/visualvm_218/visualvm/lib/deployed/jdk16/linux-amd64/libprofilerinterface.so=/home/hburchell/Downloads/visualvm_218/visualvm/lib,5130 \
-  Harness DeltaBlue 50 60000  
+  -agentpath:/home/hburchell/visualvm_218/visualvm/lib/deployed/jdk16/linux-amd64/libprofilerinterface.so=/home/hburchell/visualvm_218/visualvm/lib,5112 \
+  Harness DeltaBlue 10 60000  
 
   # -agentpath:/home/hburchell/Downloads/visualvm_218/visualvm/lib/deployed/jdk16/linux-amd64/libprofilerinterface.so=/home/hburchell/Downloads/visualvm_218/visualvm/lib,5135 \
 

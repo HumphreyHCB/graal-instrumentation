@@ -8,18 +8,18 @@
 # mx --java-home /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 igv
 # JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.22.0.7-2.el9.x86_64 mx c1visualizer
 mx --java-home \
- /home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/ \
+ /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
-  -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=1  \
+  -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=1 -Dgraal.BuboDebugMode=true  \
  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose \
   -Dgraal.Dump=:5 -Dgraal.PrintGraph=Network -Dgraal.PrintBackendCFG=true \
-  -XX:+UseJVMCICompiler -XX:CompileOnly=HelloWorld::inc  \
+  -XX:+UseJVMCICompiler  \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  HelloWorld 
+  Harness DeltaBlue 300 60000  
 
 #  HelloWorld 
   
