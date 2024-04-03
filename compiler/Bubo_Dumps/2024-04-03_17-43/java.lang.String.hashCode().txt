@@ -1,0 +1,3 @@
+Null: 8
+isLatin1: 2
+hashCode: 39

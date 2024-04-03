@@ -1,0 +1,4 @@
+lastIndexOf: 73
+Null: 15
+min: 2
+canEncode: 2

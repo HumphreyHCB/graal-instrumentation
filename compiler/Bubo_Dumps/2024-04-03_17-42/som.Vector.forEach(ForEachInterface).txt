@@ -1,0 +1,4 @@
+Null: 18
+forEach: 86
+instanceofPrimary: 2
+loadHubIntrinsic: 2

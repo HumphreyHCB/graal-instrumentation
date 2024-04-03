@@ -1,0 +1,5 @@
+g1PreBarrierStub: 19
+Null: 136
+clear: 103
+satbBarrier: 516
+registerAsWord: 19

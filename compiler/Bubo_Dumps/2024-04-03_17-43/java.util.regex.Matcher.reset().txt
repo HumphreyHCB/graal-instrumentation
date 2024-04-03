@@ -1,0 +1,5 @@
+Null: 76
+coder: 2
+getTextLength: 16
+length: 4
+reset: 143

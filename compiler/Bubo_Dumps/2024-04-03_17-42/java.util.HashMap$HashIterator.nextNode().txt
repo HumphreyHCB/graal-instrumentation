@@ -1,0 +1,12 @@
+g1PreBarrierStub: 4
+Null: 51
+getObject: 4
+g1PostBarrierStub: 4
+cardTableAddress: 8
+nextNode: 80
+cardTableShift: 1
+g1PostWriteBarrier: 154
+satbBarrier: 110
+memoryBarrier: 4
+cardTableStart: 1
+registerAsWord: 8
