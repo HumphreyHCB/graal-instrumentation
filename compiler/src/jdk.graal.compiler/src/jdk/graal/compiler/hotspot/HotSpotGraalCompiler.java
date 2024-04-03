@@ -26,6 +26,8 @@ package jdk.graal.compiler.hotspot;
 
 import static jdk.graal.compiler.core.common.GraalOptions.OptAssumptions;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -75,6 +77,9 @@ import jdk.vm.ci.meta.TriState;
 import jdk.vm.ci.runtime.JVMCICompiler;
 import jdk.vm.ci.services.Services;
 import sun.misc.Unsafe;
+
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JVMCICompilerShadow {
 
@@ -144,7 +149,6 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             OptionValues options = task.filterOptions(initialOptions);
             if (GraalOptions.EnableProfiler.getValue(options) || GraalOptions.CountCompiledMethods.getValue(options)) {
                 addMethodToCache(task.getCompilationIdentifier());
-                System.out.println("bing");   
             }
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             boolean oneIsolatePerCompilation = Services.IS_IN_NATIVE_IMAGE &&
@@ -167,7 +171,30 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         }
     }
     private void addMethodToCache(CompilationIdentifier id){
-        BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+        addToFile(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+        //BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+    }
+
+       public static void addToFile(String line) {
+         String filename = "VisualVMMethodCount.txt";
+        String newline = System.getProperty("line.separator"); // Get the system's newline character
+
+        try {
+            // Create a FileWriter object with append mode
+            FileWriter writer = new FileWriter(filename, true);
+            
+            // Append a newline to the file
+            writer.write(newline);
+            writer.write(line);
+            
+            // Close the FileWriter
+            writer.close();
+            
+            System.out.println("Newline appended to the file successfully.");
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e.getMessage());
+        }
+        
     }
 
     private boolean shouldRetainLocalVariables(long envAddress) {
