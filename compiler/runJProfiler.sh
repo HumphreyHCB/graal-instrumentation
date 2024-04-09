@@ -2,22 +2,30 @@
 # -Xlog:jit+compilation
 #/home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/bin
 # /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33
-# /home/hburchell/JDKS/labsjdk-ce-22-jvmci-b02-debug/
-# /home/hburchell/JDKS/graalvm-jdk-22+36.1
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=false -Dgraal.BuboDebugMode=false \
+ vm  \
+ -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose  \
-  -XX:+UseJVMCICompiler  \
+  -XX:+UseJVMCICompiler -Dgraal.Dump=:5 \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  Harness DeltaBlue 300 60000  
+  -agentpath:/home/hburchell/jprofiler14/bin/linux-x64/libjprofilerti.so=port=8849,nowait,config=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/jprofiler_config.xml \
+  Harness DeltaBlue 10 60000  
+ 
+ #options_file=profiler-options.txt
+  # -agentpath:/home/hburchell/Downloads/visualvm_218/visualvm/lib/deployed/jdk16/linux-amd64/libprofilerinterface.so=/home/hburchell/Downloads/visualvm_218/visualvm/lib,5135 \
+
+
+# java \
+#   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
+#   -agentpath:/home/hburchell/Downloads/visualvm_218/visualvm/lib/deployed/jdk16/linux-amd64/libprofilerinterface.so=/home/hburchell/Downloads/visualvm_218/visualvm/lib,5138 \
+#   Harness DeltaBlue 300 60000   
 
 #  HelloWorld 
-#   -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
+  
 #  Harness DeltaBlue 1200 6000 
 # labsjdk-ce-21.0.2-jvmci-23.1-b33
 #  -XX:CompileOnly= -Dgraal.Dump=:2 -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true \
