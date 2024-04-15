@@ -5,10 +5,10 @@
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
- -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
+ -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=false \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
-  -Dgraal.CompilationFailureAction=Diagnose  \
-  -XX:+UseJVMCICompiler -Dgraal.Dump=:5 \
+  -Dgraal.CompilationFailureAction=Diagnose -Dgraal.Dump=:2  \
+  -XX:+UseJVMCICompiler -Dgraal.HotSpotPrintInlining=true -Djdk.graal.LogFile=JprofilerDump.txt \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \

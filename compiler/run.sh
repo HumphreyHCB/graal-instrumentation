@@ -6,10 +6,10 @@
 # /home/hburchell/JDKS/graalvm-jdk-22+36.1
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=false -Dgraal.BuboDebugMode=false \
+ vm -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=false -Dgraal.BuboDebugMode=true \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
-  -Dgraal.CompilationFailureAction=Diagnose  \
-  -XX:+UseJVMCICompiler  \
+  -Dgraal.CompilationFailureAction=Diagnose -Dgraal.Dump=:2  \
+  -XX:+UseJVMCICompiler \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
