@@ -97,7 +97,12 @@ public class BuboInstrumentationLowTierDebugPhase extends BasePhase<LowTierConte
         for (Node node : graph.getNodes()) {
             NodeSourcePosition nsp = node.getNodeSourcePosition();
             if (nsp == null) {
-                map.put("Null", map.get("Null") + 1);
+                String key = "Null " + node.getClass();
+                if (map.containsKey(key)) {
+                    map.put(key, map.get(key) + 1);
+                } else {
+                    map.put(key, 1);
+                }
             } else {
                 //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getName();

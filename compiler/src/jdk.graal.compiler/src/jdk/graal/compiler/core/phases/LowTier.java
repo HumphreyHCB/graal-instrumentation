@@ -80,7 +80,9 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new BuboInstrumentationLowTierPhase(options));
             appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
         }
-
+        if (GraalOptions.BuboDebugMode.getValue(options)) {
+            appendPhase(new BuboInstrumentationLowTierDebugPhase());
+        }
         appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 
         appendPhase(new FixReadsPhase(true,
@@ -105,9 +107,6 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new RemoveOpaqueValuePhase());
 
-        if (GraalOptions.BuboDebugMode.getValue(options)) {
-            appendPhase(new BuboInstrumentationLowTierDebugPhase());
-        }
 
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
     }
