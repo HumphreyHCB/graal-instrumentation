@@ -1,2 +1,0 @@
-Null: 22
-getChars: 164

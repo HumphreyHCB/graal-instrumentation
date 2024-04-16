@@ -1,3 +1,0 @@
-Null: 10
-newMark: 4
-incrementalAdd: 22

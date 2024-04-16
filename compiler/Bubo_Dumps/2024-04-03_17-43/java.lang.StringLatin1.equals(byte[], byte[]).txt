@@ -1,2 +1,0 @@
-Null: 20
-equals: 80

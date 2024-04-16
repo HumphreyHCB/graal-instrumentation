@@ -1,2 +1,0 @@
-Null: 2
-stringSize: 145

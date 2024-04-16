@@ -1,4 +1,0 @@
-Null: 18
-instanceofExact: 1
-indexOfChar: 108
-loadHubOrNullIntrinsic: 10

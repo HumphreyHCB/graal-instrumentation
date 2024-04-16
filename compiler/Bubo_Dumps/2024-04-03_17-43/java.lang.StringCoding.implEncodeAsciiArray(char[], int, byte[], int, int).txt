@@ -1,2 +1,0 @@
-Null: 29
-implEncodeAsciiArray: 98

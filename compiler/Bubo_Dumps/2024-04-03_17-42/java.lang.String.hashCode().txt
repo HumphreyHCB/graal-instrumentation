@@ -1,4 +1,0 @@
-Null: 11
-isLatin1: 2
-hashCode: 50
-vectorizedHashCode: 4

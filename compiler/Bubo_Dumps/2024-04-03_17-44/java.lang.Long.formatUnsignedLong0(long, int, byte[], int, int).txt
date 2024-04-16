@@ -1,2 +1,0 @@
-Null: 13
-formatUnsignedLong0: 72
