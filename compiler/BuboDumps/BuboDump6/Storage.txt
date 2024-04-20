@@ -1,0 +1,12 @@
+
+74.374275% java.util.Arrays.setAll(Object[],
+19.796604% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+3.6816933% Storage.buildTreeDepth(int,
+1.964021% Storage.benchmark()
+0.032190286% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.012643305% java.util.ArrayList.add(Object)
+0.011643219% java.util.Formatter.format(Locale,
+0.008512324% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.0084172385% org.graalvm.collections.EconomicMapImpl.createHash()
+0.0066074994% java.util.ArrayList$Itr.next()
+0.0056861225% java.lang.String.equals(Object)

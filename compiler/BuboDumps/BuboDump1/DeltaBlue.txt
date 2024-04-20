@@ -1,0 +1,12 @@
+
+20.212267% deltablue.Planner.projectionTest(int)deltablue.Planner.projectionTest(int) Re-Comp
+15.793037% deltablue.Planner.chainTest(int)deltablue.Planner.chainTest(int) Re-Comp
+15.583788% som.Vector.forEach(ForEachInterface)
+10.679073% deltablue.AbstractConstraint.satisfy(int,deltablue.AbstractConstraint.satisfy(int, Re-Comp
+9.393716% deltablue.Plan$$Lambda/0x00007fe64c01f598.apply(Object)deltablue.Plan$$Lambda/0x00007fe64c01f598.apply(Object) Re-Comp
+7.730191% deltablue.Planner.addPropagate(AbstractConstraint,deltablue.Planner.addPropagate(AbstractConstraint, Re-Comp
+4.4217205% deltablue.Planner$$Lambda/0x00007fe64c01c968.apply(Object)
+3.2243714% deltablue.Planner.removePropagateFrom(Variable)deltablue.Planner.removePropagateFrom(Variable) Re-Comp
+2.9207761% deltablue.Planner.makePlan(Vector)deltablue.Planner.makePlan(Vector) Re-Comp
+2.2361786% deltablue.ScaleConstraint.<init>(Variable,
+1.0679687% deltablue.Planner.lambda$removePropagateFrom$5(Vector,deltablue.Planner.lambda$removePropagateFrom$5(Vector, Re-Comp

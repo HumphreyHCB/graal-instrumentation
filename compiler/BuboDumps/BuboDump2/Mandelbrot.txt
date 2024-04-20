@@ -1,0 +1,12 @@
+
+98.84293% Mandelbrot.mandelbrot(int)Mandelbrot.mandelbrot(int) Re-Comp
+0.6198366% Mandelbrot.mandelbrot(int)
+0.07780053% java.util.Formatter.format(Locale,
+0.06756353% org.graalvm.collections.EconomicMapImpl.get(Object)
+0.03131569% java.util.ArrayList.add(Object)
+0.028209554% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.023835607% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.018804776% java.util.ArrayList$Itr.next()
+0.018413508% org.graalvm.collections.EconomicMapImpl.createHash()
+0.016705148% java.lang.String.equals(Object)
+0.014837779% java.util.Formatter$FormatSpecifier.print(Formatter,java.util.Formatter$FormatSpecifier.print(Formatter, Re-Comp

@@ -1,0 +1,12 @@
+
+96.81488% NBody.innerBenchmarkLoop(int)NBody.innerBenchmarkLoop(int) Re-Comp
+1.4220893% NBody.innerBenchmarkLoop(int)
+1.321469% nbody.NBodySystem.advance(double)
+0.084327474% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.038613874% java.util.Formatter.format(Locale,
+0.026577447% java.util.ArrayList.add(Object)
+0.020841572% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.020217715% org.graalvm.collections.EconomicMapImpl.createHash()
+0.016345685% java.util.ArrayList$Itr.next()
+0.013123106% java.lang.String.equals(Object)
+0.008745795% org.graalvm.collections.EconomicMapImpl.get(Object)

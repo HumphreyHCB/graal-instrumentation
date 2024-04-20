@@ -1,0 +1,12 @@
+
+26.224482% cd.CollisionDetector.handleNewFrame(Vector)
+22.884722% som.Vector.forEach(ForEachInterface)som.Vector.forEach(ForEachInterface) Re-Comp
+15.574646% cd.CollisionDetector.reduceCollisionSet(Vector)
+8.8028145% cd.RedBlackTree.treeInsert(Comparable,cd.RedBlackTree.treeInsert(Comparable, Re-Comp
+6.3375683% cd.CollisionDetector.putIntoMap(RedBlackTree,
+5.7331247% cd.RedBlackTree.forEach(ForEachInterface)cd.RedBlackTree.forEach(ForEachInterface) Re-Comp
+4.9759016% cd.RedBlackTree.put(Comparable,cd.RedBlackTree.put(Comparable, Re-Comp
+4.290581% cd.RedBlackTree.findNode(Comparable)cd.RedBlackTree.findNode(Comparable) Re-Comp
+3.8898263% cd.CollisionDetector.recurse(RedBlackTree,
+0.4851723% cd.Simulator.simulate(double)cd.Simulator.simulate(double) Re-Comp
+0.22585548% cd.RedBlackTree.rightRotate(RedBlackTree$Node)

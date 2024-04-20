@@ -1,0 +1,12 @@
+
+76.50037% Towers.moveDisks(int,
+12.40263% Towers.benchmark()
+10.970696% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+0.056026295% Towers.pushDisk(Towers$TowersDisk,
+0.040763784% Towers.popDiskFrom(int)
+0.0053231693% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.0023065112% java.util.Formatter.format(Locale,
+0.0021186552% java.util.Formatter$FormatSpecifier.print(Formatter,
+0.0016700642% java.util.ArrayList.add(Object)
+0.0015277156% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.0010684985% org.graalvm.collections.EconomicMapImpl.createHash()

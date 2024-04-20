@@ -1,0 +1,12 @@
+
+51.29586% Bounce.benchmark()Bounce.benchmark() Re-Comp
+47.754578% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+0.6670777% Benchmark.innerBenchmarkLoop(int)
+0.04131253% java.util.Formatter.format(Locale,
+0.03954452% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.015326372% java.util.Formatter$FormatSpecifier.localizedMagnitude(Formatter,
+0.0147312265% org.graalvm.collections.EconomicMapImpl.grow()
+0.013502291% java.util.ArrayList.add(Object)
+0.0109854415% Bounce.benchmark()
+0.010530511% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.009199427% org.graalvm.collections.EconomicMapImpl.createHash()

@@ -1,0 +1,12 @@
+
+51.22737% json.JsonPureStringParser.readArray()
+33.55336% json.JsonPureStringParser.readObject()
+7.1724505% json.JsonPureStringParser.readStringInternal()
+2.4910488% json.JsonPureStringParser.readNumber()
+2.1392508% json.JsonPureStringParser.read()
+1.1980273% json.JsonPureStringParser.readValue()
+1.0758772% json.JsonPureStringParser.isWhiteSpace()
+0.69180495% json.JsonPureStringParser.isDigit()
+0.11773858% json.JsonPureStringParser.readNull()
+0.067648254% json.JsonPureStringParser.readExponent()
+0.045716353% java.lang.StringLatin1.equals(byte[],

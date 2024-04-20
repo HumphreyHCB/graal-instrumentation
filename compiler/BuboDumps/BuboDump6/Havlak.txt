@@ -1,0 +1,12 @@
+
+82.17969% havlak.HavlakLoopFinder.doDFS(BasicBlock,
+4.6738276% som.Set.add(Object)
+4.6076016% havlak.HavlakLoopFinder.findLoops()
+4.5772924% havlak.LoopTesterApp.findLoops(LoopStructureGraph)
+1.4467934% havlak.LoopTesterApp.addDummyLoops(int)havlak.LoopTesterApp.addDummyLoops(int) Re-Comp
+0.86694986% havlak.HavlakLoopFinder.identifyEdges(int)
+0.61455905% havlak.UnionFindNode.findSet()
+0.29181343% som.Vector.hasSome(TestInterface)
+0.2594842% havlak.HavlakLoopFinder$$Lambda/0x00007f0f7400f2b8.apply(Object)
+0.21550971% havlak.SimpleLoop.<init>(BasicBlock,
+0.061527807% som.Dictionary.resize()

@@ -1,0 +1,12 @@
+
+67.567184% List.tail(List$Element,
+16.388626% List.benchmark()
+15.852701% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+0.11468074% List.makeList(int)
+0.049705554% Benchmark.innerBenchmarkLoop(int)
+0.0034583234% org.graalvm.collections.EconomicMapImpl.get(Object)
+0.002033427% java.util.Formatter.format(Locale,
+0.0016653629% java.util.ArrayList.add(Object)
+0.001501689% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.0012709408% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.0012241497% org.graalvm.collections.EconomicMapImpl.createHash()

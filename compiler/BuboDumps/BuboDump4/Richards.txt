@@ -1,0 +1,12 @@
+
+38.92791% richards.Scheduler.schedule()richards.Scheduler.schedule() Re-Comp
+29.922056% richards.Scheduler.start()
+20.49344% richards.TaskControlBlock.runTask()
+9.038568% richards.Scheduler.lambda$createHandler$1(Packet,
+1.2988871% richards.Scheduler.lambda$createWorker$3(Packet,
+0.13536824% richards.Scheduler.schedule()
+0.0288827% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.025996804% richards.RBObject.append(Packet,
+0.009328044% java.util.ArrayList.add(Object)
+0.007565462% java.util.Formatter.format(Locale,
+0.007465197% org.graalvm.collections.EconomicMapImpl.put(Object,

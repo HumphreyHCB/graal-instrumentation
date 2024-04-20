@@ -1,0 +1,12 @@
+
+36.280907% Queens.placeQueen(int)
+33.736317% Queens.benchmark()
+29.710787% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+0.05306565% Benchmark.innerBenchmarkLoop(int)
+0.041157156% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.012805253% java.util.ArrayList.add(Object)
+0.012136648% java.lang.String.substring(int,
+0.009170043% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.00852504% org.graalvm.collections.EconomicMapImpl.createHash()
+0.008426618% java.util.ArrayList$Itr.next()
+0.00668934% java.lang.String.equals(Object)

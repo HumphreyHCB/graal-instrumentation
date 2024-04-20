@@ -1,0 +1,12 @@
+
+92.52636% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+3.5271% Sieve.sieve(boolean[],Sieve.sieve(boolean[], Re-Comp
+3.2457774% Sieve.benchmark()
+0.32552648% java.util.Arrays.fill(boolean[],java.util.Arrays.fill(boolean[], Re-Comp
+0.0445916% org.graalvm.collections.EconomicMapImpl.get(Object)
+0.033424422% Benchmark.innerBenchmarkLoop(int)
+0.022065777% java.util.Formatter$FormatSpecifier.print(Formatter,
+0.020308131% java.util.ArrayList.add(Object)
+0.019052457% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.016183104% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.014560754% Sieve.sieve(boolean[],

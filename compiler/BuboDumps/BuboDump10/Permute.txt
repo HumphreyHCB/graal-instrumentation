@@ -1,0 +1,12 @@
+
+55.26241% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
+44.32604% Permute.permute(int)
+0.0797575% Benchmark.innerBenchmarkLoop(int)
+0.04963171% org.graalvm.collections.EconomicMapImpl.find(Object)
+0.04208367% java.util.Formatter.format(Locale,
+0.028872738% Permute.swap(int,
+0.017188476% java.util.Formatter$FormatSpecifier.print(Formatter,
+0.016678926% java.util.ArrayList.add(Object)
+0.012744499% org.graalvm.collections.EconomicMapImpl.put(Object,
+0.01049214% org.graalvm.collections.EconomicMapImpl.createHash()
+0.008993629% java.util.ArrayList$Itr.next()
