@@ -171,11 +171,11 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         }
     }
     private void addMethodToCache(CompilationIdentifier id){
-        addToFile(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
-        //BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+        //addToFile(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+        BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
     }
 
-       public static void addToFile(String line) {
+    public static void addToFile(String line) {
          String filename = "VisualVMMethodCount.txt";
         String newline = System.getProperty("line.separator"); // Get the system's newline character
 
