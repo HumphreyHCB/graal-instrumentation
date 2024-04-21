@@ -24,10 +24,12 @@
  */
 package jdk.graal.compiler.phases.common;
 
+import java.util.HashMap;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugCloseable;
+import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.ConstantNode;
@@ -51,6 +53,8 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
+import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
 
 /**
  * Adds Instrumentation to the start and end of all method compilations.
@@ -234,7 +238,30 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             System.out.print("---------------------------------------------------------------------------");
             System.out.print("---------------------------------------------------------------------------");
         }
-
+        HashMap<String,Integer> nodeRatioMap = new HashMap<String,Integer>();
+        nodeRatioMap.put("Null", 0); // fill null
+        String graphID = graph.compilationId().toString(Verbosity.NAME);
+        for (Node node : graph.getNodes()) {
+            NodeSourcePosition nsp = node.getNodeSourcePosition();
+            if (nsp == null) {
+                String key = "Null";
+                nodeRatioMap.put(key, nodeRatioMap.get(key) + 1);
+            } else {
+                //nsp.getClass().toGenericString();
+                String key = nsp.getMethod().getName();
+                if (nodeRatioMap.containsKey(key)) {
+                    nodeRatioMap.put(key, nodeRatioMap.get(key) + 1);
+                } else {
+                    nodeRatioMap.put(key, 1);
+                }
+            }
     }
+    String Info = " ";
+    for (String method : nodeRatioMap.keySet()) {
+        Info += method + "," + nodeRatioMap.get(method) + " ";
+    }
+    BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]), Info);
+}
 
+    
 }

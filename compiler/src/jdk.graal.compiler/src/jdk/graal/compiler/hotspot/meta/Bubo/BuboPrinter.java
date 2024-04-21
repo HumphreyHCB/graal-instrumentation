@@ -4,8 +4,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -219,6 +222,83 @@ public class BuboPrinter {
         // sum is cycles and TotalSpenttime is time
         //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
 
+    }
+
+    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, String filename, HashMap<Integer, String> CompUnits) {
+
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+        long sum = 0;
+        HashMap<Integer, Long> timmings = new HashMap<>();
+        for (int index : methods.keySet()) {
+            if (TimeBuffer[index] != 0) {
+                sum += TimeBuffer[index];
+                timmings.put(index, TimeBuffer[index]);
+            }
+            else if (CyclesBuffer[index] != 0) {
+                sum += CyclesBuffer[index];
+                timmings.put(index, CyclesBuffer[index]);
+            }
+            else{
+                // method was comppiled but we have no infor it it
+                // maybe we look at this some point
+            }
+
+        }
+        
+        timmings = orderDataByTime(timmings);
+        int counter = 0;
+        String bars = "";
+        String spaces = "";
+        long fraction = 0;
+        for (int index : timmings.keySet()) {
+            if (counter > 10) {
+                // System.out.println("...");
+                // System.out.println(
+                //         "There is " + (timmings.size() - 10) + " More ( We have Not Displyed the rest for simplicity)");
+                break;
+            }
+            fraction = (long) (((float) timmings.get(index) / sum) * 50);
+            bars = "";
+            spaces = "";
+
+            for (int i = 0; i < fraction; i++) {
+                bars += "|";
+            }
+            for (int i = 0; i < 50 - fraction; i++) {
+                spaces += " ";
+            }
+
+
+            counter++;
+            addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
+            addToFile("\t " + CompUnits.get(index), filename);
+
+        }
+        // sum is cycles and TotalSpenttime is time
+        //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
+
+    }
+
+        public static List<Map.Entry<String, Double>> splitNodeData(String data) {
+        List<Map.Entry<String, Double>> resultList = new ArrayList<>();
+        String[] entries = data.split("\\s+"); // Split by whitespace to get each "Name,number" pair
+
+        for (String entry : entries) {
+            String[] parts = entry.split(","); // Split each entry by comma to separate name and number
+            if (parts.length == 2) { // Ensure that each part has both a name and a number
+                String name = parts[0].trim();
+                Double number = null;
+                try {
+                    number = Double.parseDouble(parts[1].trim());
+                } catch (NumberFormatException e) {
+                    System.out.println("Error parsing number from entry: " + entry);
+                    continue; // Skip this entry if number is not valid
+                }
+                resultList.add(new AbstractMap.SimpleEntry<>(name, number));
+            }
+        }
+        return resultList;
     }
 
     public static void addToFile(String line, String Filename) {
