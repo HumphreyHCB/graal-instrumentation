@@ -244,13 +244,6 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         for (Node node : graph.getNodes()) {
             NodeSourcePosition nsp = node.getNodeSourcePosition();
             if (nsp == null) {
-                //String key = "Null " + node.getClass();
-                // String key = "Null";
-                // if (nodeRatioMap.containsKey(key)) {
-                //     nodeRatioMap.put(key, nodeRatioMap.get(key) + 1);
-                // } else {
-                //     nodeRatioMap.put(key, 1);
-                // }
             } else {
                 //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();

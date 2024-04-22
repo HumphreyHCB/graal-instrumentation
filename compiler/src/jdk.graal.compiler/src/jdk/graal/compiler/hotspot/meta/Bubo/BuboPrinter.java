@@ -295,7 +295,7 @@ public class BuboPrinter {
                 break;
             }
 
-            System.out.println(key + " : " + sortedMap.get(key));
+            System.out.println(key + ": " + sortedMap.get(key));
             counter++;
         }
 
@@ -335,6 +335,7 @@ public class BuboPrinter {
             if (name == "Null") {
                 continue;
              }
+             name = name.replace("/", ".").replace(";", ""); 
             int count = Integer.parseInt(parts[1]);
             counts.put(name, count);
         }
