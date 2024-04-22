@@ -251,55 +251,57 @@ public class BuboPrinter {
         String bars = "";
         String spaces = "";
         long fraction = 0;
+        System.out.println("");
+        System.out.println("The following is the Top 10 hottest Compilation Units");
+        int[] top10Indexs = new int[10];
         for (int index : timmings.keySet()) {
-            if (counter > 10) {
-                // System.out.println("...");
-                // System.out.println(
-                //         "There is " + (timmings.size() - 10) + " More ( We have Not Displyed the rest for simplicity)");
+            if (counter >= 10) {
                 break;
             }
-            fraction = (long) (((float) timmings.get(index) / sum) * 50);
-            bars = "";
-            spaces = "";
 
-            for (int i = 0; i < fraction; i++) {
-                bars += "|";
-            }
-            for (int i = 0; i < 50 - fraction; i++) {
-                spaces += " ";
-            }
-
-
+            System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
+            top10Indexs[counter] = index;
             counter++;
-            addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
-            addToFile("\t " + CompUnits.get(index), filename);
-
+            // addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
+            // addToFile("\t " + CompUnits.get(index), filename);
         }
-        // sum is cycles and TotalSpenttime is time
-        //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
 
-    }
+        List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
+        for (int i = 0; i < top10Indexs.length; i++) {
+            double maxPercentage = ((double) timmings.get(top10Indexs[i]) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage,CompUnits.get(top10Indexs[i])));
+        }
 
-        public static List<Map.Entry<String, Double>> splitNodeData(String data) {
-        List<Map.Entry<String, Double>> resultList = new ArrayList<>();
-        String[] entries = data.split("\\s+"); // Split by whitespace to get each "Name,number" pair
+        Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
 
-        for (String entry : entries) {
-            String[] parts = entry.split(","); // Split each entry by comma to separate name and number
-            if (parts.length == 2) { // Ensure that each part has both a name and a number
-                String name = parts[0].trim();
-                Double number = null;
-                try {
-                    number = Double.parseDouble(parts[1].trim());
-                } catch (NumberFormatException e) {
-                    System.out.println("Error parsing number from entry: " + entry);
-                    continue; // Skip this entry if number is not valid
-                }
-                resultList.add(new AbstractMap.SimpleEntry<>(name, number));
+        if (combinedMap.size() <= 0) {
+            return;
+        }
+        // Sort the map by values in descending order
+        Map<String, Double> sortedMap = combinedMap.entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            Map.Entry::getValue,
+            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+        // Display the sorted map
+        System.out.println("\n\n Inlinded Estimation : \n");
+
+        counter = 0;
+        for (String key : sortedMap.keySet()) {
+            if (counter >= 10) {
+                break;
             }
+
+            System.out.println(key + " : " + sortedMap.get(key));
+            counter++;
         }
-        return resultList;
+
     }
+
+
 
     public static void addToFile(String line, String Filename) {
         String filename = Filename;
@@ -323,4 +325,51 @@ public class BuboPrinter {
        
    }
 
+   public static Map<String, Double> findInlinedNodePercentage(Double max, String info) {
+        // Parse the input string into a map
+        Map<String, Integer> counts = new HashMap<>();
+        String[] entries = info.trim().split(" ");
+        for (String entry : entries) {
+            String[] parts = entry.split(",");
+            String name = parts[0];
+            if (name == "Null") {
+                continue;
+             }
+            int count = Integer.parseInt(parts[1]);
+            counts.put(name, count);
+        }
+
+        int totalSum = counts.values().stream().mapToInt(Integer::intValue).sum();
+        
+        Map<String, Double> returnMap = new HashMap<>();
+
+        for (String key : counts.keySet()) {
+            double percentage = (counts.get(key) * max) / totalSum;
+            returnMap.put(key, percentage);
+        }
+
+     return returnMap;
+    
+   }
+
+   public static Map<String, Double> combinedMap(List<Map<String, Double>> listOfMaps ) {
+    
+    // Resultant map to combine all entries
+    Map<String, Double> combinedMap = new HashMap<>();
+
+    // Process each map in the list
+    for (Map<String, Double> map : listOfMaps) {
+        for (Map.Entry<String, Double> entry : map.entrySet()) {
+            combinedMap.merge(entry.getKey(), entry.getValue(), Double::sum);
+        }
+    }
+
+    // Output the combined results
+    // for (Map.Entry<String, Double> entry : combinedMap.entrySet()) {
+    //     System.out.println(entry.getKey() + ": " + entry.getValue());
+    // }
+
+    return combinedMap;
+
+   }
 }

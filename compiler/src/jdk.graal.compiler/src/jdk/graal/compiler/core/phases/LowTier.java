@@ -75,15 +75,12 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new LowTierLoweringPhase(canonicalizerWithGVN));
 
+        appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 
         if (GraalOptions.EnableProfiler.getValue(options)) {
             appendPhase(new BuboInstrumentationLowTierPhase(options));
             appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
         }
-        if (GraalOptions.BuboDebugMode.getValue(options)) {
-            appendPhase(new BuboInstrumentationLowTierDebugPhase());
-        }
-        appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 
         appendPhase(new FixReadsPhase(true,
                         new SchedulePhase(GraalOptions.StressTestEarlyReads.getValue(options) ? SchedulingStrategy.EARLIEST : SchedulingStrategy.LATEST_OUT_OF_LOOPS_IMPLICIT_NULL_CHECKS)));
@@ -106,7 +103,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         appendPhase(new OptimizeExtendsPhase());
 
         appendPhase(new RemoveOpaqueValuePhase());
-
+        
+        if (GraalOptions.BuboDebugMode.getValue(options)) {
+            appendPhase(new BuboInstrumentationLowTierDebugPhase());
+        }
 
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
     }

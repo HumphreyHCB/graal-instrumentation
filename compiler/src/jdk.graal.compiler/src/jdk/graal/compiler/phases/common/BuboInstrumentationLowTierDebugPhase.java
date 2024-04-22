@@ -125,7 +125,7 @@ public class BuboInstrumentationLowTierDebugPhase extends BasePhase<LowTierConte
         new File(directoryPath).mkdirs();
 
         // File path
-        String filePath = directoryPath + "/" + graphID + ".txt";
+        String filePath = directoryPath + "/" + graph.compilationId().toString(Verbosity.ID) + ".txt";
 
         try {
             File file = new File(filePath);
