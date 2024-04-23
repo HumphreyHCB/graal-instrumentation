@@ -1,12 +1,11 @@
 
-38.404125% richards.Scheduler.schedule()richards.Scheduler.schedule() Re-Comp
-30.864021% richards.Scheduler.start()
-20.245604% richards.TaskControlBlock.runTask()
-8.946108% richards.Scheduler.lambda$createHandler$1(Packet,
-1.2841977% richards.Scheduler.lambda$createWorker$3(Packet,
-0.095861495% richards.Scheduler.schedule()
-0.023662468% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.022089714% richards.RBObject.append(Packet,
-0.007861406% java.util.ArrayList.add(Object)
-0.0071315328% java.util.ArrayList.grow(int)
-0.0060384255% org.graalvm.collections.EconomicMapImpl.put(Object,
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 31.13305884204772
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 23.13058595646259
+Lrichards.Scheduler.schedule: 5.877978857238881
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 2.7207321769471333
+Lrichards.TaskState.isTaskHoldingOrWaiting: 2.5090743998313783
+Lrichards.Scheduler.findTask: 2.0943074545906284
+Lrichards.Scheduler.createTask: 1.827857915139821
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.registerAsWord: 1.7899740934734119
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 1.7005426348923718
+Ljdk.graal.compiler.hotspot.replacements.HotSpotG1WriteBarrierSnippets.cardTableAddress: 1.487797752443221

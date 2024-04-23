@@ -1,12 +1,11 @@
 
-51.187325% json.JsonPureStringParser.readArray()
-33.716763% json.JsonPureStringParser.readObject()
-7.1747026% json.JsonPureStringParser.readStringInternal()
-2.4723303% json.JsonPureStringParser.readNumber()
-2.1424105% json.JsonPureStringParser.read()
-1.1664104% json.JsonPureStringParser.readValue()
-1.0453316% json.JsonPureStringParser.isWhiteSpace()
-0.67358047% json.JsonPureStringParser.isDigit()
-0.11481075% json.JsonPureStringParser.readNull()
-0.065970846% json.JsonPureStringParser.readExponent()
-0.0551727% java.lang.StringLatin1.equals(byte[],
+Ljava.lang.String.equals: 22.39343017703692
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 10.530321759985982
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 8.57846813291351
+Ljson.JsonPureStringParser.read: 4.583172684623839
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateArrayImpl: 3.570510784202882
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 3.055147928339507
+Ljson.JsonPureStringParser.isWhiteSpace: 2.638796826358541
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 2.539785072476132
+Lsom.Vector.append: 2.2696722420012048
+Ljdk.internal.util.Preconditions.checkFromToIndex: 2.1301246663658078

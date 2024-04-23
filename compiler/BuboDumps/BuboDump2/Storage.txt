@@ -1,12 +1,11 @@
 
-74.428566% java.util.Arrays.setAll(Object[],
-20.011286% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-3.4748533% Storage.buildTreeDepth(int,
-1.9168926% Storage.benchmark()
-0.028789897% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.012999186% java.util.Formatter.format(Locale,
-0.0115550645% java.util.ArrayList.add(Object)
-0.0075733033% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.0073092566% org.graalvm.collections.EconomicMapImpl.createHash()
-0.0061224434% java.util.ArrayList$Itr.next()
-0.005271708% java.lang.String.equals(Object)
+LStorage.buildTreeDepth: 12.714672116664186
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateArrayImpl: 8.056912104926326
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 7.228951119504967
+Ljdk.graal.compiler.replacements.AllocationSnippets.fillMemoryAligned: 7.182849774291515
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 6.470950577641833
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 4.88498905035734
+Ljava.util.Arrays.setAll: 4.782358949169716
+Ljdk.internal.misc.Unsafe.allocateInstance: 3.640503469554524
+Ljdk.graal.compiler.nodes.memory.address.OffsetAddressNode.address: 3.3597996506503964
+Ljdk.graal.compiler.nodes.PrefetchAllocateNode.prefetch: 2.9055725365136316

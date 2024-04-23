@@ -1,12 +1,11 @@
 
-19.659449% deltablue.Planner.projectionTest(int)deltablue.Planner.projectionTest(int) Re-Comp
-18.550016% som.Vector.forEach(ForEachInterface)
-15.957686% deltablue.Planner.chainTest(int)deltablue.Planner.chainTest(int) Re-Comp
-10.055878% deltablue.AbstractConstraint.satisfy(int,
-9.181041% deltablue.Plan$$Lambda/0x00007f27f403dd30.apply(Object)
-7.462132% deltablue.Planner.addPropagate(AbstractConstraint,deltablue.Planner.addPropagate(AbstractConstraint, Re-Comp
-4.319466% deltablue.Planner.removePropagateFrom(Variable)deltablue.Planner.removePropagateFrom(Variable) Re-Comp
-4.186424% deltablue.Planner$$Lambda/0x00007f27f400f6e8.apply(Object)
-3.0876374% deltablue.Planner.makePlan(Vector)deltablue.Planner.makePlan(Vector) Re-Comp
-2.0430512% deltablue.ScaleConstraint.<init>(Variable,
-1.4436042% deltablue.Planner.lambda$constraintsConsuming$3(AbstractConstraint,
+Lsom.Vector.forEach: 19.854324963734527
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 12.086896713389326
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 8.929530874112464
+Lsom.Vector.append: 4.2410168664846095
+Ldeltablue.Planner.projectionTest: 3.302970029281249
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 2.1189637626272906
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 1.416038812609106
+Ldeltablue.Planner.chainTest: 1.4075932295006708
+Ljdk.graal.compiler.hotspot.replacements.TypeCheckSnippetUtils.checkSelfAndSupers: 1.381906042178276
+Lsom.Vector.at: 1.2995291918483602

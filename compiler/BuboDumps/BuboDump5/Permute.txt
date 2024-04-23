@@ -1,12 +1,11 @@
 
-53.51516% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-46.078583% Permute.permute(int)
-0.08196093% Benchmark.innerBenchmarkLoop(int)
-0.050146174% Permute.swap(int,
-0.034049384% org.graalvm.collections.EconomicMapImpl.get(Object)
-0.03208564% java.util.Formatter.format(Locale,
-0.017247418% java.util.ArrayList.add(Object)
-0.0146224145% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.012348962% java.lang.String.substring(int,
-0.012348434% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.0101319635% org.graalvm.collections.EconomicMapImpl.createHash()
+LPermute.swap: 34.0807175359709
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 13.325167242062616
+LPermute.permute: 11.803060596354346
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 9.955893584758138
+LBenchmark.innerBenchmarkLoop: 6.806199822316394
+LPermute.benchmark: 4.439021558657179
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateArrayImpl: 3.0622059911592294
+Ljdk.graal.compiler.replacements.AllocationSnippets.fillMemoryAlignedUnrollable: 2.449267008280072
+LPermute.verifyResult: 1.6837667981113436
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 1.5313043792800891

@@ -1,12 +1,11 @@
 
-82.2627% havlak.HavlakLoopFinder.doDFS(BasicBlock,
-4.7084975% som.Set.add(Object)
-4.5663314% havlak.HavlakLoopFinder.findLoops()
-4.542108% havlak.LoopTesterApp.findLoops(LoopStructureGraph)
-1.4219648% havlak.LoopTesterApp.addDummyLoops(int)havlak.LoopTesterApp.addDummyLoops(int) Re-Comp
-0.873103% havlak.HavlakLoopFinder.identifyEdges(int)
-0.6035094% havlak.UnionFindNode.findSet()
-0.28650826% som.Vector.hasSome(TestInterface)
-0.25975168% havlak.HavlakLoopFinder$$Lambda/0x00007fd11c00f2b8.apply(Object)
-0.20737027% havlak.SimpleLoop.<init>(BasicBlock,
-0.06239582% som.Dictionary.resize()
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 16.54006088937958
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 13.360097690021636
+Lhavlak.HavlakLoopFinder.doDFS: 12.789755985254596
+Lsom.Dictionary.atPut: 3.955617403800501
+Lsom.Dictionary.hash: 3.891519666680292
+Ljava.lang.Integer.valueOf: 3.3766802779719463
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubOrNullIntrinsic: 3.003354553646222
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 2.961439829104942
+Lsom.Vector.at: 2.55867417238254
+Lsom.IdentityDictionary$IdEntry.match: 2.3851137852575874

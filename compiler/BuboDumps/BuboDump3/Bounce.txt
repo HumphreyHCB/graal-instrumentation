@@ -1,12 +1,11 @@
 
-51.24873% Bounce.benchmark()Bounce.benchmark() Re-Comp
-48.52111% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-0.035423424% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.030877804% Benchmark.innerBenchmarkLoop(int)
-0.012631549% java.util.ArrayList.add(Object)
-0.0097202975% java.util.Formatter.format(Locale,
-0.009178588% Bounce.benchmark()
-0.009143068% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.008807108% org.graalvm.collections.EconomicMapImpl.createHash()
-0.007602853% java.util.ArrayList$Itr.next()
-0.0066879024% java.lang.String.equals(Object)
+LBenchmark.innerBenchmarkLoop: 15.537350609263102
+Ljava.lang.Integer.intValue: 12.267900184837341
+LBounce.verifyResult: 11.548742970727233
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 9.395439551128577
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubOrNullIntrinsic: 8.304174178445455
+LBounce$Ball.<init>: 5.867875491472329
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 5.782970611028315
+LBounce.benchmark: 3.75195158159553
+LBounce$Ball.bounce: 3.256405378222956
+Ljava.util.Arrays.setAll: 3.1144877608583905

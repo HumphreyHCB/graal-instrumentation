@@ -1,12 +1,11 @@
 
-76.549324% Towers.moveDisks(int,
-12.408278% Towers.benchmark()
-10.930391% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-0.05093071% Towers.pushDisk(Towers$TowersDisk,
-0.034374166% Towers.popDiskFrom(int)
-0.0044421717% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.0041108504% java.util.Formatter.format(Locale,
-0.0014857647% java.util.ArrayList.add(Object)
-0.0014340846% java.util.Formatter$FormatSpecifier.print(Formatter,java.util.Formatter$FormatSpecifier.print(Formatter, Re-Comp
-0.0012001874% org.graalvm.collections.EconomicMapImpl.put(Object,
-9.3747984E-4% java.util.ArrayList.<init>(int)
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 30.069140937509182
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 29.6548428659922
+LTowers.popDiskFrom: 6.964409153201129
+LTowers.pushDisk: 6.6115445449099655
+LBenchmark.innerBenchmarkLoop: 3.5130934721511458
+Ljava.lang.Integer.intValue: 2.777803855288352
+LTowers.verifyResult: 2.614395142065969
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubOrNullIntrinsic: 1.8793349868548894
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.registerAsWord: 1.7244631691348107
+LTowers.moveDisks: 1.7041282886205875

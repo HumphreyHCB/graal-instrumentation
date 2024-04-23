@@ -1,12 +1,11 @@
 
-96.84946% NBody.innerBenchmarkLoop(int)NBody.innerBenchmarkLoop(int) Re-Comp
-1.725168% nbody.NBodySystem.advance(double)
-1.0789167% NBody.innerBenchmarkLoop(int)
-0.06499721% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.023149941% org.graalvm.collections.EconomicMapImpl.createHash()
-0.022589492% java.util.ArrayList.add(Object)
-0.018693656% java.util.ArrayList.grow(int)
-0.015597798% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.013687408% java.util.ArrayList$Itr.next()
-0.010959982% java.lang.String.equals(Object)
-0.008200666% java.lang.String.substring(int,
+Lnbody.NBodySystem.advance: 25.050993964540453
+Lnbody.NBodySystem.energy: 13.81047338723068
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 10.183347804437094
+Ljdk.graal.compiler.replacements.AllocationSnippets.fillMemoryAligned: 3.329278384954419
+Lnbody.Body.getY: 3.272868375692602
+Lnbody.Body.getZ: 3.272868375692602
+Lnbody.Body.getX: 3.217781636288801
+Lnbody.Body.getMass: 2.8556345386636615
+Lnbody.Body.getVZ: 2.6991147005906937
+Lnbody.Body.getVY: 2.6991147005906937

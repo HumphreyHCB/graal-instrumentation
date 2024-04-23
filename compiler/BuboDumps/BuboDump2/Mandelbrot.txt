@@ -1,12 +1,11 @@
 
-98.84293% Mandelbrot.mandelbrot(int)Mandelbrot.mandelbrot(int) Re-Comp
-0.6198366% Mandelbrot.mandelbrot(int)
-0.07780053% java.util.Formatter.format(Locale,
-0.06756353% org.graalvm.collections.EconomicMapImpl.get(Object)
-0.03131569% java.util.ArrayList.add(Object)
-0.028209554% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.023835607% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.018804776% java.util.ArrayList$Itr.next()
-0.018413508% org.graalvm.collections.EconomicMapImpl.createHash()
-0.016705148% java.lang.String.equals(Object)
-0.014837779% java.util.Formatter$FormatSpecifier.print(Formatter,java.util.Formatter$FormatSpecifier.print(Formatter, Re-Comp
+LMandelbrot.mandelbrot: 99.3292082053757
+Ljava.util.Formatter.format: 0.02944734511617453
+Lorg.graalvm.collections.EconomicMapImpl.compareKeys: 0.025694208585707215
+Lorg.graalvm.collections.EconomicMapImpl.findLinear: 0.02361716191031801
+Ljava.util.ArrayList$Itr.next: 0.01903264784563658
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 0.017506035853860298
+Lorg.graalvm.collections.EconomicMapImpl.getHashArray: 0.014883969428434831
+Ljava.lang.StringLatin1.equals: 0.014351018265546137
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 0.013747802495042165
+Lorg.graalvm.collections.EconomicMapImpl.getRawValue: 0.01294669642925736

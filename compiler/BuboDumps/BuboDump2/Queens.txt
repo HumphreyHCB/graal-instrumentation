@@ -1,12 +1,11 @@
 
-36.345993% Queens.placeQueen(int)
-33.78537% Queens.benchmark()
-29.613483% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-0.03839025% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.027388154% java.util.Formatter.format(Locale,
-0.0247521% Queens.getRowColumn(int,
-0.01295697% java.util.ArrayList.add(Object)
-0.009579636% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.00860494% org.graalvm.collections.EconomicMapImpl.createHash()
-0.008259661% Benchmark.innerBenchmarkLoop(int)
-0.008008361% java.util.ArrayList$Itr.next()
+LQueens.setRowColumn: 23.457170480294355
+LQueens.getRowColumn: 22.12414058328791
+LQueens.placeQueen: 11.659692479039936
+LBenchmark.innerBenchmarkLoop: 11.55012919102564
+Ljava.lang.Boolean.booleanValue: 7.546510036169254
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubOrNullIntrinsic: 5.108065164600995
+LQueens.verifyResult: 5.105730487205255
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 3.171663568591976
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 2.374285145532734
+Ljava.util.Arrays.fill: 1.9631694379971056

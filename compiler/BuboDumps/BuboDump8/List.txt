@@ -1,12 +1,11 @@
 
-67.54381% List.tail(List$Element,
-16.397207% List.benchmark()
-15.903108% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-0.11783801% List.makeList(int)
-0.017358247% Benchmark.innerBenchmarkLoop(int)
-0.0028583542% org.graalvm.collections.EconomicMapImpl.get(Object)
-0.001434724% java.util.ArrayList.add(Object)
-0.0011832584% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.0010006181% org.graalvm.collections.EconomicMapImpl.put(Object,
-9.5103186E-4% org.graalvm.collections.EconomicMapImpl.createHash()
-8.0081326E-4% java.util.ArrayList$Itr.next()
+LList.tail: 20.45782172578847
+LList.isShorterThan: 18.91381332402661
+LBenchmark.innerBenchmarkLoop: 14.609900898786641
+LList$Element.getNext: 14.475078766517404
+Ljava.lang.Integer.intValue: 11.449569142759264
+LList.verifyResult: 10.775947048338974
+Ljdk.graal.compiler.hotspot.replacements.HotSpotReplacementsUtil.loadHubOrNullIntrinsic: 7.747192245919196
+Ljdk.graal.compiler.hotspot.replacements.InstanceOfSnippets.instanceofExact: 0.6740135880537432
+Ljava.lang.Integer.valueOf: 0.13749324707119007
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 0.12407999781383959

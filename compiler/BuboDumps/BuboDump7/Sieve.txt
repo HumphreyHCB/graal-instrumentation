@@ -1,12 +1,11 @@
 
-93.15276% Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp
-3.6679041% Sieve.benchmark()
-2.4813259% Sieve.sieve(boolean[],Sieve.sieve(boolean[], Re-Comp
-0.25897965% java.util.Arrays.fill(boolean[],java.util.Arrays.fill(boolean[], Re-Comp
-0.067202225% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.057679467% java.util.Formatter.format(Locale,
-0.035659913% Benchmark.innerBenchmarkLoop(int)
-0.02267837% java.util.ArrayList.add(Object)
-0.017636536% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.017296528% Sieve.sieve(boolean[],
-0.015222175% org.graalvm.collections.EconomicMapImpl.createHash()
+Ljava.util.Arrays.fill: 45.87943352391498
+LSieve.sieve: 24.913333375393382
+LBenchmark.innerBenchmarkLoop: 9.675943463523321
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateArrayImpl: 3.1239115159836475
+Ljdk.graal.compiler.nodes.memory.address.OffsetAddressNode.address: 1.8937478046958387
+LSieve.verifyResult: 1.814130224450945
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 1.6117943890481932
+LSieve.benchmark: 1.3578627796072646
+Ljdk.graal.compiler.replacements.AllocationSnippets.formatArray: 1.239485678493907
+Ljdk.graal.compiler.nodes.extended.StoreHubNode.write: 0.9669750189142867

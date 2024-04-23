@@ -1,12 +1,11 @@
 
-99.03885% Mandelbrot.mandelbrot(int)Mandelbrot.mandelbrot(int) Re-Comp
-0.5089928% Mandelbrot.mandelbrot(int)
-0.064568% org.graalvm.collections.EconomicMapImpl.get(Object)
-0.03111454% java.util.ArrayList.add(Object)
-0.027213002% org.graalvm.collections.EconomicMapImpl.find(Object)
-0.022914222% org.graalvm.collections.EconomicMapImpl.put(Object,
-0.02253873% org.graalvm.collections.EconomicMapImpl.grow()
-0.021731565% org.graalvm.collections.EconomicMapImpl.createHash()
-0.018293709% java.util.ArrayList$Itr.next()
-0.016056063% java.lang.String.equals(Object)
-0.009440534% java.lang.String.substring(int,
+LMandelbrot.mandelbrot: 99.31235999313793
+Lorg.graalvm.collections.EconomicMapImpl.compareKeys: 0.027780387589955526
+Lorg.graalvm.collections.EconomicMapImpl.findLinear: 0.025535185362161796
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 0.019221031797588814
+Ljava.util.ArrayList$Itr.next: 0.016681728642420814
+Lorg.graalvm.collections.EconomicMapImpl.getHashArray: 0.016092522251118097
+Ljava.lang.StringLatin1.equals: 0.015488353268144548
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 0.015093703215641973
+Lorg.graalvm.collections.EconomicMapImpl.getRawValue: 0.014005774687337259
+Lorg.graalvm.collections.EconomicMapImpl.getHashIndex: 0.012895689703846537

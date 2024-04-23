@@ -1,12 +1,11 @@
 
-31.071981% cd.CollisionDetector.handleNewFrame(Vector)
-28.265514% som.Vector.forEach(ForEachInterface)som.Vector.forEach(ForEachInterface) Re-Comp
-14.091131% cd.RedBlackTree.put(Comparable,
-7.9845295% cd.CollisionDetector.putIntoMap(RedBlackTree,
-6.7058535% cd.RedBlackTree.forEach(ForEachInterface)cd.RedBlackTree.forEach(ForEachInterface) Re-Comp
-5.318503% cd.RedBlackTree.findNode(Comparable)
-4.9608903% cd.CollisionDetector.recurse(RedBlackTree,
-0.63166946% cd.Simulator.simulate(double)cd.Simulator.simulate(double) Re-Comp
-0.2877528% cd.RedBlackTree.rightRotate(RedBlackTree$Node)
-0.1951772% java.util.Arrays.copyOf(Object[],
-0.18222274% cd.CollisionDetector.lambda$handleNewFrame$3(Vector,
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.g1PostWriteBarrier: 22.561765948928016
+Ljdk.graal.compiler.replacements.gc.G1WriteBarrierSnippets.satbBarrier: 8.789404289775733
+Ljdk.graal.compiler.replacements.AllocationSnippets.allocateInstanceImpl: 5.105263943608513
+Lsom.Vector.append: 4.849914876039622
+Ljdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.nonNullOrDeopt: 3.13359011477863
+Lcd.CollisionDetector.lambda$handleNewFrame$0: 3.016903027583644
+Lsom.Vector.forEach: 2.9747085796454105
+Ljdk.graal.compiler.hotspot.replacements.TypeCheckSnippetUtils.checkSelfAndSupers: 2.5535585669446412
+Lcd.RedBlackTree.findNode: 2.3655293621642626
+Ljdk.graal.compiler.replacements.AllocationSnippets.fillMemoryAligned: 2.146224011764838
