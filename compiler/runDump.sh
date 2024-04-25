@@ -10,7 +10,7 @@
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
-  -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=1 -Dgraal.BuboDebugMode=true  \
+  -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.BuboDebugMode=false  \
  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose \
   -Dgraal.Dump=:5 -Dgraal.PrintGraph=Network -Dgraal.PrintBackendCFG=true \
@@ -19,7 +19,7 @@ mx --java-home \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  Harness DeltaBlue 300 60000  
+  Harness Towers 300 2500  
 
 #  HelloWorld 
   
