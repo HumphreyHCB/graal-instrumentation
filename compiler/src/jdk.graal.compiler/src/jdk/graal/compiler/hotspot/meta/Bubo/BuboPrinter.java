@@ -296,6 +296,7 @@ public class BuboPrinter {
             }
 
             System.out.println(key + ": " + sortedMap.get(key));
+            addToFile(key + ": " + sortedMap.get(key), filename);
             counter++;
         }
 
