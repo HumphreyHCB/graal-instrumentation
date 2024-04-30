@@ -1,3 +1,0 @@
-UnINstrumneted Run Count : 413
-EnableProfiler Run Count : 447
-VisualVM Run Count : 35
