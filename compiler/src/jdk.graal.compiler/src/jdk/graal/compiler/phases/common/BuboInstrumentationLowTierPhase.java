@@ -226,10 +226,6 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
                 }
             } else {
-                // System.out.println("OldBufferAddress is " + (OldBufferAddress != null ? "not null" : "null"));
-                // System.out.println("TimeBuffer is " + (TimeBuffer != null ? "not null" : "null"));
-                // System.out.println("ActivationCountBuffer is " + (ActivationCountBuffer != null ? "not null" : "null"));
-                // System.out.println("CyclesBuffer is " + (CyclesBuffer != null ? "not null" : "null"));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -248,9 +244,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                 //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();
                 if (nodeRatioMap.containsKey(key)) {
-                    nodeRatioMap.put(key, nodeRatioMap.get(key) + 1);
+                    nodeRatioMap.put(key, nodeRatioMap.get(key) + Math.max(1,node.estimatedNodeCycles().value));
                 } else {
-                    nodeRatioMap.put(key, 1);
+                    nodeRatioMap.put(key, Math.max(1,node.estimatedNodeCycles().value));
                 }
             }
     }
