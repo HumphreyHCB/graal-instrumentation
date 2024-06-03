@@ -1,0 +1,102 @@
+
+Towers.moveDisks(int,@ TimeBuffer : 1714213245233@ CyclesEstBuffer : 0
+Towers.benchmark()@ TimeBuffer : 277767298104@ CyclesEstBuffer : 0
+Benchmark.innerBenchmarkLoop(int)Benchmark.innerBenchmarkLoop(int) Re-Comp@ TimeBuffer : 245173416382@ CyclesEstBuffer : 0
+Towers.pushDisk(Towers$TowersDisk,@ TimeBuffer : 0@ CyclesEstBuffer : 1092592060
+Towers.popDiskFrom(int)@ TimeBuffer : 0@ CyclesEstBuffer : 658355958
+org.graalvm.collections.EconomicMapImpl.find(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 129179850
+java.util.Formatter.format(Locale,@ TimeBuffer : 47636278@ CyclesEstBuffer : 0
+java.util.ArrayList.add(Object)@ TimeBuffer : 37837178@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.put(Object,@ TimeBuffer : 0@ CyclesEstBuffer : 33795636
+java.lang.String.equals(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 24228396
+org.graalvm.collections.EconomicMapImpl.createHash()@ TimeBuffer : 24026328@ CyclesEstBuffer : 0
+java.util.ArrayList$Itr.next()@ TimeBuffer : 0@ CyclesEstBuffer : 22306713
+java.util.Formatter$FormatSpecifier.print(Formatter,@ TimeBuffer : 15743569@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.findLinear(Object)org.graalvm.collections.EconomicMapImpl.findLinear(Object) Re-Comp@ TimeBuffer : 14360552@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.get(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 11920853
+org.graalvm.collections.EconomicMapImpl.putHashEntry(Object,@ TimeBuffer : 0@ CyclesEstBuffer : 10313030
+java.lang.String.substring(int,@ TimeBuffer : 10206966@ CyclesEstBuffer : 0
+java.util.RegularEnumSet.contains(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 9946250
+java.util.ArrayList.<init>(int)@ TimeBuffer : 9510308@ CyclesEstBuffer : 0
+java.util.ArrayList.grow(int)@ TimeBuffer : 9509621@ CyclesEstBuffer : 0
+java.util.concurrent.ConcurrentHashMap.computeIfAbsent(Object,@ TimeBuffer : 8334432@ CyclesEstBuffer : 0
+java.util.Formatter$FormatSpecifier.localizedMagnitude(Formatter,@ TimeBuffer : 7644004@ CyclesEstBuffer : 0
+java.util.ArrayList.iterator()@ TimeBuffer : 0@ CyclesEstBuffer : 7222680
+java.util.HashMap.putVal(int,java.util.HashMap.putVal(int, Re-Comp@ TimeBuffer : 7037425@ CyclesEstBuffer : 0
+java.util.BitSet.or(BitSet)@ TimeBuffer : 7038173@ CyclesEstBuffer : 0
+java.util.HashMap.getNode(Object)java.util.HashMap.getNode(Object) Re-Comp@ TimeBuffer : 7109051@ CyclesEstBuffer : 0
+java.util.ArrayDeque.add(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 6982122
+org.graalvm.collections.EconomicMapImpl.grow()@ TimeBuffer : 6995849@ CyclesEstBuffer : 0
+java.util.Arrays.copyOf(Object[],@ TimeBuffer : 6695730@ CyclesEstBuffer : 0
+java.util.ArrayDeque.remove()@ TimeBuffer : 0@ CyclesEstBuffer : 6629655
+java.util.ArrayDeque.addLast(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 6477660
+java.util.ArrayList.forEach(Consumer)@ TimeBuffer : 6411425@ CyclesEstBuffer : 0
+java.util.ArrayList$Itr.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 6410097
+java.util.ArrayList.get(int)@ TimeBuffer : 0@ CyclesEstBuffer : 6252942
+Towers.buildTowerAt(int,@ TimeBuffer : 6091164@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.findLinear(Object)@ TimeBuffer : 5934892@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.removeKey(Object)@ TimeBuffer : 5985139@ CyclesEstBuffer : 0
+jdk.internal.misc.Unsafe.allocateUninitializedArray(Class,@ TimeBuffer : 5928794@ CyclesEstBuffer : 0
+java.util.ArrayDeque$DeqIterator.next()@ TimeBuffer : 0@ CyclesEstBuffer : 4980560
+java.util.HashMap.getNode(Object)java.util.HashMap.getNode(Object) Re-Comp@ TimeBuffer : 4853362@ CyclesEstBuffer : 0
+java.util.Formatter$FormatSpecifier.print(Formatter,java.util.Formatter$FormatSpecifier.print(Formatter, Re-Comp@ TimeBuffer : 4283740@ CyclesEstBuffer : 0
+java.util.ArrayDeque.peek()@ TimeBuffer : 0@ CyclesEstBuffer : 4025856
+java.lang.StringLatin1.lastIndexOf(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 3818374
+java.lang.AbstractStringBuilder.ensureCapacityInternal(int)@ TimeBuffer : 3767324@ CyclesEstBuffer : 0
+java.lang.AbstractStringBuilder.append(char)@ TimeBuffer : 3641749@ CyclesEstBuffer : 0
+java.util.ArrayDeque.pollFirst()@ TimeBuffer : 0@ CyclesEstBuffer : 3570448
+java.util.ArrayDeque.isEmpty()@ TimeBuffer : 0@ CyclesEstBuffer : 3359066
+java.lang.StringBuilder.append(char)@ TimeBuffer : 3268426@ CyclesEstBuffer : 0
+java.util.ArrayList.sort(Comparator)@ TimeBuffer : 3248924@ CyclesEstBuffer : 0
+java.lang.ThreadLocal$ThreadLocalMap.set(ThreadLocal,@ TimeBuffer : 0@ CyclesEstBuffer : 3096651
+org.graalvm.collections.EconomicMapImpl.findHash(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 2716896
+java.lang.StringConcatHelper.prepend(long,java.lang.StringConcatHelper.prepend(long, Re-Comp@ TimeBuffer : 0@ CyclesEstBuffer : 2696106
+java.util.HashMap.getNode(Object)java.util.HashMap.getNode(Object) Re-Comp@ TimeBuffer : 2580109@ CyclesEstBuffer : 0
+java.util.BitSet.<init>(int)@ TimeBuffer : 2557118@ CyclesEstBuffer : 0
+java.util.BitSet.clone()@ TimeBuffer : 2420312@ CyclesEstBuffer : 0
+java.util.Collections$UnmodifiableCollection$1.hasNext()@ TimeBuffer : 2394963@ CyclesEstBuffer : 0
+java.util.HashMap.putVal(int,@ TimeBuffer : 2262060@ CyclesEstBuffer : 0
+java.util.ArrayDeque.grow(int)@ TimeBuffer : 2271672@ CyclesEstBuffer : 0
+java.util.BitSet.nextSetBit(int)@ TimeBuffer : 0@ CyclesEstBuffer : 2217943
+java.util.BitSet.get(int)@ TimeBuffer : 0@ CyclesEstBuffer : 2052690
+java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object,@ TimeBuffer : 2001348@ CyclesEstBuffer : 0
+java.lang.StringLatin1.equals(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 1948200
+org.graalvm.collections.EconomicMapImpl$3.next()@ TimeBuffer : 0@ CyclesEstBuffer : 1838728
+java.util.Collections$UnmodifiableCollection$1.next()@ TimeBuffer : 1838093@ CyclesEstBuffer : 0
+java.lang.Iterable.forEach(Consumer)@ TimeBuffer : 2009808@ CyclesEstBuffer : 0
+java.util.ArrayDeque.iterator()@ TimeBuffer : 0@ CyclesEstBuffer : 1799523
+java.lang.AbstractStringBuilder.append(CharSequence,@ TimeBuffer : 1707770@ CyclesEstBuffer : 0
+java.lang.StringLatin1.lastIndexOf(byte[],java.lang.StringLatin1.lastIndexOf(byte[], Re-Comp@ TimeBuffer : 1560816@ CyclesEstBuffer : 0
+java.lang.AbstractStringBuilder.append(String)@ TimeBuffer : 1576960@ CyclesEstBuffer : 0
+java.lang.StringLatin1.replace(byte[],@ TimeBuffer : 1517794@ CyclesEstBuffer : 0
+java.nio.HeapByteBuffer.put(byte)@ TimeBuffer : 0@ CyclesEstBuffer : 1488879
+java.lang.StringConcatHelper.newString(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 1502025
+org.graalvm.collections.EconomicMapImpl.<init>(Equivalence,@ TimeBuffer : 0@ CyclesEstBuffer : 1307898
+java.util.HashMap.getNode(Object)@ TimeBuffer : 1287556@ CyclesEstBuffer : 0
+java.util.BitSet.set(int)@ TimeBuffer : 0@ CyclesEstBuffer : 1259676
+java.lang.String.hashCode()@ TimeBuffer : 0@ CyclesEstBuffer : 1209082
+java.lang.String.toString()@ TimeBuffer : 0@ CyclesEstBuffer : 1218084
+org.graalvm.collections.EconomicMapImpl.getHashIndex(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 1135231
+java.util.ArrayDeque.addFirst(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 1139226
+java.util.ArrayList.set(int,@ TimeBuffer : 0@ CyclesEstBuffer : 1100840
+java.lang.StringLatin1.indexOfChar(byte[],java.lang.StringLatin1.indexOfChar(byte[], Re-Comp@ TimeBuffer : 1028362@ CyclesEstBuffer : 0
+java.lang.AbstractStringBuilder.<init>(int)@ TimeBuffer : 1033392@ CyclesEstBuffer : 0
+java.util.ArrayDeque$DeqIterator.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 908192
+java.lang.ClassValue.get(Class)@ TimeBuffer : 0@ CyclesEstBuffer : 894006
+java.util.HashMap.put(Object,@ TimeBuffer : 0@ CyclesEstBuffer : 881475
+java.lang.Object.<init>()@ TimeBuffer : 0@ CyclesEstBuffer : 865708
+java.lang.String.<init>(AbstractStringBuilder,@ TimeBuffer : 867091@ CyclesEstBuffer : 0
+java.lang.StringBuilder.toString()@ TimeBuffer : 854099@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.getKey(int)@ TimeBuffer : 0@ CyclesEstBuffer : 823760
+java.lang.StringConcatHelper.mix(long,@ TimeBuffer : 0@ CyclesEstBuffer : 789798
+java.lang.Integer.valueOf(int)@ TimeBuffer : 0@ CyclesEstBuffer : 786192
+java.lang.StringBuilder.<init>()@ TimeBuffer : 0@ CyclesEstBuffer : 757944
+java.util.Formatter$FormatSpecifier.appendJustified(Appendable,@ TimeBuffer : 713907@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.setRawValue(int,@ TimeBuffer : 0@ CyclesEstBuffer : 706158
+java.util.TimSort.binarySort(Object[],java.util.TimSort.binarySort(Object[], Re-Comp@ TimeBuffer : 1684844@ CyclesEstBuffer : 0
+java.util.Arrays.copyOf(Object[],java.util.Arrays.copyOf(Object[], Re-Comp@ TimeBuffer : 674244@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl$SparseMapIterator.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 658590
+java.util.ArrayDeque.push(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 663256
+org.graalvm.collections.EconomicMapImpl.remove(int)@ TimeBuffer : 0@ CyclesEstBuffer : 642880
+org.graalvm.collections.EconomicMapImpl.setValue(int,@ TimeBuffer : 0@ CyclesEstBuffer : 613536
+java.util.Arrays$ArrayItr.next()@ TimeBuffer : 0@ CyclesEstBuffer : 598386

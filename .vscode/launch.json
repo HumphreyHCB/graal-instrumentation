@@ -1,0 +1,69 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "request": "attach",
+            "name": "Attach by Process ID",
+            "processId": "${command:PickJavaProcess}"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "DownloadChromiumDev",
+            "request": "launch",
+            "mainClass": "com.oracle.truffle.tools.chromeinspector.workflowtest.DownloadChromiumDev",
+            "projectName": "CDTInspectorTest"
+        },
+        {
+            "type": "java",
+            "name": "Test",
+            "request": "launch",
+            "mainClass": "com.oracle.truffle.tools.chromeinspector.workflowtest.Test",
+            "projectName": "CDTInspectorTest"
+        },
+        {
+            "type": "java",
+            "name": "JVMCIVersionCheck",
+            "request": "launch",
+            "mainClass": "jdk.graal.compiler.hotspot.JVMCIVersionCheck",
+            "projectName": "graal-instrumentation_9f5e57c7"
+        },
+        {
+            "type": "java",
+            "name": "JVMCIVersionCompare",
+            "request": "launch",
+            "mainClass": "jdk.graal.compiler.hotspot.JVMCIVersionCompare",
+            "projectName": "graal-instrumentation_9f5e57c7"
+        },
+        {
+            "type": "java",
+            "name": "BuboDataReader",
+            "request": "launch",
+            "mainClass": "jdk.graal.compiler.hotspot.meta.Bubo.BuboDataReader",
+            "projectName": "graal-instrumentation_9f5e57c7"
+        },
+        {
+            "type": "java",
+            "name": "BuboPrinter",
+            "request": "launch",
+            "mainClass": "jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter",
+            "projectName": "graal-instrumentation_9f5e57c7"
+        },
+        {
+            "type": "java",
+            "name": "BuboWriter",
+            "request": "launch",
+            "mainClass": "jdk.graal.compiler.hotspot.meta.Bubo.BuboWriter",
+            "projectName": "graal-instrumentation_9f5e57c7"
+        }
+    ]
+}

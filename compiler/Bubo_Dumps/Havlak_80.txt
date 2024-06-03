@@ -1,0 +1,102 @@
+
+havlak.HavlakLoopFinder.doDFS(BasicBlock,@ TimeBuffer : 2365714706861@ CyclesEstBuffer : 0
+havlak.HavlakLoopFinder.findLoops()@ TimeBuffer : 136807883165@ CyclesEstBuffer : 0
+havlak.LoopTesterApp.findLoops(LoopStructureGraph)@ TimeBuffer : 136050010075@ CyclesEstBuffer : 0
+som.Set.add(Object)@ TimeBuffer : 133337985644@ CyclesEstBuffer : 0
+havlak.LoopTesterApp.addDummyLoops(int)havlak.LoopTesterApp.addDummyLoops(int) Re-Comp@ TimeBuffer : 42879709952@ CyclesEstBuffer : 0
+havlak.HavlakLoopFinder.identifyEdges(int)@ TimeBuffer : 25005603349@ CyclesEstBuffer : 0
+havlak.UnionFindNode.findSet()@ TimeBuffer : 18001358203@ CyclesEstBuffer : 0
+havlak.HavlakLoopFinder$$Lambda/0x00007f272801a000.apply(Object)@ TimeBuffer : 15059959599@ CyclesEstBuffer : 0
+som.Vector.hasSome(TestInterface)@ TimeBuffer : 0@ CyclesEstBuffer : 8989930895
+havlak.SimpleLoop.<init>(BasicBlock,@ TimeBuffer : 6539021063@ CyclesEstBuffer : 0
+som.Dictionary.resize()@ TimeBuffer : 1906504632@ CyclesEstBuffer : 0
+som.Dictionary.transferEntries(Dictionary$Entry[])som.Dictionary.transferEntries(Dictionary$Entry[]) Re-Comp@ TimeBuffer : 1713034188@ CyclesEstBuffer : 0
+havlak.HavlakLoopFinder.setLoopAttributes(int,@ TimeBuffer : 0@ CyclesEstBuffer : 1388740388
+java.util.Arrays.copyOf(Object[],@ TimeBuffer : 797428730@ CyclesEstBuffer : 0
+havlak.LoopTesterApp.buildBaseLoop(int)@ TimeBuffer : 317081917@ CyclesEstBuffer : 0
+havlak.ControlFlowGraph.createNode(int)@ TimeBuffer : 0@ CyclesEstBuffer : 300759875
+havlak.LoopStructureGraph$$Lambda/0x00007f27280867d8.apply(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 283531580
+havlak.BasicBlockEdge.<init>(ControlFlowGraph,@ TimeBuffer : 243802410@ CyclesEstBuffer : 0
+havlak.LoopStructureGraph$$Lambda/0x00007f2728086368.apply(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 192466260
+havlak.LoopTesterApp.constructCFG(int,havlak.LoopTesterApp.constructCFG(int, Re-Comp@ TimeBuffer : 139440816@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.find(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 136215933
+havlak.LoopTesterApp.addDummyLoops(int)@ TimeBuffer : 102163537@ CyclesEstBuffer : 0
+som.Vector.forEach(ForEachInterface)@ TimeBuffer : 0@ CyclesEstBuffer : 60297480
+java.util.ArrayList.add(Object)@ TimeBuffer : 38437844@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.put(Object,@ TimeBuffer : 0@ CyclesEstBuffer : 37789167
+org.graalvm.collections.EconomicMapImpl.findLinear(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 31967448
+org.graalvm.collections.EconomicMapImpl.createHash()@ TimeBuffer : 29492603@ CyclesEstBuffer : 0
+java.util.ArrayList$Itr.next()@ TimeBuffer : 0@ CyclesEstBuffer : 25993286
+som.Vector.append(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 24925934
+java.lang.String.equals(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 24265440
+java.util.HashMap.getNode(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 17380974
+org.graalvm.collections.EconomicMapImpl.get(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 12539408
+org.graalvm.collections.EconomicMapImpl.putHashEntry(Object,@ TimeBuffer : 0@ CyclesEstBuffer : 11554200
+java.lang.AbstractStringBuilder.append(char)@ TimeBuffer : 0@ CyclesEstBuffer : 11408598
+java.util.ArrayList.grow(int)@ TimeBuffer : 11428527@ CyclesEstBuffer : 0
+java.util.RegularEnumSet.contains(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 10941900
+java.util.Formatter$FormatSpecifier.print(Formatter,@ TimeBuffer : 10046120@ CyclesEstBuffer : 0
+java.util.Formatter.format(Locale,java.util.Formatter.format(Locale, Re-Comp@ TimeBuffer : 10026139@ CyclesEstBuffer : 0
+org.graalvm.collections.EconomicMapImpl.grow()@ TimeBuffer : 9883409@ CyclesEstBuffer : 0
+java.util.ArrayList.<init>(int)@ TimeBuffer : 9724218@ CyclesEstBuffer : 0
+java.lang.String.substring(int,@ TimeBuffer : 9306738@ CyclesEstBuffer : 0
+som.Dictionary.splitBucket(Dictionary$Entry[],@ TimeBuffer : 0@ CyclesEstBuffer : 9138015
+java.util.concurrent.ConcurrentHashMap.computeIfAbsent(Object,@ TimeBuffer : 9107964@ CyclesEstBuffer : 0
+java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object,@ TimeBuffer : 9010476@ CyclesEstBuffer : 0
+havlak.HavlakLoopFinder$$Lambda/0x00007f272801b100.apply(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 8922270
+java.util.TimSort.sort(Object[],@ TimeBuffer : 10599055@ CyclesEstBuffer : 0
+java.util.ArrayDeque.add(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 7891527
+java.util.ArrayDeque.remove()@ TimeBuffer : 0@ CyclesEstBuffer : 7771515
+java.util.ArrayList.get(int)@ TimeBuffer : 0@ CyclesEstBuffer : 7667700
+java.util.ArrayList.iterator()@ TimeBuffer : 0@ CyclesEstBuffer : 7290840
+java.util.BitSet.or(BitSet)@ TimeBuffer : 7266307@ CyclesEstBuffer : 0
+java.util.ArrayList.forEach(Consumer)java.util.ArrayList.forEach(Consumer) Re-Comp@ TimeBuffer : 7092617@ CyclesEstBuffer : 0
+java.util.HashMap.putVal(int,java.util.HashMap.putVal(int, Re-Comp@ TimeBuffer : 6933925@ CyclesEstBuffer : 0
+java.util.ArrayList$Itr.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 6952437
+java.util.ArrayDeque.addLast(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 6897807
+jdk.internal.misc.Unsafe.allocateUninitializedArray(Class,@ TimeBuffer : 6528890@ CyclesEstBuffer : 0
+java.util.ArrayDeque$DeqIterator.next()@ TimeBuffer : 0@ CyclesEstBuffer : 6090565
+java.lang.Iterable.forEach(Consumer)@ TimeBuffer : 5736996@ CyclesEstBuffer : 0
+java.lang.StringLatin1.equals(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 5667880
+java.lang.invoke.DirectMethodHandle.allocateInstance(Object)@ TimeBuffer : 5585567@ CyclesEstBuffer : 0
+java.util.Formatter$FormatSpecifier.localizedMagnitude(Formatter,@ TimeBuffer : 4568528@ CyclesEstBuffer : 0
+java.util.ArrayDeque.peek()@ TimeBuffer : 0@ CyclesEstBuffer : 4447900
+java.util.Formatter$FormatSpecifier.print(Formatter,java.util.Formatter$FormatSpecifier.print(Formatter, Re-Comp@ TimeBuffer : 4358522@ CyclesEstBuffer : 0
+som.IdentityDictionary.newEntry(Dictionary$CustomHash,@ TimeBuffer : 0@ CyclesEstBuffer : 4089690
+java.lang.StringLatin1.lastIndexOf(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 3956506
+java.util.ArrayDeque.isEmpty()@ TimeBuffer : 0@ CyclesEstBuffer : 3725462
+havlak.LoopStructureGraph.<init>()@ TimeBuffer : 3504134@ CyclesEstBuffer : 0
+java.util.ArrayDeque.pollFirst()@ TimeBuffer : 0@ CyclesEstBuffer : 3390856
+java.util.Collections$UnmodifiableCollection$1.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 3209328
+java.util.BitSet.<init>(int)@ TimeBuffer : 3156965@ CyclesEstBuffer : 0
+java.util.Collections$UnmodifiableCollection$1.next()@ TimeBuffer : 0@ CyclesEstBuffer : 3070950
+java.util.ArrayDeque.grow(int)@ TimeBuffer : 3025980@ CyclesEstBuffer : 0
+java.lang.StringConcatHelper.prepend(long,java.lang.StringConcatHelper.prepend(long, Re-Comp@ TimeBuffer : 0@ CyclesEstBuffer : 2985843
+java.lang.ThreadLocal$ThreadLocalMap.set(ThreadLocal,@ TimeBuffer : 0@ CyclesEstBuffer : 2908488
+java.util.Formatter$FixedString.print(Formatter,@ TimeBuffer : 2867815@ CyclesEstBuffer : 0
+java.util.BitSet.nextSetBit(int)@ TimeBuffer : 0@ CyclesEstBuffer : 2519584
+org.graalvm.collections.EconomicMapImpl.findHash(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 2503592
+java.lang.AbstractStringBuilder.ensureCapacityInternal(int)@ TimeBuffer : 0@ CyclesEstBuffer : 2282282
+org.graalvm.collections.EconomicMapImpl$3.next()@ TimeBuffer : 0@ CyclesEstBuffer : 2171256
+java.util.BitSet.get(int)@ TimeBuffer : 0@ CyclesEstBuffer : 2160498
+java.util.ArrayList.addAll(Collection)@ TimeBuffer : 2173635@ CyclesEstBuffer : 0
+java.util.ArrayDeque.addFirst(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 1855106
+som.Dictionary.at(Dictionary$CustomHash)@ TimeBuffer : 0@ CyclesEstBuffer : 1741200
+java.lang.StringLatin1.replace(byte[],@ TimeBuffer : 1756473@ CyclesEstBuffer : 0
+java.util.HashMap.putVal(int,java.util.HashMap.putVal(int, Re-Comp@ TimeBuffer : 1609632@ CyclesEstBuffer : 0
+java.util.ArrayList.set(int,@ TimeBuffer : 0@ CyclesEstBuffer : 1598420
+java.nio.HeapByteBuffer.put(byte)@ TimeBuffer : 0@ CyclesEstBuffer : 1602369
+java.lang.StringConcatHelper.newString(byte[],@ TimeBuffer : 0@ CyclesEstBuffer : 1713375
+java.util.ArrayDeque$DeqIterator.<init>(ArrayDeque)@ TimeBuffer : 0@ CyclesEstBuffer : 1557452
+java.lang.String.hashCode()@ TimeBuffer : 0@ CyclesEstBuffer : 1520799
+java.lang.AbstractStringBuilder.<init>(int)@ TimeBuffer : 1500725@ CyclesEstBuffer : 0
+java.util.Collections$SingletonSet.contains(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 1470735
+org.graalvm.collections.EconomicMapImpl.getHashIndex(Object)@ TimeBuffer : 0@ CyclesEstBuffer : 1464995
+org.graalvm.collections.EconomicMapImpl.<init>(Equivalence,@ TimeBuffer : 0@ CyclesEstBuffer : 1375398
+java.util.BitSet.set(int)@ TimeBuffer : 0@ CyclesEstBuffer : 1383273
+havlak.LoopTesterApp.buildDiamond(int)@ TimeBuffer : 1326844@ CyclesEstBuffer : 0
+java.util.ArrayDeque$DeqIterator.hasNext()@ TimeBuffer : 0@ CyclesEstBuffer : 1306458
+java.util.Formatter.parse(String)@ TimeBuffer : 1294680@ CyclesEstBuffer : 0
+java.lang.String.toString()@ TimeBuffer : 0@ CyclesEstBuffer : 1213186
+java.util.BitSet.clone()@ TimeBuffer : 1148597@ CyclesEstBuffer : 0
+java.util.Arrays.hashCode(Object[])@ TimeBuffer : 1100990@ CyclesEstBuffer : 0
