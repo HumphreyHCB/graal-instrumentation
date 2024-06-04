@@ -45,7 +45,10 @@ import jdk.graal.compiler.debug.DebugHandlersFactory;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
 import jdk.graal.compiler.hotspot.phases.OnStackReplacementPhase;
 import jdk.graal.compiler.java.GraphBuilderPhase;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
@@ -78,8 +81,6 @@ import jdk.vm.ci.runtime.JVMCICompiler;
 import jdk.vm.ci.services.Services;
 import sun.misc.Unsafe;
 
-import java.io.FileWriter;
-import java.io.IOException;
 
 public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JVMCICompilerShadow {
 
@@ -96,6 +97,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         // It is sufficient to have one compilation counter object per compiler object.
         this.compilationCounters = CompilationCounters.Options.CompilationCountLimit.getValue(options) > 0 ? new CompilationCounters(options) : null;
         this.bootstrapWatchDog = graalRuntime.isBootstrapping() && !DebugOptions.BootstrapInitializeOnly.getValue(options) ? BootstrapWatchDog.maybeCreate(graalRuntime) : null;
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            startBubo();
+        }
     }
 
     public List<DebugHandlersFactory> getDebugHandlersFactories() {
@@ -173,6 +177,58 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
     private void addMethodToCache(CompilationIdentifier id){
         //addToFile(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
         BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
+    }
+
+    private void startBubo(){
+
+        System.out.println("Starting Bubo Agent......");
+        
+        BuboCache timeCache = new BuboCache();
+        timeCache.start();
+
+        BuboMethodCache methodCache = new BuboMethodCache();
+        methodCache.start();
+
+        BuboCompUnitCache compunitCache = new BuboCompUnitCache();
+        compunitCache.start();
+
+        Thread writingHook = new Thread(() -> {
+            System.out.println("Bubo Agent Joining......");
+            try {
+                timeCache.join();
+                methodCache.join();
+                compunitCache.join();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            System.out.println("Bubo Agent Starting Printing......");
+
+            if (BuboMethodCache.pointer == 0) {
+                System.out.println("Method Cache is empty, did you forget to enable the profiler");
+                System.out.println("Add the follwoing command : -Dgraal.EnableProfiler=true ");
+                boolean didSOmthing = false;
+                for (int i = 0; i < 1000; i++) {
+                    if (BuboCache.Buffer[i] > 0) {
+                        didSOmthing = true;
+                    }
+                }
+                if (didSOmthing) {
+                    System.out.println("We did find at least one method entry in the raw cache; therefore, something was recorded, but we don't know which method it belongs to.");
+                }
+                
+            }
+            else{
+             //BuboPrinter.printPercentageBar(BuboCache.Buffer, BuboMethodCache.getBuffer(), endTime - startTime );
+             //BuboPrinter.printMultiBufferDebug(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), agentArgs);
+             BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), compunitCache.Buffer);
+            }
+
+            //BuboPrinter.addToFile("VisualVM Run Count : " + BuboMethodCache.getBuffer().size());
+            System.out.println("Bubo Agent Sutting Down......");
+    });
+        Runtime.getRuntime().addShutdownHook(writingHook);
+
     }
 
     public static void addToFile(String line) {
