@@ -9,9 +9,7 @@ mx --java-home \
  vm -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=80 -Dgraal.BuboDebugMode=false \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.TrackNodeSourcePosition=true -XX:+UseJVMCICompiler \
-  --add-exports \
-  jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
-  -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
+  -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   Harness DeltaBlue 300 60000  
 
 #  HelloWorld 
