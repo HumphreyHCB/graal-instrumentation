@@ -26,6 +26,7 @@ package jdk.graal.compiler.phases.common;
 
 import java.util.Optional;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.type.Stamp;
@@ -118,6 +119,7 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             return address;
 
         } catch (Exception e) {
+            System.err.print("You Must include -XX:-UseJVMCINativeLibrary in your Run Options");
             e.printStackTrace();
             // TODO: handle exception
         }
