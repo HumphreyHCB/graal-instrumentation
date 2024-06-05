@@ -26,8 +26,6 @@ package jdk.graal.compiler.hotspot;
 
 import static jdk.graal.compiler.core.common.GraalOptions.OptAssumptions;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -90,6 +88,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
     private final CompilationCounters compilationCounters;
     private final BootstrapWatchDog bootstrapWatchDog;
     private List<DebugHandlersFactory> factories;
+    private boolean happend;
 
     HotSpotGraalCompiler(HotSpotJVMCIRuntime jvmciRuntime, HotSpotGraalRuntimeProvider graalRuntime, OptionValues options) {
         this.jvmciRuntime = jvmciRuntime;
@@ -97,9 +96,10 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         // It is sufficient to have one compilation counter object per compiler object.
         this.compilationCounters = CompilationCounters.Options.CompilationCountLimit.getValue(options) > 0 ? new CompilationCounters(options) : null;
         this.bootstrapWatchDog = graalRuntime.isBootstrapping() && !DebugOptions.BootstrapInitializeOnly.getValue(options) ? BootstrapWatchDog.maybeCreate(graalRuntime) : null;
-        if (GraalOptions.EnableProfiler.getValue(options)) {
-            startBubo();
-        }
+        //if (GraalOptions.EnableProfiler.getValue(options)) {
+          // startBubo();
+        //}
+        happend = false;
     }
 
     public List<DebugHandlersFactory> getDebugHandlersFactories() {
@@ -152,6 +152,10 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             CompilationTask task = new CompilationTask(jvmciRuntime, this, hsRequest, true, shouldRetainLocalVariables(hsRequest.getJvmciEnv()), shouldUsePreciseUnresolvedDeopts(), installAsDefault);
             OptionValues options = task.filterOptions(initialOptions);
             if (GraalOptions.EnableProfiler.getValue(options) || GraalOptions.CountCompiledMethods.getValue(options)) {
+                if (!happend) {
+                    startBubo();
+                    happend = true;
+                }
                 addMethodToCache(task.getCompilationIdentifier());
             }
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
@@ -179,12 +183,13 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
     }
 
+
     private void startBubo(){
 
-        System.out.println("Starting Bubo Agent......");
+        System.out.println("Starting Bubo Agent...... From Compiler");
         
-        BuboCache timeCache = new BuboCache();
-        timeCache.start();
+        //BuboCache timeCache = new BuboCache();
+        //timeCache.start();
 
         BuboMethodCache methodCache = new BuboMethodCache();
         methodCache.start();
@@ -195,7 +200,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         Thread writingHook = new Thread(() -> {
             System.out.println("Bubo Agent Joining......");
             try {
-                timeCache.join();
+                //timeCache.join();
                 methodCache.join();
                 compunitCache.join();
             } catch (InterruptedException e) {
@@ -219,39 +224,23 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                 
             }
             else{
-             //BuboPrinter.printPercentageBar(BuboCache.Buffer, BuboMethodCache.getBuffer(), endTime - startTime );
-             //BuboPrinter.printMultiBufferDebug(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), agentArgs);
-             BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), compunitCache.Buffer);
+                System.out.println("BuboMethodCache");
+                for (int key : BuboMethodCache.getBuffer().keySet()) {
+                    System.out.println("ID : " + key + ", Method : " + BuboMethodCache.getBuffer().get(key));
+                }
+                System.out.println("BuboCompUnitCache");
+                for (int key : BuboCompUnitCache.Buffer.keySet()) {
+                    System.out.println("ID : " + key + ", Unit : " + BuboMethodCache.getBuffer().get(key));
+                }
+                //BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(),"" ,BuboCompUnitCache.Buffer);
             }
 
-            //BuboPrinter.addToFile("VisualVM Run Count : " + BuboMethodCache.getBuffer().size());
             System.out.println("Bubo Agent Sutting Down......");
     });
         Runtime.getRuntime().addShutdownHook(writingHook);
-
-    }
-
-    public static void addToFile(String line) {
-         String filename = "VisualVMMethodCount.txt";
-        String newline = System.getProperty("line.separator"); // Get the system's newline character
-
-        try {
-            // Create a FileWriter object with append mode
-            FileWriter writer = new FileWriter(filename, true);
-            
-            // Append a newline to the file
-            writer.write(newline);
-            writer.write(line);
-            
-            // Close the FileWriter
-            writer.close();
-            
-            System.out.println("Newline appended to the file successfully.");
-        } catch (IOException e) {
-            System.out.println("An error occurred: " + e.getMessage());
-        }
         
     }
+
 
     private boolean shouldRetainLocalVariables(long envAddress) {
         GraalHotSpotVMConfig config = graalRuntime.getVMConfig();

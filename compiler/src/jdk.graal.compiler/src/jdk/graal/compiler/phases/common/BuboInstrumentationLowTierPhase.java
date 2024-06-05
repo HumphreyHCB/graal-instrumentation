@@ -86,7 +86,6 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         try {
 
             // find the address node added in the high tier phase, using the BuboVoidStamp
-            OffsetAddressNode OldBufferAddress = null;
             OffsetAddressNode TimeBuffer = null;
             OffsetAddressNode ActivationCountBuffer = null;
             OffsetAddressNode CyclesBuffer = null;
@@ -108,14 +107,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
                             CyclesBuffer = element;
                         }
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboVoid())) {
-                            OldBufferAddress = element;
-                        }
                     }
                 }
             }
 
-            if (OldBufferAddress != null && TimeBuffer != null && ActivationCountBuffer != null
+            if (TimeBuffer != null && ActivationCountBuffer != null
                     && CyclesBuffer != null) {
                 double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
                 if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {

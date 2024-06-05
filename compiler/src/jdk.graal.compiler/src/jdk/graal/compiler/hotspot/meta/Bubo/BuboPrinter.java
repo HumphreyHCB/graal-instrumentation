@@ -224,7 +224,7 @@ public class BuboPrinter {
 
     }
 
-    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
+    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods,String Dead, HashMap<Integer, String> CompUnits) {
 
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
