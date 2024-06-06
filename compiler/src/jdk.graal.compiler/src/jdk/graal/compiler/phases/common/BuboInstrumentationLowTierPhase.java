@@ -108,14 +108,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
                             CyclesBuffer = element;
                         }
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboVoid())) {
-                            OldBufferAddress = element;
-                        }
                     }
                 }
             }
 
-            if (OldBufferAddress != null && TimeBuffer != null && ActivationCountBuffer != null
+            if (TimeBuffer != null && ActivationCountBuffer != null
                     && CyclesBuffer != null) {
                 double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
                 if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
@@ -240,7 +237,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         for (Node node : graph.getNodes()) {
             NodeSourcePosition nsp = node.getNodeSourcePosition();
             if (nsp == null) {
+
             } else {
+                if (nsp.getMethod().isNative() || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
+                    continue;
+                }
                 //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();
                 if (nodeRatioMap.containsKey(key)) {
