@@ -24,20 +24,19 @@
  */
 package jdk.graal.compiler.phases.common;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
-import jdk.graal.compiler.core.common.GraalOptions;
+
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
-import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.graph.NodeClass;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
 import jdk.graal.compiler.nodes.GraphState;
-import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.calc.AddNode;
 import jdk.graal.compiler.nodes.calc.LeftShiftNode;
 import jdk.graal.compiler.nodes.calc.SignExtendNode;
-import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.java.LoadFieldNode;
 import jdk.graal.compiler.nodes.java.ReachabilityFenceNode;
 import jdk.graal.compiler.nodes.memory.address.AddressNode;
@@ -47,9 +46,10 @@ import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
+
+
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaConstant;
-
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.code.CodeUtil;
 
@@ -74,6 +74,33 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
     public BuboInstrumentationHighTierPhase() {
     }
 
+    private static final Field BUFFER_FIELD;
+    private static final Field TIMEBUFFER_FIELD;
+    private static final Field ACTIVATIONCOUNTBUFFER_FIELD;
+    private static final Field CYCLESBUFFER_FIELD;
+
+    static {
+        Field bufferField = null;
+        Field timeBufferField = null;
+        Field activationCountBufferField = null;
+        Field cyclesBufferField = null;
+        
+        try {
+            bufferField = BuboCache.class.getDeclaredField("Buffer");
+            timeBufferField = BuboCache.class.getDeclaredField("TimeBuffer");
+            activationCountBufferField = BuboCache.class.getDeclaredField("ActivationCountBuffer");
+            cyclesBufferField = BuboCache.class.getDeclaredField("CyclesBuffer");
+        } catch (NoSuchFieldException e) {
+            System.err.println("There was a problem in finding the fields");
+            e.printStackTrace();
+        }
+
+        BUFFER_FIELD = bufferField;
+        TIMEBUFFER_FIELD = timeBufferField;
+        ACTIVATIONCOUNTBUFFER_FIELD = activationCountBufferField;
+        CYCLESBUFFER_FIELD = cyclesBufferField;
+    }
+
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, HighTierContext context) {
@@ -85,10 +112,10 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
 
-            AddressNode address = createBuboAddress("Buffer",ID,graph,context,StampFactory.forBuboVoid());
-            AddressNode TimeBuffer = createBuboAddress("TimeBuffer",ID,graph,context,StampFactory.forBuboTimeRead());
-            AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ID,graph,context,StampFactory.forBuboActivationCountRead());
-            AddressNode CyclesBuffer = createBuboAddress("CyclesBuffer",ID,graph,context,StampFactory.forBuboCycleRead());
+            AddressNode address = createBuboAddress("Buffer",BUFFER_FIELD,ID,graph,context,StampFactory.forBuboVoid());
+            AddressNode TimeBuffer = createBuboAddress("TimeBuffer",TIMEBUFFER_FIELD,ID,graph,context,StampFactory.forBuboTimeRead());
+            AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ACTIVATIONCOUNTBUFFER_FIELD,ID,graph,context,StampFactory.forBuboActivationCountRead());
+            AddressNode CyclesBuffer = createBuboAddress("CyclesBuffer",CYCLESBUFFER_FIELD,ID,graph,context,StampFactory.forBuboCycleRead());
 
 
             
@@ -106,11 +133,11 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
 
     }
 
-    public AddressNode createBuboAddress(String FieldName, ValueNode ID, StructuredGraph graph, HighTierContext context, Stamp stamp) {
+    public AddressNode createBuboAddress(String FieldName, Field field, ValueNode ID, StructuredGraph graph, HighTierContext context, Stamp stamp) {
         try {
                     // Read the buffer form the static class
         LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-                    context.getMetaAccess().lookupJavaField(BuboCache.class.getField(FieldName))));
+                    context.getMetaAccess().lookupJavaField(field)));
             graph.addAfterFixed(graph.start(), readBuffer);
 
             // create the address, and give it our unique stamp for identifaction later on
@@ -119,7 +146,6 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             return address;
 
         } catch (Exception e) {
-            System.err.print("You Must include -XX:-UseJVMCINativeLibrary in your Run Options");
             e.printStackTrace();
             // TODO: handle exception
         }
