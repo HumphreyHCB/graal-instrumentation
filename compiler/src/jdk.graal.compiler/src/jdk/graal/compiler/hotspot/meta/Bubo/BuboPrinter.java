@@ -224,7 +224,7 @@ public class BuboPrinter {
 
     }
 
-    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, String filename, HashMap<Integer, String> CompUnits) {
+    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
 
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
@@ -296,7 +296,7 @@ public class BuboPrinter {
             }
 
             System.out.println(key + ": " + sortedMap.get(key));
-            addToFile(key + ": " + sortedMap.get(key), filename);
+            //addToFile(key + ": " + sortedMap.get(key), filename);
             counter++;
         }
 
