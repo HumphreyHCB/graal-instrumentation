@@ -84,7 +84,6 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
 
-            AddressNode address = createBuboAddress("Buffer",ID,graph,context,StampFactory.forBuboVoid());
             AddressNode TimeBuffer = createBuboAddress("TimeBuffer",ID,graph,context,StampFactory.forBuboTimeRead());
             AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ID,graph,context,StampFactory.forBuboActivationCountRead());
             AddressNode CyclesBuffer = createBuboAddress("CyclesBuffer",ID,graph,context,StampFactory.forBuboCycleRead());
@@ -92,7 +91,7 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
 
             
             // add a ReachabilityFenceNode this should stop our address from being optmised out
-            ValueNode[] list = new ValueNode[]{address,TimeBuffer,ActivationCountBuffer, CyclesBuffer};
+            ValueNode[] list = new ValueNode[]{TimeBuffer,ActivationCountBuffer, CyclesBuffer};
             ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
             graph.addAfterFixed(graph.start(), fenceNode);
             fenceNode.setStamp(StampFactory.forBuboVoid());
