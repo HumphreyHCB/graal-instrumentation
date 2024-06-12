@@ -320,5 +320,8 @@ public final class GraalOptions {
 
     @Option(help = "Enable Bubo DebugMode to collect profile information, such as gragh stats", type = OptionType.Debug)
     public static final OptionKey<Boolean> BuboDebugMode = new OptionKey<>(false);
+
+    @Option(help = "Enable Bubo Dump, print results to the parse file location", type = OptionType.Debug)
+    public static final OptionKey<String> BuboDump = new OptionKey<>("");
   
 }

@@ -241,7 +241,12 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
                 
             }
             else{
+            if (GraalOptions.BuboDump.getValue(options) != "") {
+                BuboPrinter.printCompUnitandDump(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer, GraalOptions.BuboDump.getValue(options));
+            }
+            else{
              BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer);
+            }
             }
 
             System.out.println("Bubo Instrumentation Sutting Down......");

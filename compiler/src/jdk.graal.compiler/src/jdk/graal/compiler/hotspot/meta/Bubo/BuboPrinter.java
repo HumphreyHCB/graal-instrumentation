@@ -223,6 +223,82 @@ public class BuboPrinter {
         //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
 
     }
+    
+    public static void printCompUnitandDump(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits, String filename) {
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+        long sum = 0;
+        HashMap<Integer, Long> timmings = new HashMap<>();
+        for (int index : methods.keySet()) {
+            if (TimeBuffer[index] != 0) {
+                sum += TimeBuffer[index];
+                timmings.put(index, TimeBuffer[index]);
+            }
+            else if (CyclesBuffer[index] != 0) {
+                sum += CyclesBuffer[index];
+                timmings.put(index, CyclesBuffer[index]);
+            }
+            else{
+                // method was comppiled but we have no infor it it
+                // maybe we look at this some point
+            }
+
+        }
+        
+        timmings = orderDataByTime(timmings);
+        int counter = 0;
+        String bars = "";
+        String spaces = "";
+        long fraction = 0;
+        System.out.println("");
+        System.out.println("The following is the Top 10 hottest Compilation Units");
+        int[] top10Indexs = new int[10];
+        for (int index : timmings.keySet()) {
+            if (counter >= 10) {
+                break;
+            }
+
+            System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
+            top10Indexs[counter] = index;
+            counter++;
+            // addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
+            // addToFile("\t " + CompUnits.get(index), filename);
+        }
+
+        List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
+        for (int i = 0; i < top10Indexs.length; i++) {
+            double maxPercentage = ((double) timmings.get(top10Indexs[i]) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage,CompUnits.get(top10Indexs[i])));
+        }
+
+        Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
+
+        if (combinedMap.size() <= 0) {
+            return;
+        }
+        // Sort the map by values in descending order
+        Map<String, Double> sortedMap = combinedMap.entrySet()
+        .stream()
+        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            Map.Entry::getValue,
+            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+        // Display the sorted map
+        System.out.println("\n\n Inlinded Estimation : \n");
+
+        counter = 0;
+        for (String key : sortedMap.keySet()) {
+            if (counter >= 10) {
+                break;
+            }
+
+            System.out.println(key + ": " + sortedMap.get(key));
+            addToFile(key + ": " + sortedMap.get(key), filename);
+            counter++;
+        }
+    }
 
     public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
 
@@ -328,7 +404,7 @@ public class BuboPrinter {
 
    public static Map<String, Double> findInlinedNodePercentage(Double max, String info) {
         // Parse the input string into a map
-        Map<String, Integer> counts = new HashMap<>();
+        Map<String, Double> counts = new HashMap<>();
         String[] entries = info.trim().split(" ");
         for (String entry : entries) {
             String[] parts = entry.split(",");
@@ -337,11 +413,11 @@ public class BuboPrinter {
                 continue;
              }
              name = name.replace("/", ".").replace(";", ""); 
-            int count = Integer.parseInt(parts[1]);
+             Double count = Double.parseDouble(parts[1]);
             counts.put(name, count);
         }
 
-        int totalSum = counts.values().stream().mapToInt(Integer::intValue).sum();
+        Double totalSum = counts.values().stream().mapToDouble(Double::doubleValue).sum();
         
         Map<String, Double> returnMap = new HashMap<>();
 
