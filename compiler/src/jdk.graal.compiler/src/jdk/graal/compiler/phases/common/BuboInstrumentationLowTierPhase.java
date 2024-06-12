@@ -25,6 +25,7 @@
 package jdk.graal.compiler.phases.common;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -42,6 +43,7 @@ import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
 import jdk.graal.compiler.nodes.java.ReachabilityFenceNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
+import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
@@ -114,7 +116,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
             if (TimeBuffer != null && ActivationCountBuffer != null
                     && CyclesBuffer != null) {
-                double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, false);
+                double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
                 if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
                     // add the starting ForeignCallNode to the start of the graph
@@ -231,10 +233,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             System.out.print("---------------------------------------------------------------------------");
             System.out.print("---------------------------------------------------------------------------");
         }
-        HashMap<String,Integer> nodeRatioMap = new HashMap<String,Integer>();
-        nodeRatioMap.put("Null", 0); // fill null
-        String graphID = graph.compilationId().toString(Verbosity.NAME);
-        for (Node node : graph.getNodes()) {
+        HashMap<String,Double> nodeRatioMap = new HashMap<String,Double>();
+        nodeRatioMap.put("Null", 0D); // fill null
+        //String graphID = graph.compilationId().toString(Verbosity.NAME);
+        Map<Node, Double> GraphCyclesMap = NodeCostUtil.computeGraphCyclesMap(graph, true);
+        for (Node node : GraphCyclesMap.keySet()) {
             NodeSourcePosition nsp = node.getNodeSourcePosition();
             if (nsp == null) {
 
@@ -245,9 +248,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                 //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();
                 if (nodeRatioMap.containsKey(key)) {
-                    nodeRatioMap.put(key, nodeRatioMap.get(key) + Math.max(1,node.estimatedNodeCycles().value));
+                    nodeRatioMap.put(key, nodeRatioMap.get(key) + Math.max(1D,GraphCyclesMap.get(node)));
                 } else {
-                    nodeRatioMap.put(key, Math.max(1,node.estimatedNodeCycles().value));
+                    nodeRatioMap.put(key, Math.max(1,GraphCyclesMap.get(node)));
                 }
             }
     }
