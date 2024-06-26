@@ -27,14 +27,15 @@ public class BuboMethodCache extends Thread  {
         String[] idComponents = new String[2];
         for (int i = 0; i < pointer; i++) {
             if (Buffer[i] != null) {
-                
-            
-            idComponents = Buffer[i].split(" ");
-            // very hacky
-            if (buffer.containsValue(idComponents[1])) {
-                idComponents[1] += idComponents[1] + " Re-Comp"; // this is not ture, just ddid it for demo purposues 
-            }
-            buffer.put(Integer.parseInt(idComponents[0].split("-")[1]) , idComponents[1]);
+                  
+                idComponents = Buffer[i].split(" ");
+                // very hacky
+                if (buffer.containsValue(idComponents[1])) {
+                    
+                    continue; // this is where its been recomped
+                    //idComponents[1] += idComponents[1] + " Re-Comp"; // this is not ture, just ddid it for demo purposues 
+                }
+                buffer.put(Integer.parseInt(idComponents[0].split("-")[1]) , idComponents[1]);
             }
         }
 
