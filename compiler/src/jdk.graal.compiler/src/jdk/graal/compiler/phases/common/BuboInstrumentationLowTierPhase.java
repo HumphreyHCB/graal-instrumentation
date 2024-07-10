@@ -65,10 +65,18 @@ import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
 
+/**
+ * Adds Instrumentation to the start and end of all method compilations.
+ */
 public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
     private OptionValues options;
 
+    /**
+     * Constructor for BuboInstrumentationLowTierPhase.
+     * 
+     * @param options Option values for the phase.
+     */
     public BuboInstrumentationLowTierPhase(OptionValues options) {
         this.options = options;
     }
@@ -83,30 +91,45 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         return ALWAYS_APPLICABLE;
     }
 
+    /**
+     * Runs the instrumentation phase on the given graph.
+     * 
+     * @param graph   The structured graph to instrument.
+     * @param context The low tier context.
+     */
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, LowTierContext context) {
         try {
+            // Find instrumentation buffers in the graph
             InstrumentationBuffers buffers = findInstrumentationBuffers(graph);
 
             if (buffers.isComplete()) {
                 double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
                 if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
+                    // Time instrument the graph
                     handleFullInstrumentation(graph, buffers, graphCycleCost);
                 } else {
+                    // Estimate instrument the graph
                     handlePartialInstrumentation(graph, buffers, graphCycleCost);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.print("---------------------------------------------------------------------------");
             System.out.println("ERROR: Bubo Instrumentation Failure");
-            System.out.print("---------------------------------------------------------------------------");
         }
 
+        // Record node ratios for further analysis
         recordNodeRatios(graph);
     }
 
+    /**
+     * Handles full instrumentation of the graph.
+     * 
+     * @param graph          The structured graph to instrument.
+     * @param buffers        The instrumentation buffers.
+     * @param graphCycleCost The cycle cost of the graph.
+     */
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers, double graphCycleCost) {
         ClockTimeNode startTime = graph.add(new ClockTimeNode());
         graph.addAfterFixed(graph.start(), startTime);
@@ -131,6 +154,14 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         }
     }
 
+    /**
+     * Handles instrumentation at the end of a node.
+     * 
+     * @param graph     The structured graph to instrument.
+     * @param endNode   The end node.
+     * @param startTime The start time node.
+     * @param buffers   The instrumentation buffers.
+     */
     private void handleEndNodeInstrumentation(StructuredGraph graph, FixedNode endNode, ClockTimeNode startTime, InstrumentationBuffers buffers) {
         try (DebugCloseable s = endNode.withNodeSourcePosition()) {
             ClockTimeNode endTime = graph.add(new ClockTimeNode());
@@ -142,6 +173,13 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         }
     }
 
+    /**
+     * Handles partial instrumentation of the graph.
+     * 
+     * @param graph          The structured graph to instrument.
+     * @param buffers        The instrumentation buffers.
+     * @param graphCycleCost The cycle cost of the graph.
+     */
     private void handlePartialInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers, double graphCycleCost) {
         JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffers.cyclesBuffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
         graph.addAfterFixed(graph.start(), readCurrentValue);
@@ -155,6 +193,14 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         incrementAndStoreActivationCount(graph, buffers.activationCountBuffer);
     }
 
+    /**
+     * Aggregates and stores time differences.
+     * 
+     * @param graph     The structured graph.
+     * @param position  The position node.
+     * @param buffer    The buffer node.
+     * @param timeDiff  The time difference node.
+     */
     private void aggregateAndStore(StructuredGraph graph, FixedWithNextNode position, OffsetAddressNode buffer, ValueNode timeDiff) {
         JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
         graph.addAfterFixed(position, readCurrentValue);
@@ -163,6 +209,12 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         graph.addAfterFixed(readCurrentValue, memoryWrite);
     }
 
+    /**
+     * Increments and stores the activation count.
+     * 
+     * @param graph  The structured graph.
+     * @param buffer The buffer node.
+     */
     private void incrementAndStoreActivationCount(StructuredGraph graph, OffsetAddressNode buffer) {
         JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
         ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
@@ -171,6 +223,12 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         graph.addAfterFixed(readCurrentValue, memoryWrite);
     }
 
+    /**
+     * Finds instrumentation buffers in the graph.
+     * 
+     * @param graph The structured graph.
+     * @return The found instrumentation buffers.
+     */
     private InstrumentationBuffers findInstrumentationBuffers(StructuredGraph graph) {
         OffsetAddressNode callSiteBuffer = null;
         OffsetAddressNode timeBuffer = null;
@@ -199,6 +257,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         return new InstrumentationBuffers(callSiteBuffer, timeBuffer, activationCountBuffer, cyclesBuffer);
     }
 
+    /**
+     * Records node ratios for further analysis.
+     * 
+     * @param graph The structured graph.
+     */
     private void recordNodeRatios(StructuredGraph graph) {
         HashMap<String, Double> nodeRatioMap = new HashMap<>();
         nodeRatioMap.put("Null", 0D);
@@ -221,6 +284,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]), methodInfos);
     }
 
+    /**
+     * Class to hold instrumentation buffers.
+     */
     private static class InstrumentationBuffers {
         OffsetAddressNode callSiteBuffer;
         OffsetAddressNode timeBuffer;
@@ -234,6 +300,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             this.cyclesBuffer = cyclesBuffer;
         }
 
+        /**
+         * Checks if all required buffers are present.
+         * 
+         * @return True if all buffers are present, false otherwise.
+         */
         boolean isComplete() {
             return timeBuffer != null && activationCountBuffer != null && cyclesBuffer != null;
         }
