@@ -224,15 +224,16 @@ public class BuboPrinter {
 
     }
     
-    public static void printCompUnitandDump(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits, String filename) {
+    public static void printCompUnitandDump(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits, String filename) {
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
         long sum = 0;
         HashMap<Integer, Long> timmings = new HashMap<>();
         for (int index : methods.keySet()) {
             if (TimeBuffer[index] != 0) {
-                sum += TimeBuffer[index];
-                timmings.put(index, TimeBuffer[index]);
+                Long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
+                sum += adjusted;
+                timmings.put(index, adjusted);
             }
             else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
@@ -300,7 +301,7 @@ public class BuboPrinter {
         }
     }
 
-    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
+    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
 
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
@@ -308,8 +309,9 @@ public class BuboPrinter {
         HashMap<Integer, Long> timmings = new HashMap<>();
         for (int index : methods.keySet()) {
             if (TimeBuffer[index] != 0) {
-                sum += TimeBuffer[index];
-                timmings.put(index, TimeBuffer[index]);
+                Long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
+                sum += adjusted;
+                timmings.put(index, adjusted);
             }
             else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
@@ -321,6 +323,7 @@ public class BuboPrinter {
             }
 
         }
+
         
         timmings = orderDataByTime(timmings);
         int counter = 0;
@@ -338,9 +341,11 @@ public class BuboPrinter {
             System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
             top10Indexs[counter] = index;
             counter++;
+            // System.out.println("For CompID " + index + " We timed " + timmings.get(index) + " and found in the callsite " + CallSiteBuffer[index]);
             // addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
             // addToFile("\t " + CompUnits.get(index), filename);
         }
+
 
         List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
         for (int i = 0; i < top10Indexs.length; i++) {

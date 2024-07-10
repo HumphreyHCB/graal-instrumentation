@@ -9,17 +9,19 @@ import java.lang.Thread;
 
  public class BuboCache extends Thread {
         
-        public static long[] TimeBuffer;
-        public static long[] ActivationCountBuffer;
-        public static long[] CyclesBuffer;
+        public static long[] TimeBuffer; // stores all recorded cycles from RDTSC comp units
+        public static long[] ActivationCountBuffer; // stores activaation of Comp units
+        public static long[] CyclesBuffer; // stores all recorded cycles for est comp units
         public static int pointer;
-        public static long[] Buffer;
+        //public static long[] Buffer; // dead never used
+        public static long[] CallSiteBuffer; // store all of the time spent calling out for a comp unit
 
         public BuboCache() {
-                Buffer = new long[200_000];
+                //Buffer = new long[200_000];
                 TimeBuffer = new long[200_000];
                 ActivationCountBuffer = new long[200_000];
                 CyclesBuffer = new long[200_000];
+                CallSiteBuffer = new long [200_000];
                 pointer = 1;
         }
 

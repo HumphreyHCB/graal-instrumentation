@@ -131,6 +131,9 @@ public class StampFactory {
     public static Stamp forBuboTimeRead() {
         return BuboTimeRead.getInstance();
     }
+    public static Stamp forBuboCallSiteRead() {
+        return BuboCallSiteRead.getInstance();
+    }
 
     public static Stamp intValue() {
         return forKind(JavaKind.Int);

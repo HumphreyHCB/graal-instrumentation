@@ -35,6 +35,7 @@ import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.GraphState;
+import jdk.graal.compiler.nodes.InvokeNode;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.NodeView;
 import jdk.graal.compiler.nodes.calc.AddNode;
@@ -88,7 +89,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         try {
 
             // find the address node added in the high tier phase, using the BuboVoidStamp
-            OffsetAddressNode OldBufferAddress = null;
+            OffsetAddressNode CallSiteBuffer = null;
             OffsetAddressNode TimeBuffer = null;
             OffsetAddressNode ActivationCountBuffer = null;
             OffsetAddressNode CyclesBuffer = null;
@@ -110,6 +111,10 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
                             CyclesBuffer = element;
                         }
+                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCallSiteRead())) {
+                            CallSiteBuffer = element;
+                        }
+
                     }
                 }
             }
@@ -119,11 +124,44 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                 double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
                 if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
-                    // add the starting ForeignCallNode to the start of the graph
-                    // ForeignCallNode startTime = graph.add(new
-                    // ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
+                    // Start time at the root of the Graph
                     ClockTimeNode startTime = graph.add(new ClockTimeNode());
                     graph.addAfterFixed(graph.start(), startTime);
+
+
+                    for (InvokeNode invokeNode : graph.getNodes().filter(InvokeNode.class)) {
+                        ClockTimeNode invokeStartTime = graph.add(new ClockTimeNode());
+                        graph.addBeforeFixed(invokeNode, invokeStartTime);
+
+
+                        ClockTimeNode invokeEndTime = graph.add(new ClockTimeNode());
+                        graph.addAfterFixed(invokeNode, invokeEndTime);
+
+
+                        SubNode Time = graph.addWithoutUnique(new SubNode(invokeEndTime, invokeStartTime));
+
+                        // read the current value store in call site Buffer
+                        JavaReadNode readCurrentValue = graph
+                                    .add(new JavaReadNode(JavaKind.Long, CallSiteBuffer,
+                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+                        graph.addAfterFixed(invokeEndTime, readCurrentValue);
+
+                        // add the store time with the new time
+                        AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
+
+                            // write this value back
+                        JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+                            CallSiteBuffer,
+                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+                                    false));
+                            graph.addAfterFixed(readCurrentValue, memoryWrite);
+                        
+                        // store aggregate
+                        
+
+
+                    }
+
 
                     // for each return node
                     for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
@@ -131,13 +169,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                         try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
                             // add the end time call
-                            // ForeignCallNode endTime = graph.add(new
-                            // ForeignCallNode(FAST_JAVA_TIME_MILLIS, ValueNode.EMPTY_ARRAY));
                             ClockTimeNode endTime = graph.add(new ClockTimeNode());
                             graph.addBeforeFixed(returnNode, endTime);
 
-                            // ValueNode dummy = graph.addWithoutUnique(new
-                            // ConstantNode(JavaConstant.forInt(100), StampFactory.forKind(JavaKind.Int)));
 
                             SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
@@ -245,10 +279,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
                 if (nsp.getMethod().isNative() || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
                     continue;
                 }
-                //nsp.getClass().toGenericString();
                 String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();
                 if (nodeRatioMap.containsKey(key)) {
-                    nodeRatioMap.put(key, nodeRatioMap.get(key) + Math.max(1D,GraphCyclesMap.get(node)));
+                    nodeRatioMap.put(key, nodeRatioMap.get(key) + GraphCyclesMap.get(node));
                 } else {
                     nodeRatioMap.put(key, Math.max(1,GraphCyclesMap.get(node)));
                 }
