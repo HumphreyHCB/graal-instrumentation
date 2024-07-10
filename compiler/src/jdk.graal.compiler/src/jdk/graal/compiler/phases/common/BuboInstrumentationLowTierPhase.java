@@ -105,14 +105,8 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             InstrumentationBuffers buffers = findInstrumentationBuffers(graph);
 
             if (buffers.isComplete()) {
-                double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
-                if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
-                    // Time instrument the graph
-                    handleFullInstrumentation(graph, buffers, graphCycleCost);
-                } else {
-                    // Estimate instrument the graph
-                    handlePartialInstrumentation(graph, buffers, graphCycleCost);
-                }
+
+                    handleFullInstrumentation(graph, buffers);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -120,7 +114,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
         }
 
         // Record node ratios for further analysis
-        recordNodeRatios(graph);
+        //recordNodeRatios(graph);
     }
 
     /**
@@ -130,28 +124,14 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
      * @param buffers        The instrumentation buffers.
      * @param graphCycleCost The cycle cost of the graph.
      */
-    private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers, double graphCycleCost) {
-        ClockTimeNode startTime = graph.add(new ClockTimeNode());
-        graph.addAfterFixed(graph.start(), startTime);
+    private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
 
-        for (InvokeNode invokeNode : graph.getNodes().filter(InvokeNode.class)) {
-            ClockTimeNode invokeStartTime = graph.add(new ClockTimeNode());
-            graph.addBeforeFixed(invokeNode, invokeStartTime);
-
-            ClockTimeNode invokeEndTime = graph.add(new ClockTimeNode());
-            graph.addAfterFixed(invokeNode, invokeEndTime);
-
-            SubNode timeDiff = graph.addWithoutUnique(new SubNode(invokeEndTime, invokeStartTime));
-            aggregateAndStore(graph, invokeEndTime, buffers.callSiteBuffer, timeDiff);
+        for (Node node : graph.getNodes()) {
+            if (!node.successors().isEmpty()) {
+                //node.
+            }
         }
 
-        for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
-            handleEndNodeInstrumentation(graph, returnNode, startTime, buffers);
-        }
-
-        for (UnwindNode unwindNode : graph.getNodes(UnwindNode.TYPE)) {
-            handleEndNodeInstrumentation(graph, unwindNode, startTime, buffers);
-        }
     }
 
     /**
