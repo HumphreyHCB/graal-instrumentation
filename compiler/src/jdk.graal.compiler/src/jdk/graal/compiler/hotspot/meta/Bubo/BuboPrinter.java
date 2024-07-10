@@ -224,163 +224,134 @@ public class BuboPrinter {
 
     }
     
-    public static void printCompUnitandDump(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits, String filename) {
+    public static void printCompUnitandDump(long[] TimeBuffer, long[] ActivationCountBuffer, long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, List<CompUnitInfo>> CompUnits, String filename) {
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
+
         long sum = 0;
         HashMap<Integer, Long> timmings = new HashMap<>();
         for (int index : methods.keySet()) {
             if (TimeBuffer[index] != 0) {
-                Long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
+                long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
                 sum += adjusted;
                 timmings.put(index, adjusted);
-            }
-            else if (CyclesBuffer[index] != 0) {
+            } else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
                 timmings.put(index, CyclesBuffer[index]);
+            } else {
+                // method was compiled but we have no information on it
             }
-            else{
-                // method was comppiled but we have no infor it it
-                // maybe we look at this some point
-            }
-
         }
-        
+
         timmings = orderDataByTime(timmings);
         int counter = 0;
-        String bars = "";
-        String spaces = "";
-        long fraction = 0;
         System.out.println("");
         System.out.println("The following is the Top 10 hottest Compilation Units");
-        int[] top10Indexs = new int[10];
+        int[] top10Indexes = new int[10];
         for (int index : timmings.keySet()) {
             if (counter >= 10) {
                 break;
             }
-
             System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
-            top10Indexs[counter] = index;
+            top10Indexes[counter] = index;
             counter++;
-            // addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
-            // addToFile("\t " + CompUnits.get(index), filename);
         }
 
         List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
-        for (int i = 0; i < top10Indexs.length; i++) {
-            double maxPercentage = ((double) timmings.get(top10Indexs[i]) / sum) * 100;
-            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage,CompUnits.get(top10Indexs[i])));
+        for (int i = 0; i < top10Indexes.length; i++) {
+            double maxPercentage = ((double) timmings.get(top10Indexes[i]) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(top10Indexes[i])));
         }
 
         Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
 
-        if (combinedMap.size() <= 0) {
+        if (combinedMap.isEmpty()) {
             return;
         }
-        // Sort the map by values in descending order
-        Map<String, Double> sortedMap = combinedMap.entrySet()
-        .stream()
-        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            Map.Entry::getValue,
-            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
-        // Display the sorted map
-        System.out.println("\n\n Inlinded Estimation : \n");
+        Map<String, Double> sortedMap = combinedMap.entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+        System.out.println("\n\n Inlined Estimation : \n");
 
         counter = 0;
         for (String key : sortedMap.keySet()) {
             if (counter >= 10) {
                 break;
             }
-
             System.out.println(key + ": " + sortedMap.get(key));
             addToFile(key + ": " + sortedMap.get(key), filename);
             counter++;
         }
     }
 
-    public static void printCompUnit(long[] TimeBuffer,long[] ActivationCountBuffer,long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, String> CompUnits) {
-
+    public static void printCompUnit(long[] TimeBuffer, long[] ActivationCountBuffer, long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, List<CompUnitInfo>> CompUnits) {
         System.out.println("\n\n");
         System.out.println("Bubo Agent collected the following metrics: \n");
+
         long sum = 0;
         HashMap<Integer, Long> timmings = new HashMap<>();
         for (int index : methods.keySet()) {
             if (TimeBuffer[index] != 0) {
-                Long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
+                long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
                 sum += adjusted;
                 timmings.put(index, adjusted);
-            }
-            else if (CyclesBuffer[index] != 0) {
+            } else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
                 timmings.put(index, CyclesBuffer[index]);
+            } else {
+                // method was compiled but we have no information on it
             }
-            else{
-                // method was comppiled but we have no infor it it
-                // maybe we look at this some point
-            }
-
         }
 
-        
         timmings = orderDataByTime(timmings);
         int counter = 0;
-        String bars = "";
-        String spaces = "";
-        long fraction = 0;
         System.out.println("");
         System.out.println("The following is the Top 10 hottest Compilation Units");
-        int[] top10Indexs = new int[10];
+        int[] top10Indexes = new int[10];
         for (int index : timmings.keySet()) {
             if (counter >= 10) {
                 break;
             }
-
             System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
-            top10Indexs[counter] = index;
+            top10Indexes[counter] = index;
             counter++;
-            // System.out.println("For CompID " + index + " We timed " + timmings.get(index) + " and found in the callsite " + CallSiteBuffer[index]);
-            // addToFile(( (((float) timmings.get(index) / sum) * 100) + "% ")+ methods.get(index) , filename);
-            // addToFile("\t " + CompUnits.get(index), filename);
         }
 
-
         List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
-        for (int i = 0; i < top10Indexs.length; i++) {
-            double maxPercentage = ((double) timmings.get(top10Indexs[i]) / sum) * 100;
-            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage,CompUnits.get(top10Indexs[i])));
+        for (int i = 0; i < top10Indexes.length; i++) {
+            double maxPercentage = ((double) timmings.get(top10Indexes[i]) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(top10Indexes[i])));
         }
 
         Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
 
-        if (combinedMap.size() <= 0) {
+        if (combinedMap.isEmpty()) {
             return;
         }
-        // Sort the map by values in descending order
-        Map<String, Double> sortedMap = combinedMap.entrySet()
-        .stream()
-        .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
-        .collect(Collectors.toMap(
-            Map.Entry::getKey,
-            Map.Entry::getValue,
-            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
-        // Display the sorted map
-        System.out.println("\n\n Inlinded Estimation : \n");
+        Map<String, Double> sortedMap = combinedMap.entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+        System.out.println("\n\n Inlined Estimation : \n");
 
         counter = 0;
         for (String key : sortedMap.keySet()) {
             if (counter >= 10) {
                 break;
             }
-
             System.out.println(key + ": " + sortedMap.get(key));
-            //addToFile(key + ": " + sortedMap.get(key), filename);
-            counter++;
         }
-
     }
 
 
@@ -407,33 +378,24 @@ public class BuboPrinter {
        
    }
 
-   public static Map<String, Double> findInlinedNodePercentage(Double max, String info) {
-        // Parse the input string into a map
-        Map<String, Double> counts = new HashMap<>();
-        String[] entries = info.trim().split(" ");
-        for (String entry : entries) {
-            String[] parts = entry.split(",");
-            String name = parts[0];
-            if (name == "Null") {
-                continue;
-             }
-             name = name.replace("/", ".").replace(";", ""); 
-             Double count = Double.parseDouble(parts[1]);
-            counts.put(name, count);
+   public static Map<String, Double> findInlinedNodePercentage(double max, List<CompUnitInfo> compUnitInfos) {
+    Map<String, Double> counts = new HashMap<>();
+    for (CompUnitInfo info : compUnitInfos) {
+        String name = info.getMethodName().replace("/", ".").replace(";", "");
+        if (!"Null".equals(name)) {
+            counts.put(name, info.getRatio());
         }
+    }
 
-        Double totalSum = counts.values().stream().mapToDouble(Double::doubleValue).sum();
-        
-        Map<String, Double> returnMap = new HashMap<>();
+    double totalSum = counts.values().stream().mapToDouble(Double::doubleValue).sum();
+    Map<String, Double> returnMap = new HashMap<>();
+    for (String key : counts.keySet()) {
+        double percentage = (counts.get(key) * max) / totalSum;
+        returnMap.put(key, percentage);
+    }
 
-        for (String key : counts.keySet()) {
-            double percentage = (counts.get(key) * max) / totalSum;
-            returnMap.put(key, percentage);
-        }
-
-     return returnMap;
-    
-   }
+    return returnMap;
+}
 
    public static Map<String, Double> combinedMap(List<Map<String, Double>> listOfMaps ) {
     

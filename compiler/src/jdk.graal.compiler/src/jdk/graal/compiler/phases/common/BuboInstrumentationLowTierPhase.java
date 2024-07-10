@@ -24,7 +24,9 @@
  */
 package jdk.graal.compiler.phases.common;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,6 +60,7 @@ import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
 
 /**
  * Adds Instrumentation to the start and end of all method compilations.
@@ -267,31 +270,32 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             System.out.print("---------------------------------------------------------------------------");
             System.out.print("---------------------------------------------------------------------------");
         }
-        HashMap<String,Double> nodeRatioMap = new HashMap<String,Double>();
+        HashMap<String, Double> nodeRatioMap = new HashMap<>();
         nodeRatioMap.put("Null", 0D); // fill null
-        //String graphID = graph.compilationId().toString(Verbosity.NAME);
         Map<Node, Double> GraphCyclesMap = NodeCostUtil.computeGraphCyclesMap(graph, true);
         for (Node node : GraphCyclesMap.keySet()) {
             NodeSourcePosition nsp = node.getNodeSourcePosition();
             if (nsp == null) {
-
+                continue;
             } else {
                 if (nsp.getMethod().isNative() || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
                     continue;
                 }
-                String key = nsp.getMethod().getDeclaringClass().getName()+"."+nsp.getMethod().getName();
+                String key = nsp.getMethod().getDeclaringClass().getName() + "." + nsp.getMethod().getName();
                 if (nodeRatioMap.containsKey(key)) {
                     nodeRatioMap.put(key, nodeRatioMap.get(key) + GraphCyclesMap.get(node));
                 } else {
-                    nodeRatioMap.put(key, Math.max(1,GraphCyclesMap.get(node)));
+                    nodeRatioMap.put(key, Math.max(1, GraphCyclesMap.get(node)));
                 }
             }
-    }
-    String Info = " ";
-    for (String method : nodeRatioMap.keySet()) {
-        Info += method + "," + nodeRatioMap.get(method) + " ";
-    }
-    BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]), Info);
+        }
+
+        List<CompUnitInfo> methodInfos = new ArrayList<>();
+        for (String method : nodeRatioMap.keySet()) {
+            methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
+        }
+
+        BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]), methodInfos); 
 }
 
     
