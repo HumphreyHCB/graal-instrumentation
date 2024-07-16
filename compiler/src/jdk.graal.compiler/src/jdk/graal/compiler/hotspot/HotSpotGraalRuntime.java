@@ -36,10 +36,7 @@ import java.util.Map;
 
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
+import jdk.graal.compiler.hotspot.meta.GT.GTCache;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
@@ -192,7 +189,7 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
-        if (GraalOptions.EnableProfiler.getValue(options)) {
+        if (GraalOptions.EnableGTSlowDown.getValue(options)) {
             initalizeBubo();
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
@@ -201,55 +198,19 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
     }
 
     private void initalizeBubo() {
-        System.out.println("Starting Bubo Instrumentation......");
+        System.out.println("Groundtruth SlowDown Started......");
         
-        BuboCache timeCache = new BuboCache();
+        GTCache timeCache = new GTCache();
         timeCache.start();
 
-        BuboMethodCache methodCache = new BuboMethodCache();
-        methodCache.start();
-
-        BuboCompUnitCache compunitCache = new BuboCompUnitCache();
-        compunitCache.start();
-
         Thread writingHook = new Thread(() -> {
-            System.out.println("Bubo Instrumentation Joining......");
             try {
                 timeCache.join();
-                methodCache.join();
-                compunitCache.join();
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            System.out.println("Bubo Instrumentation Shutdown Printing......");
-            long endTime = System.currentTimeMillis();
-
-            if (BuboMethodCache.pointer == 0) {
-                System.out.println("Method Cache is empty, did you forget to enable the profiler");
-                System.out.println("Add the follwoing command : -Dgraal.EnableProfiler=true ");
-                int foundMethods = 0;
-                for (int i = 0; i < 200000; i++) {
-                    if (BuboCache.TimeBuffer[i] > 0) {
-                        foundMethods++;
-                    }
-                }
-                if (foundMethods > 0) {
-                    System.out.println("We did find at least one method entry in the raw cache; therefore, something was recorded, but we don't know which method it belongs to.");
-                    System.out.println("We found in the TimeBuffer :" + foundMethods + " Methods");
-                }
-                
-            }
-            else{
-            if (GraalOptions.BuboDump.getValue(options) != "") {
-                BuboPrinter.printCompUnitandDump(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer,BuboCache.CallSiteBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer, GraalOptions.BuboDump.getValue(options));
-            }
-            else{
-             BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer,BuboCache.CallSiteBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer);
-            }
-            }
-
-            System.out.println("Bubo Instrumentation Sutting Down......");
+            System.out.println("Groundtruth SlowDown Shutdown......");
     });
         Runtime.getRuntime().addShutdownHook(writingHook);
     }

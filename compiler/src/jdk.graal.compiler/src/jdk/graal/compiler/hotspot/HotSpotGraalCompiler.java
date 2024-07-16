@@ -45,7 +45,6 @@ import jdk.graal.compiler.debug.DebugHandlersFactory;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.graal.compiler.hotspot.phases.OnStackReplacementPhase;
 import jdk.graal.compiler.java.GraphBuilderPhase;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
@@ -77,9 +76,6 @@ import jdk.vm.ci.meta.TriState;
 import jdk.vm.ci.runtime.JVMCICompiler;
 import jdk.vm.ci.services.Services;
 import sun.misc.Unsafe;
-
-import java.io.FileWriter;
-import java.io.IOException;
 
 public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JVMCICompilerShadow {
 
@@ -147,9 +143,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
             HotSpotCompilationRequest hsRequest = (HotSpotCompilationRequest) request;
             CompilationTask task = new CompilationTask(jvmciRuntime, this, hsRequest, true, shouldRetainLocalVariables(hsRequest.getJvmciEnv()), shouldUsePreciseUnresolvedDeopts(), installAsDefault);
             OptionValues options = task.filterOptions(initialOptions);
-            if (GraalOptions.EnableProfiler.getValue(options) || GraalOptions.CountCompiledMethods.getValue(options)) {
-                addMethodToCache(task.getCompilationIdentifier());
-            }
+            //if (GraalOptions.EnableGTSlowDown.getValue(options)) {
+            //    addMethodToCache(task.getCompilationIdentifier());
+            //}
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             boolean oneIsolatePerCompilation = Services.IS_IN_NATIVE_IMAGE &&
                             config.getFlag("JVMCIThreadsPerNativeLibraryRuntime", Integer.class, 0) == 1 &&
@@ -169,9 +165,6 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                 return r;
             }
         }
-    }
-    private void addMethodToCache(CompilationIdentifier id){
-        BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
     }
 
     private boolean shouldRetainLocalVariables(long envAddress) {

@@ -38,15 +38,15 @@ import jdk.graal.compiler.nodes.spi.LoweringTool;
 /**
  * Adds CustomInstrumentation to loops.
  */
-public class BuboInstrumentationLoweringPhase extends LoweringPhase  {
+public class GTLoweringPhase extends LoweringPhase  {
 
 
 
-    public BuboInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer, boolean lowerOptimizableMacroNodes) {
+    public GTLoweringPhase(CanonicalizerPhase canonicalizer, boolean lowerOptimizableMacroNodes) {
         super(canonicalizer, LoweringTool.StandardLoweringStage.LOW_TIER, lowerOptimizableMacroNodes, StageFlag.CUSTOMINSTRUMENTATION_TIER);
     }
 
-    public BuboInstrumentationLoweringPhase(CanonicalizerPhase canonicalizer) {
+    public GTLoweringPhase(CanonicalizerPhase canonicalizer) {
         super(canonicalizer, LoweringTool.StandardLoweringStage.LOW_TIER, StageFlag.CUSTOMINSTRUMENTATION_TIER);
     }
 

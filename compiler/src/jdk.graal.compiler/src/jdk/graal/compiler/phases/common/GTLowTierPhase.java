@@ -62,13 +62,11 @@ import jdk.vm.ci.meta.JavaKind;
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.graph.NodeSourcePosition;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
 
 /**
  * Adds Instrumentation to the start and end of all method compilations.
  */
-public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
+public class GTLowTierPhase extends BasePhase<LowTierContext> {
 
     private OptionValues options;
 
@@ -77,7 +75,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
      * 
      * @param options Option values for the phase.
      */
-    public BuboInstrumentationLowTierPhase(OptionValues options) {
+    public GTLowTierPhase(OptionValues options) {
         this.options = options;
     }
 
@@ -106,11 +104,11 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
 
             if (buffers.isComplete()) {
 
-                    handleFullInstrumentation(graph, buffers);
+                handleFullInstrumentation(graph, buffers);
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("ERROR: Bubo Instrumentation Failure");
+            System.out.println("ERROR: GT Failure");
         }
 
         // Record node ratios for further analysis
@@ -174,74 +172,29 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
      * @return The found instrumentation buffers.
      */
     private InstrumentationBuffers findInstrumentationBuffers(StructuredGraph graph) {
-        OffsetAddressNode callSiteBuffer = null;
-        OffsetAddressNode timeBuffer = null;
-        OffsetAddressNode activationCountBuffer = null;
-        OffsetAddressNode cyclesBuffer = null;
 
+        OffsetAddressNode activationCountBuffer = null;
         for (ReachabilityFenceNode node : graph.getNodes().filter(ReachabilityFenceNode.class)) {
             if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
                 for (OffsetAddressNode element : node.getValues().filter(OffsetAddressNode.class)) {
-                    if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
-                        timeBuffer = element;
-                    }
                     if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
                         activationCountBuffer = element;
-                    }
-                    if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
-                        cyclesBuffer = element;
-                    }
-                    if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCallSiteRead())) {
-                        callSiteBuffer = element;
                     }
                 }
             }
         }
 
-        return new InstrumentationBuffers(callSiteBuffer, timeBuffer, activationCountBuffer, cyclesBuffer);
-    }
-
-    /**
-     * Records node ratios for further analysis.
-     * 
-     * @param graph The structured graph.
-     */
-    private void recordNodeRatios(StructuredGraph graph) {
-        HashMap<String, Double> nodeRatioMap = new HashMap<>();
-        nodeRatioMap.put("Null", 0D);
-        Map<Node, Double> graphCyclesMap = NodeCostUtil.computeGraphCyclesMap(graph, true);
-
-        for (Node node : graphCyclesMap.keySet()) {
-            NodeSourcePosition nsp = node.getNodeSourcePosition();
-            if (nsp == null || nsp.getMethod().isNative() || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
-                continue;
-            }
-            String key = nsp.getMethod().getDeclaringClass().getName() + "." + nsp.getMethod().getName();
-            nodeRatioMap.put(key, nodeRatioMap.getOrDefault(key, 0D) + graphCyclesMap.get(node));
-        }
-
-        List<CompUnitInfo> methodInfos = new ArrayList<>();
-        for (Map.Entry<String, Double> entry : nodeRatioMap.entrySet()) {
-            methodInfos.add(new CompUnitInfo(entry.getKey(), entry.getValue()));
-        }
-
-        BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]), methodInfos);
+        return new InstrumentationBuffers( activationCountBuffer);
     }
 
     /**
      * Class to hold instrumentation buffers.
      */
     private static class InstrumentationBuffers {
-        OffsetAddressNode callSiteBuffer;
-        OffsetAddressNode timeBuffer;
         OffsetAddressNode activationCountBuffer;
-        OffsetAddressNode cyclesBuffer;
 
-        InstrumentationBuffers(OffsetAddressNode callSiteBuffer, OffsetAddressNode timeBuffer, OffsetAddressNode activationCountBuffer, OffsetAddressNode cyclesBuffer) {
-            this.callSiteBuffer = callSiteBuffer;
-            this.timeBuffer = timeBuffer;
+        InstrumentationBuffers(OffsetAddressNode activationCountBuffer) {
             this.activationCountBuffer = activationCountBuffer;
-            this.cyclesBuffer = cyclesBuffer;
         }
 
         /**
@@ -250,7 +203,7 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
          * @return True if all buffers are present, false otherwise.
          */
         boolean isComplete() {
-            return timeBuffer != null && activationCountBuffer != null && cyclesBuffer != null;
+            return activationCountBuffer != null;
         }
     }
 }

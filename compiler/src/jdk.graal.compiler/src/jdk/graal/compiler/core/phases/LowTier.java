@@ -33,9 +33,8 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.PlaceholderPhase;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
-import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierDebugPhase;
-import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierPhase;
-import jdk.graal.compiler.phases.common.BuboInstrumentationLoweringPhase;
+import jdk.graal.compiler.phases.common.GTLowTierPhase;
+import jdk.graal.compiler.phases.common.GTLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.common.ExpandLogicPhase;
@@ -77,9 +76,9 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 
-        if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new BuboInstrumentationLowTierPhase(options));
-            appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
+        if (GraalOptions.EnableGTSlowDown.getValue(options)) {
+            appendPhase(new GTLowTierPhase(options));
+            appendPhase(new GTLoweringPhase(canonicalizerWithGVN));
         }
 
         appendPhase(new FixReadsPhase(true,
@@ -104,10 +103,6 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new RemoveOpaqueValuePhase());
         
-        if (GraalOptions.BuboDebugMode.getValue(options)) {
-            appendPhase(new BuboInstrumentationLowTierDebugPhase());
-        }
-
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
     }
 

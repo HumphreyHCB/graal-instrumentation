@@ -309,19 +309,7 @@ public final class GraalOptions {
     @Option(help = "AMD64 only: Replace forward jumps (jmp, jcc) with equivalent but smaller instructions if the actual jump displacement fits in one byte.", type = OptionType.Expert)
     public static final OptionKey<Boolean> OptimizeLongJumps = new OptionKey<>(false);
   
-    @Option(help = "Enable Instrumentation to collect profile information", type = OptionType.Debug)
-    public static final OptionKey<Boolean> EnableProfiler = new OptionKey<>(false);
-
-    @Option(help = "Min graph size to start instrumenting", type = OptionType.Debug)
-    public static final OptionKey<Integer> MinGraphSize = new OptionKey<>(1);
-
-    @Option(help = "Enable Instrumentation to count the amount of Compiled Methods", type = OptionType.Debug)
-    public static final OptionKey<Boolean> CountCompiledMethods = new OptionKey<>(false);
-
-    @Option(help = "Enable Bubo DebugMode to collect profile information, such as gragh stats", type = OptionType.Debug)
-    public static final OptionKey<Boolean> BuboDebugMode = new OptionKey<>(false);
-
-    @Option(help = "Enable Bubo Dump, print results to the parse file location", type = OptionType.Debug)
-    public static final OptionKey<String> BuboDump = new OptionKey<>("");
+    @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
   
 }

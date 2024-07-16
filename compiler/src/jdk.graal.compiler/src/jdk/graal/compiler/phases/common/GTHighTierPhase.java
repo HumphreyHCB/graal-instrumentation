@@ -30,7 +30,7 @@ import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
+import jdk.graal.compiler.hotspot.meta.GT.GTCache;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.calc.AddNode;
@@ -55,7 +55,7 @@ import jdk.vm.ci.code.CodeUtil;
 /**
  * Adds ReadNode & Addres to Start of the graphg, this will be use in the Low Ter Instrumentation phase .
  */
-public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext> {
+public class GTHighTierPhase extends BasePhase<HighTierContext> {
 
     @Override
     public boolean checkContract() {
@@ -70,7 +70,7 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
         return ALWAYS_APPLICABLE;
     }
 
-    public BuboInstrumentationHighTierPhase() {
+    public GTHighTierPhase() {
     }
 
     @Override
@@ -84,15 +84,12 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
 
-            AddressNode TimeBuffer = createBuboAddress("TimeBuffer",ID,graph,context,StampFactory.forBuboTimeRead());
             AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ID,graph,context,StampFactory.forBuboActivationCountRead());
-            AddressNode CyclesBuffer = createBuboAddress("CyclesBuffer",ID,graph,context,StampFactory.forBuboCycleRead());
-            AddressNode CallSiteRead = createBuboAddress("CallSiteBuffer",ID,graph,context,StampFactory.forBuboCallSiteRead());
 
 
             
             // add a ReachabilityFenceNode this should stop our address from being optmised out
-            ValueNode[] list = new ValueNode[]{TimeBuffer,ActivationCountBuffer, CyclesBuffer, CallSiteRead};
+            ValueNode[] list = new ValueNode[]{ActivationCountBuffer};
             ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
             graph.addAfterFixed(graph.start(), fenceNode);
             fenceNode.setStamp(StampFactory.forBuboVoid());
@@ -109,7 +106,7 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
         try {
                     // Read the buffer form the static class
         LoadFieldNode readBuffer = graph.add(LoadFieldNode.create(null, null,
-                    context.getMetaAccess().lookupJavaField(BuboCache.class.getField(FieldName))));
+                    context.getMetaAccess().lookupJavaField(GTCache.class.getField(FieldName))));
             graph.addAfterFixed(graph.start(), readBuffer);
 
             // create the address, and give it our unique stamp for identifaction later on
