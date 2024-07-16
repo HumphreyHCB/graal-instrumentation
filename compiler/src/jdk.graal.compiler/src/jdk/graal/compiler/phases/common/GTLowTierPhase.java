@@ -24,6 +24,9 @@
  */
 package jdk.graal.compiler.phases.common;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -123,15 +126,15 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
      * @param graphCycleCost The cycle cost of the graph.
      */
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
-        int counter = 0;
-        Iterable<FixedWithNextNode> intialNodes = graph.getNodes().filter(FixedWithNextNode.class);
-        for (FixedWithNextNode node :  intialNodes) {
-            if (!node.successors().isEmpty() && counter < 100) {
-                incrementAndStoreActivationCount(graph, node, buffers.activationCountBuffer);
-                counter++;
-            }
+        double initialCost = NodeCostUtil.computeGraphCycles(graph, true);
+        double targetCost = initialCost * 2; // its 2 cause we want to double the overhead
+        int incrementCost = 18;
+        
+        int requiredIncrements = (int) Math.ceil((targetCost - initialCost) / incrementCost);
+        
+        for (int i = 0; i < requiredIncrements; i++) {
+            incrementAndStoreActivationCount(graph, graph.start(), buffers.activationCountBuffer);
         }
-
     }
 
     /**
