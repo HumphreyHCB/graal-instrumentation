@@ -125,52 +125,15 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
      * @param graphCycleCost The cycle cost of the graph.
      */
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
-
-        for (Node node : graph.getNodes()) {
-            if (!node.successors().isEmpty()) {
-                //node.
+        int counter = 0;
+        Iterable<FixedWithNextNode> intialNodes = graph.getNodes().filter(FixedWithNextNode.class);
+        for (FixedWithNextNode node :  intialNodes) {
+            if (!node.successors().isEmpty() && counter < 100) {
+                incrementAndStoreActivationCount(graph, node, buffers.activationCountBuffer);
+                counter++;
             }
         }
 
-    }
-
-    /**
-     * Handles instrumentation at the end of a node.
-     * 
-     * @param graph     The structured graph to instrument.
-     * @param endNode   The end node.
-     * @param startTime The start time node.
-     * @param buffers   The instrumentation buffers.
-     */
-    private void handleEndNodeInstrumentation(StructuredGraph graph, FixedNode endNode, ClockTimeNode startTime, InstrumentationBuffers buffers) {
-        try (DebugCloseable s = endNode.withNodeSourcePosition()) {
-            ClockTimeNode endTime = graph.add(new ClockTimeNode());
-            graph.addBeforeFixed(endNode, endTime);
-
-            SubNode timeDiff = graph.addWithoutUnique(new SubNode(endTime, startTime));
-            aggregateAndStore(graph, endTime, buffers.timeBuffer, timeDiff);
-            incrementAndStoreActivationCount(graph, buffers.activationCountBuffer);
-        }
-    }
-
-    /**
-     * Handles partial instrumentation of the graph.
-     * 
-     * @param graph          The structured graph to instrument.
-     * @param buffers        The instrumentation buffers.
-     * @param graphCycleCost The cycle cost of the graph.
-     */
-    private void handlePartialInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers, double graphCycleCost) {
-        JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffers.cyclesBuffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-        graph.addAfterFixed(graph.start(), readCurrentValue);
-
-        ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
-        AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
-
-        JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, buffers.cyclesBuffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY, false));
-        graph.addAfterFixed(readCurrentValue, memoryWrite);
-
-        incrementAndStoreActivationCount(graph, buffers.activationCountBuffer);
     }
 
     /**
@@ -195,8 +158,9 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
      * @param graph  The structured graph.
      * @param buffer The buffer node.
      */
-    private void incrementAndStoreActivationCount(StructuredGraph graph, OffsetAddressNode buffer) {
+    private void incrementAndStoreActivationCount(StructuredGraph graph, FixedWithNextNode node , OffsetAddressNode buffer) {
         JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        graph.addAfterFixed(node, readCurrentValue);
         ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
         AddNode addOne = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
         JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), addOne, BarrierType.ARRAY, false));
