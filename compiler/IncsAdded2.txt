@@ -1,0 +1,249 @@
+In comp ID java.lang.Object.<init>()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.forEach(ForEachInterface)
+graph Cost 5514.0
+Going to add 344 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.addPropagate(AbstractConstraint, int)
+graph Cost 432.0
+Going to add 27 increment as we currently judge the cost to be 16
+In comp ID som.Vector.forEach(ForEachInterface)
+graph Cost 923.0
+Going to add 57 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)
+graph Cost 223.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.equals(byte[], byte[])
+graph Cost 129.0
+Going to add 8 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)
+graph Cost 205.0
+Going to add 12 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.indexOfChar(byte[], int, int, int)
+graph Cost 299.0
+Going to add 18 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringCoding.countPositives(byte[], int, int)
+graph Cost 684.0
+Going to add 42 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getValue()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setValue(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Plan$$Lambda/0x00007f4ff4085830.apply(Object)
+graph Cost 109.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID deltablue.Plan.lambda$execute$0(AbstractConstraint)
+graph Cost 101.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID deltablue.EqualityConstraint.execute()
+graph Cost 28.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.getOutput()
+graph Cost 14.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.isEmpty()
+graph Cost 12.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle.constructorMethod(Object)
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle.allocateInstance(Object)
+graph Cost 656.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getMark()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getStay()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.incrementalAdd(AbstractConstraint)
+graph Cost 23.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.Vector.append(Object)
+graph Cost 68.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.isSatisfied()
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$addConstraintsConsumingTo$2(AbstractConstraint, Vector, AbstractConstraint)
+graph Cost 55.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f4ff400ebb0.apply(Object)
+graph Cost 27.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getWalkStrength()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setMark(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getDeterminedBy()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.findLinear(Object)
+graph Cost 211.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.getArithmeticValue()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.isAlive()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getConstraints()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.ScaleConstraint.execute()
+graph Cost 49.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.isLatin1()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.checkIndex(int, int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.charAt(int)
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.charAt(byte[], int)
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(int, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, int)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(Object, Object, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, Object, Object)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID som.Vector.removeFirst()
+graph Cost 33.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.weaker(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.id()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeIdAccessor.getNodeId(Node)
+graph Cost 13.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f4ff400e998.apply(Object)
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.lambda$satisfy$1(int, Variable)
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.addConstraint(AbstractConstraint)
+graph Cost 75.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setDeterminedBy(AbstractConstraint)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.satisfy(int, Planner)
+graph Cost 441.0
+Going to add 27 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.stronger(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f4ff400e998.<init>(int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, Object)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(Object, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f4ff4086cc8.apply(Object)
+graph Cost 92.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$removePropagateFrom$4(Vector, AbstractConstraint)
+graph Cost 84.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.addConstraintsConsumingTo(Variable, Vector)
+graph Cost 47.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f4ff400ebb0.<init>(AbstractConstraint, Vector)
+graph Cost 54.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f4ff4087108.apply(Object)
+graph Cost 27.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.forward()
+graph Cost 31.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$constraintsConsuming$3(AbstractConstraint, ForEachInterface, AbstractConstraint)
+graph Cost 201.0
+Going to add 12 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setWalkStrength(Strength)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setStay(boolean)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.<init>(int)
+graph Cost 644.0
+Going to add 40 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.weakest(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector$$Lambda/0x00007f4ff4086aa8.apply(Object)
+graph Cost 76.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID som.Vector.lambda$remove$0(Object, boolean[], Object[], int[], Object)
+graph Cost 64.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID sun.misc.Unsafe.getObject(Object, long)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength$Sym.customHash()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.hash(Dictionary$CustomHash)
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.getBucketIdx(int)
+graph Cost 17.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.absoluteWeakest()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.at(Dictionary$CustomHash)
+graph Cost 59.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.getBucket(int)
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.IdentityDictionary$IdEntry.match(int, Object)
+graph Cost 16.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.of(Strength$Sym)
+graph Cost 62.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.inputsKnown(int)
+graph Cost 91.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.<init>(Strength$Sym)
+graph Cost 87.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.addConstraint(Planner)
+graph Cost 298.0
+Going to add 18 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.<init>()
+graph Cost 129.0
+Going to add 8 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f4ff4086cc8.<init>(Vector)
+graph Cost 31.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.makePlan(Vector)
+graph Cost 1.5344289E7
+Going to add 959018 increment as we currently judge the cost to be 16
