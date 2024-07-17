@@ -6,8 +6,8 @@
 # /home/hburchell/JDKS/graalvm-jdk-22+36.1
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm -Dgraal.EnableProfiler=true -Dgraal.MinGraphSize=0 -Dgraal.BuboDump=BuboDumps/BuboDump1/test_40.txt \
+ vm -Dgraal.EnableGTSlowDown=false -XX:-TieredCompilation \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.TrackNodeSourcePosition=true -XX:+UseJVMCICompiler \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  Harness DeltaBlue 300 60000  
+  Harness DeltaBlue 100 60000  

@@ -126,12 +126,39 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
      * @param graphCycleCost The cycle cost of the graph.
      */
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
-        double initialCost = NodeCostUtil.computeGraphCycles(graph, true);
-        double targetCost = initialCost * 2; // its 2 cause we want to double the overhead
-        int incrementCost = 18;
+        double initialCost = Math.floor(NodeCostUtil.computeGraphCycles(graph, true));
+        //double targetCost = initialCost * 2; // its 2 cause we want to double the overhead
+        int incrementCost = 16;
         
-        int requiredIncrements = (int) Math.ceil((targetCost - initialCost) / incrementCost);
+        int requiredIncrements = (int) Math.floor(initialCost/ incrementCost);
+
         
+        System.out.println("In comp ID " + graph.compilationId().toString(Verbosity.NAME) );
+        System.out.println("graph Cost " + initialCost);
+        //System.out.println("Ceil" + Math.ceil((targetCost - initialCost)));
+        System.out.println("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost);
+
+        String filePath = "IncsAdded.txt";
+
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
+            FileWriter writer = new FileWriter(file, true);
+                writer.write("In comp ID " + graph.compilationId().toString(Verbosity.NAME) + "\n");
+                //writer.write("Ceil" + (targetCost - initialCost) + "\n");
+                writer.write("graph Cost " + initialCost + "\n");
+                writer.write("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost + "\n");
+
+            writer.close();
+            //System.out.println("File has been written to " + filePath);
+        } catch (IOException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+
         for (int i = 0; i < requiredIncrements; i++) {
             incrementAndStoreActivationCount(graph, graph.start(), buffers.activationCountBuffer);
         }
@@ -162,7 +189,7 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
     private void incrementAndStoreActivationCount(StructuredGraph graph, FixedWithNextNode node , OffsetAddressNode buffer) {
         JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
         graph.addAfterFixed(node, readCurrentValue);
-        ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+        ValueNode one = graph.addWithoutUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forKind(JavaKind.Int)));
         AddNode addOne = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
         JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long, buffer, NamedLocationIdentity.getArrayLocation(JavaKind.Long), addOne, BarrierType.ARRAY, false));
         graph.addAfterFixed(readCurrentValue, memoryWrite);
