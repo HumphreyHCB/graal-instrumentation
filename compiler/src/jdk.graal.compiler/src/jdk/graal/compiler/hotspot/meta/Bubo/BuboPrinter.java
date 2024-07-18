@@ -300,6 +300,10 @@ public class BuboPrinter {
             if (TimeBuffer[index] != 0) {
                 long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
                 sum += adjusted;
+                // there is a problem, of we dont deal record any data form recom nodes,
+                // first go look at BuboMethodCache, we need to chekc if we do write the new id to chache
+                // next we need to store its information aswell but dont overwrite.
+                // we need to do each owns node ratio and then some how aggrate at the end to get the most accuate resulst 
                 timmings.put(index, adjusted);
             } else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
