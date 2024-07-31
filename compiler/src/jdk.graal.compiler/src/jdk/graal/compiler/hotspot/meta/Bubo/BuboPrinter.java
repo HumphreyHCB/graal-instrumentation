@@ -258,12 +258,13 @@ public class BuboPrinter {
         }
 
         List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
-        for (int i = 0; i < top10Indexes.length; i++) {
-            double maxPercentage = ((double) timmings.get(top10Indexes[i]) / sum) * 100;
-            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(top10Indexes[i])));
+        for (int key : timmings.keySet()) {
+            double maxPercentage = ((double) timmings.get(key) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(key)));
         }
 
         Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
+        //combinedMap = aggregateReComps(combinedMap);
 
         if (combinedMap.isEmpty()) {
             return;
@@ -296,14 +297,13 @@ public class BuboPrinter {
 
         long sum = 0;
         HashMap<Integer, Long> timmings = new HashMap<>();
-        for (int index : methods.keySet()) {
+        // for each method compiled
+        // check if we have timmings for it in ever the time buffer or the est buffer
+        for (int index : methods.keySet()) { 
             if (TimeBuffer[index] != 0) {
+                // if its timed, we need to minus the call site buffer
                 long adjusted = TimeBuffer[index] - CallSiteBuffer[index];
                 sum += adjusted;
-                // there is a problem, of we dont deal record any data form recom nodes,
-                // first go look at BuboMethodCache, we need to chekc if we do write the new id to chache
-                // next we need to store its information aswell but dont overwrite.
-                // we need to do each owns node ratio and then some how aggrate at the end to get the most accuate resulst 
                 timmings.put(index, adjusted);
             } else if (CyclesBuffer[index] != 0) {
                 sum += CyclesBuffer[index];
@@ -312,7 +312,7 @@ public class BuboPrinter {
                 // method was compiled but we have no information on it
             }
         }
-
+        // sort by largest time
         timmings = orderDataByTime(timmings);
         int counter = 0;
         System.out.println("");
@@ -328,12 +328,13 @@ public class BuboPrinter {
         }
 
         List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
-        for (int i = 0; i < top10Indexes.length; i++) {
-            double maxPercentage = ((double) timmings.get(top10Indexes[i]) / sum) * 100;
-            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(top10Indexes[i])));
+        for (int key : timmings.keySet()) {
+            double maxPercentage = ((double) timmings.get(key) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(key)));
         }
 
         Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
+        //combinedMap = aggregateReComps(combinedMap);
 
         if (combinedMap.isEmpty()) {
             return;
@@ -421,4 +422,32 @@ public class BuboPrinter {
     return combinedMap;
 
    }
+
+   /// if there are recompliations we need to aggrate them 
+   public static Map<String, Double> aggregateReComps(Map<String, Double> map) {
+    Map<String, Double> originalMap = new HashMap<>(map);
+    Map<String, Double> toAdd = new HashMap<>();
+
+    for (String compName : originalMap.keySet()) {
+        if (compName.endsWith("-Re-Comp")) {
+            String OGComp = removeSuffix(compName, "-Re-Comp");
+            
+            toAdd.put(OGComp, originalMap.get(OGComp) + originalMap.get(compName));
+            map.remove(compName);
+        }
+    }
+
+    for (Map.Entry<String, Double> entry : toAdd.entrySet()) {
+        map.put(entry.getKey(), entry.getValue());
+    }
+
+    return map;
+}
+
+   public static String removeSuffix(String str, String suffix) {
+    if (str != null && str.endsWith(suffix)) {
+        return str.substring(0, str.length() - suffix.length());
+    }
+    return str;
+}
 }
