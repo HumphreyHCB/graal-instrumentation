@@ -33,7 +33,7 @@ public class BuboMethodCache extends Thread  {
                 if (buffer.containsValue(idComponents[1])) {
                     
                     //continue; // this is where its been recomped
-                    idComponents[1] += idComponents[1] + " Re-Comp"; // this is not ture, just ddid it for demo purposues 
+                    idComponents[1] += idComponents[1] + "-Re-Comp"; // this is not ture, just ddid it for demo purposues 
                 }
                 buffer.put(Integer.parseInt(idComponents[0].split("-")[1]) , idComponents[1]);
             }
