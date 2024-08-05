@@ -127,37 +127,17 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
      */
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
         double initialCost = Math.floor(NodeCostUtil.computeGraphCycles(graph, true));
-        //double targetCost = initialCost * 2; // its 2 cause we want to double the overhead
+
         int incrementCost = 16;
         
         int requiredIncrements = (int) Math.floor(initialCost/ incrementCost);
 
         
-        System.out.println("In comp ID " + graph.compilationId().toString(Verbosity.NAME) );
-        System.out.println("graph Cost " + initialCost);
-        //System.out.println("Ceil" + Math.ceil((targetCost - initialCost)));
-        System.out.println("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost);
+        // System.out.println("In comp ID " + graph.compilationId().toString(Verbosity.NAME) );
+        // System.out.println("graph Cost " + initialCost);
+        // System.out.println("Ceil" + Math.ceil((targetCost - initialCost)));
+        // System.out.println("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost);
 
-        String filePath = "IncsAdded.txt";
-
-        try {
-            File file = new File(filePath);
-            if (!file.exists()) {
-                file.createNewFile();
-            }
-
-            FileWriter writer = new FileWriter(file, true);
-                writer.write("In comp ID " + graph.compilationId().toString(Verbosity.NAME) + "\n");
-                //writer.write("Ceil" + (targetCost - initialCost) + "\n");
-                writer.write("graph Cost " + initialCost + "\n");
-                writer.write("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost + "\n");
-
-            writer.close();
-            //System.out.println("File has been written to " + filePath);
-        } catch (IOException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
 
         for (int i = 0; i < requiredIncrements; i++) {
             incrementAndStoreActivationCount(graph, graph.start(), buffers.activationCountBuffer);

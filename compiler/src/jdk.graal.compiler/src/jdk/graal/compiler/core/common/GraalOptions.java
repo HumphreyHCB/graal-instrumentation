@@ -311,5 +311,8 @@ public final class GraalOptions {
   
     @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
     public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
+
+    @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
   
 }
