@@ -37,6 +37,7 @@ import java.util.Map;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.hotspot.meta.GT.GTCache;
+import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
@@ -189,26 +190,33 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
-        if (GraalOptions.EnableGTSlowDown.getValue(options)) {
-            initalizeBubo();
+        if (GraalOptions.EnableGTSlowDown.getValue(options) || GraalOptions.LIRGTSlowDown.getValue(options)) {
+            initalizeGT();
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
 
         startupLibGraal(this);
     }
 
-    private void initalizeBubo() {
+    private void initalizeGT() {
         System.out.println("Groundtruth SlowDown Started......");
         
         GTCache timeCache = new GTCache();
         timeCache.start();
 
+        GTCacheDebug debugCache = new GTCacheDebug();
+        debugCache.start();
+
         Thread writingHook = new Thread(() -> {
             try {
                 timeCache.join();
+                debugCache.join();
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+            }
+            for (String key : debugCache.Occurrences.keySet()) {
+                System.out.println(key + " found : " + debugCache.Occurrences.get(key));
             }
             System.out.println("Groundtruth SlowDown Shutdown......");
     });
