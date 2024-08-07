@@ -599,7 +599,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
             if (op.getPosition() != null) {
                 recordSourceMapping(start, asm.position(), op.getPosition());
             }
-            if (!lirInstructionVerifiers.isEmpty() && start < asm.position()) {
+            if ( start < asm.position()) { // i removed a check here
                 int end = asm.position();
                 for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
                     if (codeAnnotation instanceof JumpTable) {
@@ -612,7 +612,14 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                     }
                 }
                 byte[] emittedCode = asm.copy(start, end);
-                lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
+                // My hack
+                System.out.println("Start For LIR instruction"  + op.getClass());
+                for (byte b : emittedCode) {
+                    System.out.println(b);
+                }
+                System.out.println("End For LIR instruction"  + op.getClass());
+                // end of my hack
+                //lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
             }
         } catch (BailoutException e) {
             throw e;

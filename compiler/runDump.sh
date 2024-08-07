@@ -10,7 +10,7 @@
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
-  -Dgraal.EnableGTSlowDown=true \
+  -Dgraal.EnableGTSlowDown=false -Dgraal.LIRGTSlowDown=true \
  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
   -Dgraal.CompilationFailureAction=Diagnose \
   -Dgraal.Dump=:3 -Dgraal.PrintGraph=Network -Dgraal.PrintBackendCFG=true \
@@ -18,7 +18,7 @@ mx --java-home \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  Harness Towers 300 2500  
+  Harness DeltaBlue 100 60000   
 
 #  HelloWorld 
   

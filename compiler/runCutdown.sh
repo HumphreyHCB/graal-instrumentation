@@ -6,8 +6,10 @@
 # /home/hburchell/JDKS/graalvm-jdk-22+36.1
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm -Dgraal.EnableGTSlowDown=false -XX:-TieredCompilation \
+ vm -Dgraal.EnableGTSlowDown=false -Dgraal.LIRGTSlowDown=true -XX:-TieredCompilation \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \
   -Dgraal.TrackNodeSourcePosition=true -XX:+UseJVMCICompiler \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  Harness DeltaBlue 100 60000  
+  Harness Towers 100 2500  
+
+# -agentpath:/home/hburchell/Repos/AWFY-Profilers/Profilers/Async/build/libasyncProfiler.so=start,event=cpu,interval=10ms,file=AsyncTowersSlowdown.txt \

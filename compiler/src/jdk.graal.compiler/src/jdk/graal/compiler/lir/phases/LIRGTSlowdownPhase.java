@@ -28,6 +28,7 @@ import java.util.ArrayList;
 
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
@@ -55,13 +56,14 @@ public class LIRGTSlowdownPhase extends PreAllocationOptimizationPhase {
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            //instructions.addFirst(new AMD64ReadTimestampCounter());
             int loopAmount =  (int) Math.floor((instructions.size() - 2)/ 2);
             if (!instructions.isEmpty()) {
-                for (int index = 0; index < loopAmount; index++) {
-                    //System.out.println("loopAmount = " + loopAmount);
-                    instructions.add(1, new AMD64PauseOp());
+                for (LIRInstruction iterable_element : instructions) {
+                    GTCacheDebug.add(iterable_element.getClass().getName());
                 }
+                //for (int index = 0; index < loopAmount; index++) {
+                //    instructions.add(1, new AMD64PauseOp());
+                //}
                 
             } 
 
