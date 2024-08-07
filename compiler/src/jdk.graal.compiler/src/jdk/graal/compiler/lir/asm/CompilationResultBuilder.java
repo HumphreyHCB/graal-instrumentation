@@ -615,7 +615,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 // My hack
                 System.out.println("Start For LIR instruction"  + op.getClass());
                 for (byte b : emittedCode) {
-                    System.out.println(b);
+                    System.out.println(String.format("%02x", b & 0xFF));
                 }
                 System.out.println("End For LIR instruction"  + op.getClass());
                 // end of my hack
