@@ -56,6 +56,7 @@ import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.hotspot.meta.GT.GTCache;
 import jdk.graal.compiler.lir.ImplicitLIRFrameState;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRFrameState;
@@ -613,11 +614,11 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 }
                 byte[] emittedCode = asm.copy(start, end);
                 // My hack
-                System.out.println("Start For LIR instruction"  + op.getClass());
+                String emmitedOPCode = "";
                 for (byte b : emittedCode) {
-                    System.out.println(String.format("%02x", b & 0xFF));
+                    emmitedOPCode += String.format("%02x", b & 0xFF);
                 }
-                System.out.println("End For LIR instruction"  + op.getClass());
+                GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
                 // end of my hack
                 //lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
             }

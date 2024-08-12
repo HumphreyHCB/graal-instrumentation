@@ -55,17 +55,17 @@ public class LIRGTSlowdownPhase extends PreAllocationOptimizationPhase {
         // try a LFence incase
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
-            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            int loopAmount =  (int) Math.floor((instructions.size() - 2)/ 2);
-            if (!instructions.isEmpty()) {
-                for (LIRInstruction iterable_element : instructions) {
-                    GTCacheDebug.add(iterable_element.getClass().getName());
-                }
+            // ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+            // int loopAmount =  (int) Math.floor((instructions.size() - 2)/ 2);
+            // if (!instructions.isEmpty()) {
+            //     for (LIRInstruction iterable_element : instructions) {
+            //         GTCacheDebug.add(iterable_element.getClass().getName());
+            //     }
                 //for (int index = 0; index < loopAmount; index++) {
                 //    instructions.add(1, new AMD64PauseOp());
                 //}
                 
-            } 
+            //} 
 
         }
 

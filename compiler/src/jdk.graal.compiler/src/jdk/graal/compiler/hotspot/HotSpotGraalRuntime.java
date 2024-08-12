@@ -215,9 +215,7 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            for (String key : debugCache.Occurrences.keySet()) {
-                System.out.println(key + " found : " + debugCache.Occurrences.get(key));
-            }
+            GTCache.dumpLIRInstructionsToJSON();
             System.out.println("Groundtruth SlowDown Shutdown......");
     });
         Runtime.getRuntime().addShutdownHook(writingHook);
