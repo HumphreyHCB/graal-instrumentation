@@ -28,6 +28,7 @@ import java.util.ArrayList;
 
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostLookup;
 import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
@@ -53,21 +54,22 @@ public class LIRGTSlowdownPhase extends PreAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes, PreAllocationOptimizationContext context) {
         // try a LFence incase
-        for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+        // for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
-            // ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            // int loopAmount =  (int) Math.floor((instructions.size() - 2)/ 2);
-            // if (!instructions.isEmpty()) {
-            //     for (LIRInstruction iterable_element : instructions) {
-            //         GTCacheDebug.add(iterable_element.getClass().getName());
-            //     }
-                //for (int index = 0; index < loopAmount; index++) {
-                //    instructions.add(1, new AMD64PauseOp());
-                //}
+        //     ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+        //     int blockCost = 0;
+        //     for (LIRInstruction instruction : instructions) {
+        //         blockCost += LIRInstructionCostLookup.getCost(instruction.getClass().toString());
+        //     }
+        //     int loopAmount =  (int) Math.floor((blockCost)/ 8);
+        //     if (!instructions.isEmpty()) {
+        //         for (int index = 0; index < loopAmount; index++) {
+        //            instructions.add(1, new AMD64PauseOp());
+        //         }
                 
-            //} 
+        //     } 
 
-        }
+        // }
 
     }
 
