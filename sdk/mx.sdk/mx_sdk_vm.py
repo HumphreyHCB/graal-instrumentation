@@ -205,11 +205,10 @@ class LibraryConfig(AbstractNativeImageConfig):
 
 
 class LanguageLibraryConfig(LibraryConfig):
-    def __init__(self, jar_distributions, build_args, language, main_class=None, is_sdk_launcher=True, launchers=None, option_vars=None, default_vm_args=None, headers=False, set_default_relative_home_path=True, isolate_library_layout_distribution=None, **kwargs):
+    def __init__(self, jar_distributions, build_args, language, main_class=None, is_sdk_launcher=True, launchers=None, option_vars=None, default_vm_args=None, headers=False, set_default_relative_home_path=True, **kwargs):
         """
         :param str language
         :param str main_class
-        :param isolate_library_layout_distribution dict
         """
         kwargs.pop('destination', None)
         super(LanguageLibraryConfig, self).__init__('lib/<lib:' + language + 'vm>', jar_distributions, build_args, home_finder=True, headers=headers, **kwargs)
@@ -228,7 +227,6 @@ class LanguageLibraryConfig(LibraryConfig):
         if set_default_relative_home_path:
             # Ensure the language launcher can always find the language home
             self.add_relative_home_path(language, relpath('.', dirname(self.destination)))
-        self.isolate_library_layout_distribution = isolate_library_layout_distribution
 
 class GraalVmComponent(object):
     def __init__(self,
@@ -562,6 +560,9 @@ def base_jdk():
 def base_jdk_version():
     return base_jdk().javaCompliance.value
 
+def get_jdk_version_for_profiles():
+    jdk_version = mx.get_jdk().javaCompliance.value
+    return '_LATEST' if jdk_version > 21 else jdk_version
 
 def _probe_jvmci_info(jdk, attribute_name):
     if not hasattr(jdk, '.enables_jvmci_by_default'):
@@ -832,6 +833,11 @@ def _get_image_vm_options(jdk, use_upgrade_module_path, modules, synthetic_modul
                 if default_to_jvmci == 'lib':
                     vm_options.append('-XX:+UseJVMCINativeLibrary')
                 vm_options.extend(['-XX:-UnlockExperimentalVMOptions'])
+                if 'jdk.graal.compiler' in non_synthetic_modules:
+                    if 'com.oracle.graal.graal_enterprise' in non_synthetic_modules:
+                        vm_options.extend(['--add-exports=java.base/jdk.internal.misc=jdk.graal.compiler,com.oracle.graal.graal_enterprise'])
+                    else:
+                        vm_options.extend(['--add-exports=java.base/jdk.internal.misc=jdk.graal.compiler'])
             else:
                 # Don't default to using JVMCI as JIT unless Graal is being updated in the image.
                 # This avoids unexpected issues with using the out-of-date Graal compiler in
@@ -944,7 +950,8 @@ def jlink_new_jdk(jdk, dst_jdk_dir, module_dists, ignore_dists,
         mx.abort('Cannot derive a new JDK from ' + jdk.home + ' since ' + jmods_dir + ' is missing or is not a directory')
 
     # Exclude jdk.aot due to GR-10545 and JDK-8255616
-    jdk_modules = {jmd.name: jmd for jmd in jdk.get_modules() if jmd.name != 'jdk.aot'}
+    # Exclude graal in case it is included in the base JDK
+    jdk_modules = {jmd.name: jmd for jmd in jdk.get_modules() if jmd.name != 'jdk.aot' and not jmd.name.startswith('jdk.graal.compiler')}
     modules = [as_java_module(dist, jdk) for dist in module_dists]
     module_names = frozenset((m.name for m in modules))
     all_module_names = frozenset(list(jdk_modules.keys())) | module_names

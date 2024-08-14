@@ -435,6 +435,7 @@ public final class NodeParser extends AbstractParser<NodeData> {
         verifyConstructors(node);
         verifySpecializationThrows(node);
         verifyFrame(node);
+        verifyReportPolymorphism(node);
 
         if (isGenerateSlowPathOnly(node)) {
             removeFastPathSpecializations(node, node.getSharedCaches());
@@ -1794,32 +1795,7 @@ public final class NodeParser extends AbstractParser<NodeData> {
         }
     }
 
-    private static class ImportsKey {
-
-        private final TypeElement relativeTo;
-        private final TypeElement importGuardsClass;
-        private final boolean includeConstructors;
-
-        ImportsKey(TypeElement relativeTo, TypeElement importGuardsClass, boolean includeConstructors) {
-            this.relativeTo = relativeTo;
-            this.importGuardsClass = importGuardsClass;
-            this.includeConstructors = includeConstructors;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(relativeTo, importGuardsClass, includeConstructors);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj instanceof ImportsKey) {
-                ImportsKey other = (ImportsKey) obj;
-                return Objects.equals(relativeTo, other.relativeTo) && Objects.equals(importGuardsClass, other.importGuardsClass) && Objects.equals(includeConstructors, other.includeConstructors);
-            }
-            return false;
-        }
-
+    private record ImportsKey(TypeElement relativeTo, TypeElement importGuardsClass, boolean includeConstructors) {
     }
 
     private final Map<ImportsKey, List<Element>> importCache = ProcessorContext.getInstance().getCacheMap(ImportsKey.class);
@@ -3471,7 +3447,7 @@ public final class NodeParser extends AbstractParser<NodeData> {
         if (specialization.isFallback()) {
             for (int i = 0; i < libraries.size(); i++) {
                 CacheExpression cachedLibrary = libraries.get(i);
-                if (cachedLibrary.getCachedLibraryExpression() != null) {
+                if (cachedLibrary.getCachedLibraryExpression() != null && specialization.hasMultipleInstances()) {
                     cachedLibrary.addError("@%s annotations with specialized receivers are not supported in combination with @%s annotations. " +
                                     "Specify the @%s(limit=\"...\") attribute and remove the receiver expression to use an dispatched library instead.",
                                     getSimpleName(types.CachedLibrary), getSimpleName(types.Fallback), getSimpleName(types.CachedLibrary));
@@ -3965,7 +3941,6 @@ public final class NodeParser extends AbstractParser<NodeData> {
     }
 
     private ExecutableElement lookupInlineMethod(DSLExpressionResolver resolver, NodeData node, CacheExpression cache, TypeMirror type, MessageContainer errorTarget) {
-
         String inlineMethodName = ElementUtils.getAnnotationValue(String.class, cache.getMessageAnnotation(), "inlineMethod", false);
         ExecutableElement inlineMethod = null;
         if (inlineMethodName != null) {
@@ -4007,15 +3982,27 @@ public final class NodeParser extends AbstractParser<NodeData> {
                 return null;
             }
 
-            NodeData inlinedNode = lookupNodeData(node, type, errorTarget);
-            if (inlinedNode != null && inlinedNode.isGenerateInline()) {
-                CodeExecutableElement method = NodeFactoryFactory.createInlineMethod(inlinedNode, null);
-                method.setEnclosingElement(NodeCodeGenerator.nodeElement(inlinedNode));
-                inlineMethod = method;
+            Map<String, ExecutableElement> inlineSignatureCache = context.getInlineSignatureCache();
+            String id = ElementUtils.getUniqueIdentifier(parameterType.asType());
+            ExecutableElement cachedInline;
+            if (inlineSignatureCache.containsKey(id)) {
+                cachedInline = inlineSignatureCache.get(id);
+            } else {
+                NodeData inlinedNode = lookupNodeData(node, type, errorTarget);
+                if (inlinedNode != null && inlinedNode.isGenerateInline()) {
+                    CodeExecutableElement method = NodeFactoryFactory.createInlineMethod(inlinedNode, null);
+                    method.setEnclosingElement(NodeCodeGenerator.nodeElement(inlinedNode));
+                    cachedInline = method;
+                } else {
+                    cachedInline = null;
+                }
+                inlineSignatureCache.put(id, cachedInline);
+            }
+            if (cachedInline != null) {
+                inlineMethod = cachedInline;
             }
         }
         return inlineMethod;
-
     }
 
     private static boolean hasDefaultCreateCacheMethod(TypeMirror type) {
@@ -4425,6 +4412,26 @@ public final class NodeParser extends AbstractParser<NodeData> {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private static void verifyReportPolymorphism(NodeData node) {
+        if (node.isReportPolymorphism()) {
+            List<SpecializationData> reachableSpecializations = node.getReachableSpecializations();
+            if (reachableSpecializations.size() == 1 && reachableSpecializations.get(0).getMaximumNumberOfInstances() == 1) {
+                node.addSuppressableWarning(TruffleSuppressedWarnings.SPLITTING,
+                                "This node uses @ReportPolymorphism but has a single specialization instance, so the annotation has no effect. Remove the annotation or move it to another node to resolve this.");
+            }
+
+            if (reachableSpecializations.stream().noneMatch(SpecializationData::isReportPolymorphism)) {
+                node.addSuppressableWarning(TruffleSuppressedWarnings.SPLITTING,
+                                "This node uses @ReportPolymorphism but all specializations use @ReportPolymorphism.Exclude. Remove some excludes or do not use ReportPolymorphism at all for this node to resolve this.");
+            }
+
+            if (reachableSpecializations.stream().anyMatch(SpecializationData::isReportMegamorphism)) {
+                node.addSuppressableWarning(TruffleSuppressedWarnings.SPLITTING,
+                                "This node uses @ReportPolymorphism on the class and @ReportPolymorphism.Megamorphic on some specializations, the latter annotation has no effect. Remove one of the annotations to resolve this.");
             }
         }
     }

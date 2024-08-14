@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import jdk.graal.compiler.replacements.nodes.CStringConstant;
 import org.graalvm.nativeimage.AnnotationAccess;
 
 import com.oracle.graal.pointsto.AbstractAnalysisEngine;
@@ -45,9 +44,7 @@ import com.oracle.graal.pointsto.flow.LoadFieldTypeFlow.LoadStaticFieldTypeFlow;
 import com.oracle.graal.pointsto.flow.MethodFlowsGraph.GraphKind;
 import com.oracle.graal.pointsto.flow.OffsetLoadTypeFlow.LoadIndexedTypeFlow;
 import com.oracle.graal.pointsto.flow.OffsetLoadTypeFlow.UnsafeLoadTypeFlow;
-import com.oracle.graal.pointsto.flow.OffsetLoadTypeFlow.UnsafePartitionLoadTypeFlow;
 import com.oracle.graal.pointsto.flow.OffsetStoreTypeFlow.StoreIndexedTypeFlow;
-import com.oracle.graal.pointsto.flow.OffsetStoreTypeFlow.UnsafePartitionStoreTypeFlow;
 import com.oracle.graal.pointsto.flow.OffsetStoreTypeFlow.UnsafeStoreTypeFlow;
 import com.oracle.graal.pointsto.flow.StoreFieldTypeFlow.StoreInstanceFieldTypeFlow;
 import com.oracle.graal.pointsto.flow.StoreFieldTypeFlow.StoreStaticFieldTypeFlow;
@@ -58,8 +55,6 @@ import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.graal.pointsto.meta.PointsToAnalysisMethod;
-import com.oracle.graal.pointsto.nodes.UnsafePartitionLoadNode;
-import com.oracle.graal.pointsto.nodes.UnsafePartitionStoreNode;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysis;
 import com.oracle.graal.pointsto.results.StrengthenGraphs;
 import com.oracle.graal.pointsto.typestate.TypeState;
@@ -123,8 +118,11 @@ import jdk.graal.compiler.nodes.java.LoadIndexedNode;
 import jdk.graal.compiler.nodes.java.MethodCallTargetNode;
 import jdk.graal.compiler.nodes.java.MonitorEnterNode;
 import jdk.graal.compiler.nodes.java.NewArrayNode;
+import jdk.graal.compiler.nodes.java.NewArrayWithExceptionNode;
 import jdk.graal.compiler.nodes.java.NewInstanceNode;
+import jdk.graal.compiler.nodes.java.NewInstanceWithExceptionNode;
 import jdk.graal.compiler.nodes.java.NewMultiArrayNode;
+import jdk.graal.compiler.nodes.java.NewMultiArrayWithExceptionNode;
 import jdk.graal.compiler.nodes.java.StoreFieldNode;
 import jdk.graal.compiler.nodes.java.StoreIndexedNode;
 import jdk.graal.compiler.nodes.java.UnsafeCompareAndExchangeNode;
@@ -143,6 +141,7 @@ import jdk.graal.compiler.phases.graph.MergeableState;
 import jdk.graal.compiler.phases.graph.PostOrderNodeIterator;
 import jdk.graal.compiler.replacements.nodes.BasicArrayCopyNode;
 import jdk.graal.compiler.replacements.nodes.BinaryMathIntrinsicNode;
+import jdk.graal.compiler.replacements.nodes.CStringConstant;
 import jdk.graal.compiler.replacements.nodes.MacroInvokable;
 import jdk.graal.compiler.replacements.nodes.ObjectClone;
 import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode;
@@ -252,30 +251,52 @@ public class MethodTypeFlowBuilder {
             } else if (n instanceof NewInstanceNode) {
                 NewInstanceNode node = (NewInstanceNode) n;
                 AnalysisType type = (AnalysisType) node.instanceClass();
-                type.registerAsAllocated(AbstractAnalysisEngine.sourcePosition(node));
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
+                for (var f : type.getInstanceFields(true)) {
+                    var field = (AnalysisField) f;
+                    field.getInitialFlow().addState(bb, TypeState.defaultValueForKind(field.getStorageKind()));
+                }
+
+            } else if (n instanceof NewInstanceWithExceptionNode) {
+                NewInstanceWithExceptionNode node = (NewInstanceWithExceptionNode) n;
+                AnalysisType type = (AnalysisType) node.instanceClass();
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
 
             } else if (n instanceof VirtualObjectNode) {
                 VirtualObjectNode node = (VirtualObjectNode) n;
                 AnalysisType type = (AnalysisType) node.type();
-                type.registerAsAllocated(AbstractAnalysisEngine.sourcePosition(node));
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
 
             } else if (n instanceof NewArrayNode) {
                 NewArrayNode node = (NewArrayNode) n;
                 AnalysisType type = ((AnalysisType) node.elementType()).getArrayClass();
-                type.registerAsAllocated(AbstractAnalysisEngine.sourcePosition(node));
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
+
+            } else if (n instanceof NewArrayWithExceptionNode) {
+                NewArrayWithExceptionNode node = (NewArrayWithExceptionNode) n;
+                AnalysisType type = ((AnalysisType) node.elementType()).getArrayClass();
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
 
             } else if (n instanceof NewMultiArrayNode) {
                 NewMultiArrayNode node = (NewMultiArrayNode) n;
                 AnalysisType type = ((AnalysisType) node.type());
                 for (int i = 0; i < node.dimensionCount(); i++) {
-                    type.registerAsAllocated(AbstractAnalysisEngine.sourcePosition(node));
+                    type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
+                    type = type.getComponentType();
+                }
+
+            } else if (n instanceof NewMultiArrayWithExceptionNode) {
+                NewMultiArrayWithExceptionNode node = (NewMultiArrayWithExceptionNode) n;
+                AnalysisType type = ((AnalysisType) node.type());
+                for (int i = 0; i < node.dimensionCount(); i++) {
+                    type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
                     type = type.getComponentType();
                 }
 
             } else if (n instanceof BoxNode) {
                 BoxNode node = (BoxNode) n;
                 AnalysisType type = (AnalysisType) StampTool.typeOrNull(node, bb.getMetaAccess());
-                type.registerAsAllocated(AbstractAnalysisEngine.sourcePosition(node));
+                type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
 
             } else if (n instanceof LoadFieldNode) {
                 LoadFieldNode node = (LoadFieldNode) n;
@@ -294,7 +315,7 @@ public class MethodTypeFlowBuilder {
                     assert StampTool.isExactType(cn) : cn;
                     if (!ignoreConstant(cn)) {
                         AnalysisType type = (AnalysisType) StampTool.typeOrNull(cn, bb.getMetaAccess());
-                        type.registerAsInHeap(new EmbeddedRootScan(AbstractAnalysisEngine.sourcePosition(cn), root));
+                        type.registerAsInstantiated(new EmbeddedRootScan(AbstractAnalysisEngine.sourcePosition(cn), root));
                         registerEmbeddedRoot(bb, cn);
                     }
                 }
@@ -374,7 +395,7 @@ public class MethodTypeFlowBuilder {
     /**
      * Unsafe access nodes whose offset is a {@link FieldOffsetProvider} are modeled directly as
      * field access type flows and therefore do not need unsafe registration.
-     * 
+     *
      * We do not want that a field is registered as unsafe accessed just so that we have the field
      * offset during debugging, so we also ignore {@link FrameState}. {@link StrengthenGraphs}
      * removes the node from the {@link FrameState} if it is not registered for unsafe access for
@@ -598,6 +619,22 @@ public class MethodTypeFlowBuilder {
     protected void apply(boolean forceReparse, Object reason) {
         assert !processed : "can only call apply once per MethodTypeFlowBuilder";
         processed = true;
+
+        if (bb.getHostVM().useBaseLayer() && method.isInBaseLayer()) {
+            /*
+             * We don't need to analyze this method. We already know its return type state from the
+             * open world analysis. We just install a return flow to link it with its uses.
+             */
+            AnalysisType returnType = method.getSignature().getReturnType();
+            if (returnType.getJavaKind().isObject()) {
+                // GR-52421: the return type state should not be all-instantiated, it should be the
+                // persisted result of the open-world analysis
+                insertAllInstantiatedTypesReturn();
+            }
+            // GR-52421: verify that tracked parameter state is subset of persisted state
+            insertPlaceholderParamAndReturnFlows();
+            return;
+        }
 
         // assert method.getAnnotation(Fold.class) == null : method;
         if (handleNodeIntrinsic()) {
@@ -1023,65 +1060,6 @@ public class MethodTypeFlowBuilder {
                 processStoreIndexed(node, node.array(), node.value(), node.value().getStackKind(), state);
                 processImplicitNonNull(node.array(), state);
 
-            } else if (n instanceof UnsafePartitionLoadNode) {
-                UnsafePartitionLoadNode node = (UnsafePartitionLoadNode) n;
-                assert node.object().getStackKind() == JavaKind.Object : node.object();
-
-                checkUnsafeOffset(node.object(), node.offset());
-
-                AnalysisType partitionType = (AnalysisType) node.partitionType();
-
-                AnalysisType objectType = (AnalysisType) StampTool.typeOrNull(node.object(), bb.getMetaAccess());
-                assert bb.getGraalNodeType().isAssignableFrom(objectType) : objectType;
-
-                /* Use the Object type as a conservative type for the values loaded. */
-                AnalysisType componentType = bb.getObjectType();
-
-                TypeFlowBuilder<?> objectBuilder = state.lookup(node.object());
-                TypeFlowBuilder<?> unsafeLoadBuilder = TypeFlowBuilder.create(bb, node, UnsafePartitionLoadTypeFlow.class, () -> {
-                    UnsafePartitionLoadTypeFlow loadTypeFlow = new UnsafePartitionLoadTypeFlow(AbstractAnalysisEngine.sourcePosition(node), objectType, componentType, objectBuilder.get(),
-                                    node.unsafePartitionKind(), partitionType);
-                    flowsGraph.addMiscEntryFlow(loadTypeFlow);
-                    return loadTypeFlow;
-                });
-                unsafeLoadBuilder.addObserverDependency(objectBuilder);
-                state.add(node, unsafeLoadBuilder);
-
-            } else if (n instanceof UnsafePartitionStoreNode) {
-                UnsafePartitionStoreNode node = (UnsafePartitionStoreNode) n;
-
-                assert node.object().getStackKind() == JavaKind.Object : node.object();
-                assert node.value().getStackKind() == JavaKind.Object : node.value();
-
-                checkUnsafeOffset(node.object(), node.offset());
-
-                AnalysisType partitionType = (AnalysisType) node.partitionType();
-
-                AnalysisType objectType = (AnalysisType) StampTool.typeOrNull(node.object(), bb.getMetaAccess());
-                assert bb.getGraalNodeType().isAssignableFrom(objectType) : objectType;
-
-                /* Use the Object type as a conservative type for the values stored. */
-                AnalysisType componentType = bb.getObjectType();
-
-                AnalysisType valueType = (AnalysisType) StampTool.typeOrNull(node.value(), bb.getMetaAccess());
-                assert valueType.isJavaLangObject() || bb.getGraalNodeType().isAssignableFrom(valueType) || bb.getGraalNodeListType().isAssignableFrom(valueType) : valueType;
-
-                TypeFlowBuilder<?> objectBuilder = state.lookup(node.object());
-                TypeFlowBuilder<?> valueBuilder = state.lookup(node.value());
-
-                TypeFlowBuilder<?> unsafeStoreBuilder = TypeFlowBuilder.create(bb, node, UnsafePartitionStoreTypeFlow.class, () -> {
-                    UnsafePartitionStoreTypeFlow storeTypeFlow = new UnsafePartitionStoreTypeFlow(AbstractAnalysisEngine.sourcePosition(node), objectType, componentType, objectBuilder.get(),
-                                    valueBuilder.get(),
-                                    node.partitionKind(), partitionType);
-                    flowsGraph.addMiscEntryFlow(storeTypeFlow);
-                    return storeTypeFlow;
-                });
-                unsafeStoreBuilder.addUseDependency(valueBuilder);
-                unsafeStoreBuilder.addObserverDependency(objectBuilder);
-
-                /* Unsafe stores must not be removed. */
-                typeFlowGraphBuilder.registerSinkBuilder(unsafeStoreBuilder);
-
             } else if (n instanceof RawLoadNode node) {
                 modelUnsafeReadOnlyFlow(node, node.object(), node.offset());
             } else if (n instanceof RawStoreNode node) {
@@ -1175,10 +1153,10 @@ public class MethodTypeFlowBuilder {
         /*
          * The various Unsafe access nodes either only read, only write, or write-and-read directly
          * based on an offset. All three cases are handled similarly:
-         * 
+         *
          * 1) If we have precise information about the accessed field, we can model the access using
          * proper field access type flows.
-         * 
+         *
          * 2) If the accessed object is always an array, we ca model the access using array type
          * flows. The Unsafe access of an array is essentially an array access because we do not
          * have separate type flows for different array elements.
@@ -1466,6 +1444,11 @@ public class MethodTypeFlowBuilder {
                     } else {
                         AnalysisField field = (AnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
                         processStoreField(commitAllocationNode, field, object, value, value.getStackKind(), state);
+                    }
+                } else {
+                    if (!type.isArray()) {
+                        AnalysisField field = (AnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
+                        field.getInitialFlow().addState(bb, TypeState.defaultValueForKind(field.getStorageKind()));
                     }
                 }
             }

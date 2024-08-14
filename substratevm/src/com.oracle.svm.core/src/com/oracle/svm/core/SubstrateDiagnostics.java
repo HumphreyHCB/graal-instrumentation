@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.core;
 
+import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 import static com.oracle.svm.core.option.RuntimeOptionKey.RuntimeOptionKeyFlag.RelevantForCompilationIsolates;
 
 import java.util.ArrayList;
@@ -53,20 +54,18 @@ import com.oracle.svm.core.code.CodeInfoTable;
 import com.oracle.svm.core.code.FrameInfoQueryResult;
 import com.oracle.svm.core.code.RuntimeCodeInfoHistory;
 import com.oracle.svm.core.code.RuntimeCodeInfoMemory;
-import com.oracle.svm.core.code.UntetheredCodeInfo;
 import com.oracle.svm.core.config.ConfigurationValues;
+import com.oracle.svm.core.container.Container;
+import com.oracle.svm.core.container.OperatingSystem;
 import com.oracle.svm.core.deopt.DeoptimizationSupport;
-import com.oracle.svm.core.deopt.DeoptimizedFrame;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredImageSingleton;
 import com.oracle.svm.core.graal.RuntimeCompilation;
 import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
 import com.oracle.svm.core.heap.Heap;
-import com.oracle.svm.core.heap.PhysicalMemory;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.LayoutEncoding;
-import com.oracle.svm.core.jdk.Jvm;
 import com.oracle.svm.core.jdk.UninterruptibleUtils;
 import com.oracle.svm.core.jdk.UninterruptibleUtils.AtomicWord;
 import com.oracle.svm.core.locks.VMLockSupport;
@@ -370,35 +369,11 @@ public class SubstrateDiagnostics {
         log.resetIndentation().newline();
     }
 
-    @Uninterruptible(reason = "Prevent deoptimization of stack frames while in this method.")
-    private static long getTotalFrameSize(Pointer sp, CodePointer ip) {
-        DeoptimizedFrame deoptFrame = Deoptimizer.checkDeoptimized(sp);
-        if (deoptFrame != null) {
-            return deoptFrame.getSourceTotalFrameSize();
-        }
-
-        UntetheredCodeInfo untetheredInfo = CodeInfoTable.lookupCodeInfo(ip);
-        if (untetheredInfo.isNonNull()) {
-            Object tether = CodeInfoAccess.acquireTether(untetheredInfo);
-            try {
-                CodeInfo codeInfo = CodeInfoAccess.convert(untetheredInfo, tether);
-                return getTotalFrameSize0(ip, codeInfo);
-            } finally {
-                CodeInfoAccess.releaseTether(untetheredInfo, tether);
-            }
-        }
-        return -1;
-    }
-
-    @Uninterruptible(reason = "Wrap the now safe call to interruptibly look up the frame size.", calleeMustBe = false)
-    private static long getTotalFrameSize0(CodePointer ip, CodeInfo codeInfo) {
-        return CodeInfoAccess.lookupTotalFrameSize(codeInfo, CodeInfoAccess.relativeIP(codeInfo, ip));
-    }
-
     private static void logFrameAnchors(Log log, IsolateThread thread) {
         JavaFrameAnchor anchor = JavaFrameAnchors.getFrameAnchor(thread);
         if (anchor.isNull()) {
             log.string("No anchors").newline();
+            return;
         }
 
         int printed = 0;
@@ -880,7 +855,7 @@ public class SubstrateDiagnostics {
             Platform platform = ImageSingletons.lookup(Platform.class);
             log.string("Platform: ").string(platform.getOS()).string("/").string(platform.getArchitecture()).newline();
             log.string("Page size: ").unsigned(SubstrateOptions.getPageSize()).newline();
-            log.string("Container support: ").bool(Containers.Options.UseContainerSupport.getValue()).newline();
+            log.string("Containerized: ").string(String.valueOf(Container.singleton().isContainerized())).newline();
             log.string("CPU features used for AOT compiled code: ").string(getBuildTimeCpuFeatures()).newline();
             log.indent(false);
         }
@@ -902,24 +877,38 @@ public class SubstrateDiagnostics {
         public void printDiagnostics(Log log, ErrorContext context, int maxDiagnosticLevel, int invocationCount) {
             log.string("Runtime information:").indent(true);
 
-            int activeProcessorCount = Processor.singleton().getLastQueriedActiveProcessorCount();
-            log.string("CPU cores (container): ");
-            if (activeProcessorCount > 0) {
-                log.signed(activeProcessorCount).newline();
-            } else {
-                log.string("unknown").newline();
+            if (Container.singleton().isContainerized()) {
+                log.string("CPU cores (container): ");
+                int processorCount = getContainerActiveProcessorCount();
+                if (processorCount > 0) {
+                    log.signed(processorCount).newline();
+                } else {
+                    log.string("unknown").newline();
+                }
             }
 
             log.string("CPU cores (OS): ");
-            if (!SubstrateOptions.AsyncSignalSafeDiagnostics.getValue() && SubstrateOptions.JNI.getValue()) {
-                log.signed(Jvm.JVM_ActiveProcessorCount()).newline();
+            int processorCount = getOsProcessorCount();
+            if (processorCount > 0) {
+                log.signed(processorCount).newline();
             } else {
                 log.string("unknown").newline();
             }
 
-            log.string("Memory: ");
-            if (PhysicalMemory.isInitialized()) {
-                log.rational(PhysicalMemory.getCachedSize(), 1024 * 1024, 0).string("M").newline();
+            if (Container.singleton().isContainerized()) {
+                log.string("Memory (container): ");
+                UnsignedWord memory = getContainerPhysicalMemory();
+                if (memory.aboveThan(0)) {
+                    log.rational(memory, 1024 * 1024, 0).string("M").newline();
+                } else {
+                    log.string("unknown").newline();
+                }
+            }
+
+            log.string("Memory (OS): ");
+            UnsignedWord memory = getOsPhysicalMemorySize();
+            if (memory.aboveThan(0)) {
+                log.rational(memory, 1024 * 1024, 0).string("M").newline();
             } else {
                 log.string("unknown").newline();
             }
@@ -930,13 +919,50 @@ public class SubstrateDiagnostics {
                 log.string("Current timestamp: ").unsigned(System.currentTimeMillis()).newline();
             }
 
-            CodeInfo info = CodeInfoTable.getImageCodeInfo();
-            Pointer codeStart = (Pointer) CodeInfoAccess.getCodeStart(info);
-            UnsignedWord codeSize = CodeInfoAccess.getCodeSize(info);
-            Pointer codeEnd = codeStart.add(codeSize).subtract(1);
-            log.string("AOT compiled code: ").zhex(codeStart).string(" - ").zhex(codeEnd).newline();
+            CodeInfo info = CodeInfoTable.getFirstImageCodeInfo();
+            do {
+                Pointer codeStart = (Pointer) CodeInfoAccess.getCodeStart(info);
+                UnsignedWord codeSize = CodeInfoAccess.getCodeSize(info);
+                Pointer codeEnd = codeStart.add(codeSize).subtract(1);
+                log.string("AOT compiled code: ").zhex(codeStart).string(" - ").zhex(codeEnd).newline();
+                info = CodeInfoAccess.getNextImageCodeInfo(info);
+            } while (info.isNonNull());
 
             log.indent(false);
+        }
+
+        private static int getOsProcessorCount() {
+            if (SubstrateOptions.AsyncSignalSafeDiagnostics.getValue()) {
+                return OperatingSystem.singleton().getCachedActiveProcessorCount();
+            } else if (SubstrateOptions.JNI.getValue()) {
+                return OperatingSystem.singleton().getActiveProcessorCount();
+            } else {
+                return -1;
+            }
+        }
+
+        private static UnsignedWord getOsPhysicalMemorySize() {
+            if (SubstrateOptions.AsyncSignalSafeDiagnostics.getValue()) {
+                return OperatingSystem.singleton().getCachedPhysicalMemorySize();
+            } else {
+                return OperatingSystem.singleton().getPhysicalMemorySize();
+            }
+        }
+
+        private static int getContainerActiveProcessorCount() {
+            if (SubstrateOptions.AsyncSignalSafeDiagnostics.getValue()) {
+                return Container.singleton().getCachedActiveProcessorCount();
+            } else {
+                return Container.singleton().getActiveProcessorCount();
+            }
+        }
+
+        private static UnsignedWord getContainerPhysicalMemory() {
+            if (SubstrateOptions.AsyncSignalSafeDiagnostics.getValue()) {
+                return Container.singleton().getCachedPhysicalMemory();
+            } else {
+                return Container.singleton().getPhysicalMemory();
+            }
         }
     }
 
@@ -987,7 +1013,7 @@ public class SubstrateDiagnostics {
             CodePointer ip = context.getInstructionPointer();
 
             log.string("Stacktrace for the failing thread ").zhex(CurrentIsolate.getCurrentThread()).string(" (A=AOT compiled, J=JIT compiled, D=deoptimized, i=inlined):").indent(true);
-            boolean success = ThreadStackPrinter.printStacktrace(sp, ip, printVisitors[invocationCount - 1].reset(), log);
+            boolean success = ThreadStackPrinter.printStacktrace(CurrentIsolate.getCurrentThread(), sp, ip, printVisitors[invocationCount - 1].reset(), log);
 
             if (!success && DiagnosticLevel.unsafeOperationsAllowed(maxDiagnosticLevel)) {
                 /*
@@ -1018,7 +1044,7 @@ public class SubstrateDiagnostics {
             Pointer sp = returnAddressPos.add(FrameAccess.returnAddressSize());
             log.newline();
             log.string("Starting the stack walk in a possible caller (sp + ").unsigned(sp.subtract(originalSp)).string("):").newline();
-            ThreadStackPrinter.printStacktrace(sp, possibleIp, printVisitors[invocationCount - 1].reset(), log);
+            ThreadStackPrinter.printStacktrace(CurrentIsolate.getCurrentThread(), sp, possibleIp, printVisitors[invocationCount - 1].reset(), log);
         }
     }
 
@@ -1100,25 +1126,28 @@ public class SubstrateDiagnostics {
          * NOTE: this method may only be called by a single thread.
          */
         public boolean printLocationInfo(Log log, UnsignedWord value) {
-            CodeInfo imageCodeInfo = CodeInfoTable.getImageCodeInfo();
-            if (imageCodeInfo.equal(value)) {
-                log.string("is the image CodeInfo object");
-                return true;
-            }
-
-            UnsignedWord codeInfoEnd = ((UnsignedWord) imageCodeInfo).add(CodeInfoAccess.getSizeOfCodeInfo());
-            if (value.aboveOrEqual((UnsignedWord) imageCodeInfo) && value.belowThan(codeInfoEnd)) {
-                log.string("points inside the image CodeInfo object ").zhex(imageCodeInfo);
-                return true;
-            }
-
-            if (CodeInfoAccess.contains(imageCodeInfo, (CodePointer) value)) {
-                log.string("points into AOT compiled code ");
-                FrameInfoQueryResult compilationRoot = getCompilationRoot(imageCodeInfo, (CodePointer) value);
-                if (compilationRoot != null) {
-                    compilationRoot.log(log);
+            CodeInfo imageCodeInfo = CodeInfoTable.getFirstImageCodeInfo();
+            while (imageCodeInfo.isNonNull()) {
+                if (imageCodeInfo.equal(value)) {
+                    log.string("is an image CodeInfo object");
+                    return true;
                 }
-                return true;
+
+                UnsignedWord codeInfoEnd = ((UnsignedWord) imageCodeInfo).add(CodeInfoAccess.getSizeOfCodeInfo());
+                if (value.aboveOrEqual((UnsignedWord) imageCodeInfo) && value.belowThan(codeInfoEnd)) {
+                    log.string("points inside the image CodeInfo object ").zhex(imageCodeInfo);
+                    return true;
+                }
+
+                if (CodeInfoAccess.contains(imageCodeInfo, (CodePointer) value)) {
+                    log.string("points into AOT compiled code ");
+                    FrameInfoQueryResult compilationRoot = getCompilationRoot(imageCodeInfo, (CodePointer) value);
+                    if (compilationRoot != null) {
+                        compilationRoot.log(log);
+                    }
+                    return true;
+                }
+                imageCodeInfo = CodeInfoAccess.getNextImageCodeInfo(imageCodeInfo);
             }
 
             return false;
@@ -1319,7 +1348,8 @@ public class SubstrateDiagnostics {
                  * image build, it can happen that the singleton does not exist yet. In that case,
                  * the value will be copied to the image heap when executing the constructor of the
                  * singleton. This is a bit cumbersome but necessary because we can't use a static
-                 * field.
+                 * field. We also need to mark the option as used at run-time (see feature) as the
+                 * static analysis would otherwise remove the option from the image.
                  */
                 if (ImageSingletons.contains(Options.class)) {
                     Options.singleton().loopOnFatalError = newValue;
@@ -1327,11 +1357,26 @@ public class SubstrateDiagnostics {
             }
         };
 
+        @Option(help = "Determines if implicit exceptions are fatal if they don't have a stack trace.", type = OptionType.Debug)//
+        public static final RuntimeOptionKey<Boolean> ImplicitExceptionWithoutStacktraceIsFatal = new RuntimeOptionKey<>(false, RelevantForCompilationIsolates) {
+            @Override
+            protected void onValueUpdate(EconomicMap<OptionKey<?>, Object> values, Boolean oldValue, Boolean newValue) {
+                super.onValueUpdate(values, oldValue, newValue);
+
+                /* See comment above. */
+                if (ImageSingletons.contains(Options.class)) {
+                    Options.singleton().implicitExceptionWithoutStacktraceIsFatal = newValue;
+                }
+            }
+        };
+
         private volatile boolean loopOnFatalError;
+        private boolean implicitExceptionWithoutStacktraceIsFatal;
 
         @Platforms(Platform.HOSTED_ONLY.class)
         public Options() {
             this.loopOnFatalError = Options.LoopOnFatalError.getValue();
+            this.implicitExceptionWithoutStacktraceIsFatal = Options.ImplicitExceptionWithoutStacktraceIsFatal.getValue();
         }
 
         @Fold
@@ -1341,6 +1386,11 @@ public class SubstrateDiagnostics {
 
         public static boolean shouldLoopOnFatalError() {
             return singleton().loopOnFatalError;
+        }
+
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static boolean implicitExceptionWithoutStacktraceIsFatal() {
+            return singleton().implicitExceptionWithoutStacktraceIsFatal;
         }
     }
 }

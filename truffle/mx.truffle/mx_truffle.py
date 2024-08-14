@@ -48,7 +48,7 @@ import tempfile
 import difflib
 import zipfile
 from argparse import Action, ArgumentParser, RawDescriptionHelpFormatter
-from os.path import exists, isdir, join, abspath
+from os.path import dirname, exists, isdir, join, abspath
 from urllib.parse import urljoin # pylint: disable=unused-import,no-name-in-module
 
 import mx
@@ -57,6 +57,7 @@ import mx_gate
 import mx_native
 import mx_sdk
 import mx_sdk_vm
+import mx_sdk_vm_impl
 import mx_subst
 import mx_unittest
 import mx_jardistribution
@@ -117,7 +118,7 @@ def javadoc(args, vm=None):
         'com.oracle.truffle.api.object',
         'com.oracle.truffle.api.staticobject',
     ]
-    mx.javadoc(['--unified', '--projects', ','.join(projects)] + extraArgs + args, includeDeps=False)
+    mx.javadoc(['--unified', '--disallow-all-warnings','--projects', ','.join(projects)] + extraArgs + args, includeDeps=False)
     javadoc_dir = os.sep.join([_suite.dir, 'javadoc'])
     checkLinks(javadoc_dir)
 
@@ -198,16 +199,16 @@ def _open_module_exports_args():
 class TruffleUnittestConfig(mx_unittest.MxUnittestConfig):
 
     _use_enterprise_polyglot = True
+    _use_optimized_runtime = True
 
     def __init__(self):
         super(TruffleUnittestConfig, self).__init__('truffle')
 
     def processDeps(self, deps):
-        if TruffleUnittestConfig._use_enterprise_polyglot:
-            dist_names = resolve_truffle_dist_names()
-            mx.logv(f'Adding Truffle runtime distributions {", ".join(dist_names)} to unittest dependencies.')
-            for dist_name in dist_names:
-                deps.add(mx.distribution(dist_name))
+        dist_names = resolve_truffle_dist_names(TruffleUnittestConfig._use_optimized_runtime, TruffleUnittestConfig._use_enterprise_polyglot)
+        mx.logv(f'Adding Truffle runtime distributions {", ".join(dist_names)} to unittest dependencies.')
+        for dist_name in dist_names:
+            deps.add(mx.distribution(dist_name))
 
     def apply(self, config):
         vmArgs, mainClass, mainClassArgs = config
@@ -223,6 +224,10 @@ class TruffleUnittestConfig(mx_unittest.MxUnittestConfig):
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.sl/*=ALL-UNNAMED'])
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.truffle/*=org.graalvm.sl'])
         mainClassArgs.extend(['-JUnitOpenPackages', 'org.graalvm.shadowed.jcodings/*=ALL-UNNAMED'])
+
+        # Disable VirtualThread warning
+        vmArgs = vmArgs + ['-Dpolyglot.engine.WarnVirtualThreadSupport=false']
+
         return (vmArgs, mainClass, mainClassArgs)
 
 
@@ -238,8 +243,18 @@ class _DisableEnterpriseTruffleAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         TruffleUnittestConfig._use_enterprise_polyglot = False
 
+class _DisableOptimizedRuntimeAction(Action):
+    def __init__(self, **kwargs):
+        kwargs['required'] = False
+        kwargs['nargs'] = 0
+        super(_DisableOptimizedRuntimeAction, self).__init__(**kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        TruffleUnittestConfig._use_optimized_runtime = False
+
 
 mx_unittest.add_unittest_argument('--disable-truffle-enterprise', default=False, help='Disables the automatic inclusion of Enterprise Truffle in unittest dependencies.', action=_DisableEnterpriseTruffleAction)
+mx_unittest.add_unittest_argument('--disable-truffle-optimized-runtime', default=False, help='Disables the automatic inclusion of Truffle optimized runtime in unittest dependencies.', action=_DisableOptimizedRuntimeAction)
 
 
 class NFITestConfig:
@@ -355,10 +370,10 @@ def _sl_command(jdk, vm_args, sl_args, use_optimized_runtime=True, use_enterpris
 
 def slnative(args):
     """build a native image of an SL program"""
-    parser = ArgumentParser(prog='mx slnative', description='Builds and executes native SL image.', usage='mx slnative [--target-folder <folder>|SL args|@VM options]')
+    parser = ArgumentParser(prog='mx slnative', description='Builds and executes native SL image.', usage='mx slnative [--target-folder <folder>|@VM options|--|SL args]')
     parser.add_argument('--target-folder', help='Folder where the SL executable will be generated.', default=None)
     parsed_args, args = parser.parse_known_args(args)
-    vm_args, sl_args = mx.extract_VM_args(args)
+    vm_args, sl_args = mx.extract_VM_args(args, useDoubleDash=True, defaultAllVMArgs=False)
     target_dir = parsed_args.target_folder if parsed_args.target_folder else tempfile.mkdtemp()
     jdk = mx.get_jdk(tag='graalvm')
     image = _native_image_sl(jdk, vm_args, target_dir, use_optimized_runtime=True, force_cp=False, hosted_assertions=False)
@@ -393,50 +408,80 @@ def _native_image_sl(jdk, vm_args, target_dir, use_optimized_runtime=True, use_e
     mx.run([native_image_path] + native_image_args)
     return target_path
 
+class TruffleGateTags:
+    style = ['style']
+    javadoc = ['javadoc']
+    sigtest = ['sigtest', 'test', 'fulltest']
+    truffle_test = ['truffle-test', 'test', 'fulltest']
+    panama_test = ['panama-test', 'test', 'fulltest']
+    string_test = ['string-test', 'test', 'fulltest']
+    dsl_max_state_bit_test = ['dsl-max-state-bit-test', 'fulltest']
+    parser_test = ['parser-test', 'test', 'fulltest']
+
 def _truffle_gate_runner(args, tasks):
     jdk = mx.get_jdk(tag=mx.DEFAULT_JDK_TAG)
     if jdk.javaCompliance < '9':
-        with Task('Truffle Javadoc', tasks) as t:
+        with Task('Truffle Javadoc', tasks, tags=TruffleGateTags.javadoc) as t:
             if t: javadoc([])
-    with Task('File name length check', tasks) as t:
+    with Task('File name length check', tasks, tags=TruffleGateTags.style) as t:
         if t: check_filename_length([])
-    with Task('Truffle Signature Tests', tasks) as t:
+    with Task('Truffle Signature Tests', tasks, tags=TruffleGateTags.sigtest) as t:
         if t: sigtest(['--check', 'binary'])
-    with Task('Truffle UnitTests', tasks) as t:
+    with Task('Truffle UnitTests', tasks, tags=TruffleGateTags.truffle_test) as t:
         if t: unittest(list(['--suite', 'truffle', '--enable-timing', '--verbose', '--max-class-failures=25']))
     if jdk.javaCompliance >= '22':
-        with Task('Truffle NFI tests with Panama Backend', tasks) as t:
+        with Task('Truffle NFI tests with Panama Backend', tasks, tags=TruffleGateTags.panama_test) as t:
             if t:
                 unittest(['com.oracle.truffle.nfi.test', '--enable-timing', '--verbose', '--nfi-config=panama'])
-    with Task('TruffleString UnitTests without Java String Compaction', tasks) as t:
+    with Task('TruffleString UnitTests without Java String Compaction', tasks, tags=TruffleGateTags.string_test) as t:
         if t: unittest(list(['-XX:-CompactStrings', '--suite', 'truffle', '--enable-timing', '--verbose', '--max-class-failures=25', 'com.oracle.truffle.api.strings.test']))
     if os.getenv('DISABLE_DSL_STATE_BITS_TESTS', 'false').lower() != 'true':
-        with Task('Truffle DSL max state bit tests', tasks) as t:
+        with Task('Truffle DSL max state bit tests', tasks, tags=TruffleGateTags.dsl_max_state_bit_test) as t:
             if t:
                 _truffle_gate_state_bitwidth_tests()
-    with Task('Validate parsers', tasks) as t:
+    with Task('Validate parsers', tasks, tags=TruffleGateTags.parser_test) as t:
         if t: validate_parsers()
+
 
 # Run in vm suite with:
 # mx --env ce --native-images=. build
-# mx --env ce --native-images=. gate -o -s "Truffle Unchained Truffle ModulePath Unit Tests"
-def truffle_jvm_module_path_unit_tests_gate():
-    unittest(list(['--suite', 'truffle', '--use-graalvm', '--enable-timing', '--verbose', '--max-class-failures=25']))
+# mx --env ce --native-images=. gate -o -t "Truffle ModulePath Unit Tests Optimized"
+def truffle_jvm_module_path_optimized_unit_tests_gate():
+    _truffle_jvm_module_path_unit_tests_gate()
+
+
+# Run in vm suite with:
+# mx --env ce --native-images=. build
+# mx --env ce --native-images=. gate -o -t "Truffle ModulePath Unit Tests Fallback"
+def truffle_jvm_module_path_fallback_unit_tests_gate():
+    _truffle_jvm_module_path_unit_tests_gate(['--disable-truffle-optimized-runtime'])
+
+
+def _truffle_jvm_module_path_unit_tests_gate(additional_unittest_options=None):
+    if additional_unittest_options is None:
+        additional_unittest_options = []
+    unittest(list(['--suite', 'truffle', '--use-graalvm', '--enable-timing', '--verbose', '--max-class-failures=25'] + additional_unittest_options))
+
 
 # Run in VM suite with:
 # mx --env ce --native-images=. build
-# mx --env ce --native-images=. gate -o -s "Truffle Unchained Truffle ClassPath Unit Tests"
-def truffle_jvm_class_path_unit_tests_gate():
-    unittest(list(['--suite', 'truffle', '--use-graalvm', '--enable-timing', '--force-classpath', '--verbose', '--max-class-failures=25']))
+# mx --env ce --native-images=. gate -o -t "Truffle ClassPath Unit Tests Optimized"
+def truffle_jvm_class_path_optimized_unit_tests_gate():
+    _truffle_jvm_class_path_unit_tests_gate()
 
-    # GR-50223 temporarily still run tests with class-path isolation. they are to be removed.
-    test_classes = [
-            "com.oracle.truffle.api.test.polyglot",
-            "com.oracle.truffle.api.test.examples",
-            "com.oracle.truffle.tck.tests",
-        ]
-    unittest(list(['--suite', 'truffle', '-Dpolyglotimpl.DisableClassPathIsolation=false', '--use-graalvm', '--enable-timing', '--force-classpath', '--verbose', '--max-class-failures=25'] + test_classes))
 
+# Run in VM suite with:
+# mx --env ce --native-images=. build
+# mx --env ce --native-images=. gate -o -t "Truffle ClassPath Unit Tests Fallback"
+def truffle_jvm_class_path_fallback_unit_tests_gate():
+    _truffle_jvm_class_path_unit_tests_gate(['--disable-truffle-optimized-runtime'])
+
+
+def _truffle_jvm_class_path_unit_tests_gate(additional_unittest_options=None):
+    if additional_unittest_options is None:
+        additional_unittest_options = []
+    unittest(list(['--suite', 'truffle', '--use-graalvm', '--enable-timing', '--force-classpath', '--verbose',
+                   '--max-class-failures=25'] + additional_unittest_options))
 
 @mx.command(_suite.name, 'native-truffle-unittest')
 def native_truffle_unittest(args):
@@ -497,6 +542,7 @@ def native_truffle_unittest(args):
     try:
         jdk = mx.get_jdk(tag='graalvm')
         unittest_distributions = ['mx:JUNIT-PLATFORM-NATIVE']
+        truffle_runtime_distributions = resolve_truffle_dist_names(True, True)
         test_classes_file = os.path.join(tmp, 'test_classes.txt')
 
         def collect_unittest_distributions(test_deps, vm_launcher, vm_args):
@@ -515,7 +561,7 @@ def native_truffle_unittest(args):
             '-Djunit.platform.listeners.uid.tracking.enabled=true',
             f'-Djunit.platform.listeners.uid.tracking.output.dir={os.path.join(tmp, "test-ids")}'
         ]
-        vm_args = enable_asserts_args + uid_tracking_args + mx.get_runtime_jvm_args(names=unittest_distributions) + module_args
+        vm_args = enable_asserts_args + uid_tracking_args + mx.get_runtime_jvm_args(names=unittest_distributions + truffle_runtime_distributions) + module_args
 
         # 2. Collect test ids for a native image build
         junit_console_launcher_with_args = [
@@ -583,13 +629,15 @@ def native_truffle_unittest(args):
 
 # Run in VM suite with:
 # mx --env ce --native-images=. build
-# mx --env ce --native-images=. gate -o -s "Truffle Unchained SL JVM"
+# mx --env ce --native-images=. gate -o -t "Truffle SL JVM"
 def sl_jvm_gate_tests():
     _sl_jvm_gate_tests(mx.get_jdk(tag='graalvm'), force_cp=False, supports_optimization=True)
     _sl_jvm_gate_tests(mx.get_jdk(tag='graalvm'), force_cp=True, supports_optimization=True)
 
     _sl_jvm_gate_tests(mx.get_jdk(tag='default'), force_cp=False, supports_optimization=False)
     _sl_jvm_gate_tests(mx.get_jdk(tag='default'), force_cp=True, supports_optimization=False)
+
+    _sl_jvm_comiler_on_upgrade_module_path_gate_tests(mx.get_jdk(tag='default'))
 
 
 def _sl_jvm_gate_tests(jdk, force_cp=False, supports_optimization=True):
@@ -639,9 +687,33 @@ def _sl_jvm_gate_tests(jdk, force_cp=False, supports_optimization=True):
         _run_sl_tests(run_jvm_no_enterprise_jvmci_disabled)
 
 
+def _sl_jvm_comiler_on_upgrade_module_path_gate_tests(jdk):
+    if _is_graalvm(jdk):
+        # Ignore tests for Truffle LTS gate using GraalVM as a base JDK
+        mx.log(f'Ignoring SL JVM Optimized with Compiler on Upgrade Module Path on {jdk.home} because JDK is GraalVM')
+        return
+    compiler = mx.distribution('compiler:GRAAL')
+    vm_args = [
+        '-XX:+UnlockExperimentalVMOptions',
+        '-XX:+EnableJVMCI',
+        f'--upgrade-module-path={compiler.classpath_repr()}',
+    ]
+
+    def run_jvm_optimized(test_file):
+        return _sl_command(jdk, vm_args, [test_file, '--disable-launcher-output'], use_optimized_runtime=True)
+
+    def run_jvm_optimized_immediately(test_file):
+        return _sl_command(jdk, vm_args, [test_file, '--disable-launcher-output', '--engine.CompileImmediately', '--engine.BackgroundCompilation=false'], use_optimized_runtime=True)
+
+    mx.log(f'Run SL JVM Optimized Test on {jdk.home} with Compiler on Upgrade Module Path')
+    _run_sl_tests(run_jvm_optimized)
+    mx.log(f'Run SL JVM Optimized Immediately Test on {jdk.home} with Compiler on Upgrade Module Path')
+    _run_sl_tests(run_jvm_optimized_immediately)
+
+
 # Run in VM suite with:
 # mx --env ce --native-images=. build
-# mx --env ce --native-images=. gate -o -s "Truffle Unchained SL Native Optimized"
+# mx --env ce --native-images=. gate -o -t "Truffle SL Native Optimized"
 def sl_native_optimized_gate_tests(quick_build=False):
     _sl_native_optimized_gate_tests(force_cp=False, quick_build=quick_build)
     _sl_native_optimized_gate_tests(force_cp=True, quick_build=quick_build)
@@ -686,7 +758,7 @@ def _sl_native_optimized_gate_tests(force_cp, quick_build):
 
 # Run in VM suite with:
 # mx --env ce --native-images=. build
-# mx --env ce --native-images=. gate -o -s "Truffle Unchained SL Native Fallback"
+# mx --env ce --native-images=. gate -o -t "Truffle SL Native Fallback"
 def sl_native_fallback_gate_tests(quick_build=False):
     _sl_native_fallback_gate_tests(force_cp=False, quick_build=quick_build)
     _sl_native_fallback_gate_tests(force_cp=True, quick_build=quick_build)
@@ -1165,90 +1237,309 @@ def validate_parser(grammar_project, grammar_path, create_command, args=None, ou
                     "Make sure the grammar files are up to date with the generated code. You can regenerate the generated code using mx.")
 
 
-def register_polyglot_isolate_distributions(register_distribution, language_id, language_distribution, isolate_library_layout_distribution, internal_resource_project):
+class _PolyglotIsolateResourceProject(mx.JavaProject):
     """
-    Registers the polyglot isolate resource distribution and isolate resource meta-POM distribution.
+    A Java project creating an internal resource implementation unpacking the polyglot isolate library.
+    The Java source code for internal resources is generated into the project's `source_gen_dir` before compilation,
+    using the `mx.truffle/polyglot_isolate_resource.template`. Configuration of the project follows these conventions:
+    The target package name is `com.oracle.truffle.isolate.resource.<language_id>.<os>.<arch>`,
+    and the resource ID is `<language_id>-isolate-<os>-<arch>`.
+    """
+
+    def __init__(self, language_suite, subDir, language_id, resource_id, os_name, cpu_architecture, placeholder):
+        name = f'com.oracle.truffle.isolate.resource.{language_id}.{os_name}.{cpu_architecture}'
+        javaCompliance = str(mx.distribution('truffle:TRUFFLE_API').javaCompliance) + '+'
+        project_dir = os.path.join(language_suite.dir, subDir, name)
+        deps = ['truffle:TRUFFLE_API']
+        if placeholder:
+            deps += ['sdk:NATIVEIMAGE']
+        super(_PolyglotIsolateResourceProject, self).__init__(language_suite, name, subDir=subDir, srcDirs=[], deps=deps,
+                                             javaCompliance=javaCompliance, workingSets='Truffle', d=project_dir,
+                                             theLicense=_suite.defaultLicense)
+        src_gen_dir = self.source_gen_dir()
+        self.srcDirs.append(src_gen_dir)
+        self.declaredAnnotationProcessors = ['truffle:TRUFFLE_DSL_PROCESSOR']
+        self.language_id = language_id
+        self.resource_id = resource_id
+        self.os_name = os_name
+        self.cpu_architecture = cpu_architecture
+        self.placeholder = placeholder
+
+
+    def getBuildTask(self, args):
+        jdk = mx.get_jdk(self.javaCompliance, tag=mx.DEFAULT_JDK_TAG, purpose='building ' + self.name)
+        return _PolyglotIsolateResourceBuildTask(args, self, jdk)
+
+
+class _PolyglotIsolateResourceBuildTask(mx.JavaBuildTask):
+    """
+    A _PolyglotIsolateResourceProject build task generating and building the internal resource unpacking
+    the polyglot isolate library. Refer to `_PolyglotIsolateResourceProject` documentation for more details.
+    """
+
+    def __str__(self):
+        return f'Generating {self.subject.name} internal resource and compiling it with {self._getCompiler().name()}'
+
+    @staticmethod
+    def _template_file(placeholder):
+        name = 'polyglot_isolate_resource_invalid.template' if placeholder else 'polyglot_isolate_resource.template'
+        return os.path.join(_suite.mxDir, name)
+
+    def needsBuild(self, newestInput):
+        is_needed, reason = mx.ProjectBuildTask.needsBuild(self, newestInput)
+        if is_needed:
+            return True, reason
+        proj = self.subject
+        for outDir in [proj.output_dir(), proj.source_gen_dir()]:
+            if not os.path.exists(outDir):
+                return True, f"{outDir} does not exist"
+        template_ts = mx.TimeStampFile.newest([
+                        _PolyglotIsolateResourceBuildTask._template_file(False),
+                        _PolyglotIsolateResourceBuildTask._template_file(True),
+                        __file__
+        ])
+        if newestInput is None or newestInput.isOlderThan(template_ts):
+            newestInput = template_ts
+        return super().needsBuild(newestInput)
+
+    @staticmethod
+    def _target_file(root, pkg_name):
+        target_folder = os.path.join(root, pkg_name.replace('.', os.sep))
+        target_file = os.path.join(target_folder, 'PolyglotIsolateResource.java')
+        return target_file
+
+
+    def _collect_files(self):
+        if self._javafiles is not None:
+            # already collected
+            return self
+        # collect project files first, then extend with generated resource
+        super(_PolyglotIsolateResourceBuildTask, self)._collect_files()
+        javafiles = self._javafiles
+        prj = self.subject
+        gen_src_dir = prj.source_gen_dir()
+        pkg_name = prj.name
+        target_file = _PolyglotIsolateResourceBuildTask._target_file(gen_src_dir, pkg_name)
+        if not target_file in javafiles:
+            bin_dir = prj.output_dir()
+            target_class = os.path.join(bin_dir, os.path.relpath(target_file, gen_src_dir)[:-len('.java')] + '.class')
+            javafiles[target_file] = target_class
+        # Remove annotation processor generated files.
+        javafiles = {k: v for k, v in javafiles.items() if k == target_file}
+        self._javafiles = javafiles
+        return self
+
+    def build(self):
+        prj = self.subject
+        pkg_name = prj.name
+        with open(_PolyglotIsolateResourceBuildTask._template_file(prj.placeholder), 'r', encoding='utf-8') as f:
+            file_content = f.read()
+        subst_eng = mx_subst.SubstitutionEngine()
+        subst_eng.register_no_arg('package', pkg_name)
+        subst_eng.register_no_arg('languageId', prj.language_id)
+        subst_eng.register_no_arg('resourceId', prj.resource_id)
+        subst_eng.register_no_arg('os', prj.os_name)
+        subst_eng.register_no_arg('arch', prj.cpu_architecture)
+        file_content = subst_eng.substitute(file_content)
+        target_file = _PolyglotIsolateResourceBuildTask._target_file(prj.source_gen_dir(), pkg_name)
+        mx_util.ensure_dir_exists(dirname(target_file))
+        with mx_util.SafeFileCreation(target_file) as sfc, open(sfc.tmpPath, 'w', encoding='utf-8') as f:
+            f.write(file_content)
+        super(_PolyglotIsolateResourceBuildTask, self).build()
+
+
+
+def register_polyglot_isolate_distributions(language_suite, register_project, register_distribution, language_id,
+                                            subDir, language_pom_distribution, maven_group_id, language_license,
+                                            isolate_build_options=None, platforms=None):
+    """
+    Creates and registers the polyglot isolate resource distribution and isolate resource meta-POM distribution.
     The created polyglot isolate resource distribution is named `<ID>_ISOLATE_RESOURCES`, inheriting the Maven group ID
     from the given `language_distribution`, and the Maven artifact ID is `<id>-isolate`.
     The meta-POM distribution is named `<ID>_ISOLATE`, having the Maven group ID `org.graalvm.polyglot`,
     and the Maven artifact ID is `<id>-isolate`.
 
+    :param Suite language_suite: The language suite  used to register generated projects and distributions to.
+    :param register_project: A callback to dynamically register the project, obtained as a parameter from `mx_register_dynamic_suite_constituents`.
+    :type register_project: (mx.Project) -> None
     :param register_distribution: A callback to dynamically register the distribution, obtained as a parameter from `mx_register_dynamic_suite_constituents`.
     :type register_distribution: (mx.Distribution) -> None
-    :param language_id: The language ID.
-    :param language_distribution: The language distribution used to inherit distribution properties.
-    :param isolate_library_layout_distribution: The layout distribution with polyglot isolate library.
-    :param internal_resource_project: The internal resource project used for unpacking the polyglot isolate library.
+    :param str language_id: The language ID.
+    :param str subDir: a path relative to `suite.dir` in which the IDE project configuration for this distribution is generated
+    :param POMDistribution language_pom_distribution: The language meta pom distribution used to set the image builder module-path.
+    :param str maven_group_id: The maven language group id.
+    :param str | list | language_license: Language licence(s).
+    :param list isolate_build_options: additional options passed to a native image to build the isolate library.
+    :param list platforms: supported platforms, defaults to ['linux-amd64', 'linux-aarch64', 'darwin-amd64', 'darwin-aarch64', 'windows-amd64']
     """
-    assert language_distribution
-    assert isolate_library_layout_distribution
-    assert internal_resource_project
-    owner_suite = language_distribution.suite
-    resources_dist_name = f'{language_id.upper()}_ISOLATE_RESOURCES'
-    isolate_dist_name = f'{language_id.upper()}_ISOLATE'
-    layout_dist_qualified_name = f'{isolate_library_layout_distribution.suite.name}:{isolate_library_layout_distribution.name}'
-    maven_group_id = language_distribution.maven_group_id()
-    maven_artifact_id = f'{language_id}-isolate'
-    module_name = f'{get_module_name(language_distribution)}.isolate'
-    licenses = set()
-    licenses.update(language_distribution.theLicense)
-    licenses.update(owner_suite.defaultLicense)
-    attrs = {
-        'description': f'Polyglot isolate resources for {language_id}.',
-        'moduleInfo': {
-            'name': module_name,
-        },
-        'maven': {
-            'groupId': maven_group_id,
-            'artifactId': maven_artifact_id,
-            'tag': ['default', 'public'],
-        },
-        'mavenNoJavadoc': True,
-        'mavenNoSources': True,
-    }
-    isolate_library_dist = mx_jardistribution.JARDistribution(
-        suite=owner_suite,
-        name=resources_dist_name,
-        subDir=language_distribution.subDir,
-        path=None,
-        sourcesPath=None,
-        deps=[
-            internal_resource_project.name,
-            layout_dist_qualified_name,
-        ],
-        mainClass=None,
-        excludedLibs=[],
-        distDependencies=['truffle:TRUFFLE_API'],
-        javaCompliance=str(internal_resource_project.javaCompliance)+'+',
-        platformDependent=True,
-        theLicense=list(licenses),
-        compress=True,
-        **attrs
-    )
-    register_distribution(isolate_library_dist)
+    assert language_suite
+    assert register_project
+    assert register_distribution
+    assert language_id
+    assert subDir
+    assert language_pom_distribution
+    assert maven_group_id
+    assert language_license
+
+    polyglot_isolates_value = mx_sdk_vm_impl._parse_cmd_arg('polyglot_isolates')
+    if not polyglot_isolates_value or not (polyglot_isolates_value is True or (isinstance(polyglot_isolates_value, list) and language_id in polyglot_isolates_value)):
+        return False
+
+    if not isinstance(language_license, list):
+        assert isinstance(language_license, str)
+        language_license = [language_license]
+
+    def _qualname(distribution_name):
+        return language_suite.name + ':' + distribution_name if distribution_name.find(':') < 0 else distribution_name
+
+    language_pom_distribution = _qualname(language_pom_distribution)
+    if isolate_build_options is None:
+        isolate_build_options = []
+    language_id_upper_case = language_id.upper()
+    if platforms is None:
+        platforms = [
+            'linux-amd64',
+            'linux-aarch64',
+            'darwin-amd64',
+            'darwin-aarch64',
+            'windows-amd64',
+        ]
+    current_platform = mx_subst.string_substitutions.substitute('<os>-<arch>')
+    if current_platform not in platforms:
+        mx.abort(f'Current platform {current_platform} is not in supported platforms {", ".join(platforms)}')
+
+    platform_meta_poms = []
+    for platform in platforms:
+        build_for_current_platform = platform == current_platform
+        resource_id = f'{language_id}-isolate-{platform}'
+        os_name, cpu_architecture = platform.split('-')
+        os_name_upper_case = os_name.upper()
+        cpu_architecture_upper_case = cpu_architecture.upper()
+        # 1. Register a project generating and building an internal resource for polyglot isolate library
+        build_internal_resource = _PolyglotIsolateResourceProject(language_suite, subDir, language_id, resource_id,
+                                                                  os_name, cpu_architecture, not build_for_current_platform)
+        register_project(build_internal_resource)
+        resources_dist_dependencies = [
+            build_internal_resource.name,
+        ]
+
+        if build_for_current_platform:
+            # 2. Register a project building the isolate library
+            isolate_deps = [language_pom_distribution, 'graal-enterprise:TRUFFLE_ENTERPRISE']
+            build_library = mx_sdk_vm_impl.PolyglotIsolateLibrary(language_suite, language_id, isolate_deps, isolate_build_options)
+            register_project(build_library)
+
+            # 3. Register layout distribution with isolate library and isolate resources
+            resource_base_folder = f'META-INF/resources/engine/{resource_id}/libvm'
+            attrs = {
+                'description': f'Contains {language_id} language library resources.',
+                'hashEntry': f'{resource_base_folder}/sha256',
+                'fileListEntry': f'{resource_base_folder}/files',
+                'maven': False,
+            }
+            layout_dist = mx.LayoutDirDistribution(
+                suite=language_suite,
+                name=f'{language_id_upper_case}_ISOLATE_LAYOUT_{os_name_upper_case}_{cpu_architecture_upper_case}',
+                deps=[],
+                layout={
+                    f'{resource_base_folder}/': f'dependency:{build_library.name}',
+                    f'{resource_base_folder}/resources': f'dependency:{build_library.name}/resources',
+                },
+                path=None,
+                platformDependent=True,
+                theLicense=None,
+                platforms=[platform],
+                **attrs
+            )
+            register_distribution(layout_dist)
+            layout_dist_qualified_name = f'{layout_dist.suite.name}:{layout_dist.name}'
+            resources_dist_dependencies.append(layout_dist_qualified_name)
+
+        # 4. Register Jar distribution containing the internal resource project and isolate library for current platform.
+        # For other platforms, create a jar distribution with an internal resource only
+        resources_dist_name = f'{language_id_upper_case}_ISOLATE_RESOURCES_{os_name_upper_case}_{cpu_architecture_upper_case}'
+        maven_artifact_id = resource_id
+        licenses = set(language_license)
+        # The graal-enterprise suite may not be fully loaded.
+        # We cannot look up the TRUFFLE_ENTERPRISE distribution to resolve its license
+        # We pass directly the license id
+        licenses.update(['GFTC'])
+        attrs = {
+            'description': f'Polyglot isolate resources for {language_id} for {platform}.',
+            'moduleInfo': {
+                'name': build_internal_resource.name,
+            },
+            'maven': {
+                'groupId': maven_group_id,
+                'artifactId': maven_artifact_id,
+                'tag': ['default', 'public'],
+            },
+            'mavenNoJavadoc': True,
+            'mavenNoSources': True,
+        }
+        isolate_library_dist = mx_jardistribution.JARDistribution(
+            suite=language_suite,
+            name=resources_dist_name,
+            subDir=subDir,
+            path=None,
+            sourcesPath=None,
+            deps=resources_dist_dependencies,
+            mainClass=None,
+            excludedLibs=[],
+            distDependencies=['truffle:TRUFFLE_API'],
+            javaCompliance=str(build_internal_resource.javaCompliance)+'+',
+            platformDependent=True,
+            theLicense=sorted(list(licenses)),
+            compress=True,
+            **attrs
+        )
+        register_distribution(isolate_library_dist)
+
+        # 5. Register meta POM distribution for the isolate library jar file for a specific platform.
+        isolate_dist_name = f'{language_id_upper_case}_ISOLATE_{os_name_upper_case}_{cpu_architecture_upper_case}'
+        attrs = {
+            'description': f'The {language_id} polyglot isolate for {platform}.',
+            'maven': {
+                'groupId': 'org.graalvm.polyglot',
+                'artifactId': maven_artifact_id,
+                'tag': ['default', 'public'],
+            },
+        }
+        meta_pom_dist = mx_pomdistribution.POMDistribution(
+            suite=language_suite,
+            name=isolate_dist_name,
+            distDependencies=[],
+            runtimeDependencies=[
+                resources_dist_name,
+                'graal-enterprise:TRUFFLE_ENTERPRISE',
+            ],
+            theLicense=sorted(list(licenses)),
+            **attrs)
+        register_distribution(meta_pom_dist)
+        platform_meta_poms.append(meta_pom_dist)
+    # 6. Register meta POM distribution listing all platform specific meta-POMS.
+    isolate_dist_name = f'{language_id_upper_case}_ISOLATE'
     attrs = {
         'description': f'The {language_id} polyglot isolate.',
         'maven': {
             'groupId': 'org.graalvm.polyglot',
-            'artifactId': maven_artifact_id,
+            'artifactId': f'{language_id}-isolate',
             'tag': ['default', 'public'],
         },
     }
-    # The graal-enterprise suite may not be fully loaded.
-    # We cannot look up the TRUFFLE_ENTERPRISE distribution to resolve its license
-    # We pass directly the license id
-    licenses.update(['GFTC'])
     meta_pom_dist = mx_pomdistribution.POMDistribution(
-        suite=owner_suite,
+        suite=language_suite,
         name=isolate_dist_name,
         distDependencies=[],
-        runtimeDependencies=[
-            resources_dist_name,
-            'graal-enterprise:TRUFFLE_ENTERPRISE',
-        ],
+        runtimeDependencies=[pom.name for pom in platform_meta_poms],
         theLicense=sorted(list(licenses)),
         **attrs)
     register_distribution(meta_pom_dist)
+    return True
+
+
+mx.add_argument('--polyglot-isolates', action='store', help='Comma-separated list of languages for which the polyglot isolate library should be built. Setting the value to `true` builds all polyglot isolate libraries.')
+
 
 class LibffiBuilderProject(mx.AbstractNativeProject, mx_native.NativeDependency):  # pylint: disable=too-many-ancestors
     """Project for building libffi from source.
@@ -1270,10 +1561,10 @@ class LibffiBuilderProject(mx.AbstractNativeProject, mx_native.NativeDependency)
         self.out_dir = self.get_output_root()
         if mx.get_os() == 'windows':
             self.delegate = mx_native.DefaultNativeProject(suite, name, subDir, [], [], None,
-                                                           os.path.join(self.out_dir, 'libffi-3.4.4'),
+                                                           os.path.join(self.out_dir, 'libffi-3.4.6'),
                                                            'static_lib',
                                                            deliverable='ffi',
-                                                           cflags=['-MD', '-O2', '-DFFI_BUILDING_DLL'])
+                                                           cflags=['-MD', '-O2', '-DFFI_STATIC_BUILD'])
             self.delegate._source = dict(tree=['include',
                                                'src',
                                                os.path.join('src', 'x86')],
@@ -1296,7 +1587,7 @@ class LibffiBuilderProject(mx.AbstractNativeProject, mx_native.NativeDependency)
 
                 def getArchivableResults(self, use_relpath=True, single=False):
                     for file_path, archive_path in super(LibtoolNativeProject, self).getArchivableResults(use_relpath):
-                        path_in_lt_objdir = os.path.basename(os.path.dirname(file_path)) == '.libs'
+                        path_in_lt_objdir = os.path.basename(dirname(file_path)) == '.libs'
                         yield file_path, os.path.basename(archive_path) if path_in_lt_objdir else archive_path
                         if single:
                             assert path_in_lt_objdir, 'the first build result must be from LT_OBJDIR'
@@ -1307,11 +1598,11 @@ class LibffiBuilderProject(mx.AbstractNativeProject, mx_native.NativeDependency)
                                                   'include/ffi.h',
                                                   'include/ffitarget.h'],
                                                  os.path.join(self.out_dir, 'libffi-build'),
-                                                 os.path.join(self.out_dir, 'libffi-3.4.4'))
+                                                 os.path.join(self.out_dir, 'libffi-3.4.6'))
             configure_args = ['--disable-dependency-tracking',
                               '--disable-shared',
                               '--with-pic',
-                              ' CFLAGS="{}"'.format(' '.join(['-g', '-O3'] + (['-m64'] if mx.get_os() == 'solaris' else []))),
+                              ' CFLAGS="{}"'.format(' '.join(['-g', '-O3', '-fvisibility=hidden'] + (['-m64'] if mx.get_os() == 'solaris' else []))),
                               'CPPFLAGS="-DNO_JAVA_RAW_API"',
                              ]
 
@@ -1505,7 +1796,7 @@ mx_sdk_vm.register_graalvm_component(mx_sdk_vm.GraalVmLanguage(
     dir_name='icu4j',
     license_files=[],
     third_party_license_files=[],
-    dependencies=['Truffle'],
+    dependencies=['Truffle', 'XZ'],
     truffle_jars=[
         'truffle:TRUFFLE_ICU4J',
     ],

@@ -26,9 +26,10 @@ package jdk.graal.compiler.phases.common.util;
 
 import java.util.EnumSet;
 
-import jdk.graal.compiler.core.common.cfg.Loop;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.core.common.type.IntegerStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
+import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Graph.NodeEvent;
@@ -53,12 +54,83 @@ import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.nodes.extended.OpaqueValueNode;
 import jdk.graal.compiler.nodes.loop.BasicInductionVariable;
 import jdk.graal.compiler.nodes.loop.InductionVariable;
-import jdk.graal.compiler.nodes.loop.LoopEx;
+import jdk.graal.compiler.nodes.loop.Loop;
 import jdk.graal.compiler.nodes.loop.LoopsData;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 
 public class LoopUtility {
+
+    public static long addExact(int bits, long a, long b) {
+        if (bits == 32) {
+            int ia = (int) a;
+            int ib = (int) b;
+            assert ia == a && ib == b : Assertions.errorMessage("Conversions must be lossless", bits, a, b, ia, ib);
+            return Math.addExact(ia, ib);
+        } else if (bits == 64) {
+            return Math.addExact(a, b);
+        } else {
+            throw GraalError.shouldNotReachHere("Must be one of java's core datatypes int/long but is " + bits);
+        }
+    }
+
+    public static long subtractExact(int bits, long a, long b) {
+        if (bits == 32) {
+            int ia = (int) a;
+            int ib = (int) b;
+            assert ia == a && ib == b : Assertions.errorMessage("Conversions must be lossless", bits, a, b, ia, ib);
+            return Math.subtractExact(ia, ib);
+        } else if (bits == 64) {
+            return Math.subtractExact(a, b);
+        } else {
+            throw GraalError.shouldNotReachHere("Must be one of java's core datatypes int/long but is " + bits);
+        }
+    }
+
+    public static long multiplyExact(int bits, long a, long b) {
+        if (bits == 32) {
+            int ia = (int) a;
+            int ib = (int) b;
+            assert ia == a && ib == b : Assertions.errorMessage("Conversions must be lossless", bits, a, b, ia, ib);
+            return Math.multiplyExact(ia, ib);
+        } else if (bits == 64) {
+            return Math.multiplyExact(a, b);
+        } else {
+            throw GraalError.shouldNotReachHere("Must be one of java's core datatypes int/long but is " + bits);
+        }
+    }
+
+    public static boolean canTakeAbs(long l, int bits) {
+        try {
+            abs(l, bits);
+            return true;
+        } catch (ArithmeticException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Compute {@link Math#abs(long)} for the given arguments and the given bit size. Throw a
+     * {@link ArithmeticException} if the abs operation would overflow.
+     */
+    public static long abs(long l, int bits) throws ArithmeticException {
+        if (bits == 32) {
+            if (l == Integer.MIN_VALUE) {
+                throw new ArithmeticException("Abs on Integer.MIN_VALUE would cause an overflow because abs(Integer.MIN_VALUE) = Integer.MAX_VALUE + 1 which does not fit in int (32 bits)");
+            } else {
+                final int i = (int) l;
+                return Math.abs(i);
+            }
+        } else if (bits == 64) {
+            if (l == Long.MIN_VALUE) {
+                throw new ArithmeticException("Abs on Long.MIN_VALUE would cause an overflow because abs(Long.MIN_VALUE) = Long.MAX_VALUE + 1 which does not fit in long (64 bits)");
+            } else {
+                return Math.abs(l);
+            }
+        } else {
+            throw GraalError.shouldNotReachHere("Must be one of java's core datatypes int/long but is " + bits);
+        }
+    }
 
     /**
      * Determine if the def can use node {@code use} without the need for value proxies. This means
@@ -81,8 +153,8 @@ public class LoopUtility {
         }
         HIRBlock useBlock = cfg.blockFor(use);
         HIRBlock defBlock = cfg.blockFor(def);
-        Loop<HIRBlock> defLoop = defBlock.getLoop();
-        Loop<HIRBlock> useLoop = useBlock.getLoop();
+        CFGLoop<HIRBlock> defLoop = defBlock.getLoop();
+        CFGLoop<HIRBlock> useLoop = useBlock.getLoop();
         if (defLoop != null) {
             // the def is inside a loop, either a parent or a disjunct loop
             if (useLoop != null) {
@@ -134,7 +206,7 @@ public class LoopUtility {
         LoopsData loopsData = context.getLoopsDataProvider().getLoopsData(graph);
         final EconomicSetNodeEventListener inputChanges = new EconomicSetNodeEventListener(EnumSet.of(NodeEvent.INPUT_CHANGED));
         try (NodeEventScope s = graph.trackNodeEvents(inputChanges)) {
-            for (LoopEx loop : loopsData.loops()) {
+            for (Loop loop : loopsData.loops()) {
                 removeObsoleteProxiesForLoop(loop);
             }
         }
@@ -146,7 +218,7 @@ public class LoopUtility {
      * {@link #removeObsoleteProxies(StructuredGraph, CoreProviders, CanonicalizerPhase)}, this does
      * not apply canonicalization.
      */
-    public static void removeObsoleteProxiesForLoop(LoopEx loop) {
+    public static void removeObsoleteProxiesForLoop(Loop loop) {
         for (LoopExitNode lex : loop.loopBegin().loopExits()) {
             for (ProxyNode proxy : lex.proxies().snapshot()) {
                 if (loop.isOutsideLoop(proxy.value())) {
@@ -160,7 +232,7 @@ public class LoopUtility {
      * Advance all of the loop's induction variables by {@code iterations} strides by modifying the
      * underlying phi's init value.
      */
-    public static void stepLoopIVs(StructuredGraph graph, LoopEx loop, ValueNode iterations) {
+    public static void stepLoopIVs(StructuredGraph graph, Loop loop, ValueNode iterations) {
         for (InductionVariable iv : loop.getInductionVariables().getValues()) {
             if (!(iv instanceof BasicInductionVariable)) {
                 // Only step basic IVs; this will advance derived IVs automatically.
@@ -190,7 +262,7 @@ public class LoopUtility {
      * stamp of an arithmetic operation. Thus, we manually inject the original stamps via pi nodes
      * into the unrolled versions. This ensures the divs verify correctly.
      */
-    public static void preserveCounterStampsForDivAfterUnroll(LoopEx loop) {
+    public static void preserveCounterStampsForDivAfterUnroll(Loop loop) {
         for (Node n : loop.inside().nodes()) {
             if (n instanceof FloatingIntegerDivRemNode<?> idiv) {
 
@@ -218,7 +290,7 @@ public class LoopUtility {
         loop.loopBegin().getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, loop.loopBegin().graph(), "After preserving idiv stamps");
     }
 
-    private static PiNode piAnchorBeforeLoop(StructuredGraph graph, ValueNode v, Stamp s, LoopEx loop) {
+    private static PiNode piAnchorBeforeLoop(StructuredGraph graph, ValueNode v, Stamp s, Loop loop) {
         ValueNode opaqueDivisor = graph.addWithoutUnique(new OpaqueValueNode(v));
         // just anchor the pi before the loop, that dominates the other input
         return graph.addWithoutUnique(new PiNode(opaqueDivisor, s, AbstractBeginNode.prevBegin(loop.loopBegin().forwardEnd())));

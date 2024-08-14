@@ -70,19 +70,23 @@ public final class ImageHeapInstance extends ImageHeapConstant {
          */
         private Object[] fieldValues;
 
-        private InstanceData(AnalysisType type, JavaConstant hostedObject, Object[] fieldValues) {
-            super(type, hostedObject);
+        private InstanceData(AnalysisType type, JavaConstant hostedObject, Object[] fieldValues, int identityHashCode) {
+            super(type, hostedObject, identityHashCode);
             this.fieldValues = fieldValues;
             assert !type.isArray() : type;
         }
     }
 
     ImageHeapInstance(AnalysisType type, JavaConstant hostedObject) {
-        super(new InstanceData(type, hostedObject, null), false);
+        this(type, hostedObject, -1);
+    }
+
+    ImageHeapInstance(AnalysisType type, JavaConstant hostedObject, int identityHashCode) {
+        super(new InstanceData(type, hostedObject, null, identityHashCode), false);
     }
 
     public ImageHeapInstance(AnalysisType type) {
-        super(new InstanceData(type, null, new Object[type.getInstanceFields(true).length]), false);
+        super(new InstanceData(type, null, new Object[type.getInstanceFields(true).length], -1), false);
     }
 
     private ImageHeapInstance(ConstantData data, boolean compressed) {
@@ -105,7 +109,7 @@ public final class ImageHeapInstance extends ImageHeapConstant {
      * {@link #isReaderInstalled()} which ensures that the future setting the field values was
      * executed, therefore we can read the field directly.
      */
-    private Object[] getFieldValues() {
+    Object[] getFieldValues() {
         AnalysisError.guarantee(isReaderInstalled());
         Object[] fieldValues = getConstantData().fieldValues;
         AnalysisError.guarantee(fieldValues != null);
@@ -117,6 +121,7 @@ public final class ImageHeapInstance extends ImageHeapConstant {
      * is marked as read.
      */
     void setFieldTask(AnalysisField field, AnalysisFuture<JavaConstant> task) {
+        Objects.requireNonNull(task);
         arrayHandle.setVolatile(getFieldValues(), field.getPosition(), task);
     }
 
@@ -126,6 +131,7 @@ public final class ImageHeapInstance extends ImageHeapConstant {
      * and replaced.
      */
     public void setFieldValue(AnalysisField field, JavaConstant value) {
+        Objects.requireNonNull(value);
         arrayHandle.setVolatile(getFieldValues(), field.getPosition(), value);
     }
 
@@ -135,6 +141,10 @@ public final class ImageHeapInstance extends ImageHeapConstant {
      * or the result of executing the task, i.e., a {@link JavaConstant}.
      */
     public Object getFieldValue(AnalysisField field) {
+        if (isInBaseLayer()) {
+            /* Base layer constants that are not relinked might not have field positions computed */
+            field.getType().getInstanceFields(true);
+        }
         return arrayHandle.getVolatile(getFieldValues(), field.getPosition());
     }
 
@@ -170,6 +180,6 @@ public final class ImageHeapInstance extends ImageHeapConstant {
         Objects.requireNonNull(fieldValues, "Cannot clone an instance before the field values are set.");
         Object[] newFieldValues = Arrays.copyOf(fieldValues, fieldValues.length);
         /* The new constant is never backed by a hosted object, regardless of the input object. */
-        return new ImageHeapInstance(new InstanceData(constantData.type, null, newFieldValues), compressed);
+        return new ImageHeapInstance(new InstanceData(constantData.type, null, newFieldValues, -1), compressed);
     }
 }

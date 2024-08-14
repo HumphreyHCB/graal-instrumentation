@@ -38,6 +38,10 @@ public final class GraalOptions {
     @Option(help = "Uses compiler intrinsifications.", type = OptionType.Expert)
     public static final OptionKey<Boolean> Intrinsify = new OptionKey<>(true);
 
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> ReduceCodeSize = new OptionKey<>(false);
+
     @Option(help = "Rewrite signed comparisons to unsigned ones if the result is equal.", type = OptionType.Debug)
     public static final OptionKey<Boolean> PreferUnsignedComparison = new OptionKey<>(true);
 
@@ -155,6 +159,15 @@ public final class GraalOptions {
 
     @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> VerifyPhases = new OptionKey<>(false);
+
+    @Option(help = "Use generated assembly for GC barriers if supported by the platform", type = OptionType.Expert)
+    public static final OptionKey<Boolean> AssemblyGCBarriers = new OptionKey<>(true);
+
+    @Option(help = "Force use of slow path for assembly GC barriers. Intended for debugging only.", type = OptionType.Debug)
+    public static final OptionKey<Boolean> AssemblyGCBarriersSlowPathOnly = new OptionKey<>(false);
+
+    @Option(help = "Verify oops processed by GC barriers", type = OptionType.Debug)
+    public static final OptionKey<Boolean> VerifyAssemblyGCBarriers = new OptionKey<>(false);
 
     // Debug settings:
     @Option(help = "Start tracing compiled GC barriers after N garbage collections (disabled if N <= 0).", type = OptionType.Debug)
@@ -308,11 +321,14 @@ public final class GraalOptions {
 
     @Option(help = "AMD64 only: Replace forward jumps (jmp, jcc) with equivalent but smaller instructions if the actual jump displacement fits in one byte.", type = OptionType.Expert)
     public static final OptionKey<Boolean> OptimizeLongJumps = new OptionKey<>(false);
-  
+
     @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
     public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
 
     @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
     public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
   
+    @Option(help = "Optimize integer division operation by using various mathematical foundations to "
+                    + " express it in faster, equivalent, arithmetic.", type = OptionType.Debug)
+    public static final OptionKey<Boolean> OptimizeDiv = new OptionKey<>(true);
 }

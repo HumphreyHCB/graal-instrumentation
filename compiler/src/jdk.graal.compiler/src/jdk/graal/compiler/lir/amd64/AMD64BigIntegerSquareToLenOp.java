@@ -24,6 +24,9 @@
  */
 package jdk.graal.compiler.lir.amd64;
 
+import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.multiplyAdd64;
+import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.multiplyAdd64Bmi2;
+import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.useBMI2Instructions;
 import static jdk.vm.ci.amd64.AMD64.r10;
 import static jdk.vm.ci.amd64.AMD64.r11;
 import static jdk.vm.ci.amd64.AMD64.r12;
@@ -37,9 +40,6 @@ import static jdk.vm.ci.amd64.AMD64.rdi;
 import static jdk.vm.ci.amd64.AMD64.rdx;
 import static jdk.vm.ci.amd64.AMD64.rsi;
 import static jdk.vm.ci.code.ValueUtil.asRegister;
-import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.multiplyAdd64;
-import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.multiplyAdd64Bmi2;
-import static jdk.graal.compiler.lir.amd64.AMD64BigIntegerMulAddOp.useBMI2Instructions;
 
 import jdk.graal.compiler.asm.Label;
 import jdk.graal.compiler.asm.amd64.AMD64Address;
@@ -50,15 +50,14 @@ import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.SyncPort;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
-
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.meta.Value;
 
 // @formatter:off
-@SyncPort(from = "https://github.com/openjdk/jdk/blob/be2b92bd8b43841cc2b9c22ed4fde29be30d47bb/src/hotspot/cpu/x86/stubGenerator_x86_64.cpp#L3152-L3196",
+@SyncPort(from = "https://github.com/openjdk/jdk/blob/43a2f17342af8f5bf1f5823df9fa0bf0bdfdfce2/src/hotspot/cpu/x86/stubGenerator_x86_64.cpp#L3146-L3190",
           sha1 = "ab70559cefe0dc177a290d417047955fba3ad1fc")
-@SyncPort(from = "https://github.com/openjdk/jdk/blob/be2b92bd8b43841cc2b9c22ed4fde29be30d47bb/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L7025-L7338",
+@SyncPort(from = "https://github.com/openjdk/jdk/blob/fbe8a81d1900d0de1920ad1df6ad574f3da4bd51/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L7374-L7687",
           sha1 = "2e4ea1436904cbd5a933eb8c687296d9bbefe4f0")
 // @formatter:on
 public final class AMD64BigIntegerSquareToLenOp extends AMD64LIRInstruction {
@@ -375,5 +374,10 @@ public final class AMD64BigIntegerSquareToLenOp extends AMD64LIRInstruction {
         masm.movl(tmp3, new AMD64Address(x, len, Stride.S4, -4));
         masm.andl(tmp3, 1);
         masm.orl(new AMD64Address(z, zlen, Stride.S4, -4), tmp3);
+    }
+
+    @Override
+    public boolean modifiesStackPointer() {
+        return true;
     }
 }

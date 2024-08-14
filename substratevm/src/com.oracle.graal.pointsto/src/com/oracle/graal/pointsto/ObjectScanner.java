@@ -156,6 +156,10 @@ public class ObjectScanner {
      * @param field the scanned root field
      */
     protected final void scanRootField(AnalysisField field) {
+        if (field.isInBaseLayer()) {
+            // skip base layer roots
+            return;
+        }
         scanField(field, null, null);
     }
 
@@ -267,7 +271,7 @@ public class ObjectScanner {
                     scanningObserver.forNullArrayElement(array, arrayType, idx, reason);
                 } else {
                     try {
-                        JavaConstant element = bb.getUniverse().getHostedValuesProvider().forObject(bb.getUniverse().replaceObject(e));
+                        JavaConstant element = bb.getUniverse().replaceObjectWithConstant(e);
                         scanArrayElement(array, arrayType, reason, idx, element);
                     } catch (UnsupportedFeatureException | AnalysisError.TypeNotFoundError ex) {
                         unsupportedFeatureDuringConstantScan(bb, bb.getUniverse().getHostedValuesProvider().forObject(e), ex, reason);

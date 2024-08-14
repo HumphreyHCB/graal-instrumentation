@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,7 +63,9 @@ import com.oracle.truffle.api.impl.ThreadLocalHandshake;
 import com.oracle.truffle.api.nodes.BlockNode;
 import com.oracle.truffle.api.nodes.BlockNode.ElementExecutor;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.runtime.OptimizedTruffleRuntime.CompilerOptionsDescriptors;
@@ -83,8 +85,30 @@ final class OptimizedRuntimeSupport extends RuntimeSupport {
     }
 
     @Override
+    public long getCallTargetId(CallTarget target) {
+        if (target instanceof OptimizedCallTarget) {
+            return ((OptimizedCallTarget) target).id;
+        } else {
+            return 0;
+        }
+    }
+
+    @Override
     public boolean isLoaded(CallTarget callTarget) {
         return ((OptimizedCallTarget) callTarget).isLoaded();
+    }
+
+    @Override
+    public IndirectCallNode createIndirectCallNode() {
+        return new OptimizedIndirectCallNode();
+    }
+
+    @Override
+    public DirectCallNode createDirectCallNode(CallTarget target) {
+        OptimizedCallTarget optimizedTarget = (OptimizedCallTarget) target;
+        final OptimizedDirectCallNode directCallNode = new OptimizedDirectCallNode(optimizedTarget);
+        optimizedTarget.addDirectCallNode(directCallNode);
+        return directCallNode;
     }
 
     @Override
@@ -116,7 +140,7 @@ final class OptimizedRuntimeSupport extends RuntimeSupport {
             node = node.getParent();
         }
         if (parentNode instanceof RootNode) {
-            CallTarget target = ((RootNode) parentNode).getCallTarget();
+            CallTarget target = OptimizedRuntimeAccessor.NODES.getCallTargetWithoutInitialization((RootNode) parentNode);
             if (target instanceof OptimizedCallTarget) {
                 ((OptimizedCallTarget) target).onLoopCount(count);
             }

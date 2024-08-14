@@ -36,6 +36,7 @@ import java.lang.reflect.Proxy;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,12 +64,14 @@ import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
+import com.oracle.graal.pointsto.meta.BaseLayerType;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
 import com.oracle.graal.pointsto.util.GraalAccess;
 import com.oracle.svm.common.meta.MultiMethod;
 import com.oracle.svm.core.BuildPhaseProvider;
+import com.oracle.svm.core.MissingRegistrationSupport;
 import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.NeverInlineTrivial;
 import com.oracle.svm.core.RuntimeAssertionsSupport;
@@ -79,13 +82,17 @@ import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallLinkage;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
 import com.oracle.svm.core.graal.stackvalue.StackValueNode;
+import com.oracle.svm.core.heap.FillerArray;
 import com.oracle.svm.core.heap.StoredContinuation;
 import com.oracle.svm.core.heap.Target_java_lang_ref_Reference;
 import com.oracle.svm.core.heap.UnknownClass;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.HubType;
+import com.oracle.svm.core.hub.Hybrid;
 import com.oracle.svm.core.hub.PredefinedClassesSupport;
 import com.oracle.svm.core.hub.ReferenceType;
+import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
+import com.oracle.svm.core.interpreter.InterpreterSupport;
 import com.oracle.svm.core.jdk.InternalVMMethod;
 import com.oracle.svm.core.jdk.LambdaFormHiddenMethod;
 import com.oracle.svm.core.option.HostedOptionKey;
@@ -117,6 +124,7 @@ import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyImpl;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils;
 import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
 import com.oracle.svm.hosted.substitute.AutomaticUnsafeTransformationSupport;
+import com.oracle.svm.hosted.util.IdentityHashCodeUtil;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -139,6 +147,7 @@ import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.common.BoxNodeIdentityPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.virtual.phases.ea.PartialEscapePhase;
+import jdk.internal.loader.NativeLibraries;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.ResolvedJavaField;
@@ -149,7 +158,12 @@ public class SVMHost extends HostVM {
     private final ConcurrentHashMap<AnalysisType, DynamicHub> typeToHub = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<DynamicHub, AnalysisType> hubToType = new ConcurrentHashMap<>();
 
-    private final Map<String, EnumSet<AnalysisType.UsageKind>> forbiddenTypes;
+    public enum UsageKind {
+        Instantiated,
+        Reachable;
+    }
+
+    private final Map<String, Set<UsageKind>> forbiddenTypes;
     private final Platform platform;
     private final ClassInitializationSupport classInitializationSupport;
     private final LinkAtBuildTimeSupport linkAtBuildTimeSupport;
@@ -175,11 +189,19 @@ public class SVMHost extends HostVM {
     private final InlineBeforeAnalysisPolicy inlineBeforeAnalysisPolicy;
 
     private final FieldValueInterceptionSupport fieldValueInterceptionSupport;
+    private final MissingRegistrationSupport missingRegistrationSupport;
+
+    private final boolean useBaseLayer;
+    private Set<Field> excludedFields;
+
+    private final Boolean optionAllowUnsafeAllocationOfAllInstantiatedTypes = SubstrateOptions.AllowUnsafeAllocationOfAllInstantiatedTypes.getValue();
 
     @SuppressWarnings("this-escape")
-    public SVMHost(OptionValues options, ImageClassLoader loader, ClassInitializationSupport classInitializationSupport, AnnotationSubstitutionProcessor annotationSubstitutions) {
+    public SVMHost(OptionValues options, ImageClassLoader loader, ClassInitializationSupport classInitializationSupport, AnnotationSubstitutionProcessor annotationSubstitutions,
+                    MissingRegistrationSupport missingRegistrationSupport) {
         super(options, loader.getClassLoader());
         this.classInitializationSupport = classInitializationSupport;
+        this.missingRegistrationSupport = missingRegistrationSupport;
         this.stringTable = HostedStringDeduplication.singleton();
         this.forbiddenTypes = setupForbiddenTypes(options);
         this.automaticUnsafeTransformations = new AutomaticUnsafeTransformationSupport(options, annotationSubstitutions, loader);
@@ -202,25 +224,34 @@ public class SVMHost extends HostVM {
         }
         fieldValueInterceptionSupport = new FieldValueInterceptionSupport(annotationSubstitutions, classInitializationSupport);
         ImageSingletons.add(FieldValueInterceptionSupport.class, fieldValueInterceptionSupport);
+        useBaseLayer = ImageLayerBuildingSupport.buildingExtensionLayer();
+        if (SubstrateOptions.includeAll()) {
+            initializeExcludedFields();
+        }
+    }
+
+    @Override
+    public boolean useBaseLayer() {
+        return useBaseLayer;
     }
 
     protected InlineBeforeAnalysisPolicyUtils getInlineBeforeAnalysisPolicyUtils() {
         return new InlineBeforeAnalysisPolicyUtils();
     }
 
-    private static Map<String, EnumSet<AnalysisType.UsageKind>> setupForbiddenTypes(OptionValues options) {
+    private static Map<String, Set<UsageKind>> setupForbiddenTypes(OptionValues options) {
         List<String> forbiddenTypesOptionValues = SubstrateOptions.ReportAnalysisForbiddenType.getValue(options).values();
-        Map<String, EnumSet<AnalysisType.UsageKind>> forbiddenTypes = new HashMap<>();
+        Map<String, Set<UsageKind>> forbiddenTypes = new HashMap<>();
         for (String forbiddenTypesOptionValue : forbiddenTypesOptionValues) {
             String[] typeNameUsageKind = forbiddenTypesOptionValue.split(":", 2);
-            EnumSet<AnalysisType.UsageKind> usageKinds;
+            EnumSet<UsageKind> usageKinds;
             if (typeNameUsageKind.length == 1) {
-                usageKinds = EnumSet.allOf(AnalysisType.UsageKind.class);
+                usageKinds = EnumSet.allOf(UsageKind.class);
             } else {
-                usageKinds = EnumSet.noneOf(AnalysisType.UsageKind.class);
+                usageKinds = EnumSet.noneOf(UsageKind.class);
                 String[] usageKindValues = typeNameUsageKind[1].split(",");
                 for (String usageKindValue : usageKindValues) {
-                    usageKinds.add(AnalysisType.UsageKind.valueOf(usageKindValue));
+                    usageKinds.add(UsageKind.valueOf(usageKindValue));
                 }
 
             }
@@ -229,8 +260,7 @@ public class SVMHost extends HostVM {
         return forbiddenTypes.isEmpty() ? null : forbiddenTypes;
     }
 
-    @Override
-    public void checkForbidden(AnalysisType type, AnalysisType.UsageKind kind) {
+    private void checkForbidden(AnalysisType type, UsageKind kind) {
         if (SubstrateOptions.VerifyNamingConventions.getValue()) {
             NativeImageGenerator.checkName(type.getWrapped().toJavaName(), null, null);
         }
@@ -247,7 +277,7 @@ public class SVMHost extends HostVM {
          * seems less likely that someone registers an interface as forbidden.
          */
         for (AnalysisType cur = type; cur != null; cur = cur.getSuperclass()) {
-            EnumSet<AnalysisType.UsageKind> forbiddenType = forbiddenTypes.get(cur.getWrapped().toJavaName());
+            var forbiddenType = forbiddenTypes.get(cur.getWrapped().toJavaName());
             if (forbiddenType != null && forbiddenType.contains(kind)) {
                 throw new UnsupportedFeatureException("Forbidden type " + cur.getWrapped().toJavaName() +
                                 (cur.equals(type) ? "" : " (superclass of " + type.getWrapped().toJavaName() + ")") +
@@ -279,14 +309,32 @@ public class SVMHost extends HostVM {
 
     @Override
     public void registerType(AnalysisType analysisType) {
-
         DynamicHub hub = createHub(analysisType);
-        /* Register the hub->type and type->hub mappings. */
+
+        registerType(analysisType, hub);
+    }
+
+    @Override
+    public void registerType(AnalysisType analysisType, int identityHashCode) {
+        DynamicHub hub = createHub(analysisType);
+
+        boolean result = IdentityHashCodeUtil.injectIdentityHashCode(hub, identityHashCode);
+
+        if (!result) {
+            throw VMError.shouldNotReachHere("The hashcode was already set when trying to inject the value from the base layer.");
+        }
+
+        registerType(analysisType, hub);
+    }
+
+    /**
+     * Register the hub->type and type->hub mappings.
+     */
+    private void registerType(AnalysisType analysisType, DynamicHub hub) {
         Object existing = typeToHub.put(analysisType, hub);
         assert existing == null;
         existing = hubToType.put(hub, analysisType);
         assert existing == null;
-
     }
 
     @Override
@@ -297,12 +345,33 @@ public class SVMHost extends HostVM {
         if (BuildPhaseProvider.isAnalysisFinished()) {
             throw VMError.shouldNotReachHere("Initializing type after analysis: " + analysisType);
         }
+        checkForbidden(analysisType, UsageKind.Reachable);
 
         /* Decide when the type should be initialized. */
         classInitializationSupport.maybeInitializeAtBuildTime(analysisType);
 
         /* Compute the automatic substitutions. */
         automaticUnsafeTransformations.computeTransformations(bb, this, GraalAccess.getOriginalProviders().getMetaAccess().lookupJavaType(analysisType.getJavaClass()));
+    }
+
+    @Override
+    public void onTypeInstantiated(BigBang bb, AnalysisType type) {
+        checkForbidden(type, UsageKind.Instantiated);
+
+        if (optionAllowUnsafeAllocationOfAllInstantiatedTypes != null) {
+            if (optionAllowUnsafeAllocationOfAllInstantiatedTypes) {
+                type.registerAsUnsafeAllocated("All types are registered as Unsafe allocated via option -H:+AllowUnsafeAllocationOfAllInstantiatedTypes");
+                typeToHub.get(type).getCompanion().setUnsafeAllocate();
+            } else {
+                /*
+                 * No default registration for unsafe allocation, setting the explicit option has
+                 * precedence over the generic ThrowMissingRegistrationError option.
+                 */
+            }
+        } else if (!missingRegistrationSupport.reportMissingRegistrationErrors(type.getJavaClass())) {
+            type.registerAsUnsafeAllocated("Type is not listed as ThrowMissingRegistrationError and therefore registered as Unsafe allocated automatically for compatibility reasons");
+            typeToHub.get(type).getCompanion().setUnsafeAllocate();
+        }
     }
 
     @Override
@@ -330,7 +399,7 @@ public class SVMHost extends HostVM {
          * bytecode-liveness. This greatly helps debugging. Note that when local variable numbers
          * are reused by javac, local variables can still be assigned to illegal values.
          */
-        return SubstrateOptions.optimizationLevel() == OptimizationLevel.O0;
+        return SubstrateOptions.optimizationLevel() == OptimizationLevel.O0 || InterpreterSupport.isEnabled();
     }
 
     @Override
@@ -343,6 +412,10 @@ public class SVMHost extends HostVM {
             targetMethod = Optional.of((AnalysisMethod) linkage.getMethod());
         }
         return targetMethod;
+    }
+
+    public DynamicHub dynamicHub(Class<?> type) {
+        return dynamicHub(providers.getMetaAccess().lookupJavaType(type));
     }
 
     public DynamicHub dynamicHub(ResolvedJavaType type) {
@@ -368,11 +441,14 @@ public class SVMHost extends HostVM {
         if ((type.isInstanceClass() && type.getSuperclass() != null) || type.isArray()) {
             superHub = dynamicHub(type.getSuperclass());
         }
+        Class<?> javaClass = type.getJavaClass();
         DynamicHub componentHub = null;
         if (type.isArray()) {
             componentHub = dynamicHub(type.getComponentType());
+        } else if (javaClass == FillerArray.class) {
+            Hybrid hybrid = AnnotationAccess.getAnnotation(javaClass, Hybrid.class);
+            componentHub = dynamicHub(hybrid.componentType());
         }
-        Class<?> javaClass = type.getJavaClass();
         int modifiers = javaClass.getModifiers();
 
         /*
@@ -383,7 +459,11 @@ public class SVMHost extends HostVM {
         ClassLoader hubClassLoader = javaClass.getClassLoader();
 
         /* Class names must be interned strings according to the Java specification. */
-        String className = type.toClassName().intern();
+        String name = type.toClassName();
+        if (name.endsWith(BaseLayerType.BASE_LAYER_SUFFIX.substring(0, BaseLayerType.BASE_LAYER_SUFFIX.length() - 1))) {
+            name = name.substring(0, name.length() - BaseLayerType.BASE_LAYER_SUFFIX.length() + 1);
+        }
+        String className = name.intern();
         /*
          * There is no need to have file names and simple binary names as interned strings. So we
          * perform our own de-duplication.
@@ -493,6 +573,8 @@ public class SVMHost extends HostVM {
                 return HubType.POD_INSTANCE;
             } else if (ContinuationSupport.isSupported() && type.getJavaClass() == StoredContinuation.class) {
                 return HubType.STORED_CONTINUATION_INSTANCE;
+            } else if (type.getJavaClass() == FillerArray.class) {
+                return HubType.PRIMITIVE_ARRAY;
             }
             assert !Target_java_lang_ref_Reference.class.isAssignableFrom(type.getJavaClass()) : "should not see substitution type here";
             return HubType.INSTANCE;
@@ -563,7 +645,7 @@ public class SVMHost extends HostVM {
                  */
                 new ImplicitAssertionsPhase().apply(graph, getProviders(method.getMultiMethodKey()));
             }
-            UninterruptibleAnnotationChecker.checkAfterParsing(method, graph);
+            UninterruptibleAnnotationChecker.checkAfterParsing(method, graph, bb.getConstantReflectionProvider());
 
             optimizeAfterParsing(bb, method, graph);
             /*
@@ -759,6 +841,35 @@ public class SVMHost extends HostVM {
         return false;
     }
 
+    private void initializeExcludedFields() {
+        excludedFields = new HashSet<>();
+        /*
+         * These fields need to be folded as they are used in snippets, and they must be accessed
+         * without producing reads with side effects.
+         */
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "arrayHub"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "additionalFlags"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "layoutEncoding"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "numClassTypes"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "numInterfaceTypes"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldTypeCheckSlots"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "typeIDDepth"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "typeID"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "monitorOffset"));
+        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "hubType"));
+
+        /*
+         * Including this field makes ThreadLocalAllocation.getTlabDescriptorSize reachable through
+         * ThreadLocalAllocation.regularTLAB which is accessed with
+         * FastThreadLocalBytes.getSizeSupplier
+         */
+        excludedFields.add(ReflectionUtil.lookupField(VMThreadLocalInfo.class, "sizeSupplier"));
+        /* This field cannot be written to (see documentation) */
+        excludedFields.add(ReflectionUtil.lookupField(Counter.Group.class, "enabled"));
+        /* This field can contain a reference to a Thread, which is not allowed in the heap */
+        excludedFields.add(ReflectionUtil.lookupField(NativeLibraries.class, "nativeLibraryLockMap"));
+    }
+
     @Override
     public boolean isFieldIncluded(BigBang bb, Field field) {
         /*
@@ -768,18 +879,11 @@ public class SVMHost extends HostVM {
         if (field.getType().equals(CGlobalData.class)) {
             return false;
         }
-        /*
-         * Including this field makes ThreadLocalAllocation.getTlabDescriptorSize reachable through
-         * ThreadLocalAllocation.regularTLAB which is accessed with
-         * FastThreadLocalBytes.getSizeSupplier
-         */
-        if (field.equals(ReflectionUtil.lookupField(VMThreadLocalInfo.class, "sizeSupplier"))) {
+
+        if (excludedFields.contains(field)) {
             return false;
         }
-        /* This field cannot be written to (see documentation) */
-        if (field.equals(ReflectionUtil.lookupField(Counter.Group.class, "enabled"))) {
-            return false;
-        }
+
         /* Fields with those names are not allowed in the image */
         if (NativeImageGenerator.checkName(field.getType().getName() + "." + field.getName()) != null) {
             return false;
@@ -889,9 +993,9 @@ public class SVMHost extends HostVM {
     @Override
     public HostedProviders getProviders(MultiMethod.MultiMethodKey key) {
         if (parsingSupport != null) {
-            HostedProviders providers = parsingSupport.getHostedProviders(key);
-            if (providers != null) {
-                return providers;
+            HostedProviders p = parsingSupport.getHostedProviders(key);
+            if (p != null) {
+                return p;
             }
         }
         return super.getProviders(key);

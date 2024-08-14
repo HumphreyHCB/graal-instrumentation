@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -119,7 +119,7 @@ public class LoopFragmentInside extends LoopFragment {
         }
     };
 
-    public LoopFragmentInside(LoopEx loop) {
+    public LoopFragmentInside(Loop loop) {
         super(loop);
     }
 
@@ -139,18 +139,18 @@ public class LoopFragmentInside extends LoopFragment {
     }
 
     @SuppressWarnings("unused")
-    public void appendInside(LoopEx loop) {
+    public void appendInside(Loop loop) {
         GraalError.unimplemented("intentional"); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override
-    public LoopEx loop() {
+    public Loop loop() {
         assert !this.isDuplicate();
         return super.loop();
     }
 
     @Override
-    public void insertBefore(LoopEx loop) {
+    public void insertBefore(Loop loop) {
         assert this.isDuplicate();
         assert this.original().loop() == loop : "Original loop " + this.original().loop() + " != " + loop;
 
@@ -171,7 +171,7 @@ public class LoopFragmentInside extends LoopFragment {
      * Duplicate the body within the loop after the current copy copy of the body, updating the
      * iteration limit to account for the duplication.
      */
-    public void insertWithinAfter(LoopEx loop, EconomicMap<LoopBeginNode, OpaqueNode> opaqueUnrolledStrides) {
+    public void insertWithinAfter(Loop loop, EconomicMap<LoopBeginNode, OpaqueNode> opaqueUnrolledStrides) {
         assert isDuplicate();
         assert original().loop() == loop : original().loop() + "!=" + loop;
 
@@ -270,7 +270,7 @@ public class LoopFragmentInside extends LoopFragment {
         return ConditionalNode.create(overflowCheck, extremum, newLimit, NodeView.DEFAULT);
     }
 
-    protected CompareNode placeNewSegmentAndCleanup(LoopEx loop, EconomicMap<Node, Node> new2OldPhis, @SuppressWarnings("unused") EconomicMap<Node, Node> originalPhi2Backedges) {
+    protected CompareNode placeNewSegmentAndCleanup(Loop loop, EconomicMap<Node, Node> new2OldPhis, @SuppressWarnings("unused") EconomicMap<Node, Node> originalPhi2Backedges) {
         CountedLoopInfo mainCounted = loop.counted();
         LoopBeginNode mainLoopBegin = loop.loopBegin();
         // Discard the segment entry and its flow, after if merging it into the loop
@@ -282,6 +282,13 @@ public class LoopFragmentInside extends LoopFragment {
 
         if (mainCounted.getBody() != loop.loopBegin()) {
             // regular loop
+            Node predecessor = newSegmentLoopTest.predecessor();
+            while (predecessor instanceof FixedWithNextNode fixedPredecessor) {
+                for (Node usage : fixedPredecessor.usages().snapshot()) {
+                    usage.replaceFirstInput(fixedPredecessor, loopTest.predecessor());
+                }
+                predecessor = fixedPredecessor.predecessor();
+            }
             AbstractBeginNode falseSuccessor = newSegmentLoopTest.falseSuccessor();
             for (Node usage : falseSuccessor.anchored().snapshot()) {
                 usage.replaceFirstInput(falseSuccessor, loopTest.falseSuccessor());
@@ -362,7 +369,7 @@ public class LoopFragmentInside extends LoopFragment {
      * Unrolling loops with multiple exits is special in the way the exits are handled.
      * Pre-Main-Post creation will merge them.
      */
-    protected void mergeEarlyLoopExits(StructuredGraph graph, LoopBeginNode mainLoopBegin, CountedLoopInfo mainCounted, EconomicMap<Node, Node> new2OldPhis, LoopEx loop) {
+    protected void mergeEarlyLoopExits(StructuredGraph graph, LoopBeginNode mainLoopBegin, CountedLoopInfo mainCounted, EconomicMap<Node, Node> new2OldPhis, Loop loop) {
         if (mainLoopBegin.loopExits().count() <= 1) {
             return;
         }
@@ -384,7 +391,7 @@ public class LoopFragmentInside extends LoopFragment {
     }
 
     private void mergeRegularEarlyExit(FixedNode next, AbstractBeginNode exitBranchBegin, LoopExitNode oldExit, LoopBeginNode mainLoopBegin, StructuredGraph graph,
-                    EconomicMap<Node, Node> new2OldPhis, LoopEx loop) {
+                    EconomicMap<Node, Node> new2OldPhis, Loop loop) {
         AbstractMergeNode merge = ((EndNode) next).merge();
         assert merge instanceof MergeNode : "Can only merge loop exits on regular merges";
         assert exitBranchBegin.next() == null;

@@ -65,6 +65,7 @@ import static com.oracle.truffle.api.strings.TStringGuards.littleEndian;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
+import java.lang.ref.Reference;
 import java.util.Arrays;
 import java.util.BitSet;
 
@@ -221,6 +222,8 @@ public final class TruffleString extends AbstractTruffleString {
         }
         if (bytes instanceof NativePointer) {
             ((NativePointer) bytes).materializeByteArray(null, offset, length << stride, InlinedConditionProfile.getUncached());
+        } else {
+            assert stride == Stride.fromCodeRangeAllowImprecise(codeRange, encoding);
         }
         long attrs = CalcStringAttributesNodeGen.getUncached().execute(CalcStringAttributesNodeGen.getUncached(), null, bytes, offset, length, stride, encoding, 0, knownCodeRange);
         int cpLengthCalc = StringAttributes.getCodePointLength(attrs);
@@ -3888,10 +3891,27 @@ public final class TruffleString extends AbstractTruffleString {
          *
          * @since 23.0
          */
-        public abstract int execute(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet);
+        public final int execute(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet) {
+            return execute(a, fromByteIndex, toByteIndex, codePointSet, true);
+        }
+
+        /**
+         * Returns the byte index of the first codepoint present in the given {@link CodePointSet},
+         * bounded by {@code fromByteIndex} (inclusive) and {@code toByteIndex} (exclusive).
+         * 
+         * @param usePreciseCodeRange If this parameter is set to {@code true}, the node may
+         *            evaluate the input string's precise code range for better search performance.
+         *            For more details, see {@link GetCodeRangeNode} and
+         *            {@link GetCodeRangeImpreciseNode}. This parameter is expected to be
+         *            {@link CompilerAsserts#partialEvaluationConstant(Object) partial evaluation
+         *            constant}.
+         * 
+         * @since 24.1
+         */
+        public abstract int execute(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet, boolean usePreciseCodeRange);
 
         @Specialization(guards = "codePointSet == cachedCodePointSet", limit = "1")
-        static int indexOfSpecialized(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet,
+        static int indexOfSpecialized(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet, boolean usePreciseCodeRange,
                         @Bind("this") Node node,
                         @Cached @Exclusive ToIndexableNode toIndexableNode,
                         @Cached TStringInternalNodes.GetPreciseCodeRangeNode getPreciseCodeRangeNode,
@@ -3900,6 +3920,7 @@ public final class TruffleString extends AbstractTruffleString {
             Encoding encoding = cachedCodePointSet.encoding;
             CompilerAsserts.partialEvaluationConstant(codePointSet);
             CompilerAsserts.partialEvaluationConstant(encoding);
+            CompilerAsserts.partialEvaluationConstant(usePreciseCodeRange);
             a.checkEncoding(encoding);
             if (a.isEmpty()) {
                 return -1;
@@ -3911,11 +3932,12 @@ public final class TruffleString extends AbstractTruffleString {
                 return -1;
             }
             Object arrayA = toIndexableNode.execute(node, a, a.data());
-            return byteIndex(internalNode.execute(arrayA, a.offset(), a.length(), a.stride(), getPreciseCodeRangeNode.execute(node, a, encoding), fromIndex, toIndex), encoding);
+            int codeRangeA = usePreciseCodeRange ? getPreciseCodeRangeNode.execute(node, a, encoding) : a.codeRange();
+            return byteIndex(internalNode.execute(arrayA, a.offset(), a.length(), a.stride(), codeRangeA, fromIndex, toIndex), encoding);
         }
 
         @Specialization(replaces = "indexOfSpecialized")
-        int indexOfUncached(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet,
+        int indexOfUncached(AbstractTruffleString a, int fromByteIndex, int toByteIndex, CodePointSet codePointSet, @SuppressWarnings("unused") boolean usePreciseCodeRange,
                         @Cached @Exclusive ToIndexableNode toIndexableNode,
                         @Cached TStringInternalNodes.GetCodeRangeForIndexCalculationNode getCodeRangeNode,
                         @Cached TruffleStringIterator.InternalNextNode nextNode) {
@@ -5012,7 +5034,8 @@ public final class TruffleString extends AbstractTruffleString {
                         @Cached TStringInternalNodes.GetCodePointLengthNode getCodePointLengthNode,
                         @Cached TStringInternalNodes.CalcStringAttributesNode calcStringAttributesNode,
                         @Cached InlinedConditionProfile brokenProfile,
-                        @Cached InlinedBranchProfile outOfMemoryProfile) {
+                        @Cached InlinedBranchProfile outOfMemoryProfile,
+                        @Cached InlinedBranchProfile compactProfile) {
             a.checkEncoding(expectedEncoding);
             if (n < 0) {
                 throw InternalErrors.illegalArgument("n must be positive");
@@ -5027,27 +5050,38 @@ public final class TruffleString extends AbstractTruffleString {
             int codeRangeA = getPreciseCodeRangeNode.execute(this, a, expectedEncoding);
             int codePointLengthA = getCodePointLengthNode.execute(this, a, expectedEncoding);
             int byteLengthA = (a.length()) << a.stride();
-            long byteLength = ((long) byteLengthA) * n;
+            int stride = Stride.fromCodeRange(codeRangeA, expectedEncoding);
+            long byteLength = (((long) a.length()) << stride) * n;
             if (Long.compareUnsigned(byteLength, TStringConstants.MAX_ARRAY_SIZE) > 0) {
                 outOfMemoryProfile.enter(this);
                 throw InternalErrors.outOfMemory();
             }
             byte[] array = new byte[(int) byteLength];
             int offsetB = 0;
-            for (int i = 0; i < n; i++) {
-                TStringOps.arraycopyWithStride(this, arrayA, a.offset(), 0, 0, array, offsetB, 0, 0, byteLengthA);
-                offsetB += byteLengthA;
-                TStringConstants.truffleSafePointPoll(this, i + 1);
+            if (stride == a.stride()) {
+                for (int i = 0; i < n; i++) {
+                    TStringOps.arraycopyWithStride(this, arrayA, a.offset(), 0, 0, array, offsetB, 0, 0, byteLengthA);
+                    offsetB += byteLengthA;
+                    TStringConstants.truffleSafePointPoll(this, i + 1);
+                }
+            } else {
+                compactProfile.enter(this);
+                int byteLengthCompact = a.length() << stride;
+                for (int i = 0; i < n; i++) {
+                    TStringOps.arraycopyWithStride(this, arrayA, a.offset(), a.stride(), 0, array, offsetB, stride, 0, a.length());
+                    offsetB += byteLengthCompact;
+                    TStringConstants.truffleSafePointPoll(this, i + 1);
+                }
             }
-            int length = (int) (byteLength >> a.stride());
+            int length = (int) (byteLength >> stride);
             if (brokenProfile.profile(this, isBroken(codeRangeA))) {
-                long attrs = calcStringAttributesNode.execute(this, null, array, 0, length, a.stride(), expectedEncoding, 0, codeRangeA);
+                long attrs = calcStringAttributesNode.execute(this, null, array, 0, length, stride, expectedEncoding, 0, codeRangeA);
                 codeRangeA = StringAttributes.getCodeRange(attrs);
                 codePointLengthA = StringAttributes.getCodePointLength(attrs);
             } else {
                 codePointLengthA *= n;
             }
-            return createFromByteArray(array, length, a.stride(), expectedEncoding, codePointLengthA, codeRangeA);
+            return createFromByteArray(array, length, stride, expectedEncoding, codePointLengthA, codeRangeA);
         }
 
         /**
@@ -6181,7 +6215,13 @@ public final class TruffleString extends AbstractTruffleString {
             // This is to avoid potential problems with UTF-32 encoded strings, where native code
             // may not read single bytes but 32-bit values.
             checkIntSize();
-            TStringUnsafe.putIntNative(nativePointer.pointer, byteSize, 0);
+            try {
+                TStringUnsafe.putInt(null, nativePointer.pointer + byteSize, 0);
+            } finally {
+                // probably not necessary because the native object is referenced by the return
+                // value, but better safe than sorry
+                Reference.reachabilityFence(nativePointer);
+            }
             TruffleString nativeString = TruffleString.createFromArray(nativePointer, 0, length, stride, encoding, a.codePointLength(), codeRangeA, !cacheResult);
             if (cacheResult) {
                 a.cacheInsert(nativeString);

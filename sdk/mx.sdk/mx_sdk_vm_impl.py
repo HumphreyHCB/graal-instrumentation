@@ -579,7 +579,7 @@ class BaseGraalVmLayoutDistribution(mx.LayoutDistribution, metaclass=ABCMeta):
             _jvm_library_dest = _component_jvmlib_base
 
             if _component.dir_name:
-                _component_base = _component_type_base + _component.dir_name + '/'
+                _component_base = normpath(_component_type_base + _component.dir_name) + '/'
             else:
                 _component_base = _component_type_base
 
@@ -600,7 +600,7 @@ class BaseGraalVmLayoutDistribution(mx.LayoutDistribution, metaclass=ABCMeta):
                 # a subset of files from this component's home directory. The file lists will be merged by the NativeImageResourcesFileList project into a single file `native-image-resources.filelist` that will be
                 # written into this component's home directory. As a part of a native image build that includes this component, the files in the merged file list will be copied as resources to a directory named
                 # `resources` next to the produced image. This impacts only the native images built by GraalVM that are not a part of the GraalVM itself.
-                if not _component_base in _lang_homes_with_ni_resources:
+                if _component_base not in _lang_homes_with_ni_resources:
                     _add(layout, _component_base, 'dependency:{}/native-image-resources.filelist'.format(NativeImageResourcesFileList.project_name(_component.dir_name)), _component)
                     _lang_homes_with_ni_resources.append(_component_base)
             _add(layout, '<jdk_base>/include/', [{
@@ -623,27 +623,28 @@ class BaseGraalVmLayoutDistribution(mx.LayoutDistribution, metaclass=ABCMeta):
             else:
                 _jdk_jre_bin = '<jre_base>/bin/'
 
-            _licenses = _component.third_party_license_files
-            if not _no_licenses():
-                _licenses = _licenses + _component.license_files
-            for _license in _licenses:
-                if mx.is_windows() or isinstance(self, mx.AbstractJARDistribution):
-                    if _component_base == '<jdk_base>/':
-                        pass  # already in place from the support dist
-                    elif len(_component.support_distributions) == 1:
-                        _support = _component.support_distributions[0]
-                        _add(layout, '<jdk_base>/', 'extracted-dependency:{}/{}'.format(_support, _license), _component)
-                    elif any(_license.startswith(sd + '/') for sd in _component.support_distributions):
-                        _add(layout, '<jdk_base>/', 'extracted-dependency:{}'.format(_license), _component)
+            if _component_base == '<jdk_base>/':
+                pass  # already in place from the support dist
+            else:
+                _licenses = _component.third_party_license_files
+                if not _no_licenses():
+                    _licenses = _licenses + _component.license_files
+                for _license in _licenses:
+                    if mx.is_windows() or isinstance(self, mx.AbstractJARDistribution):
+                        if len(_component.support_distributions) == 1:
+                            _support = _component.support_distributions[0]
+                            _add(layout, '<jdk_base>/', 'extracted-dependency:{}/{}'.format(_support, _license), _component)
+                        elif any(_license.startswith(sd + '/') for sd in _component.support_distributions):
+                            _add(layout, '<jdk_base>/', 'extracted-dependency:{}'.format(_license), _component)
+                        else:
+                            mx.warn("Can not add license: " + _license)
                     else:
-                        mx.warn("Can not add license: " + _license)
-                else:
-                    for sd in _component.support_distributions:
-                        if _license.startswith(sd + '/'):
-                            _add_link('<jdk_base>/', _component_base + _license[len(sd) + 1:], _component)
-                            break
-                    else:
-                        _add_link('<jdk_base>/', _component_base + _license, _component)
+                        for sd in _component.support_distributions:
+                            if _license.startswith(sd + '/'):
+                                _add_link('<jdk_base>/', _component_base + _license[len(sd) + 1:], _component)
+                                break
+                        else:
+                            _add_link('<jdk_base>/', _component_base + _license, _component)
 
             _jre_bin_names = []
 
@@ -1991,6 +1992,47 @@ class GraalVmLibrary(GraalVmNativeImage):
     def is_skipped(self):
         return _skip_libraries(self.native_image_config)
 
+class PolyglotIsolateLibrary(GraalVmLibrary):
+    """
+    A native image project dedicated to constructing a language polyglot isolate library.
+    Despite being built upon the component supertype, it operates independently of the component system
+    and native-image macros. Its configuration relies solely on the module path and META-INF/native-image
+    configuration files. Instances are instantiated by mx_truffle::register_polyglot_isolate_distributions
+    when a language dynamically registers a polyglot isolate distribution.
+    """
+    def __init__(self, target_suite, language, deps, build_args, **kw_args):
+        library_config = mx_sdk.LanguageLibraryConfig(
+            jar_distributions=deps,
+            build_args=[],
+            build_args_enterprise=build_args,
+            language=language,
+        )
+        super(PolyglotIsolateLibrary, self).__init__(None, f'{language}.isolate.image',
+                                                     list(deps), library_config, **kw_args)
+        self.suite = target_suite
+        self.dir = target_suite.dir
+
+
+    def getBuildTask(self, args):
+        svm_support = _get_svm_support()
+        assert svm_support.is_supported(), "Needs svm to build " + str(self)
+        if not self.is_skipped():
+            return PolyglotIsolateLibraryBuildTask(self, args, svm_support)
+        else:
+            return mx.NoOpTask(self, args)
+
+    def getArchivableResults(self, use_relpath=True, single=False):
+        for e in super(PolyglotIsolateLibrary, self).getArchivableResults(use_relpath=use_relpath, single=single):
+            yield e
+            if single:
+                return
+        output_dir = dirname(self.output_file())
+        resources_dir = join(output_dir, 'resources')
+        if exists(resources_dir):
+            yield resources_dir, 'resources'
+
+    def is_skipped(self):
+        return False
 
 class GraalVmMiscLauncher(GraalVmLauncher):  # pylint: disable=too-many-ancestors
     def __init__(self, component, native_image_config, stage1=False, **kw_args):
@@ -2417,9 +2459,9 @@ class GraalVmSVMNativeImageBuildTask(GraalVmNativeImageBuildTask):
         if alt_c_compiler is not None:
             experimental_build_args += ['-H:CCompilerPath=' + shutil.which(alt_c_compiler)]
         if self.args.alt_cflags is not None:
-            experimental_build_args += ['-H:CCompilerOption=' + self.args.alt_cflags]
+            experimental_build_args += ['-H:CCompilerOption=' + e for e in self.args.alt_cflags.split()]
         if self.args.alt_ldflags is not None:
-            experimental_build_args += ['-H:NativeLinkerOption=' + self.args.alt_ldflags]
+            experimental_build_args += ['-H:NativeLinkerOption=' + e for e in self.args.alt_ldflags.split()]
 
         build_args = [
             '-EJVMCI_VERSION_CHECK', # Propagate this env var when running native image from mx
@@ -2438,6 +2480,33 @@ class GraalVmSVMLauncherBuildTask(GraalVmSVMNativeImageBuildTask):
 
 class GraalVmLibraryBuildTask(GraalVmSVMNativeImageBuildTask):
     pass
+
+
+class PolyglotIsolateLibraryBuildTask(GraalVmLibraryBuildTask):
+    """
+    A PolyglotIsolateLibrary build task building a language polyglot isolate library.
+    Despite being built upon the component supertype, it operates independently of the component system
+    and native-image macros. Its configuration relies solely on the module path and META-INF/native-image
+    configuration files.
+    """
+    def get_build_args(self):
+        project = self.subject
+        target = project.native_image_name[:-len(_lib_suffix)]
+        build_args = [
+            '-EJVMCI_VERSION_CHECK',  # Propagate this env var when running native image from mx
+            '--parallelism=' + str(self.parallelism),
+            '--shared',
+            '-o',
+            target,
+            '--features=com.oracle.svm.enterprise.truffle.PolyglotIsolateGuestFeature',
+            '-H:APIFunctionPrefix=truffle_isolate_',
+        ] + svm_experimental_options([
+            '-H:+IgnoreMaxHeapSizeWhileInVMOperation',
+            '-H:+BuildOutputPrefix',
+            '-H:+GenerateBuildArtifactsFile',  # generate 'build-artifacts.json'
+        ]) + mx.get_runtime_jvm_args(self.subject.native_image_jar_distributions) + \
+        project.native_image_config.build_args + project.native_image_config.build_args_enterprise
+        return build_args
 
 
 class JmodModifier(mx.Project):
@@ -3491,7 +3560,6 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                     else:
                         with_non_rebuildable_configs = True
             for library_config in _get_library_configs(component):
-                library_project = None
                 if with_svm:
                     library_project = GraalVmLibrary(component, GraalVmNativeImage.project_name(library_config), [], library_config)
                     register_project(library_project)
@@ -3509,29 +3577,6 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                         register_project(launcher_project)
                         polyglot_config_project = PolyglotConfig(component, library_config)
                         register_project(polyglot_config_project)
-                    if with_svm and library_config.isolate_library_layout_distribution and not library_project.is_skipped() and has_component('tfle', stage1=True):
-                        # Create a layout distribution with the resulting language library that can be consumed into the
-                        # isolate resources jar distribution,
-                        resource_base_folder = f'META-INF/resources/engine/{library_config.language}-isolate/<os>/<arch>/libvm'
-                        attrs = {
-                            'description': f'Contains {library_config.language} language library resources',
-                            'hashEntry': f'{resource_base_folder}/sha256',
-                            'fileListEntry': f'{resource_base_folder}/files',
-                            'maven': False,
-                        }
-                        register_distribution(mx.LayoutDirDistribution(
-                            suite=_suite,
-                            name=library_config.isolate_library_layout_distribution['name'],
-                            deps=[],
-                            layout={
-                                f'{resource_base_folder}/': f'dependency:{library_project.name}'
-                            },
-                            path=None,
-                            platformDependent=True,
-                            theLicense=None,
-                            platforms=library_config.isolate_library_layout_distribution['platforms'],
-                            **attrs
-                        ))
             if isinstance(component, mx_sdk.GraalVmLanguage) and component.support_distributions:
                 ni_resources_components = dir_name_to_ni_resources_components.get(component.dir_name)
                 if not ni_resources_components:

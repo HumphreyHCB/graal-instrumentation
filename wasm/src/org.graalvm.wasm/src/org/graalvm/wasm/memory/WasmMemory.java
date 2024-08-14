@@ -110,21 +110,6 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
     protected final long maxAllowedSize;
 
     /**
-     * Optional grow callback to notify the embedder.
-     */
-    private Object growCallback;
-
-    /**
-     * JS callback to implement part of memory.atomic.notify.
-     */
-    private Object notifyCallback;
-
-    /**
-     * JS callback to implement part of memory.atomic.waitN.
-     */
-    private Object waitCallback;
-
-    /**
      * @see #hasIndexType64()
      */
     protected final boolean indexType64;
@@ -214,7 +199,12 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
         return shared;
     }
 
-    public abstract boolean grow(long extraPageSize);
+    /**
+     * Increases the size of the memory by the specified number of pages.
+     *
+     * @return The previous size of the memory if successful, otherwise {@code -1}.
+     */
+    public abstract long grow(long extraPageSize);
 
     /**
      * Shrinks this memory's size to its {@link #declaredMinSize()} initial size}, and sets all
@@ -529,7 +519,7 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
      * @param string the string to write
      * @param offset memory index where to write the string
      * @param length the maximum number of bytes to write, including the trailing null character
-     * @return the number of bytes written, including the trailing null character
+     * @return the number of bytes written
      */
     @CompilerDirectives.TruffleBoundary
     public final int writeString(Node node, String string, int offset, int length) {
@@ -820,40 +810,16 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
         store_i32_8(null, address, rawValue);
     }
 
-    public void setGrowCallback(Object growCallback) {
-        this.growCallback = growCallback;
-    }
-
-    public Object getGrowCallback() {
-        return growCallback;
-    }
-
     protected void invokeGrowCallback() {
         WebAssembly.invokeMemGrowCallback(this);
     }
 
-    public void setNotifyCallback(Object notifyCallback) {
-        this.notifyCallback = notifyCallback;
+    protected int invokeNotifyCallback(Node node, long address, int count) {
+        return WebAssembly.invokeMemNotifyCallback(node, this, address, count);
     }
 
-    public Object getNotifyCallback() {
-        return notifyCallback;
-    }
-
-    protected int invokeNotifyCallback(long address, int count) {
-        return WebAssembly.invokeMemNotifyCallback(this, address, count);
-    }
-
-    public void setWaitCallback(Object waitCallback) {
-        this.waitCallback = waitCallback;
-    }
-
-    public Object getWaitCallback() {
-        return waitCallback;
-    }
-
-    protected int invokeWaitCallback(long address, long expected, long timeout, boolean is64) {
-        return WebAssembly.invokeMemWaitCallback(this, address, expected, timeout, is64);
+    protected int invokeWaitCallback(Node node, long address, long expected, long timeout, boolean is64) {
+        return WebAssembly.invokeMemWaitCallback(node, this, address, expected, timeout, is64);
     }
 
     public abstract void close();
@@ -870,6 +836,13 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
 
     protected boolean outOfBounds(long offset, long length) {
         return length < 0 || offset < 0 || offset > getBufferSize() - length;
+    }
+
+    public final WasmMemory checkSize(long initialSize) {
+        if (byteSize() < initialSize * Sizes.MEMORY_PAGE_SIZE) {
+            throw CompilerDirectives.shouldNotReachHere("Memory size must not be less than initial size");
+        }
+        return this;
     }
 
     /**
@@ -897,7 +870,7 @@ public abstract class WasmMemory extends EmbedderDataHolder implements TruffleOb
 
     /**
      * Copy data from memory into a byte[] array.
-     * 
+     *
      * @param node the node used for errors
      * @param dst the output buffer
      * @param srcOffset the offset in the memory

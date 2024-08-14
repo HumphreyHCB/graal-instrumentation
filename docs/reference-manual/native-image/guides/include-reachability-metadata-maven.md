@@ -17,9 +17,9 @@ Depending on your application dependencies, there are three ways to provide the 
 
 1. [Using the GraalVM Reachability Metadata Repository](#build-a-native-executable-using-the-graalvm-reachability-metadata-repository)
 2. [Using the Tracing Agent](#build-a-native-executable-with-the-tracing-agent)
-3. [Autodetecting](https://graalvm.github.io/native-build-tools/latest/gradle-plugin-quickstart.html#build-a-native-executable-with-resources-autodetection) (if the required resources are directly available on the classpath, in the _src/main/resources_ directory)
+3. [Autodetecting](https://graalvm.github.io/native-build-tools/latest/gradle-plugin-quickstart.html#build-a-native-executable-with-resources-autodetection) (if the required resources are directly available on the class path, in the _src/main/resources/_ directory)
 
-This guide demonstrates how to build a native executable using the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata), and with the [Tracing agent](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html#agent-support).
+This guide demonstrates how to build a native executable using the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata), and with the [Tracing Agent](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html#agent-support).
 The goal of this guide is to illustrate the difference between the two approaches, and demonstrate how the use of reachability metadata can simplify your development tasks.
 
 We recommend that you follow the instructions and create the application step-by-step. 
@@ -27,13 +27,14 @@ Alternatively, you can go right to the [completed example](https://github.com/gr
 
 ## Prepare a Demo Application
 
-1. Make sure you have installed GraalVM.
+### Prerequisite 
+Make sure you have installed a GraalVM JDK.
 The easiest way to get started is with [SDKMAN!](https://sdkman.io/jdks#graal).
 For other installation options, visit the [Downloads section](https://www.graalvm.org/downloads/).
 
-2. Create a new Java project with **Maven** in your favorite IDE or from the command line, called "H2Example", in the `org.graalvm.example` package.
+1. Create a new Java project with **Maven** in your favorite IDE or from the command line, called "H2Example", in the `org.graalvm.example` package.
 
-3. Open the main class file, _src/main/java/org/graalvm/example/H2Example.java_, and replace its contents with the following:
+2. Open the main class file, _src/main/java/org/graalvm/example/H2Example.java_, and replace its contents with the following:
     ```java
     package org.graalvm.example;
 
@@ -115,9 +116,9 @@ For other installation options, visit the [Downloads section](https://www.graalv
         }
     }
     ```
-4. Delete the _H2Example/src/test/java_ directory (if it exists).
+3. Delete the _H2Example/src/test/java/_ directory (if it exists).
 
-5. Open the project configuration file, _pom.xml_, and replace its contents with the following:
+4. Open the project configuration file, _pom.xml_, and replace its contents with the following:
     ```xml
     <?xml version="1.0" encoding="UTF-8"?>
     <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -247,8 +248,7 @@ For other installation options, visit the [Downloads section](https://www.graalv
     The plugin discovers which JAR files it needs to pass to `native-image` and what the executable main class should be.
 
     **3** You can pass parameters to the underlying `native-image` build tool using the `<buildArgs>` section. In individual `<buildArg>` tags you can pass parameters exactly the same way as you do from a command line. The `-Ob` option to enable quick build mode (recommended during development only) is used as an example. Learn about other configuration options from the [plugin's documentation](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#configuration-options).
-
-6.  (Optional) Build the application. From the root directory of the repository, run the following command:
+5.  (Optional) Build the application. From the root directory of the repository, run the following command:
     ```shell
     mvn clean package
     ```
@@ -284,7 +284,8 @@ The support needs to be enabled explicitly.
     ```shell
     mvn package -Pnative
     ```
-    This generates a native executable for the platform in the _target_ directory, called `h2example`.
+    This generates a native executable for the platform in the _target/_ directory, called `h2example`.
+
 3. Run the application from the native executable:
 
     ```shell
@@ -294,7 +295,7 @@ The support needs to be enabled explicitly.
 
 ## Build a Native Executable with the Tracing Agent
 
-The second way to provide the medatata configuration for `native-image` is by injecting the [Tracing agent](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#agent-support) (later *the agent*) at compile time.
+The second way to provide the medatata configuration for `native-image` is by injecting the [Tracing Agent](https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#agent-support) (later *the agent*) at compile time.
 The agent is disabled by default, but it can be enabled within your _pom.xml_ file or via the command line.
 
 The agent can run in three modes:
@@ -302,7 +303,7 @@ The agent can run in three modes:
 - **Conditional**: Collects metadata with conditions. This is recommended if you are creating conditional metadata for a native shared library intended for further use.
 - **Direct**: For advanced users only. This mode allows directly controlling the command line passed to the agent.
 
-See below how to collect metadata with the tracing agent, and build a native executable applying the provided configuration.
+See below how to collect metadata with the Tracing Agent, and build a native executable applying the provided configuration.
 
 1. Enable the agent by adding the following into the `<configuration>` element of the `native` profile:
     ```xml
@@ -352,29 +353,29 @@ In the `native` Maven profile section, add the `exec-maven-plugin` plugin:
         </executions>
     </plugin>
     ```
+
 3. Run your application with the agent enabled, on the JVM:
     ```shell
     mvn -Pnative -Dagent=true -DskipTests -DskipNativeBuild=true package exec:exec@java-agent
     ```
-    The agent captures and records calls to the H2 Database and all the dynamic features encountered during a test run into multiple _*-config.json_ files in the _target/native/agent-output/main_ directory.
+    The agent captures and records calls to the H2 Database and all the dynamic features encountered during a test run into multiple _*-config.json_ files in the _target/native/agent-output/main/_ directory.
 
 4. Build a native executable using configuration collected by the agent:
     ```shell
     mvn -Pnative -Dagent=true -DskipTests package exec:exec@native
     ```
-    It generates a native executable for the platform in the _target_ directory, called `h2example`.
+    It generates a native executable for the platform in the _target/_ directory, called _h2example_.
 
 5. Run the application from the native executable:
-
     ```shell
     ./target/h2example 
     ```
         
-6. (Optional) To clean up the project, run `mvn clean`, and delete the directory _META-INF_ with its contents.
+6. (Optional) To clean up the project, run `mvn clean`, and delete the directory _META-INF/_ with its contents.
 
 ### Summary
 
-This guide demonstrated how to build a native executable using the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata) and with the Tracing agent. The goal was to show the difference, and prove how using the reachability metadata can simplify the work.
+This guide demonstrated how to build a native executable using the [GraalVM Reachability Metadata Repository](https://github.com/oracle/graalvm-reachability-metadata) and with the Tracing Agent. The goal was to show the difference, and prove how using the reachability metadata can simplify the work.
 
 Note that if your application does not call any dynamic features at run time, enabling the GraalVM Reachability Metadata Repository is needless. 
 Your workflow in that case would just be:

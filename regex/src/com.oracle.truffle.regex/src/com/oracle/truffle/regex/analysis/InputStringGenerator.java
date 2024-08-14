@@ -50,7 +50,6 @@ import java.util.Random;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.regex.RegexLanguage;
@@ -70,7 +69,7 @@ import com.oracle.truffle.regex.util.TruffleNull;
 
 public final class InputStringGenerator {
 
-    private static final CodePointSet ALLOWED_CHARACTERS = CodePointSet.createNoDedup(0x1, 0x7f);
+    private static final CodePointSet ALLOWED_CHARACTERS = CodePointSet.createNoDedup(0x1, 0x10ffff);
 
     private static final class LotteryBox implements Iterator<Integer> {
         private final Random rng;
@@ -472,13 +471,8 @@ public final class InputStringGenerator {
 
         @Override
         public Object execute(VirtualFrame frame) {
-            try {
-                long rngSeed = toLongNode.execute(frame.getArguments()[0]);
-                return Objects.requireNonNullElse(InputStringGenerator.generate(ast, rngSeed), TruffleNull.INSTANCE);
-            } catch (UnsupportedTypeException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new RuntimeException(e);
-            }
+            long rngSeed = toLongNode.execute(frame.getArguments()[0]);
+            return Objects.requireNonNullElse(InputStringGenerator.generate(ast, rngSeed), TruffleNull.INSTANCE);
         }
     }
 
@@ -600,8 +594,9 @@ public final class InputStringGenerator {
         } else if (term.isCharacterClass()) {
             CodePointSet cps = term.asCharacterClass().getCharSet();
 
-            // TODO: delete this
-            cps = ALLOWED_CHARACTERS.createIntersectionSingleRange(cps);
+            if (!cps.isEmpty()) {
+                cps = ALLOWED_CHARACTERS.createIntersectionSingleRange(cps);
+            }
 
             if (cps.isEmpty()) {
                 state = State.backtrack;

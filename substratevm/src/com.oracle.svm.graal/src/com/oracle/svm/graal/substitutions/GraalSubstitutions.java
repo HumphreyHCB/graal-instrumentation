@@ -40,6 +40,7 @@ import org.graalvm.collections.Equivalence;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.FieldValueTransformer;
+import org.graalvm.nativeimage.impl.IsolateSupport;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.WordFactory;
 
@@ -123,7 +124,8 @@ final class Target_jdk_graal_compiler_nodes_graphbuilderconf_InvocationPlugins {
 final class Target_jdk_graal_compiler_phases_common_inlining_info_elem_InlineableGraph {
 
     @Substitute
-    private static StructuredGraph parseBytecodes(ResolvedJavaMethod method, HighTierContext context, CanonicalizerPhase canonicalizer, StructuredGraph caller, boolean trackNodeSourcePosition) {
+    private static StructuredGraph parseBytecodes(ResolvedJavaMethod method, Invoke invoke, HighTierContext context, CanonicalizerPhase canonicalizer, StructuredGraph caller,
+                    boolean trackNodeSourcePosition) {
         DebugContext debug = caller.getDebug();
         StructuredGraph result = TruffleRuntimeCompilationSupport.decodeGraph(debug, null, CompilationIdentifier.INVALID_COMPILATION_ID, (SubstrateMethod) method, caller);
         assert result != null : "should not try to inline method when no graph is in the native image";
@@ -229,7 +231,7 @@ final class Target_jdk_graal_compiler_serviceprovider_IsolateUtil {
 
     @Substitute
     public static long getIsolateID() {
-        return ImageSingletons.lookup(GraalCompilerSupport.class).getIsolateId();
+        return ImageSingletons.lookup(IsolateSupport.class).getIsolateID();
     }
 }
 

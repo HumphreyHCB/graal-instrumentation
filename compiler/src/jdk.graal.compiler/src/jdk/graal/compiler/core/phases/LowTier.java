@@ -42,6 +42,7 @@ import jdk.graal.compiler.phases.common.FinalCanonicalizerPhase;
 import jdk.graal.compiler.phases.common.FixReadsPhase;
 import jdk.graal.compiler.phases.common.LowTierLoweringPhase;
 import jdk.graal.compiler.phases.common.OptimizeExtendsPhase;
+import jdk.graal.compiler.phases.common.OptimizeOffsetAddressPhase;
 import jdk.graal.compiler.phases.common.ProfileCompiledMethodsPhase;
 import jdk.graal.compiler.phases.common.PropagateDeoptimizeProbabilityPhase;
 import jdk.graal.compiler.phases.common.RemoveOpaqueValuePhase;
@@ -80,6 +81,8 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new GTLowTierPhase(options));
             appendPhase(new GTLoweringPhase(canonicalizerWithGVN));
         }
+        appendPhase(new OptimizeOffsetAddressPhase(canonicalizerWithGVN));
+
 
         appendPhase(new FixReadsPhase(true,
                         new SchedulePhase(GraalOptions.StressTestEarlyReads.getValue(options) ? SchedulingStrategy.EARLIEST : SchedulingStrategy.LATEST_OUT_OF_LOOPS_IMPLICIT_NULL_CHECKS)));

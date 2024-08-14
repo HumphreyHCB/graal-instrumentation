@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.GraalOptions;
-import jdk.graal.compiler.core.common.cfg.Loop;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugCloseable;
@@ -65,7 +65,7 @@ import jdk.graal.compiler.nodes.calc.IntegerEqualsNode;
 import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.nodes.extended.BranchProbabilityNode;
 import jdk.graal.compiler.nodes.extended.OSRMonitorEnterNode;
-import jdk.graal.compiler.nodes.loop.LoopEx;
+import jdk.graal.compiler.nodes.loop.Loop;
 import jdk.graal.compiler.nodes.loop.LoopsData;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.spi.Simplifiable;
@@ -244,26 +244,35 @@ public class ConvertDeoptimizeToGuardPhase extends PostRunCanonicalizationPhase<
                                             new FixedGuardNode(conditionNode, deopt.getReason(), deopt.getAction(), deopt.getSpeculation(), negateGuardCondition, survivingSuccessorPosition));
                             FixedWithNextNode pred = (FixedWithNextNode) ifNode.predecessor();
                             AbstractBeginNode survivingSuccessor;
+
                             if (negateGuardCondition) {
                                 survivingSuccessor = ifNode.falseSuccessor();
                             } else {
                                 survivingSuccessor = ifNode.trueSuccessor();
                             }
+                            /**
+                             * Note that we may be dealing with a semi canonicalized graph - cutting
+                             * off a branch here can canonicalize enclosing loops as well. This can
+                             * lead to situations where surviving successor will be dead.
+                             */
                             graph.removeSplitPropagate(ifNode, survivingSuccessor);
 
                             Node newGuard = guard;
-                            if (survivingSuccessor instanceof LoopExitNode) {
-                                newGuard = ProxyNode.forGuard(guard, (LoopExitNode) survivingSuccessor);
+                            if (survivingSuccessor.isAlive()) {
+                                if (survivingSuccessor instanceof LoopExitNode) {
+                                    newGuard = ProxyNode.forGuard(guard, (LoopExitNode) survivingSuccessor);
+                                }
+                                survivingSuccessor.replaceAtUsages(newGuard, InputType.Guard);
                             }
-                            survivingSuccessor.replaceAtUsages(newGuard, InputType.Guard);
-
                             graph.getOptimizationLog().report(ConvertDeoptimizeToGuardPhase.class, "DeoptimizeToGuardConversion", deopt.asNode());
                             FixedNode next = pred.next();
                             pred.setNext(guard);
                             guard.setNext(next);
                             assert providers != null;
                             SimplifierTool simplifierTool = GraphUtil.getDefaultSimplifier(providers, false, graph.getAssumptions(), graph.getOptions());
-                            ((Simplifiable) survivingSuccessor).simplify(simplifierTool);
+                            if (survivingSuccessor.isAlive()) {
+                                ((Simplifiable) survivingSuccessor).simplify(simplifierTool);
+                            }
                         }
                     }
                     return;
@@ -310,9 +319,9 @@ public class ConvertDeoptimizeToGuardPhase extends PostRunCanonicalizationPhase<
 
     private static boolean isCountedLoopExit(IfNode ifNode, LazyValue<LoopsData> lazyLoops) {
         LoopsData loopsData = lazyLoops.get();
-        Loop<HIRBlock> loop = loopsData.getCFG().getNodeToBlock().get(ifNode).getLoop();
+        CFGLoop<HIRBlock> loop = loopsData.getCFG().getNodeToBlock().get(ifNode).getLoop();
         if (loop != null) {
-            LoopEx loopEx = loopsData.loop(loop);
+            Loop loopEx = loopsData.loop(loop);
             if (loopEx.detectCounted()) {
                 return ifNode == loopEx.counted().getLimitTest();
             }

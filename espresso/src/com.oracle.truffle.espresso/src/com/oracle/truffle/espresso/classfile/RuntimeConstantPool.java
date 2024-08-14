@@ -29,6 +29,7 @@ import com.oracle.truffle.espresso.classfile.constantpool.ClassConstant;
 import com.oracle.truffle.espresso.classfile.constantpool.DynamicConstant;
 import com.oracle.truffle.espresso.classfile.constantpool.FieldRefConstant;
 import com.oracle.truffle.espresso.classfile.constantpool.InvokeDynamicConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.MethodRefConstant;
 import com.oracle.truffle.espresso.classfile.constantpool.NeedsFreshResolutionException;
 import com.oracle.truffle.espresso.classfile.constantpool.PoolConstant;
 import com.oracle.truffle.espresso.classfile.constantpool.Resolvable;
@@ -174,6 +175,11 @@ public final class RuntimeConstantPool extends ConstantPool {
         return (Method) resolved.value();
     }
 
+    public MethodRefConstant resolvedMethodRefAt(ObjectKlass accessingKlass, int index) {
+        Resolvable.ResolvedConstant resolved = resolvedAt(accessingKlass, index, "method");
+        return (MethodRefConstant) resolved;
+    }
+
     public Method resolvedMethodAtNoCache(ObjectKlass accessingKlass, int index) {
         CompilerAsserts.neverPartOfCompilation();
         Resolvable.ResolvedConstant resolved = resolvedAtNoCache(accessingKlass, index, "method");
@@ -202,6 +208,10 @@ public final class RuntimeConstantPool extends ConstantPool {
             }
             throw failure.cause;
         }
+    }
+
+    public InvokeDynamicConstant.Resolved peekResolvedInvokeDynamic(int index) {
+        return (InvokeDynamicConstant.Resolved) constants[index];
     }
 
     public DynamicConstant.Resolved resolvedDynamicConstantAt(ObjectKlass accessingKlass, int index) {
