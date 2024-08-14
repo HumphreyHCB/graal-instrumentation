@@ -33,6 +33,8 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.PlaceholderPhase;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
+import jdk.graal.compiler.phases.common.GTLowTierPhase;
+import jdk.graal.compiler.phases.common.GTLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.common.ExpandLogicPhase;
@@ -75,7 +77,12 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
 
+        if (GraalOptions.EnableGTSlowDown.getValue(options)) {
+            appendPhase(new GTLowTierPhase(options));
+            appendPhase(new GTLoweringPhase(canonicalizerWithGVN));
+        }
         appendPhase(new OptimizeOffsetAddressPhase(canonicalizerWithGVN));
+
 
         appendPhase(new FixReadsPhase(true,
                         new SchedulePhase(GraalOptions.StressTestEarlyReads.getValue(options) ? SchedulingStrategy.EARLIEST : SchedulingStrategy.LATEST_OUT_OF_LOOPS_IMPLICIT_NULL_CHECKS)));
@@ -98,7 +105,7 @@ public class LowTier extends BaseTier<LowTierContext> {
         appendPhase(new OptimizeExtendsPhase());
 
         appendPhase(new RemoveOpaqueValuePhase());
-
+        
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
     }
 

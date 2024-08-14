@@ -56,6 +56,7 @@ import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.hotspot.meta.GT.GTCache;
 import jdk.graal.compiler.lir.ImplicitLIRFrameState;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRFrameState;
@@ -71,6 +72,7 @@ import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.vm.ci.code.BailoutException;
 import jdk.vm.ci.code.DebugInfo;
 import jdk.vm.ci.code.Register;
@@ -614,6 +616,26 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 byte[] emittedCode = asm.copy(start, end);
                 lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
             }
+            if (GraalOptions.LIRGTSlowDown.getValue(options) && start < asm.position()) {
+                int end = asm.position();
+                for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
+                    if (codeAnnotation instanceof JumpTable) {
+                        // Skip jump table. Here we assume the jump table is at the tail of the
+                        // emitted code.
+                        int jumpTableStart = codeAnnotation.getPosition();
+                        if (jumpTableStart >= start && jumpTableStart < end) {
+                            end = jumpTableStart;
+                        }
+                    }
+                }
+                    byte[] emittedCode = asm.copy(start, end);
+                    String emmitedOPCode = "";
+                    for (byte b : emittedCode) {
+                        emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
+                    }
+                    GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
+                
+            } 
         } catch (BailoutException e) {
             throw e;
         } catch (AssertionError t) {

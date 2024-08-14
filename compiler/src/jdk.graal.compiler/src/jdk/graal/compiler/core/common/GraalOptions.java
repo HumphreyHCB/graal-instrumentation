@@ -322,6 +322,12 @@ public final class GraalOptions {
     @Option(help = "AMD64 only: Replace forward jumps (jmp, jcc) with equivalent but smaller instructions if the actual jump displacement fits in one byte.", type = OptionType.Expert)
     public static final OptionKey<Boolean> OptimizeLongJumps = new OptionKey<>(false);
 
+    @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
+
+    @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
+  
     @Option(help = "Optimize integer division operation by using various mathematical foundations to "
                     + " express it in faster, equivalent, arithmetic.", type = OptionType.Debug)
     public static final OptionKey<Boolean> OptimizeDiv = new OptionKey<>(true);

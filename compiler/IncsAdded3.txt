@@ -1,0 +1,840 @@
+In comp ID java.lang.Object.<init>()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.forEach(ForEachInterface)
+graph Cost 5560.0
+Going to add 347 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)
+graph Cost 218.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.equals(byte[], byte[])
+graph Cost 142.0
+Going to add 8 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)
+graph Cost 200.0
+Going to add 12 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.indexOfChar(byte[], int, int, int)
+graph Cost 306.0
+Going to add 19 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.addPropagate(AbstractConstraint, int)
+graph Cost 2362.0
+Going to add 147 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringCoding.countPositives(byte[], int, int)
+graph Cost 684.0
+Going to add 42 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setValue(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getValue()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.EqualityConstraint.execute()
+graph Cost 28.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Plan$$Lambda/0x00007f02b401f278.apply(Object)
+graph Cost 106.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.getDebug()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Plan.lambda$execute$0(AbstractConstraint)
+graph Cost 98.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.Interval.location()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRIntrospection$Values.getDirectCount()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.code.RegisterValue.getRegister()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.nio.Buffer.position()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.nio.Buffer.limit()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.getOptions()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.trackNodeSourcePosition()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.forEach(ForEachInterface)
+graph Cost 1012.0
+Going to add 63 increment as we currently judge the cost to be 16
+In comp ID deltablue.Plan$$Lambda/0x00007f02b401f278.apply(Object)
+graph Cost 106.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$MicroBlock.getId()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.meta.ValueKind.getPlatformKind()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.isEmpty()
+graph Cost 12.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.isLeafNode()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Edges.getDirectCount()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.getOutput()
+graph Cost 14.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getMark()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getStay()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.forEach(ForEachInterface)
+graph Cost 1052.0
+Going to add 65 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle.allocateInstance(Object)
+graph Cost 656.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle.constructorMethod(Object)
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.IfNode.getSuccessorCount()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.Fields.getOffsets()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.findLinear(Object)
+graph Cost 213.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.HIRBlock.getLoop()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.isAlive()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.append(Object)
+graph Cost 68.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getWalkStrength()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.BasicBlock.getDominatorDepth()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.addPropagate(AbstractConstraint, int)
+graph Cost 1981.0
+Going to add 123 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.ValuePhiNode.values()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.HIRBlock.getRelativeFrequency()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.Loop.getDepth()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.isSatisfied()
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.type.PrimitiveStamp.getBits()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.ScopeImpl.isEmptyScope()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.getEdgeModificationCount()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.isLatin1()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.isCanonicalizable()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.IfNode.falseSuccessor()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.IfNode.trueSuccessor()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.gen.LIRGenerationResult.getLIR()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getDeterminedBy()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstruction.id()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.Interval.first()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIR.getOptions()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.minRegisterNumber()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.meta.Value.getValueKind()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.forward()
+graph Cost 31.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$addConstraintsConsumingTo$2(AbstractConstraint, Vector, AbstractConstraint)
+graph Cost 56.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.incrementalAdd(AbstractConstraint)
+graph Cost 24.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.getArithmeticValue()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.maxRegisterNumber()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b401c648.apply(Object)
+graph Cost 27.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setMark(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.getConstraints()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.id()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeIdAccessor.getNodeId(Node)
+graph Cost 13.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.checkIndex(int, int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIR.getDebug()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.charAt(byte[], int)
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.charAt(int)
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(Object, Object, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.Vector.removeFirst()
+graph Cost 33.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, Object, Object)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.isSimplifiable()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.weaker(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstructionClass.isValueMoveOp()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.getCompilerToVM()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setStay(boolean)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setWalkStrength(Strength)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(int, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, int)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.getDeclaringClass()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.java.BciBlockMapping$BciBlock.getId()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.addConstraintsConsumingTo(Variable, Vector)
+graph Cost 47.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b401c648.<init>(AbstractConstraint, Vector)
+graph Cost 54.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.bytecode.BytecodeStream.currentBCI()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f02b401c430.apply(Object)
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.lambda$satisfy$1(int, Variable)
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$NodeEntry.getNext()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector.<init>(int)
+graph Cost 644.0
+Going to add 40 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.code.BytecodePosition.getCaller()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.weakest(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.compareKeys(Object, Object)
+graph Cost 13.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.ProfileData$BranchProbabilityData.getDesignatedSuccessorProbability()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.addConstraint(AbstractConstraint)
+graph Cost 75.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.ValueNode.inferStamp()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$NodeEntry.getNode()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.type.Stamp.asConstant()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.LinearScan.getDebug()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstruction.destroysCallerSavedRegisters()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.BasicBlock.hashCode()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.StructuredGraph.getGraphState()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.Integer.intValue()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.setDeterminedBy(AbstractConstraint)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeSourcePosition.hashCode()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Edges.type()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.ScopeImpl.isTimeEnabled()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.stronger(Strength)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotConstantPool.getMetadataHandle()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f02b401c430.<init>(int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.util.CompilationAlarm.checkProgress(Graph)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial(Object, Object)
+graph Cost 662.0
+Going to add 41 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.type.AbstractPointerStamp.alwaysNull()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.invoke.Invokers$Holder.linkToTargetMethod(Object, Object)
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID sun.misc.Unsafe.getObject(Object, long)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b42ae848.apply(Object)
+graph Cost 92.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$removePropagateFrom$4(Vector, AbstractConstraint)
+graph Cost 84.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.java.BciBlockMapping$BciBlock.getEndBci()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.satisfy(int, Planner)
+graph Cost 440.0
+Going to add 27 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.chooseMethod(int)
+graph Cost 75.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.alloc.lsra.LinearScan.getLIR()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b42aec88.apply(Object)
+graph Cost 27.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.iterableId()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.Fields.getCount()
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.UnaryOpLogicNode.getValue()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$MicroBlock.getFirstNode()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotJavaType.getName()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.String.coder()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.eventCounterOverflows(int)
+graph Cost 13.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.ControlFlowGraph.getNodeToBlock()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.IfNode.condition()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.HIRBlock.setFrequencySource(ProfileData$ProfileSource)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeMap.get(Node)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.lambda$constraintsConsuming$3(AbstractConstraint, ForEachInterface, AbstractConstraint)
+graph Cost 200.0
+Going to add 12 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime()
+graph Cost 13.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.ref.Reference.reachabilityFence(Object)
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeStack.size()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.isCommutative()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.amd64.AMD64AddressNode.getBase()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.Enum.ordinal()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Vector$$Lambda/0x00007f02b42ae628.apply(Object)
+graph Cost 76.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstruction.setId(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.code.RegisterAttributes.isAllocatable()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.inputsDo(ForEachInterface)
+graph Cost 28.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.Vector.lambda$remove$0(Object, boolean[], Object[], int[], Object)
+graph Cost 64.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.getConfig()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotVMConfig.config()
+graph Cost 17.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.hasHashArray()
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.Collections$EmptyList.isEmpty()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength$Sym.customHash()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.lang.ClassValue$ClassValueMap.getCache()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.iterableIds()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.DebugConfigImpl.output()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.hash(Dictionary$CustomHash)
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.getBucketIdx(int)
+graph Cost 17.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.lastIndexOf(byte[], int, int)
+graph Cost 148.0
+Going to add 9 increment as we currently judge the cost to be 16
+In comp ID som.Dictionary.at(Dictionary$CustomHash)
+graph Cost 59.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID som.IdentityDictionary$IdEntry.match(int, Object)
+graph Cost 16.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.absoluteWeakest()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Strength.of(Strength$Sym)
+graph Cost 62.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.<init>(Strength$Sym)
+graph Cost 87.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.<init>()
+graph Cost 129.0
+Going to add 8 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.inputsKnown(int)
+graph Cost 91.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f02b401e968.<init>(int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.loop.LoopsData.getCFG()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b42ae848.<init>(Vector)
+graph Cost 31.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.code.BytecodePosition.getMethod()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.BasicBlock.setDominatorNumber(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.BasicBlock.setMaxChildDomNumber(int)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.meta.PrimitiveConstant.getJavaKind()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b42aea68.<init>(Vector)
+graph Cost 31.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.constraintsConsuming(Variable, ForEachInterface)
+graph Cost 47.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.code.BytecodePosition.getBCI()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeSourcePosition.getSourceLanguage()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b42aec88.<init>(AbstractConstraint, ForEachInterface)
+graph Cost 54.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.addConstraint(Planner)
+graph Cost 304.0
+Going to add 19 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint.lambda$inputsKnown$0(int, Variable)
+graph Cost 15.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.cycles()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.inputsHasOne(TestInterface)
+graph Cost 34.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass.getInputEdges()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.AbstractConstraint$$Lambda/0x00007f02b401e968.test(Object)
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.amd64.AMD64AddressNode.getIndex()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.calc.BinaryNode.getX()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.isDeleted()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.hasNext()
+graph Cost 62.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstruction.getPosition()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.Variable.value(int)
+graph Cost 35.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID deltablue.BinaryConstraint.<init>(Variable, Variable, Strength$Sym, Planner)
+graph Cost 142.0
+Going to add 8 increment as we currently judge the cost to be 16
+In comp ID som.Vector.at(int)
+graph Cost 24.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.common.cfg.BasicBlock.getId()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRIntrospection.visitEach(LIRInstruction, LIRIntrospection$Values, LIRInstruction$OperandMode, InstructionValueConsumer)
+graph Cost 83.0
+Going to add 5 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.makePlan(Vector)
+graph Cost 1.4760142E7
+Going to add 922508 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.removePropagateFrom(Variable)
+graph Cost 4.9491698E7
+Going to add 3093231 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.makePlan(Vector)
+graph Cost 1.3624464E7
+Going to add 851529 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.projectionTest(int)
+graph Cost 3484951.0
+Going to add 217809 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner$$Lambda/0x00007f02b400de50.apply(int)
+graph Cost 33.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.removePropagateFrom(Variable)
+graph Cost 4.9924269E7
+Going to add 3120266 increment as we currently judge the cost to be 16
+In comp ID java.lang.StringLatin1.indexOfChar(byte[], int, int, int)
+graph Cost 175.0
+Going to add 10 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator.dropDeleted()
+graph Cost 64.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.chainTest(int)
+graph Cost 1.4359725E7
+Going to add 897482 increment as we currently judge the cost to be 16
+In comp ID java.util.Arrays.setAll(Object[], IntFunction)
+graph Cost 4395415.0
+Going to add 274713 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.chainTest(int)
+graph Cost 151563.0
+Going to add 9472 increment as we currently judge the cost to be 16
+In comp ID java.util.Arrays.setAll(Object[], IntFunction)
+graph Cost 4409247.0
+Going to add 275577 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.chainTest(int)
+graph Cost 1.4526901E7
+Going to add 907931 increment as we currently judge the cost to be 16
+In comp ID deltablue.UnaryConstraint.<init>(Variable, Strength$Sym, Planner)
+graph Cost 222.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID deltablue.StayConstraint.<init>(Variable, Strength$Sym, Planner)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID deltablue.ScaleConstraint.<init>(Variable, Variable, Variable, Variable, Strength$Sym, Planner)
+graph Cost 426.0
+Going to add 26 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.projectionTest(int)
+graph Cost 4.8832421E7
+Going to add 3052026 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator.forward()
+graph Cost 556.0
+Going to add 34 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.GraphNodeIterator.forward()
+graph Cost 46.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.GraphNodeIterator.checkForDeletedNode()
+graph Cost 37.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener.changed(Graph$NodeEvent, Node)
+graph Cost 105.0
+Going to add 6 increment as we currently judge the cost to be 16
+In comp ID deltablue.EqualityConstraint.<init>(Variable, Variable, Strength$Sym, Planner)
+graph Cost 208.0
+Going to add 13 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.find(Object)
+graph Cost 173.0
+Going to add 10 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.getNodeClass()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.checkKeyNonNull(Object)
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.getRawValue(int)
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Graph.isNodeModificationCountsEnabled()
+graph Cost 6.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.Objects.checkIndex(int, int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayDeque.inc(int, int)
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList.elementData(int)
+graph Cost 24.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.ScopeImpl.isLogEnabled(int)
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList$Itr.hasNext()
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.getHashTableSize()
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.HIRBlock.getBeginNode()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.getMetaspacePointer()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.getKlassPointer()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.FixedWithNextNode.next()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList.get(int)
+graph Cost 30.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeBitMap.isMarked(int)
+graph Cost 27.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.util.RegularEnumSet.contains(Object)
+graph Cost 35.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Node.graph()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.get(Object)
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.ValueNode.graph()
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList$Itr.checkForComodification()
+graph Cost 19.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.Edges.getNodeUnsafe(Node, long)
+graph Cost 22.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList$Itr.next()
+graph Cost 48.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.ControlFlowGraph.getBlocks()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.ControlFlowGraph.getBlocks()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.cfg.HIRBlock.getEndNode()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.getHashIndex(Object)
+graph Cost 54.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.getHashArray(int)
+graph Cost 35.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeUsageIterator.advance()
+graph Cost 57.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.misc.Unsafe.getInt(long)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList.add(Object)
+graph Cost 154.0
+Going to add 9 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList.add(Object, Object[], int)
+graph Cost 145.0
+Going to add 9 increment as we currently judge the cost to be 16
+In comp ID deltablue.Planner.projectionTest(int)
+graph Cost 2.3766572E7
+Going to add 1485410 increment as we currently judge the cost to be 16
+In comp ID jdk.internal.misc.Unsafe.getLong(long)
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayList.size()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.core.amd64.AMD64AddressNode.getScale()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeUsageIterator.hasNext()
+graph Cost 11.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.MetaspaceHandleObject.getMetaspacePointer()
+graph Cost 78.0
+Going to add 4 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.gen.LIRGenerator.setSourcePosition(NodeSourcePosition)
+graph Cost 29.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeBitMap.isMarked(Node)
+graph Cost 34.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.next()
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.lir.LIRInstruction.hashCode()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.next()
+graph Cost 21.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.ScopeImpl.isCountEnabled()
+graph Cost 9.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.asm.amd64.AMD64Address.getBase()
+graph Cost 10.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.meta.JavaKind.getBasicType()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.DebugContext.isCounterEnabled(CounterKeyImpl)
+graph Cost 37.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.DebugContext.isCounterEnabledSlow(AbstractKey)
+graph Cost 33.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayDeque.elementAt(Object[], int)
+graph Cost 20.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.CounterKeyImpl.add(DebugContext, long)
+graph Cost 40.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID java.util.ArrayDeque.isEmpty()
+graph Cost 12.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeMap.set(Node, Object)
+graph Cost 59.0
+Going to add 3 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.CounterKeyImpl.increment(DebugContext)
+graph Cost 40.0
+Going to add 2 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.debug.DebugContext.isLogEnabled(int)
+graph Cost 17.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID org.graalvm.collections.EconomicMapImpl.getKey(int)
+graph Cost 25.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.getMethodPointer()
+graph Cost 12.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.getMetadataHandle()
+graph Cost 8.0
+Going to add 0 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.TypedGraphNodeIterator.current()
+graph Cost 26.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.nodes.ValueNode.graph()
+graph Cost 18.0
+Going to add 1 increment as we currently judge the cost to be 16
+In comp ID jdk.graal.compiler.graph.NodeBitMap.mark(Node)
+graph Cost 34.0
+Going to add 2 increment as we currently judge the cost to be 16
