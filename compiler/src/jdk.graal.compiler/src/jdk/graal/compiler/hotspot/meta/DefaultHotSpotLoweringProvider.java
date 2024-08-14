@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -93,8 +93,8 @@ import jdk.graal.compiler.hotspot.replacements.MonitorSnippets;
 import jdk.graal.compiler.hotspot.replacements.ObjectCloneSnippets;
 import jdk.graal.compiler.hotspot.replacements.ObjectSnippets;
 import jdk.graal.compiler.hotspot.replacements.RegisterFinalizerSnippets;
-import jdk.graal.compiler.hotspot.replacements.StringToBytesSnippets;
 import jdk.graal.compiler.hotspot.replacements.UnsafeCopyMemoryNode;
+import jdk.graal.compiler.hotspot.replacements.UnsafeSetMemoryNode;
 import jdk.graal.compiler.hotspot.replacements.UnsafeSnippets;
 import jdk.graal.compiler.hotspot.replacements.VirtualThreadUpdateJFRSnippets;
 import jdk.graal.compiler.hotspot.replacements.arraycopy.CheckcastArrayCopyCallNode;
@@ -138,7 +138,6 @@ import jdk.graal.compiler.nodes.calc.SignedDivNode;
 import jdk.graal.compiler.nodes.calc.SignedFloatingIntegerDivNode;
 import jdk.graal.compiler.nodes.calc.SignedFloatingIntegerRemNode;
 import jdk.graal.compiler.nodes.calc.SignedRemNode;
-import jdk.graal.compiler.nodes.debug.StringToBytesNode;
 import jdk.graal.compiler.nodes.debug.VerifyHeapNode;
 import jdk.graal.compiler.nodes.extended.BranchProbabilityNode;
 import jdk.graal.compiler.nodes.extended.BytecodeExceptionNode;
@@ -153,16 +152,18 @@ import jdk.graal.compiler.nodes.extended.OSRLockNode;
 import jdk.graal.compiler.nodes.extended.OSRMonitorEnterNode;
 import jdk.graal.compiler.nodes.extended.OSRStartNode;
 import jdk.graal.compiler.nodes.extended.StoreHubNode;
-import jdk.graal.compiler.nodes.gc.G1ArrayRangePostWriteBarrier;
-import jdk.graal.compiler.nodes.gc.G1ArrayRangePreWriteBarrier;
-import jdk.graal.compiler.nodes.gc.G1PostWriteBarrier;
-import jdk.graal.compiler.nodes.gc.G1PreWriteBarrier;
-import jdk.graal.compiler.nodes.gc.G1ReferentFieldReadBarrier;
-import jdk.graal.compiler.nodes.gc.SerialArrayRangeWriteBarrier;
-import jdk.graal.compiler.nodes.gc.SerialWriteBarrier;
+import jdk.graal.compiler.nodes.gc.G1ArrayRangePostWriteBarrierNode;
+import jdk.graal.compiler.nodes.gc.G1ArrayRangePreWriteBarrierNode;
+import jdk.graal.compiler.nodes.gc.G1PostWriteBarrierNode;
+import jdk.graal.compiler.nodes.gc.G1PreWriteBarrierNode;
+import jdk.graal.compiler.nodes.gc.G1ReferentFieldReadBarrierNode;
+import jdk.graal.compiler.nodes.gc.SerialArrayRangeWriteBarrierNode;
+import jdk.graal.compiler.nodes.gc.SerialWriteBarrierNode;
 import jdk.graal.compiler.nodes.java.ClassIsAssignableFromNode;
 import jdk.graal.compiler.nodes.java.DynamicNewArrayNode;
+import jdk.graal.compiler.nodes.java.DynamicNewArrayWithExceptionNode;
 import jdk.graal.compiler.nodes.java.DynamicNewInstanceNode;
+import jdk.graal.compiler.nodes.java.DynamicNewInstanceWithExceptionNode;
 import jdk.graal.compiler.nodes.java.InstanceOfDynamicNode;
 import jdk.graal.compiler.nodes.java.InstanceOfNode;
 import jdk.graal.compiler.nodes.java.LoadExceptionObjectNode;
@@ -171,8 +172,11 @@ import jdk.graal.compiler.nodes.java.MonitorEnterNode;
 import jdk.graal.compiler.nodes.java.MonitorExitNode;
 import jdk.graal.compiler.nodes.java.MonitorIdNode;
 import jdk.graal.compiler.nodes.java.NewArrayNode;
+import jdk.graal.compiler.nodes.java.NewArrayWithExceptionNode;
 import jdk.graal.compiler.nodes.java.NewInstanceNode;
+import jdk.graal.compiler.nodes.java.NewInstanceWithExceptionNode;
 import jdk.graal.compiler.nodes.java.NewMultiArrayNode;
+import jdk.graal.compiler.nodes.java.NewMultiArrayWithExceptionNode;
 import jdk.graal.compiler.nodes.java.RegisterFinalizerNode;
 import jdk.graal.compiler.nodes.java.ValidateNewInstanceClassNode;
 import jdk.graal.compiler.nodes.memory.FloatingReadNode;
@@ -266,7 +270,6 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
     protected AssertionSnippets.Templates assertionSnippets;
     protected LogSnippets.Templates logSnippets;
     protected ArrayCopySnippets.Templates arraycopySnippets;
-    protected StringToBytesSnippets.Templates stringToBytesSnippets;
     protected ObjectSnippets.Templates objectSnippets;
     protected UnsafeSnippets.Templates unsafeSnippets;
     protected ObjectCloneSnippets.Templates objectCloneSnippets;
@@ -319,7 +322,6 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
         assertionSnippets = new AssertionSnippets.Templates(options, providers);
         logSnippets = new LogSnippets.Templates(options, providers);
         arraycopySnippets = arraycopySnippetTemplates;
-        stringToBytesSnippets = new StringToBytesSnippets.Templates(options, providers);
         identityHashCodeSnippets = new IdentityHashCodeSnippets.Templates(new HotSpotHashCodeSnippets(), options, providers, HotSpotReplacementsUtil.MARK_WORD_LOCATION);
         isArraySnippets = new IsArraySnippets.Templates(new HotSpotIsArraySnippets(), options, providers);
         objectCloneSnippets = new ObjectCloneSnippets.Templates(options, providers);
@@ -422,9 +424,17 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
             if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
                 getAllocationSnippets().lower((NewInstanceNode) n, tool);
             }
+        } else if (n instanceof NewInstanceWithExceptionNode) {
+            if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
+                getAllocationSnippets().lower((NewInstanceWithExceptionNode) n, tool);
+            }
         } else if (n instanceof DynamicNewInstanceNode) {
             if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
                 getAllocationSnippets().lower((DynamicNewInstanceNode) n, tool);
+            }
+        } else if (n instanceof DynamicNewInstanceWithExceptionNode) {
+            if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
+                getAllocationSnippets().lower((DynamicNewInstanceWithExceptionNode) n, tool);
             }
         } else if (n instanceof ValidateNewInstanceClassNode) {
             ValidateNewInstanceClassNode validateNewInstance = (ValidateNewInstanceClassNode) n;
@@ -438,8 +448,22 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
             if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
                 getAllocationSnippets().lower((NewArrayNode) n, tool);
             }
+        } else if (n instanceof NewArrayWithExceptionNode) {
+            if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
+                getAllocationSnippets().lower((NewArrayWithExceptionNode) n, tool);
+            }
         } else if (n instanceof DynamicNewArrayNode) {
             DynamicNewArrayNode dynamicNewArrayNode = (DynamicNewArrayNode) n;
+            if (dynamicNewArrayNode.getVoidClass() == null) {
+                JavaConstant voidClassMirror = constantReflection.asJavaClass(metaAccess.lookupJavaType(void.class));
+                ConstantNode voidClass = ConstantNode.forConstant(voidClassMirror, tool.getMetaAccess(), graph);
+                dynamicNewArrayNode.setVoidClass(voidClass);
+            }
+            if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
+                getAllocationSnippets().lower(dynamicNewArrayNode, tool);
+            }
+        } else if (n instanceof DynamicNewArrayWithExceptionNode) {
+            DynamicNewArrayWithExceptionNode dynamicNewArrayNode = (DynamicNewArrayWithExceptionNode) n;
             if (dynamicNewArrayNode.getVoidClass() == null) {
                 JavaConstant voidClassMirror = constantReflection.asJavaClass(metaAccess.lookupJavaType(void.class));
                 ConstantNode voidClass = ConstantNode.forConstant(voidClassMirror, tool.getMetaAccess(), graph);
@@ -470,23 +494,33 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
             lowerCheckcastArrayCopyCallNode((CheckcastArrayCopyCallNode) n, tool);
         } else if (n instanceof ArrayCopyWithDelayedLoweringNode) {
             arraycopySnippets.lower((ArrayCopyWithDelayedLoweringNode) n, tool);
-        } else if (n instanceof G1PreWriteBarrier) {
-            g1WriteBarrierSnippets.lower((G1PreWriteBarrier) n, tool);
-        } else if (n instanceof G1PostWriteBarrier) {
-            g1WriteBarrierSnippets.lower((G1PostWriteBarrier) n, tool);
-        } else if (n instanceof G1ReferentFieldReadBarrier) {
-            g1WriteBarrierSnippets.lower((G1ReferentFieldReadBarrier) n, tool);
-        } else if (n instanceof SerialWriteBarrier) {
-            serialWriteBarrierSnippets.lower((SerialWriteBarrier) n, tool);
-        } else if (n instanceof SerialArrayRangeWriteBarrier) {
-            serialWriteBarrierSnippets.lower((SerialArrayRangeWriteBarrier) n, tool);
-        } else if (n instanceof G1ArrayRangePreWriteBarrier) {
-            g1WriteBarrierSnippets.lower((G1ArrayRangePreWriteBarrier) n, tool);
-        } else if (n instanceof G1ArrayRangePostWriteBarrier) {
-            g1WriteBarrierSnippets.lower((G1ArrayRangePostWriteBarrier) n, tool);
+        } else if (n instanceof G1PreWriteBarrierNode) {
+            if (!GraalOptions.AssemblyGCBarriers.getValue(n.getOptions())) {
+                g1WriteBarrierSnippets.lower((G1PreWriteBarrierNode) n, tool);
+            }
+        } else if (n instanceof G1PostWriteBarrierNode) {
+            if (!GraalOptions.AssemblyGCBarriers.getValue(n.getOptions())) {
+                g1WriteBarrierSnippets.lower((G1PostWriteBarrierNode) n, tool);
+            }
+        } else if (n instanceof G1ReferentFieldReadBarrierNode) {
+            if (!GraalOptions.AssemblyGCBarriers.getValue(n.getOptions())) {
+                g1WriteBarrierSnippets.lower((G1ReferentFieldReadBarrierNode) n, tool);
+            }
+        } else if (n instanceof SerialWriteBarrierNode) {
+            serialWriteBarrierSnippets.lower((SerialWriteBarrierNode) n, tool);
+        } else if (n instanceof SerialArrayRangeWriteBarrierNode) {
+            serialWriteBarrierSnippets.lower((SerialArrayRangeWriteBarrierNode) n, tool);
+        } else if (n instanceof G1ArrayRangePreWriteBarrierNode) {
+            g1WriteBarrierSnippets.lower((G1ArrayRangePreWriteBarrierNode) n, tool);
+        } else if (n instanceof G1ArrayRangePostWriteBarrierNode) {
+            g1WriteBarrierSnippets.lower((G1ArrayRangePostWriteBarrierNode) n, tool);
         } else if (n instanceof NewMultiArrayNode) {
             if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
                 getAllocationSnippets().lower((NewMultiArrayNode) n, tool);
+            }
+        } else if (n instanceof NewMultiArrayWithExceptionNode) {
+            if (graph.getGuardsStage().areFrameStatesAtDeopts()) {
+                getAllocationSnippets().lower((NewMultiArrayWithExceptionNode) n, tool);
             }
         } else if (n instanceof LoadExceptionObjectNode) {
             exceptionObjectSnippets.lower((LoadExceptionObjectNode) n, registers, tool);
@@ -494,10 +528,6 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
             assertionSnippets.lower((AssertionNode) n, tool);
         } else if (n instanceof LogNode) {
             logSnippets.lower((LogNode) n, tool);
-        } else if (n instanceof StringToBytesNode) {
-            if (graph.getGuardsStage().areDeoptsFixed()) {
-                stringToBytesSnippets.lower((StringToBytesNode) n, tool);
-            }
         } else if (n instanceof AbstractDeoptimizeNode || n instanceof UnwindNode || n instanceof RemNode || n instanceof SafepointNode) {
             /* No lowering, we generate LIR directly for these nodes. */
         } else if (n instanceof ClassGetHubNode) {
@@ -519,6 +549,10 @@ public abstract class DefaultHotSpotLoweringProvider extends DefaultJavaLowering
         } else if (n instanceof UnsafeCopyMemoryNode) {
             if (graph.getGuardsStage() == GuardsStage.AFTER_FSA) {
                 unsafeSnippets.lower((UnsafeCopyMemoryNode) n, tool);
+            }
+        } else if (n instanceof UnsafeSetMemoryNode) {
+            if (graph.getGuardsStage() == GuardsStage.AFTER_FSA) {
+                unsafeSnippets.lower((UnsafeSetMemoryNode) n, tool);
             }
         } else if (n instanceof RegisterFinalizerNode) {
             lowerRegisterFinalizer((RegisterFinalizerNode) n, tool);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -493,7 +493,7 @@ public interface GraphBuilderContext extends GraphBuilderTool {
     }
 
     /**
-     * Adds masking to a given subword value according to a given {@Link JavaKind}, such that the
+     * Adds masking to a given subword value according to a given {@link JavaKind}, such that the
      * masked value falls in the range of the given kind. In the cases where the given kind is not a
      * subword kind, the input value is returned immediately.
      *
@@ -578,5 +578,13 @@ public interface GraphBuilderContext extends GraphBuilderTool {
                             stateSplit, oldState, newState);
         }
         return value;
+    }
+
+    /**
+     * Determine if the given basic block is inside a {@code try} block of an exception handler
+     * catching {@link OutOfMemoryError} exceptions.
+     */
+    default boolean currentBlockCatchesOOM() {
+        return false;
     }
 }

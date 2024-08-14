@@ -71,9 +71,11 @@ import com.oracle.svm.core.VM;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.hub.ClassForNameSupport;
 import com.oracle.svm.core.jdk.Resources;
+import com.oracle.svm.core.layeredimagesingleton.FeatureSingleton;
+import com.oracle.svm.core.layeredimagesingleton.UnsavedSingleton;
+import com.oracle.svm.core.option.AccumulatingLocatableMultiOptionValue;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.HostedOptionValues;
-import com.oracle.svm.core.option.LocatableMultiOptionValue;
 import com.oracle.svm.core.option.OptionMigrationMessage;
 import com.oracle.svm.core.option.OptionOrigin;
 import com.oracle.svm.core.option.OptionUtils;
@@ -81,7 +83,6 @@ import com.oracle.svm.core.option.RuntimeOptionKey;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.core.util.json.JsonWriter;
 import com.oracle.svm.hosted.ProgressReporterFeature.UserRecommendation;
 import com.oracle.svm.hosted.ProgressReporterJsonHelper.AnalysisResults;
 import com.oracle.svm.hosted.ProgressReporterJsonHelper.GeneralInfo;
@@ -96,13 +97,15 @@ import com.oracle.svm.hosted.util.DiagnosticUtils;
 import com.oracle.svm.hosted.util.JDKArgsUtils;
 import com.oracle.svm.hosted.util.VMErrorReporter;
 import com.oracle.svm.util.ImageBuildStatistics;
+import com.sun.management.OperatingSystemMXBean;
 
 import jdk.graal.compiler.options.OptionDescriptor;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionStability;
 import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.util.json.JsonWriter;
 
-public class ProgressReporter {
+public class ProgressReporter implements FeatureSingleton, UnsavedSingleton {
     private static final boolean IS_CI = SubstrateUtil.isRunningInCI();
     private static final int CHARACTERS_PER_LINE;
     private static final String HEADLINE_SEPARATOR;
@@ -352,11 +355,11 @@ public class ProgressReporter {
             String migrationMessage = OptionUtils.getAnnotationsByType(descriptor, OptionMigrationMessage.class).stream().map(a -> a.value()).collect(Collectors.joining(". "));
             String alternatives = "";
 
-            if (optionValue instanceof LocatableMultiOptionValue<?> lmov) {
+            if (optionValue instanceof AccumulatingLocatableMultiOptionValue<?> lmov) {
                 if (lmov.getValuesWithOrigins().allMatch(o -> o.getRight().isStable())) {
                     continue;
                 } else {
-                    origins = lmov.getValuesWithOrigins().filter(p -> !isStableOrInternalOrigin(p.getRight())).map(p -> p.getRight().toString()).collect(Collectors.joining(", "));
+                    origins = lmov.getValuesWithOrigins().filter(p -> !isStableOrInternalOrigin(p.getRight())).map(p -> p.getRight().toString()).distinct().collect(Collectors.joining(", "));
                     alternatives = lmov.getValuesWithOrigins().map(p -> SubstrateOptionsParser.commandArgument(option, p.getLeft().toString()))
                                     .filter(c -> !c.startsWith(CommonOptionParser.HOSTED_OPTION_PREFIX))
                                     .collect(Collectors.joining(", "));
@@ -474,7 +477,12 @@ public class ProgressReporter {
     private void printAnalysisStatistics(AnalysisUniverse universe, Collection<String> libraries) {
         String actualFormat = "%,9d ";
         String totalFormat = " (%4.1f%% of %,8d total)";
-        long reachableTypes = universe.getTypes().stream().filter(AnalysisType::isReachable).count();
+        long reachableTypes;
+        if (universe.hostVM().useBaseLayer()) {
+            reachableTypes = universe.getTypes().stream().filter(AnalysisType::isReachable).filter(t -> !t.isInBaseLayer()).count();
+        } else {
+            reachableTypes = universe.getTypes().stream().filter(AnalysisType::isReachable).count();
+        }
         long totalTypes = universe.getTypes().size();
         recordJsonMetric(AnalysisResults.TYPES_TOTAL, totalTypes);
         recordJsonMetric(AnalysisResults.DEPRECATED_CLASS_TOTAL, totalTypes);
@@ -483,14 +491,24 @@ public class ProgressReporter {
         l().a(actualFormat, reachableTypes).doclink("reachable types", "#glossary-reachability").a("  ")
                         .a(totalFormat, Utils.toPercentage(reachableTypes, totalTypes), totalTypes).println();
         Collection<AnalysisField> fields = universe.getFields();
-        long reachableFields = fields.stream().filter(AnalysisField::isAccessed).count();
+        long reachableFields;
+        if (universe.hostVM().useBaseLayer()) {
+            reachableFields = fields.stream().filter(AnalysisField::isAccessed).filter(f -> !f.isInBaseLayer()).count();
+        } else {
+            reachableFields = fields.stream().filter(AnalysisField::isAccessed).count();
+        }
         int totalFields = fields.size();
         recordJsonMetric(AnalysisResults.FIELD_TOTAL, totalFields);
         recordJsonMetric(AnalysisResults.FIELD_REACHABLE, reachableFields);
         l().a(actualFormat, reachableFields).doclink("reachable fields", "#glossary-reachability").a(" ")
                         .a(totalFormat, Utils.toPercentage(reachableFields, totalFields), totalFields).println();
         Collection<AnalysisMethod> methods = universe.getMethods();
-        long reachableMethods = methods.stream().filter(AnalysisMethod::isReachable).count();
+        long reachableMethods;
+        if (universe.hostVM().useBaseLayer()) {
+            reachableMethods = methods.stream().filter(AnalysisMethod::isReachable).filter(m -> !m.isInBaseLayer()).count();
+        } else {
+            reachableMethods = methods.stream().filter(AnalysisMethod::isReachable).count();
+        }
         int totalMethods = methods.size();
         recordJsonMetric(AnalysisResults.METHOD_TOTAL, totalMethods);
         recordJsonMetric(AnalysisResults.METHOD_REACHABLE, reachableMethods);
@@ -502,7 +520,7 @@ public class ProgressReporter {
                             .a(totalFormat, Utils.toPercentage(numRuntimeCompiledMethods, totalMethods), totalMethods).println();
         }
         String typesFieldsMethodFormat = "%,9d types, %,5d fields, and %,5d methods ";
-        int reflectClassesCount = ClassForNameSupport.count();
+        int reflectClassesCount = ClassForNameSupport.singleton().count();
         ReflectionHostedSupport rs = ImageSingletons.lookup(ReflectionHostedSupport.class);
         int reflectFieldsCount = rs.getReflectionFieldsCount();
         int reflectMethodsCount = rs.getReflectionMethodsCount();
@@ -686,18 +704,21 @@ public class ProgressReporter {
                     Optional<Throwable> optionalUnhandledThrowable, OptionValues parsedHostedOptions) {
         executor.shutdown();
 
+        boolean singletonSupportAvailable = ImageSingletonsSupport.isInstalled() && ImageSingletons.contains(BuildArtifacts.class) && ImageSingletons.contains(TimerCollection.class);
         if (optionalUnhandledThrowable.isPresent()) {
             Path errorReportPath = NativeImageOptions.getErrorFilePath(parsedHostedOptions);
             Optional<FeatureHandler> featureHandler = optionalGenerator.map(nativeImageGenerator -> nativeImageGenerator.featureHandler);
             ReportUtils.report("GraalVM Native Image Error Report", errorReportPath,
                             p -> VMErrorReporter.generateErrorReport(p, buildOutputLog, classLoader, featureHandler, optionalUnhandledThrowable.get()),
                             false);
-            if (ImageSingletonsSupport.isInstalled()) {
-                BuildArtifacts.singleton().add(ArtifactType.BUILD_INFO, errorReportPath);
+            if (!singletonSupportAvailable) {
+                printErrorMessage(optionalUnhandledThrowable, parsedHostedOptions);
+                return;
             }
+            BuildArtifacts.singleton().add(ArtifactType.BUILD_INFO, errorReportPath);
         }
 
-        if (optionalImageName.isEmpty() || optionalGenerator.isEmpty()) {
+        if (!singletonSupportAvailable || optionalImageName.isEmpty() || optionalGenerator.isEmpty()) {
             printErrorMessage(optionalUnhandledThrowable, parsedHostedOptions);
             return;
         }
@@ -711,7 +732,7 @@ public class ProgressReporter {
         recordJsonMetric(ResourceUsageKey.TOTAL_SECS, totalSeconds);
 
         createAdditionalArtifacts(imageName, generator, wasSuccessfulBuild, parsedHostedOptions);
-        printArtifacts(generator.getBuildArtifacts());
+        printArtifacts(BuildArtifacts.singleton());
 
         l().printHeadlineSeparator();
 
@@ -756,7 +777,7 @@ public class ProgressReporter {
         if (wasSuccessfulBuild) {
             createAdditionalArtifactsOnSuccess(artifacts, generator, parsedHostedOptions);
         }
-        BuildArtifactsExporter.run(imageName, artifacts, generator.getBuildArtifacts());
+        BuildArtifactsExporter.run(imageName, artifacts);
     }
 
     private void createAdditionalArtifactsOnSuccess(BuildArtifacts artifacts, NativeImageGenerator generator, OptionValues parsedHostedOptions) {
@@ -770,7 +791,7 @@ public class ProgressReporter {
         ImageSingletons.lookup(ProgressReporterFeature.class).createAdditionalArtifactsOnSuccess(artifacts);
     }
 
-    private void printArtifacts(Map<ArtifactType, List<Path>> artifacts) {
+    private void printArtifacts(BuildArtifacts artifacts) {
         if (artifacts.isEmpty()) {
             return;
         }
@@ -859,8 +880,8 @@ public class ProgressReporter {
         return TimerCollection.singleton().get(type);
     }
 
-    private static com.sun.management.OperatingSystemMXBean getOperatingSystemMXBean() {
-        return (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+    private static OperatingSystemMXBean getOperatingSystemMXBean() {
+        return (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
     }
 
     private static class Utils {

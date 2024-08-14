@@ -25,7 +25,7 @@
 package jdk.graal.compiler.hotspot.test;
 
 import static jdk.graal.compiler.debug.MemUseTrackerKey.getCurrentThreadAllocatedBytes;
-import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
+import static jdk.internal.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -59,8 +59,8 @@ import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-import jdk.graal.compiler.serviceprovider.GraalUnsafeAccess;
 import jdk.graal.compiler.util.OptionsEncoder;
+import jdk.internal.misc.Unsafe;
 import jdk.vm.ci.hotspot.HotSpotCompilationRequest;
 import jdk.vm.ci.hotspot.HotSpotCompilationRequestResult;
 import jdk.vm.ci.hotspot.HotSpotInstalledCode;
@@ -68,7 +68,6 @@ import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.runtime.JVMCICompiler;
-import sun.misc.Unsafe;
 
 /**
  * Encapsulates functionality to compile a batch of methods for stand-alone compile test programs
@@ -82,6 +81,7 @@ public class LibGraalCompilationDriver {
 
     static {
         // To be able to use Unsafe
+        ModuleSupport.exportAndOpenAllPackagesToUnnamed("java.base");
         ModuleSupport.exportAndOpenAllPackagesToUnnamed("jdk.graal.compiler");
     }
 
@@ -153,7 +153,7 @@ public class LibGraalCompilationDriver {
         return compiler.getGraalRuntime();
     }
 
-    private static final Unsafe UNSAFE = GraalUnsafeAccess.getUnsafe();
+    private static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
     /**
      * Implemented by
@@ -285,6 +285,12 @@ public class LibGraalCompilationDriver {
                 return capacity;
             }
 
+            @Override
+            public void initialize(long addr) {
+                super.initialize(addr);
+                UNSAFE.setMemory(getAddress(), length(), (byte) 0);
+            }
+
             public String readToString() {
                 long address = getAddress();
                 int size = UNSAFE.getInt(address);
@@ -292,6 +298,14 @@ public class LibGraalCompilationDriver {
                 UNSAFE.copyMemory(null, address + Integer.BYTES, data, ARRAY_BYTE_BASE_OFFSET, size);
                 return new String(data).trim();
             }
+
+            public boolean hasBeenWritten() {
+                GraalError.guarantee(getAddress() != 0, "Must have allocated native buffer already to use this API");
+                int size = UNSAFE.getInt(getAddress());
+                GraalError.guarantee(size >= 0, "Size cannot be negative but is %s", size);
+                return size > 0;
+            }
+
         }
 
         /**
@@ -548,9 +562,18 @@ public class LibGraalCompilationDriver {
 
             HotSpotInstalledCode installedCode = LibGraal.unhand(HotSpotInstalledCode.class, installedCodeHandle);
             if (installedCode == null) {
-                String stackTrace = stackTraceBuffer.readToString();
-                TTY.println("%s : Error compiling method: %s", compilation.testName(), compilation);
-                TTY.println(stackTrace);
+                /*
+                 * Most exceptions during compilation in libgraal are already handled by the
+                 * libgraal side. Only exceptions happening during setting up compile contexts etc
+                 * may be thrown here. In general a compilation result of null means compilation
+                 * exception (handled or not), only if the exception buffer was written the
+                 * exception was not handled already on the libgraal side.
+                 */
+                if (stackTraceBuffer.hasBeenWritten()) {
+                    String stackTrace = stackTraceBuffer.readToString();
+                    TTY.println("%s : Error compiling method: %s", compilation.testName(), compilation);
+                    TTY.println(stackTrace);
+                }
                 return null;
             }
             return new CompilationResult(installedCode, memTimeBuffer.readTimeElapsed(), memTimeBuffer.readBytesAllocated());
@@ -596,19 +619,29 @@ public class LibGraalCompilationDriver {
             compileOptions = new OptionValues(compileOptions, ProfileReplaySupport.Options.LoadProfiles, profilePath);
         }
 
-        long start = System.nanoTime();
-        long allocatedAtStart = getCurrentThreadAllocatedBytes();
+        boolean retried = false;
+        while (true) {
+            long start = System.nanoTime();
+            long allocatedAtStart = getCurrentThreadAllocatedBytes();
 
-        CompilationTask task = createCompilationTask(method, useProfilingInfo, installAsDefault);
-        HotSpotCompilationRequestResult result = task.runCompilation(compileOptions);
-        if (result.getFailure() != null) {
-            throw new GraalError("Compilation request failed: %s", result.getFailureMessage());
+            CompilationTask task = createCompilationTask(method, useProfilingInfo, installAsDefault);
+            HotSpotCompilationRequestResult result = task.runCompilation(compileOptions);
+            if (result.getFailure() != null) {
+                var error = new GraalError("Compilation request failed: %s", result.getFailureMessage());
+                if (result.getRetry() && !retried) {
+                    error.printStackTrace(TTY.out);
+                    TTY.println("Retrying...");
+                    retried = true;
+                    continue;
+                }
+                throw error;
+            }
+            HotSpotInstalledCode installedCode = task.getInstalledCode();
+            assert installedCode != null : "installed code is null yet no failure detected";
+            long duration = System.nanoTime() - start;
+            long memoryUsed = getCurrentThreadAllocatedBytes() - allocatedAtStart;
+            return new CompilationResult(installedCode, duration, memoryUsed);
         }
-        HotSpotInstalledCode installedCode = task.getInstalledCode();
-        assert installedCode != null : "installed code is null yet no failure detected";
-        long duration = System.nanoTime() - start;
-        long memoryUsed = getCurrentThreadAllocatedBytes() - allocatedAtStart;
-        return new CompilationResult(installedCode, duration, memoryUsed);
     }
 
     private final AtomicInteger failedCompilations = new AtomicInteger(0);

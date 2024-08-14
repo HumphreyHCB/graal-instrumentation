@@ -19,8 +19,8 @@
   },
 
   local guard = {
-    guard: {
-      includes: ["<graal>/sdk/**", "<graal>/truffle/**", "**.jsonnet"] + top_level_ci,
+    guard+: {
+      includes+: ["<graal>/sdk/**", "<graal>/truffle/**", "**.jsonnet"] + top_level_ci,
     }
   },
 
@@ -159,7 +159,7 @@
 
     # BENCHMARKS
 
-    bench_hw.x52 + common.labsjdkLatestCE + bench_common + {
+    bench_hw.e3 + common.labsjdkLatestCE + bench_common + {
       name: "bench-truffle-jmh",
       notify_groups:: ["truffle_bench"],
       run: [

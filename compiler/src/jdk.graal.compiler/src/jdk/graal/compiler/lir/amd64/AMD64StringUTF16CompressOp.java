@@ -59,7 +59,7 @@ import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.Value;
 
 // @formatter:off
-@SyncPort(from = "https://github.com/openjdk/jdk/blob/be2b92bd8b43841cc2b9c22ed4fde29be30d47bb/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L8597-L8805",
+@SyncPort(from = "https://github.com/openjdk/jdk/blob/fbe8a81d1900d0de1920ad1df6ad574f3da4bd51/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L8946-L9154",
           sha1 = "3e365037f473204b3f742ab364bd9ad514e72161")
 // @formatter:on
 @Opcode("AMD64_STRING_COMPRESS")
@@ -579,5 +579,11 @@ public final class AMD64StringUTF16CompressOp extends AMD64ComplexVectorOp {
         masm.addq(rsp, 8 /* wordSize */);
 
         masm.bind(labelDone);
+    }
+
+    @Override
+    public boolean modifiesStackPointer() {
+        // Only charArrayCompressLegacy modifies rsp.
+        return JavaVersionUtil.JAVA_SPEC < 22;
     }
 }

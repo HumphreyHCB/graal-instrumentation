@@ -28,13 +28,15 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import com.oracle.graal.pointsto.ClassInclusionPolicy;
 import com.oracle.graal.pointsto.PointsToAnalysis;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatures;
 import com.oracle.graal.pointsto.flow.MethodFlowsGraph;
 import com.oracle.graal.pointsto.flow.MethodTypeFlowBuilder;
-import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalFieldProvider;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -118,12 +120,31 @@ public class NativeImagePointsToAnalysis extends PointsToAnalysis implements Inf
     }
 
     @Override
+    public void injectFieldTypes(AnalysisField aField, List<AnalysisType> customTypes, boolean canBeNull) {
+        customTypeFieldHandler.injectFieldTypes(aField, customTypes, canBeNull);
+    }
+
+    @Override
     public void onTypeReachable(AnalysisType type) {
         postTask(d -> {
             type.getInitializeMetaDataTask().ensureDone();
+            if (type.isInBaseLayer()) {
+                /*
+                 * Since the rescanning of the hub is skipped for constants from the base layer to
+                 * avoid deadlocks, the hub needs to be rescanned manually after the metadata is
+                 * initialized.
+                 */
+                universe.getImageLayerLoader().rescanHub(type, ((SVMHost) hostVM).dynamicHub(type));
+            }
             if (SubstrateOptions.includeAll()) {
-                Arrays.stream(OriginalClassProvider.getJavaClass(type).getDeclaredFields())
-                                .filter(classInclusionPolicy::isFieldIncluded)
+                /*
+                 * Using getInstanceFields and getStaticFields allows to include the fields from the
+                 * substitution class.
+                 */
+                Stream.concat(Arrays.stream(getOrDefault(type, t -> t.getInstanceFields(true), new AnalysisField[0])),
+                                Arrays.stream(getOrDefault(type, AnalysisType::getStaticFields, new AnalysisField[0])))
+                                .map(OriginalFieldProvider::getJavaField)
+                                .filter(field -> field != null && classInclusionPolicy.isFieldIncluded(field))
                                 .forEach(classInclusionPolicy::includeField);
             }
         });

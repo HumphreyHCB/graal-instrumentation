@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,7 +54,6 @@ import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.BiConsumer;
@@ -97,6 +95,7 @@ import com.oracle.svm.driver.metainf.NativeImageMetaInfResourceProcessor;
 import com.oracle.svm.driver.metainf.NativeImageMetaInfWalker;
 import com.oracle.svm.hosted.NativeImageGeneratorRunner;
 import com.oracle.svm.hosted.NativeImageSystemClassLoader;
+import com.oracle.svm.core.util.ArchiveSupport;
 import com.oracle.svm.hosted.util.JDKArgsUtils;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ModuleSupport;
@@ -257,6 +256,7 @@ public class NativeImage {
     final String oHUseLibC = oH(SubstrateOptions.UseLibC);
     final String oHEnableStaticExecutable = oHEnabled(SubstrateOptions.StaticExecutable);
     final String oHEnableSharedLibraryFlagPrefix = oHEnabled + SubstrateOptions.SharedLibrary.getName();
+    final String oHEnableImageLayerFlagPrefix = oH + SubstrateOptions.LayerCreate.getName();
     final String oHColor = oH(SubstrateOptions.Color);
     final String oHEnableBuildOutputProgress = oHEnabledByDriver(SubstrateOptions.BuildOutputProgress);
     final String oHEnableBuildOutputLinks = oHEnabledByDriver(SubstrateOptions.BuildOutputLinks);
@@ -306,6 +306,7 @@ public class NativeImage {
     private long imageBuilderPid = -1;
 
     BundleSupport bundleSupport;
+    private final ArchiveSupport archiveSupport;
 
     protected static class BuildConfiguration {
         /*
@@ -643,7 +644,7 @@ public class NativeImage {
             boolean ignoreClasspathEntry = false;
             Map<String, String> properties = null;
             if (isNativeImagePropertiesFile) {
-                properties = loadProperties(Files.newInputStream(resourcePath));
+                properties = ArchiveSupport.loadProperties(Files.newInputStream(resourcePath));
                 if (config.modulePathBuild) {
                     String forceOnModulePath = properties.get("ForceOnModulePath");
                     if (forceOnModulePath != null) {
@@ -814,11 +815,12 @@ public class NativeImage {
     protected NativeImage(BuildConfiguration config) {
         this.config = config;
         this.metaInfProcessor = new DriverMetaInfProcessor();
+        this.archiveSupport = new ArchiveSupport(isVerbose());
 
         String configFile = System.getenv(CONFIG_FILE_ENV_VAR_KEY);
         if (configFile != null && !configFile.isEmpty()) {
             try {
-                userConfigProperties.putAll(loadProperties(canonicalize(Paths.get(configFile))));
+                userConfigProperties.putAll(ArchiveSupport.loadProperties(canonicalize(Paths.get(configFile))));
             } catch (NativeImageError | Exception e) {
                 showError("Invalid environment variable " + CONFIG_FILE_ENV_VAR_KEY, e);
             }
@@ -856,7 +858,7 @@ public class NativeImage {
         List<String> defaultNativeImageArgs = new ArrayList<>();
         String propertyOptions = userConfigProperties.get("NativeImageArgs");
         if (propertyOptions != null) {
-            Collections.addAll(defaultNativeImageArgs, propertyOptions.split(" "));
+            Collections.addAll(defaultNativeImageArgs, propertyOptions.split(" +"));
         }
         final String envVarName = SubstrateOptions.NATIVE_IMAGE_OPTIONS_ENV_VAR;
         String nativeImageOptionsValue = System.getenv(envVarName);
@@ -1168,7 +1170,7 @@ public class NativeImage {
         imageBuilderJavaArgs.addAll(getAgentArguments());
 
         mainClass = getHostedOptionArgumentValue(imageBuilderArgs, oHClass);
-        buildExecutable = imageBuilderArgs.stream().noneMatch(arg -> arg.startsWith(oHEnableSharedLibraryFlagPrefix));
+        buildExecutable = imageBuilderArgs.stream().noneMatch(arg -> arg.startsWith(oHEnableSharedLibraryFlagPrefix) || arg.startsWith(oHEnableImageLayerFlagPrefix));
         staticExecutable = imageBuilderArgs.stream().anyMatch(arg -> arg.contains(oHEnableStaticExecutable));
         boolean listModules = imageBuilderArgs.stream().anyMatch(arg -> arg.contains(oH + "+" + "ListModules"));
         printFlags |= imageBuilderArgs.stream().anyMatch(arg -> arg.matches("-H:MicroArchitecture(@[^=]*)?=list"));
@@ -1284,9 +1286,8 @@ public class NativeImage {
             /* and we need to adjust the argument that passes the imagePath to the builder */
             updateArgumentEntryValue(imageBuilderArgs, imagePathEntry, imagePath.toString());
         } else {
-            String argsDigest = SubstrateUtil.digest(getNativeImageArgs().toString());
-            assert argsDigest.matches("[0-9a-f]+") && argsDigest.length() >= 32 : "Expecting a hex string";
-            imageBuildID = SubstrateUtil.getUUIDFromString(argsDigest).toString();
+            String value = getNativeImageArgs().toString();
+            imageBuildID = SubstrateUtil.getUUIDFromString(value).toString();
         }
         addPlainImageBuilderArg(oH(SubstrateOptions.ImageBuildID, OptionOrigin.originDriver) + imageBuildID);
 
@@ -1767,6 +1768,10 @@ public class NativeImage {
 
     boolean useBundle() {
         return bundleSupport != null;
+    }
+
+    public ArchiveSupport archiveSupport() {
+        return archiveSupport;
     }
 
     @Deprecated
@@ -2397,31 +2402,6 @@ public class NativeImage {
         return useColorfulOutput;
     }
 
-    static Map<String, String> loadProperties(Path propertiesPath) {
-        if (Files.isReadable(propertiesPath)) {
-            try {
-                return loadProperties(Files.newInputStream(propertiesPath));
-            } catch (IOException e) {
-                throw showError("Could not read properties-file: " + propertiesPath, e);
-            }
-        }
-        return Collections.emptyMap();
-    }
-
-    static Map<String, String> loadProperties(InputStream propertiesInputStream) {
-        Properties properties = new Properties();
-        try (InputStream input = propertiesInputStream) {
-            properties.load(input);
-        } catch (IOException e) {
-            showError("Could not read properties", e);
-        }
-        Map<String, String> map = new HashMap<>();
-        for (String key : properties.stringPropertyNames()) {
-            map.put(key, properties.getProperty(key));
-        }
-        return Collections.unmodifiableMap(map);
-    }
-
     static boolean forEachPropertyValue(String propertyValue, Consumer<String> target, Function<String, String> resolver) {
         return forEachPropertyValue(propertyValue, target, resolver, "\\s+");
     }
@@ -2472,28 +2452,6 @@ public class NativeImage {
             throw showError("Unable to provide meaningful substitution for \"" + target + "\" in " + source);
         }
         return source.replace(target, replacement);
-    }
-
-    private static final String deletedFileSuffix = ".deleted";
-
-    protected static boolean isDeletedPath(Path toDelete) {
-        return toDelete.getFileName().toString().endsWith(deletedFileSuffix);
-    }
-
-    protected void deleteAllFiles(Path toDelete) {
-        try {
-            Path deletedPath = toDelete;
-            if (!isDeletedPath(deletedPath)) {
-                deletedPath = toDelete.resolveSibling(toDelete.getFileName() + deletedFileSuffix);
-                Files.move(toDelete, deletedPath);
-            }
-            Files.walk(deletedPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-        } catch (IOException e) {
-            if (isVerbose()) {
-                showMessage("Could not recursively delete path: " + toDelete);
-                e.printStackTrace();
-            }
-        }
     }
 
     private record ExcludeConfig(Pattern jarPattern, Pattern resourcePattern) {

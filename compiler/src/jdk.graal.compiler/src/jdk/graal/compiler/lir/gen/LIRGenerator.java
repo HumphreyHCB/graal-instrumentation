@@ -109,7 +109,8 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
     private final boolean printIrWithLir;
     private final int traceLIRGeneratorLevel;
 
-    public LIRGenerator(LIRKindTool lirKindTool, ArithmeticLIRGenerator arithmeticLIRGen, BarrierSetLIRGenerator barrierSetLIRGen, MoveFactory moveFactory, CoreProviders providers,
+    @SuppressWarnings("this-escape")
+    public LIRGenerator(LIRKindTool lirKindTool, ArithmeticLIRGenerator arithmeticLIRGen, BarrierSetLIRGeneratorTool barrierSetLIRGen, MoveFactory moveFactory, CoreProviders providers,
                     LIRGenerationResult res) {
         super(providers);
         this.lirKindTool = lirKindTool;
@@ -121,14 +122,9 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
         this.traceLIRGeneratorLevel = TTY.isSuppressed() ? 0 : Options.TraceLIRGeneratorLevel.getValue(options);
         this.loopHeaderAlignment = LoopHeaderAlignment.getValue(options);
 
-        assert arithmeticLIRGen.lirGen == null;
-        arithmeticLIRGen.lirGen = this;
-        if (barrierSetLIRGen != null) {
-            assert barrierSetLIRGen.lirGen == null;
-            barrierSetLIRGen.lirGen = this;
-        }
-
         this.moveFactory = moveFactory;
+
+        arithmeticLIRGen.setLirGen(this);
     }
 
     @Override

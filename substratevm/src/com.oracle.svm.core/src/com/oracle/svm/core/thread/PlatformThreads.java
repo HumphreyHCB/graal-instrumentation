@@ -59,7 +59,6 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CEntryPointLiteral;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
-import org.graalvm.nativeimage.c.function.CodePointer;
 import org.graalvm.nativeimage.c.struct.RawField;
 import org.graalvm.nativeimage.c.struct.RawStructure;
 import org.graalvm.nativeimage.c.type.CCharPointer;
@@ -70,7 +69,6 @@ import org.graalvm.word.PointerBase;
 import org.graalvm.word.WordBase;
 import org.graalvm.word.WordFactory;
 
-import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.SubstrateDiagnostics;
 import com.oracle.svm.core.SubstrateOptions;
@@ -91,7 +89,6 @@ import com.oracle.svm.core.heap.ReferenceHandlerThread;
 import com.oracle.svm.core.heap.VMOperationInfos;
 import com.oracle.svm.core.jdk.StackTraceUtils;
 import com.oracle.svm.core.jdk.UninterruptibleUtils;
-import com.oracle.svm.core.jfr.HasJfrSupport;
 import com.oracle.svm.core.locks.VMMutex;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.memory.NativeMemory;
@@ -112,7 +109,6 @@ import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
-import jdk.internal.event.ThreadSleepEvent;
 import jdk.internal.misc.Unsafe;
 
 /**
@@ -865,7 +861,7 @@ public abstract class PlatformThreads {
         assert !isVirtual(thread);
         if (thread != null && thread == currentThread.get()) {
             Pointer startSP = getCarrierSPOrElse(thread, callerSP);
-            return StackTraceUtils.getStackTrace(filterExceptions, startSP, WordFactory.nullPointer());
+            return StackTraceUtils.getCurrentThreadStackTrace(filterExceptions, startSP, WordFactory.nullPointer());
         }
         assert !filterExceptions : "exception stack traces can be taken only for the current thread";
         return StackTraceUtils.asyncGetStackTrace(thread);
@@ -878,7 +874,7 @@ public abstract class PlatformThreads {
     }
 
     static StackTraceElement[] getStackTraceAtSafepoint(Thread thread, Pointer callerSP) {
-        assert thread != null && !isVirtual(thread);
+        assert thread != null && !isVirtual(thread) : "may only be called for platform or carrier threads";
         Pointer carrierSP = getCarrierSPOrElse(thread, WordFactory.nullPointer());
         IsolateThread isolateThread = getIsolateThread(thread);
         if (isolateThread == CurrentIsolate.getCurrentThread()) {
@@ -887,13 +883,17 @@ public abstract class PlatformThreads {
              * Internal frames from the VMOperation handling show up in the stack traces, but we are
              * OK with that.
              */
-            return StackTraceUtils.getStackTrace(false, startSP, WordFactory.nullPointer());
+            return StackTraceUtils.getCurrentThreadStackTrace(false, startSP, WordFactory.nullPointer());
         }
-        if (carrierSP.isNonNull()) { // mounted virtual thread, skip its frames
-            CodePointer carrierIP = FrameAccess.singleton().readReturnAddress(carrierSP);
-            return StackTraceUtils.getThreadStackTraceAtSafepoint(carrierSP, WordFactory.nullPointer(), carrierIP);
+        if (carrierSP.isNonNull()) {
+            /*
+             * The given thread is a carrier thread and has a mounted virtual thread. Skip the
+             * frames of the virtual thread and only visit the stack frames that belong to the
+             * carrier thread.
+             */
+            return StackTraceUtils.getStackTraceAtSafepoint(isolateThread, carrierSP, WordFactory.nullPointer());
         }
-        return StackTraceUtils.getThreadStackTraceAtSafepoint(isolateThread, WordFactory.nullPointer());
+        return StackTraceUtils.getStackTraceAtSafepoint(isolateThread);
     }
 
     static Pointer getCarrierSPOrElse(Thread carrier, Pointer other) {
@@ -981,37 +981,20 @@ public abstract class PlatformThreads {
     }
 
     /**
-     * Sleeps for the given number of nanoseconds, dealing with JFR events, wakups and
-     * interruptions.
+     * Sleeps for the given number of nanoseconds, dealing with early wake-ups and interruptions.
      */
     static void sleep(long nanos) throws InterruptedException {
         assert !isCurrentThreadVirtual();
-        if (HasJfrSupport.get() && ThreadSleepEvent.isTurnedOn()) {
-            ThreadSleepEvent event = new ThreadSleepEvent();
-            try {
-                event.time = nanos;
-                event.begin();
-                sleep0(nanos);
-            } finally {
-                event.commit();
-            }
-        } else {
-            sleep0(nanos);
-        }
-    }
-
-    /** Sleep for the given number of nanoseconds, dealing with early wakeups and interruptions. */
-    static void sleep0(long nanos) throws InterruptedException {
         if (nanos < 0) {
             throw new IllegalArgumentException("Timeout value is negative");
         }
-        sleep1(nanos);
+        sleep0(nanos);
         if (Thread.interrupted()) { // clears the interrupted flag as required of Thread.sleep()
             throw new InterruptedException();
         }
     }
 
-    private static void sleep1(long durationNanos) {
+    private static void sleep0(long durationNanos) {
         VMOperationControl.guaranteeOkayToBlock("[PlatformThreads.sleep(long): Should not sleep when it is not okay to block.]");
         Thread thread = currentThread.get();
         Parker sleepEvent = getCurrentThreadData().ensureSleepParker();

@@ -23,10 +23,9 @@ Developers should run the `native-image` builder in a dedicated environment, suc
 
 ## Software Bill of Materials
 
-GraalVM Native Image can embed a Software Bill of Materials (SBOM) at build time to detect any libraries that may be susceptible to known security vulnerabilities.
-Native Image provides the `--enable-sbom` option to embed an SBOM into a native executable.
-
-> Note: Embedding a Software Bill of Materials (SBOM) is not available in GraalVM Community Edition.
+GraalVM Native Image can assemble a Software Bill of Materials (SBOM) at build time to detect any libraries that may be susceptible to known security vulnerabilities.
+Native Image provides the `--enable-sbom` option to embed an SBOM into a native executable (only available in Oracle GraalVM). 
+In addition to being embedded, the SBOM can be added to the classpath or exported as a JSON by using `--enable-sbom=classpath,export`. 
 
 The CycloneDX format is supported and the default. 
 To embed a CycloneDX SBOM into a native executable, pass the `--enable-sbom` option to the `native-image` command. 
@@ -35,7 +34,7 @@ The implementation constructs the SBOM by recovering all version information obs
 The SBOM is also compressed in order to limit the SBOM's impact on the native executable size.  
 The SBOM is stored in the `gzip` format with the exported `sbom` symbol referencing its start address and the `sbom_length` symbol its size.
 
-After embedding the compressed SBOM into the executable, the [native image inspect tool](../reference-manual/native-image/InspectTool.md) is able to extract the compressed SBOM using an optional `--sbom` parameter accessible through `$JAVA_HOME/bin/native-image-inspect --sbom <path_to_binary>` from both executables and shared libraries.
+After embedding the compressed SBOM into the executable, the [Native Image Inspect Tool](../reference-manual/native-image/InspectTool.md) is able to extract the compressed SBOM using an optional `--sbom` parameter accessible through `$JAVA_HOME/bin/native-image-inspect --sbom <path_to_binary>` from both executables and shared libraries.
 It outputs the SBOM in the following format:
 
 ```json
@@ -88,7 +87,7 @@ This functionality should not be used on native image executables from unknown o
 ## Java serialization in Native Image
 
 Native Image supports Serialization to help users deserialize the constructors for classes, contained in a native executable.
-Unless picked up by native image analysis automatically, [these classes have to be pre-specified](../reference-manual/native-image/Reflection.md#manual-configuration), as classes not contained in a native executable cannot be deserialized.
+Unless picked up by native image analysis automatically, [these classes have to be prespecified](../reference-manual/native-image/Reflection.md#manual-configuration), as classes not contained in a native executable cannot be deserialized.
 Native Image cannot prevent exploitation of deserialization vulnerabilities in isolation.
 The [serialization and deserialization Secure Coding Guidelines for Java SE](https://www.oracle.com/java/technologies/javase/seccodeguide.html#8) should be followed.
 

@@ -25,9 +25,17 @@
 package com.oracle.svm.hosted.classinitialization;
 
 import static com.oracle.svm.core.SubstrateOptions.TraceObjectInstantiation;
+import static com.oracle.svm.core.configure.ConfigurationFiles.Options.TrackTypeReachedOnInterfaces;
+import static com.oracle.svm.core.configure.ConfigurationFiles.Options.TreatAllUserSpaceTypesAsTrackedForTypeReached;
 
+import java.io.Serializable;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 import java.lang.reflect.Proxy;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.Formattable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,12 +52,13 @@ import org.graalvm.nativeimage.impl.clinit.ClassInitializationTracking;
 import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.reports.ReportUtils;
 import com.oracle.svm.core.SubstrateOptions;
-import com.oracle.svm.core.option.LocatableMultiOptionValue;
+import com.oracle.svm.core.option.AccumulatingLocatableMultiOptionValue;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ImageClassLoader;
 import com.oracle.svm.hosted.LinkAtBuildTimeSupport;
+import com.oracle.svm.util.LogUtils;
 
 import jdk.graal.compiler.java.LambdaUtils;
 import jdk.internal.misc.Unsafe;
@@ -75,6 +84,22 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
      * ground truth about what got initialized during image building.
      */
     final ConcurrentMap<Class<?>, InitKind> classInitKinds = new ConcurrentHashMap<>();
+
+    /**
+     * We need always-reached types to avoid users injecting class initialization checks in our VM
+     * implementation and hot paths and to prevent users from making the whole class hierarchy
+     * require initialization nodes.
+     */
+    @SuppressWarnings("DataFlowIssue")//
+    private static final Set<Class<?>> alwaysReachedTypes = Set.of(
+                    Object.class, Class.class, String.class,
+                    Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
+                    Enum.class, Cloneable.class, Formattable.class, Throwable.class, Serializable.class, AutoCloseable.class, Runnable.class,
+                    Iterable.class, Collection.class, Set.class, List.class, Map.class,
+                    System.class, Thread.class,
+                    Reference.class, SoftReference.class, StackWalker.class, ReferenceQueue.class);
+
+    final Set<Class<?>> typesRequiringReachability = ConcurrentHashMap.newKeySet();
 
     boolean configurationSealed;
 
@@ -133,7 +158,7 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
 
     /**
      * Returns true if the provided type is initialized at image build time.
-     *
+     * <p>
      * If the return value is true, then the class is also guaranteed to be initialized already.
      * This means that calling this method might trigger class initialization, i.e., execute
      * arbitrary user code.
@@ -144,7 +169,7 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
 
     /**
      * Returns true if the provided type is initialized at image build time.
-     *
+     * <p>
      * If the return value is true, then the class is also guaranteed to be initialized already.
      * This means that calling this method might trigger class initialization, i.e., execute
      * arbitrary user code.
@@ -184,6 +209,23 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
             } else {
                 String msg = "Class initialization of " + clazz.getTypeName() + " failed. " +
                                 instructionsToInitializeAtRuntime(clazz);
+
+                if (t instanceof ExceptionInInitializerError) {
+                    Throwable cause = t;
+                    while (cause.getCause() != null) {
+                        cause = cause.getCause();
+                    }
+                    msg = msg + " Exception thrown by the class initializer:" + System.lineSeparator() + System.lineSeparator() + cause + System.lineSeparator();
+                    for (var element : cause.getStackTrace()) {
+                        if (getClass().getName().equals(element.getClassName())) {
+                            msg = msg + "\t(internal stack frames of the image generator are omitted)" + System.lineSeparator();
+                            break;
+                        }
+                        msg = msg + "\tat " + element + System.lineSeparator();
+                    }
+                    msg = msg + System.lineSeparator();
+                }
+
                 throw UserError.abort(t, "%s", msg);
             }
         }
@@ -231,7 +273,7 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
         }
     }
 
-    static boolean isClassListedInStringOption(LocatableMultiOptionValue.Strings option, Class<?> clazz) {
+    static boolean isClassListedInStringOption(AccumulatingLocatableMultiOptionValue.Strings option, Class<?> clazz) {
         return option.values().contains(clazz.getName());
     }
 
@@ -328,7 +370,7 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
      * Computes the class initialization kind of the provided class, all superclasses, and all
      * interfaces that the provided class depends on (i.e., interfaces implemented by the provided
      * class that declare default methods).
-     *
+     * <p>
      * Also defines class initialization based on a policy of the subclass.
      */
     InitKind computeInitKindAndMaybeInitializeClass(Class<?> clazz, boolean memoize) {
@@ -449,5 +491,62 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
                 addAllInterfaces(interf, result);
             }
         }
+    }
+
+    public void addForTypeReachedTracking(Class<?> clazz) {
+        if (TrackTypeReachedOnInterfaces.getValue() && clazz.isInterface() && !metaAccess.lookupJavaType(clazz).declaresDefaultMethods()) {
+            LogUtils.info("Detected 'typeReached' on interface type without default methods: %s", clazz.getName());
+        }
+
+        if (!isAlwaysReached(clazz)) {
+            UserError.guarantee(!configurationSealed || typesRequiringReachability.contains(clazz),
+                            "It is not possible to register types for reachability tracking after the analysis has started if they were not registered before analysis started. Trying to register: %s",
+                            clazz.getName());
+            typesRequiringReachability.add(clazz);
+        }
+    }
+
+    public boolean isAlwaysReached(Class<?> jClass) {
+        Set<String> systemModules = Set.of("org.graalvm.nativeimage.builder", "org.graalvm.nativeimage", "org.graalvm.nativeimage.base", "com.oracle.svm.svm_enterprise",
+                        "org.graalvm.word", "jdk.internal.vm.ci", "jdk.graal.compiler", "com.oracle.graal.graal_enterprise");
+        Set<String> jdkModules = Set.of("java.base", "jdk.management", "java.management", "org.graalvm.collections");
+
+        String classModuleName = jClass.getModule().getName();
+        boolean alwaysReachedModule = classModuleName != null && (systemModules.contains(classModuleName) || jdkModules.contains(classModuleName));
+        return jClass.isPrimitive() ||
+                        jClass.isArray() ||
+                        alwaysReachedModule ||
+                        alwaysReachedTypes.contains(jClass);
+    }
+
+    /**
+     * If any type in the type hierarchy was marked as "type reached", we have to track
+     * initialization for all its subtypes. Otherwise, marking the supertype as reached could be
+     * missed when the initializer of the subtype is computed at build time.
+     */
+    public boolean requiresInitializationNodeForTypeReached(ResolvedJavaType type) {
+        if (type == null) {
+            return false;
+        }
+        var jClass = OriginalClassProvider.getJavaClass(type);
+        if (isAlwaysReached(jClass)) {
+            return false;
+        }
+
+        if (TreatAllUserSpaceTypesAsTrackedForTypeReached.getValue()) {
+            return true;
+        }
+
+        if (typesRequiringReachability.contains(jClass) ||
+                        requiresInitializationNodeForTypeReached(type.getSuperclass())) {
+            return true;
+        }
+
+        for (ResolvedJavaType anInterface : type.getInterfaces()) {
+            if (requiresInitializationNodeForTypeReached(anInterface)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

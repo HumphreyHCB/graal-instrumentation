@@ -51,6 +51,7 @@ import com.oracle.svm.common.meta.MultiMethod;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.Uninterruptible;
+import com.oracle.svm.core.code.ImageCodeInfo;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
@@ -67,6 +68,7 @@ import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.code.CompilationInfo;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
+import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
 
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.debug.JavaMethodContext;
@@ -112,6 +114,7 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     private int codeAddressOffset;
     private boolean codeAddressOffsetValid;
     private boolean compiled;
+    private boolean compiledInPriorLayer;
 
     /**
      * All concrete methods that can actually be called when calling this method. This includes all
@@ -249,6 +252,14 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
         return compiled;
     }
 
+    public void setCompiledInPriorLayer() {
+        this.compiledInPriorLayer = true;
+    }
+
+    public boolean isCompiledInPriorLayer() {
+        return compiledInPriorLayer;
+    }
+
     public String getUniqueShortName() {
         return uniqueShortName;
     }
@@ -261,19 +272,29 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     }
 
     @Override
-    public boolean hasCodeOffsetInImage() {
+    public ImageCodeInfo getImageCodeInfo() {
         throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override
-    public int getCodeOffsetInImage() {
+    public boolean forceIndirectCall() {
+        return isCompiledInPriorLayer();
+    }
+
+    @Override
+    public boolean hasImageCodeOffset() {
         throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override
-    public int getDeoptOffsetInImage() {
+    public int getImageCodeOffset() {
+        throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
+    }
+
+    @Override
+    public int getImageCodeDeoptOffset() {
         int result = 0;
-        HostedMethod deoptTarget = getMultiMethod(DEOPT_TARGET_METHOD);
+        HostedMethod deoptTarget = getMultiMethod(SubstrateCompilationDirectives.DEOPT_TARGET_METHOD);
         if (deoptTarget != null && deoptTarget.isCodeAddressOffsetValid()) {
             result = deoptTarget.getCodeAddressOffset();
             assert result != 0;
@@ -293,7 +314,7 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     @Override
     public boolean isDeoptTarget() {
-        return MultiMethod.super.isDeoptTarget();
+        return SubstrateCompilationDirectives.isDeoptTarget(this);
     }
 
     @Override
@@ -473,7 +494,15 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     @Override
     public boolean canBeInlined() {
-        return !hasNeverInlineDirective();
+        /*
+         * GR-55278: Graphs that contain references to $$Lambda types cannot be persisted. Those
+         * methods should not be inlined in the base layer as we need to be able to call them from
+         * the extension layers.
+         */
+        if (HostedImageLayerBuildingSupport.buildingSharedLayer() && !HostedImageLayerBuildingSupport.singleton().getWriter().persistedMethodGraph(wrapped)) {
+            return false;
+        }
+        return wrapped.canBeInlined();
     }
 
     @Override
@@ -486,9 +515,14 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
         return getAnnotation(AlwaysInline.class) != null || getAnnotation(ForceInline.class) != null;
     }
 
+    private LineNumberTable lineNumberTable;
+
     @Override
     public LineNumberTable getLineNumberTable() {
-        return wrapped.getLineNumberTable();
+        if (lineNumberTable == null) {
+            lineNumberTable = wrapped.getLineNumberTable();
+        }
+        return lineNumberTable;
     }
 
     @Override

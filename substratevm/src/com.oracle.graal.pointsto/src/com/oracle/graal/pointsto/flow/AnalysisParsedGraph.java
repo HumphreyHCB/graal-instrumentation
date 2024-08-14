@@ -70,7 +70,7 @@ public final class AnalysisParsedGraph {
     private final EncodedGraph encodedGraph;
     private final boolean isIntrinsic;
 
-    private AnalysisParsedGraph(EncodedGraph encodedGraph, boolean isIntrinsic) {
+    public AnalysisParsedGraph(EncodedGraph encodedGraph, boolean isIntrinsic) {
         this.isIntrinsic = isIntrinsic;
         this.encodedGraph = encodedGraph;
     }
@@ -125,7 +125,7 @@ public final class AnalysisParsedGraph {
 
             graph = new StructuredGraph.Builder(options, debug)
                             .method(method)
-                            .recordInlinedMethods(false)
+                            .recordInlinedMethods(bb.getHostVM().recordInlinedMethods(method))
                             .build();
             try (DebugContext.Scope s = debug.scope("ClosedWorldAnalysis", graph, method)) {
 

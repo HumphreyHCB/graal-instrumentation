@@ -1,14 +1,16 @@
 local utils = import '../../../ci/ci_common/common-utils.libsonnet';
 local vm = import 'vm.jsonnet';
 local vm_common = import '../ci_common/common.jsonnet';
+local graal_common = import '../../../ci/ci_common/common.jsonnet';
 
 {
   local truffle_jvm = vm_common.svm_common + {
     run+: [
       ['mx', '--env', 'ce', '--native-images=lib:jvmcicompiler', 'gate', '--no-warning-as-error', '--tags', 'build,truffle-jvm'],
     ],
-    notify_emails: ["christian.humer@oracle.com", "tomas.zezula@oracle.com", "jakub.chaloupka@oracle.com"],
-    timelimit: '40:00',
+    notify_groups: ["truffle"],
+    components+: ["truffle"],
+    timelimit: '1:15:00',
     name: self.targets[0] + '-vm-ce-truffle-jvm-labs' + self.jdk_name + '-linux-amd64',
   },
 
@@ -16,15 +18,13 @@ local vm_common = import '../ci_common/common.jsonnet';
     run+: [
       ['mx', '--env', 'ce', '--native-images=lib:jvmcicompiler', 'gate', '--no-warning-as-error', '--tags', 'build,truffle-native' + self.gate_tag_suffix],
     ],
-    notify_emails: ["christian.humer@oracle.com", "jakub.chaloupka@oracle.com", "tomas.zezula@oracle.com"],
+    notify_groups: ["truffle"],
+    components+: ["truffle"],
     timelimit: '1:00:00',
     name: self.targets[0] + '-vm-ce-truffle-native' + self.gate_tag_suffix + '-labs' + self.jdk_name + '-linux-amd64',
   },
 
-  local truffle_lts_compatibility(mode) = vm_common.svm_common {
-    downloads+: {
-      JAVA_HOME: { name: 'graalvm-java21', version: '23.1.2', platformspecific: true },
-    },
+  local truffle_lts_compatibility(mode) = vm_common.svm_common + graal_common['graalvm-ee-21'] {
     environment+: {
       JVMCI_VERSION_CHECK: 'warn',
     },
@@ -32,7 +32,8 @@ local vm_common = import '../ci_common/common.jsonnet';
       ['mx', 'build'],
       ['mx', '--dynamicimports', '/compiler', 'gate', '--tags', 'truffle-' + mode]
     ],
-    notify_emails: ["christian.humer@oracle.com", "tomas.zezula@oracle.com", "jakub.chaloupka@oracle.com"],
+    notify_groups: ["truffle"],
+    components+: ["truffle"],
     timelimit: '40:00',
     name: self.targets[0] + '-vm-ce-truffle-lts-compatibility-' + mode + '-linux-amd64',
   },
@@ -41,7 +42,8 @@ local vm_common = import '../ci_common/common.jsonnet';
     run+: [
       ['mx', '--env', 'ce', '--dynamicimports', '/tools', '--native-images=lib:jvmcicompiler', 'gate', '--tags', 'build,truffle-native-tck,truffle-native-tck-sl'],
     ],
-    notify_emails: ["christian.humer@oracle.com", "jakub.chaloupka@oracle.com", "tomas.zezula@gmail.com"],
+    notify_groups: ["truffle"],
+    components+: ["truffletck"],
     timelimit: '35:00',
     name: self.targets[0] + '-vm-truffle-native-tck-labs' + self.jdk_name + '-linux-amd64',
   },
@@ -51,7 +53,8 @@ local vm_common = import '../ci_common/common.jsonnet';
       ['export', 'SVM_SUITE=' + vm.svm_suite],
       ['mx', '--env', 'ce-llvm', '--native-images=', 'gate', '--no-warning-as-error', '--tags', 'build,maven-downloader'],
     ],
-    notify_emails: ["christian.humer@oracle.com", "jakub.chaloupka@oracle.com"],
+    notify_groups: ["truffle"],
+    components+: ["truffle"],
     timelimit: '30:00',
     packages+: {
       maven: '>=3.3.9',

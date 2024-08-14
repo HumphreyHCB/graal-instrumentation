@@ -55,6 +55,7 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
@@ -394,6 +395,10 @@ public final class EspressoContext {
                 getLanguage().tryInitializeJavaVersion(contextJavaVersion);
             }
 
+            if (!contextJavaVersion.java21OrLater() && getEspressoEnv().RegexSubstitutions) {
+                logger.warning("UseTRegex is not available for context running Java version < 21");
+            }
+
             // Spawn JNI first, then the VM.
             try (DebugCloseable vmInit = VM_INIT.scope(espressoEnv.getTimers())) {
                 this.jniEnv = JniEnv.create(this); // libnespresso
@@ -413,8 +418,6 @@ public final class EspressoContext {
                 registries.initJavaBaseModule();
                 registries.getBootClassRegistry().initUnnamedModule(StaticObject.NULL);
             }
-
-            // TODO: link libjimage
 
             initializeAgents();
 
@@ -1174,6 +1177,11 @@ public final class EspressoContext {
 
     public boolean interfaceMappingsEnabled() {
         return getEspressoEnv().getPolyglotTypeMappings().hasInterfaceMappings();
+    }
+
+    @Idempotent
+    public boolean regexSubstitutionsEnabled() {
+        return getEspressoEnv().RegexSubstitutions && getJavaVersion().java21OrLater();
     }
 
     public PolyglotTypeMappings getPolyglotTypeMappings() {

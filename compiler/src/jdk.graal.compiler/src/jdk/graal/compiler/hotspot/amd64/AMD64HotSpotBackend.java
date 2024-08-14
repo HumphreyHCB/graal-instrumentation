@@ -93,9 +93,9 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
     }
 
     @Override
-    protected FrameMapBuilder newFrameMapBuilder(RegisterConfig registerConfig) {
+    protected FrameMapBuilder newFrameMapBuilder(RegisterConfig registerConfig, Stub stub) {
         RegisterConfig registerConfigNonNull = registerConfig == null ? getCodeCache().getRegisterConfig() : registerConfig;
-        AMD64FrameMap frameMap = new AMD64HotSpotFrameMap(getCodeCache(), registerConfigNonNull, this, config);
+        AMD64FrameMap frameMap = new AMD64HotSpotFrameMap(getCodeCache(), registerConfigNonNull, this, config.preserveFramePointer(stub != null));
         return new AMD64HotSpotFrameMapBuilder(frameMap, getCodeCache(), registerConfigNonNull);
     }
 
@@ -186,8 +186,10 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
             final Label continuation = new Label();
             final Label entryPoint = new Label();
 
-            // The following code sequence must be emitted in exactly this fashion as HotSpot
-            // will check that the barrier is the expected code sequence.
+            /*
+             * The following code sequence must be emitted in exactly this fashion as HotSpot will
+             * check that the barrier is the expected code sequence.
+             */
             asm.align(4);
             crb.recordMark(HotSpotMarkId.FRAME_COMPLETE);
             crb.recordMark(HotSpotMarkId.ENTRY_BARRIER_PATCH);
@@ -271,7 +273,7 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
         DebugContext debug = lir.getDebug();
 
         Stub stub = gen.getStub();
-        AMD64MacroAssembler masm = new AMD64HotSpotMacroAssembler(config, getTarget(), options, config.CPU_HAS_INTEL_JCC_ERRATUM);
+        AMD64MacroAssembler masm = new AMD64HotSpotMacroAssembler(config, getTarget(), options, getProviders(), config.CPU_HAS_INTEL_JCC_ERRATUM);
         HotSpotFrameContext frameContext = new HotSpotFrameContext(stub != null);
         DataBuilder dataBuilder = new HotSpotDataBuilder(getCodeCache().getTarget());
         CompilationResultBuilder crb = factory.createBuilder(getProviders(), frameMap, masm, dataBuilder, frameContext, options, debug, compilationResult, Register.None, lir);
@@ -453,9 +455,9 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
     }
 
     @Override
-    public RegisterAllocationConfig newRegisterAllocationConfig(RegisterConfig registerConfig, String[] allocationRestrictedTo) {
+    public RegisterAllocationConfig newRegisterAllocationConfig(RegisterConfig registerConfig, String[] allocationRestrictedTo, Object stub) {
         RegisterConfig registerConfigNonNull = registerConfig == null ? getCodeCache().getRegisterConfig() : registerConfig;
-        return new AMD64HotSpotRegisterAllocationConfig(registerConfigNonNull, allocationRestrictedTo, config.preserveFramePointer);
+        return new AMD64HotSpotRegisterAllocationConfig(registerConfigNonNull, allocationRestrictedTo, config.preserveFramePointer(stub != null));
     }
 
     /**

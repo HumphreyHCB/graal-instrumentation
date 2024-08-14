@@ -231,6 +231,8 @@ public final class Meta extends ContextAccessImpl {
             java_lang_String_COMPACT_STRINGS = null;
         }
 
+        java_lang_CharSequence_toString = java_lang_CharSequence.requireDeclaredMethod(Name.toString, Signature.String);
+
         java_lang_Throwable = knownKlass(Type.java_lang_Throwable);
         java_lang_Throwable_getStackTrace = java_lang_Throwable.requireDeclaredMethod(Name.getStackTrace, Signature.StackTraceElement_array);
         java_lang_Throwable_getMessage = java_lang_Throwable.requireDeclaredMethod(Name.getMessage, Signature.String);
@@ -346,6 +348,14 @@ public final class Meta extends ContextAccessImpl {
         } else {
             jdk_internal_loader_RawNativeLibraries$RawNativeLibraryImpl = null;
             jdk_internal_loader_RawNativeLibraries$RawNativeLibraryImpl_handle = null;
+        }
+
+        if (getJavaVersion().java9OrLater()) {
+            jdk_internal_util_ArraysSupport = knownKlass(Type.jdk_internal_util_ArraysSupport);
+            jdk_internal_util_ArraysSupport_vectorizedMismatch = jdk_internal_util_ArraysSupport.requireDeclaredMethod(Name.vectorizedMismatch, Signature._int_Object_long_Object_long_int_int);
+        } else {
+            jdk_internal_util_ArraysSupport = null;
+            jdk_internal_util_ArraysSupport_vectorizedMismatch = null;
         }
 
         java_net_URL = knownKlass(Type.java_net_URL);
@@ -890,6 +900,10 @@ public final class Meta extends ContextAccessImpl {
         java_util_Map_entrySet = java_util_Map.requireDeclaredMethod(Name.entrySet, Signature.java_util_Set);
         assert java_util_Map.isInterface();
 
+        java_util_HashMap = knownKlass(Type.java_util_HashMap);
+        java_util_HashMap_init = java_util_HashMap.requireDeclaredMethod(Name._init_, Signature._void_int);
+        java_util_HashMap_put = java_util_HashMap.requireDeclaredMethod(Name.put, Signature.Object_Object_Object);
+
         java_util_Map_Entry = knownKlass(Type.java_util_Map_Entry);
         java_util_Map_Entry_getKey = java_util_Map_Entry.requireDeclaredMethod(Name.getKey, Signature.Object);
         java_util_Map_Entry_getValue = java_util_Map_Entry.requireDeclaredMethod(Name.getValue, Signature.Object);
@@ -929,6 +943,122 @@ public final class Meta extends ContextAccessImpl {
         java_util_Optional = knownKlass(Type.java_util_Optional);
         java_util_Optional_EMPTY = java_util_Optional.requireDeclaredField(Name.EMPTY, Type.java_util_Optional);
         java_util_Optional_value = java_util_Optional.requireDeclaredField(Name.value, Type.java_lang_Object);
+
+        java_util_regex_Pattern = knownKlass(Type.java_util_regex_Pattern);
+        java_util_regex_Pattern_init = java_util_regex_Pattern.requireMethod(Name._init_, Signature._void_String_int);
+        java_util_regex_Pattern_compile = java_util_regex_Pattern.requireDeclaredMethod(Name.compile, Signature._void);
+
+        if (context.getJavaVersion().java20OrLater()) {
+            java_util_regex_Pattern_namedGroups = java_util_regex_Pattern.requireMethod(Name.namedGroups, Signature.Map);
+        } else {
+            java_util_regex_Pattern_namedGroups = null;
+        }
+
+        if (context.regexSubstitutionsEnabled()) {
+            java_util_regex_Pattern_HIDDEN_tregexMatch = java_util_regex_Pattern.requireHiddenField(Name.HIDDEN_TREGEX_MATCH);
+            java_util_regex_Pattern_HIDDEN_tregexFullmatch = java_util_regex_Pattern.requireHiddenField(Name.HIDDEN_TREGEX_FULLMATCH);
+            java_util_regex_Pattern_HIDDEN_tregexSearch = java_util_regex_Pattern.requireHiddenField(Name.HIDDEN_TREGEX_SEARCH);
+            java_util_regex_Pattern_HIDDEN_unsupported = java_util_regex_Pattern.requireHiddenField(Name.HIDDEN_TREGEX_UNSUPPORTED);
+        } else {
+            java_util_regex_Pattern_HIDDEN_tregexMatch = null;
+            java_util_regex_Pattern_HIDDEN_tregexFullmatch = null;
+            java_util_regex_Pattern_HIDDEN_tregexSearch = null;
+            java_util_regex_Pattern_HIDDEN_unsupported = null;
+        }
+
+        if (context.getJavaVersion().java21OrLater()) {
+            java_util_regex_Pattern_pattern = java_util_regex_Pattern.requireDeclaredField(Name.pattern, Type.java_lang_String);
+            java_util_regex_Pattern_flags = java_util_regex_Pattern.requireDeclaredField(Name.flags, Type._int);
+            java_util_regex_Pattern_flags0 = java_util_regex_Pattern.requireDeclaredField(Name.flags0, Type._int);
+            java_util_regex_Pattern_compiled = java_util_regex_Pattern.requireDeclaredField(Name.compiled, Type._boolean);
+            java_util_regex_Pattern_namedGroups_field = java_util_regex_Pattern.requireDeclaredField(Name.namedGroups, Type.java_util_Map);
+            java_util_regex_Pattern_capturingGroupCount = java_util_regex_Pattern.requireDeclaredField(Name.capturingGroupCount, Type._int);
+            java_util_regex_Pattern_root = java_util_regex_Pattern.requireDeclaredField(Name.root, Type.java_util_regex_Pattern_Node);
+            java_util_regex_Pattern_localCount = java_util_regex_Pattern.requireDeclaredField(Name.localCount, Type._int);
+            java_util_regex_Pattern_localTCNCount = java_util_regex_Pattern.requireDeclaredField(Name.localTCNCount, Type._int);
+        } else {
+            java_util_regex_Pattern_pattern = null;
+            java_util_regex_Pattern_flags = null;
+            java_util_regex_Pattern_flags0 = null;
+            java_util_regex_Pattern_compiled = null;
+            java_util_regex_Pattern_namedGroups_field = null;
+            java_util_regex_Pattern_capturingGroupCount = null;
+            java_util_regex_Pattern_root = null;
+            java_util_regex_Pattern_localCount = null;
+            java_util_regex_Pattern_localTCNCount = null;
+        }
+
+        java_util_regex_Matcher = knownKlass(Type.java_util_regex_Matcher);
+        java_util_regex_Matcher_init = java_util_regex_Matcher.requireMethod(Name._init_, Signature._void_CharSequence_Pattern);
+        java_util_regex_Matcher_reset = java_util_regex_Matcher.requireMethod(Name.reset, Signature.Matcher_CharSequence);
+        java_util_regex_Matcher_match = java_util_regex_Matcher.requireMethod(Name.match, Signature._boolean_int_int);
+        java_util_regex_Matcher_search = java_util_regex_Matcher.requireMethod(Name.search, Signature._boolean_int);
+        java_util_regex_Matcher_groupCount = java_util_regex_Matcher.requireDeclaredMethod(Name.groupCount, Signature._int);
+        java_util_regex_Matcher_hitEnd = java_util_regex_Matcher.requireDeclaredField(Name.hitEnd, Type._boolean);
+        java_util_regex_Matcher_requireEnd = java_util_regex_Matcher.requireDeclaredField(Name.requireEnd, Type._boolean);
+
+        if (context.regexSubstitutionsEnabled()) {
+            java_util_regex_Matcher_HIDDEN_tstring = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_TSTRING);
+            java_util_regex_Matcher_HIDDEN_oldLastBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_OLD_LAST_BACKUP);
+            java_util_regex_Matcher_HIDDEN_modCountBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_MOD_COUNT_BACKUP);
+            java_util_regex_Matcher_HIDDEN_transparentBoundsBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_TRANSPARENT_BOUNDS_BACKUP);
+            java_util_regex_Matcher_HIDDEN_anchoringBoundsBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_ANCHORING_BOUNDS_BACKUP);
+            java_util_regex_Matcher_HIDDEN_fromBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_FROM_BACKUP);
+            java_util_regex_Matcher_HIDDEN_toBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_TO_BACKUP);
+            java_util_regex_Matcher_HIDDEN_matchingModeBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_MATCHING_MODE_BACKUP);
+            java_util_regex_Matcher_HIDDEN_searchFromBackup = java_util_regex_Matcher.requireHiddenField(Name.HIDDEN_TREGEX_SEARCH_FROM_BACKUP);
+        } else {
+            java_util_regex_Matcher_HIDDEN_tstring = null;
+            java_util_regex_Matcher_HIDDEN_oldLastBackup = null;
+            java_util_regex_Matcher_HIDDEN_modCountBackup = null;
+            java_util_regex_Matcher_HIDDEN_transparentBoundsBackup = null;
+            java_util_regex_Matcher_HIDDEN_anchoringBoundsBackup = null;
+            java_util_regex_Matcher_HIDDEN_fromBackup = null;
+            java_util_regex_Matcher_HIDDEN_toBackup = null;
+            java_util_regex_Matcher_HIDDEN_matchingModeBackup = null;
+            java_util_regex_Matcher_HIDDEN_searchFromBackup = null;
+        }
+
+        if (context.getJavaVersion().java21OrLater()) {
+            java_util_regex_Matcher_parentPattern = java_util_regex_Matcher.requireDeclaredField(Name.parentPattern, Type.java_util_regex_Pattern);
+            java_util_regex_Matcher_groups = java_util_regex_Matcher.requireDeclaredField(Name.groups, Type._int_array);
+            java_util_regex_Matcher_first = java_util_regex_Matcher.requireDeclaredField(Name.first, Type._int);
+            java_util_regex_Matcher_last = java_util_regex_Matcher.requireDeclaredField(Name.last, Type._int);
+            java_util_regex_Matcher_oldLast = java_util_regex_Matcher.requireDeclaredField(Name.oldLast, Type._int);
+            java_util_regex_Matcher_from = java_util_regex_Matcher.requireDeclaredField(Name.from, Type._int);
+            java_util_regex_Matcher_to = java_util_regex_Matcher.requireDeclaredField(Name.to, Type._int);
+            java_util_regex_Matcher_modCount = java_util_regex_Matcher.requireDeclaredField(Name.modCount, Type._int);
+            java_util_regex_Matcher_transparentBounds = java_util_regex_Matcher.requireDeclaredField(Name.transparentBounds, Type._boolean);
+            java_util_regex_Matcher_anchoringBounds = java_util_regex_Matcher.requireDeclaredField(Name.anchoringBounds, Type._boolean);
+            java_util_regex_Matcher_locals = java_util_regex_Matcher.requireDeclaredField(Name.locals, Type._int_array);
+            java_util_regex_Matcher_localsPos = java_util_regex_Matcher.requireDeclaredField(Name.localsPos, Type.java_util_regex_IntHashSet_array);
+
+        } else {
+            java_util_regex_Matcher_parentPattern = null;
+            java_util_regex_Matcher_groups = null;
+            java_util_regex_Matcher_first = null;
+            java_util_regex_Matcher_last = null;
+            java_util_regex_Matcher_oldLast = null;
+            java_util_regex_Matcher_from = null;
+            java_util_regex_Matcher_to = null;
+            java_util_regex_Matcher_modCount = null;
+            java_util_regex_Matcher_transparentBounds = null;
+            java_util_regex_Matcher_anchoringBounds = null;
+            java_util_regex_Matcher_locals = null;
+            java_util_regex_Matcher_localsPos = null;
+        }
+
+        if (context.getJavaVersion().java21OrLater()) {
+            java_util_regex_IntHashSet = knownKlass(Type.java_util_regex_IntHashSet);
+        } else {
+            java_util_regex_IntHashSet = null;
+        }
+
+        java_util_concurrent_locks_AbstractOwnableSynchronizer = knownKlass(Type.java_util_concurrent_locks_AbstractOwnableSynchronizer);
+        java_util_concurrent_locks_AbstractOwnableSynchronizer_exclusiveOwnerThread = java_util_concurrent_locks_AbstractOwnableSynchronizer.requireDeclaredField(Name.exclusiveOwnerThread,
+                        Type.java_lang_Thread);
+        java_util_concurrent_locks_ReentrantLock_Sync = knownKlass(Type.java_util_concurrent_locks_ReentrantLock_Sync);
+        java_util_concurrent_locks_ReentrantReadWriteLock_Sync = knownKlass(Type.java_util_concurrent_locks_ReentrantReadWriteLock_Sync);
 
         java_math_BigInteger = knownKlass(Type.java_math_BigInteger);
         java_math_BigInteger_init = java_math_BigInteger.requireDeclaredMethod(Name._init_, Signature._void_byte_array);
@@ -1095,7 +1225,7 @@ public final class Meta extends ContextAccessImpl {
         }
 
         // Load Espresso's Polyglot API.
-        boolean polyglotSupport = getContext().getEnv().getOptions().get(EspressoOptions.Polyglot);
+        boolean polyglotSupport = getContext().getEspressoEnv().Polyglot;
         this.polyglot = polyglotSupport ? new PolyglotSupport() : null;
 
         JImageExtensions jImageExtensions = getLanguage().getJImageExtensions();
@@ -1111,6 +1241,10 @@ public final class Meta extends ContextAccessImpl {
                 }
             }
         }
+
+        // Continuations
+        boolean continuumSupport = getContext().getEspressoEnv().Continuum;
+        this.continuum = continuumSupport ? new ContinuumSupport() : null;
     }
 
     private void extendModulePackages(ModuleTable.ModuleEntry moduleEntry, Set<String> extraPackages) {
@@ -1229,6 +1363,9 @@ public final class Meta extends ContextAccessImpl {
     public final Method java_lang_String_indexOf;
     public final Method java_lang_String_init_char_array;
 
+    // Charsequence
+    public final Method java_lang_CharSequence_toString;
+
     public final ObjectKlass java_lang_ClassLoader;
     public final Field java_lang_ClassLoader_parent;
     public final Field java_lang_ClassLoader_unnamedModule;
@@ -1246,6 +1383,8 @@ public final class Meta extends ContextAccessImpl {
     public final ObjectKlass jdk_internal_loader_RawNativeLibraries$RawNativeLibraryImpl;
     public final Field jdk_internal_loader_RawNativeLibraries$RawNativeLibraryImpl_handle;
 
+    public final ObjectKlass jdk_internal_util_ArraysSupport;
+    public final Method jdk_internal_util_ArraysSupport_vectorizedMismatch;
     public final ObjectKlass java_net_URL;
 
     public final ObjectKlass sun_launcher_LauncherHelper;
@@ -1666,7 +1805,9 @@ public final class Meta extends ContextAccessImpl {
     public final Method java_util_Map_remove;
     public final Method java_util_Map_containsKey;
     public final Method java_util_Map_entrySet;
-
+    public final ObjectKlass java_util_HashMap;
+    public final Method java_util_HashMap_init;
+    public final Method java_util_HashMap_put;
     public final ObjectKlass java_util_Map_Entry;
     public final Method java_util_Map_Entry_getKey;
     public final Method java_util_Map_Entry_getValue;
@@ -1698,6 +1839,59 @@ public final class Meta extends ContextAccessImpl {
     public final ObjectKlass java_util_Optional;
     public final Field java_util_Optional_value;
     public final Field java_util_Optional_EMPTY;
+
+    public final ObjectKlass java_util_regex_Pattern;
+    public final Field java_util_regex_Pattern_HIDDEN_tregexMatch;
+    public final Field java_util_regex_Pattern_HIDDEN_tregexFullmatch;
+    public final Field java_util_regex_Pattern_HIDDEN_tregexSearch;
+    public final Field java_util_regex_Pattern_HIDDEN_unsupported;
+    public final Field java_util_regex_Pattern_pattern;
+    public final Field java_util_regex_Pattern_flags;
+    public final Field java_util_regex_Pattern_flags0;
+    public final Field java_util_regex_Pattern_compiled;
+    public final Method java_util_regex_Pattern_init;
+    public final Method java_util_regex_Pattern_namedGroups;
+    public final Field java_util_regex_Pattern_namedGroups_field;
+    public final Field java_util_regex_Pattern_capturingGroupCount;
+    public final Field java_util_regex_Pattern_root;
+    public final Method java_util_regex_Pattern_compile;
+    public final Field java_util_regex_Pattern_localCount;
+    public final Field java_util_regex_Pattern_localTCNCount;
+    public final ObjectKlass java_util_regex_IntHashSet;
+    public final ObjectKlass java_util_regex_Matcher;
+    public final Method java_util_regex_Matcher_init;
+    public final Method java_util_regex_Matcher_reset;
+    public final Field java_util_regex_Matcher_HIDDEN_tstring;
+    public final Field java_util_regex_Matcher_HIDDEN_oldLastBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_modCountBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_transparentBoundsBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_anchoringBoundsBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_fromBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_toBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_matchingModeBackup;
+    public final Field java_util_regex_Matcher_HIDDEN_searchFromBackup;
+    public final Field java_util_regex_Matcher_modCount;
+    public final Field java_util_regex_Matcher_parentPattern;
+    public final Field java_util_regex_Matcher_groups;
+    public final Field java_util_regex_Matcher_first;
+    public final Field java_util_regex_Matcher_last;
+    public final Field java_util_regex_Matcher_oldLast;
+    public final Field java_util_regex_Matcher_from;
+    public final Field java_util_regex_Matcher_to;
+    public final Method java_util_regex_Matcher_match;
+    public final Method java_util_regex_Matcher_search;
+    public final Field java_util_regex_Matcher_transparentBounds;
+    public final Field java_util_regex_Matcher_anchoringBounds;
+    public final Field java_util_regex_Matcher_locals;
+    public final Field java_util_regex_Matcher_localsPos;
+    public final Field java_util_regex_Matcher_hitEnd;
+    public final Field java_util_regex_Matcher_requireEnd;
+    public final Method java_util_regex_Matcher_groupCount;
+
+    public final ObjectKlass java_util_concurrent_locks_AbstractOwnableSynchronizer;
+    public final Field java_util_concurrent_locks_AbstractOwnableSynchronizer_exclusiveOwnerThread;
+    public final ObjectKlass java_util_concurrent_locks_ReentrantLock_Sync;
+    public final ObjectKlass java_util_concurrent_locks_ReentrantReadWriteLock_Sync;
 
     public final ObjectKlass java_math_BigInteger;
     public final Method java_math_BigInteger_init;
@@ -1746,6 +1940,48 @@ public final class Meta extends ContextAccessImpl {
     @CompilationFinal public Method java_beans_ThreadGroupContext_removeBeanInfo;
     @CompilationFinal public ObjectKlass java_beans_Introspector;
     @CompilationFinal public Method java_beans_Introspector_flushFromCaches;
+
+    public final class ContinuumSupport {
+        public final Method org_graalvm_continuations_ContinuationImpl_run;
+        public final Method org_graalvm_continuations_ContinuationImpl_suspend;
+        public final Field org_graalvm_continuations_ContinuationImpl_stackFrameHead;
+        public final Field HIDDEN_CONTINUATION_FRAME_RECORD;
+        public final ObjectKlass org_graalvm_continuations_ContinuationImpl_FrameRecord;
+        public final Field org_graalvm_continuations_ContinuationImpl_FrameRecord_pointers;
+        public final Field org_graalvm_continuations_ContinuationImpl_FrameRecord_primitives;
+        public final Field org_graalvm_continuations_ContinuationImpl_FrameRecord_method;
+        public final Field org_graalvm_continuations_ContinuationImpl_FrameRecord_next;
+        public final Field org_graalvm_continuations_ContinuationImpl_FrameRecord_bci;
+        public final ObjectKlass org_graalvm_continuations_IllegalMaterializedRecordException;
+        public final ObjectKlass org_graalvm_continuations_IllegalContinuationStateException;
+
+        private ContinuumSupport() {
+            ObjectKlass org_graalvm_continuations_ContinuationImpl = knownKlass(Type.org_graalvm_continuations_ContinuationImpl);
+            org_graalvm_continuations_ContinuationImpl_run = org_graalvm_continuations_ContinuationImpl.requireDeclaredMethod(Name.run, Signature._void);
+            org_graalvm_continuations_ContinuationImpl_suspend = org_graalvm_continuations_ContinuationImpl.requireDeclaredMethod(Name.suspend, Signature._void);
+            org_graalvm_continuations_ContinuationImpl_stackFrameHead = org_graalvm_continuations_ContinuationImpl.requireDeclaredField(Name.stackFrameHead,
+                            Type.org_graalvm_continuations_ContinuationImpl_FrameRecord);
+            HIDDEN_CONTINUATION_FRAME_RECORD = org_graalvm_continuations_ContinuationImpl.requireHiddenField(Name.HIDDEN_CONTINUATION_FRAME_RECORD);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord = knownKlass(Type.org_graalvm_continuations_ContinuationImpl_FrameRecord);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord_pointers = org_graalvm_continuations_ContinuationImpl_FrameRecord.requireDeclaredField(
+                            Name.pointers, Type.java_lang_Object_array);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord_primitives = org_graalvm_continuations_ContinuationImpl_FrameRecord.requireDeclaredField(
+                            Name.primitives, Type._long_array);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord_method = org_graalvm_continuations_ContinuationImpl_FrameRecord.requireDeclaredField(
+                            Name.method, Type.java_lang_reflect_Method);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord_next = org_graalvm_continuations_ContinuationImpl_FrameRecord.requireDeclaredField(
+                            Name.next, Type.org_graalvm_continuations_ContinuationImpl_FrameRecord);
+            org_graalvm_continuations_ContinuationImpl_FrameRecord_bci = org_graalvm_continuations_ContinuationImpl_FrameRecord.requireDeclaredField(
+                            Name.bci, Type._int);
+            org_graalvm_continuations_IllegalMaterializedRecordException = knownKlass(
+                            Type.org_graalvm_continuations_IllegalMaterializedRecordException);
+            org_graalvm_continuations_IllegalContinuationStateException = knownKlass(
+                            Type.org_graalvm_continuations_IllegalContinuationStateException);
+        }
+    }
+
+    @CompilationFinal //
+    public ContinuumSupport continuum;
 
     public final class PolyglotSupport {
         public final ObjectKlass UnknownIdentifierException;
@@ -2257,12 +2493,18 @@ public final class Meta extends ContextAccessImpl {
         return klass;
     }
 
-    @TruffleBoundary
     public String toHostString(StaticObject str) {
         if (StaticObject.isNull(str)) {
             return null;
         }
         return stringConversion.toHost(str, getLanguage(), this);
+    }
+
+    public StaticObject toGuestString(String hostString) {
+        if (hostString == null) {
+            return StaticObject.NULL;
+        }
+        return stringConversion.toGuest(hostString, this);
     }
 
     @TruffleBoundary
@@ -2281,17 +2523,8 @@ public final class Meta extends ContextAccessImpl {
         return toGuestString(hostString.toString());
     }
 
-    @TruffleBoundary
-    public StaticObject toGuestString(String hostString) {
-        if (hostString == null) {
-            return StaticObject.NULL;
-        }
-        return stringConversion.toGuest(hostString, this);
-    }
-
     public static boolean isString(Object string) {
-        if (string instanceof StaticObject) {
-            StaticObject staticObject = (StaticObject) string;
+        if (string instanceof StaticObject staticObject) {
             return staticObject.isString();
         }
         return false;
@@ -2327,8 +2560,7 @@ public final class Meta extends ContextAccessImpl {
 
     public Object toHostBoxed(Object object) {
         assert object != null;
-        if (object instanceof StaticObject) {
-            StaticObject guestObject = (StaticObject) object;
+        if (object instanceof StaticObject guestObject) {
             if (StaticObject.isNull(guestObject)) {
                 return null;
             }

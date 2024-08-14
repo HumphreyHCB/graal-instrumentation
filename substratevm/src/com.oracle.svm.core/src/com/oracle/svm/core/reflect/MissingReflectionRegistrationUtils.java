@@ -49,6 +49,12 @@ public final class MissingReflectionRegistrationUtils {
         report(exception);
     }
 
+    public static void forUnsafeAllocation(String className) {
+        MissingReflectionRegistrationError exception = new MissingReflectionRegistrationError(errorMessage("unsafe instantiate class", className),
+                        Class.class, null, className, null);
+        report(exception);
+    }
+
     public static void forField(Class<?> declaringClass, String fieldName) {
         MissingReflectionRegistrationError exception = new MissingReflectionRegistrationError(errorMessage("access field",
                         declaringClass.getTypeName() + "#" + fieldName),
@@ -136,7 +142,7 @@ public final class MissingReflectionRegistrationUtils {
                         ERROR_EMPHASIS_INDENT + elementDescriptor +
                         System.lineSeparator() +
                         System.lineSeparator() +
-                        " without it being registered for runtime reflection. Add " + elementDescriptor + " to the " + helpLink + " metadata to solve this problem. " +
+                        "without it being registered for runtime reflection. Add " + elementDescriptor + " to the " + helpLink + " metadata to solve this problem. " +
                         (note != null ? "Note: " + note + " " : "") +
                         "See https://www.graalvm.org/latest/reference-manual/native-image/metadata/#" + helpLink + " for help.";
     }
@@ -181,7 +187,7 @@ public final class MissingReflectionRegistrationUtils {
                     "jdk.internal.access.JavaLangAccess", Set.of("getDeclaredPublicMethods"),
                     "sun.misc.Unsafe", Set.of("allocateInstance"),
                     /* For jdk.internal.misc.Unsafe.allocateInstance(), which is intrinsified */
-                    SubstrateAllocationSnippets.class.getName(), Set.of("instanceHubErrorStub"));
+                    SubstrateAllocationSnippets.class.getName(), Set.of("slowPathHubOrUnsafeInstantiationError"));
 
     private static StackTraceElement getResponsibleClass(Throwable t) {
         StackTraceElement[] stackTrace = t.getStackTrace();

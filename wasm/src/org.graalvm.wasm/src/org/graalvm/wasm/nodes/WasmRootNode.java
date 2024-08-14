@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -69,9 +69,11 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -112,6 +114,21 @@ public class WasmRootNode extends RootNode {
         }
     }
 
+    @Override
+    protected int findBytecodeIndex(Node node, Frame frame) {
+        if (node == null) {
+            // uncached wasm calls without location may happen
+            return -1;
+        }
+        if (node instanceof WasmCallNode n) {
+            // cached wasm call with location may happen
+            return n.getBytecodeOffset();
+        } else {
+            // for wasm exceptions we might be able to get the stack trace
+            return -1;
+        }
+    }
+
     protected final WasmInstance instance(VirtualFrame frame) {
         WasmInstance instance = boundInstance;
         if (instance == null) {
@@ -139,7 +156,7 @@ public class WasmRootNode extends RootNode {
     }
 
     @Override
-    public final Object execute(VirtualFrame frame) {
+    public Object execute(VirtualFrame frame) {
         assert WasmArguments.isValid(frame.getArguments());
         final WasmContext context = getContext();
         final WasmInstance instance = instance(frame);
@@ -248,7 +265,7 @@ public class WasmRootNode extends RootNode {
     private void moveArgumentsToLocals(VirtualFrame frame) {
         Object[] args = frame.getArguments();
         int paramCount = functionNode.paramCount();
-        assert WasmArguments.getArgumentCount(args) == paramCount : "Expected number of params " + paramCount + ", actual " + args.length;
+        assert WasmArguments.getArgumentCount(args) == paramCount : "Expected number of params " + paramCount + ", actual " + WasmArguments.getArgumentCount(args);
         for (int i = 0; i != paramCount; ++i) {
             final Object arg = WasmArguments.getArgument(args, i);
             byte type = functionNode.localType(i);

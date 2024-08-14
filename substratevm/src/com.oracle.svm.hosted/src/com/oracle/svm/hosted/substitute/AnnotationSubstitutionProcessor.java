@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
@@ -585,23 +586,35 @@ public class AnnotationSubstitutionProcessor extends SubstitutionProcessor {
 
     private void handleDeletedClass(Class<?> originalClass, Delete deleteAnnotation) {
         if (NativeImageOptions.ReportUnsupportedElementsAtRuntime.getValue()) {
+            ResolvedJavaType type = metaAccess.lookupJavaType(originalClass);
+
+            try {
+                type.link();
+            } catch (LinkageError ignored) {
+                /*
+                 * Ignore any linking errors. A type that cannot be linked doesn't need elements
+                 * replaced: it will simply fail at runtime with the same linkage error before
+                 * reaching those elements.
+                 */
+                return;
+            }
+
             /*
              * We register all methods and fields as deleted. That still allows usage of the type in
              * type checks.
              */
-            for (Executable m : originalClass.getDeclaredMethods()) {
-                ResolvedJavaMethod method = metaAccess.lookupJavaMethod(m);
+            for (ResolvedJavaMethod method : type.getDeclaredMethods()) {
                 registerAsDeleted(null, method, deleteAnnotation);
             }
-            for (Executable m : originalClass.getDeclaredConstructors()) {
-                ResolvedJavaMethod method = metaAccess.lookupJavaMethod(m);
-                registerAsDeleted(null, method, deleteAnnotation);
+            for (ResolvedJavaMethod constructor : type.getDeclaredConstructors()) {
+                registerAsDeleted(null, constructor, deleteAnnotation);
             }
-            for (Field f : originalClass.getDeclaredFields()) {
-                ResolvedJavaField field = metaAccess.lookupJavaField(f);
-                registerAsDeleted(null, field, deleteAnnotation);
+            for (ResolvedJavaField f : type.getInstanceFields(false)) {
+                registerAsDeleted(null, f, deleteAnnotation);
             }
-
+            for (ResolvedJavaField f : type.getStaticFields()) {
+                registerAsDeleted(null, f, deleteAnnotation);
+            }
         } else {
             deleteAnnotations.put(metaAccess.lookupJavaType(originalClass), deleteAnnotation);
         }
@@ -988,26 +1001,39 @@ public class AnnotationSubstitutionProcessor extends SubstitutionProcessor {
 
     protected Class<?> findTargetClass(Class<?> annotatedBaseClass, TargetClass target, boolean checkOnlyWith) {
         return findTargetClass(TargetClass.class, TargetClass.NoClassNameProvider.class,
-                        annotatedBaseClass, target, target.value(), target.className(), target.classNameProvider(), target.innerClass(), checkOnlyWith ? target.onlyWith() : null);
+                        annotatedBaseClass, target, target.value(), target.className(), target.classNameProvider(), target.innerClass(), target.classLoader(),
+                        checkOnlyWith ? target.onlyWith() : null);
     }
 
     protected <T> Class<?> findTargetClass(Class<T> targetClass, Class<?> noClassNameProviderClass,
-                    Class<?> annotatedBaseClass, T target, Class<?> value, String targetClassName, Class<? extends Function<T, String>> classNameProvider, String[] innerClasses, Class<?>[] onlyWith) {
+                    Class<?> annotatedBaseClass, T target, Class<?> value, String targetClassName, Class<? extends Function<T, String>> classNameProvider, String[] innerClasses,
+                    Class<? extends Supplier<ClassLoader>> classloaderSupplier, Class<?>[] onlyWith) {
 
         String className;
+        ClassLoader loader = imageClassLoader.getClassLoader();
         if (value != targetClass) {
             guarantee(targetClassName.isEmpty(), "Both class and class name specified for substitution");
             guarantee(classNameProvider == noClassNameProviderClass, "Both class and classNameProvider specified for substitution");
+            guarantee(classloaderSupplier == TargetClass.NoClassLoaderProvider.class, "Annotation attribute 'classLoader' requires use of 'className' or 'classNameProvider'");
             className = value.getName();
-        } else if (classNameProvider != noClassNameProviderClass) {
-            try {
-                className = ReflectionUtil.newInstance(classNameProvider).apply(target);
-            } catch (ReflectionUtilError ex) {
-                throw UserError.abort(ex.getCause(), "Cannot instantiate classNameProvider: %s. The class must have a parameterless constructor.", classNameProvider.getTypeName());
-            }
         } else {
-            guarantee(!targetClassName.isEmpty(), "Neither class, className, nor classNameProvider specified for substitution");
-            className = targetClassName;
+            if (classNameProvider != noClassNameProviderClass) {
+                try {
+                    className = ReflectionUtil.newInstance(classNameProvider).apply(target);
+                } catch (ReflectionUtilError ex) {
+                    throw UserError.abort(ex.getCause(), "Cannot instantiate classNameProvider: %s. The class must have a parameterless constructor.", classNameProvider.getTypeName());
+                }
+            } else {
+                guarantee(!targetClassName.isEmpty(), "Neither class, className, nor classNameProvider specified for substitution");
+                className = targetClassName;
+            }
+            if (classloaderSupplier != TargetClass.NoClassLoaderProvider.class) {
+                try {
+                    loader = ReflectionUtil.newInstance(classloaderSupplier).get();
+                } catch (ReflectionUtilError ex) {
+                    throw UserError.abort(ex.getCause(), "Cannot instantiate classloaderSupplier: %s. The class must have a parameterless constructor.", classloaderSupplier.getTypeName());
+                }
+            }
         }
         if (onlyWith != null) {
             for (Class<?> onlyWithClass : onlyWith) {
@@ -1036,8 +1062,10 @@ public class AnnotationSubstitutionProcessor extends SubstitutionProcessor {
             }
         }
 
-        Class<?> holder = imageClassLoader.findClass(className).get();
-        if (holder == null) {
+        Class<?> holder;
+        try {
+            holder = Class.forName(className, false, loader);
+        } catch (ClassNotFoundException e) {
             throw UserError.abort("Substitution target for %s is not loaded. Use field `onlyWith` in the `TargetClass` annotation to make substitution only active when needed.",
                             annotatedBaseClass.getName());
         }

@@ -334,7 +334,7 @@ public class AArch64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implem
     }
 
     @Override
-    public Value emitZeroExtend(Value inputVal, int fromBits, int toBits) {
+    public Value emitZeroExtend(Value inputVal, int fromBits, int toBits, boolean requiresExplicitZeroExtend, boolean requiresLIRKindChange) {
         assert fromBits <= toBits && toBits <= 64 : fromBits + " " + toBits;
         if (fromBits == toBits) {
             return inputVal;
@@ -450,7 +450,8 @@ public class AArch64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implem
             case Long:
                 return AArch64MacroAssembler.isAddSubtractImmediate(constValue.asLong(), true);
             case Object:
-                return constValue.isNull();
+                /* Object constants can't be encoded as immediates in add/subtract. */
+                return false;
             default:
                 throw GraalError.shouldNotReachHereUnexpectedValue(constValue.getJavaKind().getStackKind()); // ExcludeFromJacocoGeneratedReport
         }

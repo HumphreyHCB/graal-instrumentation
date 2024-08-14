@@ -34,6 +34,7 @@ import com.oracle.svm.core.graal.nodes.DeoptEntryNode;
 import com.oracle.svm.core.nodes.CFunctionCaptureNode;
 import com.oracle.svm.core.nodes.CFunctionEpilogueNode;
 import com.oracle.svm.core.nodes.CFunctionPrologueNode;
+import com.oracle.svm.core.nodes.SubstrateIndirectCallTargetNode;
 import com.oracle.svm.core.nodes.SubstrateMethodCallTargetNode;
 import com.oracle.svm.core.thread.VMThreads.StatusSupport;
 import com.oracle.svm.core.util.VMError;
@@ -54,7 +55,6 @@ import jdk.graal.compiler.nodes.CallTargetNode.InvokeKind;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.FixedNode;
 import jdk.graal.compiler.nodes.FrameState;
-import jdk.graal.compiler.nodes.IndirectCallTargetNode;
 import jdk.graal.compiler.nodes.InvokeNode;
 import jdk.graal.compiler.nodes.InvokeWithExceptionNode;
 import jdk.graal.compiler.nodes.MergeNode;
@@ -70,7 +70,6 @@ import jdk.graal.compiler.nodes.calc.NarrowNode;
 import jdk.graal.compiler.nodes.extended.BoxNode;
 import jdk.graal.compiler.nodes.extended.FixedValueAnchorNode;
 import jdk.graal.compiler.nodes.extended.GuardingNode;
-import jdk.graal.compiler.nodes.extended.StateSplitProxyNode;
 import jdk.graal.compiler.nodes.extended.UnboxNode;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import jdk.graal.compiler.nodes.java.ExceptionObjectNode;
@@ -109,10 +108,8 @@ public class SubstrateGraphKit extends GraphKit {
         frameState.initializeForMethodStart(null, true, graphBuilderPlugins, collectedArguments);
         initialArguments = Collections.unmodifiableList(collectedArguments);
         graph.start().setStateAfter(frameState.create(bci(), graph.start()));
-    }
-
-    public SubstrateGraphKit(DebugContext debug, ResolvedJavaMethod stubMethod, Providers providers, GraphBuilderConfiguration.Plugins graphBuilderPlugins, CompilationIdentifier compilationId) {
-        this(debug, stubMethod, providers, graphBuilderPlugins, compilationId, false);
+        // Record method dependency in the graph
+        graph.recordMethod(graph.method());
     }
 
     @Override
@@ -262,7 +259,7 @@ public class SubstrateGraphKit extends GraphKit {
 
         int bci = bci();
         CallTargetNode callTarget = getGraph().add(
-                        new IndirectCallTargetNode(targetAddress, args.toArray(new ValueNode[args.size()]), StampPair.createSingle(returnStamp), parameterTypes, null,
+                        new SubstrateIndirectCallTargetNode(targetAddress, args.toArray(new ValueNode[args.size()]), StampPair.createSingle(returnStamp), parameterTypes, null,
                                         convention, InvokeKind.Static));
         InvokeNode invoke = append(new InvokeNode(callTarget, bci));
 
@@ -373,11 +370,5 @@ public class SubstrateGraphKit extends GraphKit {
         lastFixedNode = noExceptionEdge;
 
         return withExceptionNode;
-    }
-
-    public void appendStateSplitProxy() {
-        StateSplitProxyNode proxy = new StateSplitProxyNode();
-        append(proxy);
-        proxy.setStateAfter(frameState.create(bci(), proxy));
     }
 }

@@ -66,6 +66,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
         assumeManagementLibraryIsLoadable();
         testHelper(Collections.emptyList(), Arrays.asList("-XX:-TieredCompilation",
                         "-XX:+UseJVMCICompiler",
+                        "-XX:-UseJVMCINativeLibrary",
                         "-XX:JVMCIThreads=1",
                         "-Djdk.graal.CompilationFailureAction=ExitVM",
                         "-Djdk.graal.CrashAt=TestProgram.*",
@@ -183,6 +184,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
         };
         testHelper(Arrays.asList(probes), Arrays.asList("-XX:-TieredCompilation",
                         "-XX:+UseJVMCICompiler",
+                        "-XX:-UseJVMCINativeLibrary",
                         "-XX:JVMCIThreads=1",
                         "-Djdk.graal.SystemicCompilationFailureRate=0",
                         "-Djdk.graal.CompilationFailureAction=Diagnose",
@@ -240,19 +242,19 @@ public class CompilationWrapperTest extends GraalCompilerTest {
                     List<ZipProbe> initialZipProbes,
                     List<String> extraVmArgs,
                     String... mainClassAndArgs) throws IOException, InterruptedException {
-        final File dumpPath = new File(CompilationWrapperTest.class.getSimpleName() + "_" + System.currentTimeMillis()).getAbsoluteFile();
+        final Path dumpPath = getOutputDirectory().resolve(CompilationWrapperTest.class.getSimpleName() + "_" + nowAsFileName());
         List<String> vmArgs = withoutDebuggerArguments(getVMCommandLine());
         vmArgs.removeIf(a -> a.startsWith("-Djdk.graal."));
         vmArgs.remove("-esa");
         vmArgs.remove("-ea");
         vmArgs.add("-Djdk.graal.DumpPath=" + dumpPath);
         // Force output to a file even if there's a running IGV instance available.
-        vmArgs.add("-Djdk.graal.PrintGraphFile=true");
+        vmArgs.add("-Djdk.graal.PrintGraph=File");
         vmArgs.addAll(extraVmArgs);
 
         Subprocess proc = SubprocessUtil.java(vmArgs, mainClassAndArgs);
         if (VERBOSE) {
-            System.out.println(proc);
+            System.out.printf("%n%s%n", proc.preserveArgfile());
         }
 
         try {
@@ -274,7 +276,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
             for (Probe probe : probes) {
                 String error = probe.test();
                 if (error != null) {
-                    Assert.fail(String.format("Did not find expected occurrences of '%s' in output of command: %s%n%s", probe.substring, error, proc));
+                    Assert.fail(String.format("Did not find expected occurrences of '%s' in output of command: %s%n%s", probe.substring, error, proc.preserveArgfile()));
                 }
             }
 
@@ -284,7 +286,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
             Assert.assertTrue(line, m.find());
             String diagnosticOutputZip = m.group(1);
 
-            List<String> dumpPathEntries = Arrays.asList(dumpPath.list());
+            List<String> dumpPathEntries = List.of(dumpPath.toFile().list());
 
             File zip = new File(diagnosticOutputZip).getAbsoluteFile();
             Assert.assertTrue(zip.toString(), zip.exists());
@@ -317,14 +319,14 @@ public class CompilationWrapperTest extends GraalCompilerTest {
                 for (ZipProbe probe : zipProbes) {
                     String error = probe.test();
                     if (error != null) {
-                        Assert.fail(String.format("Did not find expected occurrences of '%s' files in %s: %s%n%s", probe.suffix, entries, error, proc));
+                        Assert.fail(String.format("Did not find expected occurrences of '%s' files in %s: %s%n%s", probe.suffix, entries, error, proc.preserveArgfile()));
                     }
                 }
             } finally {
                 zip.delete();
             }
         } finally {
-            Path directory = dumpPath.toPath();
+            Path directory = dumpPath;
             removeDirectory(directory);
         }
     }

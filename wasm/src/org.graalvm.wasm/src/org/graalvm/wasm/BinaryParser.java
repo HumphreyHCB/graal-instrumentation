@@ -70,7 +70,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.wasm.api.Vector128;
@@ -94,6 +93,7 @@ import org.graalvm.wasm.parser.ir.CallNode;
 import org.graalvm.wasm.parser.ir.CodeEntry;
 import org.graalvm.wasm.parser.validation.ParserState;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.ExceptionType;
 
@@ -224,7 +224,7 @@ public class BinaryParser extends BinaryStreamParser {
             assertIntEqual(offset - startOffset, size, String.format("Declared section (0x%02X) size is incorrect", sectionID), Failure.SECTION_SIZE_MISMATCH);
         }
         if (codeSectionOffset == -1) {
-            assertIntEqual(module.numFunctions(), module.importedFunctions().size(), Failure.FUNCTIONS_CODE_INCONSISTENT_LENGTHS);
+            assertIntEqual(module.numFunctions(), module.numImportedFunctions(), Failure.FUNCTIONS_CODE_INCONSISTENT_LENGTHS);
             codeSectionOffset = 0;
         }
         module.setBytecode(bytecode.toArray());
@@ -474,7 +474,7 @@ public class BinaryParser extends BinaryStreamParser {
 
     private void readCodeSection(RuntimeBytecodeGen bytecode, BytecodeGen functionDebugData) {
         final int codeSectionOffset = offset;
-        final int importedFunctionCount = module.importedFunctions().size();
+        final int importedFunctionCount = module.numImportedFunctions();
         final int codeEntryCount = readLength();
         final int expectedCodeEntryCount = module.numFunctions() - importedFunctionCount;
         assertIntEqual(codeEntryCount, expectedCodeEntryCount, Failure.FUNCTIONS_CODE_INCONSISTENT_LENGTHS);
@@ -580,7 +580,7 @@ public class BinaryParser extends BinaryStreamParser {
         state.enterFunction(resultTypes);
 
         int opcode;
-        while (offset < sourceCodeEndOffset) {
+        end: while (offset < sourceCodeEndOffset) {
             // Insert a debug instruction if a line mapping exists.
             if (sourceLocationToLineMap != null) {
                 if (sourceLocationToLineMap.containsKey(offset)) {
@@ -606,8 +606,10 @@ public class BinaryParser extends BinaryStreamParser {
                         blockParamTypes = WasmType.VOID_TYPE_ARRAY;
                         blockResultTypes = encapsulateResultType(multiResult[0]);
                     } else if (multiValue) {
-                        blockParamTypes = extractBlockParamTypes(multiResult[0]);
-                        blockResultTypes = extractBlockResultTypes(multiResult[0]);
+                        int typeIndex = multiResult[0];
+                        state.checkFunctionTypeExists(typeIndex, module.typeCount());
+                        blockParamTypes = extractBlockParamTypes(typeIndex);
+                        blockResultTypes = extractBlockResultTypes(typeIndex);
                     } else {
                         throw WasmException.create(Failure.DISABLED_MULTI_VALUE);
                     }
@@ -625,8 +627,10 @@ public class BinaryParser extends BinaryStreamParser {
                         loopParamTypes = WasmType.VOID_TYPE_ARRAY;
                         loopResultTypes = encapsulateResultType(multiResult[0]);
                     } else if (multiValue) {
-                        loopParamTypes = extractBlockParamTypes(multiResult[0]);
-                        loopResultTypes = extractBlockResultTypes(multiResult[0]);
+                        int typeIndex = multiResult[0];
+                        state.checkFunctionTypeExists(typeIndex, module.typeCount());
+                        loopParamTypes = extractBlockParamTypes(typeIndex);
+                        loopResultTypes = extractBlockResultTypes(typeIndex);
                     } else {
                         throw WasmException.create(Failure.DISABLED_MULTI_VALUE);
                     }
@@ -644,8 +648,10 @@ public class BinaryParser extends BinaryStreamParser {
                         ifParamTypes = WasmType.VOID_TYPE_ARRAY;
                         ifResultTypes = encapsulateResultType(multiResult[0]);
                     } else if (multiValue) {
-                        ifParamTypes = extractBlockParamTypes(multiResult[0]);
-                        ifResultTypes = extractBlockResultTypes(multiResult[0]);
+                        int typeIndex = multiResult[0];
+                        state.checkFunctionTypeExists(typeIndex, module.typeCount());
+                        ifParamTypes = extractBlockParamTypes(typeIndex);
+                        ifResultTypes = extractBlockResultTypes(typeIndex);
                     } else {
                         throw WasmException.create(Failure.DISABLED_MULTI_VALUE);
                     }
@@ -655,6 +661,18 @@ public class BinaryParser extends BinaryStreamParser {
                 }
                 case Instructions.END: {
                     state.exit(multiValue);
+                    if (state.controlStackSize() == 0) {
+                        /*
+                         * If control stack is empty, we should have reached the end of the function
+                         * at this point. In an invalid wasm binary however, there can be extra
+                         * instructions after the END, which we may not be able to parse due to the
+                         * control stack being empty. To handle this case, and avoid having to
+                         * validate the control stack in every instruction that needs to access the
+                         * stack, we prematurely exit the loop and let the following code size check
+                         * (in readCodeSection) throw an exception.
+                         */
+                        break end;
+                    }
                     break;
                 }
                 case Instructions.ELSE: {
@@ -715,7 +733,7 @@ public class BinaryParser extends BinaryStreamParser {
                     }
                     state.pushAll(function.type().resultTypes());
                     state.addCall(callNodes.size(), callFunctionIndex);
-                    callNodes.add(new CallNode(callFunctionIndex));
+                    callNodes.add(new CallNode(bytecode.location(), callFunctionIndex));
                     break;
                 }
                 case Instructions.CALL_INDIRECT: {
@@ -741,7 +759,7 @@ public class BinaryParser extends BinaryStreamParser {
                     }
                     state.pushAll(callResultTypes);
                     state.addIndirectCall(callNodes.size(), expectedFunctionTypeIndex, tableIndex);
-                    callNodes.add(new CallNode());
+                    callNodes.add(new CallNode(bytecode.location()));
                     break;
                 }
                 case Instructions.DROP:
@@ -1015,7 +1033,7 @@ public class BinaryParser extends BinaryStreamParser {
             // Do not override the code entry offset when rereading the function.
             module.setCodeEntryOffset(codeEntryIndex, bytecodeEndOffset);
         }
-        return new CodeEntry(functionIndex, state.maxStackSize(), locals, resultTypes, callNodes, bytecodeStartOffset, bytecodeEndOffset);
+        return new CodeEntry(functionIndex, state.maxStackSize(), locals, resultTypes, callNodes, bytecodeStartOffset, bytecodeEndOffset, state.usesMemoryZero());
     }
 
     private void readNumericInstructions(ParserState state, int opcode) {
@@ -1525,7 +1543,7 @@ public class BinaryParser extends BinaryStreamParser {
                 break;
             case Instructions.ATOMIC:
                 checkThreadsSupport(opcode);
-                int atomicOpcode = read1() & 0xFF;
+                int atomicOpcode = readUnsignedInt32();
                 state.addAtomicFlag();
                 switch (atomicOpcode) {
                     case Instructions.ATOMIC_NOTIFY:
@@ -1802,7 +1820,7 @@ public class BinaryParser extends BinaryStreamParser {
                 break;
             case Instructions.VECTOR:
                 checkSIMDSupport();
-                int vectorOpcode = read1() & 0xFF;
+                int vectorOpcode = readUnsignedInt32();
                 state.addVectorFlag();
                 switch (vectorOpcode) {
                     case Instructions.VECTOR_V128_LOAD:
@@ -1850,7 +1868,7 @@ public class BinaryParser extends BinaryStreamParser {
                         state.popChecked(V128_TYPE);
                         load(state, V128_TYPE, 8, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 16) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.BYTE_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.load8_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_LOAD8_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1861,7 +1879,7 @@ public class BinaryParser extends BinaryStreamParser {
                         state.popChecked(V128_TYPE);
                         load(state, V128_TYPE, 16, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 8) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.SHORT_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.load16_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_LOAD16_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1872,7 +1890,7 @@ public class BinaryParser extends BinaryStreamParser {
                         state.popChecked(V128_TYPE);
                         load(state, V128_TYPE, 32, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 4) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.INT_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.load32_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_LOAD32_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1883,7 +1901,7 @@ public class BinaryParser extends BinaryStreamParser {
                         state.popChecked(V128_TYPE);
                         load(state, V128_TYPE, 64, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 2) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.DOUBLE_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.load64_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_LOAD64_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1893,7 +1911,7 @@ public class BinaryParser extends BinaryStreamParser {
                     case Instructions.VECTOR_V128_STORE8_LANE: {
                         store(state, V128_TYPE, 8, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 16) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.BYTE_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.store8_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_STORE8_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1903,7 +1921,7 @@ public class BinaryParser extends BinaryStreamParser {
                     case Instructions.VECTOR_V128_STORE16_LANE: {
                         store(state, V128_TYPE, 16, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 8) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.SHORT_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.store16_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_STORE16_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1913,7 +1931,7 @@ public class BinaryParser extends BinaryStreamParser {
                     case Instructions.VECTOR_V128_STORE32_LANE: {
                         store(state, V128_TYPE, 32, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 4) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.INT_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.store32_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_STORE32_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1923,7 +1941,7 @@ public class BinaryParser extends BinaryStreamParser {
                     case Instructions.VECTOR_V128_STORE64_LANE: {
                         store(state, V128_TYPE, 64, longMultiResult);
                         final byte laneIndex = read1();
-                        if (Byte.toUnsignedInt(laneIndex) >= 2) {
+                        if (Byte.toUnsignedInt(laneIndex) >= Vector128.LONG_LENGTH) {
                             fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for v128.store64_lane", Byte.toUnsignedInt(laneIndex));
                         }
                         state.addVectorMemoryLaneInstruction(Bytecode.VECTOR_V128_STORE64_LANE, (int) longMultiResult[0], longMultiResult[1], module.memoryHasIndexType64((int) longMultiResult[0]),
@@ -1939,7 +1957,7 @@ public class BinaryParser extends BinaryStreamParser {
                     case Instructions.VECTOR_I8X16_SHUFFLE: {
                         final Vector128 indices = readUnsignedInt128();
                         for (byte index : indices.getBytes()) {
-                            if (Byte.toUnsignedInt(index) >= 32) {
+                            if (Byte.toUnsignedInt(index) >= 2 * Vector128.BYTE_LENGTH) {
                                 fail(Failure.INVALID_LANE_INDEX, "Lane index %d out of bounds for i8x16.shuffle", Byte.toUnsignedInt(index));
                             }
                         }
@@ -2689,10 +2707,14 @@ public class BinaryParser extends BinaryStreamParser {
             module.setElemInstance(currentElemSegmentId, headerOffset, elemType);
             if (mode == SegmentMode.ACTIVE) {
                 assertTrue(module.checkTableIndex(tableIndex), Failure.UNKNOWN_TABLE);
-                module.addLinkAction(((context, instance) -> context.linker().resolveElemSegment(context, instance, tableIndex, currentElemSegmentId, currentOffsetAddress,
-                                currentOffsetBytecode, bytecodeOffset, elementCount)));
+                module.addLinkAction((context, instance, imports) -> {
+                    context.linker().resolveElemSegment(context, instance, tableIndex, currentElemSegmentId, currentOffsetAddress,
+                                    currentOffsetBytecode, bytecodeOffset, elementCount);
+                });
             } else if (mode == SegmentMode.PASSIVE) {
-                module.addLinkAction(((context, instance) -> context.linker().resolvePassiveElemSegment(context, instance, currentElemSegmentId, bytecodeOffset, elementCount)));
+                module.addLinkAction((context, instance, imports) -> {
+                    context.linker().resolvePassiveElemSegment(context, instance, currentElemSegmentId, bytecodeOffset, elementCount);
+                });
             }
             for (long element : elements) {
                 final int initType = (int) (element >> 32);
@@ -2778,7 +2800,7 @@ public class BinaryParser extends BinaryStreamParser {
 
             module.symbolTable().declareGlobal(globalIndex, type, mutability, isInitialized, initBytecode, initValue);
             final int currentGlobalIndex = globalIndex;
-            module.addLinkAction((context, instance) -> {
+            module.addLinkAction((context, instance, imports) -> {
                 if (isInitialized) {
                     context.globals().store(type, instance.globalAddress(currentGlobalIndex), initValue);
                     context.linker().resolveGlobalInitialization(instance, currentGlobalIndex);
@@ -2868,15 +2890,18 @@ public class BinaryParser extends BinaryStreamParser {
                 bytecode.addDataHeader(byteLength, offsetBytecode, currentOffsetAddress, memoryIndex);
                 final int bytecodeOffset = bytecode.location();
                 module.setDataInstance(currentDataSegmentId, headerOffset);
-                module.addLinkAction(
-                                (context, instance) -> context.linker().resolveDataSegment(context, instance, currentDataSegmentId, memoryIndex, currentOffsetAddress, offsetBytecode, byteLength,
-                                                bytecodeOffset, droppedDataInstanceOffset));
+                module.addLinkAction((context, instance, imports) -> {
+                    context.linker().resolveDataSegment(context, instance, currentDataSegmentId, memoryIndex, currentOffsetAddress, offsetBytecode, byteLength,
+                                    bytecodeOffset, droppedDataInstanceOffset);
+                });
             } else {
                 bytecode.addDataHeader(mode, byteLength);
                 final int bytecodeOffset = bytecode.location();
                 bytecode.addDataRuntimeHeader(byteLength, unsafeMemory);
                 module.setDataInstance(currentDataSegmentId, headerOffset);
-                module.addLinkAction((context, instance) -> context.linker().resolvePassiveDataSegment(context, instance, currentDataSegmentId, bytecodeOffset, byteLength));
+                module.addLinkAction((context, instance, imports) -> {
+                    context.linker().resolvePassiveDataSegment(context, instance, currentDataSegmentId, bytecodeOffset, byteLength);
+                });
             }
             // Add the data section to the bytecode.
             for (int i = 0; i < byteLength; i++) {
@@ -3185,8 +3210,8 @@ public class BinaryParser extends BinaryStreamParser {
     }
 
     private Vector128 readUnsignedInt128() {
-        byte[] bytes = new byte[16];
-        for (int i = 0; i < 16; i++) {
+        byte[] bytes = new byte[Vector128.BYTES];
+        for (int i = 0; i < Vector128.BYTES; i++) {
             bytes[i] = read1();
         }
         return new Vector128(bytes);

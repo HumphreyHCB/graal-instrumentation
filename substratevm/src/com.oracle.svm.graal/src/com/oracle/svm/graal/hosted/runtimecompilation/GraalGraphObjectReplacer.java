@@ -40,6 +40,8 @@ import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.svm.common.meta.MultiMethod;
+import com.oracle.svm.core.code.CodeInfoTable;
+import com.oracle.svm.core.code.ImageCodeInfo;
 import com.oracle.svm.core.graal.nodes.SubstrateFieldLocationIdentity;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.option.HostedOptionKey;
@@ -112,6 +114,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
     private final SubstrateUniverseFactory universeFactory;
     private SubstrateGraalRuntime sGraalRuntime;
 
+    private final ImageCodeInfo imageCodeInfo;
     private final HostedStringDeduplication stringTable;
 
     private final Class<?> jvmciCleanerClass = ReflectionUtil.lookupClass(false, "jdk.vm.ci.hotspot.Cleaner");
@@ -126,6 +129,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
         this.aUniverse = aUniverse;
         this.sProviders = sProviders;
         this.universeFactory = universeFactory;
+        this.imageCodeInfo = CodeInfoTable.getImageCodeCache();
         this.stringTable = HostedStringDeduplication.singleton();
     }
 
@@ -163,7 +167,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
         } else if (source instanceof HotSpotBackendFactory) {
             HotSpotBackendFactory factory = (HotSpotBackendFactory) source;
             Architecture hostArch = HotSpotJVMCIRuntime.runtime().getHostJVMCIBackend().getTarget().arch;
-            if (!factory.getArchitecture().equals(hostArch.getClass())) {
+            if (!factory.getArchitecture().equals(hostArch.getName())) {
                 throw new UnsupportedFeatureException("Non-host architecture HotSpotBackendFactory should not appear in the image: " + source);
             }
         } else if (source instanceof GraalRuntime) {
@@ -237,7 +241,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
         SubstrateMethod sMethod = methods.get(aMethod);
         if (sMethod == null) {
             assert !(original instanceof HostedMethod) : "too late to create new method";
-            SubstrateMethod newMethod = universeFactory.createMethod(aMethod, stringTable);
+            SubstrateMethod newMethod = universeFactory.createMethod(aMethod, imageCodeInfo, stringTable);
             sMethod = methods.putIfAbsent(aMethod, newMethod);
             if (sMethod == null) {
                 sMethod = newMethod;
@@ -394,16 +398,16 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
     /**
      * Collect {@link SubstrateMethod} implementations.
      */
-    public void setMethodsImplementations() {
+    public void setMethodsImplementations(HostedUniverse hUniverse) {
         for (Map.Entry<AnalysisMethod, SubstrateMethod> entry : methods.entrySet()) {
             AnalysisMethod aMethod = entry.getKey();
             SubstrateMethod sMethod = entry.getValue();
-            AnalysisMethod[] aMethodImplementations = aMethod.getImplementations();
-            SubstrateMethod[] implementations = new SubstrateMethod[aMethodImplementations.length];
+            HostedMethod hMethod = hUniverse.lookup(aMethod);
+            SubstrateMethod[] implementations = new SubstrateMethod[hMethod.getImplementations().length];
             int idx = 0;
-            for (AnalysisMethod impl : aMethodImplementations) {
-                SubstrateMethod sImpl = methods.get(impl);
-                VMError.guarantee(sImpl != null, "SubstrateMethod for %s missing.", impl);
+            for (var hImplementation : hMethod.getImplementations()) {
+                SubstrateMethod sImpl = methods.get(hImplementation.getWrapped());
+                VMError.guarantee(sImpl != null, "SubstrateMethod for %s missing.", hImplementation);
                 implementations[idx++] = sImpl;
             }
             sMethod.setImplementations(implementations);
@@ -474,7 +478,8 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
              * We access the offset of methods in the image code section here. Therefore, this code
              * can only run after the heap and code cache layout was done.
              */
-            sMethod.setSubstrateData(vTableIndex, hMethod.isCodeAddressOffsetValid() ? hMethod.getCodeAddressOffset() : 0, hMethod.getDeoptOffsetInImage());
+            int imageCodeOffset = hMethod.isCodeAddressOffsetValid() ? hMethod.getCodeAddressOffset() : 0;
+            sMethod.setSubstrateData(vTableIndex, imageCodeOffset, hMethod.getImageCodeDeoptOffset());
         }
     }
 
