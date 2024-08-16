@@ -1,2051 +1,417 @@
-{
-    "instructions": [
-      {
-        "name": "MOV",
-        "versions": [
-          {"operands": "r8,r8", "ops": 1, "latency": 0},
-          {"operands": "r16,r16", "ops": 1, "latency": 0},
-          {"operands": "r32,r32", "ops": 1, "latency": 0},
-          {"operands": "r64,r64", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m8/16", "ops": 4, "latency": 1},
-          {"operands": "r,m32/64", "ops": 2, "latency": 1},
-          {"operands": "m,r8/16", "ops": 3, "latency": 1},
-          {"operands": "m,r32/64", "ops": 2, "latency": 1},
-          {"operands": "m,i", "ops": 1, "latency": 1},
-          {"operands": "MOVNTI m,r", "ops": 1, "latency": "900"},
-          {"operands": "MOVZX, MOVSX r,r", "ops": 1, "latency": 0},
-          {"operands": "MOVZX, MOVSX r,m", "ops": 4, "latency": 1},
-          {"operands": "MOVSXD r64,r32", "ops": 1, "latency": 0},
-          {"operands": "MOVSXD r64,m32", "ops": 3, "latency": 1}
-        ]
-      },
-      {
-        "name": "CMOVcc",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "XCHG",
-        "versions": [
-          {"operands": "r8,r8", "ops": 2, "latency": 1},
-          {"operands": "r16,r16", "ops": 2, "latency": 1},
-          {"operands": "r32,r32", "ops": 2, "latency": 0},
-          {"operands": "r64,r64", "ops": 2, "latency": 0},
-          {"operands": "r,m", "ops": 2, "latency": "18"}
-        ]
-      },
-      {
-        "name": "XLAT",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 2}
-        ]
-      },
-      {
-        "name": "PUSH",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 1},
-          {"operands": "i", "ops": 1, "latency": 1},
-          {"operands": "m", "ops": 2, "latency": 1},
-          {"operands": "F(D/Q)", "ops": 9, "latency": 4},
-          {"operands": "sp", "ops": 2, "latency": 1},
-          {"operands": "A(D)", "ops": 9, "latency": 8}
-        ]
-      },
-      {
-        "name": "POP",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 1},
-          {"operands": "m", "ops": 2, "latency": 1},
-          {"operands": "F(D/Q)", "ops": 35, "latency": 13},
-          {"operands": "A(D)", "ops": 9, "latency": 4},
-          {"operands": "sp", "ops": 2, "latency": 2}
-        ]
-      },
-      {
-        "name": "LEA",
-        "versions": [
-          {"operands": "r16,[m]", "ops": 2, "latency": 1},
-          {"operands": "r32/64,[m]", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "LAHF",
-        "versions": [
-          {"operands": "", "ops": 4, "latency": 2}
-        ]
-      },
-      {
-        "name": "SAHF",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "SALC",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "BSWAP",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "MOVBE",
-        "versions": [
-          {"operands": "r,[m]", "ops": 1, "latency": 1},
-          {"operands": "[m],r", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PREFETCHNTA",
-        "versions": [
-          {"operands": "m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PREFETCHT0/1/2",
-        "versions": [
-          {"operands": "m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PREFETCH/W",
-        "versions": [
-          {"operands": "m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "SFENCE",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "LFENCE",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 11}
-        ]
-      },
-      {
-        "name": "MFENCE",
-        "versions": [
-          {"operands": "", "ops": 7, "latency": "78"}
-        ]
-      },
-      {
-        "name": "ADD",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "SUB",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "ADC",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 1},
-          {"operands": "r,i", "ops": 1, "latency": 1},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r/i", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r/i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "SBB",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 1},
-          {"operands": "r,i", "ops": 1, "latency": 1},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r/i", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r/i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "ADCX",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "ADOX",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CMP",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "INC",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0},
-          {"operands": "m8/16", "ops": 7, "latency": 1},
-          {"operands": "m32/64", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "DEC",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0},
-          {"operands": "m8/16", "ops": 7, "latency": 1},
-          {"operands": "m32/64", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "NEG",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0},
-          {"operands": "m8/16", "ops": 7, "latency": 1},
-          {"operands": "m32/64", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "AAA",
-        "versions": [
-          {"operands": "", "ops": 10, "latency": 6}
-        ]
-      },
-      {
-        "name": "AAS",
-        "versions": [
-          {"operands": "", "ops": 10, "latency": 6}
-        ]
-      },
-      {
-        "name": "DAA",
-        "versions": [
-          {"operands": "", "ops": 16, "latency": 9}
-        ]
-      },
-      {
-        "name": "DAS",
-        "versions": [
-          {"operands": "", "ops": 20, "latency": 9}
-        ]
-      },
-      {
-        "name": "AAD",
-        "versions": [
-          {"operands": "", "ops": 4, "latency": 5}
-        ]
-      },
-      {
-        "name": "AAM",
-        "versions": [
-          {"operands": "", "ops": 4, "latency": 13}
-        ]
-      },
-      {
-        "name": "MUL",
-        "versions": [
-          {"operands": "r8/m8", "ops": 1, "latency": 3},
-          {"operands": "r16/m16", "ops": 3, "latency": 3},
-          {"operands": "r32/m32", "ops": 2, "latency": 3},
-          {"operands": "r64/m64", "ops": 2, "latency": 3}
-        ]
-      },
-      {
-        "name": "IMUL",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 3},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "r16,r16,i", "ops": 2, "latency": 4},
-          {"operands": "r32,r32,i", "ops": 1, "latency": 3},
-          {"operands": "r64,r64,i", "ops": 1, "latency": 3},
-          {"operands": "r16,m16,i", "ops": 2, "latency": 1},
-          {"operands": "r32,m32,i", "ops": 1, "latency": 1},
-          {"operands": "r64,m64,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "MULX",
-        "versions": [
-          {"operands": "r,r,r", "ops": 2, "latency": 4}
-        ]
-      },
-      {
-        "name": "DIV",
-        "versions": [
-          {"operands": "r8/m8", "ops": 1, "latency": 14},
-          {"operands": "r16/m16", "ops": 2, "latency": 17},
-          {"operands": "r32/m32", "ops": 2, "latency": 21},
-          {"operands": "r64/m64", "ops": 2, "latency": 29}
-        ]
-      },
-      {
-        "name": "IDIV",
-        "versions": [
-          {"operands": "r8/m8", "ops": 1, "latency": 14},
-          {"operands": "r16/m16", "ops": 2, "latency": 17},
-          {"operands": "r32/m32", "ops": 2, "latency": 21},
-          {"operands": "r64/m64", "ops": 2, "latency": 29}
-        ]
-      },
-      {
-        "name": "CBW",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CWDE",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CDQE",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CDQ",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CQO",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CWD",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "AND",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r/i", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r/i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "OR",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r/i", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r/i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "XOR",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "r,m", "ops": 1, "latency": 1},
-          {"operands": "m8/16,r/i", "ops": 7, "latency": 1},
-          {"operands": "m32/64,r/i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "TEST",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0},
-          {"operands": "r,i", "ops": 1, "latency": 0},
-          {"operands": "m,r", "ops": 1, "latency": 1},
-          {"operands": "m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "NOT",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0},
-          {"operands": "m8/16", "ops": 7, "latency": 1},
-          {"operands": "m32/64", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "ANDN",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "SHL",
-        "versions": [
-          {"operands": "r,i/CL", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "SHR",
-        "versions": [
-          {"operands": "r,i/CL", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "SAR",
-        "versions": [
-          {"operands": "r,i/CL", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "ROL",
-        "versions": [
-          {"operands": "r,i/CL", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "ROR",
-        "versions": [
-          {"operands": "r,i/CL", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "RCL",
-        "versions": [
-          {"operands": "r,1", "ops": 1, "latency": 1},
-          {"operands": "r,i", "ops": 9, "latency": 4},
-          {"operands": "r,cl", "ops": 9, "latency": 4}
-        ]
-      },
-      {
-        "name": "RCR",
-        "versions": [
-          {"operands": "r,1", "ops": 1, "latency": 1},
-          {"operands": "r,i", "ops": 7, "latency": 3},
-          {"operands": "r,cl", "ops": 7, "latency": 3}
-        ]
-      },
-      {
-        "name": "SHLD",
-        "versions": [
-          {"operands": "r,r,i", "ops": 6, "latency": 3},
-          {"operands": "r,r,cl", "ops": 7, "latency": 3},
-          {"operands": "m,r,i/CL", "ops": 8, "latency": 3}
-        ]
-      },
-      {
-        "name": "SHRD",
-        "versions": [
-          {"operands": "r,r,i", "ops": 6, "latency": 3},
-          {"operands": "r,r,cl", "ops": 7, "latency": 3},
-          {"operands": "m,r,i/CL", "ops": 8, "latency": 3}
-        ]
-      },
-      {
-        "name": "SARX",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "SHLX",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "SHRX",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "RORX",
-        "versions": [
-          {"operands": "r,r,i", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "BT",
-        "versions": [
-          {"operands": "r,r/i", "ops": 1, "latency": 0},
-          {"operands": "m,i", "ops": 1, "latency": 1},
-          {"operands": "m,r", "ops": 5, "latency": 3}
-        ]
-      },
-      {
-        "name": "BTC",
-        "versions": [
-          {"operands": "r,r/i", "ops": 2, "latency": 1},
-          {"operands": "m,i", "ops": 4, "latency": 2},
-          {"operands": "m,r", "ops": 8, "latency": 3}
-        ]
-      },
-      {
-        "name": "BTR",
-        "versions": [
-          {"operands": "r,r/i", "ops": 2, "latency": 1},
-          {"operands": "m,i", "ops": 4, "latency": 2},
-          {"operands": "m,r", "ops": 8, "latency": 3}
-        ]
-      },
-      {
-        "name": "BTS",
-        "versions": [
-          {"operands": "r,r/i", "ops": 2, "latency": 1},
-          {"operands": "m,i", "ops": 4, "latency": 2},
-          {"operands": "m,r", "ops": 8, "latency": 3}
-        ]
-      },
-      {
-        "name": "BSF",
-        "versions": [
-          {"operands": "r,r", "ops": 6, "latency": 3},
-          {"operands": "r,m", "ops": 8, "latency": 4}
-        ]
-      },
-      {
-        "name": "BSR",
-        "versions": [
-          {"operands": "r,r", "ops": 6, "latency": 4},
-          {"operands": "r,m", "ops": 8, "latency": 5}
-        ]
-      },
-      {
-        "name": "SETcc",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 1},
-          {"operands": "m", "ops": 1, "latency": 2}
-        ]
-      },
-      {
-        "name": "CLC",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "STC",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "CMC",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CLD",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "STD",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "POPCNT",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "LZCNT",
-        "versions": [
-          {"operands": "r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "TZCNT",
-        "versions": [
-          {"operands": "r,r", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "BEXTR",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "BLSI",
-        "versions": [
-          {"operands": "r,r", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "BLSMSK",
-        "versions": [
-          {"operands": "r,r", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "BLSR",
-        "versions": [
-          {"operands": "r,r", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "PDEP",
-        "versions": [
-          {"operands": "r,r,r", "ops": 6, "latency": 19}
-        ]
-      },
-      {
-        "name": "PEXT",
-        "versions": [
-          {"operands": "r,r,r", "ops": 7, "latency": 19}
-        ]
-      },
-      {
-        "name": "BZHI",
-        "versions": [
-          {"operands": "r,r,r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "JMP",
-        "versions": [
-          {"operands": "short/near", "ops": 1, "latency": 2},
-          {"operands": "r", "ops": 1, "latency": 2},
-          {"operands": "m", "ops": 1, "latency": 2}
-        ]
-      },
-      {
-        "name": "Jcc",
-        "versions": [
-          {"operands": "short/near", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "fused CMP+Jcc",
-        "versions": [
-          {"operands": "short/near", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "J(E/R)CXZ",
-        "versions": [
-          {"operands": "short", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "LOOP",
-        "versions": [
-          {"operands": "short", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "LOOPE",
-        "versions": [
-          {"operands": "short", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "LOOPNE",
-        "versions": [
-          {"operands": "short", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "CALL",
-        "versions": [
-          {"operands": "near", "ops": 2, "latency": 2},
-          {"operands": "r", "ops": 2, "latency": 2},
-          {"operands": "m", "ops": 6, "latency": 2}
-        ]
-      },
-      {
-        "name": "RET",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 2},
-          {"operands": "i", "ops": 2, "latency": 2}
-        ]
-      },
-      {
-        "name": "BOUND",
-        "versions": [
-          {"operands": "m", "ops": 11, "latency": 4}
-        ]
-      },
-      {
-        "name": "INTO",
-        "versions": [
-          {"operands": "", "ops": 4, "latency": 2}
-        ]
-      },
-      {
-        "name": "LODS",
-        "versions": [
-          {"operands": "", "ops": 3, "latency": 3}
-        ]
-      },
-      {
-        "name": "REP LODS",
-        "versions": [
-          {"operands": "m", "ops": 6, "latency": 2}
-        ]
-      },
-      {
-        "name": "STOS",
-        "versions": [
-          {"operands": "", "ops": 3, "latency": 3}
-        ]
-      },
-      {
-        "name": "REP STOS",
-        "versions": [
-          {"operands": "", "ops": 3, "latency": 1}
-        ]
-      },
-      {
-        "name": "MOVS",
-        "versions": [
-          {"operands": "", "ops": 5, "latency": 3}
-        ]
-      },
-      {
-        "name": "REP MOVS",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "SCAS",
-        "versions": [
-          {"operands": "", "ops": 3, "latency": 3}
-        ]
-      },
-      {
-        "name": "REP SCAS",
-        "versions": [
-          {"operands": "", "ops": 7, "latency": 2}
-        ]
-      },
-      {
-        "name": "CMPS",
-        "versions": [
-          {"operands": "", "ops": 6, "latency": 3}
-        ]
-      },
-      {
-        "name": "REP CMPS",
-        "versions": [
-          {"operands": "", "ops": 9, "latency": 3}
-        ]
-      },
-      {
-        "name": "LOCK ADD",
-        "versions": [
-          {"operands": "m,r", "ops": 1, "latency": "17"}
-        ]
-      },
-      {
-        "name": "XADD",
-        "versions": [
-          {"operands": "m,r", "ops": 4, "latency": 7}
-        ]
-      },
-      {
-        "name": "LOCK XADD",
-        "versions": [
-          {"operands": "m,r", "ops": 4, "latency": "17"}
-        ]
-      },
-      {
-        "name": "CMPXCHG",
-        "versions": [
-          {"operands": "m,r8", "ops": 5, "latency": 9},
-          {"operands": "m,r16/32/64", "ops": 6, "latency": 9}
-        ]
-      },
-      {
-        "name": "LOCK CMPXCHG",
-        "versions": [
-          {"operands": "m,r", "ops": 5, "latency": "17"}
-        ]
-      },
-      {
-        "name": "CMPXCHG8B",
-        "versions": [
-          {"operands": "m64", "ops": 18, "latency": 9}
-        ]
-      },
-      {
-        "name": "LOCK CMPXCHG8B",
-        "versions": [
-          {"operands": "m64", "ops": 18, "latency": "17"}
-        ]
-      },
-      {
-        "name": "CMPXCHG16B",
-        "versions": [
-          {"operands": "m128", "ops": 27, "latency": 14}
-        ]
-      },
-      {
-        "name": "LOCK CMPXCHG16B",
-        "versions": [
-          {"operands": "m128", "ops": 27, "latency": "17"}
-        ]
-      },
-      {
-        "name": "NOP (90)",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "Long NOP (0F 1F)",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "PAUSE",
-        "versions": [
-          {"operands": "", "ops": 8, "latency": "65"}
-        ]
-      },
-      {
-        "name": "ENTER",
-        "versions": [
-          {"operands": "a,0", "ops": 12, "latency": 18},
-          {"operands": "a,b", "ops": 11, "latency": 20}
-        ]
-      },
-      {
-        "name": "LEAVE",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 3}
-        ]
-      },
-      {
-        "name": "CPUID",
-        "versions": [
-          {"operands": "", "ops": 37, "latency": 130}
-        ]
-      },
-      {
-        "name": "XGETBV",
-        "versions": [
-          {"operands": "", "ops": 38, "latency": 48}
-        ]
-      },
-      {
-        "name": "RDTSC",
-        "versions": [
-          {"operands": "", "ops": 37, "latency": 37}
-        ]
-      },
-      {
-        "name": "RDTSCP",
-        "versions": [
-          {"operands": "", "ops": 37, "latency": 67}
-        ]
-      },
-      {
-        "name": "RDPMC",
-        "versions": [
-          {"operands": "", "ops": 19, "latency": 21}
-        ]
-      },
-      {
-        "name": "CRC32",
-        "versions": [
-          {"operands": "r32,r8", "ops": 1, "latency": 3},
-          {"operands": "r32,r16", "ops": 1, "latency": 3},
-          {"operands": "r32,r32", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "RDRAND",
-        "versions": [
-          {"operands": "RDSEED r16/32", "ops": 11, "latency": "1900"},
-          {"operands": "RDSEED r64", "ops": 17, "latency": "3700"}
-        ]
-      },
-      {
-        "name": "FLD",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 1},
-          {"operands": "m32/64", "ops": 1, "latency": 6},
-          {"operands": "m80", "ops": 8, "latency": 7},
-          {"operands": "FBLD m80", "ops": 24, "latency": 24}
-        ]
-      },
-      {
-        "name": "FST(P)",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 1},
-          {"operands": "m32/64", "ops": 2, "latency": 5},
-          {"operands": "m80", "ops": 15, "latency": 8},
-          {"operands": "FBSTP m80", "ops": 274, "latency": "155"}
-        ]
-      },
-      {
-        "name": "FXCH",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "FILD",
-        "versions": [
-          {"operands": "m", "ops": 1, "latency": 8}
-        ]
-      },
-      {
-        "name": "FIST(T)(P)",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "FLDZ",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FLD1",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FCMOVcc",
-        "versions": [
-          {"operands": "st0,r", "ops": 7, "latency": 3}
-        ]
-      },
-      {
-        "name": "FFREE",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "FINCSTP",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "FDECSTP",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "FNSTSW AX",
-        "versions": [
-          {"operands": "", "ops": 3, "latency": 16}
-        ]
-      },
-      {
-        "name": "FNSTSW m16",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 14}
-        ]
-      },
-      {
-        "name": "FLDCW",
-        "versions": [
-          {"operands": "m16", "ops": 1, "latency": 2}
-        ]
-      },
-      {
-        "name": "FNSTCW",
-        "versions": [
-          {"operands": "m16", "ops": 2, "latency": 2}
-        ]
-      },
-      {
-        "name": "FADD(P)",
-        "versions": [
-          {"operands": "r/m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "FSUB(R)(P)",
-        "versions": [
-          {"operands": "r/m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "FIADD",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "FISUB(R)",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "FMUL(P)",
-        "versions": [
-          {"operands": "r/m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "FIMUL",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "FDIV(R)(P)",
-        "versions": [
-          {"operands": "r", "ops": 1, "latency": 15},
-          {"operands": "m", "ops": 1, "latency": 15}
-        ]
-      },
-      {
-        "name": "FIDIV(R)",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 15}
-        ]
-      },
-      {
-        "name": "FABS",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FCHS",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FCOM(P)",
-        "versions": [
-          {"operands": "r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FUCOM(P)",
-        "versions": [
-          {"operands": "r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FCOMPP",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FUCOMPP",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FCOMI(P)",
-        "versions": [
-          {"operands": "r", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "FICOM(P)",
-        "versions": [
-          {"operands": "m", "ops": 2, "latency": 1}
-        ]
-      },
-      {
-        "name": "FTST",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FXAM",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FRNDINT",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "FPREM",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 36}
-        ]
-      },
-      {
-        "name": "FPREM1",
-        "versions": [
-          {"operands": "", "ops": 2, "latency": 36}
-        ]
-      },
-      {
-        "name": "FSQRT",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 22}
-        ]
-      },
-      {
-        "name": "FLDPI",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "FSIN",
-        "versions": [
-          {"operands": "", "ops": 11, "latency": 115}
-        ]
-      },
-      {
-        "name": "FCOS",
-        "versions": [
-          {"operands": "", "ops": 16, "latency": 85}
-        ]
-      },
-      {
-        "name": "FSINCOS",
-        "versions": [
-          {"operands": "", "ops": 11, "latency": 108}
-        ]
-      },
-      {
-        "name": "FPTAN",
-        "versions": [
-          {"operands": "", "ops": 11, "latency": 74}
-        ]
-      },
-      {
-        "name": "FPATAN",
-        "versions": [
-          {"operands": "", "ops": 11, "latency": 82}
-        ]
-      },
-      {
-        "name": "FSCALE",
-        "versions": [
-          {"operands": "", "ops": 8, "latency": 8}
-        ]
-      },
-      {
-        "name": "FXTRACT",
-        "versions": [
-          {"operands": "", "ops": 13, "latency": 8}
-        ]
-      },
-      {
-        "name": "F2XM1",
-        "versions": [
-          {"operands": "", "ops": 10, "latency": 55}
-        ]
-      },
-      {
-        "name": "FYL2X",
-        "versions": [
-          {"operands": "", "ops": 10, "latency": 18}
-        ]
-      },
-      {
-        "name": "FYL2XP1",
-        "versions": [
-          {"operands": "", "ops": 69, "latency": 145}
-        ]
-      },
-      {
-        "name": "FNOP",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "(F)WAIT",
-        "versions": [
-          {"operands": "", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "FNCLEX",
-        "versions": [
-          {"operands": "", "ops": 20, "latency": 49}
-        ]
-      },
-      {
-        "name": "FNINIT",
-        "versions": [
-          {"operands": "", "ops": 34, "latency": 92}
-        ]
-      },
-      {
-        "name": "FNSAVE",
-        "versions": [
-          {"operands": "m864", "ops": 99, "latency": "186"}
-        ]
-      },
-      {
-        "name": "FRSTOR",
-        "versions": [
-          {"operands": "m864", "ops": 77, "latency": "140"}
-        ]
-      },
-      {
-        "name": "MOVD",
-        "versions": [
-          {"operands": "r32, mm", "ops": 1, "latency": 3},
-          {"operands": "mm, r32", "ops": 2, "latency": 4},
-          {"operands": "r32/64, x", "ops": 1, "latency": 3},
-          {"operands": "x, r32/64", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "MOVD/Q",
-        "versions": [
-          {"operands": "mm/x,m32", "ops": 1, "latency": 4},
-          {"operands": "m32,mm/x", "ops": 1, "latency": 4},
-          {"operands": "mm/x,mm/x", "ops": 1, "latency": 0},
-          {"operands": "mm/x,m64", "ops": 1, "latency": 4},
-          {"operands": "m64,mm/x", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVDQA",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 0},
-          {"operands": "x,m", "ops": 1, "latency": 4},
-          {"operands": "m,x", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "VMOVDQA",
-        "versions": [
-          {"operands": "y,y", "ops": 1, "latency": 0},
-          {"operands": "y,m256", "ops": 1, "latency": 4},
-          {"operands": "m256,y", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVDQU",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 0},
-          {"operands": "x,m", "ops": 1, "latency": 4},
-          {"operands": "m,x", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "LDDQU",
-        "versions": [
-          {"operands": "x,m", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "VMOVDQU",
-        "versions": [
-          {"operands": "y,m", "ops": 1, "latency": 4},
-          {"operands": "m,y", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVDQ2Q",
-        "versions": [
-          {"operands": "mm,x", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "MOVQ2DQ",
-        "versions": [
-          {"operands": "x,mm", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "MOVNTQ",
-        "versions": [
-          {"operands": "m,mm", "ops": 1, "latency": "930"}
-        ]
-      },
-      {
-        "name": "MOVNTDQ",
-        "versions": [
-          {"operands": "m,x", "ops": 1, "latency": "940"}
-        ]
-      },
-      {
-        "name": "MOVNTDQA",
-        "versions": [
-          {"operands": "x,m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "PACKSSWB/DW",
-        "versions": [
-          {"operands": "mm/x,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PACKUSWB",
-        "versions": [
-          {"operands": "mm/x,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VPACKSSWB/DW",
-        "versions": [
-          {"operands": "v,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VPACKUSWB",
-        "versions": [
-          {"operands": "v,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PUNPCKL/HQDQ",
-        "versions": [
-          {"operands": "v,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PSHUFB",
-        "versions": [
-          {"operands": "v,r/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PSHUFD",
-        "versions": [
-          {"operands": "v,v,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PSHUFW",
-        "versions": [
-          {"operands": "mm,mm,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PSHUFL/HW",
-        "versions": [
-          {"operands": "v,v,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PALIGNR",
-        "versions": [
-          {"operands": "v,r/m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "PBLENDW",
-        "versions": [
-          {"operands": "v,r/m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VPERMD",
-        "versions": [
-          {"operands": "v,v,v", "ops": 2, "latency": 8},
-          {"operands": "v,v,m", "ops": 3, "latency": 2}
-        ]
-      },
-      {
-        "name": "VPERMQ",
-        "versions": [
-          {"operands": "v,v,i", "ops": 2, "latency": 6},
-          {"operands": "v,m,i", "ops": 3, "latency": 2}
-        ]
-      },
-      {
-        "name": "VPERM2I128",
-        "versions": [
-          {"operands": "v,v,v,i", "ops": 1, "latency": 3},
-          {"operands": "v,v,m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VEXTRACTI128",
-        "versions": [
-          {"operands": "x,y,i", "ops": 1, "latency": 1},
-          {"operands": "m,y,i", "ops": 2, "latency": 8}
-        ]
-      },
-      {
-        "name": "VINSERTI128",
-        "versions": [
-          {"operands": "y,x,i", "ops": 1, "latency": 1},
-          {"operands": "y,m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "MASKMOVQ",
-        "versions": [
-          {"operands": "mm,mm", "ops": 30, "latency": "2000"}
-        ]
-      },
-      {
-        "name": "MASKMOVDQU",
-        "versions": [
-          {"operands": "x,x", "ops": 60, "latency": "5000"}
-        ]
-      },
-      {
-        "name": "PMOVMSKB",
-        "versions": [
-          {"operands": "r32,mm", "ops": 1, "latency": 3},
-          {"operands": "r32,x", "ops": 1, "latency": 3},
-          {"operands": "r32,y", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "PEXTRB/W/D/Q",
-        "versions": [
-          {"operands": "r,x/mm,i", "ops": 2, "latency": 3}
-        ]
-      },
-      {
-        "name": "PINSRB/W/D/Q",
-        "versions": [
-          {"operands": "x/mm,r,i", "ops": 2, "latency": 3}
-        ]
-      },
-      {
-        "name": "EXTRQ",
-        "versions": [
-          {"operands": "x,i,i", "ops": 2, "latency": 3},
-          {"operands": "x,x", "ops": 1, "latency": 2}
-        ]
-      },
-      {
-        "name": "INSERTQ",
-        "versions": [
-          {"operands": "x,x,i,i", "ops": 2, "latency": 2},
-          {"operands": "x,x", "ops": 1, "latency": 2}
-        ]
-      },
-      {
-        "name": "VMOVAPS/D",
-        "versions": [
-          {"operands": "v,v", "ops": 1, "latency": 0},
-          {"operands": "x,m128", "ops": 1, "latency": 4},
-          {"operands": "y,m256", "ops": 1, "latency": 5},
-          {"operands": "m128,x", "ops": 1, "latency": 4},
-          {"operands": "m256,y", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVSS/D",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 1},
-          {"operands": "x,m32/64", "ops": 1, "latency": 4},
-          {"operands": "m32/64,x", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVHPS/D",
-        "versions": [
-          {"operands": "x,m64", "ops": 1, "latency": 5},
-          {"operands": "m64,x", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "MOVLPS/D",
-        "versions": [
-          {"operands": "x,m64", "ops": 1, "latency": 5},
-          {"operands": "m64,x", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVLHPS",
-        "versions": [
-          {"operands": "MOVHLPS x,x", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "MOVMSKPS/D",
-        "versions": [
-          {"operands": "r32,x", "ops": 1, "latency": 3},
-          {"operands": "r32,y", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "MOVNTPS/D",
-        "versions": [
-          {"operands": "m,v", "ops": 1, "latency": "950"}
-        ]
-      },
-      {
-        "name": "MOVNTSS/SD",
-        "versions": [
-          {"operands": "m,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "SHUFPS/D",
-        "versions": [
-          {"operands": "v,v/m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VPERMILPS/PD",
-        "versions": [
-          {"operands": "v,v,v/m", "ops": 1, "latency": 3},
-          {"operands": "v,v/m,i", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VPERM2F128",
-        "versions": [
-          {"operands": "y,y,y/m,i", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "VPERMPS",
-        "versions": [
-          {"operands": "y,y,y", "ops": 2, "latency": 8},
-          {"operands": "y,y,m", "ops": 3, "latency": 2}
-        ]
-      },
-      {
-        "name": "VPERMPD",
-        "versions": [
-          {"operands": "y,y,i", "ops": 2, "latency": 6},
-          {"operands": "y,m,i", "ops": 3, "latency": 1}
-        ]
-      },
-      {
-        "name": "BLENDPS/PD",
-        "versions": [
-          {"operands": "y,y,i", "ops": 1, "latency": 0}
-        ]
-      },
-      {
-        "name": "BLENDVPS/PD",
-        "versions": [
-          {"operands": "x,x/m,xmm0", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VBLENDVPS/PD",
-        "versions": [
-          {"operands": "v,v,v/m,v", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "MOVDDUP",
-        "versions": [
-          {"operands": "v,v", "ops": 1, "latency": 1},
-          {"operands": "x,m64", "ops": 1, "latency": 9},
-          {"operands": "y,m256", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "VBROADCASTSS/D",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 1},
-          {"operands": "y,x", "ops": 2, "latency": 4},
-          {"operands": "v,m", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "VBROADCASTF128",
-        "versions": [
-          {"operands": "y,m128", "ops": 1, "latency": 4}
-        ]
-      },
-      {
-        "name": "MOVSH/LDUP",
-        "versions": [
-          {"operands": "v,v", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "UNPCKH/LPS/D",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "EXTRACTPS",
-        "versions": [
-          {"operands": "r32,x,i", "ops": 2, "latency": 4},
-          {"operands": "m32,x,i", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "VEXTRACTF128",
-        "versions": [
-          {"operands": "x,y,i", "ops": 1, "latency": 3},
-          {"operands": "m128,y,i", "ops": 2, "latency": 6}
-        ]
-      },
-      {
-        "name": "INSERTPS",
-        "versions": [
-          {"operands": "x,x,i", "ops": 1, "latency": 1},
-          {"operands": "x,m32,i", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "VINSERTF128",
-        "versions": [
-          {"operands": "y,y,x,i", "ops": 1, "latency": 1},
-          {"operands": "y,y,m128,i", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "VMASKMOVPS/D",
-        "versions": [
-          {"operands": "v,v,m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "VGATHERDPS",
-        "versions": [
-          {"operands": "x,[r+s*x],x", "ops": 32, "latency": 9},
-          {"operands": "y,[r+s*y],y", "ops": 60, "latency": 16}
-        ]
-      },
-      {
-        "name": "VGATHERQPS",
-        "versions": [
-          {"operands": "x,[r+s*x],x", "ops": 20, "latency": 6},
-          {"operands": "y,[r+s*y],y", "ops": 32, "latency": 9}
-        ]
-      },
-      {
-        "name": "VGATHERDPD",
-        "versions": [
-          {"operands": "x,[r+s*x],x", "ops": 19, "latency": 6},
-          {"operands": "y,[r+s*x],y", "ops": 32, "latency": 9}
-        ]
-      },
-      {
-        "name": "VGATHERQPD",
-        "versions": [
-          {"operands": "x,[r+s*x],x", "ops": 19, "latency": 6},
-          {"operands": "y,[r+s*y],y", "ops": 32, "latency": 9}
-        ]
-      },
-      {
-        "name": "CVTPD2PS",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "VCVTPD2PS",
-        "versions": [
-          {"operands": "x,y", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "CVTPS2PD",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "VCVTPS2PD",
-        "versions": [
-          {"operands": "y,x", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "CVTSD2SS",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "CVTSS2SD",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "CVTDQ2PS",
-        "versions": [
-          {"operands": "v,v", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "CVT(T) PS2DQ",
-        "versions": [
-          {"operands": "v,v", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "CVTDQ2PD",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "VCVTDQ2PD",
-        "versions": [
-          {"operands": "y,x", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "CVT(T)PD2DQ",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "VCVT(T)PD2DQ",
-        "versions": [
-          {"operands": "x,y", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "CVTPI2PS",
-        "versions": [
-          {"operands": "x,mm", "ops": 3, "latency": 6}
-        ]
-      },
-      {
-        "name": "CVT(T)PS2PI",
-        "versions": [
-          {"operands": "mm,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "CVTPI2PD",
-        "versions": [
-          {"operands": "x,mm", "ops": 3, "latency": 6}
-        ]
-      },
-      {
-        "name": "CVT(T) PD2PI",
-        "versions": [
-          {"operands": "mm,x", "ops": 2, "latency": 4}
-        ]
-      },
-      {
-        "name": "CVTSI2SS",
-        "versions": [
-          {"operands": "x,r32", "ops": 2, "latency": 7}
-        ]
-      },
-      {
-        "name": "CVT(T)SS2SI",
-        "versions": [
-          {"operands": "r32,x", "ops": 2, "latency": 6}
-        ]
-      },
-      {
-        "name": "CVTSI2SD",
-        "versions": [
-          {"operands": "x,r32/64", "ops": 2, "latency": 7}
-        ]
-      },
-      {
-        "name": "CVT(T)SD2SI",
-        "versions": [
-          {"operands": "r32/64,x", "ops": 2, "latency": 6}
-        ]
-      },
-      {
-        "name": "VCVTPS2PH",
-        "versions": [
-          {"operands": "x/m,x,i", "ops": 1, "latency": 3},
-          {"operands": "x/m,y,i", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "VCVTPH2PS",
-        "versions": [
-          {"operands": "x,x/m", "ops": 1, "latency": 3},
-          {"operands": "y,x/m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "ADDSS/D",
-        "versions": [
-          {"operands": "x,x/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "ADDPS/D",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "ADDSUBPS/D",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "HADD/SUBPS/D",
-        "versions": [
-          {"operands": "x,x", "ops": 4, "latency": 7},
-          {"operands": "y,y,y/m", "ops": 3, "latency": 7}
-        ]
-      },
-      {
-        "name": "MULSS",
-        "versions": [
-          {"operands": "x,x/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "MULSD",
-        "versions": [
-          {"operands": "x,x/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "MULPS",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "MULPD",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "DIVSS",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 10}
-        ]
-      },
-      {
-        "name": "DIVPS",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 10}
-        ]
-      },
-      {
-        "name": "DIVSD",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 13}
-        ]
-      },
-      {
-        "name": "DIVPD",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 13}
-        ]
-      },
-      {
-        "name": "RCPSS/PS",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "CMPSS/SD/PS/PD",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "(U)COMISS/SD",
-        "versions": [
-          {"operands": "x,x/m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "ROUNDSS/SD/PS/PD",
-        "versions": [
-          {"operands": "v,v/m,i", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "DPPS",
-        "versions": [
-          {"operands": "x,x,i", "ops": 8, "latency": 15}
-        ]
-      },
-      {
-        "name": "VDPPS",
-        "versions": [
-          {"operands": "y,y,y,i", "ops": 7, "latency": 15}
-        ]
-      },
-      {
-        "name": "DPPD",
-        "versions": [
-          {"operands": "x,x,i", "ops": 3, "latency": 9}
-        ]
-      },
-      {
-        "name": "VFMADD132PS/PD",
-        "versions": [
-          {"operands": "v,v,v/m", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "SQRTSS/PS",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 14}
-        ]
-      },
-      {
-        "name": "SQRTSD/PD",
-        "versions": [
-          {"operands": "v,v/m", "ops": 1, "latency": 15}
-        ]
-      },
-      {
-        "name": "CVTPS2PI",
-        "versions": [
-          {"operands": "mm,x", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "CVT(T)PI2PS",
-        "versions": [
-          {"operands": "x,mm", "ops": 3, "latency": 6}
-        ]
-      },
-      {
-        "name": "CVTSD2SI",
-        "versions": [
-          {"operands": "r,x", "ops": 2, "latency": 6}
-        ]
-      },
-      {
-        "name": "CVTSI2SD",
-        "versions": [
-          {"operands": "x,r", "ops": 2, "latency": 7}
-        ]
-      },
-      {
-        "name": "CVTPI2PS",
-        "versions": [
-          {"operands": "x,mm", "ops": 3, "latency": 6}
-        ]
-      },
-      {
-        "name": "MOVHLPS",
-        "versions": [
-          {"operands": "x,x", "ops": 1, "latency": 1}
-        ]
-      },
-      {
-        "name": "MOVMSKPS",
-        "versions": [
-          {"operands": "r,x", "ops": 1, "latency": 3}
-        ]
-      },
-      {
-        "name": "PMOVSXB/DW",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMOVSXQ",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMOVZXB/DW",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMOVZXQ",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMOVZXBQ/DQ",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMOVZXBW",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PMULHRSW",
-        "versions": [
-          {"operands": "v,v/v", "ops": 2, "latency": 4}
-        ]
-      },
-      {
-        "name": "PMADDWD",
-        "versions": [
-          {"operands": "v,v/v", "ops": 2, "latency": 3}
-        ]
-      },
-      {
-        "name": "PMULH/W/DQ",
-        "versions": [
-          {"operands": "v,v/m", "ops": 2, "latency": 4}
-        ]
-      },
-      {
-        "name": "PMULULQ",
-        "versions": [
-          {"operands": "v,v/m", "ops": 2, "latency": 4}
-        ]
-      },
-      {
-        "name": "VPALIGNR",
-        "versions": [
-          {"operands": "v,r/m,i", "ops": 2, "latency": 5}
-        ]
-      },
-      {
-        "name": "PCLMULQDQ",
-        "versions": [
-          {"operands": "v,v/m,i", "ops": 1, "latency": 5}
-        ]
-      },
-      {
-        "name": "VBROADCASTI128",
-        "versions": [
-          {"operands": "v,m", "ops": 2, "latency": 7}
-        ]
-      },
-      {
-        "name": "BEXTR",
-        "versions": [
-          {"operands": "r,r,r", "ops": 2, "latency": 7}
-        ]
-      }
-    ]
-  }
-  
+[
+    {"name": "MOV", "opcode": "C6", "ops": "1"},
+    {"name": "CMOVA", "opcode": "", "ops": "1"},
+    {"name": "XCHG", "opcode": "86", "ops": "2"},
+    {"name": "XLAT", "opcode": "", "ops": "2"},
+    {"name": "PUSH", "opcode": "6A", "ops": "1"},
+    {"name": "POP", "opcode": "58", "ops": "1"},
+    {"name": "LEA", "opcode": "8D", "ops": "2"},
+    {"name": "LAHF", "opcode": "", "ops": "4"},
+    {"name": "SAHF", "opcode": "", "ops": "2"},
+    {"name": "SALC", "opcode": "", "ops": "1"},
+    {"name": "BSWAP", "opcode": "C8", "ops": "1"},
+    {"name": "MOVBE", "opcode": "F0", "ops": "1"},
+    {"name": "PREFETCHNTA", "opcode": "18", "ops": "1"},
+    {"name": "PREFETCHT0/1/2", "opcode": "", "ops": "1"},
+    {"name": "PREFETCH/W", "opcode": "", "ops": "1"},
+    {"name": "SFENCE", "opcode": "F8", "ops": "1"},
+    {"name": "LFENCE", "opcode": "E8", "ops": "1"},
+    {"name": "MFENCE", "opcode": "F0", "ops": "7"},
+    {"name": "ADD", "opcode": "04", "ops": "1"},
+    {"name": "SUB", "opcode": "2C", "ops": "1"},
+    {"name": "ADC", "opcode": "14", "ops": "1"},
+    {"name": "SBB", "opcode": "1C", "ops": "1"},
+    {"name": "ADCX", "opcode": "F6", "ops": "1"},
+    {"name": "ADOX", "opcode": "F6", "ops": "1"},
+    {"name": "CMP", "opcode": "3C", "ops": "1"},
+    {"name": "INC", "opcode": "FE", "ops": "1"},
+    {"name": "DEC", "opcode": "FE", "ops": "1"},
+    {"name": "NEG", "opcode": "F6", "ops": "1"},
+    {"name": "AAA", "opcode": "", "ops": "10"},
+    {"name": "AAS", "opcode": "", "ops": "10"},
+    {"name": "DAA", "opcode": "", "ops": "16"},
+    {"name": "DAS", "opcode": "", "ops": "20"},
+    {"name": "AAD", "opcode": "", "ops": "4"},
+    {"name": "AAM", "opcode": "", "ops": "4"},
+    {"name": "MUL", "opcode": "F6", "ops": "1"},
+    {"name": "IMUL", "opcode": "F6", "ops": "1"},
+    {"name": "MULX", "opcode": "F6", "ops": "2"},
+    {"name": "DIV", "opcode": "F6", "ops": "1"},
+    {"name": "IDIV", "opcode": "F6", "ops": "1"},
+    {"name": "CBW", "opcode": "98", "ops": "1"},
+    {"name": "CWDE", "opcode": "98", "ops": "1"},
+    {"name": "CDQE", "opcode": "98", "ops": "1"},
+    {"name": "CDQ", "opcode": "99", "ops": "1"},
+    {"name": "CQO", "opcode": "99", "ops": "1"},
+    {"name": "CWD", "opcode": "99", "ops": "2"},
+    {"name": "AND", "opcode": "24", "ops": "1"},
+    {"name": "OR", "opcode": "0C", "ops": "1"},
+    {"name": "XOR", "opcode": "34", "ops": "1"},
+    {"name": "TEST", "opcode": "A8", "ops": "1"},
+    {"name": "NOT", "opcode": "F6", "ops": "1"},
+    {"name": "ANDN", "opcode": "F2", "ops": "1"},
+    {"name": "SHL", "opcode": "D0", "ops": "1"},
+    {"name": "SHR", "opcode": "D0", "ops": "1"},
+    {"name": "SAR", "opcode": "D0", "ops": "1"},
+    {"name": "ROL", "opcode": "D0", "ops": "1"},
+    {"name": "ROR", "opcode": "D0", "ops": "1"},
+    {"name": "RCL", "opcode": "D0", "ops": "1"},
+    {"name": "RCR", "opcode": "D0", "ops": "1"},
+    {"name": "SHLD", "opcode": "A4", "ops": "6"},
+    {"name": "SHRD", "opcode": "AC", "ops": "6"},
+    {"name": "SARX", "opcode": "F7", "ops": "1"},
+    {"name": "SHLX", "opcode": "F7", "ops": "1"},
+    {"name": "SHRX", "opcode": "F7", "ops": "1"},
+    {"name": "RORX", "opcode": "F0", "ops": "1"},
+    {"name": "BT", "opcode": "BA", "ops": "1"},
+    {"name": "BTC", "opcode": "BA", "ops": "2"},
+    {"name": "BTR", "opcode": "BA", "ops": "2"},
+    {"name": "BTS", "opcode": "BA", "ops": "2"},
+    {"name": "BSF", "opcode": "BC", "ops": "6"},
+    {"name": "BSR", "opcode": "BD", "ops": "6"},
+    {"name": "SETcc", "opcode": "", "ops": "1"},
+    {"name": "CLC", "opcode": "F8", "ops": "1"},
+    {"name": "STC", "opcode": "F9", "ops": "1"},
+    {"name": "CMC", "opcode": "F5", "ops": "1"},
+    {"name": "CLD", "opcode": "FC", "ops": "1"},
+    {"name": "STD", "opcode": "FD", "ops": "1"},
+    {"name": "POPCNT", "opcode": "B8", "ops": "1"},
+    {"name": "LZCNT", "opcode": "BD", "ops": "1"},
+    {"name": "TZCNT", "opcode": "BC", "ops": "2"},
+    {"name": "BEXTR", "opcode": "10", "ops": "1"},
+    {"name": "BLSI", "opcode": "F3", "ops": "2"},
+    {"name": "BLSMSK", "opcode": "F3", "ops": "2"},
+    {"name": "BLSR", "opcode": "F3", "ops": "2"},
+    {"name": "PDEP", "opcode": "F5", "ops": "6"},
+    {"name": "PEXT", "opcode": "F5", "ops": "7"},
+    {"name": "BZHI", "opcode": "F5", "ops": "1"},
+    {"name": "JMP", "opcode": "EB", "ops": "1"},
+    {"name": "Jcc", "opcode": "", "ops": "1"},
+    {"name": "fused CMP+Jcc", "opcode": "", "ops": "1"},
+    {"name": "J(E/R)CXZ", "opcode": "", "ops": "1"},
+    {"name": "LOOP", "opcode": "", "ops": "1"},
+    {"name": "LOOPE", "opcode": "", "ops": "1"},
+    {"name": "LOOPNE", "opcode": "", "ops": "1"},
+    {"name": "CALL", "opcode": "E8", "ops": "2"},
+    {"name": "RET", "opcode": "C3", "ops": "1"},
+    {"name": "BOUND", "opcode": "", "ops": "11"},
+    {"name": "INTO", "opcode": "", "ops": "4"},
+    {"name": "LODS", "opcode": "", "ops": "3"},
+    {"name": "REP LODS", "opcode": "", "ops": "6"},
+    {"name": "STOS", "opcode": "", "ops": "3"},
+    {"name": "REP STOS", "opcode": "", "ops": "3"},
+    {"name": "MOVS", "opcode": "", "ops": "5"},
+    {"name": "REP MOVS", "opcode": "", "ops": "1"},
+    {"name": "SCAS", "opcode": "", "ops": "3"},
+    {"name": "REP SCAS", "opcode": "", "ops": "7"},
+    {"name": "CMPS", "opcode": "", "ops": "6"},
+    {"name": "REP CMPS", "opcode": "", "ops": "9"},
+    {"name": "LOCK ADD", "opcode": "", "ops": "1"},
+    {"name": "XADD", "opcode": "C0", "ops": "4"},
+    {"name": "LOCK XADD", "opcode": "", "ops": "4"},
+    {"name": "CMPXCHG", "opcode": "B0", "ops": "5"},
+    {"name": "LOCK CMPXCHG", "opcode": "", "ops": "5"},
+    {"name": "CMPXCHG8B", "opcode": "C7", "ops": "18"},
+    {"name": "LOCK CMPXCHG8B", "opcode": "", "ops": "18"},
+    {"name": "CMPXCHG16B", "opcode": "C7", "ops": "27"},
+    {"name": "LOCK CMPXCHG16B", "opcode": "", "ops": "27"},
+    {"name": "NOP", "opcode": "", "ops": "1"},
+    {"name": "Long NOP (0F 1F)", "opcode": "", "ops": "1"},
+    {"name": "PAUSE", "opcode": "90", "ops": "8"},
+    {"name": "ENTER", "opcode": "", "ops": "12"},
+    {"name": "LEAVE", "opcode": "", "ops": "2"},
+    {"name": "CPUID", "opcode": "A2", "ops": "37"},
+    {"name": "XGETBV", "opcode": "D0", "ops": "38"},
+    {"name": "RDTSC", "opcode": "31", "ops": "37"},
+    {"name": "RDTSCP", "opcode": "F9", "ops": "37"},
+    {"name": "RDPMC", "opcode": "", "ops": "19"},
+    {"name": "CRC32", "opcode": "F0", "ops": "1"},
+    {"name": "RDRAND", "opcode": "C7", "ops": "11"},
+    {"name": "FLD", "opcode": "", "ops": "1"},
+    {"name": "FST(P)", "opcode": "", "ops": "1"},
+    {"name": "FXCH", "opcode": "", "ops": "1"},
+    {"name": "FILD", "opcode": "", "ops": "1"},
+    {"name": "FIST", "opcode": "", "ops": "2"},
+    {"name": "FLDZ", "opcode": "", "ops": "1"},
+    {"name": "FLD1", "opcode": "", "ops": "1"},
+    {"name": "FCMOVcc", "opcode": "", "ops": "7"},
+    {"name": "FFREE", "opcode": "", "ops": "1"},
+    {"name": "FINCSTP", "opcode": "", "ops": "1"},
+    {"name": "FDECSTP", "opcode": "", "ops": "1"},
+    {"name": "FNSTSW", "opcode": "", "ops": "3"},
+    {"name": "FNSTSW m16", "opcode": "", "ops": "2"},
+    {"name": "FLDCW", "opcode": "", "ops": "1"},
+    {"name": "FNSTCW", "opcode": "", "ops": "2"},
+    {"name": "FADD", "opcode": "", "ops": "1"},
+    {"name": "FSUB", "opcode": "", "ops": "1"},
+    {"name": "FIADD", "opcode": "", "ops": "2"},
+    {"name": "FISUB", "opcode": "", "ops": "2"},
+    {"name": "FMUL", "opcode": "", "ops": "1"},
+    {"name": "FIMUL", "opcode": "", "ops": "2"},
+    {"name": "FDIV", "opcode": "", "ops": "1"},
+    {"name": "FIDIV", "opcode": "", "ops": "2"},
+    {"name": "FABS", "opcode": "", "ops": "1"},
+    {"name": "FCHS", "opcode": "", "ops": "1"},
+    {"name": "FCOM", "opcode": "", "ops": "1"},
+    {"name": "FUCOM", "opcode": "", "ops": "1"},
+    {"name": "FCOMPP", "opcode": "", "ops": "1"},
+    {"name": "FUCOMPP", "opcode": "", "ops": "1"},
+    {"name": "FCOMI", "opcode": "", "ops": "2"},
+    {"name": "FICOM", "opcode": "", "ops": "2"},
+    {"name": "FTST", "opcode": "", "ops": "1"},
+    {"name": "FXAM", "opcode": "", "ops": "1"},
+    {"name": "FRNDINT", "opcode": "", "ops": "1"},
+    {"name": "FPREM", "opcode": "", "ops": "2"},
+    {"name": "FPREM1", "opcode": "", "ops": "2"},
+    {"name": "FSQRT", "opcode": "", "ops": "1"},
+    {"name": "FLDPI", "opcode": "", "ops": "1"},
+    {"name": "FSIN", "opcode": "", "ops": "11"},
+    {"name": "FCOS", "opcode": "", "ops": "16"},
+    {"name": "FSINCOS", "opcode": "", "ops": "11"},
+    {"name": "FPTAN", "opcode": "", "ops": "11"},
+    {"name": "FPATAN", "opcode": "", "ops": "11"},
+    {"name": "FSCALE", "opcode": "", "ops": "8"},
+    {"name": "FXTRACT", "opcode": "", "ops": "13"},
+    {"name": "F2XM1", "opcode": "", "ops": "10"},
+    {"name": "FYL2X", "opcode": "", "ops": "10"},
+    {"name": "FYL2XP1", "opcode": "", "ops": "69"},
+    {"name": "FNOP", "opcode": "", "ops": "1"},
+    {"name": "FWAIT", "opcode": "", "ops": "1"},
+    {"name": "FNCLEX", "opcode": "", "ops": "20"},
+    {"name": "FNINIT", "opcode": "", "ops": "34"},
+    {"name": "FNSAVE", "opcode": "", "ops": "99"},
+    {"name": "FRSTOR", "opcode": "", "ops": "77"},
+    {"name": "MOVD", "opcode": "7E", "ops": "1"},
+    {"name": "MOVD/Q", "opcode": "", "ops": "1"},
+    {"name": "MOVDQA", "opcode": "6F", "ops": "1"},
+    {"name": "VMOVDQA", "opcode": "6F", "ops": "1"},
+    {"name": "MOVDQU", "opcode": "6F", "ops": "1"},
+    {"name": "LDDQU", "opcode": "F0", "ops": "1"},
+    {"name": "VMOVDQU", "opcode": "6F", "ops": "1"},
+    {"name": "MOVDQ2Q", "opcode": "D6", "ops": "1"},
+    {"name": "MOVQ2DQ", "opcode": "D6", "ops": "1"},
+    {"name": "MOVNTQ", "opcode": "E7", "ops": "1"},
+    {"name": "MOVNTDQ", "opcode": "E7", "ops": "1"},
+    {"name": "MOVNTDQA", "opcode": "2A", "ops": "1"},
+    {"name": "PACKSSWB/DW", "opcode": "", "ops": "1"},
+    {"name": "PACKUSWB", "opcode": "67", "ops": "1"},
+    {"name": "VPACKSSWB/DW", "opcode": "", "ops": "1"},
+    {"name": "VPACKUSWB", "opcode": "67", "ops": "1"},
+    {"name": "PUNPCKL/HQDQ", "opcode": "", "ops": "1"},
+    {"name": "PSHUFB", "opcode": "00", "ops": "1"},
+    {"name": "PSHUFD", "opcode": "70", "ops": "1"},
+    {"name": "PSHUFW", "opcode": "70", "ops": "1"},
+    {"name": "PSHUFL/HW", "opcode": "", "ops": "1"},
+    {"name": "PALIGNR", "opcode": "0F", "ops": "1"},
+    {"name": "PBLENDW", "opcode": "0E", "ops": "1"},
+    {"name": "VPERMD", "opcode": "36", "ops": "2"},
+    {"name": "VPERMQ", "opcode": "00", "ops": "2"},
+    {"name": "VPERM2I128", "opcode": "46", "ops": "1"},
+    {"name": "VEXTRACTI128", "opcode": "39", "ops": "1"},
+    {"name": "VINSERTI128", "opcode": "38", "ops": "1"},
+    {"name": "MASKMOVQ", "opcode": "F7", "ops": "30"},
+    {"name": "MASKMOVDQU", "opcode": "F7", "ops": "60"},
+    {"name": "PMOVMSKB", "opcode": "D7", "ops": "1"},
+    {"name": "PEXTRB/W/D/Q", "opcode": "", "ops": "2"},
+    {"name": "PINSRB/W/D/Q", "opcode": "", "ops": "2"},
+    {"name": "EXTRQ", "opcode": "79", "ops": "2"},
+    {"name": "INSERTQ", "opcode": "79", "ops": "2"},
+    {"name": "VMOVAPS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVSS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVHPS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVLPS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVLHPS", "opcode": "16", "ops": "1"},
+    {"name": "MOVMSKPS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVNTPS/D", "opcode": "", "ops": "1"},
+    {"name": "MOVNTSS/SD", "opcode": "", "ops": "1"},
+    {"name": "SHUFPS/D", "opcode": "", "ops": "1"},
+    {"name": "VPERMILPS/PD", "opcode": "", "ops": "1"},
+    {"name": "VPERM2F128", "opcode": "06", "ops": "1"},
+    {"name": "VPERMPS", "opcode": "16", "ops": "2"},
+    {"name": "VPERMPD", "opcode": "01", "ops": "2"},
+    {"name": "BLENDPS/PD", "opcode": "", "ops": "1"},
+    {"name": "BLENDVPS/PD", "opcode": "", "ops": "1"},
+    {"name": "VBLENDVPS/PD", "opcode": "", "ops": "1"},
+    {"name": "MOVDDUP", "opcode": "12", "ops": "1"},
+    {"name": "VBROADCASTSS/D", "opcode": "", "ops": "1"},
+    {"name": "VBROADCASTF128", "opcode": "1A", "ops": "1"},
+    {"name": "MOVSH/LDUP", "opcode": "", "ops": "1"},
+    {"name": "UNPCKH/LPS/D", "opcode": "", "ops": "1"},
+    {"name": "EXTRACTPS", "opcode": "17", "ops": "2"},
+    {"name": "VEXTRACTF128", "opcode": "19", "ops": "1"},
+    {"name": "INSERTPS", "opcode": "21", "ops": "1"},
+    {"name": "VINSERTF128", "opcode": "18", "ops": "1"},
+    {"name": "VMASKMOVPS/D", "opcode": "", "ops": "1"},
+    {"name": "VGATHERDPS", "opcode": "92", "ops": "32"},
+    {"name": "VGATHERQPS", "opcode": "93", "ops": "20"},
+    {"name": "VGATHERDPD", "opcode": "92", "ops": "19"},
+    {"name": "VGATHERQPD", "opcode": "93", "ops": "19"},
+    {"name": "CVTPD2PS", "opcode": "5A", "ops": "1"},
+    {"name": "VCVTPD2PS", "opcode": "5A", "ops": "2"},
+    {"name": "CVTPS2PD", "opcode": "5A", "ops": "1"},
+    {"name": "VCVTPS2PD", "opcode": "5A", "ops": "2"},
+    {"name": "CVTSD2SS", "opcode": "5A", "ops": "1"},
+    {"name": "CVTSS2SD", "opcode": "5A", "ops": "1"},
+    {"name": "CVTDQ2PS", "opcode": "5B", "ops": "1"},
+    {"name": "CVT(T) PS2DQ", "opcode": "", "ops": "1"},
+    {"name": "CVTDQ2PD", "opcode": "E6", "ops": "1"},
+    {"name": "VCVTDQ2PD", "opcode": "E6", "ops": "2"},
+    {"name": "CVTTPD2DQ", "opcode": "", "ops": "1"},
+    {"name": "VCVTTPD2DQ", "opcode": "", "ops": "2"},
+    {"name": "CVTPI2PS", "opcode": "2A", "ops": "3"},
+    {"name": "CVTTPS2PI", "opcode": "", "ops": "1"},
+    {"name": "CVTPI2PD", "opcode": "2A", "ops": "3"},
+    {"name": "CVTTPD2PI", "opcode": "", "ops": "2"},
+    {"name": "CVTSI2SS", "opcode": "2A", "ops": "2"},
+    {"name": "CVTTSS2SI", "opcode": "", "ops": "2"},
+    {"name": "CVTSI2SD", "opcode": "2A", "ops": "2"},
+    {"name": "CVTTSD2SI", "opcode": "", "ops": "2"},
+    {"name": "VCVTPS2PH", "opcode": "1D", "ops": "1"},
+    {"name": "VCVTPH2PS", "opcode": "13", "ops": "1"},
+    {"name": "ADDSS/D", "opcode": "", "ops": "1"},
+    {"name": "ADDPS/D", "opcode": "", "ops": "1"},
+    {"name": "ADDSUBPS/D", "opcode": "", "ops": "1"},
+    {"name": "HADD/SUBPS/D", "opcode": "", "ops": "4"},
+    {"name": "MULSS", "opcode": "59", "ops": "1"},
+    {"name": "MULSD", "opcode": "59", "ops": "1"},
+    {"name": "MULPS", "opcode": "59", "ops": "1"},
+    {"name": "MULPD", "opcode": "59", "ops": "1"},
+    {"name": "DIVSS", "opcode": "5E", "ops": "1"},
+    {"name": "DIVPS", "opcode": "5E", "ops": "1"},
+    {"name": "DIVSD", "opcode": "5E", "ops": "1"},
+    {"name": "DIVPD", "opcode": "5E", "ops": "1"},
+    {"name": "RCPSS/PS", "opcode": "", "ops": "1"},
+    {"name": "CMPSS/SD/PS/PD", "opcode": "", "ops": "1"},
+    {"name": "UCOMISS", "opcode": "", "ops": "2"},
+    {"name": "ROUNDSS", "opcode": "", "ops": "1"},
+    {"name": "DPPS", "opcode": "40", "ops": "8"},
+    {"name": "VDPPS", "opcode": "40", "ops": "7"},
+    {"name": "DPPD", "opcode": "41", "ops": "3"},
+    {"name": "VFMADD132PS/PD", "opcode": "", "ops": "1"},
+    {"name": "SQRTSS/PS", "opcode": "", "ops": "1"},
+    {"name": "SQRTSD/PD", "opcode": "", "ops": "1"},
+    {"name": "CVTPS2PI", "opcode": "2D", "ops": "1"},
+    {"name": "CVTTPI2PS", "opcode": "", "ops": "3"},
+    {"name": "CVTSD2SI", "opcode": "2D", "ops": "2"},
+    {"name": "CVTSI2SD", "opcode": "2A", "ops": "2"},
+    {"name": "CVTPI2PS", "opcode": "2A", "ops": "3"},
+    {"name": "MOVHLPS", "opcode": "12", "ops": "1"},
+    {"name": "MOVMSKPS", "opcode": "50", "ops": "1"},
+    {"name": "PMOVSXB/DW", "opcode": "", "ops": "2"},
+    {"name": "PMOVSXQ", "opcode": "", "ops": "2"},
+    {"name": "PMOVZXB/DW", "opcode": "", "ops": "2"},
+    {"name": "PMOVZXQ", "opcode": "", "ops": "2"},
+    {"name": "PMOVZXBQ/DQ", "opcode": "", "ops": "2"},
+    {"name": "PMOVZXBW", "opcode": "30", "ops": "2"},
+    {"name": "PMULHRSW", "opcode": "0B", "ops": "2"},
+    {"name": "PMADDWD", "opcode": "F5", "ops": "2"},
+    {"name": "PMULH/W/DQ", "opcode": "", "ops": "2"},
+    {"name": "PMULULQ", "opcode": "", "ops": "2"},
+    {"name": "VPALIGNR", "opcode": "0F", "ops": "2"},
+    {"name": "PCLMULQDQ", "opcode": "44", "ops": "1"},
+    {"name": "VBROADCASTI128", "opcode": "5A", "ops": "2"},
+    {"name": "BEXTR", "opcode": "10", "ops": "2"},
+    {"name": "CMOVL", "opcode": "ADDED", "ops": "7"},
+    {"name": "CMOVB", "opcode": "ADDED", "ops": "7"},
+    {"name": "CMOVZ", "opcode": "ADDED", "ops": "7"},
+    {"name": "CMOVG", "opcode": "ADDED", "ops": "7"},
+    {"name": "JBE", "opcode": "ADDED", "ops": "1"},
+    {"name": "JA", "opcode": "ADDED", "ops": "1"},
+    {"name": "JZ", "opcode": "ADDED", "ops": "1"},
+    {"name": "JNZ", "opcode": "ADDED", "ops": "1"},
+    {"name": "JL", "opcode": "ADDED", "ops": "1"},
+    {"name": "JGE", "opcode": "ADDED", "ops": "1"},
+    {"name": "JAE", "opcode": "ADDED", "ops": "1"},
+    {"name": "MOVZX", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETGE", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETNZ", "opcode": "ADDED", "ops": "1"},
+    {"name": "MOVZX", "opcode": "ADDED", "ops": "1"},
+    {"name": "MOVSX", "opcode": "ADDED", "ops": "1"},
+    {"name": "MOVSXD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VZEROUPPER", "opcode": "ADDED", "ops": "1"},
+    {"name": "JB", "opcode": "ADDED", "ops": "1"},
+    {"name": "JG", "opcode": "ADDED", "ops": "1"},
+    {"name": "JLE", "opcode": "ADDED", "ops": "1"},
+    {"name": "JP", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETZ", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETL", "opcode": "ADDED", "ops": "1"},
+    {"name": "REP", "opcode": "ADDED", "ops": "3"},
+    {"name": "VPHADDD", "opcode": "ADDED", "ops": "3"},
+    {"name": "VMOVSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPXOR", "opcode": "ADDED", "ops": "6"},
+    {"name": "VMOVD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMOVQ", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPMULLD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPMOVZXBD", "opcode": "ADDED", "ops": "2"},
+    {"name": "VPADDD", "opcode": "ADDED", "ops": "1"},
+    {"name": "RETF", "opcode": "ADDED", "ops": "2"},
+    {"name": "LOCK", "opcode": "ADDED", "ops": "2"},
+    {"name": "SETLE", "opcode": "ADDED", "ops": "2"},
+    {"name": "LOCK", "opcode": "ADDED", "ops": "2"},
+    {"name": "SETLE", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETG", "opcode": "ADDED", "ops": "1"},
+    {"name": "VBLENDVPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VCVTTSD2SI", "opcode": "ADDED", "ops": "2"},
+    {"name": "VMOVSS", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMULSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VSQRTSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPEXTRW", "opcode": "ADDED", "ops": "2"},
+    {"name": "VXORPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPOR", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPSRLQ", "opcode": "ADDED", "ops": "1"},
+    {"name": "VRCPPS", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPSLLQ", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMULSS", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPAND", "opcode": "ADDED", "ops": "1"},
+    {"name": "VCVTSI2SD", "opcode": "ADDED", "ops": "2"},
+    {"name": "VMULPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMULSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VSUBSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VUNPCKLPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VADDSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VADDPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPSHUFD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPINSRW", "opcode": "ADDED", "ops": "2"},
+    {"name": "CLI", "opcode": "ADDED", "ops": "3"},
+    {"name": "OUTSD", "opcode": "ADDED", "ops": "78"},
+    {"name": "REPNE", "opcode": "ADDED", "ops": "40"},
+    {"name": "CMOVNP", "opcode": "ADDED", "ops": "1"},
+    {"name": "CMOVP", "opcode": "ADDED", "ops": "1"},
+    {"name": "JE", "opcode": "ADDED", "ops": "1"},
+    {"name": "JNE", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETE", "opcode": "ADDED", "ops": "1"},
+    {"name": "SETNE", "opcode": "ADDED", "ops": "1"},
+    {"name": "MOVABS", "opcode": "ADDED", "ops": "1"},
+    {"name": "REP STOSB", "opcode": "ADDED", "ops": "3"},
+    {"name": "VPBROADCASTD", "opcode": "ADDED", "ops": "1"},
+    {"name": "CMOVE", "opcode": "ADDED", "ops": "1"},
+    {"name": "VCVTTSS2SI", "opcode": "ADDED", "ops": "2"},
+    {"name": "SETA", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPSRLD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VDIVSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPADDQ", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMOVAPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VANDPD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMINSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMAXSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VUCOMISD", "opcode": "ADDED", "ops": "1"},
+    {"name": "VUCOMISS", "opcode": "ADDED", "ops": "1"},
+    {"name": "VMOVDDUP", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPTEST", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPCMPEQB", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPMOVMSKB", "opcode": "ADDED", "ops": "1"},
+    {"name": "VCVTSI2SS", "opcode": "ADDED", "ops": "2"},
+    {"name": "VCVTSS2SD", "opcode": "ADDED", "ops": "2"},
+    {"name": "VCVTSD2SS", "opcode": "ADDED", "ops": "2"},
+    {"name": "VXORPS", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPBROADCASTB", "opcode": "ADDED", "ops": "2"},
+    {"name": "VCMPUNORDSD", "opcode": "ADDED", "ops": "1"},
+    {"name": "CMOVNE", "opcode": "ADDED", "ops": "1"},
+    {"name": "VPINSRD", "opcode": "ADDED", "ops": "2"},
+    {"name": "VPSHUFB", "opcode": "ADDED", "ops": "1"},
+    {"name": "SHA1RNDS4", "opcode": "ADDED", "ops": "1"},
+    {"name": "SHA1NEXTE", "opcode": "ADDED", "ops": "1"},
+    {"name": "SHA1MSG1", "opcode": "ADDED", "ops": "2"},
+    {"name": "SHA1MSG2", "opcode": "ADDED", "ops": "2"},
+    {"name": "VPEXTRD", "opcode": "ADDED", "ops": "2"}
+]

@@ -616,26 +616,26 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 byte[] emittedCode = asm.copy(start, end);
                 lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
             }
-            if (GraalOptions.LIRGTSlowDown.getValue(options) && start < asm.position()) {
-                int end = asm.position();
-                for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
-                    if (codeAnnotation instanceof JumpTable) {
-                        // Skip jump table. Here we assume the jump table is at the tail of the
-                        // emitted code.
-                        int jumpTableStart = codeAnnotation.getPosition();
-                        if (jumpTableStart >= start && jumpTableStart < end) {
-                            end = jumpTableStart;
-                        }
-                    }
-                }
-                    byte[] emittedCode = asm.copy(start, end);
-                    String emmitedOPCode = "";
-                    for (byte b : emittedCode) {
-                        emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
-                    }
-                    GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
+            // if (GraalOptions.LIRGTSlowDown.getValue(options) && start < asm.position()) {
+            //     int end = asm.position();
+            //     for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
+            //         if (codeAnnotation instanceof JumpTable) {
+            //             // Skip jump table. Here we assume the jump table is at the tail of the
+            //             // emitted code.
+            //             int jumpTableStart = codeAnnotation.getPosition();
+            //             if (jumpTableStart >= start && jumpTableStart < end) {
+            //                 end = jumpTableStart;
+            //             }
+            //         }
+            //     }
+            //         byte[] emittedCode = asm.copy(start, end);
+            //         String emmitedOPCode = "";
+            //         for (byte b : emittedCode) {
+            //             emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
+            //         }
+            //         GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
                 
-            } 
+            // } 
         } catch (BailoutException e) {
             throw e;
         } catch (AssertionError t) {

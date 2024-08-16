@@ -44,6 +44,29 @@ suite = {
 
     # ------------- Libraries -------------
 
+    "LocalCapstone" : {
+      "urls" : ["file:///home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/capstone.jar"],
+      "digest" : "sha512:896063c17695c4f8f28d0c19bc41fbfa53fb73ac3fdfbec74f35cb0750046c6e1bf83766e6816505e2ff3d12233d823bc822b1afec1f34218b4073c3c5f29615",
+    },
+
+    "Capstone": {
+    "digest" : "sha256:a76ef1a086089e43d2730f14eedd4dd1e30a51ed7ddbaadcf7e7ec3657b7fabb",
+    "maven" : {
+        "groupId" : "org.native4j",
+        "artifactId" : "capstone-java",
+        "version" : "0.0.4",
+      },
+    },
+
+    "JNA": {
+    "digest" : "sha256:b308faebfe4ed409de8410e0a632d164b2126b035f6eacff968d3908cafb4d9e",
+    "maven" : {
+        "groupId" : "net.java.dev.jna",
+        "artifactId" : "jna",
+        "version" : "5.5.0",
+      },
+    },
+
     "JAVA_ALLOCATION_INSTRUMENTER" : {
       "digest" : "sha512:25fe57cd6d3ecabb52f411c884f801109ece37570a2dd19fa1e5b83cc2039ed02a90787600eb9303eaa730aabf0dc70b506fb9fe40ca6c3417428bb89c2c8940",
       "maven" : {
@@ -165,6 +188,8 @@ suite = {
         "sdk:WORD",
         "sdk:COLLECTIONS",
         "truffle:TRUFFLE_COMPILER",
+        "LocalCapstone",
+        "JNA",
       ],
       "requires" : [
         "jdk.internal.vm.ci",

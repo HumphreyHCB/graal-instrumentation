@@ -220,7 +220,8 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            GTCache.postProcessingShutdown();
+            //GTCache.dumpLIRInstructionsToJSON();
+            //GTCache.postProcessingShutdown();
             System.out.println("Groundtruth SlowDown Shutdown......");
     });
         Runtime.getRuntime().addShutdownHook(writingHook);

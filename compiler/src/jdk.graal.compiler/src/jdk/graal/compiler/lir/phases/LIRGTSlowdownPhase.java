@@ -35,6 +35,7 @@ import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.Variable;
+import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64PauseOp;
 import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
@@ -54,22 +55,22 @@ public class LIRGTSlowdownPhase extends PreAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes, PreAllocationOptimizationContext context) {
         // try a LFence incase
-        // for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+        for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
-        //     ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-        //     int blockCost = 0;
-        //     for (LIRInstruction instruction : instructions) {
-        //         blockCost += LIRInstructionCostLookup.getCost(instruction.getClass().toString());
-        //     }
-        //     int loopAmount =  (int) Math.floor((blockCost)/ 8);
-        //     if (!instructions.isEmpty()) {
-        //         for (int index = 0; index < loopAmount; index++) {
-        //            instructions.add(1, new AMD64PauseOp());
-        //         }
+            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+            int blockCost = 0;
+            for (LIRInstruction instruction : instructions) {
+                blockCost += LIRInstructionCostLookup.getCost(instruction.getClass().toString());
+            }
+            //int loopAmount =  (int) Math.floor((blockCost)/ 8);
+            if (!instructions.isEmpty()) {
+                for (int index = 0; index < blockCost; index++) {
+                   instructions.add(1, new AMD64Nop());
+                }
                 
-        //     } 
+            } 
 
-        // }
+        }
 
     }
 
