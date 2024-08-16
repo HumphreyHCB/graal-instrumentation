@@ -66,3 +66,5 @@ visualizer/IdealGraphVisualizer/nbplatform/
 !compiler/MyJDKJarLib.jar
 !compiler/benchmarks.jar
 /compiler/BuboDumps/
+!compiler/instructions.csv
+!compiler/capstone.jar
