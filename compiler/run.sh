@@ -15,6 +15,8 @@ mx --java-home \
   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
   Harness DeltaBlue 300 60000  
 
+# /home/hburchell/Downloads/capstone-5.0/bindings/java/capstone.jar
+
 #  HelloWorld 
 #   -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.CountCompiledMethods=true \
 #  Harness DeltaBlue 1200 6000 
