@@ -19,8 +19,8 @@ public class LIRInstructionCostLookup {
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp", 2);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$BranchOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotIndirectCallOp", 3);
-        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$CondSetOp", 2);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotStrategySwitchOp", 11);
+        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$CondSetOp", 2);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$HashTableSwitchOp", 9);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotCRuntimeCallPrologueOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryMROp", 1);
@@ -36,6 +36,7 @@ public class LIRInstructionCostLookup {
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotPatchReturnAddressOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotMove$HotSpotLoadMetaspaceConstantOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.vector.AMD64VectorBinary$AVXBinaryMemoryOp", 1);
+        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64MathCosOp", 412);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Binary$DataTwoOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64DeoptimizeOp", 3);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.vector.AMD64VectorBinary$AVXBinaryOp", 1);
@@ -45,11 +46,12 @@ public class LIRInstructionCostLookup {
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ZeroMemoryOp", 6);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$ConstOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotspotDirectVirtualCallOp", 4);
+        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64MathSinOp", 415);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64PrefetchOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotUnwindOp", 4);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$RangeTableSwitchOp", 9);
-        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Binary$CommutativeTwoOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp", 12);
+        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Binary$CommutativeTwoOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotDeoptimizeCallerOp", 3);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryRMOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64MulDivOp", 1);
@@ -57,7 +59,6 @@ public class LIRInstructionCostLookup {
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Unary$MemoryOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ControlFlow$CmpBranchOp", 2);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Move$CompressPointerOp", 1);
-        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64StringLatin1InflateOp", 46);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64ByteSwapOp", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Call$DirectNearForeignCallOp", 2);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64Move$NullCheckOp", 1);
@@ -99,6 +100,7 @@ public class LIRInstructionCostLookup {
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64VZeroUpper", 1);
         CLASS_COST_MAP.put("jdk.graal.compiler.hotspot.amd64.AMD64HotSpotJumpToExceptionHandlerInCallerOp", 4);
         CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64SHA1Op", 245);
+        CLASS_COST_MAP.put("jdk.graal.compiler.lir.amd64.AMD64StringLatin1InflateOp", 46);
     }
 
     /**
@@ -109,8 +111,8 @@ public class LIRInstructionCostLookup {
      */
     public static int getCost(String className) {
         String sanitizedClassName = className.replaceFirst("class ", "");
-        // if (!CLASS_COST_MAP.containsKey(sanitizedClassName.trim())) {
-        //     System.out.println("Have no info for " + sanitizedClassName);
+        //if (!CLASS_COST_MAP.containsKey(sanitizedClassName.trim())) {
+        //    System.out.println("Have no info for " + sanitizedClassName);
         // }
         return CLASS_COST_MAP.getOrDefault(sanitizedClassName.trim(), 1);
     }

@@ -18,12 +18,16 @@ import org.graalvm.collections.EconomicMap;
 
 //import org.native4j.capstone.Capstone;
 import capstone.Capstone;
-
+import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionKey;
+import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.util.json.JsonBuilder;
 import jdk.graal.compiler.util.json.JsonPrettyWriter;
 import jdk.graal.compiler.util.json.JsonWriter;
 import jdk.graal.compiler.util.json.JsonBuilder.ObjectBuilder;
 import jdk.graal.compiler.util.json.JsonParser;
+import jdk.graal.compiler.options.OptionValues;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -41,16 +45,23 @@ import java.util.AbstractMap;
 
 public class GTCache extends Thread {
 
-    public static long[] ActivationCountBuffer; // stores activaation of Comp units
+    public static class Options {
+        @Option(help = "The name of the file you woul like the information to be dumped too.", type = OptionType.Debug) //
+        public static final OptionKey<String> LIRCostInformationFile = new OptionKey<>("LIRInstructionsCost.json");
+    }
+
+    //public static long[] ActivationCountBuffer; // stores activaation of Comp units
     private static Map<String, Set<String>> LIRInstructionsByteCode;
     private static Map<String, Integer> opcodeMap;
     private static Capstone capstoneParser;
+    private static OptionValues OptionValues;
 
-    public GTCache() {
+    public GTCache(OptionValues optionValues) {
         //capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
-        ActivationCountBuffer = new long[200_000];
+        //ActivationCountBuffer = new long[200_000];
         LIRInstructionsByteCode = new HashMap<>();
         opcodeMap = new HashMap<>();
+        OptionValues = optionValues;
 
     }
 
@@ -117,7 +128,7 @@ public class GTCache extends Thread {
     }
 
 
-    public static void parseJsonToInstructionMap() {
+    public static void LoadInstructionMapCost() {
         String jsonFile = "instructions.json";
         opcodeMap = new HashMap<>();
     
@@ -147,7 +158,7 @@ public class GTCache extends Thread {
         if (value != null) {
             return value;
         } else {
-            System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
+            //System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
             return 1; // Assuming 1 cycle cost if not found
         }
     }
@@ -172,7 +183,7 @@ public class GTCache extends Thread {
 
     public static void postProcessingShutdown() {
         capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
-        parseJsonToInstructionMap(); // Adjusted method name
+        LoadInstructionMapCost(); // Adjusted method name
 
         Map<String, Set<String>> snapshot;
 
@@ -194,13 +205,37 @@ public class GTCache extends Thread {
             tempSum = 0;
         }
 
-        System.out.println("\n\n\n\n\n Dump:");
-        for (String Lir : LIRCostMap.keySet()) {
-            System.out.println("For LIR : " + Lir + " Cost: " + LIRCostMap.get(Lir));
+        String fileName = Options.LIRCostInformationFile.getValue(OptionValues);
+
+        // Writing the JSON data to the specified file
+        try (JsonWriter jsonWriter = new JsonWriter(Path.of(fileName))) {
+            jsonWriter.appendObjectStart().newline().indent();
+
+            int mapSize = LIRCostMap.size();
+            int mapIndex = 0;
+
+            for (Map.Entry<String, Integer> entry : LIRCostMap.entrySet()) {
+                jsonWriter.appendKeyValue(entry.getKey(), entry.getValue());
+
+                if (++mapIndex < mapSize) {
+                    jsonWriter.appendSeparator();
+                }
+
+                jsonWriter.newline();
+            }
+
+            jsonWriter.unindent().appendObjectEnd().newline();
+            jsonWriter.flush();
+            System.out.println("LIRCostMap has been successfully dumped to " + fileName);
+        } catch (IOException e) {
+            System.err.println("Error while dumping LIRCostMap to JSON: " + e.getMessage());
         }
 
     }
 
+    /*
+     * Th method just dumps all the uqinly found bytecode for each LIRInstructions, it should not be use oputside of debug 
+     */
     public static void dumpLIRInstructionsToJSON() {
 
         Map<String, Set<String>> snapshot;
@@ -209,9 +244,9 @@ public class GTCache extends Thread {
         synchronized (LIRInstructionsByteCode) {
             snapshot = deepCopy(LIRInstructionsByteCode);
         }
-        
+        String file = "BytecodeForeachLir.json";
         // Write the JSON object to a file using JsonWriter
-        try (JsonWriter jsonWriter = new JsonWriter(Path.of("LIRInstructionsByteCodeDump.json"))) {
+        try (JsonWriter jsonWriter = new JsonWriter(Path.of(file))) {
             jsonWriter.appendObjectStart().newline().indent();
 
             int mapSize = snapshot.size();
@@ -244,9 +279,9 @@ public class GTCache extends Thread {
             jsonWriter.unindent().appendObjectEnd().newline();
             jsonWriter.flush();
             System.out.println(
-                    "LIRInstructionsByteCode has been successfully dumped to LIRInstructionsByteCodeDump.json");
+                file + " has been successfully dumped to LIRInstructionsByteCodeDump.json");
         } catch (IOException e) {
-            System.err.println("Error while dumping LIRInstructionsByteCode to JSON: " + e.getMessage());
+            System.err.println("Error while dumping "+file+" to JSON: " + e.getMessage());
         }
     }
 

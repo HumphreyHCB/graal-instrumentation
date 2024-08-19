@@ -39,7 +39,7 @@ import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.hotspot.meta.GT.GTCache;
 import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
-
+import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.vm.ci.services.Services;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
@@ -195,7 +195,7 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
-        if (GraalOptions.EnableGTSlowDown.getValue(options) || GraalOptions.LIRGTSlowDown.getValue(options)) {
+        if (GraalOptions.EnableGTSlowDown.getValue(options) || GraalOptions.LIRGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
             initalizeGT();
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
@@ -206,22 +206,24 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
     private void initalizeGT() {
         System.out.println("Groundtruth SlowDown Started......");
         
-        GTCache timeCache = new GTCache();
+        GTCache timeCache = new GTCache(options);
         timeCache.start();
 
-        GTCacheDebug debugCache = new GTCacheDebug();
-        debugCache.start();
 
         Thread writingHook = new Thread(() -> {
             try {
                 timeCache.join();
-                debugCache.join();
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            //GTCache.dumpLIRInstructionsToJSON();
-            //GTCache.postProcessingShutdown();
+            if (CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
+                GTCache.postProcessingShutdown();
+            }
+            if (GraalOptions.LIRGTSlowDown.getValue(options)) {
+                // do we need to anything??
+            }
+            
             System.out.println("Groundtruth SlowDown Shutdown......");
     });
         Runtime.getRuntime().addShutdownHook(writingHook);
