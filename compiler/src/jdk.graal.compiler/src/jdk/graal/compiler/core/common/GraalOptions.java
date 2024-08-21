@@ -327,6 +327,9 @@ public final class GraalOptions {
 
     @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
     public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
+
+    @Option(help = "Enables the ground truth slowdown, but in slowdownMode need so i can easly swich off and on printing", type = OptionType.Debug)
+    public static final OptionKey<Boolean> LIRGTSlowDownDebugMode = new OptionKey<Boolean>( false);
   
     @Option(help = "Optimize integer division operation by using various mathematical foundations to "
                     + " express it in faster, equivalent, arithmetic.", type = OptionType.Debug)
