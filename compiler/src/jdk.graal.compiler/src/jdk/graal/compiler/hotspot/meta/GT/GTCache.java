@@ -135,7 +135,7 @@ public class GTCache extends Thread {
 
 
     public static void LoadInstructionMapCost() {
-        String jsonFile = "MandelbrotInstructions.json";
+        String jsonFile = "instructions.json";
         opcodeMap = new HashMap<>();
     
         try (FileReader reader = new FileReader(jsonFile)) {
@@ -147,9 +147,9 @@ public class GTCache extends Thread {
             for (EconomicMap<String, Object> instruction : instructions) {
                 String name = (String) instruction.get("name");
                 int ops = Integer.parseInt(instruction.get("ops").toString());
-                int latency = Integer.parseInt(instruction.get("latency").toString());
+                //int latency = Integer.parseInt(instruction.get("latency").toString());
                 // Store in the opcodeMap
-                opcodeMap.put(name, ops + latency);
+                opcodeMap.put(name, ops );
             }
         } catch (IOException e) {
             System.out.println(
