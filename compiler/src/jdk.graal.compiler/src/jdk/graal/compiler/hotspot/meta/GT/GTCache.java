@@ -13,11 +13,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.graalvm.collections.EconomicMap;
 
 //import org.native4j.capstone.Capstone;
 import capstone.Capstone;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
@@ -55,13 +58,16 @@ public class GTCache extends Thread {
     private static Map<String, Integer> opcodeMap;
     private static Capstone capstoneParser;
     private static OptionValues OptionValues;
+    private static Set<String> uniqueBytes;
+    
 
     public GTCache(OptionValues optionValues) {
         //capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
         //ActivationCountBuffer = new long[200_000];
-        LIRInstructionsByteCode = new HashMap<>();
+        LIRInstructionsByteCode = new ConcurrentHashMap<>();
         opcodeMap = new HashMap<>();
         OptionValues = optionValues;
+        uniqueBytes = new HashSet<>();
 
     }
 
@@ -129,7 +135,7 @@ public class GTCache extends Thread {
 
 
     public static void LoadInstructionMapCost() {
-        String jsonFile = "instructions.json";
+        String jsonFile = "MandelbrotInstructions.json";
         opcodeMap = new HashMap<>();
     
         try (FileReader reader = new FileReader(jsonFile)) {
@@ -141,9 +147,9 @@ public class GTCache extends Thread {
             for (EconomicMap<String, Object> instruction : instructions) {
                 String name = (String) instruction.get("name");
                 int ops = Integer.parseInt(instruction.get("ops").toString());
-    
+                int latency = Integer.parseInt(instruction.get("latency").toString());
                 // Store in the opcodeMap
-                opcodeMap.put(name, ops);
+                opcodeMap.put(name, ops + latency);
             }
         } catch (IOException e) {
             System.out.println(
@@ -158,7 +164,9 @@ public class GTCache extends Thread {
         if (value != null) {
             return value;
         } else {
-            //System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
+            if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
+                System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
+            }
             return 1; // Assuming 1 cycle cost if not found
         }
     }
@@ -167,6 +175,7 @@ public class GTCache extends Thread {
     public static int caculateCostForInstructions(List<String> bytes) {
         int cost = 0;
         for (String string : bytes) {
+            uniqueBytes.add(string);
             cost += containsOPCODE(string);
         }
         return cost;
@@ -174,9 +183,9 @@ public class GTCache extends Thread {
 
     // Method to deep copy a map with sets as values
     private static Map<String, Set<String>> deepCopy(Map<String, Set<String>> original) {
-        Map<String, Set<String>> copy = new HashMap<>();
+        Map<String, Set<String>> copy = new ConcurrentHashMap<>();
         for (Map.Entry<String, Set<String>> entry : original.entrySet()) {
-            copy.put(entry.getKey(), new HashSet<>(entry.getValue()));
+            copy.put(entry.getKey(), new CopyOnWriteArraySet<>(entry.getValue()));
         }
         return copy;
     }
@@ -204,6 +213,14 @@ public class GTCache extends Thread {
             counter = 0;
             tempSum = 0;
         }
+        if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
+            System.out.println("Each uniqueByte ");
+
+            for (String string : uniqueBytes) {
+                System.out.println(string);
+            }
+        }
+        
 
         String fileName = Options.LIRCostInformationFile.getValue(OptionValues);
 
