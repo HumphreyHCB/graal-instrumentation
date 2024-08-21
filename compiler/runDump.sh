@@ -18,7 +18,7 @@ mx --java-home \
   --add-exports \
   jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  Harness DeltaBlue 100 60000   
+  Harness Mandelbrot 1000 750   
 
 #  HelloWorld 
   
