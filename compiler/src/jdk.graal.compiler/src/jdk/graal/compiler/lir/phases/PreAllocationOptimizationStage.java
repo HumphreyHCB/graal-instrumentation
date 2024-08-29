@@ -32,9 +32,9 @@ import jdk.graal.compiler.options.OptionValues;
 public class PreAllocationOptimizationStage extends LIRPhaseSuite<PreAllocationOptimizationPhase.PreAllocationOptimizationContext> {
     @SuppressWarnings("this-escape")
     public PreAllocationOptimizationStage(OptionValues options) {
-        if (GraalOptions.LIRGTSlowDown.getValue(options)) {
-            appendPhase(new LIRGTSlowdownPhase());
-        }
+        // if (GraalOptions.LIRGTSlowDown.getValue(options)) {
+        //     appendPhase(new LIRGTSlowdownPhase());
+        // }
         if (ConstantLoadOptimization.Options.LIROptConstantLoadOptimization.getValue(options)) {
             appendPhase(new ConstantLoadOptimization());
         }
