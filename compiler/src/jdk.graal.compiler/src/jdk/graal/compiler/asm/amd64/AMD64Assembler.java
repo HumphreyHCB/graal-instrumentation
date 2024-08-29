@@ -3984,6 +3984,11 @@ public class AMD64Assembler extends AMD64BaseAssembler {
         nop();
     }
 
+    public final void fnop() {
+        emitByte(0xD9);
+        emitByte(0xD0);
+    }
+
     public final void nop() {
         nop(1);
     }
