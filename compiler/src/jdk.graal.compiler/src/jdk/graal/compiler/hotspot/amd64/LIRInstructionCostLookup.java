@@ -7,10 +7,15 @@ import java.util.Map;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
 
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionKey;
+import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.util.json.JsonParser;
 
 public class LIRInstructionCostLookup {
     private static final EconomicMap<String, Integer> CLASS_COST_MAP = EconomicMap.create();
+
+
 
     static {
         try {
