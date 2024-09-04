@@ -15,7 +15,7 @@ public class LIRInstructionCostMultiLookup {
 
     static {
         try {
-            loadClassCostsFromJSON("LIRCostVaware2.json");
+            loadClassCostsFromJSON("LIRCostVaware4.json");
         } catch (IOException e) {
             System.err.println("Failed to load class costs: " + e.getMessage());
         }
