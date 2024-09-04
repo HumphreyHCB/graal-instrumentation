@@ -195,7 +195,7 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
-        if (GraalOptions.EnableGTSlowDown.getValue(options) || GraalOptions.LIRGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
+        if (GraalOptions.EnableGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
             initalizeGT();
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
