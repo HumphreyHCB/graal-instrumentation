@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -144,48 +145,64 @@ public class GTCache extends Thread {
 
     private static Map<String, Set<String>> deepCopy(Map<String, Set<String>> original) {
         Map<String, Set<String>> copy = new ConcurrentHashMap<>();
+
         synchronized (original) {
             for (Map.Entry<String, Set<String>> entry : original.entrySet()) {
-                copy.put(entry.getKey(), new HashSet<>(entry.getValue()));
+                // Create an immutable copy of the set
+                Set<String> newSet = Collections.unmodifiableSet(new HashSet<>(entry.getValue()));
+                
+                copy.put(entry.getKey(), newSet); // Add the copied set to the map
             }
         }
+
         return copy;
     }
+    
 
     public static void postProcessingShutdown() {
         capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
         LoadInstructionMapCost();
     
         Map<String, Set<String>> snapshot;
-    
+        try {
+			sleep(5000L);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
         synchronized (LIRInstructionsByteCode) {
             snapshot = deepCopy(LIRInstructionsByteCode);
         }
         Map<String, LIRCost> LIRCostMap = new HashMap<>();
-        int counter = 0;
-        int tempSum = 0;
-        int tempVSum = 0;
-    
         for (Map.Entry<String, Set<String>> entry : snapshot.entrySet()) {
+            if (entry.getKey().contains("class jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryMROp")) {
+                System.out.println("class jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryMROp");
+            }
+            int entryCounter = 0;
+            int entryTempSum = 0;
+            int entryTempVSum = 0;
+        
             for (String value : entry.getValue()) {
                 List<String> mnemonics = disassembleOPCode(value);
                 List<LIRInstruction> instructions = calculateCostForInstructions(mnemonics);
-    
+        
                 for (LIRInstruction instruction : instructions) {
-                    tempSum += instruction.totalCost;
-                    tempVSum += instruction.vCost;
+                    entryTempSum += instruction.totalCost;
+                    entryTempVSum += instruction.vCost;
                 }
-                counter++;
+                entryCounter++;
             }
-    
-            int averageCost = counter > 0 ? Math.round(tempSum / counter) : 0;
-            int averageVCost = counter > 0 ? Math.round(tempVSum / counter) : 0;
-    
+        
+            // Calculate the average cost per entry
+            int averageCost = entryCounter > 0 ? (int) Math.ceil((float) entryTempSum / entryCounter) : 0;
+            int averageVCost = entryCounter > 0 ? (int) Math.ceil((float) entryTempVSum / entryCounter) : 0;
+            
+        
+            if (averageVCost > 0  && averageVCost < 1 ) {
+                averageVCost = 1; // bias to 1 for when it someimtes a vector
+            }
+            
             LIRCostMap.put(entry.getKey(), new LIRCost(averageCost, averageVCost));
-    
-            counter = 0;
-            tempSum = 0;
-            tempVSum = 0;
     
             if (averageVCost > 0) {
                 System.out.println("LIR Instruction with 'v' cost: " + entry.getKey());
