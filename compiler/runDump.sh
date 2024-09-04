@@ -10,13 +10,11 @@
 mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
  vm  \
-  -Dgraal.EnableGTSlowDown=false -Dgraal.LIRGTSlowDown=true \
+  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=true \
  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
-  -Dgraal.CompilationFailureAction=Diagnose \
-  -Dgraal.Dump=:3 -Dgraal.PrintGraph=Network -Dgraal.PrintBackendCFG=true \
-  -XX:+UseJVMCICompiler  \
-  --add-exports \
-  jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
+  -Djdk.graal.CompilationFailureAction=Diagnose \
+  -Djdk.graal.Dump=:3 -Djdk.graal.PrintGraph=Network -Djdk.graal.PrintBackendCFG=true -Djdk.graal.ObjdumpExecutables=objdump -Djdk.graal.ObjdumpExecutables=gobjdump \
+  -XX:+UseJVMCICompiler -Djdk.graal.LIRNubers="8,9,10,12" \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   Harness Mandelbrot 1000 750   
 
