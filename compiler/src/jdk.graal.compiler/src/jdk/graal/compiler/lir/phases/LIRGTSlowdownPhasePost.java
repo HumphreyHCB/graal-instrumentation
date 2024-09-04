@@ -48,6 +48,7 @@ import jdk.graal.compiler.lir.amd64.AMD64FNop;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PauseOp;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.amd64.AMD64TempNode;
@@ -92,8 +93,8 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
             // Check if the block contains any "vector" instruction
             boolean hasVectorInstruction = false;
             for (LIRInstruction instruction : lirGenRes.getLIR().getLIRforBlock(block)) {
-                //if (instruction.getClass().toString().toLowerCase().contains("vector")) {
-                if (LIRInstructionVectorLookup.containsClassName(instruction.getClass().toString())){
+                // if (instruction.getClass().toString().toLowerCase().contains("vector")) {
+                if (LIRInstructionVectorLookup.containsClassName(instruction.getClass().toString())) {
                     hasVectorInstruction = true;
                     break;
                 }
@@ -107,14 +108,14 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                 // // Add IDs of predecessors
                 // for (int i = 0; i < block.getPredecessorCount(); i++) {
-                //     BasicBlock<?> predecessor = block.getPredecessorAt(i);
-                //     resultBlockIds.add(predecessor.getId());
+                // BasicBlock<?> predecessor = block.getPredecessorAt(i);
+                // resultBlockIds.add(predecessor.getId());
                 // }
 
                 // // Add IDs of successors
                 // for (int i = 0; i < block.getSuccessorCount(); i++) {
-                //     BasicBlock<?> successor = block.getSuccessorAt(i);
-                //     resultBlockIds.add(successor.getId());
+                // BasicBlock<?> successor = block.getSuccessorAt(i);
+                // resultBlockIds.add(successor.getId());
                 // }
             }
         }
@@ -126,110 +127,41 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-        // try a LFence incase
-        // if (lirGenRes.getCompilationUnitName().equals("Mandelbrot.mandelbrot(int)"))
-        // {
-        // System.out.println(lirGenRes.getCompilationUnitName());
-
-        //List<Integer> vectorIDs = analyzeVectorInstructions(lirGenRes);
-
-        int blockIndex = 0; // Initialize a counter for the block index
-        // Split the string by commas
-        // String[] numberArray = Options.LIRNubers.getValue(options).split(",");
-
-        // // Convert the string array to a List<Integer>
-        // List<Integer> ids = Arrays.asList(numberArray).stream()
-        // .map(Integer::parseInt)
-        // .collect(Collectors.toList());
 
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            int blockCost = 0;
             int vectorCost = 0;
             int nopCost = 0;
+            int fnopCost = 0;
             for (LIRInstruction instruction : instructions) {
-                nopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
-                vectorCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
-                //int cost = LIRInstructionCostLookup.getCost(instruction.getClass().toString());
-                //blockCost += cost;
-                //if (LIRInstructionVectorLookup.containsClassName(instruction.getClass().toString())) {
-                    //vectorCost += cost;
-                //} else {
-                 //   nopCost += cost;
+                // if (instruction.getClass().toString().toLowerCase().contains("float")) {
+                //     fnopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
+                //     fnopCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
+                // }
+                // else{
+                    nopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
+                    vectorCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
                 //}
+                //
+                
+                
             }
-            //System.out.println("nopCost " + nopCost);
-            //System.out.println("vectorCost " + vectorCost);
 
-            // boolean vector = false;
-            // int memoryFences = 0;
-            
 
             if (!instructions.isEmpty()) {
-                // if (vectorIDs.contains(blockIndex)) {
-
-                //     for (int i = 0; i < blockCost; i++) {
-                //         instructions.add(instructions.size() - 1, new AMD64SFence());
-                //     }
-                // } else {
-                //if (vectorCost > 0) {
-
-                    for (int index = 0; index < vectorCost * 2; index++) {
-
-                    instructions.add(1, new AMD64SFence());
-                    }
-                    //}else{
-                    for (int index = 0; index < nopCost; index++) {
-
-                        instructions.add(1, new AMD64Nop());
-
-                        // for (int i = 1; i < instructions.size() - 1; i++) {
-                        // int insertionCount =
-                        // LIRInstructionCostLookup.getCost(instructions.get(i).getClass().toString());
-
-                        // // Insert new elements based on the cost
-                        // for (int index = 0; index < insertionCount; index++) {
-                        // instructions.add(i + 1, new AMD64TempNode());
-                        // i++; // Increment `i` to skip the newly added element
-                        // }
-                        // }
-                        // instructions.add(1, new AMD64TempNode());
-                        // for (int index = 0; index < PauseAmount; index++) {
-                        // instructions.add(instructions.size() -1, new AMD64PauseOp());
-                        // }
-
-                    //}
+                    //instructions.add(1, new AMD64PointLess());
+                for (int index = 0; index < Math.round(vectorCost/2); index++) {
+                    //instructions.add(1, new AMD64SFence());
+                    instructions.add(1, new AMD64PointLess());
+                }
+                for (int index = 0; index < Math.round(nopCost/2); index++) {
+                    instructions.add(1, new AMD64Nop());
+                    //instructions.add(1, new AMD64PointLess());
                 }
 
             }
-            blockIndex++; 
         }
-        // Increment the block index counter after processing each block
     }
-    // }
-    // else {
-
-    // for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks())
-    // {
-
-    // ArrayList<LIRInstruction> instructions =
-    // lirGenRes.getLIR().getLIRforBlock(b);
-    // int blockCost = 0;
-    // for (LIRInstruction instruction : instructions) {
-    // blockCost +=
-    // LIRInstructionCostLookup.getCost(instruction.getClass().toString());
-    // }
-    // if (!instructions.isEmpty()) {
-    // for (int index = 0; index < blockCost; index++) {
-    // instructions.add(1, new AMD64Nop());
-    // }
-
-    // }
-
-    // }
-    // }
-
-    // }
 
 }
