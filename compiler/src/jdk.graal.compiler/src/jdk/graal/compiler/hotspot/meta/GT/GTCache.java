@@ -125,7 +125,8 @@ public class GTCache extends Thread {
             return instruction;
         } else {
             if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
-                System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
+                //System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
+                uniqueBytes.add(nameToCheck.toUpperCase());
             }
             return new LIRInstruction(nameToCheck, 1, 0); // Assuming 1 cycle cost if not found, and no vCost
         }
@@ -135,7 +136,6 @@ public class GTCache extends Thread {
         List<LIRInstruction> instructionList = new ArrayList<>();
         if (bytes != null) {
             for (String mnemonic : bytes) {
-                uniqueBytes.add(mnemonic);
                 LIRInstruction instruction = containsOPCODE(mnemonic);
                 instructionList.add(instruction);
             }
@@ -175,9 +175,6 @@ public class GTCache extends Thread {
         }
         Map<String, LIRCost> LIRCostMap = new HashMap<>();
         for (Map.Entry<String, Set<String>> entry : snapshot.entrySet()) {
-            if (entry.getKey().contains("class jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryMROp")) {
-                System.out.println("class jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer$MemoryMROp");
-            }
             int entryCounter = 0;
             int entryTempSum = 0;
             int entryTempVSum = 0;
@@ -204,9 +201,11 @@ public class GTCache extends Thread {
             
             LIRCostMap.put(entry.getKey(), new LIRCost(averageCost, averageVCost));
     
-            if (averageVCost > 0) {
-                System.out.println("LIR Instruction with 'v' cost: " + entry.getKey());
-            }
+
+        }
+        System.out.println("Missing Cost:");
+        for (String string : uniqueBytes) {
+            System.out.println(string);
         }
     
         String fileName = Options.LIRCostInformationFile.getValue(OptionValues);

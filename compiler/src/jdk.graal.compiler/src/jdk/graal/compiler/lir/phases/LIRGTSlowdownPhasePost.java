@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
@@ -127,39 +128,39 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
+        if (!lirGenRes.getCompilationUnitName().toLowerCase().contains("graal")) {
 
-        for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+            for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
-            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            int vectorCost = 0;
-            int nopCost = 0;
-            int fnopCost = 0;
-            for (LIRInstruction instruction : instructions) {
-                // if (instruction.getClass().toString().toLowerCase().contains("float")) {
-                //     fnopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
-                //     fnopCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
-                // }
-                // else{
+                ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+                int vectorCost = 0;
+                int nopCost = 0;
+                int fnopCost = 0;
+                for (LIRInstruction instruction : instructions) {
                     nopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
                     vectorCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
-                //}
-                //
-                
-                
-            }
 
-
-            if (!instructions.isEmpty()) {
-                    //instructions.add(1, new AMD64PointLess());
-                for (int index = 0; index < Math.round(vectorCost/2); index++) {
-                    //instructions.add(1, new AMD64SFence());
-                    instructions.add(1, new AMD64PointLess());
-                }
-                for (int index = 0; index < Math.round(nopCost/2); index++) {
-                    instructions.add(1, new AMD64Nop());
-                    //instructions.add(1, new AMD64PointLess());
                 }
 
+                if (!instructions.isEmpty()) {
+                    // instructions.add(1, new AMD64PointLess());
+                    for (int index = 0; index < Math.round(vectorCost / 8); index++) {
+                        // instructions.add(1, new AMD64SFence());
+                        
+                        instructions.add(instructions.size()-1, new AMD64PointLess());
+                        nopCost -= 2;
+                    }
+                    
+                    // for (int index = 0; index < vectorCost; index++) {
+                    // instructions.add(1, new AMD64Nop());
+                    // //instructions.add(1, new AMD64PointLess());
+                    // }
+                    for (int index = 0; index < nopCost; index++) {
+                        instructions.add(instructions.size()-1, new AMD64Nop());
+                        // instructions.add(1, new AMD64PointLess());
+                    }
+
+                }
             }
         }
     }
