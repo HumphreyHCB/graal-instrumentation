@@ -32,7 +32,7 @@ import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 /**
  * Emits a FWAIT.
  */
-@Opcode("")
+@Opcode("Nops")
 public final class AMD64Nops extends AMD64LIRInstruction {
     public static final LIRInstructionClass<AMD64Nops> TYPE = LIRInstructionClass.create(AMD64Nops.class);
 
