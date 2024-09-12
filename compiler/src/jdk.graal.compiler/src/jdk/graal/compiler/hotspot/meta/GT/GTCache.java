@@ -29,7 +29,7 @@ public class GTCache extends Thread {
         @Option(help = "The name of the file you would like the information to be dumped to.", type = OptionType.Debug)
         public static final OptionKey<String> LIRCostInformationFile = new OptionKey<>("LIRInstructionsCost.json");
     }
-
+    public static long[] ActivationCountBuffer; // stores activaation of Comp units
     private static Map<String, Set<String>> LIRInstructionsByteCode;
     private static Map<String, LIRInstruction> opcodeMap;
     private static Capstone capstoneParser;
@@ -37,6 +37,7 @@ public class GTCache extends Thread {
     private static Set<String> uniqueBytes;
 
     public GTCache(OptionValues optionValues) {
+        ActivationCountBuffer = new long[200_000];
         LIRInstructionsByteCode = new ConcurrentHashMap<>();
         opcodeMap = new HashMap<>();
         OptionValues = optionValues;
