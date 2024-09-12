@@ -35,24 +35,36 @@ import java.util.stream.Collectors;
 
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.core.gen.NodeLIRBuilder;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
 import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
 import jdk.graal.compiler.lir.LIR;
+import jdk.graal.compiler.lir.LIRFrameState;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.LIRInstruction.OperandMode;
+import jdk.graal.compiler.lir.LIRInstruction.State;
 import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.Variable;
+import jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer.MemoryRMOp;
 import jdk.graal.compiler.lir.amd64.AMD64FNop;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PauseOp;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess1;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess2;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess3;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess4;
+import jdk.graal.compiler.lir.amd64.AMD64PointLessWithFrame;
 import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
+import jdk.graal.compiler.lir.amd64.AMD64SFenceWithFrame;
 import jdk.graal.compiler.lir.amd64.AMD64TempNode;
+import jdk.graal.compiler.lir.framemap.ReferenceMapBuilder;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
 import jdk.graal.compiler.lir.gen.MoveFactory;
@@ -63,11 +75,13 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.vm.ci.code.Architecture;
+import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.PlatformKind;
+import jdk.graal.compiler.lir.dfa.LocationMarker;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
@@ -129,14 +143,27 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
         if (!lirGenRes.getCompilationUnitName().toLowerCase().contains("graal")) {
-
+            
             for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
-
+                
                 ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
                 int vectorCost = 0;
                 int nopCost = 0;
                 int fnopCost = 0;
+                //LIRFrameState stolenState = null; 
                 for (LIRInstruction instruction : instructions) {
+                    // if (instruction.getFrameState() != null && instruction.getFrameState().topFrame != null) {
+                    //     System.out.println("Comp "+ lirGenRes.getCompilationUnitName() +" Block " + b.getId() + " Frame " + instruction.getFrameState().topFrame.getMethod().getName());
+                    // }
+                    // if (stolenState == null && instruction.hasState() && instruction.getFrameState().topFrame != null) {
+                    //     stolenState = instruction.getFrameState();
+                            //
+                            //
+                            // TO HUmphrey, i deleted getFrameState, might need to add it back
+                            //
+                            //
+                            //
+                    // }
                     nopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
                     vectorCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
 
@@ -144,10 +171,18 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                 if (!instructions.isEmpty()) {
                     // instructions.add(1, new AMD64PointLess());
-                    for (int index = 0; index < Math.round(vectorCost / 8); index++) {
+                    //int idCOunt =0;
+                    if (vectorCost < 8) {
+                        for (int index = 0; index < vectorCost; index++) {
+                        AMD64SFence node = new AMD64SFence();
+                        instructions.add(instructions.size()-1, node);
+                        }
+                    }
+                    for (int index = 0; index < Math.round(vectorCost/8); index++) {
                         // instructions.add(1, new AMD64SFence());
                         
-                        instructions.add(instructions.size()-1, new AMD64PointLess());
+                           AMD64PointLess node = new AMD64PointLess();
+                            instructions.add(instructions.size()-1, node);
                         nopCost -= 2;
                     }
                     
@@ -156,13 +191,49 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                     // //instructions.add(1, new AMD64PointLess());
                     // }
                     for (int index = 0; index < nopCost; index++) {
-                        instructions.add(instructions.size()-1, new AMD64Nop());
-                        // instructions.add(1, new AMD64PointLess());
+                            AMD64Nop node = new AMD64Nop();
+                            instructions.add(instructions.size()-1, node);
                     }
 
                 }
             }
         }
     }
+
+    /**
+     * Utility method to copy the state from one LIR instruction to another.
+     */
+    // private void copyStateAndDebugInfo(LIRInstruction from, LIRInstruction to, LIRGenerationResult lirGenRes) {
+    //     // Copy the state
+    //     from.forEachState((stateProcedure) -> {
+    //         to.visitEachState((instruction, value, mode, flags) -> {
+    //             // Copy the state to the new instruction
+    //             lirGenRes.getLIR().setState(to, value);
+    //         });
+    //     });
+    //     from.setPosition(null);
+    //     // Copy the debug info
+    //     LIRFrameState frameState = from.getFrameState();
+    //     if (frameState != null && frameState.hasDebugInfo()) {
+    //         // Initialize debug info for the new instruction if necessary
+    //         if (!frameState.hasDebugInfo()) {
+    //             frameState.initDebugInfo();
+    //         }
+    
+    //         // Create a new reference map builder
+
+    //         ReferenceMapBuilder refMap = lirGenRes.getFrameMap().newReferenceMapBuilder();
+    //         RegStackValueSet values = new RegStackValueSet(lirGenRes.getFrameMap());
+    
+    //         // Add live values from the original instruction to the reference map
+    //         values.addLiveValues(refMap);
+    
+    //         // Set the reference map for the new instruction's debug info
+    //         LIRFrameState newFrameState = new LIRFrameState(frameState.topFrame, frameState.virtualObjects, frameState.exceptionEdge, frameState.validForDeoptimization);
+    //         newFrameState.debugInfo().setReferenceMap(refMap.finish(newFrameState));
+    
+    //         // Assign the new frame state to the new instruction
+    //         lirGenRes.getLIR().setState(to, newFrameState);
+    //     }
 
 }
