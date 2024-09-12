@@ -84,7 +84,7 @@
     {"Class":"jdk.graal.compiler.lir.amd64.AMD64NormalizedUnsignedCompareOp","normalCost":5,"vCost":0},
     {"Class":"jdk.graal.compiler.lir.amd64.AMD64ArrayEqualsOp","normalCost":10,"vCost":15},
     {"Class":"jdk.graal.compiler.hotspot.amd64.AMD64HotSpotCRuntimeCallEpilogueOp","normalCost":3,"vCost":0},
-    {"Class":"jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp","normalCost":39,"vCost":0},
+    {"Class":"jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp","normalCost":1,"vCost":0},
     {"Class":"jdk.graal.compiler.lir.amd64.AMD64VZeroUpper","normalCost":0,"vCost":1},
     {"Class":"jdk.graal.compiler.hotspot.amd64.AMD64HotSpotJumpToExceptionHandlerInCallerOp","normalCost":4,"vCost":0},
     {"Class":"jdk.graal.compiler.lir.amd64.AMD64SHA1Op","normalCost":0,"vCost":401},
