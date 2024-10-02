@@ -86,7 +86,7 @@ public class LIRInstructionCostMultiLookup {
             return CLASS_COST_MAP.get(sanitizedClassName).vCost;
         } else {
             //System.out.println("Have no cost for " + sanitizedClassName);
-            return 1; // Default value if the class is not found
+            return 0; // Default value if the class is not found
         }
     }
 }
