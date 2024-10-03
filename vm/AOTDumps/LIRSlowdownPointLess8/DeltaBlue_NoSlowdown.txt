@@ -1,0 +1,1377 @@
+--- Execution profile ---
+Total samples       : 305560
+unknown_Java        : 18543 (6.07%)
+not_walkable_Java   : 50 (0.02%)
+
+--- 25853967754 ns (8.46%), 25848 samples
+  [ 0] deltablue.EqualityConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 21928758215 ns (7.17%), 21924 samples
+  [ 0] deltablue.EqualityConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 10708099794 ns (3.50%), 10706 samples
+  [ 0] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.change
+  [ 4] deltablue.Planner.projectionTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 10559458175 ns (3.45%), 10557 samples
+  [ 0] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.change
+  [ 4] deltablue.Planner.projectionTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 4054742119 ns (1.33%), 4054 samples
+  [ 0] deltablue.Variable.getValue
+  [ 1] deltablue.ScaleConstraint.execute
+  [ 2] deltablue.Plan.lambda$execute$0
+  [ 3] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 4] som.Vector.forEach
+  [ 5] deltablue.Plan.execute
+  [ 6] deltablue.Planner.change
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 3934596927 ns (1.29%), 3934 samples
+  [ 0] deltablue.Variable.getValue
+  [ 1] deltablue.ScaleConstraint.execute
+  [ 2] deltablue.Plan.lambda$execute$0
+  [ 3] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 4] som.Vector.forEach
+  [ 5] deltablue.Plan.execute
+  [ 6] deltablue.Planner.change
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 3923827963 ns (1.28%), 3923 samples
+  [ 0] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.chainTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 3613548857 ns (1.18%), 3613 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.chainTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 3499584597 ns (1.15%), 3499 samples
+  [ 0] deltablue.Plan.lambda$execute$0
+  [ 1] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Plan.execute
+  [ 4] deltablue.Planner.chainTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 2554446108 ns (0.84%), 2554 samples
+  [ 0] deltablue.Variable.setValue
+  [ 1] [unknown_Java]
+
+--- 2358485106 ns (0.77%), 2358 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2324524866 ns (0.76%), 2324 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2209356344 ns (0.72%), 2209 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2180652237 ns (0.71%), 2180 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2159196959 ns (0.71%), 2159 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2130650346 ns (0.70%), 2130 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2122609224 ns (0.69%), 2122 samples
+  [ 0] deltablue.Variable.getValue
+  [ 1] [unknown_Java]
+
+--- 2052779551 ns (0.67%), 2053 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 2048929477 ns (0.67%), 2049 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1973457622 ns (0.65%), 1973 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1958371805 ns (0.64%), 1958 samples
+  [ 0] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 1] [unknown_Java]
+
+--- 1950125397 ns (0.64%), 1950 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1771560720 ns (0.58%), 1771 samples
+  [ 0] som.Vector.forEach
+  [ 1] deltablue.Plan.execute
+  [ 2] deltablue.Planner.chainTest
+  [ 3] DeltaBlue.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 1771238979 ns (0.58%), 1771 samples
+  [ 0] deltablue.Planner.chainTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1691446887 ns (0.55%), 1691 samples
+  [ 0] vtable stub
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1651022134 ns (0.54%), 1651 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1631896948 ns (0.53%), 1632 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1626435680 ns (0.53%), 1626 samples
+  [ 0] deltablue.EqualityConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1588259866 ns (0.52%), 1588 samples
+  [ 0] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.chainTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 1580417634 ns (0.52%), 1580 samples
+  [ 0] deltablue.EqualityConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1579665536 ns (0.52%), 1579 samples
+  [ 0] som.Vector.forEach
+  [ 1] deltablue.Plan.execute
+  [ 2] deltablue.Planner.chainTest
+  [ 3] DeltaBlue.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 1484210775 ns (0.49%), 1484 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] deltablue.Planner.chainTest
+  [ 2] DeltaBlue.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1155040057 ns (0.38%), 1155 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1030186542 ns (0.34%), 1030 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 963401845 ns (0.32%), 961 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 890093524 ns (0.29%), 890 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 758877593 ns (0.25%), 758 samples
+  [ 0] deltablue.Planner$$Lambda.0x00007f25b40097d8.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Planner.addConstraintsConsumingTo
+  [ 3] deltablue.Planner.addPropagate
+  [ 4] deltablue.AbstractConstraint.satisfy
+  [ 5] deltablue.Planner.incrementalAdd
+  [ 6] deltablue.AbstractConstraint.addConstraint
+  [ 7] deltablue.UnaryConstraint.<init>
+  [ 8] deltablue.EditConstraint.<init>
+  [ 9] deltablue.Planner.change
+  [10] deltablue.Planner.projectionTest
+  [11] DeltaBlue.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 728191797 ns (0.24%), 728 samples
+  [ 0] java.lang.invoke.MethodHandle.invokeBasic
+  [ 1] [unknown_Java]
+
+--- 695043152 ns (0.23%), 695 samples
+  [ 0] java.lang.invoke.DirectMethodHandle.constructorMethod
+  [ 1] [unknown_Java]
+
+--- 621176294 ns (0.20%), 621 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 587157854 ns (0.19%), 587 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 576082766 ns (0.19%), 576 samples
+  [ 0] deltablue.ScaleConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 518068605 ns (0.17%), 518 samples
+  [ 0] deltablue.BinaryConstraint.getOutput
+  [ 1] [unknown_Java]
+
+--- 511267850 ns (0.17%), 511 samples
+  [ 0] deltablue.Planner$$Lambda.0x00007f25b40097d8.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Planner.addConstraintsConsumingTo
+  [ 3] deltablue.Planner.makePlan
+  [ 4] deltablue.Planner.extractPlanFromConstraints
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 498250246 ns (0.16%), 498 samples
+  [ 0] deltablue.Planner$$Lambda.0x00007f25b40097d8.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Planner.addConstraintsConsumingTo
+  [ 3] deltablue.Planner.makePlan
+  [ 4] deltablue.Planner.extractPlanFromConstraints
+  [ 5] deltablue.Planner.change
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 497114275 ns (0.16%), 497 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.UnaryConstraint.<init>
+  [ 7] deltablue.EditConstraint.<init>
+  [ 8] deltablue.Planner.chainTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 496053336 ns (0.16%), 496 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.Planner.lambda$incrementalRemove$0
+  [ 6] deltablue.Planner$$Lambda.0x00007f25b400b258.apply
+  [ 7] som.Vector.forEach
+  [ 8] deltablue.Planner.incrementalRemove
+  [ 9] deltablue.AbstractConstraint.destroyConstraint
+  [10] deltablue.Planner.chainTest
+  [11] DeltaBlue.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 496049071 ns (0.16%), 496 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.UnaryConstraint.<init>
+  [ 7] deltablue.StayConstraint.<init>
+  [ 8] deltablue.Planner.projectionTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 489097859 ns (0.16%), 489 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.UnaryConstraint.<init>
+  [ 7] deltablue.StayConstraint.<init>
+  [ 8] deltablue.Planner.chainTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 479066788 ns (0.16%), 479 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$4
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400a968.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Planner.removePropagateFrom
+  [ 4] deltablue.Planner.incrementalRemove
+  [ 5] deltablue.AbstractConstraint.destroyConstraint
+  [ 6] deltablue.Planner.chainTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 476103952 ns (0.16%), 476 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.ScaleConstraint.<init>
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 469053423 ns (0.15%), 469 samples
+  [ 0] deltablue.Variable.getConstraints
+  [ 1] [unknown_Java]
+
+--- 459213510 ns (0.15%), 459 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$4
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400a968.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Planner.removePropagateFrom
+  [ 4] deltablue.Planner.incrementalRemove
+  [ 5] deltablue.AbstractConstraint.destroyConstraint
+  [ 6] deltablue.Planner.change
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 457263652 ns (0.15%), 457 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$4
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400a968.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Planner.removePropagateFrom
+  [ 4] deltablue.Planner.incrementalRemove
+  [ 5] deltablue.AbstractConstraint.destroyConstraint
+  [ 6] deltablue.Planner.change
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 455104438 ns (0.15%), 455 samples
+  [ 0] java.lang.Object.<init>
+  [ 1] [unknown_Java]
+
+--- 442111435 ns (0.14%), 442 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.UnaryConstraint.<init>
+  [ 5] deltablue.StayConstraint.<init>
+  [ 6] deltablue.Planner.chainTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 436089200 ns (0.14%), 436 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.with
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.EqualityConstraint.<init>
+  [ 7] deltablue.Planner.chainTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 434096992 ns (0.14%), 434 samples
+  [ 0] som.Vector.forEach
+  [ 1] [unknown_Java]
+
+--- 432004307 ns (0.14%), 432 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.Planner.lambda$incrementalRemove$0
+  [ 4] deltablue.Planner$$Lambda.0x00007f25b400b258.apply
+  [ 5] som.Vector.forEach
+  [ 6] deltablue.Planner.incrementalRemove
+  [ 7] deltablue.AbstractConstraint.destroyConstraint
+  [ 8] deltablue.Planner.chainTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 425117137 ns (0.14%), 425 samples
+  [ 0] som.Vector.<init>
+  [ 1] deltablue.Variable.<init>
+  [ 2] deltablue.Planner.lambda$chainTest$7
+  [ 3] deltablue.Planner$$Lambda.0x00007f25b4007000.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 409031540 ns (0.13%), 409 samples
+  [ 0] som.Vector.removeFirst
+  [ 1] [unknown_Java]
+
+--- 402045641 ns (0.13%), 402 samples
+  [ 0] som.Vector.<init>
+  [ 1] deltablue.Variable.<init>
+  [ 2] deltablue.Variable.value
+  [ 3] deltablue.Planner.projectionTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 402010206 ns (0.13%), 402 samples
+  [ 0] som.Vector.<init>
+  [ 1] deltablue.Variable.<init>
+  [ 2] deltablue.Variable.value
+  [ 3] deltablue.Planner.projectionTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 393123972 ns (0.13%), 393 samples
+  [ 0] deltablue.Variable.<init>
+  [ 1] deltablue.Variable.value
+  [ 2] deltablue.Planner.projectionTest
+  [ 3] DeltaBlue.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 388143274 ns (0.13%), 388 samples
+  [ 0] deltablue.Variable.<init>
+  [ 1] deltablue.Planner.lambda$chainTest$7
+  [ 2] deltablue.Planner$$Lambda.0x00007f25b4007000.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] deltablue.Planner.chainTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 383120752 ns (0.13%), 383 samples
+  [ 0] deltablue.Planner.projectionTest
+  [ 1] DeltaBlue.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 378044065 ns (0.12%), 378 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.EqualityConstraint.<init>
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 375038437 ns (0.12%), 375 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.change
+  [ 4] deltablue.Planner.projectionTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 373061302 ns (0.12%), 373 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Plan.execute
+  [ 3] deltablue.Planner.change
+  [ 4] deltablue.Planner.projectionTest
+  [ 5] DeltaBlue.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 372016048 ns (0.12%), 372 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.UnaryConstraint.<init>
+  [ 5] deltablue.StayConstraint.<init>
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 370070991 ns (0.12%), 370 samples
+  [ 0] deltablue.Strength.weaker
+  [ 1] [unknown_Java]
+
+--- 365981286 ns (0.12%), 366 samples
+  [ 0] deltablue.Planner.addConstraintsConsumingTo
+  [ 1] [unknown_Java]
+
+--- 363108847 ns (0.12%), 363 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.UnaryConstraint.<init>
+  [ 5] deltablue.EditConstraint.<init>
+  [ 6] deltablue.Planner.chainTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 361059532 ns (0.12%), 361 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.ScaleConstraint.<init>
+  [ 5] deltablue.Planner.projectionTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 354096426 ns (0.12%), 354 samples
+  [ 0] deltablue.Strength.weakest
+  [ 1] [unknown_Java]
+
+--- 354056471 ns (0.12%), 354 samples
+  [ 0] deltablue.Variable.getDeterminedBy
+  [ 1] [unknown_Java]
+
+--- 352076900 ns (0.12%), 352 samples
+  [ 0] deltablue.Strength.weaker
+  [ 1] deltablue.Strength.weakest
+  [ 2] deltablue.ScaleConstraint.recalculate
+  [ 3] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 4] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 5] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 6] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 7] som.Vector.forEach
+  [ 8] deltablue.Planner.constraintsConsuming
+  [ 9] deltablue.Planner.removePropagateFrom
+  [10] deltablue.Planner.incrementalRemove
+  [11] deltablue.AbstractConstraint.destroyConstraint
+  [12] deltablue.Planner.change
+  [13] deltablue.Planner.projectionTest
+  [14] DeltaBlue.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 351000794 ns (0.11%), 351 samples
+  [ 0] som.Vector.forEach
+  [ 1] deltablue.Planner.addConstraintsConsumingTo
+  [ 2] deltablue.Planner.addPropagate
+  [ 3] deltablue.AbstractConstraint.satisfy
+  [ 4] deltablue.Planner.incrementalAdd
+  [ 5] deltablue.AbstractConstraint.addConstraint
+  [ 6] deltablue.UnaryConstraint.<init>
+  [ 7] deltablue.EditConstraint.<init>
+  [ 8] deltablue.Planner.change
+  [ 9] deltablue.Planner.projectionTest
+  [10] DeltaBlue.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 350982551 ns (0.11%), 351 samples
+  [ 0] deltablue.Variable.<init>
+  [ 1] deltablue.Variable.value
+  [ 2] deltablue.Planner.projectionTest
+  [ 3] DeltaBlue.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 350134827 ns (0.11%), 350 samples
+  [ 0] deltablue.Planner$$Lambda.0x00007f25b40097d8.apply
+  [ 1] som.Vector.forEach
+  [ 2] deltablue.Planner.addConstraintsConsumingTo
+  [ 3] deltablue.Planner.addPropagate
+  [ 4] deltablue.AbstractConstraint.satisfy
+  [ 5] deltablue.Planner.incrementalAdd
+  [ 6] deltablue.AbstractConstraint.addConstraint
+  [ 7] deltablue.UnaryConstraint.<init>
+  [ 8] deltablue.EditConstraint.<init>
+  [ 9] deltablue.Planner.change
+  [10] deltablue.Planner.projectionTest
+  [11] DeltaBlue.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 350033719 ns (0.11%), 350 samples
+  [ 0] deltablue.Planner.makePlan
+  [ 1] deltablue.Planner.extractPlanFromConstraints
+  [ 2] deltablue.Planner.change
+  [ 3] deltablue.Planner.projectionTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 349298421 ns (0.11%), 349 samples
+  [ 0] som.Vector.lambda$remove$0
+  [ 1] som.Vector$$Lambda.0x00007f25b400a748.apply
+  [ 2] som.Vector.forEach
+  [ 3] som.Vector.remove
+  [ 4] deltablue.Variable.removeConstraint
+  [ 5] deltablue.UnaryConstraint.removeFromGraph
+  [ 6] deltablue.AbstractConstraint.destroyConstraint
+  [ 7] deltablue.Planner.change
+  [ 8] deltablue.Planner.projectionTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 349123385 ns (0.11%), 349 samples
+  [ 0] deltablue.Variable.getStay
+  [ 1] [unknown_Java]
+
+--- 346963529 ns (0.11%), 347 samples
+  [ 0] deltablue.Planner$$Lambda.0x00007f25b40097d8.<init>
+  [ 1] java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+  [ 2] java.lang.invoke.Invokers$Holder.linkToTargetMethod
+  [ 3] deltablue.Planner.addConstraintsConsumingTo
+  [ 4] deltablue.Planner.addPropagate
+  [ 5] deltablue.AbstractConstraint.satisfy
+  [ 6] deltablue.Planner.incrementalAdd
+  [ 7] deltablue.AbstractConstraint.addConstraint
+  [ 8] deltablue.UnaryConstraint.<init>
+  [ 9] deltablue.EditConstraint.<init>
+  [10] deltablue.Planner.change
+  [11] deltablue.Planner.projectionTest
+  [12] DeltaBlue.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 345080687 ns (0.11%), 345 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 2] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 3] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 4] som.Vector.forEach
+  [ 5] deltablue.Planner.constraintsConsuming
+  [ 6] deltablue.Planner.removePropagateFrom
+  [ 7] deltablue.Planner.incrementalRemove
+  [ 8] deltablue.AbstractConstraint.destroyConstraint
+  [ 9] deltablue.Planner.chainTest
+  [10] DeltaBlue.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 342105967 ns (0.11%), 342 samples
+  [ 0] deltablue.BinaryConstraint.chooseMethod
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.Planner.lambda$incrementalRemove$0
+  [ 4] deltablue.Planner$$Lambda.0x00007f25b400b258.apply
+  [ 5] som.Vector.forEach
+  [ 6] deltablue.Planner.incrementalRemove
+  [ 7] deltablue.AbstractConstraint.destroyConstraint
+  [ 8] deltablue.Planner.chainTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 341228178 ns (0.11%), 341 samples
+  [ 0] som.Vector.lambda$remove$0
+  [ 1] som.Vector$$Lambda.0x00007f25b400a748.apply
+  [ 2] som.Vector.forEach
+  [ 3] som.Vector.remove
+  [ 4] deltablue.Variable.removeConstraint
+  [ 5] deltablue.UnaryConstraint.removeFromGraph
+  [ 6] deltablue.AbstractConstraint.destroyConstraint
+  [ 7] deltablue.Planner.change
+  [ 8] deltablue.Planner.projectionTest
+  [ 9] DeltaBlue.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 340058367 ns (0.11%), 340 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 2] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 3] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 4] som.Vector.forEach
+  [ 5] deltablue.Planner.constraintsConsuming
+  [ 6] deltablue.Planner.removePropagateFrom
+  [ 7] deltablue.Planner.incrementalRemove
+  [ 8] deltablue.AbstractConstraint.destroyConstraint
+  [ 9] deltablue.Planner.change
+  [10] deltablue.Planner.projectionTest
+  [11] DeltaBlue.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 336099130 ns (0.11%), 336 samples
+  [ 0] deltablue.AbstractConstraint.<init>
+  [ 1] deltablue.BinaryConstraint.<init>
+  [ 2] deltablue.EqualityConstraint.<init>
+  [ 3] deltablue.Planner.chainTest
+  [ 4] DeltaBlue.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 334081627 ns (0.11%), 334 samples
+  [ 0] java.lang.invoke.DirectMethodHandle.allocateInstance
+  [ 1] [unknown_Java]
+
+--- 332081379 ns (0.11%), 332 samples
+  [ 0] deltablue.Plan.lambda$execute$0
+  [ 1] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Plan.execute
+  [ 4] deltablue.Planner.change
+  [ 5] deltablue.Planner.projectionTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 331956383 ns (0.11%), 332 samples
+  [ 0] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 1] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 2] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 3] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 4] som.Vector.forEach
+  [ 5] deltablue.Planner.constraintsConsuming
+  [ 6] deltablue.Planner.removePropagateFrom
+  [ 7] deltablue.Planner.incrementalRemove
+  [ 8] deltablue.AbstractConstraint.destroyConstraint
+  [ 9] deltablue.Planner.change
+  [10] deltablue.Planner.projectionTest
+  [11] DeltaBlue.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 330092775 ns (0.11%), 330 samples
+  [ 0] deltablue.EqualityConstraint.execute
+  [ 1] deltablue.Plan.lambda$execute$0
+  [ 2] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 3] som.Vector.forEach
+  [ 4] deltablue.Plan.execute
+  [ 5] deltablue.Planner.chainTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 328965595 ns (0.11%), 329 samples
+  [ 0] deltablue.Variable.setMark
+  [ 1] [unknown_Java]
+
+--- 327056646 ns (0.11%), 327 samples
+  [ 0] deltablue.Plan.lambda$execute$0
+  [ 1] deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+  [ 2] som.Vector.forEach
+  [ 3] deltablue.Plan.execute
+  [ 4] deltablue.Planner.change
+  [ 5] deltablue.Planner.projectionTest
+  [ 6] DeltaBlue.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 326139461 ns (0.11%), 326 samples
+  [ 0] deltablue.UnaryConstraint.chooseMethod
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.UnaryConstraint.<init>
+  [ 5] deltablue.StayConstraint.<init>
+  [ 6] deltablue.Planner.projectionTest
+  [ 7] DeltaBlue.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 318972997 ns (0.10%), 319 samples
+  [ 0] deltablue.Strength.weaker
+  [ 1] deltablue.Strength.weakest
+  [ 2] deltablue.BinaryConstraint.recalculate
+  [ 3] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 4] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 5] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 6] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 7] som.Vector.forEach
+  [ 8] deltablue.Planner.constraintsConsuming
+  [ 9] deltablue.Planner.removePropagateFrom
+  [10] deltablue.Planner.incrementalRemove
+  [11] deltablue.AbstractConstraint.destroyConstraint
+  [12] deltablue.Planner.chainTest
+  [13] DeltaBlue.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 318972588 ns (0.10%), 319 samples
+  [ 0] deltablue.Planner.addPropagate
+  [ 1] deltablue.AbstractConstraint.satisfy
+  [ 2] deltablue.Planner.incrementalAdd
+  [ 3] deltablue.AbstractConstraint.addConstraint
+  [ 4] deltablue.UnaryConstraint.<init>
+  [ 5] deltablue.EditConstraint.<init>
+  [ 6] deltablue.Planner.change
+  [ 7] deltablue.Planner.projectionTest
+  [ 8] DeltaBlue.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 318953650 ns (0.10%), 319 samples
+  [ 0] som.Vector.forEach
+  [ 1] deltablue.Plan.execute
+  [ 2] deltablue.Planner.chainTest
+  [ 3] DeltaBlue.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 318953464 ns (0.10%), 319 samples
+  [ 0] deltablue.Strength.weaker
+  [ 1] deltablue.Strength.weakest
+  [ 2] deltablue.ScaleConstraint.recalculate
+  [ 3] deltablue.Planner.lambda$removePropagateFrom$5
+  [ 4] deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+  [ 5] deltablue.Planner.lambda$constraintsConsuming$3
+  [ 6] deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  [ 7] som.Vector.forEach
+  [ 8] deltablue.Planner.constraintsConsuming
+  [ 9] deltablue.Planner.removePropagateFrom
+  [10] deltablue.Planner.incrementalRemove
+  [11] deltablue.AbstractConstraint.destroyConstraint
+  [12] deltablue.Planner.change
+  [13] deltablue.Planner.projectionTest
+  [14] DeltaBlue.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+ 53363917902   17.46%    53352  deltablue.EqualityConstraint.execute
+ 29150170870    9.54%    29144  deltablue.Plan$$Lambda.0x00007f25b400a530.apply
+ 22807165665    7.46%    22803  deltablue.ScaleConstraint.execute
+ 11823271962    3.87%    11823  deltablue.Planner.projectionTest
+ 11095044352    3.63%    11093  deltablue.Variable.getValue
+ 10284455874    3.36%    10283  java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+  9249594595    3.03%     9249  deltablue.Planner.makePlan
+  8501116905    2.78%     8499  som.Vector.forEach
+  8390043675    2.75%     8389  deltablue.Planner.addPropagate
+  8098258337    2.65%     8098  deltablue.ScaleConstraint.recalculate
+  7781303267    2.55%     7780  deltablue.AbstractConstraint.satisfy
+  5967009515    1.95%     5966  deltablue.BinaryConstraint.recalculate
+  5888231705    1.93%     5887  itable stub
+  5480729621    1.79%     5480  deltablue.BinaryConstraint.chooseMethod
+  5396688448    1.77%     5396  deltablue.Planner.addConstraintsConsumingTo
+  4598679384    1.50%     4598  som.Vector.<init>
+  4535805723    1.48%     4535  deltablue.Plan.lambda$execute$0
+  4535093600    1.48%     4533  deltablue.Planner$$Lambda.0x00007f25b40097d8.apply
+  4448144872    1.46%     4447  som.Vector.append
+  4398437026    1.44%     4398  deltablue.Planner.removePropagateFrom
+  4190433686    1.37%     4190  som.Vector.removeFirst
+  4009466557    1.31%     4009  deltablue.Strength.weaker
+  3964582383    1.30%     3964  deltablue.Planner$$Lambda.0x00007f25b40097d8.<init>
+  3288188630    1.08%     3286  deltablue.Planner.lambda$addConstraintsConsumingTo$2
+  2686539016    0.88%     2686  deltablue.Variable.setValue
+  2595729329    0.85%     2595  vtable stub
+  2202393602    0.72%     2202  deltablue.Variable.<init>
+  1835271615    0.60%     1835  deltablue.Planner.chainTest
+  1808385403    0.59%     1808  deltablue.AbstractConstraint.lambda$satisfy$1
+  1792401986    0.59%     1792  deltablue.BinaryConstraint.getOutput
+  1764237566    0.58%     1764  java.lang.invoke.DirectMethodHandle.allocateInstance
+  1691474791    0.55%     1691  deltablue.Strength.stronger
+  1628297048    0.53%     1628  deltablue.AbstractConstraint$$Lambda.0x00007f25b40095c0.<init>
+  1624611741    0.53%     1624  deltablue.Planner.lambda$removePropagateFrom$4
+  1605109141    0.53%     1605  jdk.internal.misc.Unsafe.allocateInstance
+  1557191791    0.51%     1557  deltablue.Planner.constraintsConsuming
+  1504227508    0.49%     1504  java.util.Arrays.setAll
+  1379160082    0.45%     1379  deltablue.AbstractConstraint.lambda$inputsKnown$0
+  1379053871    0.45%     1379  java.lang.invoke.DirectMethodHandle.constructorMethod
+  1304918571    0.43%     1305  deltablue.Variable.getWalkStrength
+  1285032103    0.42%     1284  som.Vector.lambda$remove$0
+  1249264064    0.41%     1249  deltablue.AbstractConstraint.<init>
+  1200179132    0.39%     1200  som.Vector.with
+  1151577147    0.38%     1149  G1ParScanThreadState::trim_queue_to_threshold
+  1137137257    0.37%     1137  deltablue.UnaryConstraint.recalculate
+  1072301371    0.35%     1072  java.lang.Object.<init>
+  1069097509    0.35%     1069  deltablue.Planner.lambda$removePropagateFrom$5
+  1059057605    0.35%     1059  deltablue.Planner$$Lambda.0x00007f25b400ada8.apply
+  1024215042    0.34%     1024  deltablue.Planner$$Lambda.0x00007f25b400ada8.<init>
+  1000184068    0.33%     1000  som.Dictionary.hash
+   973115203    0.32%      973  deltablue.Planner.lambda$constraintsConsuming$3
+   951201083    0.31%      951  deltablue.Planner.incrementalAdd
+   928032355    0.30%      928  som.Vector.isEmpty
+   847993395    0.28%      848  deltablue.Planner$$Lambda.0x00007f25b400a968.<init>
+   831090368    0.27%      831  som.Dictionary.getBucket
+   803152814    0.26%      803  deltablue.AbstractConstraint$$Lambda.0x00007f25b400a318.<init>
+   796781893    0.26%      796  som.Vector$$Lambda.0x00007f25b400a748.apply
+   788071265    0.26%      788  deltablue.Planner$$Lambda.0x00007f25b400ab88.<init>
+   753376406    0.25%      753  deltablue.BinaryConstraint.isSatisfied
+   740050886    0.24%      740  som.Dictionary.at
+   728191797    0.24%      728  java.lang.invoke.MethodHandle.invokeBasic
+   717003009    0.23%      717  deltablue.Variable.setWalkStrength
+   667058334    0.22%      667  deltablue.Variable.addConstraint
+   643127071    0.21%      643  deltablue.Variable.value
+   602246901    0.20%      602  deltablue.UnaryConstraint.chooseMethod
+   601030151    0.20%      601  deltablue.Variable.getConstraints
+   597106903    0.20%      597  deltablue.Variable.getMark
+   583190282    0.19%      583  deltablue.Planner$$Lambda.0x00007f25b400a968.apply
+   552088591    0.18%      552  deltablue.Strength.weakest
+   544112888    0.18%      544  deltablue.Variable.getDeterminedBy
+   530129628    0.17%      530  deltablue.Variable.getStay
+   508043211    0.17%      508  deltablue.AbstractConstraint$$Lambda.0x00007f25b400a318.test
+   453320674    0.15%      453  java.util.Arrays.copyOf
+   447069351    0.15%      447  deltablue.AbstractConstraint$$Lambda.0x00007f25b40095c0.apply
+   440988510    0.14%      441  deltablue.Variable.setMark
+   389009419    0.13%      389  I2C/C2I adapters(0xb)
+   317969010    0.10%      318  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub74TruffleToLibGraalEntryPoints__validateCompilerOption__Ujs0fEGwUTHHbobHrcnio9EJ32org_002egraalvm_002ejniutils_002eJNI_0024JString31org_002egraalvm_002ejniutils_002eJNI_0024JNIEnv31org_002egraalvm_002ejniutils_002eJNI_0024JClasslS0__S0__
+   305013850    0.10%      305  deltablue.Strength.getArithmeticValue
+   297005727    0.10%      297  deltablue.Variable.setStay
+   286069480    0.09%      286  deltablue.AbstractConstraint.addConstraint
+   286007277    0.09%      286  deltablue.ScaleConstraint.<init>
+   280038593    0.09%      280  I2C/C2I adapters(0xba)
+   270061070    0.09%      270  deltablue.BinaryConstraint.<init>
+   259020958    0.08%      259  I2C/C2I adapters(0xbb)
+   257097854    0.08%      257  deltablue.Variable.setDeterminedBy
+   257033760    0.08%      257  deltablue.ScaleConstraint.addToGraph
+   204980827    0.07%      205  deltablue.BinaryConstraint.inputsDo
+   199944074    0.07%      200  deltablue.Planner$$Lambda.0x00007f25b400ab88.apply
+   193065828    0.06%      193  deltablue.Planner.newMark
+   177203791    0.06%      177  __memset_avx2_unaligned_erms
+   161001990    0.05%      161  deltablue.BinaryConstraint.inputsHasOne
+   159068226    0.05%      159  som.Dictionary.getBucketIdx
+   154111944    0.05%      154  oop_disjoint_arraycopy
+   148992181    0.05%      149  som.IdentityDictionary$IdEntry.match
+   147967558    0.05%      148  deltablue.Strength.of
+   143020687    0.05%      143  deltablue.Strength$Sym.customHash
+   139056938    0.05%      138  clear_page_rep_[k]
+   124987688    0.04%      125  deltablue.BinaryConstraint.addToGraph
+   117334531    0.04%      117  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+   116032267    0.04%      116  deltablue.UnaryConstraint.<init>
+   100031060    0.03%      100  java.lang.invoke.Invokers$Holder.linkToTargetMethod
+    96039518    0.03%       96  deltablue.UnaryConstraint.addToGraph
+    91027107    0.03%       91  deltablue.AbstractConstraint.inputsKnown
+    90043950    0.03%       90  deltablue.BinaryConstraint.markUnsatisfied
+    75028169    0.02%       75  deltablue.ScaleConstraint.inputsDo
+    74998777    0.02%       75  som.Vector.at
+    73008572    0.02%       73  deltablue.UnaryConstraint.getOutput
+    65018645    0.02%       65  deltablue.Planner.lambda$chainTest$7
+    64994508    0.02%       65  I2C/C2I adapters(0xbbbb)
+    64034687    0.02%       64  G1ParScanThreadState::steal_and_trim_queue
+    63018254    0.02%       63  deltablue.StayConstraint.<init>
+    59012183    0.02%       59  I2C/C2I adapters(0xbbbbb)
+    57011846    0.02%       57  I2C/C2I adapters(0xbbbbbbb)
+    55157452    0.02%       54  _raw_spin_unlock_irqrestore_[k]
+    55011132    0.02%       55  deltablue.EqualityConstraint.<init>
+    51005685    0.02%       51  deltablue.Strength.absoluteWeakest
+    49990546    0.02%       50  I2C/C2I adapters(0xbbb)
+    41005793    0.01%       41  Interpreter
+    38000388    0.01%       38  I2C/C2I adapters(0xa)
+    31037952    0.01%       31  deltablue.AbstractConstraint.isInput
+    29999664    0.01%       30  som.Vector.remove
+    28983175    0.01%       29  deltablue.Planner$$Lambda.0x00007f25b4007000.apply
+    23004347    0.01%       23  deltablue.UnaryConstraint.isSatisfied
+    22017464    0.01%       22  deltablue.StayConstraint.execute
+    20101487    0.01%       19  __futex_abstimed_wait_common
+    15427573    0.01%       15  [vdso]
+    14258522    0.00%       14  HeapRegionManager::par_iterate
+    14007081    0.00%       14  G1Allocator::unsafe_max_tlab_alloc
+    13996874    0.00%       14  do_user_addr_fault_[k]
+    13282454    0.00%       13  __tls_get_addr
+    13000066    0.00%       13  deltablue.UnaryConstraint.inputsDo
+    11061450    0.00%       11  FreeListAllocator::reset
+    10911541    0.00%       11  zap_pte_range_[k]
+    10022034    0.00%       10  void G1ScanCardClosure::do_oop_work<narrowOop>
+     9823173    0.00%        9  syscall_enter_from_user_mode_[k]
+     9423034    0.00%        9  G1ConcurrentRefine::RemSetSamplingClosure::do_heap_region
+     9011264    0.00%        9  G1NUMA::index_of_current_thread
+     8605541    0.00%        8  __x64_sys_futex_[k]
+     8325230    0.00%        8  clock_gettime@GLIBC_2.2.5
+     8125411    0.00%        8  __memmove_sse2_unaligned_erms
+     8010022    0.00%        8  HeapRegionManager::allocate_free_region
+     8004342    0.00%        8  deltablue.Planner.change
+     7998991    0.00%        8  deltablue.Planner.incrementalRemove
+     7080443    0.00%        7  G1MergeHeapRootsTask::G1MergeCardSetClosure::do_heap_region
+     7035812    0.00%        7  next_uptodate_page_[k]
+     7034205    0.00%        7  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+     7012204    0.00%        7  G1FromCardCache::clear
+     7006003    0.00%        7  _invokeBasic
+     7004983    0.00%        7  JfrObjectAllocationSample::send_event
+     6419521    0.00%        6  WatcherThread::sleep
+     6378471    0.00%        6  StatSamplerTask::task
+     6250091    0.00%        6  pthread_cond_timedwait@@GLIBC_2.3.2
+     6202411    0.00%        6  futex_wake_[k]
+     6084922    0.00%        6  G1ScanCollectionSetRegionClosure::do_heap_region
+     6072893    0.00%        6  charge_memcg_[k]
+     6008873    0.00%        6  Run.measure
+     6006750    0.00%        6  SpinPause
+     6005742    0.00%        6  MemAllocator::allocate
+     6004010    0.00%        6  G1CollectionSet::add_eden_region
+     6003864    0.00%        6  deltablue.EditConstraint.execute
+     5996203    0.00%        6  /home/hburchell/Repos/graal-dev/graal-instrumentation/sdk/mxbuild/linux-amd64/GRAALVM_LIBGRAAL_JAVA21/graalvm-libgraal-openjdk-21.0.2+13.1/lib/libjvmcicompiler.so
+     5375070    0.00%        5  futex_wait_[k]
+     5331744    0.00%        5  __pthread_mutex_cond_lock
+     5268793    0.00%        5  __lll_lock_wake
+     5035780    0.00%        5  __new_sem_wait_slow64.constprop.0
+     5015111    0.00%        5  __memmove_avx_unaligned_erms
+     5006412    0.00%        5  java.lang.invoke.LambdaForm$DMH.0x00007f25b400dc00.newInvokeSpecial
+     5005330    0.00%        5  MemAllocator::mem_allocate_inside_tlab_slow
+     5005292    0.00%        5  InterpreterRuntime::anewarray
+     5001042    0.00%        5  InstanceKlass::allocate_objArray
+     5000923    0.00%        5  G1BarrierSetRuntime::write_ref_array_post_entry
+     4996420    0.00%        5  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<598116ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 598116ul>::oop_access_barrier
+     4994712    0.00%        5  sun.nio.cs.StreamEncoder.implWrite
+     4993303    0.00%        5  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub65CEntryPointNativeFunctions__tearDownIsolate__ke4IYWkkawAn2nvyM2ZSW5EJi37org_002egraalvm_002enativeimage_002eIsolateThread
+     4988373    0.00%        5  G1ScanHRForRegionClosure::scan_heap_roots
+     4263632    0.00%        4  os::elapsed_counter
+     4218440    0.00%        4  PlatformMonitor::wait
+     4087371    0.00%        4  malloc
+     4033230    0.00%        4  FreeCSetClosure::do_heap_region
+     4008070    0.00%        4  java.nio.CharBuffer.wrap
+     4006852    0.00%        4  sun.nio.cs.UTF_8$Encoder.encodeArrayLoop
+     4006752    0.00%        4  java.io.FileOutputStream.write
+     4004141    0.00%        4  ObjArrayAllocator::initialize
+     4004080    0.00%        4  deltablue.Planner.extractPlanFromConstraints
+     4002780    0.00%        4  aci_CopyRight
+     4002112    0.00%        4  ObjAllocator::initialize
+     4001912    0.00%        4  deltablue.Plan.execute
+     3261141    0.00%        3  os::javaTimeNanos
+     3186921    0.00%        3  Mutex::lock_without_safepoint_check
+     3162870    0.00%        3  srso_safe_ret_[k]
+     3152013    0.00%        3  G1PrimaryConcurrentRefineThread::wait_for_completed_buffers
+     3131280    0.00%        3  __GI___pthread_mutex_unlock_usercnt
+     3118840    0.00%        3  G1CardSet::occupied
+     3032980    0.00%        3  G1CardSet::clear
+     3026111    0.00%        3  update_sg_lb_stats_[k]
+     3025091    0.00%        3  G1MonotonicArena::num_segments
+     3024271    0.00%        3  void OopOopIterateDispatch<G1ScanCardClosure>::Table::oop_oop_iterate<InstanceKlass, narrowOop>
+     3017971    0.00%        3  G1CardSet::reset_table_scanner
+     3012320    0.00%        3  page_add_file_rmap_[k]
+     3010611    0.00%        3  __mem_cgroup_charge_[k]
