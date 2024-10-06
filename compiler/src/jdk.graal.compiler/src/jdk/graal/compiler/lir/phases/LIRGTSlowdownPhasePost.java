@@ -25,63 +25,22 @@
 package jdk.graal.compiler.lir.phases;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
-import jdk.graal.compiler.core.gen.NodeLIRBuilder;
-import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
-import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
-import jdk.graal.compiler.hotspot.meta.GT.GTCacheDebug;
-import jdk.graal.compiler.lir.LIR;
-import jdk.graal.compiler.lir.LIRFrameState;
-import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
-import jdk.graal.compiler.lir.LIRInstruction.OperandMode;
-import jdk.graal.compiler.lir.LIRInstruction.State;
-import jdk.graal.compiler.lir.StandardOp;
-import jdk.graal.compiler.lir.Variable;
-import jdk.graal.compiler.lir.amd64.AMD64BinaryConsumer.MemoryRMOp;
-import jdk.graal.compiler.lir.amd64.AMD64FNop;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
-import jdk.graal.compiler.lir.amd64.AMD64Nops;
-import jdk.graal.compiler.lir.amd64.AMD64PauseOp;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess1;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess2;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess3;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess4;
-import jdk.graal.compiler.lir.amd64.AMD64PointLessWithFrame;
-import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
-import jdk.graal.compiler.lir.amd64.AMD64SFenceWithFrame;
-import jdk.graal.compiler.lir.amd64.AMD64TempNode;
-import jdk.graal.compiler.lir.framemap.ReferenceMapBuilder;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
-import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
-import jdk.graal.compiler.lir.gen.MoveFactory;
-import jdk.graal.compiler.lir.phases.PreAllocationOptimizationPhase;
-import jdk.graal.compiler.lir.util.RegisterMap;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
-import jdk.vm.ci.code.Architecture;
-import jdk.vm.ci.code.BytecodeFrame;
-import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterArray;
-import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
-import jdk.vm.ci.meta.PlatformKind;
-import jdk.graal.compiler.lir.dfa.LocationMarker;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
@@ -143,8 +102,7 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
         if (!lirGenRes.getCompilationUnitName().toLowerCase().contains("graal")) {
-           
-            for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+           for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
 
                 ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
                 int vectorCost = 0;
@@ -159,30 +117,41 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                 if (!instructions.isEmpty()) {
 
+                    int originalSize = instructions.size();
+                    int nopCount = 0;
+                    int sfenceCount = 0;
+                    
                     int real = Math.round(vectorCost / 8);
                     int remainder = vectorCost % 8;
                     
-                    // Add AMD64SFence nodes based on the remainder
-                    for (int index = 0; index < remainder; index++) {
-                        AMD64SFence node = new AMD64SFence();
-                        instructions.add(1, node);
-                    }
+                    // Continue looping until all nops and sfences are inserted
+                    int i = 1;
+                    while (nopCount < nopCost || sfenceCount < remainder) {
+                        // Use modulo to wrap around the index to the list size
+                        int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount + sfenceCount;
                     
-                    // Add AMD64PointLess nodes based on the quotient
-                    for (int index = 0; index < real; index++) {
-                        AMD64PointLess node = new AMD64PointLess();
-                        instructions.add(1, node);
-                        nopCost -= 2;
+                        // Insert a Nop node if we haven't reached the Nop count limit
+                        if (nopCount < nopCost) {
+                            AMD64Nop nopNode = new AMD64Nop();
+                            instructions.add(currentIndex, nopNode);
+                            nopCount++;
+                        }
+                    
+                        // Insert a SFence node if we haven't reached the SFence count limit
+                        if (sfenceCount < remainder) {
+                            AMD64SFence sfenceNode = new AMD64SFence();
+                            instructions.add(currentIndex, sfenceNode);
+                            sfenceCount++;
+                        }
+                    
+                        i++;
                     }
 
-                    for (int index = 0; index < nopCost; index++) {
-                        AMD64Nop node = new AMD64Nop();
-                        instructions.add(1, node);
+                    for (int x = 0; x < real; x++) {
+                        AMD64PointLess PointLessNode = new AMD64PointLess();
+                        instructions.add(1, PointLessNode);
                     }
-
-                }
-            }
-        }
+        }}}
     }
 
     /**
