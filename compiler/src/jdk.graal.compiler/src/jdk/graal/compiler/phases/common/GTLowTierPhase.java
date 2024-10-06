@@ -128,7 +128,7 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
     private void handleFullInstrumentation(StructuredGraph graph, InstrumentationBuffers buffers) {
         double initialCost = Math.floor(NodeCostUtil.computeGraphCycles(graph, true));
 
-        int incrementCost = 16;
+        int incrementCost = 40;
         
         int requiredIncrements = (int) Math.floor(initialCost/ incrementCost);
 
@@ -137,11 +137,12 @@ public class GTLowTierPhase extends BasePhase<LowTierContext> {
         // System.out.println("graph Cost " + initialCost);
         // System.out.println("Ceil" + Math.ceil((targetCost - initialCost)));
         // System.out.println("Going to add " + requiredIncrements + " increment" + " as we currently judge the cost to be " + incrementCost);
-
-
-        for (int i = 0; i < requiredIncrements; i++) {
-            incrementAndStoreActivationCount(graph, graph.start(), buffers.activationCountBuffer);
-        }
+        
+        //for (int i = 0; i < requiredIncrements; i++) {
+            //PointLessNode readCurrentValue = graph.add(new PointLessNode());
+            //graph.addAfterFixed(graph.start(), readCurrentValue);
+            //incrementAndStoreActivationCount(graph, graph.start(), buffers.activationCountBuffer);
+        //}
     }
 
     /**
