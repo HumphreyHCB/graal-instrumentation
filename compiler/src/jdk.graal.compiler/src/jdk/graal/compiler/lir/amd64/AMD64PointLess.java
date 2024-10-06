@@ -29,9 +29,7 @@ import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.vm.ci.amd64.AMD64;
-import jdk.vm.ci.code.Register;
-import jdk.graal.compiler.asm.amd64.AMD64Address;
-import static jdk.vm.ci.amd64.AMD64.rax;;
+import jdk.graal.compiler.asm.amd64.AMD64Address;;
 
 /**
  * Emits a push and pop.
@@ -45,7 +43,7 @@ public final class AMD64PointLess extends AMD64LIRInstruction {
     }
 
     @Override
-    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {
+    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
 
         // Save the current stack pointer (rsp) and align it to 16 bytes.
         asm.subq(AMD64.rsp, 32);  // Adjust stack pointer for local storage (ensure 16-byte alignment)
