@@ -69,8 +69,11 @@ public class LIRInstructionCostMultiLookup {
         if (CLASS_COST_MAP.containsKey(sanitizedClassName)) {
             return CLASS_COST_MAP.get(sanitizedClassName).normalCost;
         } else {
-            //System.out.println("Have no cost for " + sanitizedClassName);
-            return 1; // Default value if the class is not found
+            if (!sanitizedClassName.equals("jdk.graal.compiler.hotspot.HotSpotLockStack")) {
+                System.out.println("Have no cost for " + sanitizedClassName);
+                return 1;
+            }
+            return 0; // Default value if the class is not found
         }
     }
 
@@ -85,7 +88,9 @@ public class LIRInstructionCostMultiLookup {
         if (CLASS_COST_MAP.containsKey(sanitizedClassName)) {
             return CLASS_COST_MAP.get(sanitizedClassName).vCost;
         } else {
-            //System.out.println("Have no cost for " + sanitizedClassName);
+            if (!sanitizedClassName.equals("jdk.graal.compiler.hotspot.HotSpotLockStack")) {
+                System.out.println("Have no cost for " + sanitizedClassName);
+            }
             return 0; // Default value if the class is not found
         }
     }
