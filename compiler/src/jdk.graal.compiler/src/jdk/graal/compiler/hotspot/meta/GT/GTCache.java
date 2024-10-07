@@ -1,6 +1,8 @@
 package jdk.graal.compiler.hotspot.meta.GT;
 
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -204,12 +206,20 @@ public class GTCache extends Thread {
     
 
         }
-        System.out.println("Missing Cost:");
-        for (String string : uniqueBytes) {
-            System.out.println(string);
-        }
-    
         String fileName = Options.LIRCostInformationFile.getValue(OptionValues);
+        if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName.replace(".json", "_NotFound.txt")))) {
+            for (String string : uniqueBytes) {
+                writer.write(string);
+                writer.newLine();
+            }
+            //System.out.println("List written to " + fileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+        
     
         try (JsonWriter jsonWriter = new JsonWriter(Path.of(fileName))) {
             jsonWriter.appendArrayStart().newline().indent(); // Start the JSON array
