@@ -120,38 +120,40 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                     int originalSize = instructions.size();
                     int nopCount = 0;
                     int sfenceCount = 0;
-                    
-                    int real = Math.round(vectorCost / 8);
-                    int remainder = vectorCost % 8;
-                    
-                    // Continue looping until all nops and sfences are inserted
+                    int pointLessCount = 0;
+                
+                    int real = Math.round(vectorCost / 2);
+                    int remainder = vectorCost % 2;
+                
+                    // Continue looping until all nops, sfences, and PointLess nodes are inserted
                     int i = 1;
-                    while (nopCount < nopCost || sfenceCount < remainder) {
+                    while (nopCount < nopCost || sfenceCount < remainder || pointLessCount < real) {
                         // Use modulo to wrap around the index to the list size
-                        int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount + sfenceCount;
-                    
+                        int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount + sfenceCount + pointLessCount;
+                
                         // Insert a Nop node if we haven't reached the Nop count limit
                         if (nopCount < nopCost) {
                             AMD64Nop nopNode = new AMD64Nop();
                             instructions.add(currentIndex, nopNode);
                             nopCount++;
                         }
-                    
+                
                         // Insert a SFence node if we haven't reached the SFence count limit
                         if (sfenceCount < remainder) {
                             AMD64SFence sfenceNode = new AMD64SFence();
                             instructions.add(currentIndex, sfenceNode);
                             sfenceCount++;
                         }
-                    
+                
+                        // Insert a PointLess node if we haven't reached the PointLess count limit
+                        if (pointLessCount < real) {
+                            AMD64PointLess pointLessNode = new AMD64PointLess();
+                            instructions.add(currentIndex, pointLessNode);
+                            pointLessCount++;
+                        }
+                
                         i++;
-                    }
-
-                    for (int x = 0; x < real; x++) {
-                        AMD64PointLess PointLessNode = new AMD64PointLess();
-                        instructions.add(1, PointLessNode);
-                    }
-        }}}
+        }}}}
     }
 
     /**
