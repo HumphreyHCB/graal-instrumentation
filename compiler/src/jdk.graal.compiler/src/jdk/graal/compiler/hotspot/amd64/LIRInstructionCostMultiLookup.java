@@ -46,6 +46,7 @@ public class LIRInstructionCostMultiLookup {
 
         // Parse the JSON content into a List of EconomicMap
         JsonParser parser = new JsonParser(jsonContent);
+        @SuppressWarnings("unchecked")
         List<EconomicMap<String, Object>> jsonList = (List<EconomicMap<String, Object>>) parser.parse();
 
         // Iterate over the list and populate CLASS_COST_MAP

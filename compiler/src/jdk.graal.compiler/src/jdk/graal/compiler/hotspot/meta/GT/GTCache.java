@@ -101,6 +101,7 @@ public class GTCache extends Thread {
 
         try (FileReader reader = new FileReader(jsonFile)) {
             JsonParser parser = new JsonParser(reader);
+            @SuppressWarnings("unchecked")
             List<EconomicMap<String, Object>> instructions = (List<EconomicMap<String, Object>>) parser.parse();
 
             for (EconomicMap<String, Object> instruction : instructions) {

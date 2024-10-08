@@ -37,6 +37,7 @@ public class LIRInstructionCostLookup {
 
         // Parse the JSON content into an EconomicMap
         JsonParser parser = new JsonParser(jsonContent);
+        @SuppressWarnings("unchecked")
         EconomicMap<String, Object> jsonMap = (EconomicMap<String, Object>) parser.parse();
 
         // Iterate over the entries using a MapCursor and populate CLASS_COST_MAP
