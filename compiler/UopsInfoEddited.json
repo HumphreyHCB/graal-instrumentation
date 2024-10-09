@@ -1,0 +1,7505 @@
+[
+    {
+        "name": "PREFETCH_EXCLUSIVE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PREFETCHW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "ADCX",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "ADOX",
+        "opcode": "",
+        "ops": 1,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "AESDEC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "AESDECLAST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "AESENC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "AESENCLAST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "AESIMC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "AESKEYGENASSIST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "VADDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VADDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VADDSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VADDSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VADDSUBPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VADDSUBPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VANDNPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VANDNPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VANDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VANDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VBLENDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VBLENDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VBLENDVPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VBLENDVPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VBROADCASTF128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VBROADCASTSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VBROADCASTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VCMPPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCMPPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCMPSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCMPSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCOMISD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCOMISS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTDQ2PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTDQ2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTPD2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTPD2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTPS2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTPS2PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSD2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSD2SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSI2SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSI2SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSS2SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VCVTSS2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VCVTTPD2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTTPS2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VCVTTSD2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VCVTTSS2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VDIVPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 17,
+        "type": "v"
+    },
+    {
+        "name": "VDIVPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 14,
+        "type": "v"
+    },
+    {
+        "name": "VDIVSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 17,
+        "type": "v"
+    },
+    {
+        "name": "VDIVSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 14,
+        "type": "v"
+    },
+    {
+        "name": "VDPPD",
+        "opcode": "",
+        "ops": 5,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VDPPS",
+        "opcode": "",
+        "ops": 10,
+        "latency": 19,
+        "type": "v"
+    },
+    {
+        "name": "VEXTRACTF128",
+        "opcode": "",
+        "ops": 2,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VEXTRACTPS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VHADDPD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VHADDPS",
+        "opcode": "",
+        "ops": 4,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VHSUBPD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VHSUBPS",
+        "opcode": "",
+        "ops": 4,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VINSERTF128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VINSERTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VLDDQU",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VLDMXCSR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMASKMOVDQU",
+        "opcode": "",
+        "ops": 60,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VMASKMOVPD",
+        "opcode": "",
+        "ops": 10,
+        "latency": 2,
+        "type": "v"
+    },
+    {
+        "name": "VMASKMOVPS",
+        "opcode": "",
+        "ops": 19,
+        "latency": 2,
+        "type": "v"
+    },
+    {
+        "name": "VMAXPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMAXPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMAXSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMAXSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMINPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMINPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMINSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMINSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPD_28",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPD_29",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPS_28",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVAPS_29",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQA",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQA_6F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQA_7F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQU",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQU_6F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVDQU_7F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVHLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VMOVHPD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVHPS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVLHPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VMOVLPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVMSKPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMOVMSKPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VMOVNTDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1187,
+        "type": "v"
+    },
+    {
+        "name": "VMOVNTDQA",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMOVNTPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1181,
+        "type": "v"
+    },
+    {
+        "name": "VMOVNTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1183,
+        "type": "v"
+    },
+    {
+        "name": "VMOVQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVQ_7E",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VMOVQ_D6",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSD_10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSD_11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSHDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSLDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSS_10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVSS_11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPD_10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPD_11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPS_10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMOVUPS_11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VMPSADBW",
+        "opcode": "",
+        "ops": 6,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VMULPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMULPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMULSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VMULSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VORPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VORPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPABSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPABSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPABSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPACKSSDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPACKSSWB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPACKUSDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPACKUSWB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDUSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDUSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPADDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPALIGNR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPAND",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPANDN",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPAVGB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPAVGW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPBLENDVB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPBLENDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCLMULQDQ",
+        "opcode": "",
+        "ops": 4,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPEQB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPEQD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPEQQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPEQW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPESTRI",
+        "opcode": "",
+        "ops": 12,
+        "latency": 16,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPESTRI64",
+        "opcode": "",
+        "ops": 12,
+        "latency": 16,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPESTRM",
+        "opcode": "",
+        "ops": 12,
+        "latency": 11,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPESTRM64",
+        "opcode": "",
+        "ops": 12,
+        "latency": 11,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPGTB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPGTD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPGTQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPGTW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPISTRI",
+        "opcode": "",
+        "ops": 3,
+        "latency": 16,
+        "type": "v"
+    },
+    {
+        "name": "VPCMPISTRM",
+        "opcode": "",
+        "ops": 4,
+        "latency": 11,
+        "type": "v"
+    },
+    {
+        "name": "VPERM2F128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPERMILPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPERMILPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPEXTRB",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VPEXTRD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPEXTRQ",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPEXTRW",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VPHADDD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPHADDSW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPHADDW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPHMINPOSUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VPHSUBD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPHSUBSW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPHSUBW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VPINSRB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPINSRD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPINSRQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPINSRW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMADDUBSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMADDWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXUB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXUD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMAXUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINUB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINUD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMINUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVMSKB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVSXWQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMOVZXWQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMULDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPMULHRSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMULHUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPMULHW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPMULLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPMULLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPMULUDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPOR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSADBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPSHUFB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSHUFD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPSHUFHW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPSHUFLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPSIGNB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSIGND",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSIGNW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRAD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRAW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBUSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBUSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPSUBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPTEST",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKHBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKHDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKHQDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKHWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKLBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKLQDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPUNPCKLWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPXOR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VRCPPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 12,
+        "type": "v"
+    },
+    {
+        "name": "VRCPSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 6,
+        "type": "v"
+    },
+    {
+        "name": "VROUNDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VROUNDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VROUNDSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VROUNDSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VRSQRTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VRSQRTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VSHUFPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VSHUFPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VSQRTPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 28,
+        "type": "v"
+    },
+    {
+        "name": "VSQRTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 22,
+        "type": "v"
+    },
+    {
+        "name": "VSQRTSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 24,
+        "type": "v"
+    },
+    {
+        "name": "VSQRTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 18,
+        "type": "v"
+    },
+    {
+        "name": "VSTMXCSR",
+        "opcode": "",
+        "ops": 2,
+        "latency": 19,
+        "type": "v"
+    },
+    {
+        "name": "VSUBPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VSUBPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VSUBSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VSUBSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VTESTPD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VTESTPS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VUCOMISD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VUCOMISS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": "v"
+    },
+    {
+        "name": "VUNPCKHPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VUNPCKHPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VUNPCKLPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VUNPCKLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VXORPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VXORPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VZEROALL",
+        "opcode": "",
+        "ops": 18,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VZEROUPPER",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "VBROADCASTI128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VEXTRACTI128",
+        "opcode": "",
+        "ops": 2,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VINSERTI128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPBLENDD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": "v"
+    },
+    {
+        "name": "VPBROADCASTB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPBROADCASTD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPBROADCASTQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPBROADCASTW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPERM2I128",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPERMD",
+        "opcode": "",
+        "ops": 3,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VPERMPD",
+        "opcode": "",
+        "ops": 3,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VPERMPS",
+        "opcode": "",
+        "ops": 3,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VPERMQ",
+        "opcode": "",
+        "ops": 3,
+        "latency": 13,
+        "type": "v"
+    },
+    {
+        "name": "VPMASKMOVD",
+        "opcode": "",
+        "ops": 19,
+        "latency": 2,
+        "type": "v"
+    },
+    {
+        "name": "VPMASKMOVQ",
+        "opcode": "",
+        "ops": 10,
+        "latency": 2,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLVD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPSLLVQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPSRAVD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLVD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VPSRLVQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": "v"
+    },
+    {
+        "name": "VGATHERDPD",
+        "opcode": "",
+        "ops": 19,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VGATHERDPS",
+        "opcode": "",
+        "ops": 32,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VGATHERQPD",
+        "opcode": "",
+        "ops": 19,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VGATHERQPS",
+        "opcode": "",
+        "ops": 20,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VPGATHERDD",
+        "opcode": "",
+        "ops": 32,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VPGATHERDQ",
+        "opcode": "",
+        "ops": 19,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VPGATHERQD",
+        "opcode": "",
+        "ops": 20,
+        "latency": 9,
+        "type": "v"
+    },
+    {
+        "name": "VPGATHERQQ",
+        "opcode": "",
+        "ops": 19,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VAESDEC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VAESDECLAST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VAESENC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VAESENCLAST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": "v"
+    },
+    {
+        "name": "VAESIMC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": "v"
+    },
+    {
+        "name": "VAESKEYGENASSIST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": "v"
+    },
+    {
+        "name": "ADC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_12",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_13",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "ADC_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADC_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_00",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_01",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_02",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_03",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "ADD_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ADD_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_20",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_21",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_22",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_23",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "AND_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "AND_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "BSF",
+        "opcode": "",
+        "ops": 8,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "BSR",
+        "opcode": "",
+        "ops": 8,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "BSWAP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "BT",
+        "opcode": "",
+        "ops": 1,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "BTC",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "BTC_LOCK",
+        "opcode": "",
+        "ops": 4,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "BTR",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "BTR_LOCK",
+        "opcode": "",
+        "ops": 4,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "BTS",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "BTS_LOCK",
+        "opcode": "",
+        "ops": 4,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "CALL_NEAR",
+        "opcode": "",
+        "ops": 5,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CLC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLI",
+        "opcode": "",
+        "ops": 6,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLTS",
+        "opcode": "",
+        "ops": 10,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMOVB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVBE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVL",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVLE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNBE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNL",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNLE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVNZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMOVZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "CMP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_38",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_39",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_3A",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_3B",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMP_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMPSB",
+        "opcode": "",
+        "ops": 6,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSB_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSB_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSD",
+        "opcode": "",
+        "ops": 6,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSD_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSD_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSW",
+        "opcode": "",
+        "ops": 6,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSW_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSW_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG",
+        "opcode": "",
+        "ops": 6,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG8B",
+        "opcode": "",
+        "ops": 18,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG8B_LOCK",
+        "opcode": "",
+        "ops": 18,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG_LOCK",
+        "opcode": "",
+        "ops": 6,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "CPUID",
+        "opcode": "",
+        "ops": 77,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CWD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "CWDE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "DEC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "DEC_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "DIV",
+        "opcode": "",
+        "ops": 2,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "ENTER",
+        "opcode": "",
+        "ops": 17,
+        "latency": 24,
+        "type": ""
+    },
+    {
+        "name": "ENTER_W",
+        "opcode": "",
+        "ops": 17,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "IDIV",
+        "opcode": "",
+        "ops": 2,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "IMUL",
+        "opcode": "",
+        "ops": 3,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "IMUL_IMMB",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "IMUL_IMMZ",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "IN",
+        "opcode": "",
+        "ops": 50,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "INC_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "INSB",
+        "opcode": "",
+        "ops": 26,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSB_REPE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSB_REPNE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSD",
+        "opcode": "",
+        "ops": 26,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSD_REPE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSD_REPE_REX64",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSD_REPNE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSD_REPNE_REX64",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSW",
+        "opcode": "",
+        "ops": 26,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSW_REPE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSW_REPNE",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INVLPG",
+        "opcode": "",
+        "ops": 24,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JBE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JL",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JLE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JMP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNBE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNL",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNLE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JRCXZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LAHF",
+        "opcode": "",
+        "ops": 4,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "LAR",
+        "opcode": "",
+        "ops": 28,
+        "latency": 91,
+        "type": ""
+    },
+    {
+        "name": "LEA_B",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_D8",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_I",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_I_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_I_D8",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_IS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_IS_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_B_IS_D8",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_I_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LEA_IS_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEA_R_D32",
+        "opcode": "",
+        "ops": 2,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LEAVE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "LEAVE_W",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "LGDT",
+        "opcode": "",
+        "ops": 27,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LIDT",
+        "opcode": "",
+        "ops": 27,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LLDT",
+        "opcode": "",
+        "ops": 58,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LMSW",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSB",
+        "opcode": "",
+        "ops": 3,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "LODSB_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSB_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSD",
+        "opcode": "",
+        "ops": 3,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "LODSD_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSD_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSW",
+        "opcode": "",
+        "ops": 3,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "LODSW_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSW_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LOOP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LOOPE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LOOPNE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LSL",
+        "opcode": "",
+        "ops": 11,
+        "latency": 92,
+        "type": ""
+    },
+    {
+        "name": "MOV",
+        "opcode": "",
+        "ops": 2,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MOV_88",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOV_89",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOV_8A",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOV_8B",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOV_CR",
+        "opcode": "",
+        "ops": 18,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOV_DR",
+        "opcode": "",
+        "ops": 52,
+        "latency": 100,
+        "type": ""
+    },
+    {
+        "name": "MOVSB",
+        "opcode": "",
+        "ops": 5,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVSB_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSB_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSD",
+        "opcode": "",
+        "ops": 5,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVSD_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSD_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSW",
+        "opcode": "",
+        "ops": 5,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVSW_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSW_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSX",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "MOVZX",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "MUL",
+        "opcode": "",
+        "ops": 3,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "NEG",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "NEG_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "NOP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "NOT",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "NOT_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "OR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_08",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_09",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_0A",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_0B",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "OR_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OR_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "OUT",
+        "opcode": "",
+        "ops": 50,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSB",
+        "opcode": "",
+        "ops": 29,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSB_REPE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSB_REPNE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSD",
+        "opcode": "",
+        "ops": 29,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSD_REPE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSD_REPE_REX64",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSD_REPNE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSD_REPNE_REX64",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSW",
+        "opcode": "",
+        "ops": 29,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSW_REPE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "OUTSW_REPNE",
+        "opcode": "",
+        "ops": 17,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "POP",
+        "opcode": "",
+        "ops": 3,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "POPF",
+        "opcode": "",
+        "ops": 34,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PUSH",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PUSH_W",
+        "opcode": "",
+        "ops": 2,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "PUSHF",
+        "opcode": "",
+        "ops": 9,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "RCL",
+        "opcode": "",
+        "ops": 11,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "RCL_R0",
+        "opcode": "",
+        "ops": 9,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "RCL_R4",
+        "opcode": "",
+        "ops": 9,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "RCR",
+        "opcode": "",
+        "ops": 10,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "RCR_R0",
+        "opcode": "",
+        "ops": 7,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "RCR_R4",
+        "opcode": "",
+        "ops": 7,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "RDMSR",
+        "opcode": "",
+        "ops": 98,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RDPMC",
+        "opcode": "",
+        "ops": 16,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RDTSC",
+        "opcode": "",
+        "ops": 37,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RET_NEAR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "ROL",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "ROL_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ROL_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ROR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "ROR_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ROR_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SAHF",
+        "opcode": "",
+        "ops": 2,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "SAR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SAR_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SAR_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_18",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_19",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_1A",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_1B",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SBB_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SBB_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SCASB",
+        "opcode": "",
+        "ops": 3,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "SCASB_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASB_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASD",
+        "opcode": "",
+        "ops": 3,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "SCASD_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASD_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASW",
+        "opcode": "",
+        "ops": 3,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "SCASW_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASW_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SETB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETBE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETL",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETLE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNBE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNL",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNLE",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETNZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SETZ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SGDT",
+        "opcode": "",
+        "ops": 13,
+        "latency": 22,
+        "type": ""
+    },
+    {
+        "name": "SHL",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SHL_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SHL_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SHLD",
+        "opcode": "",
+        "ops": 8,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "SHLD_CL",
+        "opcode": "",
+        "ops": 7,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SHLD_IMMB",
+        "opcode": "",
+        "ops": 6,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "SHR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SHR_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SHR_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SHRD",
+        "opcode": "",
+        "ops": 8,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "SHRD_CL",
+        "opcode": "",
+        "ops": 7,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "SHRD_IMMB",
+        "opcode": "",
+        "ops": 6,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "SIDT",
+        "opcode": "",
+        "ops": 13,
+        "latency": 22,
+        "type": ""
+    },
+    {
+        "name": "SLDT",
+        "opcode": "",
+        "ops": 10,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "SMSW",
+        "opcode": "",
+        "ops": 10,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "STC",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STI",
+        "opcode": "",
+        "ops": 14,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSB",
+        "opcode": "",
+        "ops": 3,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "STOSB_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSB_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSD",
+        "opcode": "",
+        "ops": 3,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "STOSD_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSD_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSW",
+        "opcode": "",
+        "ops": 3,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "STOSW_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSW_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STR",
+        "opcode": "",
+        "ops": 10,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "SUB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_28",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_29",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_2A",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_2B",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "SUB_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "SUB_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "TEST",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "TEST_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "TEST_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "VERR",
+        "opcode": "",
+        "ops": 28,
+        "latency": 97,
+        "type": ""
+    },
+    {
+        "name": "VERW",
+        "opcode": "",
+        "ops": 28,
+        "latency": 97,
+        "type": ""
+    },
+    {
+        "name": "WBINVD",
+        "opcode": "",
+        "ops": 126,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "WRMSR",
+        "opcode": "",
+        "ops": 104,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XADD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "XADD_LOCK",
+        "opcode": "",
+        "ops": 4,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "XCHG",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "XLAT",
+        "opcode": "",
+        "ops": 2,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "XOR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_30",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_31",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_32",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_33",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_LOCK",
+        "opcode": "",
+        "ops": 1,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "XOR_R0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "XOR_R4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "ANDN",
+        "opcode": "",
+        "ops": 1,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "BEXTR",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "BLSI",
+        "opcode": "",
+        "ops": 3,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "BLSMSK",
+        "opcode": "",
+        "ops": 3,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "BLSR",
+        "opcode": "",
+        "ops": 3,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "TZCNT",
+        "opcode": "",
+        "ops": 2,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "BZHI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "MULX",
+        "opcode": "",
+        "ops": 2,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PDEP",
+        "opcode": "",
+        "ops": 63,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "PEXT",
+        "opcode": "",
+        "ops": 70,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "RORX",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "SARX",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "SHLX",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "SHRX",
+        "opcode": "",
+        "ops": 2,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "CLFLUSHOPT",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLFLUSH",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLWB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CLZERO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "VCVTPH2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "VCVTPS2PH",
+        "opcode": "",
+        "ops": 3,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "VFMADD132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD132SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD132SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD213SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD213SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD231SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADD231SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMADDSUB231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB132SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB132SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB213SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB213SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB231SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUB231SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFMSUBADD231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD132SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD132SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD213SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD213SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD231SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMADD231SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB132PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB132PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB132SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB132SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB213PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB213PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB213SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB213SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB231PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB231PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB231SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "VFNMSUB231SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "CDQE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CMPSQ",
+        "opcode": "",
+        "ops": 6,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSQ_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPSQ_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG16B",
+        "opcode": "",
+        "ops": 27,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "CMPXCHG16B_LOCK",
+        "opcode": "",
+        "ops": 27,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "CQO",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "LODSQ",
+        "opcode": "",
+        "ops": 3,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "LODSQ_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LODSQ_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSQ",
+        "opcode": "",
+        "ops": 5,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVSQ_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSQ_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVSXD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "POPFQ",
+        "opcode": "",
+        "ops": 35,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PUSHFQ",
+        "opcode": "",
+        "ops": 9,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "SCASQ",
+        "opcode": "",
+        "ops": 3,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "SCASQ_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SCASQ_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSQ",
+        "opcode": "",
+        "ops": 3,
+        "latency": 2,
+        "type": ""
+    },
+    {
+        "name": "STOSQ_REPE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "STOSQ_REPNE",
+        "opcode": "",
+        "ops": 3,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LZCNT",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "EMMS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MASKMOVQ",
+        "opcode": "",
+        "ops": 30,
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "MOVD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "MOVNTQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1180,
+        "type": ""
+    },
+    {
+        "name": "MOVQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVQ_0F6F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVQ_0F7F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PACKSSDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PACKSSWB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PACKUSWB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDUSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDUSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PAND",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PANDN",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PAVGB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PAVGW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPEQB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPEQD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPEQW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPGTB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPGTD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPGTW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PEXTRW",
+        "opcode": "",
+        "ops": 2,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PINSRW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMADDWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PMAXSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMAXUB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINUB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMOVMSKB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PMULHUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PMULHW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PMULLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "POR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSADBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PSHUFW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PSLLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSLLQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSLLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRAD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRAW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRLQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSUBB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBUSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBUSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSUBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKHBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKHDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKHWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKLBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKLWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PXOR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVBE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PAUSE",
+        "opcode": "",
+        "ops": 8,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PCLMULQDQ",
+        "opcode": "",
+        "ops": 4,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "RDPID",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RDRAND",
+        "opcode": "",
+        "ops": 11,
+        "latency": 1834,
+        "type": ""
+    },
+    {
+        "name": "RDSEED",
+        "opcode": "",
+        "ops": 14,
+        "latency": 1834,
+        "type": ""
+    },
+    {
+        "name": "RDTSCP",
+        "opcode": "",
+        "ops": 37,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SHA1MSG1",
+        "opcode": "",
+        "ops": 2,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "SHA1MSG2",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "SHA1NEXTE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "SHA1RNDS4",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "SHA256MSG1",
+        "opcode": "",
+        "ops": 2,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "SHA256MSG2",
+        "opcode": "",
+        "ops": 5,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "SHA256RNDS2",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "ADDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ADDSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ANDNPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "ANDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "COMISS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTPI2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "CVTPS2PI",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTSI2SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "CVTSS2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "CVTTPS2PI",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTTSS2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "DIVPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 14,
+        "type": ""
+    },
+    {
+        "name": "DIVSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 14,
+        "type": ""
+    },
+    {
+        "name": "FXSAVE",
+        "opcode": "",
+        "ops": 93,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "FXSAVE64",
+        "opcode": "",
+        "ops": 93,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LDMXCSR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MAXPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MAXSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MINPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MINSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVAPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVAPS_0F28",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVAPS_0F29",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVHLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVHPS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVLHPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVMSKPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVNTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1181,
+        "type": ""
+    },
+    {
+        "name": "MOVSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVSS_0F10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVSS_0F11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVUPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVUPS_0F10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVUPS_0F11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MULPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MULSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ORPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PREFETCHNTA",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PREFETCHT0",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PREFETCHT1",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "PREFETCHT2",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RCPPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "RCPSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "RSQRTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "RSQRTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 9,
+        "type": ""
+    },
+    {
+        "name": "SFENCE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SHUFPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "SQRTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 22,
+        "type": ""
+    },
+    {
+        "name": "SQRTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 18,
+        "type": ""
+    },
+    {
+        "name": "STMXCSR",
+        "opcode": "",
+        "ops": 2,
+        "latency": 19,
+        "type": ""
+    },
+    {
+        "name": "SUBPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "SUBSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "UCOMISS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "UNPCKHPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "UNPCKLPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "XORPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "ADDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ADDSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ANDNPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "ANDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CMPSD_XMM",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "COMISD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTDQ2PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTDQ2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTPD2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTPD2PI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 17,
+        "type": ""
+    },
+    {
+        "name": "CVTPD2PS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTPI2PD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 12,
+        "type": ""
+    },
+    {
+        "name": "CVTPS2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTPS2PD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTSD2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "CVTSD2SS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "CVTSI2SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "CVTSS2SD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "CVTTPD2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTTPD2PI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 17,
+        "type": ""
+    },
+    {
+        "name": "CVTTPS2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "CVTTSD2SI",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "DIVPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 17,
+        "type": ""
+    },
+    {
+        "name": "DIVSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 17,
+        "type": ""
+    },
+    {
+        "name": "LFENCE",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MASKMOVDQU",
+        "opcode": "",
+        "ops": 60,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "MAXPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MAXSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MFENCE",
+        "opcode": "",
+        "ops": 7,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MINPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MINSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVAPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVAPD_0F28",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVAPD_0F29",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVDQ2Q",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVDQA",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVDQA_0F6F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVDQA_0F7F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVDQU",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVDQU_0F6F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVDQU_0F7F",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVHPD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVLPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVMSKPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVNTDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1184,
+        "type": ""
+    },
+    {
+        "name": "MOVNTI",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1186,
+        "type": ""
+    },
+    {
+        "name": "MOVNTPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1183,
+        "type": ""
+    },
+    {
+        "name": "MOVQ2DQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVQ_0F7E",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVQ_0FD6",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVSD_XMM",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVSD_XMM_0F10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVSD_XMM_0F11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "MOVUPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "MOVUPD_0F10",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVUPD_0F11",
+        "opcode": "",
+        "ops": 1,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MULPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MULSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ORPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PADDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMULUDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PSHUFD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PSHUFHW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PSHUFLW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PSLLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSRLDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "PSUBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKHQDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PUNPCKLQDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "SHUFPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "SQRTPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 28,
+        "type": ""
+    },
+    {
+        "name": "SQRTSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 24,
+        "type": ""
+    },
+    {
+        "name": "SUBPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "SUBSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "UCOMISD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "UNPCKHPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "UNPCKLPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "XORPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "ADDSUBPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "ADDSUBPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "HADDPD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "HADDPS",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "HSUBPD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "HSUBPS",
+        "opcode": "",
+        "ops": 4,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "LDDQU",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MOVDDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MOVSHDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MOVSLDUP",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "BLENDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "BLENDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "BLENDVPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "BLENDVPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "CRC32",
+        "opcode": "",
+        "ops": 1,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "DPPD",
+        "opcode": "",
+        "ops": 8,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "DPPS",
+        "opcode": "",
+        "ops": 10,
+        "latency": 19,
+        "type": ""
+    },
+    {
+        "name": "EXTRACTPS",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "INSERTPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "MOVNTDQA",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "MPSADBW",
+        "opcode": "",
+        "ops": 6,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PACKUSDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PBLENDVB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PBLENDW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPEQQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPESTRI",
+        "opcode": "",
+        "ops": 12,
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "PCMPESTRI64",
+        "opcode": "",
+        "ops": 12,
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "PCMPESTRM",
+        "opcode": "",
+        "ops": 12,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "PCMPESTRM64",
+        "opcode": "",
+        "ops": 12,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "PCMPGTQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PCMPISTRI",
+        "opcode": "",
+        "ops": 3,
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "PCMPISTRM",
+        "opcode": "",
+        "ops": 4,
+        "latency": 11,
+        "type": ""
+    },
+    {
+        "name": "PEXTRB",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "PEXTRD",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PEXTRQ",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PEXTRW_SSE4",
+        "opcode": "",
+        "ops": 2,
+        "latency": 13,
+        "type": ""
+    },
+    {
+        "name": "PHMINPOSUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "PINSRB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PINSRD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PINSRQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMAXSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMAXSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMAXUD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMAXUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINUD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMINUW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVSXWQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXBD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXBQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXBW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXWD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMOVZXWQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMULDQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 7,
+        "type": ""
+    },
+    {
+        "name": "PMULLD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "POPCNT",
+        "opcode": "",
+        "ops": 1,
+        "latency": 4,
+        "type": ""
+    },
+    {
+        "name": "PTEST",
+        "opcode": "",
+        "ops": 2,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "ROUNDPD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "ROUNDPS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 10,
+        "type": ""
+    },
+    {
+        "name": "ROUNDSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "ROUNDSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "EXTRQ",
+        "opcode": "",
+        "ops": 2,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "INSERTQ",
+        "opcode": "",
+        "ops": 1,
+        "latency": 3,
+        "type": ""
+    },
+    {
+        "name": "MOVNTSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1184,
+        "type": ""
+    },
+    {
+        "name": "MOVNTSS",
+        "opcode": "",
+        "ops": 1,
+        "latency": 1178,
+        "type": ""
+    },
+    {
+        "name": "PABSB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PABSD",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PABSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PALIGNR",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PHADDD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PHADDSW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PHADDW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PHSUBD",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PHSUBSW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PHSUBW",
+        "opcode": "",
+        "ops": 4,
+        "latency": 6,
+        "type": ""
+    },
+    {
+        "name": "PMADDUBSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PMULHRSW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 8,
+        "type": ""
+    },
+    {
+        "name": "PSHUFB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSIGNB",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSIGND",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "PSIGNW",
+        "opcode": "",
+        "ops": 1,
+        "latency": 5,
+        "type": ""
+    },
+    {
+        "name": "XGETBV",
+        "opcode": "",
+        "ops": 38,
+        "latency": 51,
+        "type": ""
+    },
+    {
+        "name": "XSAVE",
+        "opcode": "",
+        "ops": 112,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVE64",
+        "opcode": "",
+        "ops": 112,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSETBV",
+        "opcode": "",
+        "ops": 32,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVEC",
+        "opcode": "",
+        "ops": 115,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVEC64",
+        "opcode": "",
+        "ops": 115,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVEOPT",
+        "opcode": "",
+        "ops": 112,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVEOPT64",
+        "opcode": "",
+        "ops": 112,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVES",
+        "opcode": "",
+        "ops": 115,
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "XSAVES64",
+        "opcode": "",
+        "ops": 115,
+        "latency": 0,
+        "type": ""
+    },{
+        "name": "CMOVA",
+        "opcode": "",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LEA",
+        "opcode": "8D",
+        "ops": "2",
+        "latency": 1,
+        "type": ""
+    },
+    {
+        "name": "CALL",
+        "opcode": "E8",
+        "ops": "2",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "RET",
+        "opcode": "C3",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "MOVABS",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "VCMPUNORDSD",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": "v"
+    },
+    {
+        "name": "SETG",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SETE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SETNE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SETA",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "SETGE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JA",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JAE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JNE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JG",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "JGE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMOVG",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMOVE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "CMOVNE",
+        "opcode": "ADDED",
+        "ops": "1",
+        "latency": 0,
+        "type": ""
+    },
+    {
+        "name": "LOCK ADD",
+        "opcode": "",
+        "ops": "1",
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "LOCK XADD",
+        "opcode": "",
+        "ops": "4",
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "LOCK CMPXCHG",
+        "opcode": "",
+        "ops": "5",
+        "latency": 16,
+        "type": ""
+    },
+    {
+        "name": "REP STOSB",
+        "opcode": "ADDED",
+        "ops": "3",
+        "latency": 0,
+        "type": ""
+    }
+]
