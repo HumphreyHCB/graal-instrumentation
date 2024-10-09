@@ -58,22 +58,23 @@ public final class AMD64PointLess extends AMD64LIRInstruction {
         // asm.addq(AMD64.rsp, 32);  // Restore the stack pointer
 
         // Perform a pointless permutation on ymm0 to waste CPU cycles.
-        asm.vmovdqu(AMD64.xmm0, AMD64.xmm0); // Move xmm0 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm1, AMD64.xmm1); // Move xmm1 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm2, AMD64.xmm2); // Move xmm2 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm3, AMD64.xmm3); // Move xmm3 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm4, AMD64.xmm4); // Move xmm4 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm5, AMD64.xmm5); // Move xmm5 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm6, AMD64.xmm6); // Move xmm6 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm7, AMD64.xmm7); // Move xmm7 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm8, AMD64.xmm8); // Move xmm8 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm9, AMD64.xmm9); // Move xmm9 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm10, AMD64.xmm10); // Move xmm10 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm11, AMD64.xmm11); // Move xmm11 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm12, AMD64.xmm12); // Move xmm12 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm13, AMD64.xmm13); // Move xmm13 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm14, AMD64.xmm14); // Move xmm14 into itself, effectively wasting cycles
-        asm.vmovdqu(AMD64.xmm15, AMD64.xmm15); // Move xmm15 into itself, effectively wasting cycles
+        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0xFF); // Redundant shuffle operation, results in no change
+        //asm.vmovdqu(AMD64.xmm0, AMD64.xmm0); // Move xmm0 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm1, AMD64.xmm1); // Move xmm1 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm2, AMD64.xmm2); // Move xmm2 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm3, AMD64.xmm3); // Move xmm3 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm4, AMD64.xmm4); // Move xmm4 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm5, AMD64.xmm5); // Move xmm5 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm6, AMD64.xmm6); // Move xmm6 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm7, AMD64.xmm7); // Move xmm7 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm8, AMD64.xmm8); // Move xmm8 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm9, AMD64.xmm9); // Move xmm9 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm10, AMD64.xmm10); // Move xmm10 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm11, AMD64.xmm11); // Move xmm11 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm12, AMD64.xmm12); // Move xmm12 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm13, AMD64.xmm13); // Move xmm13 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm14, AMD64.xmm14); // Move xmm14 into itself, effectively wasting cycles
+        // asm.vmovdqu(AMD64.xmm15, AMD64.xmm15); // Move xmm15 into itself, effectively wasting cycles
 
     
     }

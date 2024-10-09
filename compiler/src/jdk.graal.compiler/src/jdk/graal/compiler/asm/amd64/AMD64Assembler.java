@@ -4748,6 +4748,10 @@ public class AMD64Assembler extends AMD64BaseAssembler {
         VexRVMIOp.VPCLMULQDQ.emit(this, AVXKind.AVXSize.XMM, dst, nds, src, imm8);
     }
 
+    public final void vshufps(Register dst, Register nds, Register src, int imm8) {
+        VexRVMIOp.VSHUFPS.emit(this, AVXKind.AVXSize.XMM, dst, nds, src, imm8);
+    }
+
     public final void vpblendd(Register dst, Register nds, Register src, int imm8, AVXKind.AVXSize size) {
         VexRVMIOp.VPBLENDD.emit(this, size, dst, nds, src, imm8);
     }
@@ -4767,6 +4771,8 @@ public class AMD64Assembler extends AMD64BaseAssembler {
     public final void vpclmulhqhqdq(Register dst, Register nds, Register src) {
         VexRVMIOp.VPCLMULQDQ.emit(this, AVXKind.AVXSize.XMM, dst, nds, src, 0x11);
     }
+
+
 
     public final void vpsrlq(Register dst, Register src, int imm8, AVXKind.AVXSize size) {
         VexShiftOp.VPSRLQ.emit(this, size, dst, src, imm8);

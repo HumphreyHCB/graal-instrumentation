@@ -122,15 +122,16 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                     int sfenceCount = 0;
                     int pointLessCount = 0;
                 
-                    int real = Math.round(vectorCost / 2);
-                    int remainder = vectorCost % 2;
+                    int real = Math.round(vectorCost / 1);
+                    int remainder = vectorCost % 1;
+
                 
                     // Continue looping until all nops, sfences, and PointLess nodes are inserted
                     int i = 1;
                     while (nopCount < nopCost || sfenceCount < remainder || pointLessCount < real) {
                         // Use modulo to wrap around the index to the list size
                         int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount + sfenceCount + pointLessCount;
-                
+                        
                         // Insert a Nop node if we haven't reached the Nop count limit
                         if (nopCount < nopCost) {
                             AMD64Nop nopNode = new AMD64Nop();
