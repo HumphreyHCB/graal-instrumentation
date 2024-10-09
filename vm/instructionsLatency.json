@@ -130,7 +130,7 @@
     {"name": "MOVZX", "opcode": "ADDED", "ops": "1", "latency": 0, "type": ""},
     {"name": "VPACKUSWB", "opcode": "ADDED", "ops": "1", "latency": 0, "type": "v"},
     {"name": "VPSLLQ", "opcode": "ADDED", "ops": "1", "latency": 0, "type": "v"},
-    {"name": "REP STOSB", "opcode": "ADDED", "ops": "100", "latency": 0, "type": ""},
+    {"name": "REP STOSB", "opcode": "ADDED", "ops": "3", "latency": 0, "type": ""},
     {"name": "MOVSX", "opcode": "ADDED", "ops": "1", "latency": 0, "type": ""},
     {"name": "VPEXTRW", "opcode": "ADDED", "ops": "4", "latency": 0, "type": "v"},
     {"name": "VPMOVMSKB", "opcode": "ADDED", "ops": "4", "latency": 0, "type": "v"},
