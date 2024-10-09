@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.graalvm.collections.EconomicMap;
 
@@ -31,7 +32,8 @@ public class GTCache extends Thread {
         @Option(help = "The name of the file you would like the information to be dumped to.", type = OptionType.Debug)
         public static final OptionKey<String> LIRCostInformationFile = new OptionKey<>("LIRInstructionsCost.json");
     }
-    public static long[] ActivationCountBuffer; // stores activaation of Comp units
+
+    public static long[] ActivationCountBuffer; // stores activation of Comp units
     private static Map<String, Set<String>> LIRInstructionsByteCode;
     private static Map<String, LIRInstruction> opcodeMap;
     private static Capstone capstoneParser;
@@ -49,7 +51,7 @@ public class GTCache extends Thread {
     public static class LIRInstruction {
         public final String name;
         public final int totalCost; // Total cycles excluding "v" type instructions
-        public final int vCost;     // Cycles for "v" type instructions
+        public final int vCost; // Cycles for "v" type instructions
 
         public LIRInstruction(String name, int totalCost, int vCost) {
             this.name = name;
@@ -60,7 +62,7 @@ public class GTCache extends Thread {
 
     public static class LIRCost {
         public int normalCost; // Average normal cost
-        public int vCost;      // Average "v" cost
+        public int vCost; // Average "v" cost
 
         public LIRCost(int normalCost, int vCost) {
             this.normalCost = normalCost;
@@ -69,7 +71,7 @@ public class GTCache extends Thread {
     }
 
     public static void addStringToID(String id, String value) {
-        Set<String> strings = LIRInstructionsByteCode.getOrDefault(id, new HashSet<>());
+        Set<String> strings = LIRInstructionsByteCode.getOrDefault(id, new ConcurrentSkipListSet<>());
         strings.add(value);
         LIRInstructionsByteCode.put(id, strings);
     }
@@ -96,7 +98,7 @@ public class GTCache extends Thread {
     }
 
     public static void LoadInstructionMapCost() {
-        String jsonFile = "instructionsLatency.json";
+        String jsonFile = "UopsInfoEddited.json";
         opcodeMap = new HashMap<>();
 
         try (FileReader reader = new FileReader(jsonFile)) {
@@ -106,6 +108,8 @@ public class GTCache extends Thread {
 
             for (EconomicMap<String, Object> instruction : instructions) {
                 String name = (String) instruction.get("name");
+                if (instruction.get("ops").toString().equals(""))
+                    continue;
                 int ops = Integer.parseInt(instruction.get("ops").toString());
                 int latency = Integer.parseInt(instruction.get("latency").toString());
                 String type = (String) instruction.get("type");
@@ -122,14 +126,12 @@ public class GTCache extends Thread {
         }
     }
 
-
     public static LIRInstruction containsOPCODE(String nameToCheck) {
         LIRInstruction instruction = opcodeMap.get(nameToCheck.toUpperCase());
         if (instruction != null) {
             return instruction;
         } else {
             if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
-                //System.out.println("Could not find opcode " + nameToCheck.toUpperCase());
                 uniqueBytes.add(nameToCheck.toUpperCase());
             }
             return new LIRInstruction(nameToCheck, 1, 0); // Assuming 1 cycle cost if not found, and no vCost
@@ -150,30 +152,24 @@ public class GTCache extends Thread {
     private static Map<String, Set<String>> deepCopy(Map<String, Set<String>> original) {
         Map<String, Set<String>> copy = new ConcurrentHashMap<>();
 
-        synchronized (original) {
-            for (Map.Entry<String, Set<String>> entry : original.entrySet()) {
-                // Create an immutable copy of the set
-                Set<String> newSet = Collections.unmodifiableSet(new HashSet<>(entry.getValue()));
-                
-                copy.put(entry.getKey(), newSet); // Add the copied set to the map
-            }
-        }
+        original.forEach((key, value) -> {
+            Set<String> newSet = Collections.unmodifiableSet(new HashSet<>(value));
+            copy.put(key, newSet);
+        });
 
         return copy;
     }
-    
 
     public static void postProcessingShutdown() {
         capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
         LoadInstructionMapCost();
-    
+
         Map<String, Set<String>> snapshot;
         try {
-			sleep(5000L);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            sleep(5000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         synchronized (LIRInstructionsByteCode) {
             snapshot = deepCopy(LIRInstructionsByteCode);
         }
@@ -182,78 +178,71 @@ public class GTCache extends Thread {
             int entryCounter = 0;
             int entryTempSum = 0;
             int entryTempVSum = 0;
-        
+
             for (String value : entry.getValue()) {
                 List<String> mnemonics = disassembleOPCode(value);
                 List<LIRInstruction> instructions = calculateCostForInstructions(mnemonics);
-        
+
                 for (LIRInstruction instruction : instructions) {
                     entryTempSum += instruction.totalCost;
                     entryTempVSum += instruction.vCost;
                 }
                 entryCounter++;
             }
-        
-            // Calculate the average cost per entry
+
             int averageCost = entryCounter > 0 ? (int) Math.ceil((float) entryTempSum / entryCounter) : 0;
             int averageVCost = entryCounter > 0 ? (int) Math.ceil((float) entryTempVSum / entryCounter) : 0;
-            
-        
-            if (averageVCost > 0  && averageVCost < 1 ) {
-                averageVCost = 1; // bias to 1 for when it someimtes a vector
-            }
-            
-            LIRCostMap.put(entry.getKey(), new LIRCost(averageCost, averageVCost));
-    
 
+            if (averageVCost > 0 && averageVCost < 1) {
+                averageVCost = 1;
+            }
+
+            LIRCostMap.put(entry.getKey(), new LIRCost(averageCost, averageVCost));
         }
         String fileName = Options.LIRCostInformationFile.getValue(OptionValues);
         if (GraalOptions.LIRGTSlowDownDebugMode.getValue(OptionValues)) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName.replace(".json", "_NotFound.txt")))) {
-            for (String string : uniqueBytes) {
-                writer.write(string);
-                writer.newLine();
+            if (!uniqueBytes.isEmpty()) {
+                try (BufferedWriter writer = new BufferedWriter(
+                        new FileWriter(fileName.replace(".json", "_NotFound.txt")))) {
+                    for (String string : uniqueBytes) {
+                        writer.write(string);
+                        writer.newLine();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-            //System.out.println("List written to " + fileName);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-    }
-    
-        
-    
+
         try (JsonWriter jsonWriter = new JsonWriter(Path.of(fileName))) {
-            jsonWriter.appendArrayStart().newline().indent(); // Start the JSON array
-    
+            jsonWriter.appendArrayStart().newline().indent();
+
             int mapSize = LIRCostMap.size();
             int mapIndex = 0;
-    
+
             for (Map.Entry<String, LIRCost> entry : LIRCostMap.entrySet()) {
-                jsonWriter.appendObjectStart(); // Start the object for this entry
+                jsonWriter.appendObjectStart();
                 jsonWriter.appendKeyValue("Class", entry.getKey().replace("class ", ""));
-                jsonWriter.appendSeparator(); // Add a separator between key-value pairs
+                jsonWriter.appendSeparator();
                 jsonWriter.appendKeyValue("normalCost", entry.getValue().normalCost);
-                jsonWriter.appendSeparator(); // Add a separator between key-value pairs
+                jsonWriter.appendSeparator();
                 jsonWriter.appendKeyValue("vCost", entry.getValue().vCost);
-                jsonWriter.appendObjectEnd(); // End the object for this entry
-    
+                jsonWriter.appendObjectEnd();
+
                 if (++mapIndex < mapSize) {
-                    jsonWriter.appendSeparator(); // Separate entries with a comma
+                    jsonWriter.appendSeparator();
                 }
-    
+
                 jsonWriter.newline();
             }
-    
-            jsonWriter.unindent().appendArrayEnd().newline(); // End the JSON array
+
+            jsonWriter.unindent().appendArrayEnd().newline();
             jsonWriter.flush();
             System.out.println("LIRCostMap has been successfully dumped to " + fileName);
-            //ystem.out.println("The vCount " + vCount);
         } catch (IOException e) {
             System.err.println("Error while dumping LIRCostMap to JSON: " + e.getMessage());
         }
     }
-    
-    
 
     public static void dumpLIRInstructionsToJSON() {
         Map<String, Set<String>> snapshot;
