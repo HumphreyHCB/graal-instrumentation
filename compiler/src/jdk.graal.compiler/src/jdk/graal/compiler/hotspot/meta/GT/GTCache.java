@@ -50,12 +50,12 @@ public class GTCache extends Thread {
 
     public static class LIRInstruction {
         public final String name;
-        public final int totalCost; // Total cycles excluding "v" type instructions
+        public final int nopCost; // Total cycles excluding "v" type instructions
         public final int vCost; // Cycles for "v" type instructions
 
-        public LIRInstruction(String name, int totalCost, int vCost) {
+        public LIRInstruction(String name, int nopCost, int vCost) {
             this.name = name;
-            this.totalCost = totalCost;
+            this.nopCost = nopCost;
             this.vCost = vCost;
         }
     }
@@ -74,6 +74,31 @@ public class GTCache extends Thread {
         Set<String> strings = LIRInstructionsByteCode.getOrDefault(id, new ConcurrentSkipListSet<>());
         strings.add(value);
         LIRInstructionsByteCode.put(id, strings);
+    }
+
+    public static int[] computeCycleCostForGivenString(String value) {
+        if (opcodeMap == null || opcodeMap.isEmpty()) {
+            LoadInstructionMapCost();
+            capstoneParser = new Capstone(Capstone.CS_ARCH_X86, Capstone.CS_MODE_64);
+        }
+    
+        // Disassemble the given input string to get a list of mnemonics.
+        List<String> mnemonics = disassembleOPCode(value);
+        if (mnemonics == null || mnemonics.isEmpty()) {
+            System.out.println("Found no mnemonics");
+            return new int[]{0, 0};
+        }
+    
+        // Calculate the total nop cost and total v cost for the given mnemonics.
+        int totalNopCost = 0;
+        int totalVCost = 0;
+        for (String mnemonic : mnemonics) {
+            LIRInstruction instruction = containsOPCODE(mnemonic);
+            totalNopCost += instruction.nopCost;
+            totalVCost += instruction.vCost;
+        }
+    
+        return new int[]{totalNopCost, totalVCost};
     }
 
     public static List<String> disassembleOPCode(String input) {
@@ -114,10 +139,10 @@ public class GTCache extends Thread {
                 int latency = Integer.parseInt(instruction.get("latency").toString());
                 String type = (String) instruction.get("type");
 
-                int totalCost = "v".equals(type) ? 0 : ops + latency;
+                int nopCost = "v".equals(type) ? 0 : ops + latency;
                 int vCost = "v".equals(type) ? ops + latency : 0;
 
-                opcodeMap.put(name, new LIRInstruction(name, totalCost, vCost));
+                opcodeMap.put(name, new LIRInstruction(name, nopCost, vCost));
             }
         } catch (IOException e) {
             System.out.println(
@@ -184,7 +209,7 @@ public class GTCache extends Thread {
                 List<LIRInstruction> instructions = calculateCostForInstructions(mnemonics);
 
                 for (LIRInstruction instruction : instructions) {
-                    entryTempSum += instruction.totalCost;
+                    entryTempSum += instruction.nopCost;
                     entryTempVSum += instruction.vCost;
                 }
                 entryCounter++;
