@@ -337,4 +337,8 @@ public final class GraalOptions {
 
     @Option(help = "The name of the JSON file containing LIR instruction costs.", type = OptionType.Debug)
     public static final OptionKey<String> LIRCostFileName = new OptionKey<>("LIRCostVaware5.json");
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> ASMGTSlowDown = new OptionKey<Boolean>( false);
+
 }

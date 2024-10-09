@@ -65,6 +65,8 @@ import jdk.graal.compiler.lir.LIRInstructionVerifier;
 import jdk.graal.compiler.lir.LabelRef;
 import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.StandardOp.LabelHoldingOp;
+import jdk.graal.compiler.lir.amd64.AMD64Nop;
+import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.framemap.FrameMap;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.spi.CoreProvidersDelegate;
@@ -158,14 +160,17 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     private final EconomicMap<Constant, Data> dataCache;
 
     /**
-     * These position maps are used for estimating offsets of forward branches. Used for
-     * architectures where certain branch instructions have limited displacement such as ARM tbz.
+     * These position maps are used for estimating offsets of forward branches. Used
+     * for
+     * architectures where certain branch instructions have limited displacement
+     * such as ARM tbz.
      */
     private EconomicMap<Label, Integer> labelBindLirPositions;
     private EconomicMap<LIRInstruction, Integer> lirPositions;
     /**
      * This flag is for setting the
-     * {@link CompilationResultBuilder#labelWithinLIRRange(LIRInstruction, Label, int)} into a
+     * {@link CompilationResultBuilder#labelWithinLIRRange(LIRInstruction, Label, int)}
+     * into a
      * conservative mode and always answering false.
      */
     private boolean conservativeLabelOffsets = false;
@@ -175,27 +180,31 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * This flag indicates whether the assembler should emit a separate deoptimization handler for
+     * This flag indicates whether the assembler should emit a separate
+     * deoptimization handler for
      * method handle invocations.
      */
     private boolean needsMHDeoptHandler = false;
 
-    /** PCOffset passed within last call to {@link #recordImplicitException(int, LIRFrameState)}. */
+    /**
+     * PCOffset passed within last call to
+     * {@link #recordImplicitException(int, LIRFrameState)}.
+     */
     private int lastImplicitExceptionOffset = Integer.MIN_VALUE;
 
     private final List<LIRInstructionVerifier> lirInstructionVerifiers;
 
     public CompilationResultBuilder(CoreProviders providers,
-                    FrameMap frameMap,
-                    Assembler<?> asm,
-                    DataBuilder dataBuilder,
-                    FrameContext frameContext,
-                    OptionValues options,
-                    DebugContext debug,
-                    CompilationResult compilationResult,
-                    Register uncompressedNullRegister,
-                    List<LIRInstructionVerifier> lirInstructionVerifiers,
-                    LIR lir) {
+            FrameMap frameMap,
+            Assembler<?> asm,
+            DataBuilder dataBuilder,
+            FrameContext frameContext,
+            OptionValues options,
+            DebugContext debug,
+            CompilationResult compilationResult,
+            Register uncompressedNullRegister,
+            List<LIRInstructionVerifier> lirInstructionVerifiers,
+            LIR lir) {
         super(providers);
         this.target = providers.getCodeCache().getTarget();
         this.frameMap = frameMap;
@@ -221,14 +230,16 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Sets the minimum alignment for an item in the {@linkplain DataSectionReference data section}.
+     * Sets the minimum alignment for an item in the
+     * {@linkplain DataSectionReference data section}.
      */
     public void setMinDataSectionItemAlignment(int alignment) {
         compilationResult.setMinDataSectionItemAlignment(alignment);
     }
 
     /**
-     * Associates {@code markId} with position {@code codePos} in the compilation result.
+     * Associates {@code markId} with position {@code codePos} in the compilation
+     * result.
      *
      * @return the recorded entry for the mark
      */
@@ -237,7 +248,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Associates {@code markId} with the current assembler position in the compilation result.
+     * Associates {@code markId} with the current assembler position in the
+     * compilation result.
      *
      * @return the recorded entry for the mark
      */
@@ -251,8 +263,10 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
 
     /**
      * Sets the {@linkplain CompilationResult#setTargetCode(byte[], int) code} and
-     * {@linkplain CompilationResult#recordExceptionHandler(int, int) exception handler} fields of
-     * the compilation result and then {@linkplain #closeCompilationResult() closes} it.
+     * {@linkplain CompilationResult#recordExceptionHandler(int, int) exception
+     * handler} fields of
+     * the compilation result and then {@linkplain #closeCompilationResult() closes}
+     * it.
      */
     public void finish() {
         byte[] data = asm.close(false);
@@ -269,7 +283,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Calls {@link CompilationResult#close(OptionValues)} on {@link #compilationResult}.
+     * Calls {@link CompilationResult#close(OptionValues)} on
+     * {@link #compilationResult}.
      */
     protected void closeCompilationResult() {
         compilationResult.close(options);
@@ -386,8 +401,10 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     /**
      * Creates an entry in the data section for the given constant.
      *
-     * During one compilation if this is called multiple times for the same constant (as determined
-     * by {@link Object#equals(Object)}), the same data entry will be returned for every call.
+     * During one compilation if this is called multiple times for the same constant
+     * (as determined
+     * by {@link Object#equals(Object)}), the same data entry will be returned for
+     * every call.
      */
     public Data createDataItem(Constant constant) {
         Data data = dataCache.get(constant);
@@ -408,7 +425,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Returns the address of a float constant that is embedded as a data reference into the code.
+     * Returns the address of a float constant that is embedded as a data reference
+     * into the code.
      */
     public AbstractAddress asFloatConstRef(JavaConstant value) {
         return asFloatConstRef(value, 4);
@@ -420,7 +438,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Returns the address of a double constant that is embedded as a data reference into the code.
+     * Returns the address of a double constant that is embedded as a data reference
+     * into the code.
      */
     public AbstractAddress asDoubleConstRef(JavaConstant value) {
         return asDoubleConstRef(value, 8);
@@ -432,7 +451,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Returns the address of a long constant that is embedded as a data reference into the code.
+     * Returns the address of a long constant that is embedded as a data reference
+     * into the code.
      */
     public AbstractAddress asLongConstRef(JavaConstant value) {
         assert value.getJavaKind() == JavaKind.Long : value;
@@ -443,17 +463,20 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         assert isStackSlot(value);
         StackSlot slot = asStackSlot(value);
         int size = slot.getPlatformKind().getSizeInBytes() * Byte.SIZE;
-        return asm.makeAddress(size, frameMap.getRegisterConfig().getFrameRegister(), frameMap.offsetForStackSlot(slot));
+        return asm.makeAddress(size, frameMap.getRegisterConfig().getFrameRegister(),
+                frameMap.offsetForStackSlot(slot));
     }
 
     /**
-     * Determines if a given edge from the block currently being emitted goes to its lexical
+     * Determines if a given edge from the block currently being emitted goes to its
+     * lexical
      * successor.
      */
     public boolean isSuccessorEdge(LabelRef edge) {
         assert lir != null;
         int[] order = lir.codeEmittingOrder();
-        assert order[currentBlockIndex] == edge.getSourceBlock().getId() : Assertions.errorMessage(order[currentBlockIndex], edge, edge.getSourceBlock());
+        assert order[currentBlockIndex] == edge.getSourceBlock().getId()
+                : Assertions.errorMessage(order[currentBlockIndex], edge, edge.getSourceBlock());
         BasicBlock<?> nextBlock = LIR.getNextBlock(lir.getControlFlowGraph(), order, currentBlockIndex);
         return nextBlock == edge.getTargetBlock();
     }
@@ -496,7 +519,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Emits code for {@code lir} in its {@linkplain LIR#codeEmittingOrder() code emitting order}.
+     * Emits code for {@code lir} in its {@linkplain LIR#codeEmittingOrder() code
+     * emitting order}.
      */
     public void emitLIR() {
         assert currentBlockIndex == 0 : currentBlockIndex;
@@ -508,9 +532,12 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         BasicBlock<?> previousBlock = null;
         for (int blockId : lir.codeEmittingOrder()) {
             BasicBlock<?> b = lir.getBlockById(blockId);
-            assert (b == null && lir.codeEmittingOrder()[currentBlockIndex] == AbstractControlFlowGraph.INVALID_BLOCK_ID) ||
-                            lir.codeEmittingOrder()[currentBlockIndex] == blockId : Assertions.errorMessageContext("b", b, "lir.codeOrder", lir.codeEmittingOrder(), "currentBlockIndex",
-                                            currentBlockIndex, "blockId", blockId);
+            assert (b == null
+                    && lir.codeEmittingOrder()[currentBlockIndex] == AbstractControlFlowGraph.INVALID_BLOCK_ID) ||
+                    lir.codeEmittingOrder()[currentBlockIndex] == blockId
+                    : Assertions.errorMessageContext("b", b, "lir.codeOrder", lir.codeEmittingOrder(),
+                            "currentBlockIndex",
+                            currentBlockIndex, "blockId", blockId);
             if (b != null) {
                 if (b.isAligned() && previousBlock != null) {
                     boolean hasSuccessorB = false;
@@ -523,7 +550,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                     }
                     if (!hasSuccessorB) {
                         ArrayList<LIRInstruction> instructions = lir.getLIRforBlock(b);
-                        assert instructions.get(0) instanceof StandardOp.LabelOp : "first instruction must always be a label";
+                        assert instructions.get(0) instanceof StandardOp.LabelOp
+                                : "first instruction must always be a label";
                         StandardOp.LabelOp label = (StandardOp.LabelOp) instructions.get(0);
                         label.setAlignment(IsolatedLoopHeaderAlignment.getValue(options));
                     }
@@ -565,7 +593,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         if (block == null) {
             return;
         }
-        boolean emitComment = debug.isDumpEnabled(DebugContext.BASIC_LEVEL) || Options.PrintLIRWithAssembly.getValue(getOptions());
+        boolean emitComment = debug.isDumpEnabled(DebugContext.BASIC_LEVEL)
+                || Options.PrintLIRWithAssembly.getValue(getOptions());
         if (emitComment) {
             blockComment(String.format("block B%d %s", block.getId(), block.getLoop()));
         }
@@ -631,14 +660,41 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                         }
                     }
                 }
-                    byte[] emittedCode = asm.copy(start, end);
-                    String emmitedOPCode = "";
-                    for (byte b : emittedCode) {
-                        emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
+                byte[] emittedCode = asm.copy(start, end);
+                String emmitedOPCode = "";
+                for (byte b : emittedCode) {
+                    emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
+                }
+                GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
+
+            }
+            if (GraalOptions.ASMGTSlowDown.getValue(options) && start < asm.position()) {
+                int end = asm.position();
+
+                for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
+                    if (codeAnnotation instanceof JumpTable) {
+                        // Skip jump table. Here we assume the jump table is at the tail of the
+                        // emitted code.
+                        int jumpTableStart = codeAnnotation.getPosition();
+                        if (jumpTableStart >= start && jumpTableStart < end) {
+                            end = jumpTableStart;
+                        }
                     }
-                    GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
-                
-            } 
+                }
+                byte[] emittedCode = asm.copy(start, end);
+                String emmitedOPCode = "";
+                for (byte b : emittedCode) {
+                    emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
+                }
+
+                int[] cycleCosts = GTCache.computeCycleCostForGivenString(emmitedOPCode);
+                for (int i = 0; i < cycleCosts[0] + cycleCosts[1]; i++) {
+                    new AMD64Nop().emitCode(this);
+                }
+                // for (int i = 0; i < cycleCosts[1]; i++) {
+                //     new AMD64PointLess().emitCode(this);
+                // }
+            }
         } catch (BailoutException e) {
             throw e;
         } catch (AssertionError t) {
@@ -678,7 +734,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Builds up a map for label and LIR instruction positions where labels are or labels pointing
+     * Builds up a map for label and LIR instruction positions where labels are or
+     * labels pointing
      * to.
      */
     public void buildLabelOffsets() {
@@ -704,10 +761,12 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Determines whether the distance from the LIR instruction to the label is within
+     * Determines whether the distance from the LIR instruction to the label is
+     * within
      * maxLIRDistance LIR instructions.
      *
-     * @param maxLIRDistance Maximum number of LIR instructions between label and instruction
+     * @param maxLIRDistance Maximum number of LIR instructions between label and
+     *                       instruction
      */
     public boolean labelWithinLIRRange(LIRInstruction instruction, Label label, int maxLIRDistance) {
         if (conservativeLabelOffsets) {
@@ -727,7 +786,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
 
     /**
      * Sets this CompilationResultBuilder into conservative mode. If set,
-     * {@link CompilationResultBuilder#labelWithinLIRRange(LIRInstruction, Label, int)} always
+     * {@link CompilationResultBuilder#labelWithinLIRRange(LIRInstruction, Label, int)}
+     * always
      * returns false.
      */
     public void setConservativeLabelRanges() {
@@ -735,7 +795,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     }
 
     /**
-     * Query, whether this {@link CompilationResultBuilder} uses conservative label ranges. This
+     * Query, whether this {@link CompilationResultBuilder} uses conservative label
+     * ranges. This
      * allows for larger jump distances at the cost of increased code size.
      */
     public boolean usesConservativeLabelRanges() {
