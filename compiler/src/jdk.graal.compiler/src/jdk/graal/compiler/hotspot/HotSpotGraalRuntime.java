@@ -28,6 +28,7 @@ import static jdk.graal.compiler.core.common.GraalOptions.HotSpotPrintInlining;
 import static jdk.vm.ci.common.InitTimer.timer;
 import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.hotspot.meta.GT.GTCache;
@@ -197,6 +199,16 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
         if (GraalOptions.EnableGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
             initalizeGT();
+        }
+        if (GraalOptions.LIRCostFileName.getValue(options) != GraalOptions.LIRCostFileName.getDefaultValue() && GraalOptions.LIRGTSlowDown.getValue(options)) {
+            try {
+                System.out.println("Trying to load " + GraalOptions.LIRCostFileName.getValue(options));
+                LIRInstructionCostMultiLookup.loadClassCostsFromJSON(GraalOptions.LIRCostFileName.getValue(options));
+                System.out.println("We have loaded " + GraalOptions.LIRCostFileName.getValue(options));
+            } catch (IOException e) {
+                System.out.println("Somthing has gone wrong when tryint to dynamicly load the LIRCostFileName");
+                e.printStackTrace();
+            }
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
 

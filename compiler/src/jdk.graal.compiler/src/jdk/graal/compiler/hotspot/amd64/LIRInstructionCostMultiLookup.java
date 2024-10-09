@@ -7,15 +7,20 @@ import java.util.List;
 import java.util.Map;
 import org.graalvm.collections.EconomicMap;
 
+import jdk.graal.compiler.core.common.GraalOptions;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionKey;
+import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.util.json.JsonParser;
 
 public class LIRInstructionCostMultiLookup {
 
     private static final EconomicMap<String, LIRCost> CLASS_COST_MAP = EconomicMap.create();
 
+
     static {
         try {
-            loadClassCostsFromJSON("LIRCostVaware5.json");
+            loadClassCostsFromJSON(GraalOptions.LIRCostFileName.getDefaultValue());
         } catch (IOException e) {
             System.err.println("Failed to load class costs: " + e.getMessage());
         }
@@ -40,7 +45,7 @@ public class LIRInstructionCostMultiLookup {
      * @param filePath the path to the JSON file
      * @throws IOException if there is an error reading the file
      */
-    private static void loadClassCostsFromJSON(String filePath) throws IOException {
+    public static void loadClassCostsFromJSON(String filePath) throws IOException {
         // Read the JSON file content
         String jsonContent = new String(Files.readAllBytes(Paths.get(filePath)));
 
