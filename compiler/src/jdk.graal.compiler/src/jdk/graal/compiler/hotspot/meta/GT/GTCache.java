@@ -123,7 +123,7 @@ public class GTCache extends Thread {
     }
 
     public static void LoadInstructionMapCost() {
-        String jsonFile = "UopsInfoEddited.json";
+        String jsonFile = "UopsInfoEdditedBestCase.json";
         opcodeMap = new HashMap<>();
 
         try (FileReader reader = new FileReader(jsonFile)) {
