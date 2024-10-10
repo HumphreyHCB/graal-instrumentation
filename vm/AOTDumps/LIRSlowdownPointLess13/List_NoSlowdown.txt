@@ -1,0 +1,1758 @@
+--- Execution profile ---
+Total samples       : 1579238
+unknown_Java        : 109256 (6.92%)
+not_walkable_Java   : 14 (0.00%)
+
+--- 97718371737 ns (6.19%), 97704 samples
+  [ 0] List$Element.getNext
+  [ 1] [unknown_Java]
+
+--- 6203870190 ns (0.39%), 6203 samples
+  [ 0] List.isShorterThan
+  [ 1] [unknown_Java]
+
+--- 5052896318 ns (0.32%), 5052 samples
+  [ 0] List.tail
+  [ 1] [unknown_Java]
+
+--- 401077035 ns (0.03%), 401 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 393077170 ns (0.02%), 393 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 380070490 ns (0.02%), 380 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 379054897 ns (0.02%), 379 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 374082867 ns (0.02%), 374 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 370092544 ns (0.02%), 370 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 369055762 ns (0.02%), 369 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 365065903 ns (0.02%), 365 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 361037560 ns (0.02%), 361 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 359050280 ns (0.02%), 359 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 346092000 ns (0.02%), 346 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 346047563 ns (0.02%), 346 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 342036728 ns (0.02%), 342 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 339040648 ns (0.02%), 339 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 337051615 ns (0.02%), 337 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 336049926 ns (0.02%), 336 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 333068180 ns (0.02%), 333 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 332069250 ns (0.02%), 332 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 332050695 ns (0.02%), 332 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 332030419 ns (0.02%), 332 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 331093997 ns (0.02%), 331 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 330073641 ns (0.02%), 330 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 330057878 ns (0.02%), 330 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 328079140 ns (0.02%), 328 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 327065889 ns (0.02%), 327 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 326016831 ns (0.02%), 326 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 325064422 ns (0.02%), 325 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 325040778 ns (0.02%), 325 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 324064536 ns (0.02%), 324 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 324009947 ns (0.02%), 324 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 323944170 ns (0.02%), 324 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 323077688 ns (0.02%), 323 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 323050807 ns (0.02%), 323 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 322063052 ns (0.02%), 322 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 321050516 ns (0.02%), 321 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 317028907 ns (0.02%), 317 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 315064456 ns (0.02%), 315 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 314048030 ns (0.02%), 314 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 314044644 ns (0.02%), 314 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 313068356 ns (0.02%), 313 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 313053498 ns (0.02%), 313 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 310031737 ns (0.02%), 310 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 310027907 ns (0.02%), 310 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 309055620 ns (0.02%), 309 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 309040755 ns (0.02%), 309 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 309039018 ns (0.02%), 309 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 309034623 ns (0.02%), 309 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 308052364 ns (0.02%), 308 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 308048830 ns (0.02%), 308 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 307054004 ns (0.02%), 307 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 307049972 ns (0.02%), 307 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 307036803 ns (0.02%), 307 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 307031582 ns (0.02%), 307 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 306067690 ns (0.02%), 306 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 306051827 ns (0.02%), 306 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 306048708 ns (0.02%), 306 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 306045477 ns (0.02%), 306 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 306036483 ns (0.02%), 306 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 305049695 ns (0.02%), 305 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 304049076 ns (0.02%), 304 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 304040893 ns (0.02%), 304 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 304035494 ns (0.02%), 304 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 303054688 ns (0.02%), 303 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 303045396 ns (0.02%), 303 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 302085202 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 302077850 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 302048881 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 302048127 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 302038955 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 302037274 ns (0.02%), 302 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 301065205 ns (0.02%), 301 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 301056143 ns (0.02%), 301 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 301033010 ns (0.02%), 301 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 301028354 ns (0.02%), 301 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 301026719 ns (0.02%), 301 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 300062177 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 300059944 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 300058507 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 300057162 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 300054822 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 300051647 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 300049409 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 300033133 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 300010187 ns (0.02%), 300 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 299059980 ns (0.02%), 299 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 298043560 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 298039203 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 298027986 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 298021780 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 298016634 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 298011094 ns (0.02%), 298 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 297053871 ns (0.02%), 297 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 297051528 ns (0.02%), 297 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 297050035 ns (0.02%), 297 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 297025609 ns (0.02%), 297 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 296973891 ns (0.02%), 297 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 296059269 ns (0.02%), 296 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+1282776378839   81.21%  1282580  List.isShorterThan
+189802353507   12.02%   189773  List$Element.getNext
+101441028335    6.42%   101426  List.tail
+  2140355954    0.14%     2140  List$Element.<init>
+  1531265286    0.10%     1531  List.makeList
+   171033803    0.01%      171  List$Element.setNext
+   169019894    0.01%      169  java.lang.Object.<init>
+   128016028    0.01%      128  List$Element.length
+   106893793    0.01%      107  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub74TruffleToLibGraalEntryPoints__validateCompilerOption__Ujs0fEGwUTHHbobHrcnio9EJ32org_002egraalvm_002ejniutils_002eJNI_0024JString31org_002egraalvm_002ejniutils_002eJNI_0024JNIEnv31org_002egraalvm_002ejniutils_002eJNI_0024JClasslS0__S0__
+    71025553    0.00%       71  java.lang.Integer.valueOf
+    62343054    0.00%       56  clock_gettime@GLIBC_2.2.5
+    61181854    0.00%       58  _raw_spin_unlock_irqrestore_[k]
+    56770981    0.00%       53  PerfLongVariant::sample
+    48872615    0.00%       46  __futex_abstimed_wait_common
+    33246982    0.00%       32  clear_page_rep_[k]
+    31067065    0.00%       31  do_user_addr_fault_[k]
+    27006340    0.00%       27  List.verifyResult
+    27001516    0.00%       27  Benchmark.innerBenchmarkLoop
+    26796490    0.00%       25  StatSamplerTask::task
+    25490069    0.00%       24  srso_safe_ret_[k]
+    23656738    0.00%       22  futex_wake_[k]
+    21711165    0.00%       20  [vdso]
+    21000970    0.00%       21  List.benchmark
+    19120496    0.00%       19  G1ParScanThreadState::trim_queue_to_threshold
+    17158091    0.00%       16  WatcherThread::sleep
+    15188346    0.00%       14  syscall_enter_from_user_mode_[k]
+    14969674    0.00%       14  __get_user_8_[k]
+    14899153    0.00%       14  pthread_cond_timedwait@@GLIBC_2.3.2
+    14054773    0.00%       13  __x64_sys_futex_[k]
+    14018253    0.00%       14  Interpreter
+    13789225    0.00%       13  __condvar_dec_grefs
+    13756740    0.00%       13  exit_to_user_mode_loop_[k]
+    12945966    0.00%       12  get_futex_key_[k]
+    12082771    0.00%       12  __do_softirq_[k]
+    10023941    0.00%       10  charge_memcg_[k]
+     9651610    0.00%        9  __lll_lock_wake
+     8768722    0.00%        8  __audit_syscall_entry_[k]
+     8691342    0.00%        8  PlatformMonitor::wait
+     8605052    0.00%        8  Monitor::wait_without_safepoint_check
+     8541972    0.00%        8  __rseq_handle_notify_resume_[k]
+     8528813    0.00%        8  rseq_update_cpu_id_[k]
+     8082521    0.00%        8  SpinPause
+     7660521    0.00%        7  __get_user_nocheck_4_[k]
+     7502403    0.00%        7  __tls_get_addr
+     7469183    0.00%        7  schedule_debug.constprop.0_[k]
+     7078743    0.00%        7  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+     7007882    0.00%        7  handle_mm_fault_[k]
+     6489931    0.00%        5  futex_hash_[k]
+     6414810    0.00%        6  rseq_ip_fixup_[k]
+     6408883    0.00%        6  VMError::is_error_reported
+     5504190    0.00%        5  syscall_trace_enter.constprop.0_[k]
+     5484812    0.00%        5  _copy_from_user_[k]
+     5416411    0.00%        5  PeriodicTask::real_time_tick
+     5280752    0.00%        5  Mutex::lock_without_safepoint_check
+     5067300    0.00%        5  __rcu_read_unlock_[k]
+     5024152    0.00%        5  __mod_lruvec_page_state_[k]
+     5010621    0.00%        5  do_anonymous_page_[k]
+     5007422    0.00%        5  __mem_cgroup_charge_[k]
+     4527631    0.00%        4  __pthread_mutex_cond_lock
+     4396002    0.00%        4  futex_wait_[k]
+     4373351    0.00%        4  sched_submit_work_[k]
+     4359240    0.00%        4  copy_user_generic_string_[k]
+     4344111    0.00%        4  _raw_spin_lock_[k]
+     4295590    0.00%        4  futex_get_value_locked_[k]
+     4257863    0.00%        4  finish_task_switch.isra.0_[k]
+     4236502    0.00%        4  os::elapsed_counter
+     4236031    0.00%        4  ___pthread_mutex_unlock
+     4209141    0.00%        4  InlineCacheBuffer::is_empty
+     4195431    0.00%        4  __GI___pthread_disable_asynccancel
+     4039881    0.00%        4  __mod_memcg_lruvec_state_[k]
+     4037090    0.00%        4  __handle_mm_fault_[k]
+     4036853    0.00%        4  zap_pte_range_[k]
+     4023470    0.00%        4  /home/hburchell/Repos/graal-dev/graal-instrumentation/sdk/mxbuild/linux-amd64/GRAALVM_LIBGRAAL_JAVA21/graalvm-libgraal-openjdk-21.0.2+13.1/lib/libjvmcicompiler.so
+     3997303    0.00%        4  page_remove_rmap_[k]
+     3981161    0.00%        4  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub65CEntryPointNativeFunctions__tearDownIsolate__ke4IYWkkawAn2nvyM2ZSW5EJi37org_002egraalvm_002enativeimage_002eIsolateThread
+     3387191    0.00%        3  do_syscall_64_[k]
+     3296101    0.00%        3  futex_wait_queue_[k]
+     3268573    0.00%        3  ChunkPoolCleaner::task
+     3251312    0.00%        3  futex_wait_setup_[k]
+     3236610    0.00%        3  _raw_spin_unlock_[k]
+     3224850    0.00%        3  ktime_add_safe_[k]
+     3200981    0.00%        3  __GI___pthread_mutex_unlock_usercnt
+     3196341    0.00%        3  syscall_exit_work_[k]
+     3193770    0.00%        3  rseq_get_rseq_cs_[k]
+     3173032    0.00%        3  G1ServiceThread::wait_for_task
+     3095001    0.00%        3  _raw_spin_unlock_irq_[k]
+     3026651    0.00%        3  next_uptodate_page_[k]
+     3009341    0.00%        3  find_vma_[k]
+     3008670    0.00%        3  blk_cgroup_congested_[k]
+     3008140    0.00%        3  java.nio.charset.CharsetEncoder.encode
+     3007172    0.00%        3  __folio_alloc_[k]
+     3006671    0.00%        3  java.lang.invoke.DirectMethodHandle$Holder.invokeStatic
+     3004732    0.00%        3  __memmove_avx_unaligned_erms
+     3004531    0.00%        3  java.lang.String.getChars
+     3001701    0.00%        3  Run.measure
+     2998542    0.00%        3  jdk.internal.org.objectweb.asm.ByteVector.putUTF8
+     2994211    0.00%        3  kthread_blkcg_[k]
+     2326721    0.00%        2  __GI___pthread_self
+     2177830    0.00%        2  __GI___pthread_enable_asynccancel
+     2152543    0.00%        2  __hrtimer_init_[k]
+     2139441    0.00%        2  do_futex_[k]
+     2138070    0.00%        2  os::javaTimeNanos
+     2130141    0.00%        2  __put_user_8_[k]
+     2113550    0.00%        2  mem_cgroup_handle_over_high_[k]
+     2105220    0.00%        2  __getrusage
+     2100280    0.00%        2  ConcurrentGCThread::should_terminate
+     2085410    0.00%        2  G1PeriodicGCTask::execute
+     2062781    0.00%        2  __memset_avx2_unaligned_erms
+     2056542    0.00%        2  G1GCParPhaseTimesTracker::G1GCParPhaseTimesTracker
+     2048490    0.00%        2  ConstantPool::name_and_type_ref_index_at
+     2031441    0.00%        2  G1ScanHRForRegionClosure::scan_heap_roots
+     2029832    0.00%        2  G1ParScanThreadState::steal_and_trim_queue
+     2025961    0.00%        2  e1000_clean_rx_irq?[e1000]_[k]
+     2019290    0.00%        2  nft_do_chain?[nf_tables]_[k]
+     2015000    0.00%        2  free_unref_page_[k]
+     2013550    0.00%        2  fib_table_lookup_[k]
+     2007221    0.00%        2  _int_malloc
+     2005961    0.00%        2  _find_first_bit_[k]
+     2005660    0.00%        2  sun.nio.cs.StreamEncoder.growByteBufferIfNeeded
+     2005450    0.00%        2  get_mem_cgroup_from_mm_[k]
+     2004601    0.00%        2  java.nio.Buffer.<init>
+     2004560    0.00%        2  G1CommittedRegionMap::num_active
+     2004062    0.00%        2  try_charge_memcg_[k]
+     2003910    0.00%        2  jni_GetObjectClass
+     2003610    0.00%        2  java.io.PrintStream.implWriteln
+     2003450    0.00%        2  java.lang.StringConcatHelper.prepend
+     2003430    0.00%        2  page_add_file_rmap_[k]
+     2003280    0.00%        2  java.io.BufferedWriter.write
+     2003221    0.00%        2  java.lang.Long.getChars
+     2003031    0.00%        2  java.io.BufferedWriter.implWrite
+     2002601    0.00%        2  ObjAllocator::initialize
+     2002590    0.00%        2  java.lang.invoke.LambdaForm$MH.0x00007f925800a800.invoke
+     2002520    0.00%        2  java.io.Writer.write
+     2001950    0.00%        2  java.lang.invoke.LambdaForm$MH.0x00007f9258009c00.invoke
+     2001590    0.00%        2  folio_add_lru_[k]
+     2000340    0.00%        2  MemAllocator::allocate
+     1999361    0.00%        2  java.lang.invoke.MethodType.checkPtypes
+     1969370    0.00%        2  page_remove_file_rmap_[k]
+     1399830    0.00%        1  ObjectSynchronizer::deflate_monitor_list
+     1189630    0.00%        1  hrtimer_start_range_ns_[k]
+     1141101    0.00%        1  hrtimer_sleeper_start_expires_[k]
+     1137360    0.00%        1  schedule_[k]
+     1137210    0.00%        1  futex_setup_timer_[k]
+     1130160    0.00%        1  get_timespec64_[k]
+     1116760    0.00%        1  __futex_queue_[k]
+     1109071    0.00%        1  Mutex::unlock
+     1108830    0.00%        1  futex_q_lock_[k]
+     1103901    0.00%        1  plist_add_[k]
+     1088060    0.00%        1  ObjectSynchronizer::is_async_deflation_needed
+     1079200    0.00%        1  xfs_trans_alloc?[xfs]_[k]
+     1077431    0.00%        1  hrtimer_init_sleeper_[k]
+     1070230    0.00%        1  __xfs_filemap_fault?[xfs]_[k]
+     1069130    0.00%        1  ktime_get_coarse_real_ts64_[k]
+     1066580    0.00%        1  xfs_iextents_copy?[xfs]_[k]
+     1063640    0.00%        1  wake_up_q_[k]
+     1060840    0.00%        1  RuntimeService::record_safepoint_begin
+     1058670    0.00%        1  AllocateHeap
+     1057850    0.00%        1  xfs_iunlock?[xfs]_[k]
+     1055131    0.00%        1  VMThread::wait_for_operation
+     1055020    0.00%        1  PerfString::set_string
+     1051890    0.00%        1  os::elapsedVTime
+     1048530    0.00%        1  avtab_search_node_[k]
+     1048100    0.00%        1  __x64_sys_getrusage_[k]
+     1047930    0.00%        1  GCId::current
+     1047870    0.00%        1  _itoa_word
+     1047101    0.00%        1  G1DirtyCardQueueSet::num_par_ids
+     1043530    0.00%        1  WatcherThread::run
+     1039881    0.00%        1  G1CollectedHeap::prepare_for_mutator_after_young_collection
+     1035290    0.00%        1  G1MergeHeapRootsTask::work
+     1031140    0.00%        1  sem_post@GLIBC_2.2.5
+     1029731    0.00%        1  HeapRegionClaimer::claim_region
+     1026800    0.00%        1  java_lang_ref_Reference::is_referent_field
+     1026560    0.00%        1  native_queued_spin_lock_slowpath_[k]
+     1025440    0.00%        1  G1STWIsAliveClosure::do_object_b
+     1024290    0.00%        1  StackFrameStream::StackFrameStream
+     1024001    0.00%        1  G1RemSet::scan_heap_roots
+     1022500    0.00%        1  SharedRuntime::on_slowpath_allocation_exit
+     1021661    0.00%        1  avc_lookup_[k]
+     1021340    0.00%        1  CompositeElapsedCounterSource::now
+     1021160    0.00%        1  frame::oops_interpreted_do
+     1018840    0.00%        1  nft_bitmap_lookup?[nf_tables]_[k]
+     1017630    0.00%        1  __page_set_anon_rmap_[k]
+     1016650    0.00%        1  get_page_from_freelist_[k]
+     1016590    0.00%        1  java.lang.String.charAt
+     1015000    0.00%        1  downgrade_write_[k]
+     1013571    0.00%        1  java.util.concurrent.locks.LockSupport.parkNanos
+     1012960    0.00%        1  kmem_cache_alloc_[k]
+     1012140    0.00%        1  nft_lookup_eval?[nf_tables]_[k]
+     1011671    0.00%        1  __siphash_aligned_[k]
+     1011321    0.00%        1  mem_cgroup_uncharge_skmem_[k]
+     1011290    0.00%        1  HeapRegionManager::par_iterate
+     1011120    0.00%        1  __build_skb_around_[k]
+     1011040    0.00%        1  jdk.internal.org.objectweb.asm.FieldWriter.<init>
+     1010560    0.00%        1  security_sk_free_[k]
+     1010550    0.00%        1  e1000_clean?[e1000]_[k]
+     1010161    0.00%        1  smp_call_function_many_cond_[k]
+     1009950    0.00%        1  ip_finish_output2_[k]
+     1008920    0.00%        1  kmem_cache_free_[k]
+     1008760    0.00%        1  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<299110ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 299110ul>::oop_access_barrier
+     1008660    0.00%        1  FreeListAllocator::reset

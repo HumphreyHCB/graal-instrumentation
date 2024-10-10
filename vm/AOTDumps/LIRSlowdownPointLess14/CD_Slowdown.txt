@@ -1,0 +1,1680 @@
+--- Execution profile ---
+Total samples       : 656543
+unknown_Java        : 21829 (3.32%)
+not_walkable_Java   : 88 (0.01%)
+
+--- 10217793456 ns (1.56%), 10212 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 8680818124 ns (1.32%), 8677 samples
+  [ 0] cd.RedBlackTree.treeMinimum
+  [ 1] cd.RedBlackTree$Node.successor
+  [ 2] cd.RedBlackTree.forEach
+  [ 3] cd.CollisionDetector.reduceCollisionSet
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 8365810921 ns (1.27%), 8361 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 7685625405 ns (1.17%), 7681 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 7532114302 ns (1.15%), 7528 samples
+  [ 0] cd.RedBlackTree.forEach
+  [ 1] cd.CollisionDetector.reduceCollisionSet
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 7192940526 ns (1.10%), 7189 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 6268222595 ns (0.95%), 6265 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 5877721565 ns (0.90%), 5876 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 5] cd.RedBlackTree.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 5146330391 ns (0.78%), 5145 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 5] cd.RedBlackTree.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 5107895458 ns (0.78%), 5105 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 4926359287 ns (0.75%), 4925 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 4856765482 ns (0.74%), 4854 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 4590674859 ns (0.70%), 4588 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 4534534377 ns (0.69%), 4532 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 3853189519 ns (0.59%), 3852 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 6] cd.RedBlackTree.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 3569240658 ns (0.54%), 3569 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] [unknown_Java]
+
+--- 3456757706 ns (0.53%), 3455 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 3449958984 ns (0.53%), 3448 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 3201176343 ns (0.49%), 3201 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 3124381502 ns (0.48%), 3123 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2983648444 ns (0.45%), 2982 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2955905445 ns (0.45%), 2956 samples
+  [ 0] som.Vector.<init>
+  [ 1] som.Vector.<init>
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 2647441311 ns (0.40%), 2646 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2522039821 ns (0.38%), 2522 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2454521161 ns (0.37%), 2454 samples
+  [ 0] java.lang.Object.<init>
+  [ 1] [unknown_Java]
+
+--- 2346215578 ns (0.36%), 2345 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2295237309 ns (0.35%), 2294 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2234150564 ns (0.34%), 2234 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 2232619190 ns (0.34%), 2232 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2122892960 ns (0.32%), 2122 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] [unknown_Java]
+
+--- 2010139403 ns (0.31%), 2009 samples
+  [ 0] som.Vector.append
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1999116909 ns (0.30%), 1999 samples
+  [ 0] cd.Vector2D.<init>
+  [ 1] [unknown_Java]
+
+--- 1970074207 ns (0.30%), 1969 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1967061702 ns (0.30%), 1967 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1961079975 ns (0.30%), 1961 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1942076194 ns (0.30%), 1941 samples
+  [ 0] cd.RedBlackTree$InsertResult.<init>
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1940712469 ns (0.30%), 1940 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 5] cd.RedBlackTree.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1841927984 ns (0.28%), 1841 samples
+  [ 0] cd.RedBlackTree$InsertResult.<init>
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1790582067 ns (0.27%), 1790 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1741049533 ns (0.27%), 1740 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1702061330 ns (0.26%), 1702 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.putIntoMap
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1701790526 ns (0.26%), 1701 samples
+  [ 0] cd.Motion.<init>
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1681100730 ns (0.26%), 1681 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1667855909 ns (0.25%), 1667 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1653886859 ns (0.25%), 1653 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1619495307 ns (0.25%), 1619 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1601796548 ns (0.24%), 1601 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1586119115 ns (0.24%), 1586 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.Vector2D.compareTo
+  [ 3] cd.RedBlackTree.findNode
+  [ 4] cd.RedBlackTree.get
+  [ 5] cd.CollisionDetector.putIntoMap
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1570869166 ns (0.24%), 1570 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1482999633 ns (0.23%), 1483 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.Vector2D.compareTo
+  [ 3] cd.RedBlackTree.findNode
+  [ 4] cd.RedBlackTree.get
+  [ 5] cd.CollisionDetector.putIntoMap
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1468997827 ns (0.22%), 1469 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1456123946 ns (0.22%), 1456 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1455682568 ns (0.22%), 1455 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] [unknown_Java]
+
+--- 1416092878 ns (0.22%), 1416 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1366780211 ns (0.21%), 1366 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1274346703 ns (0.19%), 1274 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1251995621 ns (0.19%), 1252 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.Vector2D.compareTo
+  [ 3] cd.RedBlackTree.findNode
+  [ 4] cd.RedBlackTree.get
+  [ 5] cd.CollisionDetector.putIntoMap
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1193595553 ns (0.18%), 1193 samples
+  [ 0] cd.RedBlackTree$Node.<init>
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1177162592 ns (0.18%), 1177 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.putIntoMap
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1173271662 ns (0.18%), 1173 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1145048846 ns (0.17%), 1145 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] [unknown_Java]
+
+--- 1137526478 ns (0.17%), 1137 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1135518884 ns (0.17%), 1135 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1120998379 ns (0.17%), 1121 samples
+  [ 0] cd.Vector2D.<init>
+  [ 1] cd.CollisionDetector.voxelHash
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1098964894 ns (0.17%), 1099 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1096962618 ns (0.17%), 1097 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.putIntoMap
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1049030349 ns (0.16%), 1049 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.Vector2D.compareTo
+  [ 3] cd.RedBlackTree.treeInsert
+  [ 4] cd.RedBlackTree.put
+  [ 5] cd.CollisionDetector.putIntoMap
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1044329733 ns (0.16%), 1044 samples
+  [ 0] cd.RedBlackTree$Entry.<init>
+  [ 1] cd.RedBlackTree.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 1036970602 ns (0.16%), 1037 samples
+  [ 0] cd.Vector2D.compareNumbers
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.Vector2D.compareTo
+  [ 3] cd.RedBlackTree.findNode
+  [ 4] cd.RedBlackTree.get
+  [ 5] cd.CollisionDetector.putIntoMap
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1031521354 ns (0.16%), 1031 samples
+  [ 0] cd.RedBlackTree$Node.<init>
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1022148362 ns (0.16%), 1022 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 6] cd.RedBlackTree.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1018096852 ns (0.16%), 1018 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 991999004 ns (0.15%), 992 samples
+  [ 0] cd.CollisionDetector.isInVoxel
+  [ 1] [unknown_Java]
+
+--- 988608467 ns (0.15%), 988 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 981449282 ns (0.15%), 981 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 962541272 ns (0.15%), 962 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 962256708 ns (0.15%), 962 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 960509775 ns (0.15%), 960 samples
+  [ 0] cd.RedBlackTree$Node.<init>
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 952081394 ns (0.14%), 952 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 952036882 ns (0.14%), 952 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 946316025 ns (0.14%), 946 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 6] cd.RedBlackTree.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 946295059 ns (0.14%), 946 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 5] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 6] cd.RedBlackTree.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 936494215 ns (0.14%), 936 samples
+  [ 0] cd.Motion.<init>
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 930147734 ns (0.14%), 930 samples
+  [ 0] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 1] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.reduceCollisionSet
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 907346518 ns (0.14%), 907 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 900459954 ns (0.14%), 900 samples
+  [ 0] cd.RedBlackTree$Entry.<init>
+  [ 1] cd.RedBlackTree.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 900045201 ns (0.14%), 900 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 900031699 ns (0.14%), 900 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 893430082 ns (0.14%), 893 samples
+  [ 0] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 1] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 2] som.Vector.forEach
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 893266771 ns (0.14%), 893 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 879074920 ns (0.13%), 879 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 868540439 ns (0.13%), 868 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 857396174 ns (0.13%), 857 samples
+  [ 0] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 1] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 2] som.Vector.forEach
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 852517271 ns (0.13%), 852 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 852147653 ns (0.13%), 852 samples
+  [ 0] cd.CollisionDetector.voxelHash
+  [ 1] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 2] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 3] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.reduceCollisionSet
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 851965076 ns (0.13%), 852 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 837485308 ns (0.13%), 837 samples
+  [ 0] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 1] cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  [ 2] som.Vector.forEach
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 836976711 ns (0.13%), 837 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 832162359 ns (0.13%), 832 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] cd.CollisionDetector.reduceCollisionSet
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 825014124 ns (0.13%), 825 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.Vector2D.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.putIntoMap
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+ 92500549665   14.09%    92470  cd.RedBlackTree.treeInsert
+ 70840577161   10.79%    70839  cd.CollisionDetector.isInVoxel
+ 57088521987    8.69%    57061  cd.CallSign.compareTo
+ 55455050664    8.44%    55453  cd.Vector2D.compareTo
+ 46592465382    7.09%    46579  itable stub
+ 37867334874    5.77%    37862  cd.RedBlackTree.findNode
+ 37453076836    5.70%    37452  cd.Vector2D.compareNumbers
+ 25532895164    3.89%    25532  cd.Vector2D.<init>
+ 23782301530    3.62%    23782  cd.RedBlackTree.put
+ 20604294004    3.14%    20603  cd.CollisionDetector.recurse
+ 16636747306    2.53%    16633  cd.RedBlackTree$InsertResult.<init>
+ 15633840169    2.38%    15633  cd.Vector2D.minus
+ 15439122957    2.35%    15439  cd.Vector2D.plus
+ 12400708992    1.89%    12400  som.Vector.<init>
+ 10863185448    1.65%    10858  cd.RedBlackTree.forEach
+ 10457309038    1.59%    10453  cd.RedBlackTree.treeMinimum
+ 10199617763    1.55%    10197  cd.RedBlackTree$Node.<init>
+  9416439799    1.43%     9415  java.lang.Object.<init>
+  8540015192    1.30%     8539  som.Vector.append
+  6447092602    0.98%     6446  cd.Vector3D.<init>
+  6394042382    0.97%     6395  cd.RedBlackTree.leftRotate
+  5899308476    0.90%     5896  cd.CollisionDetector.lambda$handleNewFrame$0
+  4792901006    0.73%     4792  cd.CollisionDetector.voxelHash
+  4568158927    0.70%     4570  cd.Simulator.simulate
+  3978240598    0.61%     3976  cd.Vector3D.minus
+  3866615439    0.59%     3865  cd.RedBlackTree$Entry.<init>
+  3720848417    0.57%     3719  cd.Motion.<init>
+  3431499394    0.52%     3431  cd.CollisionDetector.putIntoMap
+  2921065487    0.44%     2920  som.Vector.forEach
+  2509817019    0.38%     2509  cd.RedBlackTree$Node.successor
+  2435938015    0.37%     2437  cd.Aircraft.<init>
+  2034102860    0.31%     2033  cd.CollisionDetector.lambda$handleNewFrame$3
+  2015070734    0.31%     2014  cd.Motion.findIntersection
+  1979076106    0.30%     1978  cd.CollisionDetector$$Lambda.0x00007fbed0007820.apply
+  1918223009    0.29%     1918  cd.CollisionDetector.drawMotionOnVoxelMap
+  1657207060    0.25%     1657  cd.RedBlackTree.<init>
+  1635867223    0.25%     1635  cd.CollisionDetector.lambda$reduceCollisionSet$5
+  1536247081    0.23%     1536  cd.CollisionDetector.lambda$handleNewFrame$1
+  1506236822    0.23%     1506  cd.RedBlackTree.get
+  1486754499    0.23%     1486  cd.Vector3D.dot
+  1452396482    0.22%     1452  som.Vector.at
+  1179314568    0.18%     1179  cd.CollisionDetector$$Lambda.0x00007fbed000c810.apply
+  1059108536    0.16%     1059  cd.CollisionDetector$$Lambda.0x00007fbed000cc50.apply
+   971377740    0.15%      971  som.Vector.size
+   824623141    0.13%      825  cd.RedBlackTree.rightRotate
+   778493121    0.12%      778  cd.Vector3D.plus
+   723345322    0.11%      723  cd.Vector3D.times
+   531252390    0.08%      531  cd.CollisionDetector$$Lambda.0x00007fbed000ce70.apply
+   474189980    0.07%      474  cd.Motion.delta
+   455122483    0.07%      455  java.util.Arrays.copyOf
+   438025410    0.07%      438  cd.CollisionDetector.lambda$reduceCollisionSet$4
+   342001709    0.05%      342  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub74TruffleToLibGraalEntryPoints__validateCompilerOption__Ujs0fEGwUTHHbobHrcnio9EJ32org_002egraalvm_002ejniutils_002eJNI_0024JString31org_002egraalvm_002ejniutils_002eJNI_0024JNIEnv31org_002egraalvm_002ejniutils_002eJNI_0024JClasslS0__S0__
+   287700651    0.04%      282  G1ParScanThreadState::trim_queue_to_threshold
+   269144191    0.04%      269  cd.Collision.<init>
+   175075820    0.03%      170  _raw_spin_unlock_irqrestore_[k]
+   166063623    0.03%      166  cd.CollisionDetector$$Lambda.0x00007fbed000d090.apply
+   142034419    0.02%      142  java.lang.Boolean.booleanValue
+   133084574    0.02%      133  cd.Vector3D.squaredMagnitude
+    97055110    0.01%       96  SpinPause
+    69017773    0.01%       69  oop_disjoint_arraycopy
+    65800547    0.01%       65  __memset_avx2_unaligned_erms
+    64061726    0.01%       64  java.lang.Math.sqrt
+    55668877    0.01%       54  HeapRegionManager::par_iterate
+    52135100    0.01%       51  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+    52021322    0.01%       52  G1BarrierSetRuntime::write_ref_array_post_entry
+    44009857    0.01%       44  java.lang.invoke.DirectMethodHandle.allocateInstance
+    41347231    0.01%       41  clear_page_rep_[k]
+    38004044    0.01%       38  java.lang.System.arraycopy
+    37047386    0.01%       35  __futex_abstimed_wait_common
+    27676558    0.00%       27  G1ParScanThreadState::steal_and_trim_queue
+    24254643    0.00%       23  futex_wake_[k]
+    24022787    0.00%       24  Interpreter
+    23470728    0.00%       23  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+    23007905    0.00%       23  cd.CollisionDetector.handleNewFrame
+    22955148    0.00%       22  [vdso]
+    22370926    0.00%       21  clock_gettime@GLIBC_2.2.5
+    22000047    0.00%       22  CD.benchmark
+    21003856    0.00%       21  cd.CollisionDetector.reduceCollisionSet
+    19002280    0.00%       19  jdk.internal.misc.Unsafe.allocateInstance
+    18104003    0.00%       17  syscall_enter_from_user_mode_[k]
+    17340306    0.00%       17  FreeListAllocator::reset
+    16993294    0.00%       17  java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+    16352155    0.00%       16  __tls_get_addr
+    15357127    0.00%       15  G1CardSet::reset_table_scanner
+    14015705    0.00%       14  cd.CallSign.<init>
+    13317903    0.00%       13  G1ScanCollectionSetRegionClosure::do_heap_region
+    12999815    0.00%       13  java.lang.Math.min
+    12435086    0.00%       12  malloc
+    11003161    0.00%       11  G1BarrierSet::invalidate
+    11000153    0.00%       11  java.lang.Object.getClass
+    10206491    0.00%       10  WorkerThread::run
+    10049703    0.00%       10  do_user_addr_fault_[k]
+    10023862    0.00%       10  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<598116ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 598116ul>::oop_access_barrier
+    10006082    0.00%       10  _dl_update_slotinfo
+    10005263    0.00%       10  cd.CollisionDetector$$Lambda.0x00007fbed000d090.<init>
+    10003813    0.00%       10  cd.CollisionDetector$$Lambda.0x00007fbed000ce70.<init>
+     9995803    0.00%       10  Stub<AMD64MathStub.sin>
+     9303723    0.00%        9  G1ParCopyClosure<(G1Barrier)0, false>::do_oop
+     9007083    0.00%        9  cd.CollisionDetector$$Lambda.0x00007fbed0007820.<init>
+     9004181    0.00%        9  G1CollectedHeap::unsafe_max_tlab_alloc
+     9002294    0.00%        9  cd.Simulator.<init>
+     8990665    0.00%        9  /home/hburchell/Repos/graal-dev/graal-instrumentation/sdk/mxbuild/linux-amd64/GRAALVM_LIBGRAAL_JAVA21/graalvm-libgraal-openjdk-21.0.2+13.1/lib/libjvmcicompiler.so
+     8986101    0.00%        9  Stub<AMD64MathStub.cos>
+     8698045    0.00%        8  os::javaTimeNanos
+     8631693    0.00%        8  VMError::is_error_reported
+     8558874    0.00%        8  __get_user_8_[k]
+     8544612    0.00%        8  pthread_cond_timedwait@@GLIBC_2.3.2
+     8471921    0.00%        8  srso_safe_ret_[k]
+     8253000    0.00%        8  futex_hash_[k]
+     8186772    0.00%        8  _int_malloc
+     8180321    0.00%        8  G1MergeHeapRootsTask::G1MergeCardSetClosure::do_heap_region
+     8133641    0.00%        8  HeapRegionType::get_trace_type
+     8075751    0.00%        8  G1FromCardCache::clear
+     8026580    0.00%        8  HeapRegionManager::allocate_free_region
+     8009162    0.00%        8  _invokeBasic
+     8005713    0.00%        8  G1CollectionSet::add_eden_region
+     8003270    0.00%        8  CardTableBarrierSet::on_slowpath_allocation_exit
+     8002582    0.00%        8  JVMCIRuntime::new_instance_common
+     8002251    0.00%        8  java.lang.invoke.MethodHandle.invokeBasic
+     7581743    0.00%        7  PlatformMonitor::wait
+     7171331    0.00%        7  ConstantPool::name_and_type_ref_index_at
+     7137091    0.00%        7  __memmove_sse2_unaligned_erms
+     7049020    0.00%        7  __memmove_avx_unaligned_erms
+     7048145    0.00%        7  G1CardTable::g1_mark_as_young
+     7022630    0.00%        7  charge_memcg_[k]
+     7000092    0.00%        7  update_get_addr
+     6995195    0.00%        7  __GI___pthread_mutex_trylock
+     6467763    0.00%        6  futex_wait_[k]
+     6381780    0.00%        6  __x64_sys_futex_[k]
+     6322901    0.00%        6  futex_q_lock_[k]
+     6170912    0.00%        6  G1BatchedTask::work
+     6155062    0.00%        6  FreeCSetClosure::do_heap_region
+     6145821    0.00%        6  __strlen_avx2
+     6134761    0.00%        6  _int_free
+     6132565    0.00%        6  frame::oops_interpreted_do
+     6125381    0.00%        6  G1CodeRootSet::clear
+     6042282    0.00%        6  __vfprintf_internal
+     6006811    0.00%        6  Run.printResult
+     6004403    0.00%        6  G1NUMA::index_of_current_thread
+     6002740    0.00%        6  G1CollectedHeap::fill_with_dummy_object
+     5528160    0.00%        5  PeriodicTask::real_time_tick
+     5418621    0.00%        5  PerfLongVariant::sample
+     5364820    0.00%        5  copy_user_generic_string_[k]
+     5345671    0.00%        5  sched_submit_work_[k]
+     5323360    0.00%        5  WatcherThread::sleep
+     5300961    0.00%        5  __audit_syscall_entry_[k]
+     5180902    0.00%        5  plist_add_[k]
+     5168190    0.00%        5  futex_wake_mark_[k]
+     5162852    0.00%        5  do_syscall_64_[k]
+     5145942    0.00%        5  G1Policy::phase_times
+     5145891    0.00%        5  Method::bcp_from
+     5142561    0.00%        5  G1RootProcessor::process_vm_roots
+     5088690    0.00%        5  HeapRegionClaimer::claim_region
+     5087721    0.00%        5  OopStorage::BasicParState::claim_next_segment
+     5012841    0.00%        5  sun.nio.cs.UTF_8$Encoder.encodeArrayLoop
+     5006090    0.00%        5  HeapRegionRemSet::clear_fcc
+     5005931    0.00%        5  ObjArrayAllocator::initialize
+     5004112    0.00%        5  HSpaceCounters::update_used
+     5003522    0.00%        5  MemAllocator::allocate
+     5002352    0.00%        5  java.lang.invoke.DirectMethodHandle.constructorMethod
+     5002091    0.00%        5  zap_pte_range_[k]
+     5002053    0.00%        5  G1MonitoringSupport::update_eden_size
+     4998850    0.00%        5  cd.CollisionDetector$$Lambda.0x00007fbed000ca30.<init>
+     4349581    0.00%        4  finish_task_switch.isra.0_[k]
+     4308231    0.00%        4  __put_user_8_[k]
+     4302832    0.00%        4  schedule_[k]
+     4296041    0.00%        4  futex_wait_queue_[k]
+     4274863    0.00%        4  _raw_spin_unlock_[k]
+     4270230    0.00%        4  __GI___pthread_mutex_unlock_usercnt
+     4122384    0.00%        4  _raw_spin_lock_[k]
+     4119371    0.00%        4  G1GCPhaseTimes::phase_name
+     4119130    0.00%        4  frame::sender_for_interpreter_frame
+     4115001    0.00%        4  NamedThread::is_Named_thread
+     4107021    0.00%        4  G1RemSet::prepare_region_for_scan
+     4103310    0.00%        4  CompositeElapsedCounterSource::seconds
+     4101162    0.00%        4  __new_sem_wait_slow64.constprop.0
+     4098980    0.00%        4  TruncatedSeq::add
+     4097412    0.00%        4  sem_post@GLIBC_2.2.5
+     4088601    0.00%        4  G1DirtyCardQueueSet::concatenate_log_and_stats
+     4073620    0.00%        4  ___pthread_cond_broadcast
+     4044430    0.00%        4  pthread_mutex_lock@@GLIBC_2.2.5
+     4036951    0.00%        4  __do_softirq_[k]
+     4033250    0.00%        4  CollectedHeap::fill_with_object
+     4031591    0.00%        4  G1DirtyCardQueueSet::num_par_ids
+     4012810    0.00%        4  G1Allocator::unsafe_max_tlab_alloc
+     4007072    0.00%        4  java.lang.invoke.LambdaForm$MH.0x00007fbed0010800.invoke
+     4004861    0.00%        4  java.lang.invoke.DirectMethodHandle$Holder.invokeStatic
+     4004732    0.00%        4  InstanceKlass::allocate_instance
+     4003470    0.00%        4  ResourceArea::rollback_to
+     4003262    0.00%        4  JfrAllocationTracer::JfrAllocationTracer
+     4002941    0.00%        4  G1CollectedHeap::retire_mutator_alloc_region
+     4002880    0.00%        4  G1Policy::should_allocate_mutator_region
+     4002060    0.00%        4  JfrObjectAllocationSample::send_event
+     4001801    0.00%        4  I2C/C2I adapters(0xbb)
+     4000240    0.00%        4  cd.CollisionDetector$$Lambda.0x00007fbed000c810.<init>
+     3295981    0.00%        3  get_timespec64_[k]
+     3280582    0.00%        3  __GI___pthread_enable_asynccancel
+     3239142    0.00%        3  __condvar_dec_grefs
+     3225641    0.00%        3  get_futex_key_[k]
+     3216360    0.00%        3  rseq_ip_fixup_[k]

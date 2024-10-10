@@ -1,0 +1,998 @@
+--- Execution profile ---
+Total samples       : 1700841
+unknown_Java        : 317312 (18.66%)
+not_walkable_Java   : 17 (0.00%)
+deoptimization      : 2 (0.00%)
+
+--- 250871325442 ns (14.75%), 250838 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] [unknown_Java]
+
+--- 37569541913 ns (2.21%), 37564 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37473283393 ns (2.20%), 37466 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37444370064 ns (2.20%), 37439 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37247772692 ns (2.19%), 37242 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37188586998 ns (2.19%), 37181 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37155993484 ns (2.18%), 37153 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37141864779 ns (2.18%), 37137 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37126896258 ns (2.18%), 37122 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37111645476 ns (2.18%), 37107 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37068370651 ns (2.18%), 37063 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37035782347 ns (2.18%), 37031 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37033650616 ns (2.18%), 37028 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36948520202 ns (2.17%), 36942 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36900921861 ns (2.17%), 36895 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36895540489 ns (2.17%), 36890 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36864195925 ns (2.17%), 36861 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36853817986 ns (2.17%), 36846 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36832242964 ns (2.17%), 36827 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36824347193 ns (2.16%), 36819 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36698571481 ns (2.16%), 36695 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36601372984 ns (2.15%), 36596 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36531963861 ns (2.15%), 36527 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36527855111 ns (2.15%), 36522 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 33884943509 ns (1.99%), 33881 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 33820115496 ns (1.99%), 33814 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18728481888 ns (1.10%), 18724 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18627496853 ns (1.09%), 18625 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18583864804 ns (1.09%), 18581 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18520891181 ns (1.09%), 18518 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18225747468 ns (1.07%), 18222 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 17127581610 ns (1.01%), 17125 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 16863612389 ns (0.99%), 16862 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 15283830926 ns (0.90%), 15281 samples
+  [ 0] nbody.Body.getMass
+  [ 1] [unknown_Java]
+
+--- 13558963602 ns (0.80%), 13557 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 9529287786 ns (0.56%), 9528 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 7757178873 ns (0.46%), 7756 samples
+  [ 0] nbody.Body.getVZ
+  [ 1] [unknown_Java]
+
+--- 6495011485 ns (0.38%), 6494 samples
+  [ 0] nbody.Body.getVY
+  [ 1] [unknown_Java]
+
+--- 6245800400 ns (0.37%), 6245 samples
+  [ 0] nbody.Body.setVY
+  [ 1] [unknown_Java]
+
+--- 6219219865 ns (0.37%), 6218 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6217811467 ns (0.37%), 6217 samples
+  [ 0] nbody.Body.setVZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6202203548 ns (0.36%), 6202 samples
+  [ 0] nbody.Body.getX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6163036423 ns (0.36%), 6162 samples
+  [ 0] nbody.Body.getZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6151867805 ns (0.36%), 6151 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 6140833127 ns (0.36%), 6140 samples
+  [ 0] nbody.Body.getVX
+  [ 1] [unknown_Java]
+
+--- 6122926514 ns (0.36%), 6122 samples
+  [ 0] nbody.Body.setVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6075841172 ns (0.36%), 6075 samples
+  [ 0] nbody.Body.getY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 4740627919 ns (0.28%), 4740 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 4631720476 ns (0.27%), 4631 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 4597662617 ns (0.27%), 4597 samples
+  [ 0] nbody.Body.getZ
+  [ 1] [unknown_Java]
+
+--- 4565802016 ns (0.27%), 4565 samples
+  [ 0] nbody.Body.getY
+  [ 1] [unknown_Java]
+
+--- 4264247643 ns (0.25%), 4264 samples
+  [ 0] nbody.Body.getX
+  [ 1] [unknown_Java]
+
+--- 4114622252 ns (0.24%), 4114 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3411447435 ns (0.20%), 3411 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3369136814 ns (0.20%), 3369 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3280283317 ns (0.19%), 3280 samples
+  [ 0] nbody.Body.setVZ
+  [ 1] [unknown_Java]
+
+--- 3210387340 ns (0.19%), 3210 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3210386069 ns (0.19%), 3210 samples
+  [ 0] nbody.Body.getVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3200420893 ns (0.19%), 3200 samples
+  [ 0] nbody.Body.getVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3197440475 ns (0.19%), 3197 samples
+  [ 0] nbody.Body.setVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3190456869 ns (0.19%), 3190 samples
+  [ 0] nbody.Body.getVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3186416065 ns (0.19%), 3186 samples
+  [ 0] nbody.Body.setVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3183262914 ns (0.19%), 3183 samples
+  [ 0] nbody.Body.setVZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3182457519 ns (0.19%), 3182 samples
+  [ 0] nbody.Body.getVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3182033249 ns (0.19%), 3181 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3181025354 ns (0.19%), 3180 samples
+  [ 0] nbody.Body.setVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3175191361 ns (0.19%), 3175 samples
+  [ 0] nbody.Body.setVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3174425972 ns (0.19%), 3174 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3174396309 ns (0.19%), 3174 samples
+  [ 0] nbody.Body.getZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3164457543 ns (0.19%), 3163 samples
+  [ 0] nbody.Body.setVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3158480075 ns (0.19%), 3158 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3158372931 ns (0.19%), 3158 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3156771265 ns (0.19%), 3157 samples
+  [ 0] nbody.Body.setVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3152554444 ns (0.19%), 3152 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3147798537 ns (0.19%), 3147 samples
+  [ 0] nbody.Body.getVX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3147353810 ns (0.19%), 3147 samples
+  [ 0] nbody.Body.setVX
+  [ 1] [unknown_Java]
+
+--- 3136771420 ns (0.18%), 3135 samples
+  [ 0] nbody.Body.getX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3136526978 ns (0.18%), 3136 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3133576362 ns (0.18%), 3133 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3127488679 ns (0.18%), 3127 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3126522010 ns (0.18%), 3125 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3124360883 ns (0.18%), 3124 samples
+  [ 0] nbody.Body.getVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3119424745 ns (0.18%), 3119 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3118515058 ns (0.18%), 3118 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3118414882 ns (0.18%), 3118 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3117458288 ns (0.18%), 3117 samples
+  [ 0] nbody.Body.getVZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3112385025 ns (0.18%), 3112 samples
+  [ 0] nbody.Body.setVY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3111398219 ns (0.18%), 3111 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3106694698 ns (0.18%), 3106 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3101296589 ns (0.18%), 3101 samples
+  [ 0] nbody.Body.getZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3100493662 ns (0.18%), 3100 samples
+  [ 0] nbody.Body.getX
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3097467210 ns (0.18%), 3097 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3095439136 ns (0.18%), 3095 samples
+  [ 0] nbody.Body.getY
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3094381881 ns (0.18%), 3094 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3093519715 ns (0.18%), 3093 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3091454718 ns (0.18%), 3091 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3089459114 ns (0.18%), 3089 samples
+  [ 0] nbody.Body.setVZ
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3087535669 ns (0.18%), 3087 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3085513870 ns (0.18%), 3085 samples
+  [ 0] nbody.Body.getMass
+  [ 1] nbody.NBodySystem.advance
+  [ 2] NBody.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3083557551 ns (0.18%), 3083 samples
+  [ 0] nbody.NBodySystem.advance
+  [ 1] NBody.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+1433593875167   84.27%  1433385  nbody.NBodySystem.advance
+ 55586513731    3.27%    55579  nbody.Body.getMass
+ 23564477909    1.39%    23561  nbody.Body.getVX
+ 23094411660    1.36%    23091  nbody.Body.getVY
+ 23079571957    1.36%    23076  nbody.Body.getVZ
+ 23061102744    1.36%    23057  nbody.Body.getX
+ 23040204089    1.35%    23037  nbody.Body.getZ
+ 22861491436    1.34%    22858  nbody.Body.getY
+ 18900818205    1.11%    18898  nbody.Body.setVY
+ 18818822366    1.11%    18817  nbody.Body.setVZ
+ 18788949607    1.10%    18786  nbody.Body.setVX
+  4810716958    0.28%     4810  nbody.Body.setY
+  4705663701    0.28%     4705  nbody.Body.setX
+  4660757364    0.27%     4660  nbody.Body.setZ
+  1523296462    0.09%     1523  NBody.innerBenchmarkLoop
+   136567077    0.01%      136  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub74TruffleToLibGraalEntryPoints__validateCompilerOption__Ujs0fEGwUTHHbobHrcnio9EJ32org_002egraalvm_002ejniutils_002eJNI_0024JString31org_002egraalvm_002ejniutils_002eJNI_0024JNIEnv31org_002egraalvm_002ejniutils_002eJNI_0024JClasslS0__S0__
+    56411894    0.00%       53  _raw_spin_unlock_irqrestore_[k]
+    47213711    0.00%       43  __futex_abstimed_wait_common
+    46532161    0.00%       43  [vdso]
+    41665793    0.00%       38  clock_gettime@GLIBC_2.2.5
+    20958886    0.00%       20  pthread_cond_timedwait@@GLIBC_2.3.2
+    19760036    0.00%       18  copy_user_generic_string_[k]
+    19450147    0.00%       17  Interpreter
+    17989756    0.00%       18  do_user_addr_fault_[k]
+    16658825    0.00%       15  clear_page_rep_[k]
+    16261943    0.00%       15  PerfLongVariant::sample
+    16239328    0.00%       15  __put_user_8_[k]
+    14221416    0.00%       13  syscall_enter_from_user_mode_[k]
+    14116025    0.00%       13  PlatformMonitor::wait
+    13749224    0.00%       13  srso_safe_ret_[k]
+    13621442    0.00%       12  futex_wake_[k]
+    13355310    0.00%       12  get_timespec64_[k]
+    13156663    0.00%       12  WatcherThread::sleep
+    12828193    0.00%       12  StatSamplerTask::task
+    11946682    0.00%       12  rseq_ip_fixup_[k]
+    11673494    0.00%       10  PeriodicTask::real_time_tick
+    11410694    0.00%       11  Monitor::wait_without_safepoint_check
+    11233241    0.00%       10  __x64_sys_futex_[k]
+    10896802    0.00%       10  futex_wait_[k]
+    10880623    0.00%       10  VMError::is_error_reported
+    10573311    0.00%       10  zap_pte_range_[k]
+     8646173    0.00%        8  os::javaTimeNanos
+     8553054    0.00%        8  __tls_get_addr
+     8155823    0.00%        7  finish_task_switch.isra.0_[k]
+     7434814    0.00%        6  __get_user_8_[k]
+     7255712    0.00%        6  _invokeBasic
+     6646843    0.00%        5  I2C/C2I adapters(0xb)
+     6567311    0.00%        6  __audit_syscall_entry_[k]
+     6501101    0.00%        6  rseq_update_cpu_id_[k]
+     5938571    0.00%        5  java.lang.invoke.LambdaForm$MH.0x00007f506400a800.invoke
+     5676301    0.00%        3  jdk.internal.misc.Unsafe.allocateUninitializedArray
+     5433360    0.00%        5  __lll_lock_wake
+     5412102    0.00%        5  ObjectSynchronizer::is_async_deflation_needed
+     5388350    0.00%        5  get_futex_key_[k]
+     5179661    0.00%        4  __condvar_dec_grefs
+     5131651    0.00%        5  __GI___pthread_disable_asynccancel
+     5070791    0.00%        5  charge_memcg_[k]
+     5045834    0.00%        5  __memmove_avx_unaligned_erms
+     5002031    0.00%        5  nbody.NBodySystem.energy
+     4497610    0.00%        4  futex_wait_setup_[k]
+     4489921    0.00%        4  _raw_spin_lock_[k]
+     4413341    0.00%        4  do_syscall_64_[k]
+     4391142    0.00%        4  do_futex_[k]
+     4372954    0.00%        3  G1ServiceThread::wait_for_task
+     4240590    0.00%        4  ___pthread_mutex_unlock
+     4234680    0.00%        4  _pthread_cleanup_push@@GLIBC_2.34
+     4099501    0.00%        3  java.lang.invoke.LambdaForm$MH.0x00007f5064009c00.invoke
+     3988891    0.00%        4  __rcu_read_unlock_[k]
+     3960951    0.00%        3  __pthread_mutex_cond_lock
+     3407222    0.00%        2  I2C/C2I adapters(0xb7ea)
+     3307482    0.00%        3  __get_user_nocheck_4_[k]
+     3253612    0.00%        3  schedule_[k]
+     3250200    0.00%        3  futex_get_value_locked_[k]
+     3237790    0.00%        3  __GI___pthread_mutex_unlock_usercnt
+     3224171    0.00%        3  java.lang.invoke.DirectMethodHandle$Holder.invokeStatic
+     3220531    0.00%        3  _copy_from_user_[k]
+     3212950    0.00%        3  __futex_queue_[k]
+     3010071    0.00%        3  __handle_mm_fault_[k]
+     3008422    0.00%        3  jdk.internal.misc.Blocker.begin
+     3006650    0.00%        3  nbody.NBodySystem.createBodies
+     2994801    0.00%        3  next_uptodate_page_[k]
+     2975751    0.00%        3  JVMCIEnv::has_pending_exception
+     2851581    0.00%        2  java.lang.Math.round
+     2837921    0.00%        2  InstanceKlass::array_klass
+     2831542    0.00%        2  java.lang.String.getBytes
+     2685230    0.00%        1  java.lang.invoke.LambdaForm$MH.0x00007f5064008000.invoke
+     2513131    0.00%        2  java.io.PrintStream.implWriteln
+     2412091    0.00%        1  java.nio.CharBuffer.wrap
+     2350551    0.00%        1  java.lang.System.nanoTime
+     2344271    0.00%        2  pthread_mutex_lock@@GLIBC_2.2.5
+     2326800    0.00%        2  InlineCacheBuffer::is_empty
+     2301400    0.00%        3  Mutex::lock_without_safepoint_check
+     2264211    0.00%        2  plist_add_[k]
+     2229890    0.00%        2  schedule_debug.constprop.0_[k]
+     2225250    0.00%        2  __hrtimer_init_[k]
+     2204861    0.00%        2  futex_wait_queue_[k]
+     2198740    0.00%        2  __rseq_handle_notify_resume_[k]
+     2196411    0.00%        2  syscall_exit_work_[k]
+     2186690    0.00%        2  syscall_trace_enter.constprop.0_[k]
+     2179132    0.00%        2  futex_setup_timer_[k]
+     2161112    0.00%        2  futex_hash_[k]
+     2158840    0.00%        2  ConcurrentGCThread::should_terminate
+     2158581    0.00%        2  rseq_get_rseq_cs_[k]
+     2157520    0.00%        2  _raw_spin_unlock_[k]
+     2153121    0.00%        2  os::elapsed_counter
+     2117370    0.00%        2  avtab_search_node_[k]
+     2106101    0.00%        2  __do_sys_getrusage_[k]
+     2080271    0.00%        1  java.io.FileOutputStream.write
+     2070531    0.00%        1  java.lang.StringConcatHelper.mix
+     2035741    0.00%        2  get_mem_cgroup_from_mm_[k]
+     2016930    0.00%        2  get_current_thread
+     2014490    0.00%        2  folio_add_lru_vma_[k]
+     2013580    0.00%        2  page_add_file_rmap_[k]
+     2011290    0.00%        2  wp_page_copy_[k]
+     2010661    0.00%        2  __do_softirq_[k]
+     2010091    0.00%        2  pipe_write_[k]
+     2006411    0.00%        2  java.io.BufferedOutputStream.implFlush
+     2005190    0.00%        2  java.lang.Long.getChars
+     2004481    0.00%        2  java.io.OutputStreamWriter.write
+     2004370    0.00%        2  sun.nio.cs.StreamEncoder.flushBuffer
+     2003900    0.00%        2  sun.nio.cs.StreamEncoder.implWrite
+     2001181    0.00%        2  jdk.internal.org.objectweb.asm.Symbol.<init>
+     1997551    0.00%        2  readConfiguration0
+     1995501    0.00%        2  /home/hburchell/Repos/graal-dev/graal-instrumentation/sdk/mxbuild/linux-amd64/GRAALVM_LIBGRAAL_JAVA21/graalvm-libgraal-openjdk-21.0.2+13.1/lib/libjvmcicompiler.so
+     1990320    0.00%        2  smp_call_function_many_cond_[k]
+     1526880    0.00%        1  java.lang.Long.stringSize
+     1481920    0.00%        2  VMThread::wait_for_operation
+     1349150    0.00%        1  java.lang.ref.ReferenceQueue.await
+     1325690    0.00%        1  SignatureHandlerLibrary::add
+     1213741    0.00%        1  SharedRuntime::find_callee_method
+     1151820    0.00%        1  hrtimer_sleeper_start_expires_[k]
+     1151650    0.00%        1  Unsafe_CompareAndSetInt
+     1150300    0.00%        1  hrtimer_init_sleeper_[k]
+     1137340    0.00%        1  syscall_exit_to_user_mode_prepare_[k]
+     1121870    0.00%        1  __GI___pthread_self
+     1111930    0.00%        1  syscall_exit_to_user_mode_[k]
+     1091770    0.00%        1  clock_gettime@plt
+     1090630    0.00%        1  update_sg_lb_stats_[k]
+     1084310    0.00%        1  __GI___pthread_enable_asynccancel
+     1084290    0.00%        1  ktime_add_safe_[k]
+     1082790    0.00%        1  __condvar_cancel_waiting
+     1079010    0.00%        1  JVMCICompiler::on_empty_queue
+     1073410    0.00%        1  __list_add_valid_[k]
+     1072530    0.00%        1  __schedule_[k]
+     1068410    0.00%        1  do_wp_page_[k]
+     1065361    0.00%        1  hrtimer_cancel_[k]
+     1065110    0.00%        1  __getrusage
+     1063840    0.00%        1  mmput_[k]
+     1063491    0.00%        1  ktime_get_coarse_real_ts64_[k]
+     1063420    0.00%        1  _copy_to_user_[k]
+     1048991    0.00%        1  JVMCI::compiler_runtime
+     1026660    0.00%        1  metaspace::Metachunk::ensure_committed
+     1022461    0.00%        1  vma_set_page_prot_[k]
+     1019351    0.00%        1  jdk.internal.loader.URLClassPath.getResource
+     1018591    0.00%        1  java.lang.invoke.DirectMethodHandle.internalMemberName
+     1017120    0.00%        1  find_vma_[k]
+     1016260    0.00%        1  blk_cgroup_congested_[k]
+     1015000    0.00%        1  __mod_lruvec_state_[k]
+     1012301    0.00%        1  bool AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<35938406ul, G1BarrierSet>, (AccessInternal::BarrierType)8, 35938406ul>::oop_access_barrier<HeapWordImpl*>
+     1010450    0.00%        1  filemap_map_pages_[k]
+     1009270    0.00%        1  prepare_alloc_pages.constprop.0_[k]
+     1008660    0.00%        1  inode_security_[k]
+     1008031    0.00%        1  __mod_node_page_state_[k]
+     1007870    0.00%        1  ptep_clear_flush_[k]
+     1006841    0.00%        1  rmqueue_pcplist.constprop.0_[k]
+     1006560    0.00%        1  __alloc_pages_[k]
+     1006530    0.00%        1  avc_lookup_[k]
+     1006471    0.00%        1  ClassFileParser::~ClassFileParser
+     1006420    0.00%        1  java.lang.invoke.LambdaFormBuffer.growNames
+     1005861    0.00%        1  neigh_fill_info_[k]
+     1005551    0.00%        1  bio_copy_kern_endio_read_[k]
+     1005520    0.00%        1  xfs_trans_unreserve_and_mod_sb?[xfs]_[k]
+     1005520    0.00%        1  scsi_run_queue_async_[k]
+     1005200    0.00%        1  __fget_light_[k]
+     1005181    0.00%        1  __mem_cgroup_charge_[k]
+     1004960    0.00%        1  jdk.internal.org.objectweb.asm.Frame.execute
+     1004920    0.00%        1  _raw_spin_unlock_irq_[k]
+     1004880    0.00%        1  malloc
+     1004861    0.00%        1  Method::allocate
+     1004700    0.00%        1  java.io.PrintStream.implWrite
+     1004360    0.00%        1  HandleMark::pop_and_restore
+     1004201    0.00%        1  vfs_write_[k]
+     1004160    0.00%        1  java.util.concurrent.ConcurrentHashMap.addCount
+     1004100    0.00%        1  java.io.BufferedWriter.newLine
+     1004021    0.00%        1  java_lang_ref_Reference::is_referent_field
+     1003850    0.00%        1  c2v_lookupType
+     1003811    0.00%        1  __calloc
+     1003610    0.00%        1  __folio_alloc_[k]
+     1003500    0.00%        1  java.nio.ByteBuffer.position
+     1003440    0.00%        1  write
+     1003230    0.00%        1  java.lang.StringLatin1.charAt
+     1002940    0.00%        1  jdk.internal.util.Preconditions.checkFromIndexSize
+     1002830    0.00%        1  sun.nio.cs.StreamEncoder.writeBytes
+     1002811    0.00%        1  java.io.PrintStream.write
+     1002700    0.00%        1  java.lang.Math.min
+     1002641    0.00%        1  sun.nio.cs.StreamEncoder.growByteBufferIfNeeded
+     1002541    0.00%        1  InterpreterRuntime::frequency_counter_overflow_inner
+     1002520    0.00%        1  java.io.BufferedOutputStream.growIfNeeded
+     1002510    0.00%        1  jdk.internal.org.objectweb.asm.Frame.pop
+     1002500    0.00%        1  Klass::next_sibling

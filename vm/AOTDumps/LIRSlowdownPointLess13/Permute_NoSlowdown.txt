@@ -1,0 +1,1530 @@
+--- Execution profile ---
+Total samples       : 226311
+unknown_Java        : 11546 (5.10%)
+not_walkable_Java   : 3 (0.00%)
+
+--- 10975461859 ns (4.85%), 10974 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 7775050370 ns (3.43%), 7774 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 7625177573 ns (3.37%), 7624 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 7552149133 ns (3.34%), 7551 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 7227953906 ns (3.19%), 7227 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 6959017151 ns (3.07%), 6958 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 6858084992 ns (3.03%), 6857 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 6454025188 ns (2.85%), 6453 samples
+  [ 0] Permute.permute
+  [ 1] [unknown_Java]
+
+--- 5090919185 ns (2.25%), 5090 samples
+  [ 0] Permute.swap
+  [ 1] [unknown_Java]
+
+--- 4046766476 ns (1.79%), 4046 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 3895575904 ns (1.72%), 3895 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 3891541994 ns (1.72%), 3891 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 3829605558 ns (1.69%), 3829 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 3643550212 ns (1.61%), 3643 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 3527406205 ns (1.56%), 3527 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2810437948 ns (1.24%), 2810 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2791466089 ns (1.23%), 2791 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2671546534 ns (1.18%), 2671 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2523404918 ns (1.11%), 2523 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2505269557 ns (1.11%), 2505 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2420385156 ns (1.07%), 2420 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2375394199 ns (1.05%), 2375 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2151309120 ns (0.95%), 2151 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1960265816 ns (0.87%), 1960 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1891291190 ns (0.84%), 1891 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1889305756 ns (0.83%), 1889 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1854275959 ns (0.82%), 1854 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1820221216 ns (0.80%), 1820 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1802441738 ns (0.80%), 1802 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1714214296 ns (0.76%), 1714 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1572252569 ns (0.69%), 1572 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1472237520 ns (0.65%), 1472 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1451198746 ns (0.64%), 1451 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1451182713 ns (0.64%), 1451 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1431182283 ns (0.63%), 1431 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1374222484 ns (0.61%), 1374 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1347155912 ns (0.60%), 1347 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 1313221525 ns (0.58%), 1313 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 1311183844 ns (0.58%), 1311 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1293212288 ns (0.57%), 1293 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1276225239 ns (0.56%), 1276 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1276183637 ns (0.56%), 1276 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1270198098 ns (0.56%), 1270 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1243243836 ns (0.55%), 1243 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1235146655 ns (0.55%), 1235 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1186212129 ns (0.52%), 1186 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1100163568 ns (0.49%), 1100 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1098158877 ns (0.49%), 1098 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 996133606 ns (0.44%), 996 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 986167545 ns (0.44%), 986 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 961161522 ns (0.42%), 961 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 959169466 ns (0.42%), 959 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 906098871 ns (0.40%), 906 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 879092550 ns (0.39%), 879 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 816139499 ns (0.36%), 816 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 793170338 ns (0.35%), 793 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 789085235 ns (0.35%), 789 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 766097764 ns (0.34%), 766 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 734128760 ns (0.32%), 734 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 720122087 ns (0.32%), 720 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 717100400 ns (0.32%), 717 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 714064410 ns (0.32%), 714 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 709105429 ns (0.31%), 709 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 691114380 ns (0.31%), 691 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 689107983 ns (0.30%), 689 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 685120688 ns (0.30%), 685 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 683113714 ns (0.30%), 683 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 683084905 ns (0.30%), 683 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 675073480 ns (0.30%), 675 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 672069757 ns (0.30%), 672 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 671137202 ns (0.30%), 671 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 657104570 ns (0.29%), 657 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 648059655 ns (0.29%), 648 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 646145345 ns (0.29%), 646 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 645070923 ns (0.28%), 645 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 642078708 ns (0.28%), 642 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 635048947 ns (0.28%), 635 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 633069432 ns (0.28%), 633 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 626052155 ns (0.28%), 626 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 621122872 ns (0.27%), 621 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 611106912 ns (0.27%), 611 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 610066339 ns (0.27%), 610 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 604081506 ns (0.27%), 604 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 595058849 ns (0.26%), 595 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 587078815 ns (0.26%), 587 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 587070691 ns (0.26%), 587 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 537966536 ns (0.24%), 538 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 529111287 ns (0.23%), 529 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 513057842 ns (0.23%), 513 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 507065132 ns (0.22%), 507 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 500086845 ns (0.22%), 500 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 490076465 ns (0.22%), 490 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 489078537 ns (0.22%), 489 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 475085053 ns (0.21%), 475 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 470096682 ns (0.21%), 470 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 455105388 ns (0.20%), 455 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 441041749 ns (0.19%), 441 samples
+  [ 0] Permute.swap
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.permute
+  [ 7] Permute.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 437087576 ns (0.19%), 437 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 385063083 ns (0.17%), 385 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 384036967 ns (0.17%), 384 samples
+  [ 0] Permute.permute
+  [ 1] Permute.permute
+  [ 2] Permute.permute
+  [ 3] Permute.permute
+  [ 4] Permute.permute
+  [ 5] Permute.permute
+  [ 6] Permute.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+198967546181   87.90%   198938  Permute.permute
+ 26945224240   11.90%    26941  Permute.swap
+   113957113    0.05%      114  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub74TruffleToLibGraalEntryPoints__validateCompilerOption__Ujs0fEGwUTHHbobHrcnio9EJ32org_002egraalvm_002ejniutils_002eJNI_0024JString31org_002egraalvm_002ejniutils_002eJNI_0024JNIEnv31org_002egraalvm_002ejniutils_002eJNI_0024JClasslS0__S0__
+    22389533    0.01%       22  _raw_spin_unlock_irqrestore_[k]
+    19060009    0.01%       19  clear_page_rep_[k]
+    13004634    0.01%       13  Benchmark.innerBenchmarkLoop
+    12030542    0.01%       12  do_user_addr_fault_[k]
+     6001913    0.00%        6  Permute.benchmark
+     5946321    0.00%        6  zap_pte_range_[k]
+     5319382    0.00%        5  clock_gettime@GLIBC_2.2.5
+     5015902    0.00%        5  charge_memcg_[k]
+     5003100    0.00%        5  Permute.verifyResult
+     4306722    0.00%        4  syscall_enter_from_user_mode_[k]
+     4303264    0.00%        4  __tls_get_addr
+     4212931    0.00%        4  __rcu_read_unlock_[k]
+     4069292    0.00%        4  __memmove_avx_unaligned_erms
+     4022770    0.00%        4  __mod_lruvec_page_state_[k]
+     4011661    0.00%        4  next_uptodate_page_[k]
+     4010831    0.00%        4  handle_mm_fault_[k]
+     4004482    0.00%        4  java.lang.Integer.valueOf
+     3264211    0.00%        3  __x64_sys_futex_[k]
+     3184370    0.00%        3  [vdso]
+     3157371    0.00%        3  futex_wake_[k]
+     3017202    0.00%        3  __handle_mm_fault_[k]
+     3009821    0.00%        3  Interpreter
+     3009032    0.00%        3  lru_cache_add_inactive_or_unevictable_[k]
+     3004210    0.00%        3  java.io.BufferedWriter.implWrite
+     2375430    0.00%        2  srso_safe_ret_[k]
+     2312790    0.00%        2  futex_wait_setup_[k]
+     2229431    0.00%        2  __lll_lock_wake
+     2209970    0.00%        2  WatcherThread::sleep
+     2180620    0.00%        2  rseq_ip_fixup_[k]
+     2166121    0.00%        2  __put_user_8_[k]
+     2158600    0.00%        2  StatSamplerTask::task
+     2132181    0.00%        2  __futex_abstimed_wait_common
+     2124630    0.00%        2  _raw_spin_lock_[k]
+     2112190    0.00%        2  ObjectSynchronizer::is_async_deflation_needed
+     2038710    0.00%        2  smp_call_function_many_cond_[k]
+     2012940    0.00%        2  __folio_alloc_[k]
+     2008640    0.00%        2  __alloc_pages_[k]
+     2007361    0.00%        2  blk_cgroup_congested_[k]
+     2005270    0.00%        2  vma_alloc_folio_[k]
+     2004930    0.00%        2  sun.invoke.util.Wrapper.basicTypeChar
+     2004821    0.00%        2  page_add_new_anon_rmap_[k]
+     2003360    0.00%        2  java.lang.Long.stringSize
+     2003261    0.00%        2  do_anonymous_page_[k]
+     2002641    0.00%        2  jdk.internal.org.objectweb.asm.ByteVector.putUTF8
+     2002610    0.00%        2  java.lang.String.getChars
+     2002131    0.00%        2  Run.printResult
+     2001900    0.00%        2  java.lang.String.charAt
+     2001490    0.00%        2  SymbolTable::lookup_shared
+     1999862    0.00%        2  java.util.Arrays.copyOfRange
+     1994370    0.00%        2  /home/hburchell/Repos/graal-dev/graal-instrumentation/sdk/mxbuild/linux-amd64/GRAALVM_LIBGRAAL_JAVA21/graalvm-libgraal-openjdk-21.0.2+13.1/lib/libjvmcicompiler.so
+     1983280    0.00%        2  JVMCIEnv::create_string
+     1207671    0.00%        1  PerfLongVariant::sample
+     1190760    0.00%        1  syscall_trace_enter.constprop.0_[k]
+     1181660    0.00%        1  ChunkPoolCleaner::task
+     1150551    0.00%        1  ktime_add_safe_[k]
+     1138280    0.00%        1  schedule_[k]
+     1131012    0.00%        1  __GI___pthread_mutex_unlock_usercnt
+     1122541    0.00%        1  os::elapsed_counter
+     1112920    0.00%        1  futex_q_lock_[k]
+     1080940    0.00%        1  __get_user_8_[k]
+     1076372    0.00%        1  __hrtimer_init_[k]
+     1074002    0.00%        1  copy_user_generic_string_[k]
+     1071810    0.00%        1  _copy_from_user_[k]
+     1069480    0.00%        1  ConcurrentGCThread::should_terminate
+     1064450    0.00%        1  exit_to_user_mode_loop_[k]
+     1059540    0.00%        1  Monitor::wait_without_safepoint_check
+     1038001    0.00%        1  HeapRegionManager::par_iterate
+     1030421    0.00%        1  JVMCIRuntime::detach_thread
+     1022650    0.00%        1  free_unref_page_list_[k]
+     1020390    0.00%        1  G1ParScanThreadState::trim_queue_to_threshold
+     1017261    0.00%        1  MacroAssembler::resolve_weak_handle
+     1014910    0.00%        1  kthread_blkcg_[k]
+     1014770    0.00%        1  FreeListAllocator::reset
+     1014481    0.00%        1  java.lang.StringLatin1.indexOf
+     1011310    0.00%        1  __radix_tree_lookup_[k]
+     1010340    0.00%        1  ConstantPool::name_and_type_ref_index_at
+     1010030    0.00%        1  Chunk::operator new
+     1009201    0.00%        1  nft_do_chain?[nf_tables]_[k]
+     1009100    0.00%        1  Klass::is_cloneable
+     1007520    0.00%        1  filemap_map_pages_[k]
+     1006391    0.00%        1  avc_lookup_[k]
+     1005520    0.00%        1  load_balance_[k]
+     1005310    0.00%        1  pipe_write_[k]
+     1005161    0.00%        1  __mod_node_page_state_[k]
+     1004860    0.00%        1  RelocIterator::initialize
+     1004850    0.00%        1  java.lang.AbstractStringBuilder.append
+     1004770    0.00%        1  __cgroup_throttle_swaprate_[k]
+     1004610    0.00%        1  __next_zones_zonelist_[k]
+     1004480    0.00%        1  CompilerThread::is_Compiler_thread
+     1004250    0.00%        1  java.lang.Class.getClassLoader
+     1004210    0.00%        1  ServiceThread::enqueue_deferred_event
+     1003921    0.00%        1  MethodData::post_initialize
+     1003850    0.00%        1  page_counter_try_charge_[k]
+     1003850    0.00%        1  JNIHandleBlock::release_block
+     1003740    0.00%        1  unlink_chunk.constprop.0
+     1003651    0.00%        1  java.lang.invoke.MethodHandleImpl.makeIntrinsic
+     1003600    0.00%        1  prepare_alloc_pages.constprop.0_[k]
+     1003541    0.00%        1  should_fail_alloc_page_[k]
+     1003381    0.00%        1  java.lang.invoke.DirectMethodHandle$Holder.invokeStatic
+     1003111    0.00%        1  xfs_inode_item_committing?[xfs]_[k]
+     1002730    0.00%        1  sun.net.www.ParseUtil.firstEncodeIndex
+     1002681    0.00%        1  java.lang.String.length
+     1002630    0.00%        1  java.io.FileOutputStream.write
+     1002610    0.00%        1  write
+     1002560    0.00%        1  java.nio.HeapCharBuffer.<init>
+     1002530    0.00%        1  java.io.BufferedWriter.write
+     1002511    0.00%        1  java.nio.charset.CharsetEncoder.encode
+     1002440    0.00%        1  Dictionary::find
+     1002420    0.00%        1  java.lang.String.<init>
+     1002360    0.00%        1  java.lang.StringCoding.implEncodeAsciiArray
+     1002300    0.00%        1  java.lang.StringConcatHelper.prepend
+     1002270    0.00%        1  java.io.PrintStream.implWrite
+     1002260    0.00%        1  java.nio.ByteBuffer.array
+     1002220    0.00%        1  java.nio.Buffer.hasRemaining
+     1002220    0.00%        1  CompilationPolicy::call_event
+     1002160    0.00%        1  methodHandle::~methodHandle
+     1001930    0.00%        1  java.io.BufferedWriter.newLine
+     1001920    0.00%        1  jdk.internal.misc.Blocker.begin
+     1001810    0.00%        1  java.lang.invoke.MethodType$ConcurrentWeakInternSet.get
+     1001740    0.00%        1  java.nio.CharBuffer.wrap
+     1001710    0.00%        1  mem_cgroup_from_task_[k]
+     1001660    0.00%        1  java.nio.CharBuffer.limit
+     1001600    0.00%        1  Relocation::pd_call_destination
+     1001570    0.00%        1  jdk.internal.org.objectweb.asm.SymbolTable.get
+     1001560    0.00%        1  java.lang.invoke.LambdaForm$MH.0x00007f1848008400.invoke
+     1001500    0.00%        1  java.net.URLStreamHandler.setURL
+     1001450    0.00%        1  java.io.Writer.write
+     1001430    0.00%        1  CompilationPolicy::event
+     1001320    0.00%        1  ObjArrayAllocator::initialize
+     1001310    0.00%        1  java.lang.String.coder
+     1001210    0.00%        1  HandleMark::pop_and_restore
+     1001150    0.00%        1  java.lang.invoke.MethodTypeForm.canonicalizeAll
+     1001080    0.00%        1  CompileTask::print_impl
+     1001070    0.00%        1  java.io.PrintStream.ensureOpen
+     1000971    0.00%        1  vmIntrinsics::is_intrinsic_available
+     1000950    0.00%        1  jdk.internal.misc.Unsafe.allocateUninitializedArray
+     1000461    0.00%        1  java.lang.invoke.MemberName.allFlagsSet
+     1000450    0.00%        1  __ZN41com_002eoracle_002esvm_002ecore_002ecode_002eIsolateEnterStub65CEntryPointNativeFunctions__tearDownIsolate__ke4IYWkkawAn2nvyM2ZSW5EJi37org_002egraalvm_002enativeimage_002eIsolateThread
+     1000410    0.00%        1  java.lang.Number.<init>
+     1000160    0.00%        1  java.net.URLStreamHandler.toExternalForm
+     1000100    0.00%        1  Symbol::as_C_string
+     1000070    0.00%        1  java.lang.invoke.LambdaForm.<init>
+      999990    0.00%        1  MemAllocator::Allocation::notify_allocation_jvmti_sampler
+      999971    0.00%        1  lock_page_memcg_[k]
+      999970    0.00%        1  __tls_get_addr_slow
+      999880    0.00%        1  sun.nio.cs.UTF_8$Encoder.encodeArrayLoop
+      999830    0.00%        1  CodeCache::gc_on_allocation
+      999661    0.00%        1  _dl_update_slotinfo
+      999441    0.00%        1  I2C/C2I adapters(0xb)
+      999310    0.00%        1  jdk.internal.org.objectweb.asm.Frame.pop
+      999270    0.00%        1  queue_work_on_[k]
+      999260    0.00%        1  memset_orig_[k]
+      999040    0.00%        1  java.lang.invoke.InvokerBytecodeGenerator.toByteArray
+      998920    0.00%        1  java.io.UnixFileSystem.hasBooleanAttributes
+      998900    0.00%        1  JVMCIEnv::initialize_installed_code
+      998520    0.00%        1  CompileTask::select_for_compilation
+      998511    0.00%        1  get_mem_cgroup_from_mm_[k]
+      998031    0.00%        1  java.lang.invoke.InvokerBytecodeGenerator.addMethod
+      997910    0.00%        1  jdk.internal.org.objectweb.asm.SymbolTable.addConstant
+      997051    0.00%        1  java.lang.invoke.LambdaFormBuffer.endEdit
+      996630    0.00%        1  page_remove_rmap_[k]
+      996550    0.00%        1  JavaFrameAnchor::make_walkable
+      994041    0.00%        1  xas_load_[k]
+      992210    0.00%        1  JVMCI::compilation_tick
+      991911    0.00%        1  update_get_addr
+      991481    0.00%        1  java.lang.invoke.InvokerBytecodeGenerator.emitStaticInvoke
+      987790    0.00%        1  get_current_thread
+      985340    0.00%        1  jni_PopLocalFrame
+      981500    0.00%        1  do_set_pte_[k]
