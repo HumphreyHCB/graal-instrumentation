@@ -66,7 +66,9 @@ import jdk.graal.compiler.lir.LabelRef;
 import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.StandardOp.LabelHoldingOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
+import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
+import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.framemap.FrameMap;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.spi.CoreProvidersDelegate;
@@ -219,6 +221,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         assert frameContext != null;
         this.dataCache = EconomicMap.create(Equivalence.DEFAULT);
         this.lirInstructionVerifiers = Objects.requireNonNull(lirInstructionVerifiers);
+
     }
 
     public void setTotalFrameSize(int frameSize) {
@@ -668,7 +671,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
 
             }
-            if (GraalOptions.ASMGTSlowDown.getValue(options) && start < asm.position()) {
+            if (GraalOptions.ASMGTSlowDown.getValue(options) && start < asm.position() ) {
                 int end = asm.position();
 
                 for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
@@ -688,12 +691,12 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 }
 
                 int[] cycleCosts = GTCache.computeCycleCostForGivenString(emmitedOPCode);
-                for (int i = 0; i < cycleCosts[0] + cycleCosts[1]; i++) {
-                    new AMD64Nop().emitCode(this);
+                for (int i = 0; i < cycleCosts[0]; i++) {
+                    new AMD64PointLess().emitCode(this);
                 }
-                // for (int i = 0; i < cycleCosts[1]; i++) {
-                //     new AMD64PointLess().emitCode(this);
-                // }
+                for (int i = 0; i < cycleCosts[1]; i++) {
+                    new AMD64SFence().emitCode(this);
+                }
             }
         } catch (BailoutException e) {
             throw e;
