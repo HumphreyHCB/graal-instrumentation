@@ -1,3 +1,0 @@
-All INlinging is off
- now mixed in the list, OSR is On
-pop and push are back but onyl at posisation 1
