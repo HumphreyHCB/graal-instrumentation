@@ -29,10 +29,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
+import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
@@ -57,144 +59,92 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
         options = poptions;
     }
 
-    public static List<Integer> analyzeVectorInstructions(LIRGenerationResult lirGenRes) {
-        // Use a Set to avoid duplicate block IDs
-        Set<Integer> resultBlockIds = new HashSet<>();
-
-        // Iterate through all blocks in the control flow graph
-        for (BasicBlock<?> block : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
-
-            // Check if the block contains any "vector" instruction
-            boolean hasVectorInstruction = false;
-            for (LIRInstruction instruction : lirGenRes.getLIR().getLIRforBlock(block)) {
-                // if (instruction.getClass().toString().toLowerCase().contains("vector")) {
-                if (LIRInstructionVectorLookup.containsClassName(instruction.getClass().toString())) {
-                    hasVectorInstruction = true;
-                    break;
-                }
-            }
-
-            // If the block contains a "vector" instruction, collect its ID and those of its
-            // successors and predecessors
-            if (hasVectorInstruction) {
-                // Add the block's ID
-                resultBlockIds.add(block.getId());
-
-                // // Add IDs of predecessors
-                // for (int i = 0; i < block.getPredecessorCount(); i++) {
-                // BasicBlock<?> predecessor = block.getPredecessorAt(i);
-                // resultBlockIds.add(predecessor.getId());
-                // }
-
-                // // Add IDs of successors
-                // for (int i = 0; i < block.getSuccessorCount(); i++) {
-                // BasicBlock<?> successor = block.getSuccessorAt(i);
-                // resultBlockIds.add(successor.getId());
-                // }
-            }
-        }
-
-        // Convert the Set to a List and return
-        return new ArrayList<>(resultBlockIds);
-    }
-
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
         if (!lirGenRes.getCompilationUnitName().toLowerCase().contains("graal")) {
-           for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+            // for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks())
+            // {
 
-                ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-                int vectorCost = 0;
-                int nopCost = 0;
+            for (int blockId : lirGenRes.getLIR().getBlocks()) {
+                if (blockId == Integer.MAX_VALUE) {
+                    // if a block id == max then its a delected block
+                    continue;
+                }
+                ArrayList<LIRInstruction> instructions = lirGenRes.getLIR()
+                        .getLIRforBlock(lirGenRes.getLIR().getBlockById(blockId));
 
-                for (LIRInstruction instruction : instructions) {
-
-                    nopCost += LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
-                    vectorCost += LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
-
+                if (instructions != null) {
+                    for (int i = 0; i < 5; i++) {
+                        // AMD64PointLess
+                        AMD64PointLess nopNode = new AMD64PointLess();
+                        instructions.add(1, nopNode);
+                    }
                 }
 
-                if (!instructions.isEmpty()) {
+            }
 
-                    int originalSize = instructions.size();
-                    int nopCount = 0;
-                    int sfenceCount = 0;
-                    int pointLessCount = 0;
-                
-                    int real = Math.round(vectorCost / 1);
-                    int remainder = vectorCost % 1;
+            for (int i = 0; i < 20; i++) {
+                ArrayList<LIRInstruction.LIRInstructionSlowPath> list = lirGenRes.getLIR().getSlowPaths();
+            }
 
-                
-                    // Continue looping until all nops, sfences, and PointLess nodes are inserted
-                    int i = 1;
-                    while (nopCount < nopCost || sfenceCount < remainder || pointLessCount < real) {
-                        // Use modulo to wrap around the index to the list size
-                        int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount + sfenceCount + pointLessCount;
-                        
-                        // Insert a Nop node if we haven't reached the Nop count limit
-                        if (nopCount < nopCost) {
-                            AMD64Nop nopNode = new AMD64Nop();
-                            instructions.add(currentIndex, nopNode);
-                            nopCount++;
-                        }
-                
-                        // Insert a SFence node if we haven't reached the SFence count limit
-                        if (sfenceCount < remainder) {
-                            AMD64SFence sfenceNode = new AMD64SFence();
-                            instructions.add(currentIndex, sfenceNode);
-                            sfenceCount++;
-                        }
-                
-                        // Insert a PointLess node if we haven't reached the PointLess count limit
-                        if (pointLessCount < real) {
-                            AMD64PointLess pointLessNode = new AMD64PointLess();
-                            instructions.add(currentIndex, pointLessNode);
-                            pointLessCount++;
-                        }
-                
-                        i++;
-        }}}}
+
+            // ArrayList<LIRInstruction> instructions =
+            // lirGenRes.getLIR().getLIRforBlock(b);
+            // int vectorCost = 0;
+            // int nopCost = 0;
+
+            // for (LIRInstruction instruction : instructions) {
+
+            // nopCost +=
+            // LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
+            // vectorCost +=
+            // LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
+
+            // }
+
+            // if (!instructions.isEmpty()) {
+
+            // int originalSize = instructions.size();
+            // int nopCount = 0;
+            // int sfenceCount = 0;
+            // int pointLessCount = 0;
+
+            // int real = Math.round(vectorCost / 1);
+            // int remainder = vectorCost % 1;
+
+            // // Continue looping until all nops, sfences, and PointLess nodes are inserted
+            // int i = 1;
+            // while (nopCount < nopCost || sfenceCount < remainder || pointLessCount <
+            // real) {
+            // // Use modulo to wrap around the index to the list size
+            // int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount +
+            // sfenceCount + pointLessCount;
+
+            // // Insert a Nop node if we haven't reached the Nop count limit
+            // if (nopCount < nopCost) {
+            // AMD64Nop nopNode = new AMD64Nop();
+            // instructions.add(currentIndex, nopNode);
+            // nopCount++;
+            // }
+
+            // // Insert a SFence node if we haven't reached the SFence count limit
+            // if (sfenceCount < remainder) {
+            // AMD64SFence sfenceNode = new AMD64SFence();
+            // instructions.add(currentIndex, sfenceNode);
+            // sfenceCount++;
+            // }
+
+            // // Insert a PointLess node if we haven't reached the PointLess count limit
+            // if (pointLessCount < real) {
+            // AMD64PointLess pointLessNode = new AMD64PointLess();
+            // instructions.add(currentIndex, pointLessNode);
+            // pointLessCount++;
+
+            // }
+
+            // i++;
+        } // }}
     }
-
-    /**
-     * Utility method to copy the state from one LIR instruction to another.
-     */
-    // private void copyStateAndDebugInfo(LIRInstruction from, LIRInstruction to,
-    // LIRGenerationResult lirGenRes) {
-    // // Copy the state
-    // from.forEachState((stateProcedure) -> {
-    // to.visitEachState((instruction, value, mode, flags) -> {
-    // // Copy the state to the new instruction
-    // lirGenRes.getLIR().setState(to, value);
-    // });
-    // });
-    // from.setPosition(null);
-    // // Copy the debug info
-    // LIRFrameState frameState = from.getFrameState();
-    // if (frameState != null && frameState.hasDebugInfo()) {
-    // // Initialize debug info for the new instruction if necessary
-    // if (!frameState.hasDebugInfo()) {
-    // frameState.initDebugInfo();
-    // }
-
-    // // Create a new reference map builder
-
-    // ReferenceMapBuilder refMap =
-    // lirGenRes.getFrameMap().newReferenceMapBuilder();
-    // RegStackValueSet values = new RegStackValueSet(lirGenRes.getFrameMap());
-
-    // // Add live values from the original instruction to the reference map
-    // values.addLiveValues(refMap);
-
-    // // Set the reference map for the new instruction's debug info
-    // LIRFrameState newFrameState = new LIRFrameState(frameState.topFrame,
-    // frameState.virtualObjects, frameState.exceptionEdge,
-    // frameState.validForDeoptimization);
-    // newFrameState.debugInfo().setReferenceMap(refMap.finish(newFrameState));
-
-    // // Assign the new frame state to the new instruction
-    // lirGenRes.getLIR().setState(to, newFrameState);
-    // }
 
 }
