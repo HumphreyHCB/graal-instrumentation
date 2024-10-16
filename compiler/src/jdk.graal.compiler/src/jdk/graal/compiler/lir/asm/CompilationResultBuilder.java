@@ -591,7 +591,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     public LIR getLIR() {
         return lir;
     }
-
+    BasicBlock<?> currentblock = null;
     private void emitBlock(BasicBlock<?> block) {
         if (block == null) {
             return;
@@ -601,7 +601,11 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         if (emitComment) {
             blockComment(String.format("block B%d %s", block.getId(), block.getLoop()));
         }
-
+        currentblock = block;
+        if (GraalOptions.ASMGTSlowDown.getValue(options)) {
+        System.out.println(compilationResult.getCompilationId().toString());
+        System.out.println("Current Block ID " + currentblock.getId());
+        }
         for (LIRInstruction op : lir.getLIRforBlock(block)) {
             if (emitComment) {
                 blockComment(String.format("%d %s", op.id(), op));
@@ -671,7 +675,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
 
             }
-            if (GraalOptions.ASMGTSlowDown.getValue(options) && start < asm.position() ) {
+            if (GraalOptions.ASMGTSlowDown.getValue(options) && start <= asm.position() ) {
                 int end = asm.position();
 
                 for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
@@ -689,14 +693,28 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 for (byte b : emittedCode) {
                     emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
                 }
+                System.out.println(emmitedOPCode);
+                if(emmitedOPCode.trim().contains("48 89 6C 24 20".toLowerCase()))
+                {
+                    System.out.println(compilationResult.getCompilationId().toString());
+                    System.out.println("Found String in " + currentblock.getId());
+                    
+                }
 
-                int[] cycleCosts = GTCache.computeCycleCostForGivenString(emmitedOPCode);
-                for (int i = 0; i < cycleCosts[0]; i++) {
-                    new AMD64PointLess().emitCode(this);
+                // int[] cycleCosts = GTCache.computeCycleCostForGivenString(emmitedOPCode);
+                // for (int i = 0; i < cycleCosts[0]; i++) {
+                //     new AMD64PointLess().emitCode(this);
+                // }
+
+                if (op instanceof StandardOp.LabelOp) {
+                    StandardOp.LabelOp lable =  (StandardOp.LabelOp) op ;
+                    lable.getLabel().getBlockId();
+                    for (int i = 0; i < lable.getLabel().getBlockId(); i++) {
+                        new AMD64PointLess().emitCode(this);
+                    }
                 }
-                for (int i = 0; i < cycleCosts[1]; i++) {
-                    new AMD64SFence().emitCode(this);
-                }
+                
+                
             }
         } catch (BailoutException e) {
             throw e;
