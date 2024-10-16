@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
@@ -62,89 +64,95 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-        if (!lirGenRes.getCompilationUnitName().toLowerCase().contains("graal")) {
-            // for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks())
-            // {
+    //if (lirGenRes.getCompilationUnitName().toLowerCase().contains("placequeen")) {
+                
+        for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+            //if (b.getId() == AbstractControlFlowGraph.INVALID_BLOCK_ID) {
+           //    continue;
+           // }
+            //for (int i = 0; i < b.getId(); i++) {
 
-            for (int blockId : lirGenRes.getLIR().getBlocks()) {
-                if (blockId == Integer.MAX_VALUE) {
-                    // if a block id == max then its a delected block
-                    continue;
-                }
-                ArrayList<LIRInstruction> instructions = lirGenRes.getLIR()
-                        .getLIRforBlock(lirGenRes.getLIR().getBlockById(blockId));
-
-                if (instructions != null) {
-                    for (int i = 0; i < 5; i++) {
-                        // AMD64PointLess
-                        AMD64PointLess nopNode = new AMD64PointLess();
-                        instructions.add(1, nopNode);
-                    }
-                }
-
+            for (int i = 0; i <  GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId()); i++) {
+                AMD64PointLess PointLess = new AMD64PointLess();
+                instructions.add(1, PointLess);
             }
+       // }
+    }
+        // for (int blockId : lirGenRes.getLIR().getBlocks()) {
+        // if (blockId == Integer.MAX_VALUE) {
+        // // if a block id == max then its a delected block
+        // continue;
+        // }
+        // ArrayList<LIRInstruction> instructions = lirGenRes.getLIR()
+        // .getLIRforBlock(lirGenRes.getLIR().getBlockById(blockId));
 
-            for (int i = 0; i < 20; i++) {
-                ArrayList<LIRInstruction.LIRInstructionSlowPath> list = lirGenRes.getLIR().getSlowPaths();
-            }
+        // if (instructions != null) {
+        // for (int i = 0; i < 5; i++) {
+        // // AMD64PointLess
+        // AMD64PointLess nopNode = new AMD64PointLess();
+        // instructions.add(1, nopNode);
+        // }
+        // }
 
+        // }
 
-            // ArrayList<LIRInstruction> instructions =
-            // lirGenRes.getLIR().getLIRforBlock(b);
-            // int vectorCost = 0;
-            // int nopCost = 0;
+        // ArrayList<LIRInstruction> instructions =
+        // lirGenRes.getLIR().getLIRforBlock(b);
+        // int vectorCost = 0;
+        // int nopCost = 0;
 
-            // for (LIRInstruction instruction : instructions) {
+        // for (LIRInstruction instruction : instructions) {
 
-            // nopCost +=
-            // LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
-            // vectorCost +=
-            // LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
+        // nopCost +=
+        // LIRInstructionCostMultiLookup.getNormalCost(instruction.getClass().toString());
+        // vectorCost +=
+        // LIRInstructionCostMultiLookup.getVCost(instruction.getClass().toString());
 
-            // }
+        // }
 
-            // if (!instructions.isEmpty()) {
+        // if (!instructions.isEmpty()) {
 
-            // int originalSize = instructions.size();
-            // int nopCount = 0;
-            // int sfenceCount = 0;
-            // int pointLessCount = 0;
+        // int originalSize = instructions.size();
+        // int nopCount = 0;
+        // int sfenceCount = 0;
+        // int pointLessCount = 0;
 
-            // int real = Math.round(vectorCost / 1);
-            // int remainder = vectorCost % 1;
+        // int real = Math.round(vectorCost / 1);
+        // int remainder = vectorCost % 1;
 
-            // // Continue looping until all nops, sfences, and PointLess nodes are inserted
-            // int i = 1;
-            // while (nopCount < nopCost || sfenceCount < remainder || pointLessCount <
-            // real) {
-            // // Use modulo to wrap around the index to the list size
-            // int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount +
-            // sfenceCount + pointLessCount;
+        // // Continue looping until all nops, sfences, and PointLess nodes are inserted
+        // int i = 1;
+        // while (nopCount < nopCost || sfenceCount < remainder || pointLessCount <
+        // real) {
+        // // Use modulo to wrap around the index to the list size
+        // int currentIndex = ((i - 1) % (originalSize - 1)) + 1 + nopCount +
+        // sfenceCount + pointLessCount;
 
-            // // Insert a Nop node if we haven't reached the Nop count limit
-            // if (nopCount < nopCost) {
-            // AMD64Nop nopNode = new AMD64Nop();
-            // instructions.add(currentIndex, nopNode);
-            // nopCount++;
-            // }
+        // // Insert a Nop node if we haven't reached the Nop count limit
+        // if (nopCount < nopCost) {
+        // AMD64Nop nopNode = new AMD64Nop();
+        // instructions.add(currentIndex, nopNode);
+        // nopCount++;
+        // }
 
-            // // Insert a SFence node if we haven't reached the SFence count limit
-            // if (sfenceCount < remainder) {
-            // AMD64SFence sfenceNode = new AMD64SFence();
-            // instructions.add(currentIndex, sfenceNode);
-            // sfenceCount++;
-            // }
+        // // Insert a SFence node if we haven't reached the SFence count limit
+        // if (sfenceCount < remainder) {
+        // AMD64SFence sfenceNode = new AMD64SFence();
+        // instructions.add(currentIndex, sfenceNode);
+        // sfenceCount++;
+        // }
 
-            // // Insert a PointLess node if we haven't reached the PointLess count limit
-            // if (pointLessCount < real) {
-            // AMD64PointLess pointLessNode = new AMD64PointLess();
-            // instructions.add(currentIndex, pointLessNode);
-            // pointLessCount++;
+        // // Insert a PointLess node if we haven't reached the PointLess count limit
+        // if (pointLessCount < real) {
+        // AMD64PointLess pointLessNode = new AMD64PointLess();
+        // instructions.add(currentIndex, pointLessNode);
+        // pointLessCount++;
 
-            // }
+        // }
 
-            // i++;
-        } // }}
+        // i++;
+        // } // }}
     }
 
 }
