@@ -6,7 +6,7 @@
 # /home/hburchell/JDKS/graalvm-jdk-22+36.1
  mx --java-home \
  /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm -Djdk.graal.LIRGTSlowDown=true -Djdk.graal.CollectLIRCostInformation=false -Djdk.graal.LIRGTSlowDownDebugMode=false \
+ vm -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.CollectLIRCostInformation=false -Djdk.graal.LIRGTSlowDownDebugMode=false \
  -XX:-TieredCompilation  -XX:-BackgroundCompilation  \
  '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI \

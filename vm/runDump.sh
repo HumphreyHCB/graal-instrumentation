@@ -8,10 +8,10 @@
 # mx --java-home /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 igv
 # JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.24.0.8-2.el9.x86_64 mx c1visualizer
  ./latest_graalvm_home/bin/java \
-  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=true  -Djdk.graal.ASMGTSlowDown=false \
+  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=false  -Djdk.graal.ASMGTSlowDown=false \
  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
   -Djdk.graal.CompilationFailureAction=Diagnose -Djdk.graal.TrackNodeSourcePosition=true \
-  -Djdk.graal.Dump=:3 -Djdk.graal.PrintGraph=Network -Djdk.graal.PrintBackendCFG=true -Djdk.graal.ObjdumpExecutables=objdump -Djdk.graal.ObjdumpExecutables=gobjdump \
+  -Djdk.graal.Dump=:5 -Djdk.graal.PrintGraph=Network -Djdk.graal.PrintBackendCFG=true -Djdk.graal.ObjdumpExecutables=objdump -Djdk.graal.ObjdumpExecutables=gobjdump \
   -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
   Harness Queens 500 5000
