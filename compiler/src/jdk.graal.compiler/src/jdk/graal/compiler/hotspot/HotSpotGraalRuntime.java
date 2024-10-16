@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
@@ -200,6 +201,20 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
         if (GraalOptions.EnableGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
             initalizeGT();
         }
+
+        if(GraalOptions.LIRBlockSlowdownFileName.getValue(options) != GraalOptions.LIRCostFileName.getDefaultValue() ){
+
+            try {
+
+                GTBlockSlowDownLookUp.loadMethodBlockCostsFromJSON(GraalOptions.LIRBlockSlowdownFileName.getValue(options));
+
+            } catch (IOException e) {
+                System.out.println("Somthing has gone wrong when trying to dynamicly load the LIRBlockSlowdownFileName");
+                e.printStackTrace();
+            }
+
+        }
+        
         if (GraalOptions.LIRCostFileName.getValue(options) != GraalOptions.LIRCostFileName.getDefaultValue() && GraalOptions.LIRGTSlowDown.getValue(options)) {
             try {
                 System.out.println("Trying to load " + GraalOptions.LIRCostFileName.getValue(options));

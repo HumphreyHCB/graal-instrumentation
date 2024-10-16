@@ -339,6 +339,9 @@ public final class GraalOptions {
     public static final OptionKey<String> LIRCostFileName = new OptionKey<>("LIRCostVaware5.json");
 
     @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<String> LIRBlockSlowdownFileName = new OptionKey<>("BlockSlowdown.json");
+
+    @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> ASMGTSlowDown = new OptionKey<Boolean>( false);
 
 }

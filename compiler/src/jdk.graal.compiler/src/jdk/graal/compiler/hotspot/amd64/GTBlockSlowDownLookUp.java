@@ -28,37 +28,43 @@ public class GTBlockSlowDownLookUp {
      * @param filePath the path to the JSON file
      * @throws IOException if there is an error reading the file
      */
-    private static void loadMethodBlockCostsFromJSON(String filePath) throws IOException {
+    public static void loadMethodBlockCostsFromJSON(String filePath) throws IOException {
         // Read the JSON file content
         String jsonContent = new String(Files.readAllBytes(Paths.get(filePath)));
-
+    
         // Parse the JSON content using the GraalVM JsonParser
         JsonParser parser = new JsonParser(jsonContent);
         Object parsedJson = parser.parse(); // Do not cast immediately
-
+    
         // Verify the parsed object is a Map (or close to it)
         if (parsedJson instanceof EconomicMap) {
             // Safely cast and iterate over the parsed Map
             @SuppressWarnings("unchecked")
             EconomicMap<String, Object> jsonMap = (EconomicMap<String, Object>) parsedJson;
-
+    
             // Iterate over the method entries
             for (MapCursor<String, Object> cursor = jsonMap.getEntries(); cursor.advance();) {
                 String methodName = cursor.getKey();
-
+    
                 // Ensure the method entry's value is also a Map (blocks map)
                 if (cursor.getValue() instanceof EconomicMap) {
                     @SuppressWarnings("unchecked")
                     EconomicMap<String, Integer> blocksMap = (EconomicMap<String, Integer>) cursor.getValue();
                     EconomicMap<Integer, Integer> blockCostMap = EconomicMap.create();
-
+    
                     // Populate block cost map for this method
                     for (MapCursor<String, Integer> blockCursor = blocksMap.getEntries(); blockCursor.advance();) {
-                        Integer blockNumber = Integer.parseInt(blockCursor.getKey());
+                        String blockKey = blockCursor.getKey();
                         Integer cost = blockCursor.getValue();
-                        blockCostMap.put(blockNumber, cost);
+    
+                        // Extract block number from key, which contains block info
+                        String[] keyParts = blockKey.split(" \\(Vtune Block");
+                        if (keyParts.length > 1) {
+                            Integer blockNumber = Integer.parseInt(keyParts[0]);
+                            blockCostMap.put(blockNumber, cost);
+                        }
                     }
-
+    
                     METHOD_BLOCK_COST_MAP.put(methodName, blockCostMap);
                 }
             }
