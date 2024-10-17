@@ -1,0 +1,44 @@
+
+#! /bin/bash 
+# -Xlog:jit+compilation
+#/home/hburchell/Repos/graal-dev/labs-openjdk/build/linux-x86_64-server-release/images/jdk/bin
+# /home/hburchell/Downloads/labsjdk-ce-11.0.20+8-jvmci-22.3-b22-debug-linux-amd64/labsjdk-ce-11.0.20-jvmci-22.3-b22-debug
+# /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33
+
+# mx --java-home /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 igv
+# JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.22.0.7-2.el9.x86_64 mx c1visualizer
+
+file=QueensAsyncSlowdown.txt
+
+ ./latest_graalvm_home/bin/java \
+  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=true -Djdk.graal.LIRBlockSlowdownFileName=BlockSlowdown1.json -Djdk.graal.ASMGTSlowDown=false \
+ -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose -Djdk.graal.LogFile=out.txt \
+  -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
+  -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
+   -agentpath:/home/hburchell/ProgramFiles/async-profiler-3.0-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=1ms,file=$file \
+  Harness Queens 500 5000
+
+  echo "Wrote to here $file"
+
+#  HelloWorld 
+  
+#  Harness DeltaBlue 1200 6000 
+# labsjdk-ce-21.0.2-jvmci-23.1-b33
+#  -XX:CompileOnly= -Dgraal.Dump=:2 -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true \
+# -Dgraal.Dump -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true 
+# -XX:-UseOnStackReplacement
+# -Dgraal.CompilerConfiguration=economy
+# mx --java-home /home/hburchell/Downloads/labsjdk-ce-17.0.9+4-jvmci-23.0-b17-linux-amd64/labsjdk-ce-17.0.9-jvmci-23.0-b17  vm  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI   -Dgraal.Dump="*" -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true   -Dgraal.CompilationFailureAction="Print"     -XX:+UseJVMCICompiler  --add-exports   jdk.internal.vm.compiler/org.graalvm.compiler.hotspot.meta.Bubo=ALL-UNNAMED   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:/home/hburchell/Repos/AWFY-Profilers/AWFY/benchmarks/Java/benchmarks.jar   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar Harness DeltaBlue 2000 100
+# -Dgraal.SnippetCounters=true -Dgraal.Counters=
+# mx --java-home \
+# /home/hburchell/Downloads/labsjdk-ce-17.0.9+4-jvmci-23.0-b17-linux-amd64/labsjdk-ce-17.0.9-jvmci-23.0-b17 \
+#  vm -Xmx10g  \
+#  -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dgraal.EnableProfiler=false \
+#  -Dgraal.Dump -Dgraal.DumpOnError=true -Dgraal.DumpingErrorsAreFatal=true \
+#   -Dgraal.CompilationFailureAction="Print"  \
+#   -XX:+UseJVMCICompiler  \
+#   -XX:CompileOnly=HelloWorld  --add-exports \
+#   jdk.internal.vm.compiler/org.graalvm.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
+#   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler \
+#   -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
+#   HelloWorld 
