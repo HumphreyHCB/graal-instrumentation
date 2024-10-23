@@ -591,7 +591,6 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
     public LIR getLIR() {
         return lir;
     }
-    BasicBlock<?> currentblock = null;
     private void emitBlock(BasicBlock<?> block) {
         if (block == null) {
             return;
@@ -600,11 +599,6 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 || Options.PrintLIRWithAssembly.getValue(getOptions());
         if (emitComment) {
             blockComment(String.format("block B%d %s", block.getId(), block.getLoop()));
-        }
-        currentblock = block;
-        if (GraalOptions.ASMGTSlowDown.getValue(options)) {
-        System.out.println(compilationResult.getCompilationId().toString());
-        System.out.println("Current Block ID " + currentblock.getId());
         }
         for (LIRInstruction op : lir.getLIRforBlock(block)) {
             if (emitComment) {
@@ -637,6 +631,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         try {
             int start = asm.position();
             op.emitCode(this);
+
             if (op.getPosition() != null) {
                 recordSourceMapping(start, asm.position(), op.getPosition());
             }
@@ -674,47 +669,6 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 }
                 GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
 
-            }
-            if (GraalOptions.ASMGTSlowDown.getValue(options) && start <= asm.position() ) {
-                int end = asm.position();
-
-                for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
-                    if (codeAnnotation instanceof JumpTable) {
-                        // Skip jump table. Here we assume the jump table is at the tail of the
-                        // emitted code.
-                        int jumpTableStart = codeAnnotation.getPosition();
-                        if (jumpTableStart >= start && jumpTableStart < end) {
-                            end = jumpTableStart;
-                        }
-                    }
-                }
-                byte[] emittedCode = asm.copy(start, end);
-                String emmitedOPCode = "";
-                for (byte b : emittedCode) {
-                    emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
-                }
-                System.out.println(emmitedOPCode);
-                if(emmitedOPCode.trim().contains("48 89 6C 24 20".toLowerCase()))
-                {
-                    System.out.println(compilationResult.getCompilationId().toString());
-                    System.out.println("Found String in " + currentblock.getId());
-                    
-                }
-
-                // int[] cycleCosts = GTCache.computeCycleCostForGivenString(emmitedOPCode);
-                // for (int i = 0; i < cycleCosts[0]; i++) {
-                //     new AMD64PointLess().emitCode(this);
-                // }
-
-                if (op instanceof StandardOp.LabelOp) {
-                    StandardOp.LabelOp lable =  (StandardOp.LabelOp) op ;
-                    lable.getLabel().getBlockId();
-                    for (int i = 0; i < lable.getLabel().getBlockId(); i++) {
-                        new AMD64PointLess().emitCode(this);
-                    }
-                }
-                
-                
             }
         } catch (BailoutException e) {
             throw e;
