@@ -48,13 +48,6 @@ import jdk.vm.ci.code.TargetDescription;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
-    public static class Options {
-        // @formatter:off
-        @Option(help = "", type = OptionType.Debug)
-        public static final OptionKey<String> LIRNubers = new OptionKey<>("");
-        // @formatter:on
-    }
-
     private OptionValues options;
 
     LIRGTSlowdownPhasePost(OptionValues poptions) {
