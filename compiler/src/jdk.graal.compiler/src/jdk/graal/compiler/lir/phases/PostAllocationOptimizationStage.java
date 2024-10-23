@@ -87,5 +87,8 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
         }
+        if (GraalOptions.GTMarkBasicBlocks.getValue(options)) {
+            appendPhase(new LIRGTSlowdownMarkerPhase(options));
+        }
     }
 }

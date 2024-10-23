@@ -341,7 +341,7 @@ public final class GraalOptions {
     @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<String> LIRBlockSlowdownFileName = new OptionKey<>("BlockSlowdown.json");
 
-    @Option(help = "", type = OptionType.Debug)
-    public static final OptionKey<Boolean> ASMGTSlowDown = new OptionKey<Boolean>( false);
+    @Option(help = "Inserts pointless nodes with numbered ID, these will be picked up but Vtune for later analysis", type = OptionType.Debug)
+    public static final OptionKey<Boolean> GTMarkBasicBlocks = new OptionKey<Boolean>( false);
 
 }
