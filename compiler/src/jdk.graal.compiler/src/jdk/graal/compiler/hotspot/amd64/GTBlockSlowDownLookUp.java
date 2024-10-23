@@ -30,6 +30,12 @@ public class GTBlockSlowDownLookUp {
      */
     public static void loadMethodBlockCostsFromJSON(String filePath) throws IOException {
         // Read the JSON file content
+        if (!Files.exists(Paths.get(filePath))) 
+        {
+            System.out.println("Could not locate " + filePath );
+            System.out.println("Skipping Loading ( this might cause a fatel crash if GTSlowdown is on)");
+            return;
+        }
         String jsonContent = new String(Files.readAllBytes(Paths.get(filePath)));
     
         // Parse the JSON content using the GraalVM JsonParser
