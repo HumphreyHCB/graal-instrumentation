@@ -35,6 +35,8 @@ import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
+import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
@@ -58,13 +60,52 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-
-        for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
+        for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
+            BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
 
             // we never check that that b.getID() < byte
             AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId());
             instructions.add(1, markerOp);
+
+            // Check if instructions contains a DirectCallOp and save the index
+            int directCallOpIndex = -1;  // -1 means not found
+            for (int i = 0; i < instructions.size(); i++) {
+                if (instructions.get(i) instanceof DirectCallOp) {
+                    directCallOpIndex = i;
+                    break;
+                }
+            }
+
+            if (directCallOpIndex != -1) {
+                instructions.add(directCallOpIndex+ 1, new AMD64SFence());
+                instructions.add(directCallOpIndex+ 1, new AMD64GTMarkerOp(b.getId()));
+                instructions.add(directCallOpIndex+ 1, new AMD64SFence());
+
+                // Perform your logic here if a DirectCallOp is found
+                // For example, you can access the instruction by index: instructions.get(directCallOpIndex)
+            }
+
+
+
+                        // // Check if instructions contains a DirectCallOp and save the index
+                        // int directCallOpIndexa = -1;  // -1 means not found
+                        // for (int i = 0; i < instructions.size(); i++) {
+                        //     if (instructions.get(i) instanceof CompressPointerOp) {
+                        //         directCallOpIndexa = i;
+                        //         break;
+                        //     }
+                        // }
+            
+                        // if (directCallOpIndexa != -1) {
+                        //     instructions.add(directCallOpIndexa+ 1, new AMD64SFence());
+                        //     instructions.add(directCallOpIndexa+ 1, new AMD64GTMarkerOp(b.getId()));
+                        //     instructions.add(directCallOpIndexa+ 1, new AMD64SFence());
+            
+                        //     // Perform your logic here if a DirectCallOp is found
+                        //     // For example, you can access the instruction by index: instructions.get(directCallOpIndex)
+                        // }
+
 
         }
     }

@@ -34,6 +34,7 @@ import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
+import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
@@ -65,11 +66,37 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
            //    continue;
            // }
             //for (int i = 0; i < b.getId(); i++) {
-
-            for (int i = 0; i <  GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId()); i++) {
+            int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
+            for (int i = 0; i < loopAmount; i++) {
                 AMD64PointLess PointLess = new AMD64PointLess();
+                //AMD64Nop PointLess = new AMD64Nop();
                 instructions.add(1, PointLess);
             }
+
+
+
+            // Check if instructions contains a DirectCallOp and save the index
+            int directCallOpIndex = -1;  // -1 means not found
+            for (int i = 0; i < instructions.size(); i++) {
+                if (instructions.get(i) instanceof DirectCallOp) {
+                    directCallOpIndex = i;
+                    break;
+                }
+            }
+
+            if (directCallOpIndex != -1) {
+
+                for (int i = 0; i < GTBlockSlowDownLookUp.getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId()); i++) {
+                    AMD64PointLess PointLess = new AMD64PointLess();
+                    instructions.add(directCallOpIndex+ 1, PointLess);
+                }
+                // Perform your logic here if a DirectCallOp is found
+                // For example, you can access the instruction by index: instructions.get(directCallOpIndex)
+            }
+
+
+
+
        // }
     }
         // for (int blockId : lirGenRes.getLIR().getBlocks()) {

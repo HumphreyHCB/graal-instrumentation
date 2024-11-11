@@ -82,6 +82,8 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 
 /**
  * HotSpot AMD64 specific backend.
@@ -144,6 +146,19 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
 
             int verifiedEntryPointOffset = asm.position();
             if (!isStub) {
+                
+                if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions())) {
+                asm.sfence();
+                asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255); // Redundant shuffle operation, results in no change
+                asm.sfence();
+                }
+
+                if (GraalOptions.LIRGTSlowDown.getValue(getRuntime().getOptions())) { 
+                    for (int i = 0; i < GTBlockSlowDownLookUp.getBackendBlockCost(crb.compilationResult.getCompilationId().toString(Verbosity.NAME), 255); i++) {
+                        asm.movq(AMD64.rax, AMD64.rax);
+                    }
+                }
+
                 emitStackOverflowCheck(crb);
                 // assert asm.position() - verifiedEntryPointOffset >=
                 // PATCHED_VERIFIED_ENTRY_POINT_INSTRUCTION_SIZE;
