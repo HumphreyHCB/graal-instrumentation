@@ -45,6 +45,8 @@ public final class AMD64PointLess extends AMD64LIRInstruction {
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
         // Perform a pointless permutation on ymm0 to waste CPU cycles.
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0xFF); // Redundant shuffle operation, results in no change
+       // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0xFF); // Redundant shuffle operation, results in no change
+        asm.movq(AMD64.rax, AMD64.rax);
+        
     }
 }
