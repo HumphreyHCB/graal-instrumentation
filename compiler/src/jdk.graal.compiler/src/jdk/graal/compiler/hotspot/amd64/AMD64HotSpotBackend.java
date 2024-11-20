@@ -60,6 +60,7 @@ import jdk.graal.compiler.hotspot.stubs.Stub;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.amd64.AMD64Call;
 import jdk.graal.compiler.lir.amd64.AMD64FrameMap;
+import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
 import jdk.graal.compiler.lir.asm.DataBuilder;
@@ -146,20 +147,27 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
 
             int verifiedEntryPointOffset = asm.position();
             if (!isStub) {
+
+                
+                emitStackOverflowCheck(crb);
                 
                 if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions())) {
-                asm.sfence();
                 asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255); // Redundant shuffle operation, results in no change
-                asm.sfence();
+                asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255); // Redundant shuffle operation, results in no change
                 }
 
                 if (GraalOptions.LIRGTSlowDown.getValue(getRuntime().getOptions())) { 
-                    for (int i = 0; i < GTBlockSlowDownLookUp.getBackendBlockCost(crb.compilationResult.getCompilationId().toString(Verbosity.NAME), 255); i++) {
-                        asm.movq(AMD64.rax, AMD64.rax);
+                    int blockCost = GTBlockSlowDownLookUp.getBlockCost(
+                        crb.compilationResult.getCompilationId().toString(Verbosity.NAME), 
+                        65535
+                    );
+                    
+                    for (int i = 0; i < blockCost; i++) {
+                        int regIndex = i % AMD64.cpuRegisters.length; // Wrap around the register list
+                        asm.movq(AMD64.cpuRegisters[regIndex], AMD64.cpuRegisters[regIndex]);
                     }
                 }
 
-                emitStackOverflowCheck(crb);
                 // assert asm.position() - verifiedEntryPointOffset >=
                 // PATCHED_VERIFIED_ENTRY_POINT_INSTRUCTION_SIZE;
             }
