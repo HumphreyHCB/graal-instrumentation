@@ -81,11 +81,11 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (Options.LIRProfileMethods.getValue(options)) {
             appendPhase(new MethodProfilingPhase());
         }
-        if (GraalOptions.LIRGTSlowDown.getValue(options)) {
-            appendPhase(new LIRGTSlowdownPhasePost(options));
-        }
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
+        }
+        if (GraalOptions.LIRGTSlowDown.getValue(options)) {
+            appendPhase(new LIRGTSlowdownPhasePost(options));
         }
         if (GraalOptions.GTMarkBasicBlocks.getValue(options)) {
             appendPhase(new LIRGTSlowdownMarkerPhase(options));
