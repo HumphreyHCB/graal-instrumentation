@@ -48,11 +48,17 @@ public final class AMD64GTMarkerOp extends AMD64LIRInstruction {
 
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
+        // Extract lower 8 bits of the marker ID
+        int lower8 = markerId & 0xFF;
 
-        // Perform a pointless permutation on ymm0 to waste CPU cycles.
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, markerId); // Redundant shuffle operation, results in no change
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, markerId); // Redundant shuffle operation, results in no change
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, markerId); // Redundant shuffle operation, results in no change
-    
+        // Extract upper 8 bits of the marker ID
+        int upper8 = (markerId >> 8) & 0xFF;
+
+        // Emit two vshufps instructions for the 16-bit marker ID.
+        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8); // Lower 8 bits of the marker ID
+        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8); // Upper 8 bits of the marker ID
+
+    // Emit redundant shuffle operations as before
+       // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0); // Redundant shuffle operation, results in no change
     }
 }
