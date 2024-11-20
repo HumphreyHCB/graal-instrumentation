@@ -119,7 +119,15 @@ public class GTBlockSlowDownLookUp {
      * @param blockNumber the block number within the method
      * @return the cost associated with the backend block, or 0 if not found
      */
-    public static int getBackendBlockCost(String methodName, int blockNumber) {
+    public static int getBackendBlockCost(String methodName, int GraalblockNumber , int UquineIdNumber) {
+
+        int BackendID;
+        if (GraalblockNumber == 0) {
+            BackendID = 100000 + UquineIdNumber;
+        } else {
+            BackendID = (GraalblockNumber * 1000) + UquineIdNumber;
+        }
+
         int index = methodName.indexOf('(');
         if (index != -1) {
             methodName = methodName.substring(0, index).trim();
@@ -127,8 +135,8 @@ public class GTBlockSlowDownLookUp {
 
         if (BACKEND_BLOCK_COST_MAP.containsKey(methodName)) {
             EconomicMap<Integer, Integer> backendCostMap = BACKEND_BLOCK_COST_MAP.get(methodName);
-            if (backendCostMap.containsKey(blockNumber)) {
-                return backendCostMap.get(blockNumber);
+            if (backendCostMap.containsKey(BackendID)) {
+                return backendCostMap.get(BackendID);
             }
         }
         return 0; // Default value if the backend block or method is not found
