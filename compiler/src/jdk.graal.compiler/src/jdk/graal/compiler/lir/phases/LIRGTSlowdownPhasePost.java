@@ -49,6 +49,7 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.vm.ci.code.TargetDescription;
+import jdk.graal.compiler.core.common.CompilationIdentifier;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
@@ -61,16 +62,14 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-        // if (lirGenRes.getCompilationUnitName().toLowerCase().contains("placequeen"))
-        // {
+                if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED).contains("HotSpotOSRCompilation")) {
+                    return;
+                }
 
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
             int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
-            // for (int i = 0; i < loopAmount; i++) {
-            //     AMD64PointLess PointLess = new AMD64PointLess();
-            //     instructions.add(1, PointLess);
-            // }
+
 
             AMD64PointLesss PointLessa = new AMD64PointLesss(loopAmount);
             instructions.add(1, PointLessa);
