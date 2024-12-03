@@ -344,4 +344,7 @@ public final class GraalOptions {
     @Option(help = "Inserts pointless nodes with numbered ID, these will be picked up but Vtune for later analysis", type = OptionType.Debug)
     public static final OptionKey<Boolean> GTMarkBasicBlocks = new OptionKey<Boolean>( false);
 
+    @Option(help = "Disable codeEntryAlignment", type = OptionType.Debug)
+    public static final OptionKey<Boolean> DisableCodeEntryAlignment = new OptionKey<Boolean>(false);
+
 }
