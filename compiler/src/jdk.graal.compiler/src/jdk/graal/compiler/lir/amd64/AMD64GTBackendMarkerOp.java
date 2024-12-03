@@ -25,6 +25,7 @@
 package jdk.graal.compiler.lir.amd64;
 
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
+import jdk.graal.compiler.asm.amd64.AVXKind.AVXSize;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
@@ -37,19 +38,23 @@ import jdk.graal.compiler.asm.amd64.AMD64Address;;
  */
 @Opcode("GTMarker")
 public final class AMD64GTBackendMarkerOp extends AMD64LIRInstruction {
-    public static final LIRInstructionClass<AMD64GTBackendMarkerOp> TYPE = LIRInstructionClass.create(AMD64GTBackendMarkerOp.class);
+    public static final LIRInstructionClass<AMD64GTBackendMarkerOp> TYPE = LIRInstructionClass
+            .create(AMD64GTBackendMarkerOp.class);
 
     private int blockID; // this ID of the graal block
     private int uniqueID; // this ID will usally be a block ID
+    private String compID;
 
-    public AMD64GTBackendMarkerOp(int blockID, int uniqueID) {
+    public AMD64GTBackendMarkerOp(int blockID, int uniqueID, String compID) {
         super(TYPE);
         this.blockID = blockID;
         this.uniqueID = uniqueID;
+        this.compID = compID;
     }
 
     @Override
-    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
+    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {
+        asm.sfence();
 
         // Extract lower 8 bits of the marker ID
         int lower8 = blockID & 0xFF;
@@ -57,11 +62,14 @@ public final class AMD64GTBackendMarkerOp extends AMD64LIRInstruction {
         // Extract upper 8 bits of the marker ID
         int upper8 = (blockID >> 8) & 0xFF;
 
+        asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8, AVXSize.XMM); // Lower 8 bits of the marker ID
+        asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8, AVXSize.XMM); // Upper 8 bits of the marker ID
+        asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, uniqueID, AVXSize.XMM); // Upper 8 bits of the marker ID
+
+        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8); // Redundant shuffle operation, results in no change
+        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8); // Redundant shuffle operation, results in no change
+        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, uniqueID); // Redundant shuffle operation, results in no change
         asm.sfence();
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8); // Redundant shuffle operation, results in no change
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8); // Redundant shuffle operation, results in no change
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, uniqueID); // Redundant shuffle operation, results in no change
-       asm.sfence();
-    
+
     }
 }

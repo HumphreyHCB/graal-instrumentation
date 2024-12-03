@@ -25,6 +25,7 @@
 package jdk.graal.compiler.lir.amd64;
 
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
+import jdk.graal.compiler.asm.amd64.AVXKind.AVXSize;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
@@ -40,25 +41,27 @@ public final class AMD64GTMarkerOp extends AMD64LIRInstruction {
     public static final LIRInstructionClass<AMD64GTMarkerOp> TYPE = LIRInstructionClass.create(AMD64GTMarkerOp.class);
 
     private int markerId; // this ID will usally be a block ID
+    private String compID;
 
-    public AMD64GTMarkerOp(int ID) {
+    public AMD64GTMarkerOp(int ID, String compID) {
         super(TYPE);
         this.markerId = ID;
+        this.compID = compID;
     }
 
     @Override
-    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
+    public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {
+
+
         // Extract lower 8 bits of the marker ID
         int lower8 = markerId & 0xFF;
 
         // Extract upper 8 bits of the marker ID
         int upper8 = (markerId >> 8) & 0xFF;
-
         // Emit two vshufps instructions for the 16-bit marker ID.
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8); // Lower 8 bits of the marker ID
-        asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8); // Upper 8 bits of the marker ID
 
-    // Emit redundant shuffle operations as before
-       // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0); // Redundant shuffle operation, results in no change
+        asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8, AVXSize.XMM); // Lower 8 bits of the marker ID
+        asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8, AVXSize.XMM); // Upper 8 bits of the marker ID
+
     }
 }

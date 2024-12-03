@@ -92,6 +92,7 @@ import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.VMConstant;
 import jdk.vm.ci.meta.Value;
+import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 
 /**
  * Fills in a {@link CompilationResult} as its code is being assembled.
@@ -604,7 +605,6 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
             if (emitComment) {
                 blockComment(String.format("%d %s", op.id(), op));
             }
-
             try {
                 emitOp(op);
             } catch (GraalError e) {
