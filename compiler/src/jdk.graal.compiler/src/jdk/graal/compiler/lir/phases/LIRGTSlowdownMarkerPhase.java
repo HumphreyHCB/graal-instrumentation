@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
@@ -40,18 +41,20 @@ import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTMarkerOp;
+import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
+import jdk.graal.compiler.nodeinfo.Verbosity;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
+import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
-
-import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
+import jdk.vm.ci.meta.AllocatableValue;
 
 public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
@@ -64,12 +67,42 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
+        if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
+                .contains("HotSpotOSRCompilation")) {
+            return;
+        }
+
+        outerLoop:
         for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
+
             BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
+            if (b == null) {
+                continue;
+            }
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
 
+            // Iterate through the instructions to find instances of AMD64Move.MoveToRegOp
+            if (instructions.size() == 3) {
+                for (LIRInstruction instr : instructions) {
+                    if (instr instanceof AMD64Move.MoveToRegOp) {
+                        AMD64Move.MoveToRegOp moveOp = (AMD64Move.MoveToRegOp) instr;
+            
+                        // Check if the input and result are RegisterValue instances
+                        if (moveOp.getInput() instanceof RegisterValue && moveOp.getResult() instanceof RegisterValue) {
+                            RegisterValue input = (RegisterValue) moveOp.getInput();
+                            RegisterValue result = (RegisterValue) moveOp.getResult();
+            
+                            // Check if the instruction is moving between the same register
+                            if (input.getRegister().equals(result.getRegister())) {
+                                //System.out.println("Found MoveToRegOp moving between the same register: " + input);
+                                continue outerLoop;
+                            }
+                        }
+                    }
+                }
+            }
             // we never check that that b.getID() < byte
-            AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId());
+            AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId(), lirGenRes.getCompilationUnitName());
             instructions.add(1, markerOp);
 
             // List to hold indices of each operation type
@@ -81,7 +114,8 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                         instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
 
                     // Insert a new AMD64GTBackendMarkerOp immediately after the current operation
-                    instructions.add(i + 1, new AMD64GTBackendMarkerOp(b.getId(),counter));
+                    instructions.add(i + 1,
+                            new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
                     counter++;
 
                     // Move the index forward to skip over the newly inserted marker
