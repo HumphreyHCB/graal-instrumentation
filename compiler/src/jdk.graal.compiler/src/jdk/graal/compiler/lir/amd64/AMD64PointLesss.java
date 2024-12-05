@@ -49,7 +49,7 @@ public final class AMD64PointLesss extends AMD64LIRInstruction {
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {
 
         if (amount >= 500) {
-            for (int index = 0; index < amount; index++) {
+            for (int index = 0; index < amount - 499; index++) {
                 asm.movq(AMD64.cpuRegisters[0],
                         AMD64.cpuRegisters[0]);
             }
