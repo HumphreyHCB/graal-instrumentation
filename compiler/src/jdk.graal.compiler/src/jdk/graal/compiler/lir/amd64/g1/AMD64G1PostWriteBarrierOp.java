@@ -30,6 +30,8 @@ import static jdk.graal.compiler.lir.LIRInstruction.OperandFlag.REG;
 import static jdk.vm.ci.code.MemoryBarriers.STORE_LOAD;
 import static jdk.vm.ci.code.ValueUtil.asRegister;
 
+import java.util.Arrays;
+
 import jdk.graal.compiler.asm.Label;
 import jdk.graal.compiler.asm.amd64.AMD64Address;
 import jdk.graal.compiler.asm.amd64.AMD64Assembler;
@@ -149,5 +151,28 @@ public class AMD64G1PostWriteBarrierOp extends AMD64LIRInstruction {
             AMD64Call.directCall(crb, masm, tool.getCallTarget(callTarget), null, false, null);
             masm.jmp(done);
         });
+    }
+    
+    public boolean sameReg(){
+        Register storeAddress = asRegister(address);
+        Register newval = asRegister(newValue);
+        Register tmp = asRegister(temp);
+        Register tmp2 = asRegister(temp2);
+
+        Register[] registers = new Register[] {storeAddress, newval, tmp, tmp2};
+
+         for (int i = 0; i < registers.length - 1; ++i) {
+            for (int j = i + 1; j < registers.length; ++j) {
+                if (registers[i].equals(registers[j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+
+    }
+
+    public boolean isNonNull() {
+        return nonNull;
     }
 }
