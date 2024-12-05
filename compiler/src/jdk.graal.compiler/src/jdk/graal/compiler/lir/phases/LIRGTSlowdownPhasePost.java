@@ -35,6 +35,7 @@ import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
+import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
@@ -48,6 +49,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
+import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 
@@ -62,14 +64,21 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-                if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED).contains("HotSpotOSRCompilation")) {
-                    return;
-                }
+        if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
+                .contains("HotSpotOSRCompilation")) {
+            return;
+        }
 
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-            int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
 
+            boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
+
+            if (ShouldWeSkipBlock) {
+                continue;
+            }
+
+            int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
 
             AMD64PointLesss PointLessa = new AMD64PointLesss(loopAmount);
             instructions.add(1, PointLessa);
@@ -80,13 +89,27 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                         instructions.get(i) instanceof CompressPointerOp ||
                         instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
 
-                    // for (int X = 0; X < GTBlockSlowDownLookUp.getBackendBlockCost(lirGenRes.getCompilationUnitName(),
-                    //         b.getId(), counter); X++) {
-                    //     AMD64PointLess PointLess = new AMD64PointLess();
-                    //     instructions.add(i + 1, PointLess);
-                    // }
-                    AMD64PointLesss PointLessb = new AMD64PointLesss( GTBlockSlowDownLookUp.getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                    instructions.add(i + 1, PointLessb);
+                    if (instructions.get(i) instanceof CompressPointerOp) {
+                        CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
+
+                        // Check if no code will be emitted
+                        if (!toTest.willThisEmit()) {
+                            // System.out.println("CompressPointerOp will not emit any code for this
+                            // instruction.");
+                            continue;
+                        }
+                    }
+                    if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+
+                        AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
+                                .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                        instructions.add(i, PointLessb);
+                    } else {
+
+                        AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
+                                .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                        instructions.add(i + 1, PointLessb);
+                    }
                     counter++;
 
                     // Move the index forward to skip over the newly inserted marker
@@ -96,6 +119,33 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
         }
 
+    }
+
+    private boolean ShouldWeSkipBlock(ArrayList<LIRInstruction> instructions) {
+        boolean skip = false;
+        // Iterate through the instructions to find instances of AMD64Move.MoveToRegOp
+        if (instructions.size() == 3) {
+            for (LIRInstruction instr : instructions) {
+                if (instr instanceof AMD64Move.MoveToRegOp) {
+                    AMD64Move.MoveToRegOp moveOp = (AMD64Move.MoveToRegOp) instr;
+
+                    // Check if the input and result are RegisterValue instances
+                    if (moveOp.getInput() instanceof RegisterValue && moveOp.getResult() instanceof RegisterValue) {
+                        RegisterValue input = (RegisterValue) moveOp.getInput();
+                        RegisterValue result = (RegisterValue) moveOp.getResult();
+
+                        // Check if the instruction is moving between the same register
+                        if (input.getRegister().equals(result.getRegister())) {
+                            // System.out.println("Found MoveToRegOp moving between the same register: " +
+                            // input);
+                            skip = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return skip;
     }
 
 }

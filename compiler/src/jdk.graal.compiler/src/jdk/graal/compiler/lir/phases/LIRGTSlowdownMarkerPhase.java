@@ -52,6 +52,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
+import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.AllocatableValue;
@@ -72,8 +73,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             return;
         }
 
-        outerLoop:
-        for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
+        outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
             BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
             if (b == null) {
@@ -81,41 +81,49 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             }
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
 
-            // Iterate through the instructions to find instances of AMD64Move.MoveToRegOp
-            if (instructions.size() == 3) {
-                for (LIRInstruction instr : instructions) {
-                    if (instr instanceof AMD64Move.MoveToRegOp) {
-                        AMD64Move.MoveToRegOp moveOp = (AMD64Move.MoveToRegOp) instr;
-            
-                        // Check if the input and result are RegisterValue instances
-                        if (moveOp.getInput() instanceof RegisterValue && moveOp.getResult() instanceof RegisterValue) {
-                            RegisterValue input = (RegisterValue) moveOp.getInput();
-                            RegisterValue result = (RegisterValue) moveOp.getResult();
-            
-                            // Check if the instruction is moving between the same register
-                            if (input.getRegister().equals(result.getRegister())) {
-                                //System.out.println("Found MoveToRegOp moving between the same register: " + input);
-                                continue outerLoop;
-                            }
-                        }
-                    }
-                }
+            boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
+
+            if (ShouldWeSkipBlock) {
+                continue;
             }
             // we never check that that b.getID() < byte
             AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId(), lirGenRes.getCompilationUnitName());
             instructions.add(1, markerOp);
 
-            // List to hold indices of each operation type
-            // Iterate over the instructions and insert markers as needed
             int counter = 1;
             for (int i = 0; i < instructions.size(); i++) {
-                if (instructions.get(i) instanceof DirectCallOp ||
-                        instructions.get(i) instanceof CompressPointerOp ||
-                        instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                if (instructions.get(i) instanceof CompressPointerOp || instructions.get(i) instanceof DirectCallOp
+                        || instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
 
-                    // Insert a new AMD64GTBackendMarkerOp immediately after the current operation
-                    instructions.add(i + 1,
-                            new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
+                    if (instructions.get(i) instanceof CompressPointerOp) {
+                        CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
+
+                        // Check if no code will be emitted
+                        if (!toTest.willThisEmit()) {
+                            // System.out.println("CompressPointerOp will not emit any code for this
+                            // instruction.");
+                            continue;
+                        }
+                    }
+
+                    if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                        AMD64G1PostWriteBarrierOp toTest = (AMD64G1PostWriteBarrierOp) instructions.get(i);
+
+                        // Check if no code will be emitted
+                        if (toTest.sameReg()) {
+                            System.out.println("AMD64G1PostWriteBarrierOp is same reg");
+                            continue;
+                        }
+
+                        instructions.add(i,
+                                new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
+
+                    } else {
+
+                        // Insert a new AMD64GTBackendMarkerOp immediately after the current operation
+                        instructions.add(i + 1,
+                                new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
+                    }
                     counter++;
 
                     // Move the index forward to skip over the newly inserted marker
@@ -124,6 +132,37 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             }
 
         }
+    }
+
+    /*
+     * Contains Checks for blocks we should check and should we skip
+     * 
+     */
+    private boolean ShouldWeSkipBlock(ArrayList<LIRInstruction> instructions) {
+        boolean skip = false;
+        // Iterate through the instructions to find instances of AMD64Move.MoveToRegOp
+        if (instructions.size() == 3) {
+            for (LIRInstruction instr : instructions) {
+                if (instr instanceof AMD64Move.MoveToRegOp) {
+                    AMD64Move.MoveToRegOp moveOp = (AMD64Move.MoveToRegOp) instr;
+
+                    // Check if the input and result are RegisterValue instances
+                    if (moveOp.getInput() instanceof RegisterValue && moveOp.getResult() instanceof RegisterValue) {
+                        RegisterValue input = (RegisterValue) moveOp.getInput();
+                        RegisterValue result = (RegisterValue) moveOp.getResult();
+
+                        // Check if the instruction is moving between the same register
+                        if (input.getRegister().equals(result.getRegister())) {
+                            // System.out.println("Found MoveToRegOp moving between the same register: " +
+                            // input);
+                            skip = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return skip;
     }
 
 }
