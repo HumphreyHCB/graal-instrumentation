@@ -960,6 +960,18 @@ public class AMD64Move {
                 masm.shrq(resReg, shift);
             }
         }
+
+        public boolean willThisEmit()
+        {
+            final Register baseReg = getBaseRegister();
+
+            int shift = getShift();
+            if (baseReg.equals(Register.None) && shift == 0) {
+                return true;
+            }
+
+            return false;
+        }
     }
 
     public static class UncompressPointerOp extends PointerCompressionOp {
