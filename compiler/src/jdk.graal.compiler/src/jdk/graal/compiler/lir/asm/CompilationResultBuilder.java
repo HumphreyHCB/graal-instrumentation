@@ -596,6 +596,8 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
         if (block == null) {
             return;
         }
+        //System.out.println("CompilationId " + compilationResult.getCompilationId().toString(Verbosity.DETAILED));
+        //System.out.println("Block ID " + block.getId());
         boolean emitComment = debug.isDumpEnabled(DebugContext.BASIC_LEVEL)
                 || Options.PrintLIRWithAssembly.getValue(getOptions());
         if (emitComment) {
@@ -606,6 +608,7 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                 blockComment(String.format("%d %s", op.id(), op));
             }
             try {
+                //System.out.println(op.getClass());
                 emitOp(op);
             } catch (GraalError e) {
                 throw e.addContext("lir instruction", block + "@" + op.id() + " " + op.getClass().getName() + " " + op);
