@@ -44,6 +44,7 @@ import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64PointLesss;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
+import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
@@ -52,6 +53,7 @@ import jdk.graal.compiler.options.OptionKey;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
@@ -87,7 +89,7 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
             for (int i = 0; i < instructions.size(); i++) {
                 if (instructions.get(i) instanceof DirectCallOp ||
                         instructions.get(i) instanceof CompressPointerOp ||
-                        instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                        instructions.get(i) instanceof AMD64G1PostWriteBarrierOp || instructions.get(i) instanceof UncompressPointerOp || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp ) {
 
                     if (instructions.get(i) instanceof CompressPointerOp) {
                         CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
@@ -99,17 +101,17 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                             continue;
                         }
                     }
-                    if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                    // if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
 
-                        AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
-                                .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                        instructions.add(i, PointLessb);
-                    } else {
+                    //     AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
+                    //             .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                    //     instructions.add(i, PointLessb);
+                    // } else {
 
                         AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
                                 .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
                         instructions.add(i + 1, PointLessb);
-                    }
+                    //}
                     counter++;
 
                     // Move the index forward to skip over the newly inserted marker

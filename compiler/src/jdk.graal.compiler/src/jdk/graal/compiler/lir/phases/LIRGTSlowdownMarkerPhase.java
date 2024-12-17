@@ -39,9 +39,11 @@ import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
+import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
+import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
@@ -93,11 +95,11 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             int counter = 1;
             for (int i = 0; i < instructions.size(); i++) {
                 if (instructions.get(i) instanceof CompressPointerOp || instructions.get(i) instanceof DirectCallOp
-                        || instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                        || instructions.get(i) instanceof AMD64G1PostWriteBarrierOp || instructions.get(i) instanceof UncompressPointerOp || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp) {
 
                     if (instructions.get(i) instanceof CompressPointerOp) {
                         CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
-
+                        
                         // Check if no code will be emitted
                         if (!toTest.willThisEmit()) {
                             // System.out.println("CompressPointerOp will not emit any code for this
@@ -115,15 +117,15 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                             continue;
                         }
 
-                        instructions.add(i,
-                                new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
+                        //instructions.add(i,
+                        //        new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
 
-                    } else {
+                    } //else {
 
                         // Insert a new AMD64GTBackendMarkerOp immediately after the current operation
                         instructions.add(i + 1,
                                 new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
-                    }
+                    //}
                     counter++;
 
                     // Move the index forward to skip over the newly inserted marker
