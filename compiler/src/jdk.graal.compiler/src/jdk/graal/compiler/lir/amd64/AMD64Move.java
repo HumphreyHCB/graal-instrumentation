@@ -1002,6 +1002,14 @@ public class AMD64Move {
             emitUncompressCode(masm, resReg, shift, baseReg, nonNull);
         }
 
+        public boolean isNonNull(){
+            return nonNull;
+        }
+
+        public boolean shiftEqZero(){
+            return getShift() != 0;
+        }
+
         public static void emitUncompressCode(AMD64MacroAssembler masm, Register resReg, int shift, Register baseReg, boolean nonNull) {
             if (nonNull) {
                 if (!baseReg.equals(Register.None)) {

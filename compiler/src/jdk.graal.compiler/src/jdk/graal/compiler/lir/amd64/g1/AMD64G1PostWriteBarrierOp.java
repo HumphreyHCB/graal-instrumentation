@@ -38,6 +38,7 @@ import jdk.graal.compiler.asm.amd64.AMD64Assembler;
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
 import jdk.graal.compiler.core.common.spi.ForeignCallLinkage;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.lir.ConstantValue;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.SyncPort;
 import jdk.graal.compiler.lir.amd64.AMD64Call;
@@ -47,6 +48,7 @@ import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.StackSlot;
 import jdk.vm.ci.meta.AllocatableValue;
+import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.Value;
 
 /**
@@ -174,5 +176,29 @@ public class AMD64G1PostWriteBarrierOp extends AMD64LIRInstruction {
 
     public boolean isNonNull() {
         return nonNull;
+    }
+
+            /**
+     * Determine if this barrier is trivial and can be skipped.
+     * Adjust logic as needed based on your requirements.
+     */
+    public boolean shouldSkipBarrier() {
+        // Example: If nonNull is false and the newValue is known null, we can skip.
+        if (!nonNull || isCompileTimeNullConstant(newValue)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if a given value is a compile-time known null constant.
+     */
+    private boolean isCompileTimeNullConstant(Value v) {
+        if (v instanceof ConstantValue) {
+            JavaConstant c = ((ConstantValue) v).getJavaConstant();
+            return c != null && c.isNull();
+        }
+        return false;
     }
 }

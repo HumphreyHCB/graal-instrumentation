@@ -35,6 +35,7 @@ import jdk.graal.compiler.asm.amd64.AMD64Assembler;
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
 import jdk.graal.compiler.core.common.spi.ForeignCallLinkage;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.lir.ConstantValue;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.SyncPort;
 import jdk.graal.compiler.lir.amd64.AMD64AddressValue;
@@ -45,6 +46,7 @@ import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.StackSlot;
 import jdk.vm.ci.meta.AllocatableValue;
+import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.Value;
 
 /**
@@ -155,5 +157,69 @@ public class AMD64G1PreWriteBarrierOp extends AMD64LIRInstruction {
             AMD64Call.directCall(crb, masm, tool.getCallTarget(callTarget), null, false, null);
             masm.jmp(done);
         });
+    }
+
+
+        /**
+     * Checks if any of the registers used by this operation are the same.
+     * We only consider values that are actually registers.
+     * The 'address' in this operation is not a register but an address mode, so we skip it.
+     */
+    public boolean sameReg() {
+        Register tmpReg = isRegister(temp) ? asRegister(temp) : null;
+        Register prevValReg = (!expectedObject.equals(Value.ILLEGAL) && isRegister(expectedObject)) ? asRegister(expectedObject) :
+                              (isRegister(temp2) ? asRegister(temp2) : null);
+        Register temp3Reg = isRegister(temp3) ? asRegister(temp3) : null;
+
+        Register[] registers = new Register[] { tmpReg, prevValReg, temp3Reg };
+
+        // Filter out nulls (values not in registers)
+        registers = java.util.Arrays.stream(registers).filter(r -> r != null).toArray(Register[]::new);
+
+        for (int i = 0; i < registers.length - 1; ++i) {
+            for (int j = i + 1; j < registers.length; ++j) {
+                if (registers[i].equals(registers[j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns whether this barrier expects a non-null object.
+     */
+    public boolean isNonNull() {
+        return nonNull;
+    }
+
+    /**
+     * Determine if this barrier is trivial and can be skipped.
+     * For example, if nonNull is false and the expectedObject is known at compile-time to be null.
+     */
+    public boolean shouldSkipBarrier() {
+        // If nonNull is false and expectedObject is compile-time null, skip.
+        if (!nonNull || isCompileTimeNullConstant(expectedObject)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a given value is a compile-time known null constant.
+     */
+    private boolean isCompileTimeNullConstant(Value v) {
+        if (v instanceof ConstantValue) {
+            JavaConstant c = ((ConstantValue) v).getJavaConstant();
+            return c != null && c.isNull();
+        }
+        return false;
+    }
+
+    /**
+     * Utility to check if a Value is a register value.
+     */
+    private boolean isRegister(Value v) {
+        return v != null && !v.equals(Value.ILLEGAL) && asRegister(v) != null;
     }
 }
