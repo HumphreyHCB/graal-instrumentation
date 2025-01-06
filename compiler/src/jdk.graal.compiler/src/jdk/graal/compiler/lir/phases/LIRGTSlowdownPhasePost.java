@@ -164,7 +164,8 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                             continue;
                         }
             
-                        if (toTest.shouldSkipBarrier()) {
+                        //if (toTest.shouldSkipBarrier()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
                     }
@@ -175,14 +176,15 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                             continue;
                         }
             
-                        if (toTest.shouldSkipBarrier()) {
+                        //if (toTest.shouldSkipBarrier()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
                     }
 
                     if (instructions.get(i) instanceof UncompressPointerOp) {
                         UncompressPointerOp toTest = (UncompressPointerOp) instructions.get(i);
-                        if (toTest.isNonNull() || toTest.shiftEqZero()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
                         

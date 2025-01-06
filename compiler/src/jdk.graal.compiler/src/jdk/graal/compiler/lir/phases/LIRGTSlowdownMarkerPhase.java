@@ -80,6 +80,11 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
         outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
+            if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
+            .contains("moveDisks")) {
+                System.out.println("Found moveDisks");
+            }
+
             BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
             if (b == null) {
                 continue;
@@ -91,7 +96,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             if (ShouldWeSkipBlock) {
                 continue;
             }
-            // we never check that that b.getID() < byte
+
             AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId(), lirGenRes.getCompilationUnitName());
             instructions.add(1, markerOp);
 
@@ -120,7 +125,8 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                             continue;
                         }
             
-                        if (toTest.shouldSkipBarrier()) {
+                        //if (toTest.shouldSkipBarrier()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
             
@@ -134,14 +140,15 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                             continue;
                         }
             
-                        if (toTest.shouldSkipBarrier()) {
+                       // if (toTest.shouldSkipBarrier()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
                     }
 
                     if (instructions.get(i) instanceof UncompressPointerOp) {
                         UncompressPointerOp toTest = (UncompressPointerOp) instructions.get(i);
-                        if (toTest.isNonNull() || toTest.shiftEqZero()) {
+                        if (toTest.isNonNull()) {
                             continue;
                         }
                         
