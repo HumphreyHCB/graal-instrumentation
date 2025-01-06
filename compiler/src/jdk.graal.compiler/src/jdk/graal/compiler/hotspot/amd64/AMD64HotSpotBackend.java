@@ -150,10 +150,12 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
             int verifiedEntryPointOffset = asm.position();
             if (!isStub) {
 
-                emitStackOverflowCheck(crb);
-                
-                if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED).contains("HotSpotOSRCompilation")) {
 
+
+                if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED).contains("HotSpotOSRCompilation")) {
+                    // if (crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED).contains("JsonPureStringParser.read")) {
+                    //  System.out.println((crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED)));
+                    // }
                 asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Lower 8 bits of the marker ID
                 asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Upper 8 bits of the marker ID
                 }
@@ -169,7 +171,7 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
                         asm.movq(AMD64.cpuRegisters[regIndex], AMD64.cpuRegisters[regIndex]);
                     }
                 }
-
+                emitStackOverflowCheck(crb);
                 // assert asm.position() - verifiedEntryPointOffset >=
                 // PATCHED_VERIFIED_ENTRY_POINT_INSTRUCTION_SIZE;
             }

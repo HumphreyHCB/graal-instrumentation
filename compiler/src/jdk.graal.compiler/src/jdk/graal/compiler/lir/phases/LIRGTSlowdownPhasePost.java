@@ -31,17 +31,22 @@ import java.util.Set;
 
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
+import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.StandardOp.JumpOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64PointLesss;
+import jdk.graal.compiler.lir.amd64.AMD64PointLessReg;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
@@ -50,6 +55,8 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
+import jdk.vm.ci.amd64.AMD64;
+import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
@@ -70,20 +77,71 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 .contains("HotSpotOSRCompilation")) {
             return;
         }
-
+        int slowInsertCount = 0; // Counter for how many slowdown instructions we've inserted globally
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
 
             boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
-
             if (ShouldWeSkipBlock) {
                 continue;
             }
-
+        
             int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
-
-            AMD64PointLesss PointLessa = new AMD64PointLesss(loopAmount);
-            instructions.add(1, PointLessa);
+        
+            // Find first delimiter
+            int firstDelimiterIndex = -1;
+            for (int idx = 0; idx < instructions.size(); idx++) {
+                LIRInstruction ins = instructions.get(idx);
+                if (ins instanceof DirectCallOp ||
+                    ins instanceof CompressPointerOp ||
+                    ins instanceof AMD64G1PostWriteBarrierOp ||
+                    ins instanceof UncompressPointerOp ||
+                    ins instanceof AMD64G1PreWriteBarrierOp ||
+                    ins instanceof TestByteBranchOp ||
+                    ins instanceof AMD64HotSpotSafepointOp ||
+                    ins instanceof AMD64HotSpotReturnOp  ) {
+                    firstDelimiterIndex = idx;
+                    break;
+                }
+            }
+        
+            int segmentEnd = (firstDelimiterIndex == -1) ? instructions.size() : firstDelimiterIndex;
+            if (segmentEnd == instructions.size()) {
+                // This means no delimiter found. Avoid inserting after the last instruction.
+                segmentEnd = instructions.size() - 1;
+            }
+        
+            // Distribute the initial loopAmount slowdown instructions before the first delimiter
+            // If segmentEnd <= 1, just insert all after the first instruction
+            if (segmentEnd <= 1) {
+                if (instructions.size() > 1 && loopAmount > 0) {
+                    for (int count = 0; count < loopAmount; count++) {
+                        Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
+                        instructions.add(1, new AMD64PointLessReg(reg));
+                        slowInsertCount++;
+                    }
+                }
+            } else {
+                // Distribute evenly
+                int segmentCount = segmentEnd;
+                int baseInsert = loopAmount / segmentCount;
+                int remainder = loopAmount % segmentCount;
+        
+                int insertionOffset = 0; 
+                for (int idx = 0; idx < segmentEnd; idx++) {
+                    int insertsHere = baseInsert + ((remainder > 0) ? 1 : 0);
+                    if (remainder > 0) remainder--;
+        
+                    int insertPos = idx + 1 + insertionOffset;
+                    for (int k = 0; k < insertsHere; k++) {
+                        Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
+                        instructions.add(insertPos, new AMD64PointLessReg(reg));
+                        slowInsertCount++;
+                        insertionOffset++;
+                        insertPos++;
+                    }
+                }
+            }
 
             int counter = 1;
             for (int i = 0; i < instructions.size(); i++) {
@@ -96,25 +154,44 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                         // Check if no code will be emitted
                         if (!toTest.willThisEmit()) {
-                            // System.out.println("CompressPointerOp will not emit any code for this
-                            // instruction.");
                             continue;
                         }
                     }
-                    // if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                    if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
+                        AMD64G1PostWriteBarrierOp toTest = (AMD64G1PostWriteBarrierOp) instructions.get(i);
+            
+                        if (toTest.sameReg()) {
+                            continue;
+                        }
+            
+                        if (toTest.shouldSkipBarrier()) {
+                            continue;
+                        }
+                    }
+                    if (instructions.get(i) instanceof AMD64G1PreWriteBarrierOp) {
+                        AMD64G1PreWriteBarrierOp toTest = (AMD64G1PreWriteBarrierOp) instructions.get(i);
+            
+                        if (toTest.sameReg()) {
+                            continue;
+                        }
+            
+                        if (toTest.shouldSkipBarrier()) {
+                            continue;
+                        }
+                    }
 
-                    //     AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
-                    //             .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                    //     instructions.add(i, PointLessb);
-                    // } else {
+                    if (instructions.get(i) instanceof UncompressPointerOp) {
+                        UncompressPointerOp toTest = (UncompressPointerOp) instructions.get(i);
+                        if (toTest.isNonNull() || toTest.shiftEqZero()) {
+                            continue;
+                        }
+                        
+                    }
 
                         AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
                                 .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                        instructions.add(i + 1, PointLessb);
-                    //}
-                    counter++;
-
-                    // Move the index forward to skip over the newly inserted marker
+                        instructions.add(i, PointLessb);
+                        counter++;
                     i++;
                 }
             }
