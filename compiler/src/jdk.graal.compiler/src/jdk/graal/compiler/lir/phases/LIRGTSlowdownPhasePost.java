@@ -190,15 +190,41 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                         
                     }
 
-                        AMD64PointLesss PointLessb = new AMD64PointLesss(GTBlockSlowDownLookUp
+                        AMD64PointLesss PointLessbackend = new AMD64PointLesss(GTBlockSlowDownLookUp
                                 .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                        instructions.add(i, PointLessb);
+                        instructions.add(i, PointLessbackend);
                         counter++;
                     i++;
+
+
+                    // there are cases where there is a set of instructions that become theier own block, but they exist inbetween delimiters
+                    LIRInstruction ins = instructions.get(i + 1);
+                    if (ins instanceof DirectCallOp ||
+                        ins instanceof CompressPointerOp ||
+                        ins instanceof AMD64G1PostWriteBarrierOp ||
+                        ins instanceof UncompressPointerOp ||
+                        ins instanceof AMD64G1PreWriteBarrierOp ||
+                        ins instanceof TestByteBranchOp ||
+                        ins instanceof AMD64HotSpotSafepointOp ||
+                        ins instanceof AMD64HotSpotReturnOp || i + 1 == instructions.size() - 1) {
+
+                        }
+                    else{
+
+                        AMD64PointLesss PointLessHiddenBackend = new AMD64PointLesss(GTBlockSlowDownLookUp
+                                .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                        instructions.add(i + 1, PointLessHiddenBackend);
+                        counter++;
+                    }
+
                 }
             }
 
+
+            
         }
+
+        
 
     }
 

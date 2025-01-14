@@ -80,10 +80,10 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
         outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
-            if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
-            .contains("moveDisks")) {
-                System.out.println("Found moveDisks");
-            }
+            // if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
+            // .contains("moveDisks")) {
+            //     System.out.println("Found moveDisks");
+            // }
 
             BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
             if (b == null) {
@@ -154,6 +154,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                         
                     }
 
+
                     // If we reach here, it's one of the other instruction types (e.g., AMD64G1PreWriteBarrierOp)
                     // Insert the marker anyway.
                     instructions.add(i,
@@ -161,9 +162,25 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                     counter++;
                     i++;
 
+                    LIRInstruction ins = instructions.get(i + 1);
+                    if (ins instanceof DirectCallOp ||
+                        ins instanceof CompressPointerOp ||
+                        ins instanceof AMD64G1PostWriteBarrierOp ||
+                        ins instanceof UncompressPointerOp ||
+                        ins instanceof AMD64G1PreWriteBarrierOp ||
+                        ins instanceof TestByteBranchOp ||
+                        ins instanceof AMD64HotSpotSafepointOp ||
+                        ins instanceof AMD64HotSpotReturnOp || i + 1 == instructions.size() - 1) {
+
+                        }
+                    else{
+                        instructions.add(i + 1,
+                        new AMD64GTBackendMarkerOp(b.getId(), counter, lirGenRes.getCompilationUnitName()));
+                        counter++;
+                    }
+
                 }
             }
-
         }
     }
 
