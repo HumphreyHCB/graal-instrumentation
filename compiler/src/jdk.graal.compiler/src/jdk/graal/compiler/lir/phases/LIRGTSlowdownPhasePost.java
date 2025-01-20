@@ -46,6 +46,7 @@ import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64PointLesss;
+import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
 import jdk.graal.compiler.lir.amd64.AMD64PointLessReg;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
@@ -85,33 +86,35 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
             if (ShouldWeSkipBlock) {
                 continue;
             }
-        
+
             int loopAmount = GTBlockSlowDownLookUp.getBlockCost(lirGenRes.getCompilationUnitName(), b.getId());
-        
+
             // Find first delimiter
             int firstDelimiterIndex = -1;
             for (int idx = 0; idx < instructions.size(); idx++) {
                 LIRInstruction ins = instructions.get(idx);
                 if (ins instanceof DirectCallOp ||
-                    ins instanceof CompressPointerOp ||
-                    ins instanceof AMD64G1PostWriteBarrierOp ||
-                    ins instanceof UncompressPointerOp ||
-                    ins instanceof AMD64G1PreWriteBarrierOp ||
-                    ins instanceof TestByteBranchOp ||
-                    ins instanceof AMD64HotSpotSafepointOp ||
-                    ins instanceof AMD64HotSpotReturnOp  ) {
+                        ins instanceof CompressPointerOp ||
+                        ins instanceof AMD64G1PostWriteBarrierOp ||
+                        ins instanceof UncompressPointerOp ||
+                        ins instanceof AMD64G1PreWriteBarrierOp ||
+                        ins instanceof TestByteBranchOp ||
+                        ins instanceof AMD64HotSpotSafepointOp ||
+                        ins instanceof AMD64HotSpotReturnOp ||
+                        ins instanceof AMD64PrefetchOp) {
                     firstDelimiterIndex = idx;
                     break;
                 }
             }
-        
+
             int segmentEnd = (firstDelimiterIndex == -1) ? instructions.size() : firstDelimiterIndex;
             if (segmentEnd == instructions.size()) {
                 // This means no delimiter found. Avoid inserting after the last instruction.
                 segmentEnd = instructions.size() - 1;
             }
-        
-            // Distribute the initial loopAmount slowdown instructions before the first delimiter
+
+            // Distribute the initial loopAmount slowdown instructions before the first
+            // delimiter
             // If segmentEnd <= 1, just insert all after the first instruction
             if (segmentEnd <= 1) {
                 if (instructions.size() > 1 && loopAmount > 0) {
@@ -126,12 +129,13 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 int segmentCount = segmentEnd;
                 int baseInsert = loopAmount / segmentCount;
                 int remainder = loopAmount % segmentCount;
-        
-                int insertionOffset = 0; 
+
+                int insertionOffset = 0;
                 for (int idx = 0; idx < segmentEnd; idx++) {
                     int insertsHere = baseInsert + ((remainder > 0) ? 1 : 0);
-                    if (remainder > 0) remainder--;
-        
+                    if (remainder > 0)
+                        remainder--;
+
                     int insertPos = idx + 1 + insertionOffset;
                     for (int k = 0; k < insertsHere; k++) {
                         Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
@@ -145,71 +149,52 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
             int counter = 1;
             for (int i = 0; i < instructions.size(); i++) {
-                if (instructions.get(i) instanceof DirectCallOp ||
-                        instructions.get(i) instanceof CompressPointerOp ||
-                        instructions.get(i) instanceof AMD64G1PostWriteBarrierOp || instructions.get(i) instanceof UncompressPointerOp || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp ) {
+                if (instructions.get(i) instanceof CompressPointerOp 
+                    || instructions.get(i) instanceof DirectCallOp
+                    || instructions.get(i) instanceof AMD64G1PostWriteBarrierOp 
+                    || instructions.get(i) instanceof UncompressPointerOp 
+                    || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp
+                    || instructions.get(i) instanceof AMD64HotSpotSafepointOp
+                    || instructions.get(i) instanceof AMD64PrefetchOp ){
 
                     if (instructions.get(i) instanceof CompressPointerOp) {
                         CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
-
-                        // Check if no code will be emitted
-                        if (!toTest.willThisEmit()) {
-                            continue;
-                        }
+                        // ATM we dont do anything specific with this instruction
                     }
                     if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
                         AMD64G1PostWriteBarrierOp toTest = (AMD64G1PostWriteBarrierOp) instructions.get(i);
-            
-                        if (toTest.sameReg()) {
-                            continue;
-                        }
-            
-                        //if (toTest.shouldSkipBarrier()) {
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
+                        // ATM we dont do anything specific with this instruction
                     }
                     if (instructions.get(i) instanceof AMD64G1PreWriteBarrierOp) {
                         AMD64G1PreWriteBarrierOp toTest = (AMD64G1PreWriteBarrierOp) instructions.get(i);
-            
-                        if (toTest.sameReg()) {
-                            continue;
-                        }
-            
-                        //if (toTest.shouldSkipBarrier()) {
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
+                        // ATM we dont do anything specific with this instruction
                     }
 
                     if (instructions.get(i) instanceof UncompressPointerOp) {
                         UncompressPointerOp toTest = (UncompressPointerOp) instructions.get(i);
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
-                        
+                        // ATM we dont do anything specific with this instruction
                     }
 
-                        AMD64PointLesss PointLessbackend = new AMD64PointLesss(GTBlockSlowDownLookUp
-                                .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
-                        instructions.add(i, PointLessbackend);
-                        counter++;
+                    AMD64PointLesss PointLessbackend = new AMD64PointLesss(GTBlockSlowDownLookUp
+                            .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                    instructions.add(i, PointLessbackend);
+                    counter++;
                     i++;
 
-
-                    // there are cases where there is a set of instructions that become theier own block, but they exist inbetween delimiters
+                    // there are cases where there is a set of instructions that become theier own
+                    // block, but they exist inbetween delimiters
                     LIRInstruction ins = instructions.get(i + 1);
                     if (ins instanceof DirectCallOp ||
-                        ins instanceof CompressPointerOp ||
-                        ins instanceof AMD64G1PostWriteBarrierOp ||
-                        ins instanceof UncompressPointerOp ||
-                        ins instanceof AMD64G1PreWriteBarrierOp ||
-                        ins instanceof TestByteBranchOp ||
-                        ins instanceof AMD64HotSpotSafepointOp ||
-                        ins instanceof AMD64HotSpotReturnOp || i + 1 == instructions.size() - 1) {
+                            ins instanceof CompressPointerOp ||
+                            ins instanceof AMD64G1PostWriteBarrierOp ||
+                            ins instanceof UncompressPointerOp ||
+                            ins instanceof AMD64G1PreWriteBarrierOp ||
+                            ins instanceof TestByteBranchOp ||
+                            ins instanceof AMD64HotSpotSafepointOp ||
+                            ins instanceof AMD64HotSpotReturnOp ||
+                            i + 1 == instructions.size() - 1) {
 
-                        }
-                    else{
+                    } else {
 
                         AMD64PointLesss PointLessHiddenBackend = new AMD64PointLesss(GTBlockSlowDownLookUp
                                 .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
@@ -220,11 +205,7 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 }
             }
 
-
-            
         }
-
-        
 
     }
 

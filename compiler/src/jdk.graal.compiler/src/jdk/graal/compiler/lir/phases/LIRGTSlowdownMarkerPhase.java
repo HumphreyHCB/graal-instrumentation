@@ -29,17 +29,26 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
+import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotStrategySwitchOp;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionCostMultiLookup;
 import jdk.graal.compiler.hotspot.amd64.LIRInstructionVectorLookup;
+import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.CmpBranchOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.CmpConstBranchOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.FloatBranchOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestBranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
+import jdk.graal.compiler.lir.amd64.AMD64Move.CompareAndSwapOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
+import jdk.graal.compiler.lir.amd64.AMD64Move.NullCheckOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
@@ -53,6 +62,7 @@ import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.nodeinfo.Verbosity;
+import jdk.graal.compiler.nodes.calc.CompareNode.CompareOp;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.Option;
@@ -106,52 +116,31 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                     || instructions.get(i) instanceof DirectCallOp
                     || instructions.get(i) instanceof AMD64G1PostWriteBarrierOp 
                     || instructions.get(i) instanceof UncompressPointerOp 
-                    || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp) {
-                        
-            
+                    || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp
+                    || instructions.get(i) instanceof AMD64HotSpotSafepointOp
+                    || instructions.get(i) instanceof AMD64PrefetchOp ){
+
+
                     if (instructions.get(i) instanceof CompressPointerOp) {
                         CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);
             
-                        if (!toTest.willThisEmit()) {
-                            continue;
-                        }
-
+                        // ATM we dont do anything specific with this instruction
                     }
     
                     if (instructions.get(i) instanceof AMD64G1PostWriteBarrierOp) {
                         AMD64G1PostWriteBarrierOp toTest = (AMD64G1PostWriteBarrierOp) instructions.get(i);
-            
-                        if (toTest.sameReg()) {
-                            continue;
-                        }
-            
-                        //if (toTest.shouldSkipBarrier()) {
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
-            
+                        // ATM we dont do anything specific with this instruction
                     }
 
 
                     if (instructions.get(i) instanceof AMD64G1PreWriteBarrierOp) {
                         AMD64G1PreWriteBarrierOp toTest = (AMD64G1PreWriteBarrierOp) instructions.get(i);
-            
-                        if (toTest.sameReg()) {
-                            continue;
-                        }
-            
-                       // if (toTest.shouldSkipBarrier()) {
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
+                        // ATM we dont do anything specific with this instruction
                     }
 
                     if (instructions.get(i) instanceof UncompressPointerOp) {
                         UncompressPointerOp toTest = (UncompressPointerOp) instructions.get(i);
-                        if (toTest.isNonNull()) {
-                            continue;
-                        }
-                        
+                        // ATM we dont do anything specific with this instruction
                     }
 
 
@@ -162,6 +151,8 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                     counter++;
                     i++;
 
+
+
                     LIRInstruction ins = instructions.get(i + 1);
                     if (ins instanceof DirectCallOp ||
                         ins instanceof CompressPointerOp ||
@@ -170,7 +161,8 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                         ins instanceof AMD64G1PreWriteBarrierOp ||
                         ins instanceof TestByteBranchOp ||
                         ins instanceof AMD64HotSpotSafepointOp ||
-                        ins instanceof AMD64HotSpotReturnOp || i + 1 == instructions.size() - 1) {
+                        ins instanceof AMD64HotSpotReturnOp ||
+                         i + 1 == instructions.size() - 1) {
 
                         }
                     else{
@@ -181,6 +173,11 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
                 }
             }
+
+            
+
+            
+            
         }
     }
 
