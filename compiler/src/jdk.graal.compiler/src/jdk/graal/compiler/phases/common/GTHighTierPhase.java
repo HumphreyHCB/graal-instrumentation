@@ -28,9 +28,13 @@ import java.util.Optional;
 
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.memory.BarrierType;
+import jdk.graal.compiler.core.common.type.BuboCallSiteRead;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.graph.NodeClass;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.GT.GTCache;
+import jdk.graal.compiler.hotspot.meta.GT.GTDummyClass;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.calc.AddNode;
@@ -44,18 +48,25 @@ import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.phases.BasePhase;
+import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.ConstantNode;
+import jdk.graal.compiler.nodes.FixedNode;
+import jdk.graal.compiler.nodes.GTDummyNode;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaConstant;
 
 import jdk.vm.ci.meta.MetaAccessProvider;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.code.CodeUtil;
 
 /**
  * Adds ReadNode & Addres to Start of the graphg, this will be use in the Low Ter Instrumentation phase .
  */
 public class GTHighTierPhase extends BasePhase<HighTierContext> {
+    
+    public static ResolvedJavaMethod GTMethod = null;
+
 
     @Override
     public boolean checkContract() {
@@ -78,21 +89,18 @@ public class GTHighTierPhase extends BasePhase<HighTierContext> {
     protected void run(StructuredGraph graph, HighTierContext context) {
 
         try {
-            // the ID for this Compilation
-            int id = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-            ValueNode ID = graph
-                    .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
-
-
-            AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ID,graph,context,StampFactory.forBuboActivationCountRead());
-
-
-            
-            // add a ReachabilityFenceNode this should stop our address from being optmised out
-            ValueNode[] list = new ValueNode[]{ActivationCountBuffer};
-            ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
-            graph.addAfterFixed(graph.start(), fenceNode);
-            fenceNode.setStamp(StampFactory.forBuboVoid());
+            ClockTimeNode DummNode = new ClockTimeNode();
+            graph.add(DummNode);
+            for (ResolvedJavaMethod method : graph.getMethods()) {
+                //System.out.println("Method Name: " + method.getName());
+                if ("length".equals(method.getName())) {
+                    GTMethod = method;
+                }
+            }
+            if (GTMethod != null) {
+                DummNode.setNodeSourcePosition(new NodeSourcePosition(null, GTMethod, -1));
+            }
+            graph.addAfterFixed(graph.start(), DummNode);
 
 
         } catch (Exception e) {
