@@ -31,6 +31,7 @@ import java.util.Set;
 
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
@@ -41,12 +42,14 @@ import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.StandardOp.JumpOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
 import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64PointLesss;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
+import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
 import jdk.graal.compiler.lir.amd64.AMD64PointLessReg;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
@@ -61,6 +64,7 @@ import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
@@ -78,9 +82,12 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 .contains("HotSpotOSRCompilation")) {
             return;
         }
+        NodeSourcePosition source = null;
+
         int slowInsertCount = 0; // Counter for how many slowdown instructions we've inserted globally
         for (BasicBlock<?> b : lirGenRes.getLIR().getControlFlowGraph().getBlocks()) {
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+
 
             boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
             if (ShouldWeSkipBlock) {
@@ -112,15 +119,45 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 // This means no delimiter found. Avoid inserting after the last instruction.
                 segmentEnd = instructions.size() - 1;
             }
+            // if the value of MixGTSlowdown is anything byt -1 ( -1 is the deafult value, it should be a boolean as we never use its value) we will Set the source
+            if (GraalOptions.MixGTSlowdown.getValue(options) != -1) {   
+                int position = 1;
+                for (LIRInstruction instruction : instructions) {
+                    if (instruction instanceof StandardOp.LabelOp) {
+                        continue;
+                    }
+                    if (instruction.getPosition() != null) {
+                        source = instruction.getPosition(); // get first Source
+                        position = instructions.indexOf(instruction); // get the position of the first instruction with a source
+                        break;
+                    }
+                }
 
-            // Distribute the initial loopAmount slowdown instructions before the first
-            // delimiter
-            // If segmentEnd <= 1, just insert all after the first instruction
-            if (segmentEnd <= 1) {
+                for (int count = 0; count < loopAmount; count++) {
+                    Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
+                    AMD64PointLessReg pointLessReg = new AMD64PointLessReg(reg);
+                    if (source!= null){
+                        pointLessReg.setPosition(source);
+                        
+                    }
+                    instructions.add(position, pointLessReg);
+                    slowInsertCount++;
+                }
+                
+            }
+            else if (segmentEnd <= 1 ) {
+                // Distribute the initial loopAmount slowdown instructions before the first
+                // delimiter
+                // If segmentEnd <= 1, just insert all after the first instruction
                 if (instructions.size() > 1 && loopAmount > 0) {
                     for (int count = 0; count < loopAmount; count++) {
                         Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
-                        instructions.add(1, new AMD64PointLessReg(reg));
+                        AMD64PointLessReg pointLessReg = new AMD64PointLessReg(reg);
+                        if (source!= null){
+                            pointLessReg.setPosition(source);
+                            
+                        }
+                        instructions.add(1, pointLessReg);
                         slowInsertCount++;
                     }
                 }
@@ -139,7 +176,11 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                     int insertPos = idx + 1 + insertionOffset;
                     for (int k = 0; k < insertsHere; k++) {
                         Register reg = AMD64.cpuRegisters[slowInsertCount % AMD64.cpuRegisters.length];
-                        instructions.add(insertPos, new AMD64PointLessReg(reg));
+                        AMD64PointLessReg pointLessReg = new AMD64PointLessReg(reg);
+                        if (source!= null){
+                            pointLessReg.setPosition(source);
+                        }
+                        instructions.add(insertPos, pointLessReg);
                         slowInsertCount++;
                         insertionOffset++;
                         insertPos++;
@@ -177,6 +218,12 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                     AMD64PointLesss PointLessbackend = new AMD64PointLesss(GTBlockSlowDownLookUp
                             .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+
+                            PointLessbackend.setPosition(source);
+                            if (source!= null){
+                                PointLessbackend.setPosition(source);
+                                
+                            }
                     instructions.add(i, PointLessbackend);
                     counter++;
                     i++;
@@ -198,6 +245,9 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
                         AMD64PointLesss PointLessHiddenBackend = new AMD64PointLesss(GTBlockSlowDownLookUp
                                 .getBackendBlockCost(lirGenRes.getCompilationUnitName(), b.getId(), counter));
+                                if (source!= null){
+                                PointLessHiddenBackend.setPosition(source);
+                                }
                         instructions.add(i + 1, PointLessHiddenBackend);
                         counter++;
                     }
