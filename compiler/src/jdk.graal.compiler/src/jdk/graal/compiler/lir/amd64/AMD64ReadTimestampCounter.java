@@ -61,6 +61,6 @@ public class AMD64ReadTimestampCounter extends AMD64LIRInstruction {
 
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
-        masm.rdtsc();
+        //masm.rdtsc();
     }
 }

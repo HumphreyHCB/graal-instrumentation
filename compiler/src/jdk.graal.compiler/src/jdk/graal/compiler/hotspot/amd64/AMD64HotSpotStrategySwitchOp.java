@@ -38,6 +38,7 @@ import jdk.vm.ci.hotspot.HotSpotConstant;
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.Constant;
 
+public
 final class AMD64HotSpotStrategySwitchOp extends AMD64ControlFlow.StrategySwitchOp {
     public static final LIRInstructionClass<AMD64HotSpotStrategySwitchOp> TYPE = LIRInstructionClass.create(AMD64HotSpotStrategySwitchOp.class);
 

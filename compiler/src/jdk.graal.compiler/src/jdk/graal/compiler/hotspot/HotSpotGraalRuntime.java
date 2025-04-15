@@ -82,7 +82,6 @@ import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotVMConfigStore;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MetaAccessProvider;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.runtime.JVMCIBackend;
 
 //JaCoCo Exclude
@@ -127,8 +126,6 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
     private final Map<ExceptionAction, Integer> compilationProblemsPerAction;
 
     private final CompilerProfiler compilerProfiler;
-
-    public static ResolvedJavaMethod GRAAL_DUMMY_METHOD = null;
 
     /**
      * @param nameQualifier a qualifier to be added to this runtime's {@linkplain #getName() name}
@@ -202,14 +199,6 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
         if (GraalOptions.EnableGTSlowDown.getValue(options) || CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
-            //initalizeGT();
-            // try {
-            //     GRAAL_DUMMY_METHOD = getHostProviders().getMetaAccess().lookupJavaMethod(GTCache.class.getDeclaredMethod("TestPrint", new Class<?>[0]));
-            // } catch (Exception e) {
-            //     e.printStackTrace();
-            // }
-            // System.out.println("WE DID SOMTHING");           
-            
         }
 
         if(GraalOptions.LIRBlockSlowdownFileName.getValue(options) != GraalOptions.LIRCostFileName.getDefaultValue() ){
@@ -242,28 +231,6 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
     private void initalizeGT() {
         System.out.println("Groundtruth SlowDown Started......");
-        //context.getMetaAccess().lookupJavaMethod(GTCache.class.getDeclaredMethod("TestPrint", new Class<?>[0]))
-        //GTCache timeCache = new GTCache(options);
-        //timeCache.start();
-
-
-        // Thread writingHook = new Thread(() -> {
-        //     try {
-        //         timeCache.join();
-        //     } catch (InterruptedException e) {
-        //         // TODO Auto-generated catch block
-        //         e.printStackTrace();
-        //     }
-        //     if (CompilationResultBuilder.Options.CollectLIRCostInformation.getValue(options)) {
-        //         GTCache.postProcessingShutdown();
-        //     }
-        //     if (GraalOptions.LIRGTSlowDown.getValue(options)) {
-        //         // do we need to anything??
-        //     }
-            
-        //     System.out.println("Groundtruth SlowDown Shutdown......");
-    //);
-       // Runtime.getRuntime().addShutdownHook(writingHook);
     }
 
     /**

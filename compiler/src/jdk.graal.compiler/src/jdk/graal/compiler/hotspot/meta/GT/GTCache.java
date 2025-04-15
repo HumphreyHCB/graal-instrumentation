@@ -26,6 +26,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.util.json.JsonParser;
 import jdk.graal.compiler.util.json.JsonWriter;
 
+
 public class GTCache extends Thread {
 
     public static class Options {
@@ -39,6 +40,10 @@ public class GTCache extends Thread {
     private static Capstone capstoneParser;
     private static OptionValues OptionValues;
     private static Set<String> uniqueBytes;
+
+    public static void TestPrint() {
+        System.out.print("Test Print From Static Class");
+}
 
     public GTCache(OptionValues optionValues) {
         ActivationCountBuffer = new long[200_000];
