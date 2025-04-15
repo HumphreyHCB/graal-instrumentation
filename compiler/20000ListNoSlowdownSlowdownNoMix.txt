@@ -1,0 +1,2013 @@
+--- Execution profile ---
+Total samples       : 374398
+unknown_Java        : 8881 (2.37%)
+not_walkable_Java   : 967 (0.26%)
+
+--- 80141221986 ns (2.14%), 8014 samples
+  [ 0] List.tail
+  [ 1] [unknown_Java]
+
+--- 9560206022 ns (0.26%), 956 samples
+  [ 0] Interpreter
+  [ 1] [not_walkable_Java]
+
+--- 1830017934 ns (0.05%), 183 samples
+  [ 0] I2C/C2I adapters(0xb)
+  [ 1] [unknown_Java]
+
+--- 1730025344 ns (0.05%), 173 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1640002782 ns (0.04%), 164 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1619996695 ns (0.04%), 162 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1580015760 ns (0.04%), 158 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1570022440 ns (0.04%), 157 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1570022125 ns (0.04%), 157 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1559998008 ns (0.04%), 156 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1550037670 ns (0.04%), 155 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1550001380 ns (0.04%), 155 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1530043422 ns (0.04%), 153 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1529997907 ns (0.04%), 153 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1510036522 ns (0.04%), 151 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1469997091 ns (0.04%), 147 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 1440039996 ns (0.04%), 144 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1410028301 ns (0.04%), 141 samples
+  [ 0] List$Element.length
+  [ 1] List$Element.length
+  [ 2] List$Element.length
+  [ 3] List$Element.length
+  [ 4] List$Element.length
+  [ 5] List$Element.length
+  [ 6] List$Element.length
+  [ 7] List$Element.length
+  [ 8] List$Element.length
+  [ 9] List$Element.length
+  [10] List$Element.length
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1339991694 ns (0.04%), 134 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1330024403 ns (0.04%), 133 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1320034626 ns (0.04%), 132 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1320021943 ns (0.04%), 132 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1290053767 ns (0.03%), 129 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1290013935 ns (0.03%), 129 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1270020857 ns (0.03%), 127 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1240056790 ns (0.03%), 124 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1240027604 ns (0.03%), 124 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1230015596 ns (0.03%), 123 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1210017665 ns (0.03%), 121 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1210012835 ns (0.03%), 121 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1200049308 ns (0.03%), 120 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1200007064 ns (0.03%), 120 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1190012930 ns (0.03%), 119 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1190007521 ns (0.03%), 119 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1190003195 ns (0.03%), 119 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1179986177 ns (0.03%), 118 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1170025794 ns (0.03%), 117 samples
+  [ 0] List.tail
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1170009488 ns (0.03%), 117 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1170003864 ns (0.03%), 117 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1170002850 ns (0.03%), 117 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 1169997255 ns (0.03%), 117 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1169956849 ns (0.03%), 117 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 1140014673 ns (0.03%), 114 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1140014287 ns (0.03%), 114 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1139992151 ns (0.03%), 114 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1130035783 ns (0.03%), 113 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1130014113 ns (0.03%), 113 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1130008886 ns (0.03%), 113 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1129997374 ns (0.03%), 113 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1129983202 ns (0.03%), 113 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1100039104 ns (0.03%), 110 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1100037994 ns (0.03%), 110 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1090047084 ns (0.03%), 109 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1090026295 ns (0.03%), 109 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1090020305 ns (0.03%), 109 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1090016547 ns (0.03%), 109 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1090007760 ns (0.03%), 109 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1080037971 ns (0.03%), 108 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1080037228 ns (0.03%), 108 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1080027048 ns (0.03%), 108 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1070037729 ns (0.03%), 107 samples
+  [ 0] List.tail
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1070028248 ns (0.03%), 107 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1070023879 ns (0.03%), 107 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1070012896 ns (0.03%), 107 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1070005376 ns (0.03%), 107 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1069987500 ns (0.03%), 107 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1060028404 ns (0.03%), 106 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1060023402 ns (0.03%), 106 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1060005567 ns (0.03%), 106 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1050041158 ns (0.03%), 105 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1040008221 ns (0.03%), 104 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1040000468 ns (0.03%), 104 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1029989539 ns (0.03%), 103 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1020022670 ns (0.03%), 102 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1020021195 ns (0.03%), 102 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 1020003593 ns (0.03%), 102 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1020003150 ns (0.03%), 102 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1019983073 ns (0.03%), 102 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.benchmark
+  [14] Benchmark.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 1010029566 ns (0.03%), 101 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 1010022013 ns (0.03%), 101 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1010021241 ns (0.03%), 101 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1010009609 ns (0.03%), 101 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 1009993439 ns (0.03%), 101 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 1000041305 ns (0.03%), 100 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.benchmark
+  [ 9] Benchmark.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1000003670 ns (0.03%), 100 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 999993311 ns (0.03%), 100 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 989997881 ns (0.03%), 99 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.benchmark
+  [ 7] Benchmark.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 980034516 ns (0.03%), 98 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 980017451 ns (0.03%), 98 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.tail
+  [13] List.tail
+  [14] List.benchmark
+  [15] Benchmark.innerBenchmarkLoop
+  [16] Run.measure
+  [17] Run.doRuns
+  [18] Run.runBenchmark
+  [19] Harness.main
+
+--- 970027134 ns (0.03%), 97 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 970002329 ns (0.03%), 97 samples
+  [ 0] I2C/C2I adapters(0xbb)
+  [ 1] [unknown_Java]
+
+--- 960055797 ns (0.03%), 96 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 960018224 ns (0.03%), 96 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 959983127 ns (0.03%), 96 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 950029933 ns (0.03%), 95 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 950024780 ns (0.03%), 95 samples
+  [ 0] List.isShorterThan
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 950023896 ns (0.03%), 95 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.tail
+  [12] List.benchmark
+  [13] Benchmark.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 950021613 ns (0.03%), 95 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 950021172 ns (0.03%), 95 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 950007794 ns (0.03%), 95 samples
+  [ 0] List$Element.getNext
+  [ 1] List.isShorterThan
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.benchmark
+  [11] Benchmark.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+1582305598893   42.26%   158228  List$Element.getNext
+1509323404664   40.31%   150930  List.isShorterThan
+430326471960   11.49%    43032  List.tail
+ 15480030223    0.41%     1548  List.makeList
+  9860218438    0.26%      986  Interpreter
+  4950050871    0.13%      495  java.lang.Integer.valueOf
+  4300074521    0.11%      430  List$Element.length
+  4020088034    0.11%      402  I2C/C2I adapters(0xb)
+  1529995543    0.04%      153  I2C/C2I adapters(0xbb)
+  1520033893    0.04%      152  jdk.graal.compiler.phases.BasePhase.apply
+  1480066554    0.04%      148  InstanceKlass::find_method_index
+  1080002456    0.03%      108  List.benchmark
+   880005026    0.02%       88  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.scheduleEarliestIterative
+   719967069    0.02%       72  java.util.ArrayList.add
+   710002517    0.02%       71  jdk.graal.compiler.phases.common.CanonicalizerPhase.processNode
+   630973592    0.02%       63  G1ParScanThreadState::trim_queue_to_threshold
+   630031936    0.02%       63  jdk.graal.compiler.phases.common.LoweringPhase.process
+   629988972    0.02%       63  jdk.graal.compiler.nodes.loop.LoopFragment.computeNodes
+   540019258    0.01%       54  itable stub
+   540003190    0.01%       54  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryCanonicalize
+   539957532    0.01%       54  java.util.Formatter$FormatSpecifier.print
+   520024712    0.01%       52  jdk.graal.compiler.phases.common.CanonicalizerPhase.processWorkSet
+   510018631    0.01%       51  jdk.graal.compiler.nodes.cfg.ReversePostOrder.compute
+   510000159    0.01%       51  jdk.graal.compiler.phases.common.ConditionalEliminationUtil.tryProveGuardCondition
+   509978585    0.01%       51  jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener.changed
+   480021948    0.01%       48  jdk.graal.compiler.graph.NodeClass.dataEquals
+   480013664    0.01%       48  jdk.graal.compiler.core.common.type.AbstractObjectStamp.join0
+   479978216    0.01%       48  jdk.graal.compiler.graph.NodeUsageIterator.advance
+   470008675    0.01%       47  jdk.graal.compiler.core.common.type.IntegerStamp.create
+   450017597    0.01%       45  I2C/C2I adapters(0xbbb)
+   430013553    0.01%       43  jdk.graal.compiler.nodes.cfg.HIRBlock.assignPredecessorsAndSuccessors
+   430010367    0.01%       43  jdk.graal.compiler.graph.Graph.findDuplicate
+   420023312    0.01%       42  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortNodesLatestWithinBlock
+   410021251    0.01%       41  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.perBasicBlockFrequencyAction
+   410019467    0.01%       41  jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+   410017654    0.01%       41  jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+   400023568    0.01%       40  ThreadInVMfromNative::ThreadInVMfromNative
+   390016540    0.01%       39  I2C/C2I adapters(0xba)
+   380016049    0.01%       38  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+   379993933    0.01%       38  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime
+   370021759    0.01%       37  jdk.graal.compiler.java.BytecodeParser.appendInvoke
+   370019118    0.01%       37  jdk.graal.compiler.graph.Node.updatePredecessor
+   360004324    0.01%       36  jdk.graal.compiler.phases.common.inlining.InliningUtil.updateSourcePosition
+   350027920    0.01%       35  jdk.graal.compiler.phases.common.inlining.InliningUtil.inline
+   350022819    0.01%       35  jdk.graal.compiler.graph.Node.addUsage
+   350015929    0.01%       35  jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator.forward
+   350001833    0.01%       35  InstanceKlass::allocate_objArray
+   350001758    0.01%       35  Benchmark.innerBenchmarkLoop
+   350001276    0.01%       35  jdk.graal.compiler.graph.Node.getNodeInfo
+   349997467    0.01%       35  org.graalvm.collections.EconomicMapImpl.getHashIndex
+   349975262    0.01%       35  ConstantPool::klass_at_impl
+   340008685    0.01%       34  jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+   340008189    0.01%       34  java.lang.Object.hashCode
+   339995924    0.01%       34  jdk.graal.compiler.graph.NodeMap.set
+   339991653    0.01%       34  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.hasNext
+   339987283    0.01%       34  jdk.internal.math.DoubleToDecimal.toDecimal
+   330035465    0.01%       33  jdk.graal.compiler.java.BciBlockMapping.computeBlockOrder
+   330007267    0.01%       33  I2C/C2I adapters(0xbbbb)
+   330004533    0.01%       33  CodeHeap::find_blob
+   320016480    0.01%       32  java.util.Formatter.parse
+   320003956    0.01%       32  jdk.graal.compiler.hotspot.ProfileReplaySupport.getCanonicalGraphString
+   319988701    0.01%       32  jdk.graal.compiler.graph.Node.clone
+   310033107    0.01%       31  CodeCache::find_blob
+   310022970    0.01%       31  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computePostdominators
+   310022780    0.01%       31  jdk.graal.compiler.java.BytecodeParser.createTarget
+   310022321    0.01%       31  jdk.graal.compiler.nodes.FrameState.<init>
+   310013519    0.01%       31  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeLoopInformation
+   300007790    0.01%       30  jdk.graal.compiler.nodes.ValueNode.graph
+   300004325    0.01%       30  jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+   299975865    0.01%       30  java.lang.AbstractStringBuilder.append
+   290126351    0.01%       29  __memset_avx2_unaligned_erms
+   280030812    0.01%       28  Dictionary::find_class
+   280008298    0.01%       28  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlocks
+   279985765    0.01%       28  jbyte_disjoint_arraycopy
+   279983552    0.01%       28  jdk.graal.compiler.nodes.PiNode.canonical
+   279980466    0.01%       28  sun.security.provider.SHA2.implCompress0
+   270029801    0.01%       27  jdk.graal.compiler.graph.Node.initialize
+   270026110    0.01%       27  jdk.graal.compiler.java.FrameStateBuilder.create
+   270013928    0.01%       27  jdk.graal.compiler.java.BytecodeParser.build
+   270007483    0.01%       27  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.rpoInnerLoopsFirst
+   270000525    0.01%       27  org.graalvm.collections.EconomicMapImpl.setKey
+   260015906    0.01%       26  jdk.graal.compiler.nodes.util.GraphUtil.killWithUnusedFloatingInputs
+   260006064    0.01%       26  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processInputs
+   259997627    0.01%       26  java.util.Arrays.copyOf
+   259997158    0.01%       26  jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator.dropDeleted
+   259990824    0.01%       26  jdk.graal.compiler.nodes.calc.AddNode.canonical
+   259988203    0.01%       26  jdk.graal.compiler.phases.BasePhase.getEnclosingPhase
+   259980634    0.01%       26  jdk.graal.compiler.nodes.IfNode.simplify
+   250023371    0.01%       25  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processNode
+   250012467    0.01%       25  jdk.graal.compiler.graph.Graph.register
+   249998975    0.01%       25  jdk.graal.compiler.phases.graph.ReentrantNodeIterator.apply
+   240011679    0.01%       24  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlocks
+   240003019    0.01%       24  org.graalvm.collections.EconomicMapImpl.findLinear
+   240001430    0.01%       24  jdk.graal.compiler.graph.NodeList.<init>
+   239998436    0.01%       24  java.util.ArrayList.grow
+   239986346    0.01%       24  org.graalvm.collections.EconomicMapImpl.getRawValue
+   239980475    0.01%       24  jdk.graal.compiler.java.FrameStateBuilder.initializeForMethodStart
+   230015774    0.01%       23  jdk.graal.compiler.java.BytecodeParser.processBytecode
+   230011171    0.01%       23  jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walkTo
+   230004696    0.01%       23  jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lowerWithoutDelegation
+   230002705    0.01%       23  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewCondition
+   229998706    0.01%       23  jdk.graal.compiler.graph.NodeClass.createNodeDuplicates
+   229991204    0.01%       23  jdk.graal.compiler.lir.LIRIntrospection.visitEach
+   220010968    0.01%       22  jdk.graal.compiler.java.BytecodeParser.<init>
+   220008124    0.01%       22  jdk.graal.compiler.java.BytecodeParser.genIf
+   220005990    0.01%       22  methodHandle::~methodHandle
+   220005122    0.01%       22  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeDominators
+   220002304    0.01%       22  jdk.graal.compiler.java.LocalLiveness.computeLiveness
+   220002267    0.01%       22  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryInferStamp
+   219998768    0.01%       22  org.graalvm.collections.EconomicMapImpl.put
+   219993061    0.01%       22  jdk.graal.compiler.graph.Graph.eventCounterOverflows
+   219986436    0.01%       22  org.graalvm.collections.EconomicMapImpl.setRawValue
+   219983303    0.01%       22  java.util.ArrayDeque.addLast
+   219981997    0.01%       22  jdk.graal.compiler.lir.alloc.lsra.Range.intersectsAt
+   211046328    0.01%       21  __tls_get_addr
+   210117388    0.01%       21  JavaThread::pd_last_frame
+   210036254    0.01%       21  jdk.graal.compiler.lir.alloc.lsra.MoveResolver.resolveMappings
+   210029602    0.01%       21  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.compute
+   210017378    0.01%       21  jdk.graal.compiler.nodes.StructuredGraph.notifyInliningDecision
+   210012734    0.01%       21  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.fromMetaspace
+   210010480    0.01%       21  java.util.concurrent.ConcurrentHashMap.computeIfAbsent
+   210005096    0.01%       21  java.lang.Object.getClass
+   210003574    0.01%       21  jdk.graal.compiler.virtual.phases.ea.PEReadEliminationClosure.processNode
+   209999444    0.01%       21  jdk.vm.ci.hotspot.HotSpotConstantPool.lookupField
+   209992747    0.01%       21  jdk.graal.compiler.asm.amd64.AMD64BaseAssembler.emitOperandHelper
+   209977448    0.01%       21  CompilationPolicy::select_task
+   200017643    0.01%       20  jdk.graal.compiler.java.BciBlockMapping.iterateOverBytecodes
+   200012139    0.01%       20  jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase.buildIntervals
+   200009086    0.01%       20  jdk.graal.compiler.graph.NodeWorkList.addAll
+   200005541    0.01%       20  CompilationPolicy::create_mdo
+   200005211    0.01%       20  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.advanceInput
+   200001338    0.01%       20  jdk.graal.compiler.debug.ScopeImpl.close
+   200000788    0.01%       20  InterpreterRuntime::frequency_counter_overflow_inner
+   200000677    0.01%       20  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.forward
+   199996092    0.01%       20  List.verifyResult
+   199994858    0.01%       20  jdk.graal.compiler.java.BytecodeParser.openNodeContext
+   199993158    0.01%       20  org.graalvm.collections.EconomicMapImpl.find
+   199989066    0.01%       20  jdk.graal.compiler.nodes.calc.IntegerLowerThanNode$LowerOp.findSynonym
+   199982818    0.01%       20  jdk.graal.compiler.nodes.java.LoadFieldNode.canonical
+   191578075    0.01%       19  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+   190177953    0.01%       19  ___pthread_mutex_trylock
+   190009633    0.01%       19  MethodData::bci_to_dp
+   190008231    0.01%       19  java.util.HashMap.getNode
+   190006122    0.01%       19  jdk.graal.compiler.graph.NodeClass.addGraphDuplicate
+   190005563    0.01%       19  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processEnd
+   189998484    0.01%       19  jdk.graal.compiler.lir.RedundantMoveElimination$Optimization.solveDataFlow
+   189998206    0.01%       19  methodHandle::operator=
+   189997149    0.01%       19  java.util.RegularEnumSet.contains
+   189995218    0.01%       19  java.util.ArrayList$Itr.hasNext
+   189995046    0.01%       19  jdk.graal.compiler.core.common.type.IntegerStamp.join
+   189985376    0.01%       19  java.util.Formatter.format
+   180023177    0.00%       18  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlock
+   180016332    0.00%       18  jdk.graal.compiler.graph.Graph.updateNodeCaches
+   180011477    0.00%       18  jdk.graal.compiler.debug.DebugContext.log
+   180010441    0.00%       18  jdk.graal.compiler.graph.NodeClass.registerAtInputsAsUsage
+   180008518    0.00%       18  jdk.graal.compiler.java.BytecodeParser.genGetField
+   180007836    0.00%       18  jdk.graal.compiler.core.gen.NodeLIRBuilder.matchComplexExpressions
+   180007089    0.00%       18  jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.get
+   180004034    0.00%       18  jdk.graal.compiler.phases.common.inlining.walker.ComputeInliningRelevance$Scope.process
+   180000136    0.00%       18  jdk.graal.compiler.nodes.loop.LoopFragment.markFloating
+   179994433    0.00%       18  java.util.Formatter$FormatSpecifier.<init>
+   179990867    0.00%       18  jdk.graal.compiler.java.FrameStateBuilder.verifyStackEffect
+   179988155    0.00%       18  jdk.graal.compiler.core.common.Fields.copy
+   172117188    0.00%       17  [vdso]
+   170022723    0.00%       17  jdk.graal.compiler.lir.alloc.lsra.Interval.getSplitChildAtOpId
+   170020409    0.00%       17  jdk.graal.compiler.core.common.type.IntegerStamp.<init>
+   170013362    0.00%       17  jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+   170012349    0.00%       17  jdk.graal.compiler.graph.TypedGraphNodeIterator.<init>
+   170011258    0.00%       17  jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase.computeLocalLiveSets
+   170009639    0.00%       17  jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.findLeafConcreteSubtype
+   170005919    0.00%       17  jdk.graal.compiler.graph.Node.replaceAtUsage
+   170005410    0.00%       17  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.next
+   170003402    0.00%       17  jdk.graal.compiler.nodes.FixedWithNextNode.next
+   170000543    0.00%       17  jdk.graal.compiler.phases.PhaseSuite.notApplicableTo
+   169999435    0.00%       17  InterpreterRuntime::anewarray
+   169997151    0.00%       17  jdk.graal.compiler.graph.Graph.uniqueHelper
+   169996933    0.00%       17  jdk.graal.compiler.core.common.type.IntegerStamp$2.foldStampImpl
+   169992128    0.00%       17  Stub<IntrinsicStubsGen.sha256ImplCompress>
+   160021203    0.00%       16  jdk.graal.compiler.java.BytecodeParser.processBlock
+   160018420    0.00%       16  org.graalvm.collections.EconomicMapImpl.getKey
+   160018235    0.00%       16  jdk.graal.compiler.lir.alloc.lsra.LinearScanAssignLocationsPhase.assignLocations
+   160013020    0.00%       16  jdk.graal.compiler.core.common.type.IntegerStamp.asConstant
+   160011119    0.00%       16  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.replaceConstantInputs
+   160010922    0.00%       16  jdk.graal.compiler.graph.Graph.addOrUniqueWithInputs
+   160010421    0.00%       16  jdk.graal.compiler.graph.NodeWorkList$IterativeNodeWorkList$1.next
+   160009697    0.00%       16  InterpreterRuntime::ldc
+   160009489    0.00%       16  jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.createMethod
+   160009090    0.00%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlock
+   160007453    0.00%       16  jdk.graal.compiler.graph.NodeSourcePosition.<init>
+   160004970    0.00%       16  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processNode
+   160004779    0.00%       16  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processStack
+   160004166    0.00%       16  jdk.graal.compiler.graph.Node.isAlive
+   160003127    0.00%       16  jdk.graal.compiler.graph.NodeMap.get
+   159999236    0.00%       16  InstanceKlass::uncached_lookup_method
+   159998187    0.00%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.calcDominatorRanges
+   159989326    0.00%       16  jdk.graal.compiler.nodes.calc.IntegerEqualsNode$IntegerEqualsOp.canonical
+   150014769    0.00%       15  CompLevel CompilationPolicy::common<CallPredicate>
+   150014359    0.00%       15  jdk.graal.compiler.lir.alloc.lsra.LinearScanResolveDataFlowPhase.resolveCollectMappings
+   150014342    0.00%       15  java.lang.String.<init>
+   150007353    0.00%       15  org.graalvm.collections.EconomicMapImpl.create

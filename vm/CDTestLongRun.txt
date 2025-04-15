@@ -1,0 +1,1685 @@
+--- Execution profile ---
+Total samples       : 32504
+unknown_Java        : 1040 (3.20%)
+not_walkable_Java   : 1089 (3.35%)
+deoptimization      : 2 (0.01%)
+
+--- 10600762393 ns (3.26%), 1060 samples
+  [ 0] Interpreter
+  [ 1] [not_walkable_Java]
+
+--- 6519750741 ns (2.01%), 652 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 5579863245 ns (1.72%), 558 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 5279912134 ns (1.62%), 528 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 3030412011 ns (0.93%), 303 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 2500962457 ns (0.77%), 250 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.reduceCollisionSet
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2239978863 ns (0.69%), 224 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.handleNewFrame
+  [ 2] CD.benchmark
+  [ 3] CD.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 2069791166 ns (0.64%), 207 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1760061534 ns (0.54%), 176 samples
+  [ 0] I2C/C2I adapters(0xb)
+  [ 1] [unknown_Java]
+
+--- 1540435287 ns (0.47%), 154 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 2] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.reduceCollisionSet
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1489892181 ns (0.46%), 149 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 1310261174 ns (0.40%), 131 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 1169973452 ns (0.36%), 117 samples
+  [ 0] I2C/C2I adapters(0xbb)
+  [ 1] [unknown_Java]
+
+--- 759861849 ns (0.23%), 76 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 729936624 ns (0.22%), 73 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 700024995 ns (0.22%), 70 samples
+  [ 0] cd.CollisionDetector.recurse
+  [ 1] [unknown_Java]
+
+--- 650508362 ns (0.20%), 65 samples
+  [ 0] cd.RedBlackTree.forEach
+  [ 1] cd.CollisionDetector.reduceCollisionSet
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 650133817 ns (0.20%), 65 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 630187913 ns (0.19%), 63 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 620197162 ns (0.19%), 62 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.putIntoMap
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 4] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.reduceCollisionSet
+  [ 8] cd.CollisionDetector.handleNewFrame
+  [ 9] CD.benchmark
+  [10] CD.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 610090812 ns (0.19%), 61 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] [unknown_Java]
+
+--- 600235035 ns (0.18%), 60 samples
+  [ 0] cd.CollisionDetector.lambda$reduceCollisionSet$5
+  [ 1] cd.CollisionDetector$$Lambda.0x00007f46c029f448.apply
+  [ 2] cd.RedBlackTree.forEach
+  [ 3] cd.CollisionDetector.reduceCollisionSet
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 599898184 ns (0.18%), 60 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 579886701 ns (0.18%), 58 samples
+  [ 0] cd.RedBlackTree.findNode
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 4] cd.RedBlackTree.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 560001793 ns (0.17%), 56 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 541372613 ns (0.17%), 54 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 529647439 ns (0.16%), 53 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 509973871 ns (0.16%), 51 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 509903222 ns (0.16%), 51 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.treeInsert
+  [ 3] cd.RedBlackTree.put
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 509808492 ns (0.16%), 51 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 479941068 ns (0.15%), 48 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 469855851 ns (0.14%), 47 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 450234140 ns (0.14%), 45 samples
+  [ 0] cd.RedBlackTree.treeMinimum
+  [ 1] cd.RedBlackTree$Node.successor
+  [ 2] cd.RedBlackTree.forEach
+  [ 3] cd.CollisionDetector.reduceCollisionSet
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 439934867 ns (0.14%), 44 samples
+  [ 0] som.Vector.append
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 430132850 ns (0.13%), 43 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 430003087 ns (0.13%), 43 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 429887708 ns (0.13%), 43 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 420222477 ns (0.13%), 42 samples
+  [ 0] InstanceKlass::find_method_index
+  [ 1] InstanceKlass::find_instance_method
+  [ 2] ConcreteMethodFinder::is_witness
+  [ 3] ConcreteMethodFinder::find_witness_anywhere
+  [ 4] Dependencies::find_unique_concrete_method
+  [ 5] c2v_findUniqueConcreteMethod
+  [ 6] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 7] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 8] jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.uniqueConcreteMethod
+  [ 9] jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.findUniqueConcreteMethod
+  [10] jdk.graal.compiler.nodes.java.MethodCallTargetNode.devirtualizeCall
+  [11] jdk.graal.compiler.nodes.java.MethodCallTargetNode.findSpecialCallTarget
+  [12] jdk.graal.compiler.java.BytecodeParser.appendInvoke
+  [13] jdk.graal.compiler.java.BytecodeParser.genDynamicInvokeHelper
+  [14] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [15] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [16] jdk.graal.compiler.java.BytecodeParser.processBytecode
+  [17] jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+  [18] jdk.graal.compiler.java.BytecodeParser.handleBytecodeBlock
+  [19] jdk.graal.compiler.java.BytecodeParser.processBlock
+  [20] jdk.graal.compiler.java.BytecodeParser.build
+  [21] jdk.graal.compiler.java.BytecodeParser.buildRootMethod
+  [22] jdk.graal.compiler.java.GraphBuilderPhase$Instance.run
+  [23] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [24] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [25] jdk.graal.compiler.phases.BasePhase.apply
+  [26] jdk.graal.compiler.phases.BasePhase.apply
+  [27] jdk.graal.compiler.phases.PhaseSuite.run
+  [28] jdk.graal.compiler.phases.BasePhase.apply
+  [29] jdk.graal.compiler.phases.BasePhase.apply
+  [30] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.parseBytecodes
+  [31] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.<init>
+  [32] jdk.graal.compiler.phases.common.inlining.info.elem.Inlineable.getInlineableElement
+  [33] jdk.graal.compiler.phases.common.inlining.info.AbstractInlineInfo.populateInlinableElements
+  [34] jdk.graal.compiler.phases.common.inlining.walker.InliningData.processNextInvoke
+  [35] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [36] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [37] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [38] jdk.graal.compiler.phases.BasePhase.apply
+  [39] jdk.graal.compiler.phases.BasePhase.apply
+  [40] jdk.graal.compiler.core.phases.BaseTier.run
+  [41] jdk.graal.compiler.phases.BasePhase.apply
+  [42] jdk.graal.compiler.phases.BasePhase.apply
+  [43] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [44] jdk.graal.compiler.core.GraalCompiler.compile
+  [45] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [46] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [47] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [48] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [49] jdk.graal.compiler.core.CompilationWrapper.run
+  [50] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [51] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [52] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [53] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [54] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 420067178 ns (0.13%), 42 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 419976050 ns (0.13%), 42 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 419945663 ns (0.13%), 42 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 5] cd.RedBlackTree.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 409963667 ns (0.13%), 41 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 4] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.reduceCollisionSet
+  [ 8] cd.CollisionDetector.handleNewFrame
+  [ 9] CD.benchmark
+  [10] CD.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 390098463 ns (0.12%), 39 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 3] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.reduceCollisionSet
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 389842708 ns (0.12%), 39 samples
+  [ 0] CompilationPolicy::select_task
+  [ 1] CompileQueue::get
+  [ 2] CompileBroker::compiler_thread_loop
+  [ 3] JavaThread::thread_main_inner
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+
+--- 380093479 ns (0.12%), 38 samples
+  [ 0] I2C/C2I adapters(0xbbb)
+  [ 1] [unknown_Java]
+
+--- 380061052 ns (0.12%), 38 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.putIntoMap
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 379989825 ns (0.12%), 38 samples
+  [ 0] Interpreter
+  [ 1] [unknown_Java]
+
+--- 379910515 ns (0.12%), 38 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 4] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.reduceCollisionSet
+  [ 8] cd.CollisionDetector.handleNewFrame
+  [ 9] CD.benchmark
+  [10] CD.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 360481519 ns (0.11%), 36 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 2] G1RemSet::scan_heap_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 350028253 ns (0.11%), 35 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.putIntoMap
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 350014519 ns (0.11%), 35 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 349963214 ns (0.11%), 35 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 330058494 ns (0.10%), 33 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 330027378 ns (0.10%), 33 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 320322736 ns (0.10%), 32 samples
+  [ 0] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 1] som.Vector.forEach
+  [ 2] cd.CollisionDetector.reduceCollisionSet
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 320126259 ns (0.10%), 32 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] [unknown_Java]
+
+--- 320005454 ns (0.10%), 32 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.putIntoMap
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 309950643 ns (0.10%), 31 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 4] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.reduceCollisionSet
+  [ 8] cd.CollisionDetector.handleNewFrame
+  [ 9] CD.benchmark
+  [10] CD.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 309950060 ns (0.10%), 31 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 299985241 ns (0.09%), 30 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 5] cd.RedBlackTree.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 290278742 ns (0.09%), 29 samples
+  [ 0] cd.CollisionDetector.lambda$reduceCollisionSet$5
+  [ 1] cd.CollisionDetector$$Lambda.0x00007f46c029f448.apply
+  [ 2] cd.RedBlackTree.forEach
+  [ 3] cd.CollisionDetector.reduceCollisionSet
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 289892086 ns (0.09%), 29 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 280051597 ns (0.09%), 28 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 280034873 ns (0.09%), 28 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 279977708 ns (0.09%), 28 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 4] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 6] som.Vector.forEach
+  [ 7] cd.CollisionDetector.reduceCollisionSet
+  [ 8] cd.CollisionDetector.handleNewFrame
+  [ 9] CD.benchmark
+  [10] CD.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 279956902 ns (0.09%), 28 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.findNode
+  [ 2] cd.RedBlackTree.get
+  [ 3] cd.CollisionDetector.putIntoMap
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 279953905 ns (0.09%), 28 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 270095162 ns (0.08%), 27 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 270035670 ns (0.08%), 27 samples
+  [ 0] I2C/C2I adapters(0xba)
+  [ 1] [unknown_Java]
+
+--- 269951171 ns (0.08%), 27 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 269904856 ns (0.08%), 27 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 269832594 ns (0.08%), 27 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 259983430 ns (0.08%), 26 samples
+  [ 0] cd.Vector2D.compareTo
+  [ 1] cd.RedBlackTree.treeInsert
+  [ 2] cd.RedBlackTree.put
+  [ 3] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 4] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 5] som.Vector.forEach
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 259963488 ns (0.08%), 26 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 250354368 ns (0.08%), 25 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParCopyClosure<(G1Barrier)0, false>::do_oop
+  [ 2] InterpreterOopMap::iterate_oop
+  [ 3] frame::oops_interpreted_do
+  [ 4] JavaThread::oops_do_frames
+  [ 5] Thread::oops_do
+  [ 6] Threads::possibly_parallel_oops_do
+  [ 7] G1RootProcessor::process_java_roots
+  [ 8] G1RootProcessor::evacuate_roots
+  [ 9] G1EvacuateRegionsTask::scan_roots
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+
+--- 250015087 ns (0.08%), 25 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 249983885 ns (0.08%), 25 samples
+  [ 0] itable stub
+  [ 1] som.Vector.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 240112145 ns (0.07%), 24 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 240062438 ns (0.07%), 24 samples
+  [ 0] cd.CallSign.compareTo
+  [ 1] cd.CallSign.compareTo
+  [ 2] cd.RedBlackTree.findNode
+  [ 3] cd.RedBlackTree.get
+  [ 4] cd.CollisionDetector.lambda$handleNewFrame$1
+  [ 5] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 6] cd.RedBlackTree.forEach
+  [ 7] cd.CollisionDetector.handleNewFrame
+  [ 8] CD.benchmark
+  [ 9] CD.innerBenchmarkLoop
+  [10] Run.measure
+  [11] Run.doRuns
+  [12] Run.runBenchmark
+  [13] Harness.main
+
+--- 239969277 ns (0.07%), 24 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 239957032 ns (0.07%), 24 samples
+  [ 0] itable stub
+  [ 1] cd.RedBlackTree.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 230002569 ns (0.07%), 23 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.recurse
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 229973822 ns (0.07%), 23 samples
+  [ 0] G1BarrierSetRuntime::write_ref_array_post_entry
+  [ 1] [not_walkable_Java]
+
+--- 229939959 ns (0.07%), 23 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 229923412 ns (0.07%), 23 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 220462097 ns (0.07%), 22 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+
+--- 220396614 ns (0.07%), 22 samples
+  [ 0] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 1] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 2] som.Vector.forEach
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 220287866 ns (0.07%), 22 samples
+  [ 0] cd.CollisionDetector.voxelHash
+  [ 1] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 2] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.reduceCollisionSet
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 220060725 ns (0.07%), 22 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 6] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 7] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 8] som.Vector.forEach
+  [ 9] cd.CollisionDetector.reduceCollisionSet
+  [10] cd.CollisionDetector.handleNewFrame
+  [11] CD.benchmark
+  [12] CD.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 220017449 ns (0.07%), 22 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.CollisionDetector.putIntoMap
+  [ 2] cd.CollisionDetector.recurse
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 5] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 6] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 7] som.Vector.forEach
+  [ 8] cd.CollisionDetector.reduceCollisionSet
+  [ 9] cd.CollisionDetector.handleNewFrame
+  [10] CD.benchmark
+  [11] CD.innerBenchmarkLoop
+  [12] Run.measure
+  [13] Run.doRuns
+  [14] Run.runBenchmark
+  [15] Harness.main
+
+--- 220011157 ns (0.07%), 22 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 219954786 ns (0.07%), 22 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 219929707 ns (0.07%), 22 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.get
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.recurse
+  [ 7] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 8] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 9] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [10] som.Vector.forEach
+  [11] cd.CollisionDetector.reduceCollisionSet
+  [12] cd.CollisionDetector.handleNewFrame
+  [13] CD.benchmark
+  [14] CD.innerBenchmarkLoop
+  [15] Run.measure
+  [16] Run.doRuns
+  [17] Run.runBenchmark
+  [18] Harness.main
+
+--- 210026212 ns (0.06%), 21 samples
+  [ 0] cd.RedBlackTree.put
+  [ 1] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 2] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 3] som.Vector.forEach
+  [ 4] cd.CollisionDetector.handleNewFrame
+  [ 5] CD.benchmark
+  [ 6] CD.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 209990000 ns (0.06%), 21 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+--- 209966488 ns (0.06%), 21 samples
+  [ 0] cd.RedBlackTree.treeInsert
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.lambda$handleNewFrame$0
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.handleNewFrame
+  [ 6] CD.benchmark
+  [ 7] CD.innerBenchmarkLoop
+  [ 8] Run.measure
+  [ 9] Run.doRuns
+  [10] Run.runBenchmark
+  [11] Harness.main
+
+--- 200177317 ns (0.06%), 20 samples
+  [ 0] cd.CollisionDetector.voxelHash
+  [ 1] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 2] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 3] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 4] som.Vector.forEach
+  [ 5] cd.CollisionDetector.reduceCollisionSet
+  [ 6] cd.CollisionDetector.handleNewFrame
+  [ 7] CD.benchmark
+  [ 8] CD.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 200024133 ns (0.06%), 20 samples
+  [ 0] cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+  [ 1] cd.RedBlackTree.forEach
+  [ 2] cd.CollisionDetector.handleNewFrame
+  [ 3] CD.benchmark
+  [ 4] CD.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 200015723 ns (0.06%), 20 samples
+  [ 0] cd.RedBlackTree.treeMinimum
+  [ 1] cd.RedBlackTree$Node.successor
+  [ 2] cd.RedBlackTree.forEach
+  [ 3] cd.CollisionDetector.handleNewFrame
+  [ 4] CD.benchmark
+  [ 5] CD.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 200013519 ns (0.06%), 20 samples
+  [ 0] jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+  [ 1] cd.RedBlackTree.put
+  [ 2] cd.CollisionDetector.putIntoMap
+  [ 3] cd.CollisionDetector.recurse
+  [ 4] cd.CollisionDetector.recurse
+  [ 5] cd.CollisionDetector.recurse
+  [ 6] cd.CollisionDetector.drawMotionOnVoxelMap
+  [ 7] cd.CollisionDetector.lambda$reduceCollisionSet$4
+  [ 8] cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+  [ 9] som.Vector.forEach
+  [10] cd.CollisionDetector.reduceCollisionSet
+  [11] cd.CollisionDetector.handleNewFrame
+  [12] CD.benchmark
+  [13] CD.innerBenchmarkLoop
+  [14] Run.measure
+  [15] Run.doRuns
+  [16] Run.runBenchmark
+  [17] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+ 62940066314   19.36%     6294  jdk.graal.compiler.core.common.type.BuboCallSiteRead.toString
+ 10980752218    3.38%     1098  Interpreter
+ 10089571829    3.10%     1009  cd.RedBlackTree.treeInsert
+  4649608666    1.43%      465  cd.CollisionDetector.isInVoxel
+  4539636123    1.40%      454  cd.RedBlackTree.put
+  4459955613    1.37%      446  I2C/C2I adapters(0xb)
+  3469766525    1.07%      347  cd.RedBlackTree.findNode
+  3359489648    1.03%      336  cd.CallSign.compareTo
+  2799924690    0.86%      280  cd.Vector2D.compareTo
+  1999965843    0.62%      200  cd.Vector2D.compareNumbers
+  1930124896    0.59%      193  InstanceKlass::find_method_index
+  1889978531    0.58%      189  cd.CollisionDetector.recurse
+  1889860394    0.58%      189  I2C/C2I adapters(0xbb)
+  1440015327    0.44%      144  itable stub
+  1412754771    0.43%      141  G1ParScanThreadState::trim_queue_to_threshold
+  1309804108    0.40%      131  som.Vector.append
+  1190317971    0.37%      119  cd.RedBlackTree.forEach
+  1129660192    0.35%      113  cd.RedBlackTree.leftRotate
+   909925613    0.28%       91  jdk.graal.compiler.phases.BasePhase.apply
+   890513777    0.27%       89  cd.CollisionDetector.lambda$reduceCollisionSet$5
+   880525809    0.27%       88  cd.CollisionDetector.lambda$handleNewFrame$0
+   870119791    0.27%       87  cd.Vector2D.minus
+   860313028    0.26%       86  cd.RedBlackTree.treeMinimum
+   810518139    0.25%       81  cd.Simulator.simulate
+   800490027    0.25%       80  cd.CollisionDetector.voxelHash
+   800425005    0.25%       80  cd.Vector2D.plus
+   710124943    0.22%       71  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.scheduleEarliestIterative
+   670047490    0.21%       67  jdk.graal.compiler.nodes.loop.LoopFragment.computeNodes
+   629935745    0.19%       63  jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener.changed
+   609999068    0.19%       61  jdk.graal.compiler.phases.common.LoweringPhase.process
+   589910253    0.18%       59  org.graalvm.collections.EconomicMapImpl.getHashIndex
+   579905458    0.18%       58  jdk.graal.compiler.core.common.type.IntegerStamp.create
+   570067238    0.18%       57  I2C/C2I adapters(0xba)
+   559872704    0.17%       56  java.util.ArrayList.add
+   550361385    0.17%       55  cd.CollisionDetector$$Lambda.0x00007f46c029f228.apply
+   550020531    0.17%       55  I2C/C2I adapters(0xbbb)
+   549948297    0.17%       55  cd.Motion.findIntersection
+   539867525    0.17%       54  jdk.graal.compiler.phases.common.CanonicalizerPhase.processNode
+   530071488    0.16%       53  jdk.graal.compiler.nodes.IfNode.simplify
+   530010120    0.16%       53  jdk.graal.compiler.core.common.type.AbstractObjectStamp.join0
+   529917246    0.16%       53  jdk.graal.compiler.phases.common.ConditionalEliminationUtil.tryProveGuardCondition
+   520066602    0.16%       52  cd.CollisionDetector.putIntoMap
+   519999189    0.16%       52  cd.RedBlackTree$Node.successor
+   509944439    0.16%       51  java.util.Arrays.copyOf
+   509807891    0.16%       51  jdk.graal.compiler.java.BytecodeParser.appendInvoke
+   499827872    0.15%       50  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryCanonicalize
+   490160860    0.15%       49  jdk.graal.compiler.graph.NodeUsageIterator.advance
+   489931545    0.15%       49  jdk.internal.math.DoubleToDecimal.toDecimal
+   480350892    0.15%       48  cd.CollisionDetector$$Lambda.0x00007f46c029df70.apply
+   479876228    0.15%       48  java.util.Formatter$FormatSpecifier.print
+   470057145    0.14%       47  jdk.graal.compiler.graph.Node.clone
+   470053925    0.14%       47  jdk.graal.compiler.nodes.cfg.ReversePostOrder.compute
+   469931285    0.14%       47  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.perBasicBlockFrequencyAction
+   460087478    0.14%       46  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+   439999352    0.14%       44  jdk.graal.compiler.hotspot.ProfileReplaySupport.getCanonicalGraphString
+   439937299    0.14%       44  jdk.graal.compiler.phases.common.inlining.InliningUtil.inline
+   420050562    0.13%       42  jdk.graal.compiler.nodes.cfg.HIRBlock.assignPredecessorsAndSuccessors
+   420013544    0.13%       42  jdk.graal.compiler.graph.Node.updatePredecessor
+   419942069    0.13%       42  jdk.graal.compiler.phases.common.inlining.InliningUtil.updateSourcePosition
+   410085701    0.13%       41  jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+   410015152    0.13%       41  jdk.graal.compiler.java.FrameStateBuilder.create
+   409928732    0.13%       41  jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+   409659554    0.13%       41  jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator.forward
+   400016621    0.12%       40  jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+   400006055    0.12%       40  jdk.graal.compiler.graph.Node.addUsage
+   399980149    0.12%       40  jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+   390141783    0.12%       39  som.Vector.<init>
+   390101721    0.12%       39  som.Vector.forEach
+   389993981    0.12%       39  Dictionary::find_class
+   389934302    0.12%       39  jdk.graal.compiler.nodes.PiNode.canonical
+   389842708    0.12%       39  CompilationPolicy::select_task
+   380158535    0.12%       38  cd.RedBlackTree.get
+   380130423    0.12%       38  jdk.graal.compiler.java.BciBlockMapping.computeBlockOrder
+   380028960    0.12%       38  java.lang.AbstractStringBuilder.append
+   380006427    0.12%       38  jdk.graal.compiler.nodes.calc.AddNode.canonical
+   380005413    0.12%       38  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime
+   379947873    0.12%       38  jdk.graal.compiler.graph.Graph.register
+   379926062    0.12%       38  jdk.graal.compiler.graph.NodeClass.dataEquals
+   369948294    0.11%       37  CodeCache::find_blob
+   369908767    0.11%       37  ConstantPool::klass_at_impl
+   360548236    0.11%       36  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+   360045683    0.11%       36  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.fromMetaspace
+   359999716    0.11%       36  jdk.graal.compiler.graph.NodeMap.get
+   350091593    0.11%       35  jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walkTo
+   350065152    0.11%       35  CodeHeap::find_blob
+   349845657    0.11%       35  jdk.graal.compiler.graph.Graph.findDuplicate
+   340131879    0.10%       34  java.lang.Object.getClass
+   339980830    0.10%       34  jdk.graal.compiler.graph.NodeMap.set
+   339926848    0.10%       34  jdk.graal.compiler.nodes.util.GraphUtil.killWithUnusedFloatingInputs
+   330140767    0.10%       33  oop_disjoint_arraycopy
+   329981948    0.10%       33  jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator.dropDeleted
+   329976316    0.10%       33  InstanceKlass::allocate_objArray
+   329951715    0.10%       33  java.util.ArrayList$Itr.next
+   320032110    0.10%       32  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeDominators
+   319999887    0.10%       32  jdk.graal.compiler.java.BytecodeParser.createTarget
+   319977653    0.10%       32  jdk.graal.compiler.java.BytecodeParser.build
+   319965959    0.10%       32  java.util.ArrayList.grow
+   319956603    0.10%       32  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortNodesLatestWithinBlock
+   319923458    0.10%       32  ThreadInVMfromNative::ThreadInVMfromNative
+   310133409    0.10%       31  org.graalvm.collections.EconomicMapImpl.put
+   310109235    0.10%       31  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.rpoInnerLoopsFirst
+   310052350    0.10%       31  java.util.HashMap.getNode
+   310033634    0.10%       31  jdk.graal.compiler.lir.LIRIntrospection.visitEach
+   309967439    0.10%       31  jdk.graal.compiler.graph.NodeClass.createNodeDuplicates
+   300165816    0.09%       30  jdk.graal.compiler.graph.Node.getNodeInfo
+   300025789    0.09%       30  __memset_avx2_unaligned_erms
+   299965811    0.09%       30  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlocks
+   299964653    0.09%       30  cd.CollisionDetector.lambda$handleNewFrame$1
+   290103855    0.09%       29  jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run
+   290050577    0.09%       29  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processNode
+   290032460    0.09%       29  jdk.graal.compiler.nodes.calc.IntegerLowerThanNode$LowerOp.findSynonym
+   280072031    0.09%       28  cd.CollisionDetector$$Lambda.0x00007f46c029ede8.apply
+   280045267    0.09%       28  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlocks
+   280019734    0.09%       28  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processInputs
+   279996474    0.09%       28  jdk.graal.compiler.java.BytecodeParser.genIf
+   279978929    0.09%       28  jdk.graal.compiler.java.LocalLiveness.computeLiveness
+   279928795    0.09%       28  java.lang.Class.isInstance
+   270062283    0.08%       27  MethodData::bci_to_dp
+   270034006    0.08%       27  jdk.graal.compiler.nodes.FrameState.<init>
+   269916780    0.08%       27  InterpreterRuntime::frequency_counter_overflow_inner
+   260044281    0.08%       26  jdk.graal.compiler.java.BytecodeParser.processBlock
+   260020891    0.08%       26  jdk.graal.compiler.lir.alloc.lsra.LinearScanAssignLocationsPhase.assignLocations
+   260013068    0.08%       26  jdk.graal.compiler.phases.common.DominatorBasedGlobalValueNumberingPhase$GVNVisitor.enter
+   259975405    0.08%       26  jdk.graal.compiler.phases.common.CanonicalizerPhase.processWorkSet
+   259922304    0.08%       26  java.lang.String.hashCode
+   249995369    0.08%       25  java.util.Formatter.format
+   249977860    0.08%       25  java.util.ArrayDeque.addLast
+   249968508    0.08%       25  cd.CollisionDetector.lambda$handleNewFrame$3
+   249950222    0.08%       25  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computePostdominators
+   249855545    0.08%       25  org.graalvm.collections.EconomicMapImpl.findLinear
+   249821132    0.08%       25  jdk.graal.compiler.java.BytecodeParser.processBytecode
+   240046708    0.07%       24  jbyte_disjoint_arraycopy
+   239975059    0.07%       24  jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+   230054594    0.07%       23  java.util.RegularEnumSet.contains
+   230027415    0.07%       23  jdk.graal.compiler.core.gen.NodeLIRBuilder.matchComplexExpressions
+   230021339    0.07%       23  jdk.graal.compiler.phases.common.inlining.walker.ComputeInliningRelevance$Scope.process
+   230015037    0.07%       23  jdk.graal.compiler.java.BytecodeParser.genGetField
+   229993194    0.07%       23  jdk.graal.compiler.phases.graph.ReentrantNodeIterator.apply
+   229973822    0.07%       23  G1BarrierSetRuntime::write_ref_array_post_entry
+   229913441    0.07%       23  sun.security.provider.SHA2.implCompress0
+   229905584    0.07%       23  jdk.graal.compiler.nodes.java.LoadFieldNode.canonical
+   220083251    0.07%       22  java.util.concurrent.ConcurrentHashMap.computeIfAbsent
+   220053972    0.07%       22  jdk.graal.compiler.graph.NodeList.<init>
+   220047004    0.07%       22  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeLoopInformation
+   220002063    0.07%       22  InterpreterRuntime::resolve_invoke
+   219987547    0.07%       22  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortIntoList
+   219935503    0.07%       22  jdk.vm.ci.code.BytecodePosition.<init>
+   210171078    0.06%       21  jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.getCodeSize
+   210081275    0.06%       21  jdk.graal.compiler.nodes.FixedWithNextNode.next
+   210077535    0.06%       21  jdk.graal.compiler.nodes.ValueNode.graph
+   209984341    0.06%       21  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewStamp
+   209969728    0.06%       21  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryInferStamp
+   209967596    0.06%       21  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.calcDominatorRanges
+   209950956    0.06%       21  org.graalvm.collections.EconomicMapImpl.putHashEntry
+   209908438    0.06%       21  MemAllocator::allocate
+   209901612    0.06%       21  jdk.graal.compiler.core.common.type.IntegerStamp$2.foldStampImpl
+   200053610    0.06%       20  jdk.graal.compiler.lir.alloc.lsra.MoveResolver.resolveMappings
+   200038938    0.06%       20  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.compute
+   200028235    0.06%       20  CompLevel CompilationPolicy::common<CallPredicate>
+   200014193    0.06%       20  jdk.graal.compiler.java.BytecodeParser.<init>
+   199994175    0.06%       20  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewCondition
+   199993326    0.06%       20  __tls_get_addr
+   199960428    0.06%       20  jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.replaceParamsWithMoreInformativeArguments
+   199958727    0.06%       20  jdk.graal.compiler.java.BytecodeParser.createNonInlinedInvoke
+   190099313    0.06%       19  java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+   190063236    0.06%       19  jdk.graal.compiler.nodes.cfg.HIRBlock$UnmodifiableBlock.getPredecessorCount
+   190063067    0.06%       19  SymbolTable::do_lookup
+   190041080    0.06%       19  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlock
+   190027123    0.06%       19  jdk.graal.compiler.phases.common.CanonicalizerPhase$1.inputChanged
+   190005781    0.06%       19  jdk.graal.compiler.core.common.Fields.copy
+   190002219    0.06%       19  org.graalvm.collections.EconomicMapImpl.setRawValue
+   189999491    0.06%       19  jdk.graal.compiler.graph.NodeClass.applyEdges
+   189994679    0.06%       19  java.util.Formatter.parse
+   189992806    0.06%       19  jdk.graal.compiler.lir.alloc.lsra.Interval.getSplitChildAtOpId
+   189987989    0.06%       19  jdk.graal.compiler.nodes.IfNode.removeOrMaterializeIf
+   189981422    0.06%       19  java.lang.String.lastIndexOf
+   189969959    0.06%       19  jdk.graal.compiler.graph.NodeClass.addGraphDuplicate
+   189951401    0.06%       19  jdk.graal.compiler.lir.alloc.lsra.Range.intersectsAt
+   189943650    0.06%       19  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.forward
+   180059733    0.06%       18  CompilationPolicy::method_invocation_event
+   180011495    0.06%       18  InstanceKlass::array_klass
+   180008889    0.06%       18  jdk.graal.compiler.graph.Node.initialize
+   179995988    0.06%       18  org.graalvm.collections.EconomicMapImpl.find
+   179975388    0.06%       18  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.hasNext
+   179974693    0.06%       18  jdk.graal.compiler.graph.Graph$NodeEventListener.event
+   179953981    0.06%       18  org.graalvm.collections.EconomicMapImpl.grow
+   179952726    0.06%       18  jdk.graal.compiler.debug.DebugContext.enterCompilerPhase
+   179913196    0.06%       18  jdk.graal.compiler.lir.RedundantMoveElimination$Optimization.solveDataFlow
+   170698957    0.05%       17  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+   170137514    0.05%       17  java.lang.Object.<init>
+   170076299    0.05%       17  jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.createMethod
+   170074185    0.05%       17  jdk.graal.compiler.nodes.calc.IntegerLessThanNode$LessThanOp.findSynonym
+   170031352    0.05%       17  InvocationCounter::set_carry_on_overflow
+   170026010    0.05%       17  java.util.ArrayDeque.addFirst
+   170025313    0.05%       17  jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase.buildIntervals
+   170022676    0.05%       17  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processStack
+   170016778    0.05%       17  jdk.graal.compiler.graph.iterators.NodeIterable.filter
+   170016234    0.05%       17  java.lang.System.arraycopy
+   170006842    0.05%       17  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.next
+   170002606    0.05%       17  jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.parseBytecodes

@@ -1,0 +1,4360 @@
+WE DID SOMTHING
+Method Name: isLatin1
+
+
+
+
+
+
+Profiling started
+Starting List benchmark ...
+THe SOurce Position is: DummyMethod
+Method Name: setExclusiveOwnerThread
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getExclusiveOwnerThread
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+Method Name: isShorterThan
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: tail
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+[Use -Djdk.graal.LogFile=<path> to redirect Graal log output to a file.]
+[thread:14] scope: JVMCI CompilerThread0
+    [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler
+    Context: StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+      [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd
+      Context: StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+              [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd.EmitLIR.LIRStages.PostAllocationOptimizationStage.LIRGTSlowdownPhasePost
+              Exception raised in scope JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd.EmitLIR.LIRStages.PostAllocationOptimizationStage.LIRGTSlowdownPhasePost: java.lang.AssertionError: class jdk.graal.compiler.lir.amd64.AMD64PointLess class jdk.graal.compiler.lir.amd64.AMD64PointLessReg
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.LIRInstruction.<init>(LIRInstruction.java:230)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64LIRInstruction.<init>(AMD64LIRInstruction.java:39)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64PointLessReg.<init>(AMD64PointLessReg.java:44)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:144)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:69)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhaseSuite.run(LIRPhaseSuite.java:113)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLowLevel(LIRCompilerBackend.java:198)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0(LIRCompilerBackend.java:169)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR(LIRCompilerBackend.java:115)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd(LIRCompilerBackend.java:84)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.target.Backend.emitBackEnd(Backend.java:294)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:149)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+              	at jdk.internal.vm.ci/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+              
+Dumping debug output in '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722'
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/HotSpotCompilation-630[List.tail(List$Element,_List$Element,_List$Element)List$Element].cfg'
+              Context obj jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost@600a8dae
+              Context obj PostAllocationOptimizationStage:
+              ├── EdgeMoveOptimizer
+              ├── RedundantMoveElimination
+              ├── NullCheckOptimizer
+              ├── ControlFlowOptimizer
+              ├── ComputeCodeEmissionOrder
+              ├── LIRGTSlowdownPhasePost
+              └── StackMoveOptimizationPhase
+              
+              Context obj jdk.graal.compiler.hotspot.amd64.AMD64HotSpotNodeLIRBuilder@5b661d9
+              Context obj jdk.graal.compiler.hotspot.HotSpotLIRGenerationResult@5ac5053f
+              Context obj jdk.graal.compiler.lir.LIR@6668af48
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/HotSpotCompilation-630[List.tail(List$Element,_List$Element,_List$Element)List$Element].bgv'
+Could not connect to the IGV on 127.0.0.1:4445. Dumping IGV graphs in /home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722
+              Context obj StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+              Context obj jdk.graal.compiler.nodes.StructuredGraph$ScheduleResult@6c7eceb5
+              Context obj jdk.vm.ci.hotspot.HotSpotCodeCacheProvider@5d1f02b6
+              Context obj DebugDumpScope[630]
+[[[Graal compilation failure]]]
+Thread[#14,JVMCI CompilerThread0,9,system]: Compilation of List.tail(List$Element, List$Element, List$Element) @ -1 failed:
+java.lang.AssertionError: class jdk.graal.compiler.lir.amd64.AMD64PointLess class jdk.graal.compiler.lir.amd64.AMD64PointLessReg
+	at jdk.graal.compiler/jdk.graal.compiler.lir.LIRInstruction.<init>(LIRInstruction.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64LIRInstruction.<init>(AMD64LIRInstruction.java:39)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64PointLessReg.<init>(AMD64PointLessReg.java:44)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:144)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:69)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhaseSuite.run(LIRPhaseSuite.java:113)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLowLevel(LIRCompilerBackend.java:198)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0(LIRCompilerBackend.java:169)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR(LIRCompilerBackend.java:115)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd(LIRCompilerBackend.java:84)
+	at jdk.graal.compiler/jdk.graal.compiler.core.target.Backend.emitBackEnd(Backend.java:294)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:149)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+If in an environment where setting system properties is possible, the following
+properties are available to change compilation failure reporting:
+- To disable compilation failure notifications, set CompilationFailureAction to Silent (e.g., -Djdk.graal.CompilationFailureAction=Silent).
+- To print a message for a compilation failure without retrying the compilation, set CompilationFailureAction to Print (e.g., -Djdk.graal.CompilationFailureAction=Print).
+Retrying compilation of List.tail(List$Element, List$Element, List$Element) @ -1
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/graal_diagnostics_2516845@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1/HotSpotCompilation-630[List.tail(List$Element,_List$Element,_List$Element)List$Element].bgv'
+Could not connect to the IGV on 127.0.0.1:4445. Dumping IGV graphs in /home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/graal_diagnostics_2516845@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/graal_diagnostics_2516845@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1/HotSpotCompilation-630[List.tail(List$Element,_List$Element,_List$Element)List$Element].cfg'
+Method Name: tail
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nextNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+Method Name: getTable
+Method Name: indexFor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: valueOf
+Method Name: <init>
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: indexOf
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: indexOfChar
+
+
+
+
+
+
+Method Name: inflate
+
+
+
+
+
+
+Method Name: indexOfChar
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: implEncodeAsciiArray
+
+
+
+
+
+
+Method Name: clear
+
+
+
+
+
+
+Method Name: returnType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: inflate
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDeclaringClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: implEncodeAsciiArray
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: internalMemberName
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: forward
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: index
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: replace
+Method Name: newArray
+Method Name: <init>
+
+
+
+
+
+
+Method Name: basicTypeChar
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: type
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: replace
+Method Name: newArray
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: basicTypeClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+List: iterations=1 runtime: 20184627us
+Method Name: signedHashCode
+
+
+
+
+
+
+Method Name: makeList
+Method Name: <init>
+Method Name: setNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: signedHashCode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: forward
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lastIndexOf
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putVal
+
+
+
+
+
+
+List: iterations=2 runtime: 2530459us
+THe SOurce Position is: DummyMethod
+Method Name: unmaskedHashCode
+
+
+
+
+
+
+Method Name: putUTF8
+
+
+
+
+
+
+Method Name: stringFromByteBufferMatches
+
+
+
+
+
+
+Method Name: writePropertyObject
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+Method Name: writeByte
+
+
+
+
+
+
+List: iterations=3 runtime: 1846393us
+THe SOurce Position is: DummyMethod
+Method Name: expungeStaleEntries
+Method Name: indexFor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verifyInputs
+Method Name: getCount
+Method Name: isOptional
+Method Name: getName
+Method Name: assertTrue
+Method Name: iterator
+Method Name: next
+
+
+
+
+
+
+List: iterations=4 runtime: 1942957us
+THe SOurce Position is: DummyMethod
+Method Name: length
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkForDeletedNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isAlive
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <clinit>
+Method Name: linkToTargetMethod
+Method Name: invoke
+
+
+
+
+
+
+List: iterations=5 runtime: 2876536us
+Method Name: isNodeModificationCountsEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: reachabilityFence
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: id
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeId
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verifyIdsAreStable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isFound
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: coder
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: extractOriginalNodeId
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: assertTrue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: visitEach
+Method Name: getCount
+Method Name: getFlags
+Method Name: getValue
+Method Name: getFlags
+Method Name: getValueArray
+Method Name: getFlags
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: graph
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: session
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: ix
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: length
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: remaining
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: capacity
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: modCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: ensureAvailable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeModCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: charValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isNew
+Method Name: capacity
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: capacity
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDirectCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: charAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: charAt
+Method Name: checkIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isDeleted
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: usageModCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nodeUsageModCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: check
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: pick
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nextPutIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+List: iterations=6 runtime: 1844672us
+THe SOurce Position is: DummyMethod
+Method Name: putByte
+Method Name: putByteInternal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putByteInternal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: writeByte
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkProgress
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: eventCounterOverflows
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: put
+Method Name: session
+Method Name: ix
+Method Name: putByte
+Method Name: putByteInternal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: ordinal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: ensureCapacityInternal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hashCode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: check
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: runtime
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isNew
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nextPutIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getName
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getId
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: stamp
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: stamp
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+List: iterations=7 runtime: 1841975us
+THe SOurce Position is: DummyMethod
+Method Name: getConfig
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: config
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkForComodification
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasHashArray
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getHashTableSize
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: refersTo
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: refersToImpl
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: advance
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getBlocks
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: headIsNull
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getBlocks
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: matchesKey
+Method Name: refersTo
+Method Name: refersToImpl
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: poll
+Method Name: lock
+Method Name: unlock
+Method Name: release
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: indexFor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getTable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getHashIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getHashArray
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: find
+
+
+
+
+
+
+List: iterations=8 runtime: 1843040us
+THe SOurce Position is: DummyMethod
+Method Name: verifyNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verify
+Method Name: assertTrue
+Method Name: assertTrue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: size
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getRawValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: maskNull
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hash
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isMarked
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: node
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkKeyNonNull
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: node
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verify
+
+
+
+
+
+
+Method Name: getBeginNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isMarked
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findNodeClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verify
+
+
+
+
+
+
+List: iterations=9 runtime: 1842192us
+THe SOurce Position is: DummyMethod
+Method Name: contains
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nodeClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nodeClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: forward
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: elementData
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: min
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isEndMarker
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putShortUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: writeShort
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: indexOfRange
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getStackKind
+Method Name: stamp
+Method Name: stamp
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: predecessor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getBits
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putChar
+Method Name: ix
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putChar
+Method Name: session
+Method Name: putCharUnaligned
+Method Name: putCharUnalignedInternal
+Method Name: putCharUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putCharUnaligned
+Method Name: putCharUnalignedInternal
+Method Name: putCharUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putCharUnalignedInternal
+Method Name: putCharUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putCharUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: fireNodeEvent
+
+
+
+
+
+
+List: iterations=10 runtime: 1842470us
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkNoConcurrentAccess
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkNoConcurrentAccess
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeUnsafe
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+Method Name: checkIndex
+Method Name: elementData
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: convEndian
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: reverseBytes
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putCharUnaligned
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getEndNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isLatin1
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: size
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: access$100
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+Method Name: access$100
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getBytes
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: assertPositiveInt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: add
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: add
+
+
+
+
+
+
+List: iterations=11 runtime: 1842687us
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: toString
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: writePoolObject
+Method Name: writeByte
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: current
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getCount
+
+
+
+
+
+
+List: iterations=12 runtime: 1939968us
+THe SOurce Position is: DummyMethod
+Method Name: getLookupKey
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: iterator
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: successors
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getSuccessorIterable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findPoolType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findJavaField
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: field
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: field
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findSignature
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: signature
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: inc
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: signature
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findNodeSourcePosition
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: dropDeleted
+
+
+
+
+
+
+List: iterations=13 runtime: 1846975us
+THe SOurce Position is: DummyMethod
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nodeSourcePosition
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nodeSourcePosition
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isAllowedUsageType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isLogEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: canEncode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getMetaspacePointer
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getKlassPointer
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: append
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: forward
+Method Name: current
+Method Name: current
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: elementAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: append
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putStringAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: access$300
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+Method Name: access$300
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: inflateIfNeededFor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getSuccessorCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getLong
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findHash
+Method Name: getKey
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: set
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isNotEmpty
+
+
+
+
+
+
+List: iterations=14 runtime: 1843441us
+THe SOurce Position is: DummyMethod
+Method Name: verifyNode
+Method Name: assertTrue
+Method Name: verifyNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getMetaspacePointer
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getInt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: compareKeys
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: inputs
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getInputIterable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: iterator
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getData
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getName
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getKey
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isEmpty
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findMethod
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findLinear
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: contains
+
+
+
+
+
+
+Method Name: usages
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getBlocks
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: method
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: contains
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getValue
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkDescriptorExists
+Method Name: init
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: init
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: method
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDefaultValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isCast
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: mark
+
+
+
+
+
+
+List: iterations=15 runtime: 1844900us
+THe SOurce Position is: DummyMethod
+Method Name: verifyInput
+Method Name: isOptional
+Method Name: getName
+Method Name: assertTrue
+Method Name: assertFalse
+Method Name: assertTrue
+Method Name: getInputType
+Method Name: getName
+Method Name: assertTrue
+Method Name: getType
+Method Name: getName
+Method Name: assertTrue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isCountEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isCounterEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: add
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isCounterEnabledSlow
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getMethodPointer
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: booleanValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: blockFor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: stripCast
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isLogEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getMetadataHandle
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: guarantee
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: increment
+Method Name: add
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isRegister
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: assertFalse
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeInfo
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: max
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getInputType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isFrozen
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDominatorNumber
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findEnumOrdinal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: enumOrdinal
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findJavaTypeName
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: typeName
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setRawValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verifyNode
+Method Name: iterator
+Method Name: next
+Method Name: assertTrue
+Method Name: graph
+Method Name: graph
+Method Name: graph
+Method Name: graph
+Method Name: graph
+Method Name: assertTrue
+Method Name: iterator
+Method Name: next
+Method Name: assertTrue
+Method Name: assertTrue
+Method Name: iterator
+Method Name: next
+Method Name: assertTrue
+Method Name: assertTrue
+Method Name: verifyNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getResult
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorCount
+Method Name: forwardEndCount
+Method Name: forwardEndCount
+
+
+
+
+
+
+List: iterations=16 runtime: 1852975us
+THe SOurce Position is: DummyMethod
+Method Name: getStartOffset
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDominator
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: readOffset
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hash
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkInvariants
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: apply
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDebug
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getU1
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getU1
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: currentFrom
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: iterator
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: iterator
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: length
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: length
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: findNext
+Method Name: current
+Method Name: current
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: trackNodeSourcePosition
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isUnregistered
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: put
+Method Name: setKey
+Method Name: size
+Method Name: size
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: test
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lambda$getSortedSites$1
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getSuccessorCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: graph
+Method Name: graph
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: calcTo
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getNodeSourcePosition
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hashCode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getObject
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: allocateInstance
+
+
+
+
+
+
+List: iterations=17 runtime: 1935486us
+THe SOurce Position is: DummyMethod
+Method Name: constructorMethod
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isFinite
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getCaller
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPlatformKind
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getOptions
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: assertInRange
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: get
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getFirstDominated
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: size
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: wordIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: copyOfRange
+Method Name: copyOfRangeByte
+Method Name: checkLength
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: valueNumberable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: mask
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getCaller
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: compareAndSetState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: tryRelease
+Method Name: setExclusiveOwnerThread
+Method Name: setState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lock
+Method Name: acquire
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isLogEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: initialTryLock
+Method Name: compareAndSetState
+Method Name: setExclusiveOwnerThread
+Method Name: setState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: release
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getGraphState
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: unlock
+Method Name: release
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lock
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: layoutHelper
+Method Name: config
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isArray
+Method Name: config
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getSuccessors
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setHashArray
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lock
+Method Name: lock
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: read
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: putHashEntry
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: pollFirst
+Method Name: elementAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: unlock
+Method Name: unlock
+Method Name: release
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: intValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: position
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorAt
+Method Name: getBlocks
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: selectScope
+
+
+
+
+
+
+List: iterations=18 runtime: 1853479us
+THe SOurce Position is: DummyMethod
+Method Name: getAtIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setOptionalBits
+
+
+
+
+
+
+Method Name: getInput
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: processInputs
+Method Name: guarantee
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: setOptionalBits
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: removeFirst
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: <init>
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isLeafNode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=19 runtime: 1842663us
+List: iterations=20 runtime: 2027553us
+List: iterations=21 runtime: 1947233us
+Method Name: intersectsAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: contains
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+List: iterations=22 runtime: 1936663us
+Method Name: checkSplitChild
+Method Name: from
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: anyMatch
+
+
+
+
+
+
+Method Name: from
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getOptions
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkProgress
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=23 runtime: 1868998us
+Method Name: indexOfRange
+
+
+
+
+
+
+List: iterations=24 runtime: 1999126us
+Method Name: getSuccessorCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: indexOfRange
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: anyMatch
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: visitEachState
+Method Name: getCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: changed
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=25 runtime: 1863869us
+List: iterations=26 runtime: 1931308us
+Method Name: eventCounterOverflows
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=27 runtime: 1939644us
+List: iterations=28 runtime: 1934445us
+List: iterations=29 runtime: 1938023us
+Method Name: contains
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nextSetBit
+Method Name: wordIndex
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: mergeState
+Method Name: isObjectValue
+Method Name: isObjectValue
+Method Name: isObjectValue
+
+
+
+
+
+
+Method Name: sortIntoList
+
+
+
+
+
+
+List: iterations=30 runtime: 1934083us
+THe SOurce Position is: DummyMethod
+Method Name: visitValues
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: mergeState
+Method Name: isObjectValue
+Method Name: isObjectValue
+Method Name: isObjectValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verify
+Method Name: containsSucc
+Method Name: containsPred
+Method Name: get
+Method Name: iterator
+Method Name: iterator
+
+
+
+
+
+
+List: iterations=31 runtime: 1928490us
+List: iterations=32 runtime: 1931627us
+List: iterations=33 runtime: 1938226us
+List: iterations=34 runtime: 1944772us
+Method Name: registerAtInputsAsUsage
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: removeUsage
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: markFloating
+Method Name: isEmpty
+Method Name: loopBegin
+Method Name: iterator
+
+
+
+
+
+
+List: iterations=35 runtime: 1932040us
+THe SOurce Position is: DummyMethod
+Method Name: perBasicBlockFrequencyAction
+Method Name: setFrequencySource
+
+
+
+
+
+
+List: iterations=36 runtime: 2024674us
+THe SOurce Position is: DummyMethod
+Method Name: checkEmpty
+
+
+
+
+
+
+Method Name: verify
+Method Name: containsSucc
+Method Name: containsPred
+Method Name: push
+Method Name: pop
+Method Name: get
+Method Name: push
+Method Name: iterator
+Method Name: iterator
+
+
+
+
+
+
+List: iterations=37 runtime: 1949330us
+List: iterations=38 runtime: 1950175us
+THe SOurce Position is: DummyMethod
+Method Name: updateNodeCaches
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: rpoInnerLoopsFirst
+Method Name: getNodes
+Method Name: <init>
+Method Name: isLoopHeader
+Method Name: <init>
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: loopBegin
+
+
+
+
+
+
+List: iterations=39 runtime: 1841030us
+Method Name: createHash
+Method Name: size
+Method Name: getKey
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: rpoInnerLoopsFirst
+Method Name: getNodes
+Method Name: <init>
+Method Name: isLoopHeader
+Method Name: <init>
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: loopBegin
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: readProperties
+Method Name: getCount
+Method Name: getType
+Method Name: getNodeSourcePosition
+
+
+
+
+
+
+List: iterations=40 runtime: 2035724us
+THe SOurce Position is: DummyMethod
+Method Name: checkEmpty
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: matchShape
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+List: iterations=41 runtime: 1941919us
+Method Name: findDuplicate
+Method Name: valueEquals
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: sortNodesLatestWithinBlock
+Method Name: get
+Method Name: get
+Method Name: iterator
+Method Name: get
+Method Name: iterator
+
+
+
+
+
+
+List: iterations=42 runtime: 1973032us
+THe SOurce Position is: DummyMethod
+Method Name: calcLatestBlockForUsage
+Method Name: valueCount
+Method Name: getPredecessorAt
+Method Name: commonDominatorTyped
+Method Name: guarantee
+Method Name: commonDominatorTyped
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: covers
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=43 runtime: 1891587us
+List: iterations=44 runtime: 2029183us
+Method Name: count
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: applyEdges
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: add
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: registerAtSuccessorsAsPredecessor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: scheduleEarliestIterative
+Method Name: createNodeMap
+Method Name: <init>
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: <init>
+Method Name: getGuardsStage
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: linkToTargetMethod
+Method Name: invoke
+Method Name: getNodes
+Method Name: <init>
+Method Name: getNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getNodeCount
+Method Name: getNodes
+Method Name: <init>
+Method Name: forwardEndCount
+Method Name: getNodeCount
+Method Name: getBlockNodes
+Method Name: <init>
+Method Name: getBlockNodes
+Method Name: <init>
+
+
+
+
+
+
+List: iterations=45 runtime: 1839337us
+List: iterations=46 runtime: 1932187us
+THe SOurce Position is: DummyMethod
+Method Name: getSplitChildAtOpId
+Method Name: from
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: tryInferStamp
+Method Name: increment
+Method Name: add
+Method Name: isCounterEnabled
+Method Name: increment
+Method Name: add
+Method Name: isCounterEnabled
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+Method Name: getKey
+
+
+
+
+
+
+List: iterations=47 runtime: 1934810us
+THe SOurce Position is: DummyMethod
+Method Name: calcLatestBlock
+Method Name: contains
+Method Name: isLoopHeader
+Method Name: isBeforeStage
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: predecessorBlockSequentialLoopExit
+Method Name: getCfg
+
+
+
+
+
+
+List: iterations=48 runtime: 1933030us
+THe SOurce Position is: DummyMethod
+Method Name: isEndMarker
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: to
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: forEachState
+Method Name: getCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: location
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: next
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: nonNullElementAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: log
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: benchmark
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: dataEquals
+Method Name: getCount
+Method Name: getType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: verifyResult
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getRegister
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isVariable
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNoUsages
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: addLast
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: add
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: compute
+Method Name: createNodeBitMap
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: enqueueBlockInRPO
+Method Name: enqueueBlockInRPO
+Method Name: loopBegin
+Method Name: loopBegin
+
+
+
+
+
+
+List: iterations=49 runtime: 2629352us
+Method Name: getValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkGrow
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: asRegister
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: asRegisterValue
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: isEmpty
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: trueSuccessor
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: remove
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hasNext
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: equals
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: checkBlocks
+Method Name: create
+Method Name: create
+Method Name: create
+Method Name: <init>
+Method Name: <init>
+Method Name: intercept
+Method Name: contains
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: binarySort
+
+
+
+
+
+
+List: iterations=50 runtime: 1930931us
+Method Name: erasedType
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: compute
+Method Name: createNodeBitMap
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: loopBegin
+Method Name: enqueueBlockInRPO
+Method Name: enqueueBlockInRPO
+Method Name: loopBegin
+Method Name: loopBegin
+
+
+
+
+
+
+Method Name: getMajorVersion
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: hashCode
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getPredecessorAt
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getterFunctions
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: getDominatedSibling
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: parameterSlotCount
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: first
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+Method Name: lookupClass
+
+
+
+
+
+
+THe SOurce Position is: DummyMethod
+List: iterations=50 average: 2324605us total: 116230296us
+
+
+Total Runtime: 116230296us
+Method Name: currentIntersectsAt
+
+
+
+
+
+
+Graal diagnostic output saved in '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.55.29.722/graal_diagnostics_2516845@0.zip'

@@ -1,0 +1,416 @@
+Profiling started
+Method Name: coder
+Method Name: checkIndex
+Method Name: checkFromIndexSize
+Method Name: charAt
+Method Name: charAt
+Method Name: checkIndex
+Method Name: <init>
+Method Name: hashCode
+Method Name: isLatin1
+Method Name: tabAt
+Method Name: getReferenceAcquire
+Method Name: checkFromIndexSize
+Method Name: equals
+Method Name: length
+Method Name: getValue
+Method Name: requireNonNull
+Method Name: ordinal
+Method Name: basicType
+Method Name: basicTypeChar
+Method Name: hashCode
+Method Name: returnType
+Method Name: equals
+Method Name: getDeclaringClass
+Method Name: length
+Method Name: type
+Method Name: index
+Method Name: signedHashCode
+Method Name: signedHashCode
+Starting List benchmark ...
+Method Name: getNext
+Method Name: isShorterThan
+Method Name: tail
+Method Name: setNext
+Method Name: intValue
+Method Name: makeList
+Method Name: <init>
+Method Name: setNext
+Method Name: valueOf
+Method Name: length
+Method Name: benchmark
+Method Name: verifyResult
+Method Name: basicTypeClass
+Method Name: form
+Method Name: parameterSlotCount
+Method Name: ptypes
+Method Name: type
+Method Name: size
+Method Name: erasedType
+Method Name: indexOfChar
+Method Name: putUTF8
+Method Name: isEnabled
+List: iterations=1 runtime: 428153us
+List: iterations=2 runtime: 367093us
+Method Name: innerBenchmarkLoop
+Method Name: innerBenchmarkLoop
+Method Name: getExclusiveOwnerThread
+Method Name: getState
+Method Name: setState
+Method Name: lock
+Method Name: compareAndSetState
+Method Name: lock
+Method Name: release
+Method Name: initialTryLock
+Method Name: compareAndSetState
+Method Name: setExclusiveOwnerThread
+Method Name: setState
+Method Name: tryRelease
+Method Name: setExclusiveOwnerThread
+Method Name: setState
+Method Name: unlock
+Method Name: release
+List: iterations=3 runtime: 376560us
+Method Name: lock
+Method Name: lock
+List: iterations=4 runtime: 365879us
+Method Name: unlock
+Method Name: unlock
+Method Name: release
+List: iterations=5 runtime: 366146us
+List: iterations=6 runtime: 366215us
+List: iterations=7 runtime: 366498us
+List: iterations=8 runtime: 368685us
+List: iterations=9 runtime: 368401us
+List: iterations=10 runtime: 366435us
+List: iterations=11 runtime: 366005us
+List: iterations=12 runtime: 365787us
+List: iterations=13 runtime: 365747us
+List: iterations=14 runtime: 365770us
+List: iterations=15 runtime: 366316us
+List: iterations=16 runtime: 368138us
+List: iterations=17 runtime: 368152us
+List: iterations=18 runtime: 368062us
+List: iterations=19 runtime: 368028us
+List: iterations=20 runtime: 368086us
+List: iterations=21 runtime: 367983us
+List: iterations=22 runtime: 368001us
+List: iterations=23 runtime: 367971us
+List: iterations=24 runtime: 368420us
+Method Name: position
+List: iterations=25 runtime: 368071us
+List: iterations=26 runtime: 368167us
+List: iterations=27 runtime: 368025us
+List: iterations=28 runtime: 368123us
+Method Name: limit
+List: iterations=29 runtime: 368605us
+List: iterations=30 runtime: 366271us
+List: iterations=31 runtime: 366070us
+List: iterations=32 runtime: 365961us
+List: iterations=33 runtime: 365925us
+List: iterations=34 runtime: 365984us
+List: iterations=35 runtime: 365911us
+List: iterations=36 runtime: 366244us
+List: iterations=37 runtime: 365948us
+List: iterations=38 runtime: 366241us
+List: iterations=39 runtime: 365991us
+List: iterations=40 runtime: 365909us
+List: iterations=41 runtime: 365965us
+List: iterations=42 runtime: 368757us
+List: iterations=43 runtime: 378552us
+List: iterations=44 runtime: 366168us
+List: iterations=45 runtime: 366127us
+List: iterations=46 runtime: 366028us
+List: iterations=47 runtime: 365938us
+List: iterations=48 runtime: 365982us
+List: iterations=49 runtime: 367353us
+List: iterations=50 runtime: 366311us
+List: iterations=51 runtime: 366276us
+List: iterations=52 runtime: 365940us
+List: iterations=53 runtime: 365940us
+List: iterations=54 runtime: 365925us
+List: iterations=55 runtime: 365909us
+List: iterations=56 runtime: 365966us
+List: iterations=57 runtime: 365889us
+List: iterations=58 runtime: 365946us
+List: iterations=59 runtime: 365970us
+List: iterations=60 runtime: 365915us
+List: iterations=61 runtime: 365968us
+List: iterations=62 runtime: 365917us
+List: iterations=63 runtime: 365906us
+List: iterations=64 runtime: 365929us
+List: iterations=65 runtime: 366303us
+List: iterations=66 runtime: 365953us
+List: iterations=67 runtime: 366070us
+List: iterations=68 runtime: 365826us
+List: iterations=69 runtime: 365877us
+List: iterations=70 runtime: 367351us
+List: iterations=71 runtime: 365868us
+List: iterations=72 runtime: 365862us
+List: iterations=73 runtime: 450752us
+List: iterations=74 runtime: 413114us
+List: iterations=75 runtime: 366060us
+List: iterations=76 runtime: 365911us
+List: iterations=77 runtime: 366006us
+List: iterations=78 runtime: 366438us
+List: iterations=79 runtime: 365910us
+List: iterations=80 runtime: 366132us
+List: iterations=81 runtime: 365858us
+List: iterations=82 runtime: 466769us
+List: iterations=83 runtime: 380306us
+List: iterations=84 runtime: 365912us
+List: iterations=85 runtime: 365881us
+List: iterations=86 runtime: 365856us
+List: iterations=87 runtime: 365947us
+List: iterations=88 runtime: 365909us
+List: iterations=89 runtime: 365787us
+List: iterations=90 runtime: 367215us
+List: iterations=91 runtime: 365857us
+List: iterations=92 runtime: 366048us
+List: iterations=93 runtime: 365828us
+List: iterations=94 runtime: 365735us
+List: iterations=95 runtime: 365715us
+List: iterations=96 runtime: 365926us
+List: iterations=97 runtime: 365800us
+List: iterations=98 runtime: 443212us
+List: iterations=99 runtime: 402650us
+List: iterations=100 runtime: 365764us
+List: iterations=101 runtime: 365910us
+List: iterations=102 runtime: 365838us
+List: iterations=103 runtime: 365740us
+List: iterations=104 runtime: 365688us
+List: iterations=105 runtime: 378608us
+List: iterations=106 runtime: 365747us
+List: iterations=107 runtime: 365739us
+List: iterations=108 runtime: 365874us
+List: iterations=109 runtime: 365917us
+List: iterations=110 runtime: 484041us
+List: iterations=111 runtime: 365964us
+List: iterations=112 runtime: 365994us
+List: iterations=113 runtime: 365978us
+List: iterations=114 runtime: 366224us
+List: iterations=115 runtime: 366063us
+List: iterations=116 runtime: 365937us
+List: iterations=117 runtime: 365975us
+List: iterations=118 runtime: 366338us
+List: iterations=119 runtime: 366004us
+List: iterations=120 runtime: 366283us
+List: iterations=121 runtime: 365997us
+Method Name: capacity
+List: iterations=122 runtime: 410195us
+List: iterations=123 runtime: 430696us
+List: iterations=124 runtime: 366018us
+List: iterations=125 runtime: 366177us
+Method Name: maxBytesPerChar
+List: iterations=126 runtime: 365978us
+List: iterations=127 runtime: 365918us
+List: iterations=128 runtime: 365952us
+List: iterations=129 runtime: 365857us
+List: iterations=130 runtime: 365976us
+List: iterations=131 runtime: 367118us
+List: iterations=132 runtime: 366309us
+List: iterations=133 runtime: 365935us
+List: iterations=134 runtime: 365895us
+List: iterations=135 runtime: 366042us
+List: iterations=136 runtime: 365908us
+List: iterations=137 runtime: 365841us
+List: iterations=138 runtime: 365774us
+List: iterations=139 runtime: 365759us
+List: iterations=140 runtime: 365764us
+List: iterations=141 runtime: 365866us
+List: iterations=142 runtime: 365686us
+List: iterations=143 runtime: 371965us
+List: iterations=144 runtime: 365748us
+List: iterations=145 runtime: 366146us
+List: iterations=146 runtime: 365909us
+List: iterations=147 runtime: 365790us
+List: iterations=148 runtime: 365752us
+List: iterations=149 runtime: 365634us
+List: iterations=150 runtime: 365672us
+List: iterations=151 runtime: 367239us
+List: iterations=152 runtime: 365885us
+List: iterations=153 runtime: 365753us
+List: iterations=154 runtime: 365730us
+List: iterations=155 runtime: 365782us
+List: iterations=156 runtime: 365828us
+List: iterations=157 runtime: 365895us
+List: iterations=158 runtime: 365754us
+List: iterations=159 runtime: 366299us
+List: iterations=160 runtime: 365803us
+List: iterations=161 runtime: 365708us
+List: iterations=162 runtime: 478724us
+List: iterations=163 runtime: 365865us
+List: iterations=164 runtime: 365765us
+List: iterations=165 runtime: 365743us
+List: iterations=166 runtime: 365772us
+List: iterations=167 runtime: 365729us
+List: iterations=168 runtime: 365840us
+List: iterations=169 runtime: 365727us
+List: iterations=170 runtime: 365694us
+List: iterations=171 runtime: 367239us
+List: iterations=172 runtime: 366392us
+List: iterations=173 runtime: 365834us
+List: iterations=174 runtime: 457967us
+List: iterations=175 runtime: 386468us
+List: iterations=176 runtime: 365768us
+List: iterations=177 runtime: 365787us
+List: iterations=178 runtime: 365756us
+List: iterations=179 runtime: 366030us
+List: iterations=180 runtime: 365679us
+List: iterations=181 runtime: 365678us
+List: iterations=182 runtime: 365687us
+List: iterations=183 runtime: 365640us
+List: iterations=184 runtime: 365765us
+List: iterations=185 runtime: 365977us
+List: iterations=186 runtime: 366282us
+List: iterations=187 runtime: 365848us
+List: iterations=188 runtime: 365750us
+List: iterations=189 runtime: 365720us
+List: iterations=190 runtime: 365793us
+List: iterations=191 runtime: 367220us
+List: iterations=192 runtime: 365969us
+List: iterations=193 runtime: 365788us
+List: iterations=194 runtime: 365751us
+List: iterations=195 runtime: 365779us
+List: iterations=196 runtime: 365793us
+List: iterations=197 runtime: 365870us
+List: iterations=198 runtime: 365879us
+List: iterations=199 runtime: 366600us
+List: iterations=200 runtime: 365915us
+List: iterations=201 runtime: 365772us
+List: iterations=202 runtime: 365753us
+List: iterations=203 runtime: 365882us
+List: iterations=204 runtime: 365833us
+List: iterations=205 runtime: 365831us
+List: iterations=206 runtime: 378396us
+List: iterations=207 runtime: 365755us
+List: iterations=208 runtime: 365744us
+List: iterations=209 runtime: 365746us
+List: iterations=210 runtime: 365839us
+List: iterations=211 runtime: 365834us
+List: iterations=212 runtime: 367123us
+List: iterations=213 runtime: 366706us
+List: iterations=214 runtime: 366027us
+List: iterations=215 runtime: 365991us
+List: iterations=216 runtime: 365942us
+List: iterations=217 runtime: 365924us
+List: iterations=218 runtime: 365761us
+List: iterations=219 runtime: 365801us
+List: iterations=220 runtime: 365942us
+List: iterations=221 runtime: 365766us
+List: iterations=222 runtime: 365792us
+List: iterations=223 runtime: 365785us
+List: iterations=224 runtime: 365859us
+List: iterations=225 runtime: 365912us
+List: iterations=226 runtime: 366260us
+List: iterations=227 runtime: 366235us
+List: iterations=228 runtime: 365908us
+List: iterations=229 runtime: 365766us
+List: iterations=230 runtime: 365764us
+List: iterations=231 runtime: 365764us
+List: iterations=232 runtime: 367211us
+List: iterations=233 runtime: 366063us
+List: iterations=234 runtime: 365842us
+List: iterations=235 runtime: 365798us
+List: iterations=236 runtime: 365743us
+List: iterations=237 runtime: 365758us
+List: iterations=238 runtime: 365887us
+List: iterations=239 runtime: 365906us
+List: iterations=240 runtime: 366744us
+List: iterations=241 runtime: 365799us
+List: iterations=242 runtime: 365803us
+List: iterations=243 runtime: 365856us
+List: iterations=244 runtime: 365897us
+List: iterations=245 runtime: 365850us
+List: iterations=246 runtime: 365861us
+List: iterations=247 runtime: 365871us
+List: iterations=248 runtime: 365835us
+List: iterations=249 runtime: 365843us
+List: iterations=250 runtime: 365889us
+List: iterations=251 runtime: 365888us
+List: iterations=252 runtime: 367081us
+List: iterations=253 runtime: 365725us
+List: iterations=254 runtime: 366596us
+List: iterations=255 runtime: 365833us
+List: iterations=256 runtime: 365756us
+List: iterations=257 runtime: 365731us
+List: iterations=258 runtime: 365752us
+List: iterations=259 runtime: 365726us
+List: iterations=260 runtime: 365749us
+List: iterations=261 runtime: 365833us
+List: iterations=262 runtime: 365807us
+List: iterations=263 runtime: 365756us
+List: iterations=264 runtime: 365765us
+List: iterations=265 runtime: 365756us
+List: iterations=266 runtime: 365809us
+List: iterations=267 runtime: 378594us
+List: iterations=268 runtime: 383738us
+List: iterations=269 runtime: 365838us
+List: iterations=270 runtime: 365763us
+List: iterations=271 runtime: 365745us
+List: iterations=272 runtime: 367105us
+List: iterations=273 runtime: 365961us
+List: iterations=274 runtime: 365854us
+List: iterations=275 runtime: 365703us
+List: iterations=276 runtime: 365716us
+List: iterations=277 runtime: 365834us
+List: iterations=278 runtime: 365865us
+List: iterations=279 runtime: 365775us
+List: iterations=280 runtime: 365747us
+List: iterations=281 runtime: 366494us
+List: iterations=282 runtime: 365839us
+List: iterations=283 runtime: 365784us
+List: iterations=284 runtime: 365767us
+List: iterations=285 runtime: 365778us
+List: iterations=286 runtime: 365764us
+List: iterations=287 runtime: 365723us
+List: iterations=288 runtime: 365779us
+List: iterations=289 runtime: 365677us
+List: iterations=290 runtime: 365772us
+List: iterations=291 runtime: 365720us
+List: iterations=292 runtime: 365677us
+List: iterations=293 runtime: 367487us
+List: iterations=294 runtime: 366081us
+List: iterations=295 runtime: 366322us
+List: iterations=296 runtime: 365861us
+List: iterations=297 runtime: 365875us
+List: iterations=298 runtime: 365826us
+List: iterations=299 runtime: 365977us
+List: iterations=300 runtime: 365912us
+List: iterations=301 runtime: 365799us
+List: iterations=302 runtime: 365755us
+List: iterations=303 runtime: 365755us
+List: iterations=304 runtime: 365861us
+List: iterations=305 runtime: 365969us
+List: iterations=306 runtime: 372083us
+List: iterations=307 runtime: 365777us
+List: iterations=308 runtime: 366244us
+List: iterations=309 runtime: 365921us
+List: iterations=310 runtime: 366070us
+List: iterations=311 runtime: 367387us
+List: iterations=312 runtime: 412468us
+List: iterations=313 runtime: 368021us
+List: iterations=314 runtime: 367030us
+List: iterations=315 runtime: 369992us
+List: iterations=316 runtime: 369927us
+List: iterations=317 runtime: 421755us
+List: iterations=318 runtime: 437955us
+List: iterations=319 runtime: 375420us
+List: iterations=320 runtime: 462697us
+List: iterations=321 runtime: 412964us
+List: iterations=322 runtime: 368281us
+List: iterations=323 runtime: 482544us
+List: iterations=324 runtime: 366429us
+List: iterations=325 runtime: 366703us
+List: iterations=326 runtime: 365981us
+List: iterations=327 runtime: 365899us
+List: iterations=328 runtime: 366285us
+List: iterations=329 runtime: 368630us
+List: iterations=330 runtime: 366854us
+List: iterations=331 runtime: 513683us
+List: iterations=332 runtime: 381792us
+List: iterations=333 runtime: 484107us
+List: iterations=334 runtime: 366908us
+Method Name: getTableLength
+Method Name: newNode
+Method Name: afterNodeInsertion

@@ -1,0 +1,1780 @@
+--- Execution profile ---
+Total samples       : 203436
+unknown_Java        : 4373 (2.15%)
+not_walkable_Java   : 998 (0.49%)
+deoptimization      : 3 (0.00%)
+
+--- 36040688530 ns (1.77%), 3604 samples
+  [ 0] List.tail
+  [ 1] [unknown_Java]
+
+--- 9870293121 ns (0.49%), 987 samples
+  [ 0] Interpreter
+  [ 1] [not_walkable_Java]
+
+--- 2740045437 ns (0.13%), 274 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2730052647 ns (0.13%), 273 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2730010519 ns (0.13%), 273 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2710029508 ns (0.13%), 271 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2670091243 ns (0.13%), 267 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2670013161 ns (0.13%), 267 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2650037377 ns (0.13%), 265 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2630078222 ns (0.13%), 263 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2630032741 ns (0.13%), 263 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2600011342 ns (0.13%), 260 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2590078494 ns (0.13%), 259 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2580020108 ns (0.13%), 258 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2570053988 ns (0.13%), 257 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2550034254 ns (0.13%), 255 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2549976530 ns (0.13%), 255 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2540060930 ns (0.12%), 254 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2530017311 ns (0.12%), 253 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2510064880 ns (0.12%), 251 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2510034609 ns (0.12%), 251 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2500036288 ns (0.12%), 250 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2490050264 ns (0.12%), 249 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2490016167 ns (0.12%), 249 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2480020580 ns (0.12%), 248 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2470062367 ns (0.12%), 247 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2470048711 ns (0.12%), 247 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2460049392 ns (0.12%), 246 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2460016054 ns (0.12%), 246 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2450076060 ns (0.12%), 245 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2450056247 ns (0.12%), 245 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2440079390 ns (0.12%), 244 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2440048309 ns (0.12%), 244 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2430031211 ns (0.12%), 243 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2430015135 ns (0.12%), 243 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2430009994 ns (0.12%), 243 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2420027208 ns (0.12%), 242 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2420015855 ns (0.12%), 242 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2419965686 ns (0.12%), 242 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2410070632 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2410056552 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2410049331 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2410048816 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2410015962 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2410010824 ns (0.12%), 241 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2400026316 ns (0.12%), 240 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2390050481 ns (0.12%), 239 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2390017799 ns (0.12%), 239 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2390014751 ns (0.12%), 239 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2380030469 ns (0.12%), 238 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2370046629 ns (0.12%), 237 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2370043378 ns (0.12%), 237 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2370021627 ns (0.12%), 237 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2370001657 ns (0.12%), 237 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2360052803 ns (0.12%), 236 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2360034480 ns (0.12%), 236 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2360018610 ns (0.12%), 236 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2350050788 ns (0.12%), 235 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2350043317 ns (0.12%), 235 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2340059105 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2340055861 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2340039930 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2340036497 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2340031193 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2340019740 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2340001405 ns (0.12%), 234 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2330061853 ns (0.11%), 233 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2330036293 ns (0.11%), 233 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2330025015 ns (0.11%), 233 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2330006763 ns (0.11%), 233 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2320013091 ns (0.11%), 232 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2310068816 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2310057985 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2310056755 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2310050162 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2310049825 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2310028496 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2310022812 ns (0.11%), 231 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2300111214 ns (0.11%), 230 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2300055701 ns (0.11%), 230 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2300033213 ns (0.11%), 230 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2300018423 ns (0.11%), 230 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2299982887 ns (0.11%), 230 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2290046736 ns (0.11%), 229 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2290045187 ns (0.11%), 229 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2290021945 ns (0.11%), 229 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2289991593 ns (0.11%), 229 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2280061376 ns (0.11%), 228 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2280034395 ns (0.11%), 228 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.tail
+  [10] List.tail
+  [11] List.benchmark
+  [12] Benchmark.innerBenchmarkLoop
+  [13] Run.measure
+  [14] Run.doRuns
+  [15] Run.runBenchmark
+  [16] Harness.main
+
+--- 2280027578 ns (0.11%), 228 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2280020538 ns (0.11%), 228 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2280019153 ns (0.11%), 228 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2270065434 ns (0.11%), 227 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 2270033368 ns (0.11%), 227 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2270024418 ns (0.11%), 227 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2270019154 ns (0.11%), 227 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2270006647 ns (0.11%), 227 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 2260052893 ns (0.11%), 226 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2260049937 ns (0.11%), 226 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+--- 2260039429 ns (0.11%), 226 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+  [ 1] List.tail
+  [ 2] List.tail
+  [ 3] List.tail
+  [ 4] List.tail
+  [ 5] List.tail
+  [ 6] List.tail
+  [ 7] List.tail
+  [ 8] List.tail
+  [ 9] List.benchmark
+  [10] Benchmark.innerBenchmarkLoop
+  [11] Run.measure
+  [12] Run.doRuns
+  [13] Run.runBenchmark
+  [14] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+1128676773794   55.48%   112866  jdk.graal.compiler.hotspot.meta.GT.GTCache.TestPrint
+303824543230   14.93%    30382  List$Element.getNext
+290114387000   14.26%    29011  List.isShorterThan
+108271491466    5.32%    10827  List.tail
+ 10220289039    0.50%     1022  Interpreter
+  3980053135    0.20%      398  I2C/C2I adapters(0xb)
+  3850025984    0.19%      385  List.makeList
+  1840034339    0.09%      184  I2C/C2I adapters(0xbb)
+  1760105216    0.09%      176  InstanceKlass::find_method_index
+  1490045540    0.07%      149  jdk.graal.compiler.phases.BasePhase.apply
+  1470016547    0.07%      147  java.lang.Integer.valueOf
+   830036215    0.04%       83  jdk.graal.compiler.phases.common.LoweringPhase.process
+   749994710    0.04%       75  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.scheduleEarliestIterative
+   679985602    0.03%       68  jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener.changed
+   650019228    0.03%       65  itable stub
+   649974265    0.03%       65  java.util.Formatter$FormatSpecifier.print
+   639984250    0.03%       64  jdk.graal.compiler.nodes.loop.LoopFragment.computeNodes
+   589988491    0.03%       59  jdk.graal.compiler.phases.common.CanonicalizerPhase.processNode
+   589967251    0.03%       59  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryCanonicalize
+   559992532    0.03%       56  java.util.ArrayList.add
+   550922964    0.03%       55  G1ParScanThreadState::trim_queue_to_threshold
+   540038158    0.03%       54  jdk.graal.compiler.phases.common.CanonicalizerPhase.processWorkSet
+   540036206    0.03%       54  I2C/C2I adapters(0xba)
+   529977414    0.03%       53  jdk.graal.compiler.core.common.type.IntegerStamp.create
+   510032141    0.03%       51  List$Element.length
+   510011311    0.03%       51  I2C/C2I adapters(0xbbb)
+   509981251    0.03%       51  jdk.graal.compiler.core.common.type.AbstractObjectStamp.join0
+   470018948    0.02%       47  jdk.graal.compiler.java.BytecodeParser.appendInvoke
+   460034092    0.02%       46  jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+   459992856    0.02%       46  org.graalvm.collections.EconomicMapImpl.getHashIndex
+   450009629    0.02%       45  java.lang.AbstractStringBuilder.append
+   440024603    0.02%       44  jdk.graal.compiler.graph.NodeUsageIterator.advance
+   419992834    0.02%       42  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortNodesLatestWithinBlock
+   410036338    0.02%       41  InstanceKlass::allocate_objArray
+   410017862    0.02%       41  jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator.forward
+   400042464    0.02%       40  jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+   400028608    0.02%       40  jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+   400011012    0.02%       40  jdk.graal.compiler.phases.common.ConditionalEliminationUtil.tryProveGuardCondition
+   399993474    0.02%       40  jdk.graal.compiler.hotspot.ProfileReplaySupport.getCanonicalGraphString
+   399978064    0.02%       40  jdk.internal.math.DoubleToDecimal.toDecimal
+   389995738    0.02%       39  jdk.graal.compiler.nodes.cfg.ReversePostOrder.compute
+   380024594    0.02%       38  jdk.graal.compiler.phases.common.inlining.InliningUtil.inline
+   380011413    0.02%       38  jdk.graal.compiler.nodes.cfg.HIRBlock.assignPredecessorsAndSuccessors
+   380008099    0.02%       38  ConstantPool::klass_at_impl
+   370003185    0.02%       37  jdk.graal.compiler.graph.Node.updatePredecessor
+   360015744    0.02%       36  jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walkTo
+   360010467    0.02%       36  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.perBasicBlockFrequencyAction
+   349992713    0.02%       35  ThreadInVMfromNative::ThreadInVMfromNative
+   340066931    0.02%       34  CodeHeap::find_blob
+   340025495    0.02%       34  jdk.graal.compiler.java.BytecodeParser.createTarget
+   340019153    0.02%       34  jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+   340013582    0.02%       34  jdk.graal.compiler.graph.NodeClass.dataEquals
+   340005777    0.02%       34  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime
+   339978910    0.02%       34  jdk.graal.compiler.nodes.PiNode.canonical
+   330036978    0.02%       33  jdk.graal.compiler.java.BciBlockMapping.computeBlockOrder
+   330019023    0.02%       33  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.fromMetaspace
+   330012982    0.02%       33  java.util.Arrays.copyOf
+   330011718    0.02%       33  jdk.graal.compiler.graph.Graph.register
+   319983304    0.02%       32  jdk.graal.compiler.graph.Graph.findDuplicate
+   310019541    0.02%       31  jdk.graal.compiler.java.BytecodeParser.build
+   310011105    0.02%       31  jdk.graal.compiler.java.BytecodeParser.<init>
+   310010555    0.02%       31  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeLoopInformation
+   310007423    0.02%       31  jdk.graal.compiler.phases.common.inlining.InliningUtil.updateSourcePosition
+   310005927    0.02%       31  jdk.graal.compiler.core.common.type.IntegerStamp.<init>
+   300019017    0.01%       30  jdk.graal.compiler.graph.NodeClass.updateEdgesInPlace
+   300004853    0.01%       30  org.graalvm.collections.EconomicMapImpl.find
+   300004266    0.01%       30  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+   300003172    0.01%       30  java.util.ArrayList.grow
+   290011189    0.01%       29  CodeCache::find_blob
+   290005918    0.01%       29  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processEnd
+   290003393    0.01%       29  java.util.Formatter.parse
+   280023980    0.01%       28  jdk.graal.compiler.nodes.FrameState.<init>
+   280023569    0.01%       28  jdk.graal.compiler.java.LocalLiveness.computeLiveness
+   280011632    0.01%       28  __memset_avx2_unaligned_erms
+   280010461    0.01%       28  jdk.graal.compiler.graph.NodeMap.set
+   280010072    0.01%       28  jdk.graal.compiler.java.BciBlockMapping.iterateOverBytecodes
+   279997905    0.01%       28  java.lang.Object.getClass
+   279997285    0.01%       28  jdk.graal.compiler.nodes.util.GraphUtil.killWithUnusedFloatingInputs
+   279996999    0.01%       28  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeDominators
+   279996869    0.01%       28  jdk.graal.compiler.graph.NodeList.<init>
+   270017773    0.01%       27  jdk.graal.compiler.graph.Node.addUsage
+   270006283    0.01%       27  jdk.graal.compiler.graph.Node.initialize
+   260017934    0.01%       26  jdk.graal.compiler.java.FrameStateBuilder.create
+   260017304    0.01%       26  jdk.graal.compiler.java.BytecodeParser.processBytecode
+   260011428    0.01%       26  jdk.graal.compiler.graph.Node.clone
+   260010966    0.01%       26  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.rpoInnerLoopsFirst
+   260009462    0.01%       26  jdk.graal.compiler.nodes.loop.LoopFragment.markFloating
+   259991575    0.01%       26  jdk.graal.compiler.nodes.IfNode.simplify
+   250004906    0.01%       25  jdk.graal.compiler.graph.NodeClass.addGraphDuplicate
+   250002015    0.01%       25  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlocks
+   249998590    0.01%       25  Dictionary::find_class
+   249997726    0.01%       25  sun.security.provider.SHA2.implCompress0
+   249991034    0.01%       25  jdk.graal.compiler.nodes.calc.AddNode.canonical
+   249982103    0.01%       25  java.util.Formatter$FormatSpecifier.<init>
+   249980083    0.01%       25  jdk.graal.compiler.lir.alloc.lsra.Range.intersectsAt
+   239996006    0.01%       24  jbyte_disjoint_arraycopy
+   239994613    0.01%       24  jdk.graal.compiler.graph.TypedGraphNodeIterator.forward
+   239987950    0.01%       24  methodHandle::~methodHandle
+   239987215    0.01%       24  jdk.graal.compiler.graph.Graph.eventCounterOverflows
+   230015821    0.01%       23  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computePostdominators
+   230007454    0.01%       23  jdk.graal.compiler.nodes.java.LoadFieldNode.canonical
+   230007139    0.01%       23  jdk.graal.compiler.nodes.calc.IntegerLowerThanNode$LowerOp.findSynonym
+   230000252    0.01%       23  java.util.ArrayDeque.addLast
+   229996354    0.01%       23  org.graalvm.collections.EconomicMapImpl.compareKeys
+   229995375    0.01%       23  java.util.ArrayList$Itr.next
+   220017327    0.01%       22  jdk.graal.compiler.graph.NodeWorkList.addAll
+   220007528    0.01%       22  jdk.graal.compiler.phases.common.inlining.walker.ComputeInliningRelevance$Scope.process
+   220001844    0.01%       22  org.graalvm.collections.EconomicMapImpl.put
+   210336034    0.01%       21  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+   210011993    0.01%       21  jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+   210006055    0.01%       21  methodHandle::operator=
+   210003861    0.01%       21  jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lowerWithoutDelegation
+   210003190    0.01%       21  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryInferStamp
+   210002227    0.01%       21  jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase.buildIntervals
+   210001773    0.01%       21  java.lang.Class.isInstance
+   209993455    0.01%       21  java.util.Formatter.format
+   209991694    0.01%       21  CompilationPolicy::select_task
+   200533800    0.01%       20  __tls_get_addr
+   200036125    0.01%       20  DebugInformationRecorder::find_sharable_decode_offset
+   200015475    0.01%       20  jdk.graal.compiler.phases.graph.ReentrantNodeIterator.apply
+   200010991    0.01%       20  java.lang.String.<init>
+   200007508    0.01%       20  org.graalvm.collections.EconomicMapImpl.findHash
+   200007063    0.01%       20  List.benchmark
+   200006273    0.01%       20  jdk.vm.ci.meta.JavaMethod.format
+   200005898    0.01%       20  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewCondition
+   200005706    0.01%       20  jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.get
+   200004438    0.01%       20  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortIntoList
+   200001268    0.01%       20  jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+   200000589    0.01%       20  jdk.graal.compiler.lir.LIRIntrospection.visitEach
+   199996488    0.01%       20  jdk.graal.compiler.graph.Node.getNodeInfo
+   199992361    0.01%       20  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processInputs
+   199990222    0.01%       20  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.forward
+   199987672    0.01%       20  I2C/C2I adapters(0xbbbb)
+   190023237    0.01%       19  jdk.graal.compiler.debug.DebugContext.log
+   190014992    0.01%       19  jdk.graal.compiler.java.FrameStateBuilder.initializeForMethodStart
+   190012509    0.01%       19  java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+   190012235    0.01%       19  InterpreterRuntime::anewarray
+   190006060    0.01%       19  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.hasNext
+   190005228    0.01%       19  InterpreterRuntime::frequency_counter_overflow_inner
+   190002784    0.01%       19  org.graalvm.collections.EconomicMapImpl.grow
+   190001969    0.01%       19  oop_disjoint_arraycopy
+   190001283    0.01%       19  java.util.RegularEnumSet.contains
+   190000889    0.01%       19  jdk.graal.compiler.core.common.type.AbstractObjectStamp.meet
+   189996979    0.01%       19  jdk.graal.compiler.graph.NodeClass.registerAtInputsAsUsage
+   189996587    0.01%       19  jdk.graal.compiler.phases.common.inlining.policy.AbstractInliningPolicy.determineInvokeProbability
+   189988154    0.01%       19  jdk.graal.compiler.nodes.calc.CompareNode$CompareOp.canonical
+   180013720    0.01%       18  jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run
+   180011915    0.01%       18  jdk.graal.compiler.lir.LIRFrameState.visitValues
+   180010993    0.01%       18  jdk.graal.compiler.nodes.AbstractBeginNode$BlockNodeIterator.next
+   180009869    0.01%       18  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlock
+   180005597    0.01%       18  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.calculateLocalLoopFrequency
+   180004829    0.01%       18  org.graalvm.collections.EconomicMapImpl.setKey
+   180003712    0.01%       18  jdk.graal.compiler.phases.graph.ScheduledNodeIterator.processNodes
+   180003147    0.01%       18  jdk.graal.compiler.graph.NodeMap.get
+   180002063    0.01%       18  InterpreterRuntime::resolve_invoke
+   180001831    0.01%       18  ObjArrayAllocator::initialize
+   180000975    0.01%       18  jdk.graal.compiler.graph.Graph.addOrUniqueWithInputs
+   179995265    0.01%       18  jdk.graal.compiler.graph.Edges.getNodeUnsafe
+   179993062    0.01%       18  jdk.graal.compiler.nodes.util.GraphUtil.killCFGInner
+   179992678    0.01%       18  org.graalvm.collections.EconomicMapImpl.findLinear
+   179991187    0.01%       18  jdk.graal.compiler.core.common.type.IntegerStamp$2.foldStampImpl
+   170153290    0.01%       17  ___pthread_mutex_trylock
+   170011950    0.01%       17  jdk.vm.ci.hotspot.HotSpotConstantPool.lookupField
+   170009889    0.01%       17  java.lang.String.lastIndexOf
+   170004528    0.01%       17  jdk.graal.compiler.options.OptionValues.get
+   170002596    0.01%       17  java.lang.System.arraycopy
+   170001466    0.01%       17  jdk.graal.compiler.graph.Node.isAlive
+   170001303    0.01%       17  jdk.graal.compiler.graph.NodeStack.push
+   170000523    0.01%       17  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processNode
+   170000307    0.01%       17  java.util.concurrent.ConcurrentHashMap.computeIfAbsent
+   169988947    0.01%       17  jdk.graal.compiler.graph.iterators.FilteredNodeIterable.iterator
+   160026100    0.01%       16  jdk.graal.compiler.hotspot.HotSpotCompiledCodeBuilder.getSortedSites
+   160017921    0.01%       16  jdk.graal.compiler.debug.DebugContext.enterCompilerPhase
+   160014043    0.01%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlocks
+   160011065    0.01%       16  jdk.graal.compiler.nodes.calc.IsNullNode.canonicalized
+   160010603    0.01%       16  jdk.graal.compiler.debug.DebugContext.scope
+   160009397    0.01%       16  jdk.graal.compiler.debug.DebugContext.logAndIndent
+   160008712    0.01%       16  jdk.graal.compiler.phases.common.inlining.walker.InliningData.doInline
+   160008672    0.01%       16  jdk.graal.compiler.virtual.phases.ea.PEReadEliminationClosure.processNode
+   160008569    0.01%       16  jdk.graal.compiler.nodes.util.GraphUtil.markUsagesForKill
+   160006983    0.01%       16  Method::invocation_count
+   160005278    0.01%       16  JavaFrameAnchor::make_walkable
+   160004798    0.01%       16  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.advanceInput
+   160004513    0.01%       16  jdk.internal.misc.Unsafe.allocateInstance
+   160004029    0.01%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDeferLoopExits
+   160003602    0.01%       16  jdk.graal.compiler.debug.DebugContext.isCounterEnabledSlow
+   160002342    0.01%       16  java.util.ArrayList.<init>
+   160001293    0.01%       16  jdk.graal.compiler.nodes.calc.IntegerLessThanNode$LessThanOp.findSynonym
+   160001220    0.01%       16  jdk.graal.compiler.nodes.memory.ReadNode.canonicalizeRead
+   160001025    0.01%       16  jdk.graal.compiler.graph.Node.maybeNotifyInputChanged
+   160000281    0.01%       16  jdk.graal.compiler.graph.Graph.updateNodeCaches
+   159999833    0.01%       16  jdk.graal.compiler.nodes.loop.LoopsData.<init>
+   159999083    0.01%       16  jdk.graal.compiler.phases.common.CanonicalizerPhase$1.inputChanged
+   159996511    0.01%       16  jdk.graal.compiler.nodes.calc.IntegerEqualsNode$IntegerEqualsOp.canonical
+   159996361    0.01%       16  jdk.graal.compiler.java.BytecodeParser.genIf
+   159994515    0.01%       16  jdk.graal.compiler.debug.ScopeImpl.close
+   159992852    0.01%       16  JavaThread::pd_last_frame
+   159981734    0.01%       16  jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator.dropDeleted
+   159980394    0.01%       16  jdk.graal.compiler.nodes.spi.Canonicalizable$Binary.canonical
+   150012567    0.01%       15  jdk.graal.compiler.lir.RedundantMoveElimination$Optimization.eliminateMoves

@@ -1,0 +1,528 @@
+WE DID SOMTHING
+Profiling started
+THe SOurce Position is: DummyMethod
+Starting List benchmark ...
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+[Use -Djdk.graal.LogFile=<path> to redirect Graal log output to a file.]
+[thread:14] scope: JVMCI CompilerThread0
+    [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler
+    Context: StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+      [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd
+      Context: StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+              [thread:14] scope: JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd.EmitLIR.LIRStages.PostAllocationOptimizationStage.LIRGTSlowdownPhasePost
+              Exception raised in scope JVMCI CompilerThread0.Compiling.GraalCompiler.BackEnd.EmitLIR.LIRStages.PostAllocationOptimizationStage.LIRGTSlowdownPhasePost: java.lang.AssertionError: class jdk.graal.compiler.lir.amd64.AMD64PointLess class jdk.graal.compiler.lir.amd64.AMD64PointLessReg
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.LIRInstruction.<init>(LIRInstruction.java:230)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64LIRInstruction.<init>(AMD64LIRInstruction.java:39)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64PointLessReg.<init>(AMD64PointLessReg.java:44)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:144)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:69)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhaseSuite.run(LIRPhaseSuite.java:113)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+              	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLowLevel(LIRCompilerBackend.java:198)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0(LIRCompilerBackend.java:169)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR(LIRCompilerBackend.java:115)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd(LIRCompilerBackend.java:84)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.target.Backend.emitBackEnd(Backend.java:294)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:149)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+              	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+              	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+              	at jdk.internal.vm.ci/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+              
+Dumping debug output in '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544'
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/HotSpotCompilation-555[List.tail(List$Element,_List$Element,_List$Element)List$Element].cfg'
+              Context obj jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost@38e61745
+              Context obj PostAllocationOptimizationStage:
+              ├── EdgeMoveOptimizer
+              ├── RedundantMoveElimination
+              ├── NullCheckOptimizer
+              ├── ControlFlowOptimizer
+              ├── ComputeCodeEmissionOrder
+              ├── LIRGTSlowdownPhasePost
+              └── StackMoveOptimizationPhase
+              
+              Context obj jdk.graal.compiler.hotspot.amd64.AMD64HotSpotNodeLIRBuilder@3a1e8b26
+              Context obj jdk.graal.compiler.hotspot.HotSpotLIRGenerationResult@e4d1636
+              Context obj jdk.graal.compiler.lir.LIR@1c895af8
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/HotSpotCompilation-555[List.tail(List$Element,_List$Element,_List$Element)List$Element].bgv'
+Could not connect to the IGV on 127.0.0.1:4445. Dumping IGV graphs in /home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544
+              Context obj StructuredGraph:35{HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>}
+              Context obj jdk.graal.compiler.nodes.StructuredGraph$ScheduleResult@467b77d4
+              Context obj jdk.vm.ci.hotspot.HotSpotCodeCacheProvider@26fcfdf0
+              Context obj DebugDumpScope[555]
+[[[Graal compilation failure]]]
+Thread[#14,JVMCI CompilerThread0,9,system]: Compilation of List.tail(List$Element, List$Element, List$Element) @ -1 failed:
+java.lang.AssertionError: class jdk.graal.compiler.lir.amd64.AMD64PointLess class jdk.graal.compiler.lir.amd64.AMD64PointLessReg
+	at jdk.graal.compiler/jdk.graal.compiler.lir.LIRInstruction.<init>(LIRInstruction.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64LIRInstruction.<init>(AMD64LIRInstruction.java:39)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.amd64.AMD64PointLessReg.<init>(AMD64PointLessReg.java:44)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:144)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRGTSlowdownPhasePost.run(LIRGTSlowdownPhasePost.java:69)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhaseSuite.run(LIRPhaseSuite.java:113)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:121)
+	at jdk.graal.compiler/jdk.graal.compiler.lir.phases.LIRPhase.apply(LIRPhase.java:110)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLowLevel(LIRCompilerBackend.java:198)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0(LIRCompilerBackend.java:169)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR(LIRCompilerBackend.java:115)
+	at jdk.graal.compiler/jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd(LIRCompilerBackend.java:84)
+	at jdk.graal.compiler/jdk.graal.compiler.core.target.Backend.emitBackEnd(Backend.java:294)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:149)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+If in an environment where setting system properties is possible, the following
+properties are available to change compilation failure reporting:
+- To disable compilation failure notifications, set CompilationFailureAction to Silent (e.g., -Djdk.graal.CompilationFailureAction=Silent).
+- To print a message for a compilation failure without retrying the compilation, set CompilationFailureAction to Print (e.g., -Djdk.graal.CompilationFailureAction=Print).
+Retrying compilation of List.tail(List$Element, List$Element, List$Element) @ -1
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/graal_diagnostics_2508021@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1/HotSpotCompilation-555[List.tail(List$Element,_List$Element,_List$Element)List$Element].bgv'
+Could not connect to the IGV on 127.0.0.1:4445. Dumping IGV graphs in /home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/graal_diagnostics_2508021@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1
+Dumping debug output to '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/graal_diagnostics_2508021@0/List.tail(List$Element,_List$Element,_List$Element)_@_-1/HotSpotCompilation-555[List.tail(List$Element,_List$Element,_List$Element)List$Element].cfg'
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=1 runtime: 20567458us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=2 runtime: 1958698us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=3 runtime: 1879491us
+THe SOurce Position is: DummyMethod
+List: iterations=4 runtime: 2015697us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=5 runtime: 3045453us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=6 runtime: 1927358us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=7 runtime: 1829381us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=8 runtime: 1828427us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=9 runtime: 1937107us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=10 runtime: 1823676us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=11 runtime: 1819367us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=12 runtime: 1822209us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=13 runtime: 1916510us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=14 runtime: 1827388us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=15 runtime: 2021761us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=16 runtime: 1821675us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=17 runtime: 1913648us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=18 runtime: 1913234us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=19 runtime: 1823812us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=20 runtime: 1912533us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=21 runtime: 2016548us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=22 runtime: 1881947us
+List: iterations=23 runtime: 2003430us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=24 runtime: 1940093us
+List: iterations=25 runtime: 1921969us
+THe SOurce Position is: DummyMethod
+List: iterations=26 runtime: 1937450us
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+THe SOurce Position is: DummyMethod
+List: iterations=27 runtime: 1923931us
+THe SOurce Position is: DummyMethod
+Graal diagnostic output saved in '/home/hb478/repos/graal-instrumentation/compiler/graal_dumps/2025.02.14.19.39.26.544/graal_diagnostics_2508021@0.zip'

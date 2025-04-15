@@ -72,3 +72,5 @@ compiler/LIRCostInformation
 vm/AOTDumps
 !vm/graal_dumps/2024.10.15.20.29.30.045/HotSpotCompilation-80[Queens.placeQueen(int)boolean].cfg
 !vm/graal_dumps/2024.10.15.20.29.30.045/HotSpotCompilation-80[Queens.placeQueen(int)boolean].bgv
+!vm/c1dumps/*.cfg
+!vm/c1dumps/*.bgv

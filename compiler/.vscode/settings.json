@@ -1,0 +1,16 @@
+{
+    "java.project.sourcePaths": [
+        "src/jdk.graal.compiler/src"
+    ],
+    "java.project.referencedLibraries": [
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/jniutils.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/nativeimage.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/polyglot.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/word.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/jline3.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/graal-sdk.jar",
+        "/home/hb478/repos/graal-instrumentation/sdk/mxbuild/dists/collections.jar",
+        "capstone.jar",
+        "/home/hb478/repos/graal-instrumentation/compiler/MyJDKJarLib.jar"
+    ]
+}

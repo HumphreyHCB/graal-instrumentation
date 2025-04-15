@@ -16,7 +16,7 @@ mx --java-home \
   -Djdk.graal.Dump=:3 -Djdk.graal.PrintGraph=Network -Djdk.graal.PrintBackendCFG=true -Djdk.graal.ObjdumpExecutables=objdump -Djdk.graal.ObjdumpExecutables=gobjdump \
   -XX:+UseJVMCICompiler -Djdk.graal.LIRNubers="" -XX:-TieredCompilation -XX:-BackgroundCompilation '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  Harness Queens 500 5000
+  Harness Towers 500 2500
 
 #  HelloWorld 
   

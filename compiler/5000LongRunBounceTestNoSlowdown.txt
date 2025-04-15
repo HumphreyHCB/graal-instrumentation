@@ -1,0 +1,1508 @@
+--- Execution profile ---
+Total samples       : 74588
+unknown_Java        : 754 (1.01%)
+not_walkable_Java   : 858 (1.15%)
+
+--- 60621162937 ns (8.13%), 6062 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 55980782118 ns (7.50%), 5598 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 38930618846 ns (5.22%), 3893 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37290667864 ns (5.00%), 3729 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 36960368999 ns (4.96%), 3696 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 36860621633 ns (4.94%), 3686 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36560608418 ns (4.90%), 3656 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 28850350388 ns (3.87%), 2885 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 25620681629 ns (3.43%), 2562 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 25100672748 ns (3.37%), 2510 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 21690279264 ns (2.91%), 2169 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 21290370781 ns (2.85%), 2129 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 20780460581 ns (2.79%), 2078 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18500446481 ns (2.48%), 1850 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 17640273749 ns (2.36%), 1764 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 9230193598 ns (1.24%), 923 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 8500300387 ns (1.14%), 850 samples
+  [ 0] Interpreter
+  [ 1] [not_walkable_Java]
+
+--- 6500156995 ns (0.87%), 650 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 6220044380 ns (0.83%), 622 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 6120119180 ns (0.82%), 612 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 5780106989 ns (0.77%), 578 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 4580038207 ns (0.61%), 458 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 4460034881 ns (0.60%), 446 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 4430108788 ns (0.59%), 443 samples
+  [ 0] Bounce.lambda$benchmark$0
+  [ 1] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 2] java.util.Arrays.setAll
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 3340024931 ns (0.45%), 334 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 3080072383 ns (0.41%), 308 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 3000148720 ns (0.40%), 300 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2950062168 ns (0.40%), 295 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2860029490 ns (0.38%), 286 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2490056263 ns (0.33%), 249 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1720009163 ns (0.23%), 172 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1640026351 ns (0.22%), 164 samples
+  [ 0] I2C/C2I adapters(0xb)
+  [ 1] [unknown_Java]
+
+--- 1560036935 ns (0.21%), 156 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1550020684 ns (0.21%), 155 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1540012756 ns (0.21%), 154 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1490009856 ns (0.20%), 149 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1410053029 ns (0.19%), 141 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1370020262 ns (0.18%), 137 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1350022611 ns (0.18%), 135 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1310025663 ns (0.18%), 131 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1300053748 ns (0.17%), 130 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1280040916 ns (0.17%), 128 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1260064004 ns (0.17%), 126 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1229998661 ns (0.16%), 123 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1209993948 ns (0.16%), 121 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1200054364 ns (0.16%), 120 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1050012943 ns (0.14%), 105 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 919996567 ns (0.12%), 92 samples
+  [ 0] I2C/C2I adapters(0xbb)
+  [ 1] [unknown_Java]
+
+--- 579988834 ns (0.08%), 58 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 450027412 ns (0.06%), 45 samples
+  [ 0] InstanceKlass::find_method_index
+  [ 1] InstanceKlass::find_instance_method
+  [ 2] ConcreteMethodFinder::is_witness
+  [ 3] ConcreteMethodFinder::find_witness_anywhere
+  [ 4] Dependencies::find_unique_concrete_method
+  [ 5] c2v_findUniqueConcreteMethod
+  [ 6] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 7] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 8] jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.uniqueConcreteMethod
+  [ 9] jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.findUniqueConcreteMethod
+  [10] jdk.graal.compiler.nodes.java.MethodCallTargetNode.devirtualizeCall
+  [11] jdk.graal.compiler.nodes.java.MethodCallTargetNode.findSpecialCallTarget
+  [12] jdk.graal.compiler.java.BytecodeParser.appendInvoke
+  [13] jdk.graal.compiler.java.BytecodeParser.genDynamicInvokeHelper
+  [14] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [15] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [16] jdk.graal.compiler.java.BytecodeParser.processBytecode
+  [17] jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+  [18] jdk.graal.compiler.java.BytecodeParser.handleBytecodeBlock
+  [19] jdk.graal.compiler.java.BytecodeParser.processBlock
+  [20] jdk.graal.compiler.java.BytecodeParser.build
+  [21] jdk.graal.compiler.java.BytecodeParser.buildRootMethod
+  [22] jdk.graal.compiler.java.GraphBuilderPhase$Instance.run
+  [23] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [24] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [25] jdk.graal.compiler.phases.BasePhase.apply
+  [26] jdk.graal.compiler.phases.BasePhase.apply
+  [27] jdk.graal.compiler.phases.PhaseSuite.run
+  [28] jdk.graal.compiler.phases.BasePhase.apply
+  [29] jdk.graal.compiler.phases.BasePhase.apply
+  [30] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.parseBytecodes
+  [31] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.<init>
+  [32] jdk.graal.compiler.phases.common.inlining.info.elem.Inlineable.getInlineableElement
+  [33] jdk.graal.compiler.phases.common.inlining.info.AbstractInlineInfo.populateInlinableElements
+  [34] jdk.graal.compiler.phases.common.inlining.walker.InliningData.processNextInvoke
+  [35] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [36] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [37] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [38] jdk.graal.compiler.phases.BasePhase.apply
+  [39] jdk.graal.compiler.phases.BasePhase.apply
+  [40] jdk.graal.compiler.core.phases.BaseTier.run
+  [41] jdk.graal.compiler.phases.BasePhase.apply
+  [42] jdk.graal.compiler.phases.BasePhase.apply
+  [43] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [44] jdk.graal.compiler.core.GraalCompiler.compile
+  [45] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [46] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [47] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [48] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [49] jdk.graal.compiler.core.CompilationWrapper.run
+  [50] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [51] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [52] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [53] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [54] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 419990643 ns (0.06%), 42 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 409997772 ns (0.05%), 41 samples
+  [ 0] I2C/C2I adapters(0xbbb)
+  [ 1] [unknown_Java]
+
+--- 290017834 ns (0.04%), 29 samples
+  [ 0] Interpreter
+  [ 1] [unknown_Java]
+
+--- 250529891 ns (0.03%), 25 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParCopyClosure<(G1Barrier)0, false>::do_oop
+  [ 2] InterpreterOopMap::iterate_oop
+  [ 3] frame::oops_interpreted_do
+  [ 4] JavaThread::oops_do_frames
+  [ 5] Thread::oops_do
+  [ 6] Threads::possibly_parallel_oops_do
+  [ 7] G1RootProcessor::process_java_roots
+  [ 8] G1RootProcessor::evacuate_roots
+  [ 9] G1EvacuateRegionsTask::scan_roots
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+
+--- 201721015 ns (0.03%), 20 samples
+  [ 0] void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+  [ 1] WorkerThread::run
+  [ 2] Thread::call_run
+  [ 3] thread_native_entry
+  [ 4] start_thread
+
+--- 180473569 ns (0.02%), 18 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 180380752 ns (0.02%), 18 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 2] G1RemSet::scan_heap_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 170002936 ns (0.02%), 17 samples
+  [ 0] Bounce.verifyResult
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 169998034 ns (0.02%), 17 samples
+  [ 0] I2C/C2I adapters(0xbbbb)
+  [ 1] [unknown_Java]
+
+--- 169978802 ns (0.02%), 17 samples
+  [ 0] CompilationPolicy::select_task
+  [ 1] CompileQueue::get
+  [ 2] CompileBroker::compiler_thread_loop
+  [ 3] JavaThread::thread_main_inner
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+
+--- 140001362 ns (0.02%), 14 samples
+  [ 0] I2C/C2I adapters(0xba)
+  [ 1] [unknown_Java]
+
+--- 130000497 ns (0.02%), 13 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 100783117 ns (0.01%), 10 samples
+  [ 0] HeapRegionManager::par_iterate
+  [ 1] G1PrepareEvacuationTask::work
+  [ 2] WorkerThread::run
+  [ 3] Thread::call_run
+  [ 4] thread_native_entry
+  [ 5] start_thread
+
+--- 100002798 ns (0.01%), 10 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 90228695 ns (0.01%), 9 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+
+--- 90215483 ns (0.01%), 9 samples
+  [ 0] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 1] G1RemSet::scan_heap_roots
+  [ 2] G1EvacuateRegionsTask::scan_roots
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+
+--- 90017645 ns (0.01%), 9 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007fe66c1c27a0.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 90009345 ns (0.01%), 9 samples
+  [ 0] DependencyContext::add_dependent_nmethod
+  [ 1] InstanceKlass::add_dependent_nmethod
+  [ 2] nmethod::new_nmethod
+  [ 3] JVMCIRuntime::register_method
+  [ 4] CodeInstaller::install
+  [ 5] c2v_installCode0
+  [ 6] jdk.vm.ci.hotspot.CompilerToVM.installCode0
+  [ 7] jdk.vm.ci.hotspot.CompilerToVM.installCode
+  [ 8] jdk.vm.ci.hotspot.HotSpotCodeCacheProvider.installCode
+  [ 9] jdk.graal.compiler.core.target.Backend.createInstalledCode
+  [10] jdk.graal.compiler.hotspot.CompilationTask.installMethod
+  [11] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [12] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [13] jdk.graal.compiler.core.CompilationWrapper.run
+  [14] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [15] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [16] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [17] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [18] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 90005071 ns (0.01%), 9 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lowerWithoutDelegation
+  [ 1] jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lower
+  [ 2] jdk.graal.compiler.hotspot.amd64.AMD64HotSpotLoweringProvider.lower
+  [ 3] jdk.graal.compiler.nodes.spi.Lowerable.lower
+  [ 4] jdk.graal.compiler.phases.common.LoweringPhase.process
+  [ 5] jdk.graal.compiler.phases.common.LoweringPhase$ProcessFrame.preprocess
+  [ 6] jdk.graal.compiler.phases.common.LoweringPhase.processBlock
+  [ 7] jdk.graal.compiler.phases.common.LoweringPhase.lower
+  [ 8] jdk.graal.compiler.phases.common.LoweringPhase.run
+  [ 9] jdk.graal.compiler.phases.common.LoweringPhase.run
+  [10] jdk.graal.compiler.phases.BasePhase.apply
+  [11] jdk.graal.compiler.phases.BasePhase.apply
+  [12] jdk.graal.compiler.core.phases.BaseTier.run
+  [13] jdk.graal.compiler.phases.BasePhase.apply
+  [14] jdk.graal.compiler.phases.BasePhase.apply
+  [15] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [16] jdk.graal.compiler.core.GraalCompiler.compile
+  [17] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [19] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [20] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [21] jdk.graal.compiler.core.CompilationWrapper.run
+  [22] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [23] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [24] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [25] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [26] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 80006448 ns (0.01%), 8 samples
+  [ 0] _invokeBasic
+  [ 1] [unknown_Java]
+
+--- 80002147 ns (0.01%), 8 samples
+  [ 0] org.graalvm.collections.EconomicMapImpl.find
+  [ 1] [unknown_Java]
+
+--- 80001731 ns (0.01%), 8 samples
+  [ 0] jdk.graal.compiler.phases.common.CanonicalizerPhase.processWorkSet
+  [ 1] jdk.graal.compiler.phases.common.CanonicalizerPhase.run
+  [ 2] jdk.graal.compiler.phases.common.CanonicalizerPhase.run
+  [ 3] jdk.graal.compiler.phases.BasePhase.apply
+  [ 4] jdk.graal.compiler.phases.BasePhase.apply
+  [ 5] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.parseBytecodes
+  [ 6] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.<init>
+  [ 7] jdk.graal.compiler.phases.common.inlining.info.elem.Inlineable.getInlineableElement
+  [ 8] jdk.graal.compiler.phases.common.inlining.info.AbstractInlineInfo.populateInlinableElements
+  [ 9] jdk.graal.compiler.phases.common.inlining.walker.InliningData.processNextInvoke
+  [10] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [11] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [12] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [13] jdk.graal.compiler.phases.BasePhase.apply
+  [14] jdk.graal.compiler.phases.BasePhase.apply
+  [15] jdk.graal.compiler.core.phases.BaseTier.run
+  [16] jdk.graal.compiler.phases.BasePhase.apply
+  [17] jdk.graal.compiler.phases.BasePhase.apply
+  [18] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [19] jdk.graal.compiler.core.GraalCompiler.compile
+  [20] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [21] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [22] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [23] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [24] jdk.graal.compiler.core.CompilationWrapper.run
+  [25] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [26] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [27] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [28] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [29] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 71166603 ns (0.01%), 7 samples
+  [ 0] __futex_abstimed_wait_common
+
+--- 70427066 ns (0.01%), 7 samples
+  [ 0] G1ParScanThreadState::steal_and_trim_queue
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+
+--- 69997587 ns (0.01%), 7 samples
+  [ 0] [call_stub]
+
+--- 69996227 ns (0.01%), 7 samples
+  [ 0] InstanceKlass::find_method_index
+  [ 1] InstanceKlass::find_instance_method
+  [ 2] ConcreteMethodFinder::is_witness
+  [ 3] ConcreteMethodFinder::find_witness_anywhere
+  [ 4] Dependencies::find_unique_concrete_method
+  [ 5] c2v_findUniqueConcreteMethod
+  [ 6] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 7] jdk.vm.ci.hotspot.CompilerToVM.findUniqueConcreteMethod
+  [ 8] jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl.uniqueConcreteMethod
+  [ 9] jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl.findUniqueConcreteMethod
+  [10] jdk.graal.compiler.nodes.java.MethodCallTargetNode.devirtualizeCall
+  [11] jdk.graal.compiler.nodes.java.MethodCallTargetNode.findSpecialCallTarget
+  [12] jdk.graal.compiler.java.BytecodeParser.appendInvoke
+  [13] jdk.graal.compiler.java.BytecodeParser.genDynamicInvokeHelper
+  [14] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [15] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [16] jdk.graal.compiler.java.BytecodeParser.processBytecode
+  [17] jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+  [18] jdk.graal.compiler.java.BytecodeParser.handleBytecodeBlock
+  [19] jdk.graal.compiler.java.BytecodeParser.processBlock
+  [20] jdk.graal.compiler.java.BytecodeParser.build
+  [21] jdk.graal.compiler.java.BytecodeParser.parseAndInlineCallee
+  [22] jdk.graal.compiler.java.BytecodeParser.inline
+  [23] jdk.graal.compiler.java.BytecodeParser.tryInline
+  [24] jdk.graal.compiler.java.BytecodeParser.appendInvoke
+  [25] jdk.graal.compiler.java.BytecodeParser.genDynamicInvokeHelper
+  [26] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [27] jdk.graal.compiler.java.BytecodeParser.genInvokeVirtual
+  [28] jdk.graal.compiler.java.BytecodeParser.processBytecode
+  [29] jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+  [30] jdk.graal.compiler.java.BytecodeParser.handleBytecodeBlock
+  [31] jdk.graal.compiler.java.BytecodeParser.processBlock
+  [32] jdk.graal.compiler.java.BytecodeParser.build
+  [33] jdk.graal.compiler.java.BytecodeParser.buildRootMethod
+  [34] jdk.graal.compiler.java.GraphBuilderPhase$Instance.run
+  [35] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [36] jdk.graal.compiler.java.GraphBuilderPhase.run
+  [37] jdk.graal.compiler.phases.BasePhase.apply
+  [38] jdk.graal.compiler.phases.BasePhase.apply
+  [39] jdk.graal.compiler.phases.PhaseSuite.run
+  [40] jdk.graal.compiler.phases.BasePhase.apply
+  [41] jdk.graal.compiler.phases.BasePhase.apply
+  [42] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.parseBytecodes
+  [43] jdk.graal.compiler.phases.common.inlining.info.elem.InlineableGraph.<init>
+  [44] jdk.graal.compiler.phases.common.inlining.info.elem.Inlineable.getInlineableElement
+  [45] jdk.graal.compiler.phases.common.inlining.info.AbstractInlineInfo.populateInlinableElements
+  [46] jdk.graal.compiler.phases.common.inlining.walker.InliningData.processNextInvoke
+  [47] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [48] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [49] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [50] jdk.graal.compiler.phases.BasePhase.apply
+  [51] jdk.graal.compiler.phases.BasePhase.apply
+  [52] jdk.graal.compiler.core.phases.BaseTier.run
+  [53] jdk.graal.compiler.phases.BasePhase.apply
+  [54] jdk.graal.compiler.phases.BasePhase.apply
+  [55] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [56] jdk.graal.compiler.core.GraalCompiler.compile
+  [57] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [58] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [59] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [60] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [61] jdk.graal.compiler.core.CompilationWrapper.run
+  [62] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [63] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [64] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [65] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [66] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 60110510 ns (0.01%), 6 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 3] G1RemSet::scan_heap_roots
+  [ 4] G1EvacuateRegionsTask::scan_roots
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+
+--- 60010752 ns (0.01%), 6 samples
+  [ 0] jdk.graal.compiler.phases.common.inlining.InliningUtil.inline
+  [ 1] jdk.graal.compiler.phases.common.inlining.InliningUtil.inlineForCanonicalization
+  [ 2] jdk.graal.compiler.phases.common.inlining.InliningUtil.inlineForCanonicalization
+  [ 3] jdk.graal.compiler.phases.common.inlining.InliningUtil.inlineForCanonicalization
+  [ 4] jdk.graal.compiler.phases.common.inlining.info.AbstractInlineInfo.inline
+  [ 5] jdk.graal.compiler.phases.common.inlining.info.ExactInlineInfo.inline
+  [ 6] jdk.graal.compiler.phases.common.inlining.walker.InliningData.doInline
+  [ 7] jdk.graal.compiler.phases.common.inlining.walker.InliningData.tryToInline
+  [ 8] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [ 9] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [10] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [11] jdk.graal.compiler.phases.BasePhase.apply
+  [12] jdk.graal.compiler.phases.BasePhase.apply
+  [13] jdk.graal.compiler.core.phases.BaseTier.run
+  [14] jdk.graal.compiler.phases.BasePhase.apply
+  [15] jdk.graal.compiler.phases.BasePhase.apply
+  [16] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [17] jdk.graal.compiler.core.GraalCompiler.compile
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [19] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [20] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [21] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [22] jdk.graal.compiler.core.CompilationWrapper.run
+  [23] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [24] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [25] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [26] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [27] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 60008490 ns (0.01%), 6 samples
+  [ 0] jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+  [ 1] jdk.graal.compiler.core.LIRGenerationPhase.emitBlock
+  [ 2] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [ 3] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [ 4] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [ 5] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [ 6] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0
+  [ 7] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR
+  [ 8] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd
+  [ 9] jdk.graal.compiler.core.target.Backend.emitBackEnd
+  [10] jdk.graal.compiler.core.GraalCompiler.compile
+  [11] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [12] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [13] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [14] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [15] jdk.graal.compiler.core.CompilationWrapper.run
+  [16] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [17] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [19] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [20] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50420727 ns (0.01%), 5 samples
+  [ 0] G1CardSet::reset_table_scanner
+  [ 1] G1PrepareEvacuationTask::G1PrepareRegionsClosure::do_heap_region
+  [ 2] HeapRegionManager::par_iterate
+  [ 3] G1PrepareEvacuationTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+
+--- 50163456 ns (0.01%), 5 samples
+  [ 0] void G1ScanCardClosure::do_oop_work<narrowOop>
+  [ 1] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 2] G1RemSet::scan_heap_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+
+--- 50110618 ns (0.01%), 5 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParScanThreadState::steal_and_trim_queue
+  [ 3] G1ParEvacuateFollowersClosure::do_void
+  [ 4] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+
+--- 50010776 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.phases.common.ConditionalEliminationUtil.tryProveGuardCondition
+  [ 1] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.tryProveGuardCondition
+  [ 2] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processIf
+  [ 3] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processNode
+  [ 4] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processBlock
+  [ 5] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processNodes
+  [ 6] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.enter
+  [ 7] jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.enter
+  [ 8] jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+  [ 9] jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTree
+  [10] jdk.graal.compiler.phases.common.ConditionalEliminationPhase.run
+  [11] jdk.graal.compiler.phases.common.ConditionalEliminationPhase.run
+  [12] jdk.graal.compiler.phases.BasePhase.apply
+  [13] jdk.graal.compiler.phases.BasePhase.apply
+  [14] jdk.graal.compiler.phases.common.IterativeConditionalEliminationPhase.run
+  [15] jdk.graal.compiler.phases.common.IterativeConditionalEliminationPhase.run
+  [16] jdk.graal.compiler.phases.BasePhase.apply
+  [17] jdk.graal.compiler.phases.BasePhase.apply
+  [18] jdk.graal.compiler.core.phases.BaseTier.run
+  [19] jdk.graal.compiler.phases.BasePhase.apply
+  [20] jdk.graal.compiler.phases.BasePhase.apply
+  [21] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [22] jdk.graal.compiler.core.GraalCompiler.compile
+  [23] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [24] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [25] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [26] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [27] jdk.graal.compiler.core.CompilationWrapper.run
+  [28] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [29] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [30] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [31] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [32] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50009455 ns (0.01%), 5 samples
+  [ 0] G1CodeRootSet::contains
+  [ 1] nmethod::oops_do
+  [ 2] G1CollectedHeap::register_nmethod
+  [ 3] nmethod::nmethod
+  [ 4] nmethod::new_nmethod
+  [ 5] JVMCIRuntime::register_method
+  [ 6] CodeInstaller::install
+  [ 7] c2v_installCode0
+  [ 8] jdk.vm.ci.hotspot.CompilerToVM.installCode0
+  [ 9] jdk.vm.ci.hotspot.CompilerToVM.installCode
+  [10] jdk.vm.ci.hotspot.HotSpotCodeCacheProvider.installCode
+  [11] jdk.graal.compiler.core.target.Backend.createInstalledCode
+  [12] jdk.graal.compiler.hotspot.CompilationTask.installMethod
+  [13] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [14] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [15] jdk.graal.compiler.core.CompilationWrapper.run
+  [16] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [17] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [19] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [20] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50005707 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+  [ 1] jdk.graal.compiler.core.LIRGenerationPhase.emitBlock
+  [ 2] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [ 3] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [ 4] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [ 5] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [ 6] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0
+  [ 7] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR
+  [ 8] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd
+  [ 9] jdk.graal.compiler.core.target.Backend.emitBackEnd
+  [10] jdk.graal.compiler.core.GraalCompiler.compile
+  [11] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [12] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [13] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [14] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [15] jdk.graal.compiler.core.CompilationWrapper.run
+  [16] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [17] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [19] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [20] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50003086 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processEnd
+  [ 1] jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processNode
+  [ 2] jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.enter
+  [ 3] jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.enter
+  [ 4] jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+  [ 5] jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTree
+  [ 6] jdk.graal.compiler.phases.common.FixReadsPhase.run
+  [ 7] jdk.graal.compiler.phases.common.FixReadsPhase.run
+  [ 8] jdk.graal.compiler.phases.BasePhase.apply
+  [ 9] jdk.graal.compiler.phases.BasePhase.apply
+  [10] jdk.graal.compiler.core.phases.BaseTier.run
+  [11] jdk.graal.compiler.phases.BasePhase.apply
+  [12] jdk.graal.compiler.phases.BasePhase.apply
+  [13] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [14] jdk.graal.compiler.core.GraalCompiler.compile
+  [15] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [16] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [17] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [18] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [19] jdk.graal.compiler.core.CompilationWrapper.run
+  [20] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [21] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [22] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [23] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [24] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50002830 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.setBlockPos
+  [ 1] jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.spillBlockInactiveFixed
+  [ 2] jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.allocLockedRegister
+  [ 3] jdk.graal.compiler.lir.alloc.lsra.LinearScanWalker.activateCurrent
+  [ 4] jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walkTo
+  [ 5] jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walk
+  [ 6] jdk.graal.compiler.lir.alloc.lsra.LinearScanRegisterAllocationPhase.allocateRegisters
+  [ 7] jdk.graal.compiler.lir.alloc.lsra.LinearScanRegisterAllocationPhase.run
+  [ 8] jdk.graal.compiler.lir.alloc.lsra.LinearScanAllocationPhase.apply
+  [ 9] jdk.graal.compiler.lir.alloc.lsra.LinearScanAllocationPhase.apply
+  [10] jdk.graal.compiler.lir.alloc.lsra.LinearScan.allocate
+  [11] jdk.graal.compiler.lir.alloc.lsra.LinearScanPhase.run
+  [12] jdk.graal.compiler.lir.alloc.lsra.LinearScanPhase.run
+  [13] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [14] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [15] jdk.graal.compiler.lir.phases.LIRPhaseSuite.run
+  [16] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [17] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [18] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLowLevel
+  [19] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0
+  [20] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR
+  [21] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd
+  [22] jdk.graal.compiler.core.target.Backend.emitBackEnd
+  [23] jdk.graal.compiler.core.GraalCompiler.compile
+  [24] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [25] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [26] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [27] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [28] jdk.graal.compiler.core.CompilationWrapper.run
+  [29] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [30] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [31] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [32] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [33] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50002144 ns (0.01%), 5 samples
+  [ 0] I2C/C2I adapters(0xbbbe)
+  [ 1] [unknown_Java]
+
+--- 50001667 ns (0.01%), 5 samples
+  [ 0] java.lang.Long.getChars
+  [ 1] java.lang.Long.toString
+  [ 2] java.lang.Long.toString
+  [ 3] java.util.Formatter$FormatSpecifier.print
+  [ 4] java.util.Formatter$FormatSpecifier.print
+  [ 5] java.util.Formatter$FormatSpecifier.printInteger
+  [ 6] java.util.Formatter$FormatSpecifier.print
+  [ 7] java.util.Formatter.format
+  [ 8] java.util.Formatter.format
+  [ 9] java.lang.String.format
+  [10] jdk.graal.compiler.phases.common.inlining.policy.InliningPolicy$Decision.withReason
+  [11] jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+  [12] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [13] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [14] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [15] jdk.graal.compiler.phases.BasePhase.apply
+  [16] jdk.graal.compiler.phases.BasePhase.apply
+  [17] jdk.graal.compiler.core.phases.BaseTier.run
+  [18] jdk.graal.compiler.phases.BasePhase.apply
+  [19] jdk.graal.compiler.phases.BasePhase.apply
+  [20] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [21] jdk.graal.compiler.core.GraalCompiler.compile
+  [22] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [23] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [24] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [25] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [26] jdk.graal.compiler.core.CompilationWrapper.run
+  [27] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [28] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [29] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [30] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [31] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50001507 ns (0.01%), 5 samples
+  [ 0] java.lang.Integer.valueOf
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 50000888 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+  [ 1] jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+  [ 2] jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+  [ 3] jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+  [ 4] jdk.graal.compiler.virtual.phases.ea.EffectsPhase.runAnalysis
+  [ 5] jdk.graal.compiler.virtual.phases.ea.PartialEscapePhase.run
+  [ 6] jdk.graal.compiler.virtual.phases.ea.FinalPartialEscapePhase.run
+  [ 7] jdk.graal.compiler.virtual.phases.ea.FinalPartialEscapePhase.run
+  [ 8] jdk.graal.compiler.phases.BasePhase.apply
+  [ 9] jdk.graal.compiler.phases.BasePhase.apply
+  [10] jdk.graal.compiler.core.phases.BaseTier.run
+  [11] jdk.graal.compiler.phases.BasePhase.apply
+  [12] jdk.graal.compiler.phases.BasePhase.apply
+  [13] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [14] jdk.graal.compiler.core.GraalCompiler.compile
+  [15] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [16] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [17] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [18] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [19] jdk.graal.compiler.core.CompilationWrapper.run
+  [20] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [21] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [22] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [23] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [24] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 50000883 ns (0.01%), 5 samples
+  [ 0] I2C/C2I adapters(0xbbbea)
+  [ 1] [unknown_Java]
+
+--- 49998992 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.lir.hashing.IntHasher.<clinit>
+  [ 1] jdk.graal.compiler.lir.gen.LIRGenerator.hasherFor
+  [ 2] jdk.graal.compiler.lir.gen.LIRGenerator.emitStrategySwitch
+  [ 3] jdk.graal.compiler.core.gen.NodeLIRBuilder.emitSwitch
+  [ 4] jdk.graal.compiler.nodes.extended.IntegerSwitchNode.generate
+  [ 5] jdk.graal.compiler.core.gen.NodeLIRBuilder.emitNode
+  [ 6] jdk.graal.compiler.core.gen.NodeLIRBuilder.doRoot
+  [ 7] jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+  [ 8] jdk.graal.compiler.core.LIRGenerationPhase.emitBlock
+  [ 9] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [10] jdk.graal.compiler.core.LIRGenerationPhase.run
+  [11] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [12] jdk.graal.compiler.lir.phases.LIRPhase.apply
+  [13] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR0
+  [14] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitLIR
+  [15] jdk.graal.compiler.core.gen.LIRCompilerBackend.emitBackEnd
+  [16] jdk.graal.compiler.core.target.Backend.emitBackEnd
+  [17] jdk.graal.compiler.core.GraalCompiler.compile
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [19] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [20] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [21] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [22] jdk.graal.compiler.core.CompilationWrapper.run
+  [23] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [24] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [25] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [26] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [27] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 49998973 ns (0.01%), 5 samples
+  [ 0] jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lowerWithoutDelegation
+  [ 1] jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lower
+  [ 2] jdk.graal.compiler.hotspot.amd64.AMD64HotSpotLoweringProvider.lower
+  [ 3] jdk.graal.compiler.nodes.spi.Lowerable.lower
+  [ 4] jdk.graal.compiler.phases.common.LoweringPhase.process
+  [ 5] jdk.graal.compiler.phases.common.LoweringPhase$ProcessFrame.preprocess
+  [ 6] jdk.graal.compiler.phases.common.LoweringPhase.processBlock
+  [ 7] jdk.graal.compiler.phases.common.LoweringPhase.lower
+  [ 8] jdk.graal.compiler.phases.common.LoweringPhase.run
+  [ 9] jdk.graal.compiler.phases.common.LoweringPhase.run
+  [10] jdk.graal.compiler.phases.BasePhase.apply
+  [11] jdk.graal.compiler.phases.BasePhase.apply
+  [12] jdk.graal.compiler.core.phases.BaseTier.run
+  [13] jdk.graal.compiler.phases.BasePhase.apply
+  [14] jdk.graal.compiler.phases.BasePhase.apply
+  [15] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [16] jdk.graal.compiler.core.GraalCompiler.compile
+  [17] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [19] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [20] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [21] jdk.graal.compiler.core.CompilationWrapper.run
+  [22] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [23] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [24] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [25] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [26] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 49998274 ns (0.01%), 5 samples
+  [ 0] native signature handlers
+  [ 1] [unknown_Java]
+
+--- 49995499 ns (0.01%), 5 samples
+  [ 0] java.lang.AbstractStringBuilder.appendChars
+  [ 1] java.lang.AbstractStringBuilder.append
+  [ 2] java.lang.StringBuilder.append
+  [ 3] java.util.Formatter$FormatSpecifier.print
+  [ 4] java.util.Formatter$FormatSpecifier.print
+  [ 5] java.util.Formatter$FormatSpecifier.printFloat
+  [ 6] java.util.Formatter$FormatSpecifier.print
+  [ 7] java.util.Formatter.format
+  [ 8] java.util.Formatter.format
+  [ 9] java.lang.String.format
+  [10] jdk.graal.compiler.phases.common.inlining.policy.InliningPolicy$Decision.withReason
+  [11] jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+  [12] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [13] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [14] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [15] jdk.graal.compiler.phases.BasePhase.apply
+  [16] jdk.graal.compiler.phases.BasePhase.apply
+  [17] jdk.graal.compiler.core.phases.BaseTier.run
+  [18] jdk.graal.compiler.phases.BasePhase.apply
+  [19] jdk.graal.compiler.phases.BasePhase.apply
+  [20] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [21] jdk.graal.compiler.core.GraalCompiler.compile
+  [22] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [23] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [24] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [25] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [26] jdk.graal.compiler.core.CompilationWrapper.run
+  [27] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [28] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [29] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [30] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [31] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+--- 49995408 ns (0.01%), 5 samples
+  [ 0] Bounce.verifyResult
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 40281908 ns (0.01%), 4 samples
+  [ 0] mem_cgroup_handle_over_high_[k]
+  [ 1] exit_to_user_mode_loop_[k]
+  [ 2] exit_to_user_mode_prepare_[k]
+  [ 3] syscall_exit_to_user_mode_[k]
+  [ 4] do_syscall_64_[k]
+  [ 5] entry_SYSCALL_64_after_hwframe_[k]
+  [ 6] __futex_abstimed_wait_common
+
+--- 40081358 ns (0.01%), 4 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParCopyClosure<(G1Barrier)0, false>::do_oop
+  [ 3] InterpreterOopMap::iterate_oop
+  [ 4] frame::oops_interpreted_do
+  [ 5] JavaThread::oops_do_frames
+  [ 6] Thread::oops_do
+  [ 7] Threads::possibly_parallel_oops_do
+  [ 8] G1RootProcessor::process_java_roots
+  [ 9] G1RootProcessor::evacuate_roots
+  [10] G1EvacuateRegionsTask::scan_roots
+  [11] G1EvacuateRegionsBaseTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+
+--- 40012679 ns (0.01%), 4 samples
+  [ 0] jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+  [ 1] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [ 2] jdk.graal.compiler.phases.common.inlining.InliningPhase.run
+  [ 3] jdk.graal.compiler.phases.BasePhase.apply
+  [ 4] jdk.graal.compiler.phases.BasePhase.apply
+  [ 5] jdk.graal.compiler.core.phases.BaseTier.run
+  [ 6] jdk.graal.compiler.phases.BasePhase.apply
+  [ 7] jdk.graal.compiler.phases.BasePhase.apply
+  [ 8] jdk.graal.compiler.core.GraalCompiler.emitFrontEnd
+  [ 9] jdk.graal.compiler.core.GraalCompiler.compile
+  [10] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper
+  [11] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile
+  [12] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [13] jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation
+  [14] jdk.graal.compiler.core.CompilationWrapper.run
+  [15] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [16] jdk.graal.compiler.hotspot.CompilationTask.runCompilation
+  [17] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [18] jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod
+  [19] jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+361286335835   48.44%    36128  Bounce$Ball.bounce
+149802494117   20.08%    14980  Bounce.benchmark
+ 24620427544    3.30%     2462  java.lang.Math.abs
+ 20540316607    2.75%     2054  Bounce$Ball.<init>
+  8790318221    1.18%      879  Interpreter
+  5830210320    0.78%      583  java.util.Arrays.setAll
+  4480096722    0.60%      448  som.Random.next
+  4430108788    0.59%      443  Bounce.lambda$benchmark$0
+  3750053795    0.50%      375  I2C/C2I adapters(0xb)
+  1590095771    0.21%      159  InstanceKlass::find_method_index
+  1340019201    0.18%      134  I2C/C2I adapters(0xbb)
+  1240037971    0.17%      124  jdk.graal.compiler.phases.BasePhase.apply
+   721659370    0.10%       72  G1ParScanThreadState::trim_queue_to_threshold
+   630008382    0.08%       63  jdk.graal.compiler.phases.common.CanonicalizerPhase.processNode
+   619963305    0.08%       62  itable stub
+   610020357    0.08%       61  jdk.graal.compiler.phases.common.ConditionalEliminationUtil.tryProveGuardCondition
+   590021542    0.08%       59  jdk.graal.compiler.phases.common.LoweringPhase.process
+   580035333    0.08%       58  jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener.changed
+   550032384    0.07%       55  java.util.ArrayList.add
+   539990631    0.07%       54  I2C/C2I adapters(0xbbb)
+   480008477    0.06%       48  jdk.graal.compiler.virtual.phases.ea.EffectsClosure.processBlock
+   440004123    0.06%       44  jdk.graal.compiler.phases.common.CanonicalizerPhase.processWorkSet
+   430028344    0.06%       43  jdk.graal.compiler.java.BytecodeParser.iterateBytecodesForBlock
+   429986414    0.06%       43  java.util.Formatter$FormatSpecifier.print
+   420013673    0.06%       42  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortNodesLatestWithinBlock
+   419987572    0.06%       42  jdk.graal.compiler.nodes.PiNode.canonical
+   419978678    0.06%       42  jdk.graal.compiler.phases.common.CanonicalizerPhase.tryCanonicalize
+   410010176    0.05%       41  jdk.graal.compiler.nodes.loop.LoopFragment.computeNodes
+   410005171    0.05%       41  jdk.graal.compiler.nodes.cfg.ReversePostOrder.compute
+   410000988    0.05%       41  jdk.graal.compiler.graph.Graph.register
+   399955184    0.05%       40  jdk.graal.compiler.nodes.IfNode.simplify
+   390013855    0.05%       39  jdk.graal.compiler.core.common.type.AbstractObjectStamp.join0
+   389997567    0.05%       39  jdk.graal.compiler.graph.Node.updatePredecessor
+   389990702    0.05%       39  jdk.graal.compiler.java.BytecodeParser.appendInvoke
+   380046552    0.05%       38  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime
+   370004656    0.05%       37  CodeHeap::find_blob
+   369984068    0.05%       37  jdk.graal.compiler.graph.NodeClass.dataEquals
+   360013392    0.05%       36  jdk.graal.compiler.phases.common.inlining.InliningUtil.inline
+   360003468    0.05%       36  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.scheduleEarliestIterative
+   350005513    0.05%       35  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.perBasicBlockFrequencyAction
+   340008728    0.05%       34  I2C/C2I adapters(0xba)
+   330000467    0.04%       33  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDefault
+   329999759    0.04%       33  java.lang.String.lastIndexOf
+   320016852    0.04%       32  jdk.graal.compiler.nodes.FrameState.<init>
+   320003984    0.04%       32  jdk.graal.compiler.java.BciBlockMapping.computeBlockOrder
+   309981197    0.04%       31  org.graalvm.collections.EconomicMapImpl.put
+   300018009    0.04%       30  jdk.graal.compiler.graph.Graph.findDuplicate
+   300016338    0.04%       30  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewCondition
+   300005954    0.04%       30  jdk.graal.compiler.graph.Node.getNodeInfo
+   299992755    0.04%       30  jdk.graal.compiler.phases.common.inlining.policy.GreedyInliningPolicy.isWorthInlining
+   299979952    0.04%       30  jdk.graal.compiler.graph.NodeMap.get
+   290296916    0.04%       29  __memset_avx2_unaligned_erms
+   290038849    0.04%       29  jdk.graal.compiler.core.gen.NodeLIRBuilder.doBlock
+   290006280    0.04%       29  org.graalvm.collections.EconomicMapImpl.findLinear
+   290000853    0.04%       29  jdk.graal.compiler.core.common.type.IntegerStamp.create
+   289997012    0.04%       29  jdk.graal.compiler.graph.NodeUsageIterator.advance
+   280019527    0.04%       28  ConstantPool::klass_at_impl
+   280004117    0.04%       28  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeLoopInformation
+   280000583    0.04%       28  jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator.forward
+   279983524    0.04%       28  org.graalvm.collections.EconomicMapImpl.getHashIndex
+   270097726    0.04%       27  __tls_get_addr
+   270091665    0.04%       27  CodeCache::find_blob
+   270018538    0.04%       27  jdk.graal.compiler.phases.common.inlining.InliningUtil.updateSourcePosition
+   270009327    0.04%       27  jdk.graal.compiler.graph.NodeList.<init>
+   270008810    0.04%       27  jdk.graal.compiler.graph.NodeMap.set
+   269998738    0.04%       27  jdk.graal.compiler.graph.Node.addUsage
+   269996249    0.04%       27  ThreadInVMfromNative::ThreadInVMfromNative
+   269991251    0.04%       27  jdk.graal.compiler.nodes.calc.AddNode.canonical
+   269978416    0.04%       27  jdk.graal.compiler.nodes.cfg.HIRBlock.assignPredecessorsAndSuccessors
+   260018119    0.03%       26  java.lang.AbstractStringBuilder.append
+   260011851    0.03%       26  InstanceKlass::allocate_objArray
+   260007313    0.03%       26  jdk.graal.compiler.hotspot.meta.DefaultHotSpotLoweringProvider.lowerWithoutDelegation
+   260004998    0.03%       26  jdk.graal.compiler.graph.Node.clone
+   259995956    0.03%       26  InterpreterRuntime::resolve_invoke
+   250014865    0.03%       25  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.processNode
+   250004009    0.03%       25  java.util.concurrent.ConcurrentHashMap.computeIfAbsent
+   250002222    0.03%       25  jdk.graal.compiler.graph.Node.initialize
+   250002200    0.03%       25  jdk.graal.compiler.nodes.calc.IntegerLowerThanNode$LowerOp.findSynonym
+   250001187    0.03%       25  java.util.Arrays.copyOf
+   240011434    0.03%       24  methodHandle::~methodHandle
+   240006955    0.03%       24  org.graalvm.collections.EconomicMapImpl.compareKeys
+   240002658    0.03%       24  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.processEnd
+   239998694    0.03%       24  jdk.graal.compiler.java.BytecodeParser.createTarget
+   230010571    0.03%       23  jdk.graal.compiler.lir.alloc.lsra.IntervalWalker.walkTo
+   230005372    0.03%       23  jdk.graal.compiler.lir.LIRIntrospection.visitEach
+   230005235    0.03%       23  jdk.graal.compiler.debug.DebugContext.log
+   230003534    0.03%       23  jdk.graal.compiler.java.LocalLiveness.computeLiveness
+   229998430    0.03%       23  Bounce.verifyResult
+   229982919    0.03%       23  InterpreterRuntime::frequency_counter_overflow_inner
+   220020350    0.03%       22  jdk.graal.compiler.nodes.util.GraphUtil.killWithUnusedFloatingInputs
+   220014225    0.03%       22  InstanceKlass::array_klass
+   220014017    0.03%       22  jdk.graal.compiler.java.BytecodeParser.build
+   220006835    0.03%       22  java.util.HashMap.getNode
+   220003138    0.03%       22  jdk.graal.compiler.nodes.ValueNode.graph
+   220001047    0.03%       22  jdk.graal.compiler.java.FrameStateBuilder.create
+   219999268    0.03%       22  I2C/C2I adapters(0xbbbb)
+   219997752    0.03%       22  jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.fromMetaspace
+   219993687    0.03%       22  Dictionary::find_class
+   219987822    0.03%       22  jdk.graal.compiler.debug.DebugContext.scope
+   210020098    0.03%       21  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computePostdominators
+   210011438    0.03%       21  org.graalvm.collections.EconomicMapImpl.findHash
+   210008168    0.03%       21  jdk.graal.compiler.graph.TypedGraphNodeIterator.forward
+   210006087    0.03%       21  org.graalvm.collections.EconomicMapImpl.find
+   209998032    0.03%       21  jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator.dropDeleted
+   201721015    0.03%       20  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+   200015853    0.03%       20  jdk.graal.compiler.lir.alloc.lsra.MoveResolver.resolveMappings
+   200014754    0.03%       20  InterpreterRuntime::anewarray
+   200000586    0.03%       20  jdk.graal.compiler.graph.NodeClass.addGraphDuplicate
+   199999477    0.03%       20  jdk.graal.compiler.phases.common.CanonicalizerPhase$1.inputChanged
+   199989265    0.03%       20  jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase.buildIntervals
+   199973838    0.03%       20  jdk.graal.compiler.nodes.java.LoadFieldNode.canonical
+   190017613    0.03%       19  JavaThread::pd_last_frame
+   190009719    0.03%       19  jdk.graal.compiler.phases.common.inlining.walker.InliningData.moveForward
+   190007582    0.03%       19  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.rpoInnerLoopsFirst
+   190005813    0.03%       19  java.util.RegularEnumSet.contains
+   189999166    0.03%       19  org.graalvm.collections.EconomicMapImpl.setKey
+   189993693    0.03%       19  jdk.graal.compiler.java.BytecodeParser.processBlock
+   189993169    0.03%       19  jdk.graal.compiler.graph.Graph.updateNodeCaches
+   189980869    0.03%       19  jdk.graal.compiler.nodes.loop.LoopFragment.markFloating
+   180016764    0.02%       18  jdk.graal.compiler.java.BciBlockMapping.iterateOverBytecodes
+   180015529    0.02%       18  jdk.graal.compiler.java.FrameStateBuilder.initializeForMethodStart
+   180013287    0.02%       18  jdk.graal.compiler.debug.DebugContext.enterCompilerPhase
+   180010926    0.02%       18  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.advanceInput
+   180005833    0.02%       18  jdk.graal.compiler.phases.graph.ReentrantNodeIterator.apply
+   180005826    0.02%       18  jdk.graal.compiler.phases.graph.ReentrantBlockIterator.apply
+   180005762    0.02%       18  Benchmark.innerBenchmarkLoop
+   180004983    0.02%       18  jdk.graal.compiler.graph.Node.graph
+   180004646    0.02%       18  jdk.graal.compiler.java.BytecodeParser.<init>
+   180002394    0.02%       18  java.lang.Object.hashCode
+   180001759    0.02%       18  jdk.graal.compiler.nodes.util.GraphUtil.unproxify
+   179998622    0.02%       18  InterpreterRuntime::ldc
+   179989659    0.02%       18  java.util.ArrayList.grow
+   179989067    0.02%       18  oop_disjoint_arraycopy
+   170018765    0.02%       17  Method::is_accessor
+   170016160    0.02%       17  MethodData::bci_to_dp
+   170012963    0.02%       17  jdk.graal.compiler.core.common.type.IntegerStamp.<init>
+   170012156    0.02%       17  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.calcLatestBlocks
+   170009541    0.02%       17  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.compute
+   170008570    0.02%       17  jdk.graal.compiler.graph.NodeClass.applyEdges
+   170004970    0.02%       17  java.util.Formatter.format
+   169997884    0.02%       17  jdk.graal.compiler.phases.common.inlining.walker.ComputeInliningRelevance$Scope.process
+   169997648    0.02%       17  jdk.graal.compiler.phases.common.ConditionalEliminationPhase$Instance.registerNewStamp
+   169997631    0.02%       17  jdk.graal.compiler.graph.Node.isAlive
+   169994683    0.02%       17  jdk.graal.compiler.phases.graph.FixedNodeRelativeFrequencyCache.applyAsDouble
+   169994013    0.02%       17  CompLevel CompilationPolicy::common<CallPredicate>
+   169978802    0.02%       17  CompilationPolicy::select_task
+   160327204    0.02%       16  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+   160018207    0.02%       16  jdk.graal.compiler.graph.Graph.addOrUniqueWithInputs
+   160013841    0.02%       16  jdk.graal.compiler.core.common.type.AbstractObjectStamp.equals
+   160010066    0.02%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlock
+   160005519    0.02%       16  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.identifyBlocks
+   160004292    0.02%       16  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.hasNext
+   160004119    0.02%       16  java.util.Formatter.parse
+   159998600    0.02%       16  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.sortIntoList
+   159997886    0.02%       16  jdk.internal.math.DoubleToDecimal.toDecimal
+   159997763    0.02%       16  jdk.graal.compiler.phases.graph.FixedNodeRelativeFrequencyCache.findBegin
+   159997613    0.02%       16  jdk.vm.ci.hotspot.HotSpotProfilingInfo.findBCI
+   159996723    0.02%       16  jdk.graal.compiler.core.common.Fields.copy
+   159995902    0.02%       16  jdk.graal.compiler.graph.NodeWorkList.addAll
+   159993897    0.02%       16  java.util.ArrayList.elementData
+   159991246    0.02%       16  jdk.graal.compiler.core.common.Fields.getObject
+   159989248    0.02%       16  java.util.ArrayDeque.addLast
+   150014474    0.02%       15  jdk.graal.compiler.phases.common.FixReadsPhase$RawConditionalEliminationVisitor.enter
+   150013254    0.02%       15  org.graalvm.collections.EconomicMapImpl.grow
+   150012505    0.02%       15  CompLevel CompilationPolicy::common<LoopPredicate>
+   150011434    0.02%       15  CompilationPolicy::method_invocation_event
+   150011428    0.02%       15  CompilationPolicy::create_mdo
+   150009774    0.02%       15  jdk.graal.compiler.nodes.loop.LoopsData.<init>
+   150006067    0.02%       15  java.lang.String.equals
+   150005919    0.02%       15  jdk.graal.compiler.graph.NodeWorkList.<init>
+   150002282    0.02%       15  jdk.graal.compiler.graph.Graph$NodeEventListener.event
+   150001854    0.02%       15  jdk.graal.compiler.phases.BasePhase.getEnclosingPhase
+   150000874    0.02%       15  jdk.graal.compiler.lir.LIRFrameState.visitValues
+   149999349    0.02%       15  jdk.graal.compiler.options.OptionValues.get
+   149999253    0.02%       15  jdk.graal.compiler.phases.schedule.SchedulePhase$Instance.processStack
+   149999216    0.02%       15  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.visitDominatorTreeDeferLoopExits
+   149998113    0.02%       15  jdk.graal.compiler.graph.NodeClass.updateEdgesInPlace
+   149996909    0.02%       15  jdk.graal.compiler.graph.NodeClass.unregisterAtInputsAsUsage
+   149996586    0.02%       15  org.graalvm.collections.EconomicMapImpl.get
+   149987585    0.02%       15  jbyte_disjoint_arraycopy
+   140019172    0.02%       14  jdk.graal.compiler.core.gen.DebugInfoBuilder.computeFrameForState
+   140012535    0.02%       14  jdk.graal.compiler.java.BytecodeParser.openNodeContext
+   140012449    0.02%       14  jdk.graal.compiler.lir.alloc.lsra.LinearScanAssignLocationsPhase.assignLocations
+   140012025    0.02%       14  jdk.graal.compiler.lir.LIR.getLIRforBlock
+   140009465    0.02%       14  org.graalvm.collections.EconomicMapImpl.getKey
+   140007525    0.02%       14  java.util.ArrayList$Itr.checkForComodification
+   140005870    0.02%       14  jdk.graal.compiler.graph.NodeClass$RawEdgesIterator.next
+   140004851    0.02%       14  jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.get
+   140002932    0.02%       14  jdk.graal.compiler.graph.Graph.uniqueHelper
+   140002212    0.02%       14  jdk.graal.compiler.debug.DebugContext.logAndIndent
+   140000500    0.02%       14  jdk.graal.compiler.graph.iterators.NodeIterable.snapshotTo
+   140000360    0.02%       14  MemAllocator::allocate
+   139999027    0.02%       14  java.util.ArrayList$Itr.hasNext
+   139997691    0.02%       14  SymbolTable::do_lookup
+   139993674    0.02%       14  jdk.graal.compiler.nodes.cfg.ControlFlowGraph.computeDominators
+   139992699    0.02%       14  jdk.graal.compiler.java.FrameStateBuilder.verifyStackEffect
+   139989151    0.02%       14  jdk.graal.compiler.nodes.calc.IntegerLessThanNode$LessThanOp.findSynonym
+   139987819    0.02%       14  jni_GetObjectClass
+   139985132    0.02%       14  java.util.ArrayList$Itr.next
+   139981750    0.02%       14  jdk.graal.compiler.phases.PhaseSuite.notApplicableTo

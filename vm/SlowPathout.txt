@@ -1,0 +1,233 @@
+CompileCommand: dontinline *.* bool dontinline = true
+48 89 6c 24 10 e8 00 00 00 00 eb 9d 
+48 8d 0d bb ff ff ff 49 89 8f 68 04 00 00 e9 6f ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 c9 fd ff ff 
+48 8d 0d 71 ff ff ff 49 89 8f 68 04 00 00 e9 9b fd ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 68 ff ff ff 
+48 8d 0d af ff ff ff 49 89 8f 68 04 00 00 e9 1a ff ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 7a ff ff ff 
+48 8d 0d b8 ff ff ff 49 89 8f 68 04 00 00 e9 4c ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb de 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 90 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb e0 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 92 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb 9d 
+48 8d 0d bb ff ff ff 49 89 8f 68 04 00 00 e9 4f ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb 9d 
+48 8d 0d bb ff ff ff 49 89 8f 68 04 00 00 e9 6f ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 90 eb 98 
+48 8d 0d ba ff ff ff 49 89 8f 68 04 00 00 e9 6a ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 66 90 e9 15 ff ff ff 
+48 8d 0d 33 ff ff ff 49 89 8f 68 04 00 00 e9 c7 fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 13 ff ff ff 
+48 8d 0d 31 ff ff ff 49 89 8f 68 04 00 00 e9 e5 fe ff ff 
+48 8d 0d 88 ff ff ff 49 89 8f 68 04 00 00 e9 d1 fe ff ff 
+48 8d 0d 90 ff ff ff 49 89 8f 68 04 00 00 66 90 e9 bb fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb d7 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 a9 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb c0 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 92 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb dd 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8f ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb a0 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 52 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb d3 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 a5 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb de 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 90 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 30 ff ff ff 
+48 8d 0d 8e ff ff ff 49 89 8f 68 04 00 00 e9 e2 fe ff ff 
+48 8d 0d 9d ff ff ff 49 89 8f 68 04 00 00 e9 ce fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb de 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 90 ff ff ff 
+Starting Queens benchmark ...
+48 89 6c 24 10 e8 00 00 00 00 e9 3e ff ff ff 
+48 8d 0d 68 ff ff ff 49 89 8f 68 04 00 00 e9 f0 fe ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 3e f8 ff ff 
+48 8d 0d 86 f9 ff ff 49 89 8f 68 04 00 00 e9 f0 f7 ff ff 
+48 8d 0d 8b fe ff ff 49 89 8f 68 04 00 00 90 e9 db f7 ff ff 
+48 8d 0d 93 fe ff ff 49 89 8f 68 04 00 00 e9 c7 f7 ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 4c ff ff ff 
+48 8d 0d b8 ff ff ff 49 89 8f 68 04 00 00 66 66 90 e9 fb fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 66 90 e9 b5 fe ff ff 
+48 8d 0d 33 ff ff ff 49 89 8f 68 04 00 00 e9 87 fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb de 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 90 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 db fe ff ff 
+48 8d 0d 59 ff ff ff 49 89 8f 68 04 00 00 e9 ad fe ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 9a fa ff ff 
+4c 89 1c 24 e8 00 00 00 00 e9 26 fb ff ff 
+4c 89 14 24 e8 00 00 00 00 e9 77 fb ff ff 
+4c 89 1c 24 e8 00 00 00 00 e9 29 fc ff ff 
+4c 89 14 24 e8 00 00 00 00 e9 7a fc ff ff 
+4c 89 1c 24 e8 00 00 00 00 e9 2b fd ff ff 
+4c 89 14 24 e8 00 00 00 00 e9 7c fd ff ff 
+4c 89 1c 24 90 e8 00 00 00 00 e9 3c fe ff ff 
+4c 89 14 24 e8 00 00 00 00 e9 92 fe ff ff 
+48 8d 0d c0 fe ff ff 49 89 8f 68 04 00 00 e9 d3 f9 ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 2e fd ff ff 
+48 8d 0d 77 fe ff ff 49 89 8f 68 04 00 00 e9 e0 fc ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb de 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 90 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 fd fe ff ff 
+48 8d 0d 5c ff ff ff 49 89 8f 68 04 00 00 e9 cf fe ff ff 
+48 8d 0d 8a ff ff ff 49 89 8f 68 04 00 00 e9 bb fe ff ff 
+Queens: iterations=1 runtime: 146519us
+48 89 6c 24 10 e8 00 00 00 00 e9 68 ff ff ff 
+48 8d 0d af ff ff ff 49 89 8f 68 04 00 00 e9 1a ff ff ff 
+Queens: iterations=1 runtime: 131212us
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb da 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8c ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb b7 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 69 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb d5 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 87 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 90 e9 55 ff ff ff 
+48 8d 0d b3 ff ff ff 49 89 8f 68 04 00 00 e9 07 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb 80 
+48 8d 0d c0 ff ff ff 49 89 8f 68 04 00 00 e9 32 ff ff ff 
+48 8d 0d ca ff ff ff 49 89 8f 68 04 00 00 66 66 90 e9 1b ff ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 c4 fe ff ff 
+48 8d 0d 22 ff ff ff 49 89 8f 68 04 00 00 e9 76 fe ff ff 
+48 8d 0d 7c ff ff ff 49 89 8f 68 04 00 00 e9 62 fe ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 ca fe ff ff 
+48 8d 0d a8 ff ff ff 49 89 8f 68 04 00 00 90 e9 7b fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb b3 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 65 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 3b ff ff ff 
+4c 89 1c 24 e8 00 00 00 00 e9 67 ff ff ff 
+4c 89 14 24 e8 00 00 00 00 eb c4 
+48 8d 0d c0 ff ff ff 49 89 8f 68 04 00 00 e9 d2 fe ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 6d ff ff ff 
+48 8d 0d 7d ff ff ff 49 89 8f 68 04 00 00 0f 1f 40 00 e9 3b ff ff ff 
+Queens: iterations=1 runtime: 129147us
+Queens: iterations=1 runtime: 129655us
+48 89 6c 24 20 e8 00 00 00 00 e9 ab fd ff ff 
+48 8d 0d 09 fe ff ff 49 89 8f 68 04 00 00 66 90 e9 5b fd ff ff 
+48 89 6c 24 20 e8 00 00 00 00 e9 9d fe ff ff 
+48 8d 0d 87 ff ff ff 49 89 8f 68 04 00 00 e9 4f fe ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb b7 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 69 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb b7 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 69 ff ff ff 
+Queens: iterations=1 runtime: 126257us
+Queens: iterations=1 runtime: 118531us
+Queens: iterations=1 runtime: 122254us
+Queens: iterations=1 runtime: 121577us
+Queens: iterations=1 runtime: 119700us
+Queens: iterations=1 runtime: 121427us
+Queens: iterations=1 runtime: 119455us
+Queens: iterations=1 runtime: 118918us
+Queens: iterations=1 runtime: 118465us
+Queens: iterations=1 runtime: 118879us
+Queens: iterations=1 runtime: 118326us
+Queens: iterations=1 runtime: 120504us
+Queens: iterations=1 runtime: 122064us
+Queens: iterations=1 runtime: 119637us
+Queens: iterations=1 runtime: 119126us
+Queens: iterations=1 runtime: 118988us
+Queens: iterations=1 runtime: 118744us
+Queens: iterations=1 runtime: 119278us
+Queens: iterations=1 runtime: 118059us
+Queens: iterations=1 runtime: 119147us
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+Queens: iterations=1 runtime: 122820us
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+Queens: iterations=1 runtime: 120402us
+Queens: iterations=1 runtime: 118940us
+Queens: iterations=1 runtime: 117609us
+Queens: iterations=1 runtime: 118322us
+Queens: iterations=1 runtime: 119386us
+Queens: iterations=1 runtime: 117957us
+Queens: iterations=1 runtime: 125299us
+Queens: iterations=1 runtime: 128698us
+Queens: iterations=1 runtime: 130313us
+Queens: iterations=1 runtime: 126342us
+Queens: iterations=1 runtime: 121293us
+Queens: iterations=1 runtime: 124012us
+Queens: iterations=1 runtime: 122428us
+Queens: iterations=1 runtime: 123656us
+Queens: iterations=1 runtime: 122858us
+Queens: iterations=1 runtime: 123412us
+Queens: iterations=1 runtime: 122246us
+Queens: iterations=1 runtime: 127737us
+Queens: iterations=1 runtime: 127247us
+Queens: iterations=1 runtime: 156034us
+Queens: iterations=1 runtime: 131773us
+Queens: iterations=1 runtime: 126788us
+Queens: iterations=1 runtime: 125815us
+Queens: iterations=1 runtime: 127529us
+Queens: iterations=1 runtime: 126522us
+Queens: iterations=1 runtime: 127148us
+Queens: iterations=1 runtime: 127687us
+Queens: iterations=1 runtime: 126302us
+Queens: iterations=1 runtime: 126789us
+Queens: iterations=1 runtime: 128148us
+Queens: iterations=1 runtime: 124452us
+Queens: iterations=1 runtime: 130540us
+Queens: iterations=1 runtime: 133322us
+Queens: iterations=1 runtime: 126866us
+Queens: iterations=1 runtime: 129192us
+Queens: iterations=1 runtime: 126286us
+Queens: iterations=1 runtime: 123047us
+Queens: iterations=1 runtime: 133651us
+Queens: iterations=1 runtime: 126737us
+Queens: iterations=1 runtime: 136937us
+Queens: iterations=1 runtime: 133639us
+Queens: iterations=1 runtime: 136262us
+Queens: iterations=1 runtime: 124731us
+Queens: iterations=1 runtime: 124334us
+Queens: iterations=1 runtime: 132665us
+Queens: iterations=1 runtime: 129718us
+Queens: iterations=1 runtime: 128865us
+Queens: iterations=1 runtime: 131429us
+Queens: iterations=1 runtime: 124039us
+Queens: iterations=1 runtime: 125414us
+Queens: iterations=1 runtime: 130253us
+Queens: iterations=1 runtime: 126595us
+Queens: iterations=1 runtime: 128216us
+Queens: iterations=1 runtime: 126119us
+Queens: iterations=1 runtime: 125421us
+48 89 6c 24 10 e8 00 00 00 00 eb df 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 91 ff ff ff 
+Queens: iterations=1 runtime: 331440539672us
+48 89 6c 24 10 e8 00 00 00 00 eb db 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 8d ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 e9 4f ff ff ff 
+48 8d 0d ba ff ff ff 49 89 8f 68 04 00 00 e9 01 ff ff ff 
+48 89 6c 24 10 e8 00 00 00 00 eb e0 
+48 8d 0d de ff ff ff 49 89 8f 68 04 00 00 e9 92 ff ff ff 

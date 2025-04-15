@@ -1,0 +1,2069 @@
+Groundtruth SlowDown Started......
+Profiling started
+Groundtruth SlowDown Started......
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Starting Bounce benchmark ...
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=1 runtime: 278490us
+Bounce: iterations=2 runtime: 237693us
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=3 runtime: 240695us
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=4 runtime: 238247us
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=5 runtime: 239057us
+Bounce: iterations=6 runtime: 238287us
+Bounce: iterations=7 runtime: 230744us
+Bounce: iterations=8 runtime: 229337us
+Groundtruth SlowDown Shutdown......
+Bounce: iterations=9 runtime: 229886us
+Bounce: iterations=10 runtime: 228036us
+Bounce: iterations=11 runtime: 231378us
+Bounce: iterations=12 runtime: 228851us
+Bounce: iterations=13 runtime: 228421us
+Bounce: iterations=14 runtime: 227948us
+Bounce: iterations=15 runtime: 231485us
+Bounce: iterations=16 runtime: 228949us
+Bounce: iterations=17 runtime: 228056us
+Bounce: iterations=18 runtime: 231597us
+Bounce: iterations=19 runtime: 230796us
+Bounce: iterations=20 runtime: 229896us
+Bounce: iterations=21 runtime: 227737us
+Bounce: iterations=22 runtime: 227560us
+Bounce: iterations=23 runtime: 230393us
+Bounce: iterations=24 runtime: 228659us
+Groundtruth SlowDown Started......
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=25 runtime: 228468us
+Bounce: iterations=26 runtime: 229798us
+Bounce: iterations=27 runtime: 230617us
+Bounce: iterations=28 runtime: 228879us
+Bounce: iterations=29 runtime: 228849us
+Groundtruth SlowDown Shutdown......
+Bounce: iterations=30 runtime: 228690us
+Bounce: iterations=31 runtime: 230244us
+Bounce: iterations=32 runtime: 228846us
+Bounce: iterations=33 runtime: 227870us
+Bounce: iterations=34 runtime: 227545us
+Bounce: iterations=35 runtime: 228574us
+Bounce: iterations=36 runtime: 229346us
+Bounce: iterations=37 runtime: 229170us
+Bounce: iterations=38 runtime: 226940us
+Bounce: iterations=39 runtime: 227189us
+Bounce: iterations=40 runtime: 230796us
+Bounce: iterations=41 runtime: 228424us
+Bounce: iterations=42 runtime: 227708us
+Bounce: iterations=43 runtime: 227380us
+Bounce: iterations=44 runtime: 230945us
+Bounce: iterations=45 runtime: 228668us
+Bounce: iterations=46 runtime: 228253us
+Bounce: iterations=47 runtime: 227934us
+Bounce: iterations=48 runtime: 230517us
+Bounce: iterations=49 runtime: 228320us
+Bounce: iterations=50 runtime: 227927us
+Bounce: iterations=51 runtime: 227744us
+Bounce: iterations=52 runtime: 231308us
+Bounce: iterations=53 runtime: 228972us
+Bounce: iterations=54 runtime: 227645us
+Bounce: iterations=55 runtime: 227619us
+Bounce: iterations=56 runtime: 229652us
+Bounce: iterations=57 runtime: 228986us
+Bounce: iterations=58 runtime: 228217us
+Bounce: iterations=59 runtime: 228215us
+Bounce: iterations=60 runtime: 229963us
+Bounce: iterations=61 runtime: 228508us
+Bounce: iterations=62 runtime: 227776us
+Bounce: iterations=63 runtime: 227779us
+Bounce: iterations=64 runtime: 227488us
+Bounce: iterations=65 runtime: 229807us
+Bounce: iterations=66 runtime: 228271us
+Bounce: iterations=67 runtime: 228309us
+Bounce: iterations=68 runtime: 227584us
+Bounce: iterations=69 runtime: 230367us
+Bounce: iterations=70 runtime: 228172us
+Bounce: iterations=71 runtime: 227725us
+Bounce: iterations=72 runtime: 227461us
+Bounce: iterations=73 runtime: 231742us
+Bounce: iterations=74 runtime: 229368us
+Bounce: iterations=75 runtime: 230736us
+Bounce: iterations=76 runtime: 230224us
+Bounce: iterations=77 runtime: 231120us
+Bounce: iterations=78 runtime: 230437us
+Bounce: iterations=79 runtime: 229425us
+Bounce: iterations=80 runtime: 229218us
+Bounce: iterations=81 runtime: 230851us
+Bounce: iterations=82 runtime: 229165us
+Bounce: iterations=83 runtime: 229160us
+Bounce: iterations=84 runtime: 229687us
+Bounce: iterations=85 runtime: 230788us
+Bounce: iterations=86 runtime: 229947us
+Bounce: iterations=87 runtime: 229132us
+Bounce: iterations=88 runtime: 228795us
+Bounce: iterations=89 runtime: 229841us
+Bounce: iterations=90 runtime: 230233us
+Bounce: iterations=91 runtime: 228641us
+Bounce: iterations=92 runtime: 227944us
+Bounce: iterations=93 runtime: 228374us
+Bounce: iterations=94 runtime: 230551us
+Bounce: iterations=95 runtime: 232116us
+Bounce: iterations=96 runtime: 229275us
+Bounce: iterations=97 runtime: 229107us
+Bounce: iterations=98 runtime: 231650us
+Bounce: iterations=99 runtime: 229637us
+Bounce: iterations=100 runtime: 227463us
+Bounce: iterations=101 runtime: 227285us
+Bounce: iterations=102 runtime: 230610us
+Bounce: iterations=103 runtime: 229386us
+Bounce: iterations=104 runtime: 228689us
+Bounce: iterations=105 runtime: 227593us
+Bounce: iterations=106 runtime: 229590us
+Bounce: iterations=107 runtime: 228792us
+Bounce: iterations=108 runtime: 228071us
+Bounce: iterations=109 runtime: 227940us
+Bounce: iterations=110 runtime: 229258us
+Bounce: iterations=111 runtime: 228755us
+Bounce: iterations=112 runtime: 228262us
+Bounce: iterations=113 runtime: 227632us
+Bounce: iterations=114 runtime: 228495us
+Bounce: iterations=115 runtime: 228917us
+Bounce: iterations=116 runtime: 227949us
+Bounce: iterations=117 runtime: 230038us
+Bounce: iterations=118 runtime: 227784us
+Bounce: iterations=119 runtime: 230800us
+Bounce: iterations=120 runtime: 228924us
+Bounce: iterations=121 runtime: 228476us
+Groundtruth SlowDown Started......
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=122 runtime: 230356us
+Bounce: iterations=123 runtime: 231211us
+Bounce: iterations=124 runtime: 229270us
+Bounce: iterations=125 runtime: 228188us
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=126 runtime: 228356us
+Bounce: iterations=127 runtime: 230253us
+Bounce: iterations=128 runtime: 228123us
+Bounce: iterations=129 runtime: 227495us
+Bounce: iterations=130 runtime: 227815us
+Groundtruth SlowDown Shutdown......
+Bounce: iterations=131 runtime: 229206us
+Bounce: iterations=132 runtime: 228045us
+Bounce: iterations=133 runtime: 227916us
+Bounce: iterations=134 runtime: 228239us
+Bounce: iterations=135 runtime: 229951us
+Bounce: iterations=136 runtime: 229825us
+Bounce: iterations=137 runtime: 228090us
+Bounce: iterations=138 runtime: 227838us
+Bounce: iterations=139 runtime: 230616us
+Bounce: iterations=140 runtime: 230251us
+Bounce: iterations=141 runtime: 230696us
+Bounce: iterations=142 runtime: 229229us
+Bounce: iterations=143 runtime: 228773us
+Bounce: iterations=144 runtime: 230234us
+Bounce: iterations=145 runtime: 228903us
+Bounce: iterations=146 runtime: 235118us
+Bounce: iterations=147 runtime: 228795us
+Bounce: iterations=148 runtime: 230288us
+Bounce: iterations=149 runtime: 229343us
+Bounce: iterations=150 runtime: 228254us
+Bounce: iterations=151 runtime: 229124us
+Bounce: iterations=152 runtime: 230186us
+Bounce: iterations=153 runtime: 229298us
+Bounce: iterations=154 runtime: 229228us
+Bounce: iterations=155 runtime: 228731us
+Bounce: iterations=156 runtime: 248022us
+Bounce: iterations=157 runtime: 237939us
+Bounce: iterations=158 runtime: 262080us
+Bounce: iterations=159 runtime: 230635us
+Bounce: iterations=160 runtime: 232102us
+Bounce: iterations=161 runtime: 229449us
+Bounce: iterations=162 runtime: 228276us
+Bounce: iterations=163 runtime: 229152us
+Bounce: iterations=164 runtime: 231241us
+Bounce: iterations=165 runtime: 230111us
+Bounce: iterations=166 runtime: 229854us
+Bounce: iterations=167 runtime: 226703us
+Bounce: iterations=168 runtime: 228895us
+Bounce: iterations=169 runtime: 230439us
+Bounce: iterations=170 runtime: 227836us
+Bounce: iterations=171 runtime: 227427us
+Bounce: iterations=172 runtime: 227529us
+Bounce: iterations=173 runtime: 229253us
+Bounce: iterations=174 runtime: 227754us
+Bounce: iterations=175 runtime: 228916us
+Bounce: iterations=176 runtime: 231146us
+Bounce: iterations=177 runtime: 228587us
+Bounce: iterations=178 runtime: 227979us
+Bounce: iterations=179 runtime: 230690us
+Bounce: iterations=180 runtime: 228786us
+Bounce: iterations=181 runtime: 228821us
+Bounce: iterations=182 runtime: 228544us
+Bounce: iterations=183 runtime: 226735us
+Bounce: iterations=184 runtime: 226662us
+Bounce: iterations=185 runtime: 227306us
+Bounce: iterations=186 runtime: 228019us
+Bounce: iterations=187 runtime: 227441us
+Bounce: iterations=188 runtime: 226726us
+Bounce: iterations=189 runtime: 227452us
+Bounce: iterations=190 runtime: 226579us
+Bounce: iterations=191 runtime: 226416us
+Bounce: iterations=192 runtime: 226322us
+Bounce: iterations=193 runtime: 227716us
+Bounce: iterations=194 runtime: 227129us
+Bounce: iterations=195 runtime: 227053us
+Bounce: iterations=196 runtime: 228220us
+Bounce: iterations=197 runtime: 228630us
+Bounce: iterations=198 runtime: 228381us
+Bounce: iterations=199 runtime: 227764us
+Bounce: iterations=200 runtime: 227803us
+Bounce: iterations=201 runtime: 227824us
+Bounce: iterations=202 runtime: 228311us
+Bounce: iterations=203 runtime: 227394us
+Bounce: iterations=204 runtime: 227508us
+Bounce: iterations=205 runtime: 226138us
+Bounce: iterations=206 runtime: 227101us
+Bounce: iterations=207 runtime: 231633us
+Bounce: iterations=208 runtime: 228552us
+Bounce: iterations=209 runtime: 228650us
+Bounce: iterations=210 runtime: 230934us
+Bounce: iterations=211 runtime: 229751us
+Bounce: iterations=212 runtime: 229237us
+Bounce: iterations=213 runtime: 229291us
+Bounce: iterations=214 runtime: 229964us
+Bounce: iterations=215 runtime: 228858us
+Bounce: iterations=216 runtime: 228605us
+Bounce: iterations=217 runtime: 228128us
+Bounce: iterations=218 runtime: 227176us
+Bounce: iterations=219 runtime: 227980us
+Bounce: iterations=220 runtime: 227688us
+Bounce: iterations=221 runtime: 227202us
+Bounce: iterations=222 runtime: 228980us
+Bounce: iterations=223 runtime: 230749us
+Bounce: iterations=224 runtime: 231510us
+Bounce: iterations=225 runtime: 227531us
+Bounce: iterations=226 runtime: 228204us
+Bounce: iterations=227 runtime: 228572us
+Bounce: iterations=228 runtime: 227541us
+Bounce: iterations=229 runtime: 231584us
+Bounce: iterations=230 runtime: 226989us
+Bounce: iterations=231 runtime: 230455us
+Bounce: iterations=232 runtime: 229078us
+Bounce: iterations=233 runtime: 228682us
+Bounce: iterations=234 runtime: 228634us
+Bounce: iterations=235 runtime: 230402us
+Bounce: iterations=236 runtime: 228302us
+Bounce: iterations=237 runtime: 227917us
+Bounce: iterations=238 runtime: 227719us
+Bounce: iterations=239 runtime: 229203us
+Bounce: iterations=240 runtime: 228367us
+Bounce: iterations=241 runtime: 228396us
+Bounce: iterations=242 runtime: 228087us
+Bounce: iterations=243 runtime: 229518us
+Bounce: iterations=244 runtime: 228607us
+Bounce: iterations=245 runtime: 227845us
+Bounce: iterations=246 runtime: 227704us
+Bounce: iterations=247 runtime: 228124us
+Bounce: iterations=248 runtime: 227829us
+Bounce: iterations=249 runtime: 227194us
+Bounce: iterations=250 runtime: 227587us
+Bounce: iterations=251 runtime: 227678us
+Bounce: iterations=252 runtime: 249593us
+Bounce: iterations=253 runtime: 227982us
+Bounce: iterations=254 runtime: 228761us
+Bounce: iterations=255 runtime: 227828us
+Bounce: iterations=256 runtime: 230356us
+Bounce: iterations=257 runtime: 228775us
+Bounce: iterations=258 runtime: 227870us
+Bounce: iterations=259 runtime: 227817us
+Bounce: iterations=260 runtime: 229664us
+Bounce: iterations=261 runtime: 236062us
+Bounce: iterations=262 runtime: 231526us
+Bounce: iterations=263 runtime: 227838us
+Bounce: iterations=264 runtime: 261366us
+Bounce: iterations=265 runtime: 302573us
+Bounce: iterations=266 runtime: 228723us
+Bounce: iterations=267 runtime: 228435us
+Bounce: iterations=268 runtime: 231616us
+Bounce: iterations=269 runtime: 232934us
+Bounce: iterations=270 runtime: 232606us
+Bounce: iterations=271 runtime: 227064us
+Bounce: iterations=272 runtime: 228950us
+Bounce: iterations=273 runtime: 227339us
+Bounce: iterations=274 runtime: 227556us
+Bounce: iterations=275 runtime: 227960us
+Bounce: iterations=276 runtime: 229147us
+Bounce: iterations=277 runtime: 229808us
+Bounce: iterations=278 runtime: 229088us
+Bounce: iterations=279 runtime: 228188us
+Bounce: iterations=280 runtime: 227396us
+Bounce: iterations=281 runtime: 230129us
+Bounce: iterations=282 runtime: 228729us
+Bounce: iterations=283 runtime: 228809us
+Bounce: iterations=284 runtime: 228874us
+Bounce: iterations=285 runtime: 231722us
+Bounce: iterations=286 runtime: 229823us
+Bounce: iterations=287 runtime: 228912us
+Bounce: iterations=288 runtime: 229271us
+Bounce: iterations=289 runtime: 228701us
+Bounce: iterations=290 runtime: 230687us
+Bounce: iterations=291 runtime: 229754us
+Bounce: iterations=292 runtime: 229826us
+Bounce: iterations=293 runtime: 230457us
+Bounce: iterations=294 runtime: 229042us
+Bounce: iterations=295 runtime: 229801us
+Bounce: iterations=296 runtime: 228229us
+Bounce: iterations=297 runtime: 230201us
+Bounce: iterations=298 runtime: 230375us
+Bounce: iterations=299 runtime: 229282us
+Bounce: iterations=300 runtime: 227461us
+Bounce: iterations=301 runtime: 230317us
+Bounce: iterations=302 runtime: 230617us
+Bounce: iterations=303 runtime: 229083us
+Bounce: iterations=304 runtime: 229455us
+Bounce: iterations=305 runtime: 230247us
+Bounce: iterations=306 runtime: 228713us
+Bounce: iterations=307 runtime: 231248us
+Bounce: iterations=308 runtime: 230832us
+Bounce: iterations=309 runtime: 229319us
+Bounce: iterations=310 runtime: 230896us
+Bounce: iterations=311 runtime: 230536us
+Bounce: iterations=312 runtime: 229335us
+Bounce: iterations=313 runtime: 230237us
+Bounce: iterations=314 runtime: 231079us
+Bounce: iterations=315 runtime: 229310us
+Bounce: iterations=316 runtime: 229653us
+Bounce: iterations=317 runtime: 230090us
+Bounce: iterations=318 runtime: 231532us
+Bounce: iterations=319 runtime: 229012us
+Bounce: iterations=320 runtime: 229996us
+Bounce: iterations=321 runtime: 231016us
+Bounce: iterations=322 runtime: 230977us
+Bounce: iterations=323 runtime: 230110us
+Bounce: iterations=324 runtime: 230442us
+Bounce: iterations=325 runtime: 230220us
+Bounce: iterations=326 runtime: 230922us
+Bounce: iterations=327 runtime: 230147us
+Bounce: iterations=328 runtime: 227723us
+Bounce: iterations=329 runtime: 227510us
+Bounce: iterations=330 runtime: 229688us
+Bounce: iterations=331 runtime: 229446us
+Bounce: iterations=332 runtime: 228889us
+Bounce: iterations=333 runtime: 227648us
+Bounce: iterations=334 runtime: 257139us
+Bounce: iterations=335 runtime: 231488us
+Bounce: iterations=336 runtime: 232145us
+Bounce: iterations=337 runtime: 232593us
+Bounce: iterations=338 runtime: 230733us
+Bounce: iterations=339 runtime: 231664us
+Bounce: iterations=340 runtime: 229354us
+Groundtruth SlowDown Started......
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Bounce: iterations=341 runtime: 229227us
+Bounce: iterations=342 runtime: 230834us
+Bounce: iterations=343 runtime: 229797us
+Bounce: iterations=344 runtime: 228352us
+Bounce: iterations=345 runtime: 227722us
+Groundtruth SlowDown Shutdown......
+Bounce: iterations=346 runtime: 227615us
+Bounce: iterations=347 runtime: 231108us
+Bounce: iterations=348 runtime: 228801us
+Bounce: iterations=349 runtime: 229611us
+Bounce: iterations=350 runtime: 229146us
+Bounce: iterations=351 runtime: 229446us
+Bounce: iterations=352 runtime: 229289us
+Bounce: iterations=353 runtime: 228573us
+Bounce: iterations=354 runtime: 228152us
+Bounce: iterations=355 runtime: 229204us
+Bounce: iterations=356 runtime: 230314us
+Bounce: iterations=357 runtime: 228843us
+Bounce: iterations=358 runtime: 228322us
+Bounce: iterations=359 runtime: 229020us
+Bounce: iterations=360 runtime: 229208us
+Bounce: iterations=361 runtime: 228690us
+Bounce: iterations=362 runtime: 228109us
+Bounce: iterations=363 runtime: 227852us
+Bounce: iterations=364 runtime: 229642us
+Bounce: iterations=365 runtime: 228118us
+Bounce: iterations=366 runtime: 227812us
+Bounce: iterations=367 runtime: 226855us
+Bounce: iterations=368 runtime: 230097us
+Bounce: iterations=369 runtime: 228615us
+Bounce: iterations=370 runtime: 227991us
+Bounce: iterations=371 runtime: 228169us
+Bounce: iterations=372 runtime: 228065us
+Bounce: iterations=373 runtime: 227292us
+Bounce: iterations=374 runtime: 227371us
+Bounce: iterations=375 runtime: 227176us
+Bounce: iterations=376 runtime: 229384us
+Bounce: iterations=377 runtime: 228827us
+Bounce: iterations=378 runtime: 230382us
+Bounce: iterations=379 runtime: 227943us
+Bounce: iterations=380 runtime: 228298us
+Bounce: iterations=381 runtime: 227244us
+Bounce: iterations=382 runtime: 227668us
+Bounce: iterations=383 runtime: 227648us
+Bounce: iterations=384 runtime: 228523us
+Bounce: iterations=385 runtime: 228426us
+Bounce: iterations=386 runtime: 227689us
+Bounce: iterations=387 runtime: 227490us
+Bounce: iterations=388 runtime: 226655us
+Bounce: iterations=389 runtime: 229347us
+Bounce: iterations=390 runtime: 227655us
+Bounce: iterations=391 runtime: 227594us
+Bounce: iterations=392 runtime: 227299us
+Bounce: iterations=393 runtime: 230092us
+Bounce: iterations=394 runtime: 228783us
+Bounce: iterations=395 runtime: 228345us
+Bounce: iterations=396 runtime: 228021us
+Bounce: iterations=397 runtime: 230061us
+Bounce: iterations=398 runtime: 228887us
+Bounce: iterations=399 runtime: 228075us
+Bounce: iterations=400 runtime: 228059us
+Bounce: iterations=401 runtime: 229040us
+Bounce: iterations=402 runtime: 228367us
+Bounce: iterations=403 runtime: 227886us
+Bounce: iterations=404 runtime: 227819us
+Bounce: iterations=405 runtime: 228603us
+Groundtruth SlowDown Started......
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+java.lang.IllegalStateException: Cannot call asResolvedJavaMethod from JVMCI shared library
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions$NewObjectWithObjectArrayArgFunctionPointer.invoke(JNIFunctions.java)
+	at org.graalvm.nativeimage.builder/com.oracle.svm.core.jni.functions.JNIFunctions.ThrowNew(JNIFunctions.java:919)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.CompilerToVM.asResolvedJavaMethod(Native Method)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotMetaAccessProvider.lookupJavaMethod(HotSpotMetaAccessProvider.java:81)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotSnippetMetaAccessProvider.lookupJavaMethod(HotSpotSnippetMetaAccessProvider.java:63)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:91)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.common.GTHighTierPhase.run(GTHighTierPhase.java:65)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.phases.BaseTier.run(BaseTier.java:58)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:468)
+	at jdk.graal.compiler/jdk.graal.compiler.phases.BasePhase.apply(BasePhase.java:335)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.emitFrontEnd(GraalCompiler.java:286)
+	at jdk.graal.compiler/jdk.graal.compiler.core.GraalCompiler.compile(GraalCompiler.java:148)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileHelper(HotSpotGraalCompiler.java:278)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compile(HotSpotGraalCompiler.java:307)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:268)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask$HotSpotCompilationWrapper.performCompilation(CompilationTask.java:119)
+	at jdk.graal.compiler/jdk.graal.compiler.core.CompilationWrapper.run(CompilationWrapper.java:230)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:466)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.CompilationTask.runCompilation(CompilationTask.java:433)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:179)
+	at jdk.graal.compiler/jdk.graal.compiler.hotspot.HotSpotGraalCompiler.compileMethod(HotSpotGraalCompiler.java:135)
+	at jdk.internal.vm.ci@21.0.2/jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.compileMethod(HotSpotJVMCIRuntime.java:924)
+Groundtruth SlowDown Shutdown......
+Groundtruth SlowDown Shutdown......

@@ -8,12 +8,12 @@
 # mx --java-home /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 igv
 # JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.22.0.7-2.el9.x86_64 mx c1visualizer
 
-file=QueensAsyncSlowdown.txt
+file=QueensAsyncSlowdownInlining.txt
 
  ./latest_graalvm_home/bin/java \
-  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=true -Djdk.graal.LIRBlockSlowdownFileName=BlockSlowdown1.json -Djdk.graal.ASMGTSlowDown=false \
- -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose -Djdk.graal.LogFile=out.txt \
-  -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
+ -Djdk.graal.LIRGTSlowDown=true  \
+ -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/Data/2024_11_19_17_40_50_SlowDown_Data/Final_Queens.json -XX:+UseJVMCICompiler \
+  -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Xss20m -XX:StackShadowPages=20 \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
    -agentpath:/home/hburchell/ProgramFiles/async-profiler-3.0-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=1ms,file=$file \
   Harness Queens 500 5000

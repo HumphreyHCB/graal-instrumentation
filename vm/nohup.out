@@ -1,0 +1,49 @@
+Running benchmark: DeltaBlue
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/DeltaBlue_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: DeltaBlue
+--------------------------------------
+Running benchmark: Richards
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/Richards_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: Richards
+--------------------------------------
+Running benchmark: Towers
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/Towers_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: Towers
+--------------------------------------
+Running benchmark: Json
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/Json_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: Json
+--------------------------------------
+Running benchmark: Bounce
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/Bounce_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: Bounce
+--------------------------------------
+Running benchmark: List
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/List_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: List
+--------------------------------------
+Running benchmark: CD
+BBDumpInfo.sh: line 29: /home/hb478/repos/GTResearchExperiments/GTExperiment4/CD_BBSourceInfo2.txt: No such file or directory
+Finished benchmark: CD
+--------------------------------------
+Running benchmark: DeltaBlue
+Finished benchmark: DeltaBlue
+--------------------------------------
+Running benchmark: Richards
+Finished benchmark: Richards
+--------------------------------------
+Running benchmark: Towers
+Finished benchmark: Towers
+--------------------------------------
+Running benchmark: Json
+Finished benchmark: Json
+--------------------------------------
+Running benchmark: Bounce
+Finished benchmark: Bounce
+--------------------------------------
+Running benchmark: List
+Finished benchmark: List
+--------------------------------------
+Running benchmark: CD
+Finished benchmark: CD
+--------------------------------------

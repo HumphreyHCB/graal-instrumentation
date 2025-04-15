@@ -1,0 +1,2347 @@
+CompileCommand: dontinline *.* bool dontinline = true
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+8b c1 41 03 c0 
+3b c1 0f 8e 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 1
+
+44 8b 52 0c 
+44 8b d9 41 ff c3 
+0f 1f 44 00 00 41 3b c3 0f 8f 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 8
+
+44 3b d1 0f 86 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 9
+
+44 8b d1 
+44 8b c6 41 c1 e0 05 
+44 2b c6 
+46 0f b6 54 12 10 
+45 03 c2 
+44 8d 51 02 
+41 3b c2 
+44 8b c8 45 0f 4f ca 
+e9 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 11
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 90 
+45 8b d0 41 c1 e2 05 
+45 2b d0 
+46 0f b6 44 1a 10 
+45 03 d0 
+41 ff c3 
+45 8b c2 
+
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 10
+
+45 3b cb 0f 8f 75 ff ff ff 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 12
+
+89 44 24 04 
+44 8d 50 f8 
+81 f8 08 00 00 80 
+41 b9 00 00 00 80 
+45 0f 4c d1 
+90 e9 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 14
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 84 00 00 00 00 00 66 66 66 90 
+46 0f b6 4c 1a 10 
+41 8b cb ff c1 
+0f b6 4c 0a 10 
+41 8d 5b 02 
+0f b6 5c 1a 10 
+41 8d 7b 03 
+0f b6 7c 3a 10 
+41 8d 73 04 
+0f b6 74 32 10 
+41 8d 6b 05 
+0f b6 6c 2a 10 
+45 8d 6b 06 
+46 0f b6 6c 2a 10 
+45 8d 73 07 
+41 8b c0 c1 e0 05 
+41 2b c0 
+41 03 c1 
+44 8b c0 41 c1 e0 05 
+44 2b c0 
+44 03 c1 
+41 8b c0 c1 e0 05 
+41 2b c0 
+03 c3 
+44 8b c0 41 c1 e0 05 
+44 2b c0 
+44 03 c7 
+41 8b c0 c1 e0 05 
+41 2b c0 
+03 c6 
+44 8b c0 41 c1 e0 05 
+44 2b c0 
+44 03 c5 
+41 8b c0 c1 e0 05 
+41 2b c0 
+41 03 c5 
+44 8b c0 41 c1 e0 05 
+44 2b c0 
+42 0f b6 44 32 10 
+44 03 c0 
+41 8d 43 08 
+44 8b d8 
+
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 13
+
+0f 1f 84 00 00 00 00 00 45 3b d3 0f 8f b7 fe ff ff 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 15
+
+8b 44 24 04 
+e9 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 17
+66 66 90 
+45 8b d0 41 c1 e2 05 
+45 2b d0 
+46 0f b6 44 1a 10 
+45 03 d0 
+41 ff c3 
+45 8b c2 
+
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 16
+
+66 90 41 3b c3 0f 8f 37 ff ff ff 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 22
+
+41 8b c0 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 2
+
+4d 63 cb 
+8b d8 41 2b db 
+48 63 db 
+4c 03 cb 
+49 ff c9 
+41 8b da 
+49 3b d9 0f 86 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 3
+
+45 3b d3 0f 87 39 fb ff ff e9 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 21
+
+44 8b c6 
+e9 c3 fe ff ff 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 6
+
+49 c7 c2 18 00 00 00 
+
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 20
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+4d 89 97 90 04 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 19
+
+49 c7 c2 00 00 00 00 
+e9 12 ff ff ff 
+HotSpotCompilation-28[jdk.internal.util.ArraysSupport.signedHashCode(int, byte[], int, int)]
+Current Block ID 5
+
+49 c7 c2 18 00 00 00 
+e9 ed fe ff ff 
+StubCompilation-161[Stub<ExceptionHandlerStub.exceptionHandler>]
+Current Block ID 0
+
+
+49 89 87 00 05 00 00 
+49 89 97 08 05 00 00 
+48 89 54 24 18 
+49 89 a7 98 03 00 00 
+49 8b ff 
+c5 f8 77 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 c7 87 98 03 00 00 00 00 00 00 49 c7 87 a8 03 00 00 00 00 00 00 49 c7 87 a0 03 00 00 00 00 00 00 
+48 89 44 24 18 
+48 8b e5 5d c3 
+HotSpotCompilation-29[java.lang.String.coder()]
+Current Block ID 0
+
+
+0f be 46 10 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-30[java.lang.String.checkIndex(int, int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 85 d2 0f 8c 00 00 00 00 
+HotSpotCompilation-30[java.lang.String.checkIndex(int, int)]
+Current Block ID 2
+
+3b d6 0f 86 00 00 00 00 
+HotSpotCompilation-30[java.lang.String.checkIndex(int, int)]
+Current Block ID 3
+
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-30[java.lang.String.checkIndex(int, int)]
+Current Block ID 5
+
+41 c7 87 84 04 00 00 e4 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-31[java.lang.String.isLatin1()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 80 7e 10 00 0f 85 00 00 00 00 
+HotSpotCompilation-31[java.lang.String.isLatin1()]
+Current Block ID 1
+
+b8 01 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 66 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-31[java.lang.String.isLatin1()]
+Current Block ID 2
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-32[java.lang.Object.<init>()]
+Current Block ID 0
+
+
+48 83 c4 18 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-33[java.lang.String.charAt(int)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-33[java.lang.String.charAt(int)]
+Found String in 0
+
+4c 8b d6 
+89 54 24 14 
+4c 89 54 24 08 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-33[java.lang.String.charAt(int)]
+Current Block ID 2
+
+48 8b 74 24 08 
+8b 76 14 
+48 c1 e6 03 
+8b 54 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-33[java.lang.String.charAt(int)]
+Current Block ID 1
+
+8b 54 24 14 
+48 8b 74 24 08 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-34[java.lang.StringLatin1.charAt(byte[], int)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-34[java.lang.StringLatin1.charAt(byte[], int)]
+Found String in 0
+
+44 8b 56 0c 
+44 3b d2 0f 86 00 00 00 00 
+HotSpotCompilation-34[java.lang.StringLatin1.charAt(byte[], int)]
+Current Block ID 1
+
+48 89 74 24 08 
+8b f2 
+89 54 24 14 
+41 8b d2 
+90 66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+8b 44 24 14 
+48 8b 74 24 08 
+0f b6 44 06 10 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-34[java.lang.StringLatin1.charAt(byte[], int)]
+Current Block ID 2
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-35[jdk.internal.util.Preconditions.checkFromIndexSize(int, int, int, BiFunction)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+8b c6 0b c1 
+0b c2 
+85 c0 0f 8c 00 00 00 00 
+HotSpotCompilation-35[jdk.internal.util.Preconditions.checkFromIndexSize(int, int, int, BiFunction)]
+Current Block ID 2
+
+8b c1 2b c6 
+0f 1f 44 00 00 3b d0 0f 8f 00 00 00 00 
+HotSpotCompilation-35[jdk.internal.util.Preconditions.checkFromIndexSize(int, int, int, BiFunction)]
+Current Block ID 5
+
+8b c6 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-35[jdk.internal.util.Preconditions.checkFromIndexSize(int, int, int, BiFunction)]
+Current Block ID 4
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 52 0c 
+44 8b 5e 0c 
+45 3b da 0f 84 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 15
+
+b8 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 1
+
+0f 1f 40 00 45 85 db 0f 84 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 3
+
+41 8b c3 
+48 ff c8 
+45 8b c2 
+4c 3b c0 0f 86 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 4
+
+66 90 45 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 7
+
+b8 00 00 00 00 
+e9 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 9
+66 66 0f 1f 84 00 00 00 00 00 
+44 0f be 54 06 10 
+44 3a 54 02 10 0f 85 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 10
+
+ff c0 
+
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 8
+
+66 0f 1f 44 00 00 44 3b d8 0f 8f 57 ff ff ff e9 00 00 00 00 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 11
+
+b8 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 12
+
+b8 01 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-36[java.lang.StringLatin1.equals(byte[], byte[])]
+Current Block ID 14
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 18 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+45 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 9
+
+41 8b c2 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 1
+
+48 89 34 24 
+0f 1f 40 00 80 7e 11 00 75 a6 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 2
+
+4c 8b d6 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 4
+
+48 8b 34 24 
+44 8b 56 14 
+49 c1 e2 03 
+49 8b f2 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 6
+
+48 8b 34 24 
+89 46 0c 
+44 8b d0 
+e9 1f ff ff ff 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 3
+
+48 8b 34 24 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-37[java.lang.String.hashCode()]
+Current Block ID 5
+
+48 8b 34 24 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 94 02 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-38[jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 85 f6 0f 8c 00 00 00 00 
+HotSpotCompilation-38[jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)]
+Current Block ID 2
+
+3b d6 0f 8e 00 00 00 00 
+HotSpotCompilation-38[jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)]
+Current Block ID 3
+
+8b c6 
+48 8b 6c 24 10 48 83 c4 18 0f 1f 84 00 00 00 00 00 66 66 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-38[jdk.internal.util.Preconditions.checkIndex(int, int, BiFunction)]
+Current Block ID 5
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-39[java.util.concurrent.ConcurrentHashMap.tabAt(ConcurrentHashMap$Node[], int)]
+Current Block ID 0
+
+
+48 63 c2 
+8b 44 86 10 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-40[jdk.internal.misc.Unsafe.getReferenceAcquire(Object, long)]
+Current Block ID 0
+
+
+8b 04 0a 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-41[java.util.Objects.checkFromIndexSize(int, int, int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+49 c7 c0 00 00 00 00 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 66 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-42[java.util.zip.ZipCoder$UTF8ZipCoder.isUTF8()]
+Current Block ID 0
+
+
+b8 01 00 00 00 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-43[java.lang.AbstractStringBuilder.length()]
+Current Block ID 0
+
+
+8b 46 0c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-44[java.lang.String.length()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 14 
+46 8b 14 d5 0c 00 00 00 
+44 89 54 24 04 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+8b c8 
+44 8b 54 24 04 41 d3 ea 
+41 8b c2 
+48 8b 6c 24 10 48 83 c4 18 66 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-45[java.lang.AbstractStringBuilder.getValue()]
+Current Block ID 0
+
+
+8b 46 14 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-46[java.util.Objects.requireNonNull(Object)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+85 06 
+48 8b c6 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-50[java.lang.Enum.ordinal()]
+Current Block ID 0
+
+
+8b 46 0c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-52[java.lang.invoke.MethodTypeForm.basicType()]
+Current Block ID 0
+
+
+8b 46 14 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-55[sun.invoke.util.Wrapper.basicTypeChar()]
+Current Block ID 0
+
+
+0f b7 46 1c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 48 3b d6 0f 84 00 00 00 00 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 2
+
+48 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 4
+
+81 7a 08 ad de ad de 0f 85 00 00 00 00 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 5
+
+44 0f be 56 10 
+0f 1f 44 00 00 44 3a 52 10 0f 85 00 00 00 00 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 6
+
+8b 52 14 
+8b 76 14 
+48 c1 e6 03 
+48 c1 e2 03 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 9
+
+48 8b 6c 24 10 48 83 c4 18 66 0f 1f 44 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 3
+
+b8 00 00 00 00 
+eb a0 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 1
+
+b8 01 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 8
+
+b8 00 00 00 00 
+e9 44 ff ff ff 
+HotSpotCompilation-56[java.lang.String.equals(Object)]
+Current Block ID 7
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-58[java.lang.invoke.MethodType$ConcurrentWeakInternSet$WeakEntry.hashCode()]
+Current Block ID 0
+
+
+8b 46 1c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-61[java.lang.invoke.MethodType.returnType()]
+Current Block ID 0
+
+
+8b 46 0c 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-64[java.lang.invoke.MemberName.getDeclaringClass()]
+Current Block ID 0
+
+
+8b 46 18 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-75[java.lang.invoke.MethodHandle.type()]
+Current Block ID 0
+
+
+8b 46 10 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-77[java.lang.invoke.LambdaForm$Name.index()]
+Current Block ID 0
+
+
+0f bf 46 0c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+Starting Queens benchmark ...
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+8b 46 10 
+3b 14 c5 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 1
+
+44 8b d2 
+66 0f 1f 84 00 00 00 00 00 41 80 7c c2 10 00 0f 85 00 00 00 00 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 2
+
+b8 00 00 00 00 
+
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 8
+
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 3
+
+8b 46 0c 
+44 8b d1 44 03 d2 
+44 3b 14 c5 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 4
+
+41 80 7c c2 10 00 0f 84 00 00 00 00 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 6
+
+8b 46 14 
+44 8b d1 44 2b d2 
+45 8d 52 07 
+44 3b 14 c5 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 7
+
+41 0f b6 44 c2 10 
+e9 14 ff ff ff 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 5
+
+b8 00 00 00 00 
+e9 f1 fe ff ff 
+HotSpotCompilation-78[Queens.getRowColumn(int, int)]
+Current Block ID 12
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+0f 1f 40 00 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Found String in 0
+
+48 89 74 24 08 
+89 54 24 14 
+4c 8b d6 
+44 8b da 
+ba 00 00 00 00 
+41 8b cb 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+8b 54 24 14 ff c2 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 1
+
+89 54 24 10 
+
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 8
+
+48 8b 74 24 08 
+ba 01 00 00 00 
+8b 4c 24 14 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 16
+
+48 8b 74 24 08 
+ba 02 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 24
+
+48 8b 74 24 08 
+ba 03 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 32
+
+48 8b 74 24 08 
+ba 04 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 40
+
+48 8b 74 24 08 
+ba 05 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 48
+
+48 8b 74 24 08 
+ba 06 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 56
+
+48 8b 74 24 08 
+ba 07 00 00 00 
+8b 4c 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 65
+
+b8 00 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 2
+
+48 8b 74 24 08 
+8b 4e 18 
+83 3c cd 0c 00 00 00 00 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 4
+
+89 54 24 10 
+8b 54 24 14 
+89 14 cd 10 00 00 00 
+4c 8b de 
+44 8b ca 
+ba 00 00 00 00 
+41 8b c9 
+41 b8 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 6
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 7
+
+48 8b 74 24 08 
+ba 00 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+90 66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 46 f8 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 10
+
+48 8b 74 24 08 
+8b 56 18 
+83 3c d5 0c 00 00 00 02 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 12
+
+44 8b 54 24 14 
+44 89 14 d5 14 00 00 00 
+4c 8b de 
+ba 01 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 14
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 90 66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 15
+
+48 8b 74 24 08 
+ba 01 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 ff f6 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 18
+
+48 8b 74 24 08 
+8b 56 18 
+83 3c d5 0c 00 00 00 03 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 20
+
+44 8b 54 24 14 
+44 89 14 d5 18 00 00 00 
+4c 8b de 
+ba 02 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 22
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 23
+
+48 8b 74 24 08 
+ba 02 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 43 f5 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 26
+
+48 8b 74 24 08 
+8b 56 18 
+83 3c d5 0c 00 00 00 04 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 28
+
+44 8b 54 24 14 
+44 89 14 d5 1c 00 00 00 
+4c 8b de 
+ba 03 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 30
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 31
+
+48 8b 74 24 08 
+ba 03 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 0f f3 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 34
+
+48 8b 74 24 08 
+8b 56 18 
+0f 1f 44 00 00 83 3c d5 0c 00 00 00 05 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 36
+
+44 8b 54 24 14 
+44 89 14 d5 20 00 00 00 
+4c 8b de 
+ba 04 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 38
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 39
+
+48 8b 74 24 08 
+ba 04 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+0f 1f 40 00 e9 57 f0 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 42
+
+48 8b 74 24 08 
+8b 56 18 
+90 83 3c d5 0c 00 00 00 06 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 44
+
+44 8b 54 24 14 
+44 89 14 d5 24 00 00 00 
+4c 8b de 
+ba 05 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+0f 1f 84 00 00 00 00 00 83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 46
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 47
+
+48 8b 74 24 08 
+ba 05 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+0f 1f 40 00 e9 23 ed ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 50
+
+48 8b 74 24 08 
+8b 56 18 
+83 3c d5 0c 00 00 00 07 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 52
+
+44 8b 54 24 14 
+44 89 14 d5 28 00 00 00 
+4c 8b de 
+ba 06 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 54
+
+48 8b 74 24 08 
+8b 54 24 10 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 55
+
+48 8b 74 24 08 
+ba 06 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 87 e9 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 58
+
+48 8b 74 24 08 
+8b 56 18 
+90 83 3c d5 0c 00 00 00 08 0f 82 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 60
+
+44 8b 54 24 14 
+44 89 14 d5 2c 00 00 00 
+4c 8b de 
+ba 07 00 00 00 
+41 8b ca 
+41 b8 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+83 7c 24 14 07 0f 84 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 63
+
+8b 54 24 10 
+48 8b 74 24 08 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 85 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 64
+
+48 8b 74 24 08 
+ba 07 00 00 00 
+8b 4c 24 14 
+41 b8 01 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 63 e5 ff ff 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 74
+
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 66 66 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 62
+
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 27
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 51
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 43
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+0f 1f 40 00 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 35
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 3
+
+8b 54 24 14 
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 59
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 11
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-79[Queens.placeQueen(int)]
+Current Block ID 19
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-80[Queens.setRowColumn(int, int, boolean)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 10 
+42 3b 14 d5 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-80[Queens.setRowColumn(int, int, boolean)]
+Current Block ID 1
+
+44 8b 5e 0c 
+44 8b c9 44 03 ca 
+46 3b 0c dd 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-80[Queens.setRowColumn(int, int, boolean)]
+Current Block ID 2
+
+8b 5e 14 
+8b f9 2b fa 
+8d 7f 07 
+3b 3c dd 0c 00 00 00 0f 83 00 00 00 00 
+HotSpotCompilation-80[Queens.setRowColumn(int, int, boolean)]
+Current Block ID 3
+
+8b ca 
+44 23 05 00 00 00 00 
+46 88 44 d1 10 
+47 88 44 d9 10 
+44 88 44 df 10 
+48 8b 6c 24 10 48 83 c4 18 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-80[Queens.setRowColumn(int, int, boolean)]
+Current Block ID 7
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+45 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 2
+
+45 8b da 41 ff cb 
+4d 63 db 
+45 8b c2 
+4d 3b c3 0f 87 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 4
+
+90 41 83 fa 02 0f 83 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 6
+
+23 15 00 00 00 00 
+88 56 10 
+41 83 fa 03 
+41 bb 02 00 00 00 45 0f 42 da 
+41 b8 01 00 00 00 
+e9 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 8
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 80 00 00 00 00 
+42 88 54 06 10 
+41 ff c0 
+
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 7
+
+45 3b d8 0f 8e 00 00 00 00 eb a2 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 16
+
+48 8b 6c 24 10 48 83 c4 18 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 9
+
+45 8d 5a f8 
+90 e9 00 00 00 00 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 14
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 84 00 00 00 00 00 66 66 66 90 
+42 88 54 06 10 
+41 ff c0 
+
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 13
+66 90 
+45 3b d0 0f 8e a4 fe ff ff e9 61 ff ff ff 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 11
+90 
+42 88 54 06 10 
+45 8b c8 41 ff c1 
+42 88 54 0e 10 
+45 8d 48 02 
+42 88 54 0e 10 
+45 8d 48 03 
+42 88 54 0e 10 
+45 8d 48 04 
+42 88 54 0e 10 
+45 8d 48 05 
+42 88 54 0e 10 
+45 8d 48 06 
+42 88 54 0e 10 
+45 8d 48 07 
+42 88 54 0e 10 
+45 8d 40 08 
+
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 10
+
+45 3b d8 0f 8e f4 fe ff ff 0f 1f 40 00 e9 3b ff ff ff 
+HotSpotCompilation-81[java.util.Arrays.fill(boolean[], boolean)]
+Current Block ID 17
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 18 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-82[java.lang.Boolean.booleanValue()]
+Current Block ID 0
+
+
+0f b6 46 0c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+45 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 2
+
+45 8b da 41 ff cb 
+4d 63 db 
+45 8b c2 
+4d 3b c3 0f 87 00 00 00 00 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 4
+
+90 41 83 fa 02 0f 83 00 00 00 00 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 6
+
+89 56 10 
+41 83 fa 03 
+41 bb 02 00 00 00 45 0f 42 da 
+41 b8 01 00 00 00 
+90 e9 00 00 00 00 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 8
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 84 00 00 00 00 00 66 66 66 90 
+42 89 54 86 10 
+41 ff c0 
+
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 7
+
+45 3b d8 0f 8e 00 00 00 00 eb a2 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 16
+
+48 8b 6c 24 10 48 83 c4 18 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 9
+
+45 8d 5a fc 
+90 e9 00 00 00 00 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 14
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 84 00 00 00 00 00 66 66 66 90 
+42 89 54 86 10 
+41 ff c0 
+
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 13
+66 90 
+45 3b d0 0f 8e a4 fe ff ff e9 61 ff ff ff 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 11
+90 
+42 89 54 86 10 
+45 8b c8 41 ff c1 
+42 89 54 8e 10 
+45 8d 48 02 
+42 89 54 8e 10 
+45 8d 48 03 
+42 89 54 8e 10 
+45 8d 40 04 
+
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 10
+
+45 3b d8 0f 8e 18 ff ff ff e9 63 ff ff ff 
+HotSpotCompilation-83[java.util.Arrays.fill(int[], int)]
+Current Block ID 17
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+49 c7 87 90 04 00 00 18 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+StubCompilation-162[Stub<new_array_or_null(KlassPointer,int)Object>]
+Current Block ID 0
+
+
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+49 89 a7 98 03 00 00 
+49 8b ff 
+c5 f8 77 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 c7 87 98 03 00 00 00 00 00 00 49 c7 87 a8 03 00 00 00 00 00 00 49 c7 87 a0 03 00 00 00 00 00 00 
+4c 8b 94 24 e0 00 00 00 4c 8b 5c 24 08 4c 8b 44 24 10 4c 8b 4c 24 18 48 8b 4c 24 20 48 8b 5c 24 28 48 8b 7c 24 30 48 8b 54 24 38 48 8b 74 24 40 4c 8b 6c 24 50 4c 8b 74 24 58 c5 fb 10 44 24 60 c5 fb 10 4c 24 68 c5 fb 10 54 24 70 c5 fb 10 5c 24 78 c5 fb 10 a4 24 80 00 00 00 c5 fb 10 ac 24 88 00 00 00 c5 fb 10 b4 24 90 00 00 00 c5 fb 10 bc 24 98 00 00 00 c5 7b 10 84 24 a0 00 00 00 c5 7b 10 8c 24 a8 00 00 00 c5 7b 10 94 24 b0 00 00 00 c5 7b 10 9c 24 b8 00 00 00 c5 7b 10 a4 24 c0 00 00 00 c5 7b 10 ac 24 c8 00 00 00 c5 7b 10 b4 24 d0 00 00 00 c5 7b 10 bc 24 d8 00 00 00 
+49 8b 47 08 
+49 c7 47 08 00 00 00 00 
+48 85 c0 0f 84 00 00 00 00 
+StubCompilation-162[Stub<new_array_or_null(KlassPointer,int)Object>]
+Current Block ID 2
+
+49 c7 87 f0 03 00 00 00 00 00 00 
+41 c7 87 84 04 00 00 8f ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+48 8b e5 5d e9 f5 fd ff ff 
+StubCompilation-162[Stub<new_array_or_null(KlassPointer,int)Object>]
+Current Block ID 1
+
+49 8b 87 f0 03 00 00 
+49 c7 87 f0 03 00 00 00 00 00 00 
+48 8b e5 5d c3 
+StubCompilation-163[Stub<write_barrier_pre-stack-only(Object)void>]
+Current Block ID 0
+
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 48 89 44 24 48 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 48 89 44 24 48 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+
+48 8b b4 24 00 01 00 00 
+49 8b ff 
+0f 1f 40 00 e8 00 00 00 00 
+49 c7 87 f0 03 00 00 00 00 00 00 
+4c 8b 94 24 e0 00 00 00 4c 8b 5c 24 08 4c 8b 44 24 10 4c 8b 4c 24 18 48 8b 4c 24 20 48 8b 5c 24 28 48 8b 7c 24 30 48 8b 54 24 38 48 8b 74 24 40 48 8b 44 24 48 4c 8b 6c 24 50 4c 8b 74 24 58 c5 fb 10 44 24 60 c5 fb 10 4c 24 68 c5 fb 10 54 24 70 c5 fb 10 5c 24 78 c5 fb 10 a4 24 80 00 00 00 c5 fb 10 ac 24 88 00 00 00 c5 fb 10 b4 24 90 00 00 00 c5 fb 10 bc 24 98 00 00 00 c5 7b 10 84 24 a0 00 00 00 c5 7b 10 8c 24 a8 00 00 00 c5 7b 10 94 24 b0 00 00 00 c5 7b 10 9c 24 b8 00 00 00 c5 7b 10 a4 24 c0 00 00 00 c5 7b 10 ac 24 c8 00 00 00 c5 7b 10 b4 24 d0 00 00 00 c5 7b 10 bc 24 d8 00 00 00 
+48 8b e5 5d c3 
+StubCompilation-164[Stub<write_barrier_post-stack-only(Word)void>]
+Current Block ID 0
+
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 48 89 44 24 48 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 48 89 44 24 48 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+
+49 8b ff 
+48 8b b4 24 00 01 00 00 
+0f 1f 40 00 e8 00 00 00 00 
+49 c7 87 f0 03 00 00 00 00 00 00 
+4c 8b 94 24 e0 00 00 00 4c 8b 5c 24 08 4c 8b 44 24 10 4c 8b 4c 24 18 48 8b 4c 24 20 48 8b 5c 24 28 48 8b 7c 24 30 48 8b 54 24 38 48 8b 74 24 40 48 8b 44 24 48 4c 8b 6c 24 50 4c 8b 74 24 58 c5 fb 10 44 24 60 c5 fb 10 4c 24 68 c5 fb 10 54 24 70 c5 fb 10 5c 24 78 c5 fb 10 a4 24 80 00 00 00 c5 fb 10 ac 24 88 00 00 00 c5 fb 10 b4 24 90 00 00 00 c5 fb 10 bc 24 98 00 00 00 c5 7b 10 84 24 a0 00 00 00 c5 7b 10 8c 24 a8 00 00 00 c5 7b 10 94 24 b0 00 00 00 c5 7b 10 9c 24 b8 00 00 00 c5 7b 10 a4 24 c0 00 00 00 c5 7b 10 ac 24 c8 00 00 00 c5 7b 10 b4 24 d0 00 00 00 c5 7b 10 bc 24 d8 00 00 00 
+48 8b e5 5d c3 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-84[Queens.queens()]
+Found String in 0
+
+48 89 74 24 10 
+49 8b 97 b8 01 00 00 
+4c 8d 52 18 
+4d 3b 97 c8 01 00 00 0f 87 00 00 00 00 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 2
+
+4d 89 97 b8 01 00 00 
+0f 0d 8a d8 00 00 00 
+0f 0d 8a 18 01 00 00 
+0f 0d 8a 58 01 00 00 
+0f 0d 8a 98 01 00 00 
+48 c7 02 01 00 00 00 
+c7 42 08 ad de ad de 
+c7 42 0c 08 00 00 00 
+48 c7 42 10 00 00 00 00 
+
+
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 3
+
+41 80 7f 40 00 0f 84 2e 00 00 00 44 8b 5e 10 49 c1 e3 03 4d 85 db 0f 84 1d 00 00 00 4d 8b 57 28 49 83 fa 00 0f 84 00 00 00 00 49 83 ea 08 4d 89 57 28 4d 03 57 38 4d 89 1a 
+4c 8b d2 49 c1 ea 03 
+44 89 56 10 
+4c 8b d6 4c 33 d2 49 c1 ea 15 0f 84 45 00 00 00 4c 8b d6 49 c1 ea 09 49 bb 00 20 66 3d ae 7f 00 00 4d 03 d3 41 80 3a 02 74 2b f0 83 04 24 00 41 80 3a 00 74 20 41 c6 02 00 4d 8b 5f 48 4d 85 db 0f 84 00 00 00 00 49 83 eb 08 4d 89 5f 48 4d 03 5f 58 4d 89 13 
+48 8b f2 
+ba 01 00 00 00 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 8b b7 b8 01 00 00 
+48 8d 56 20 
+49 3b 97 c8 01 00 00 0f 87 00 00 00 00 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 5
+
+49 89 97 b8 01 00 00 
+0f 0d 8e e0 00 00 00 
+0f 0d 8e 20 01 00 00 
+0f 0d 8e 60 01 00 00 
+0f 0d 8e a0 01 00 00 
+48 c7 06 01 00 00 00 
+c7 46 08 ad de ad de 
+c7 46 0c 10 00 00 00 
+48 c7 46 10 00 00 00 00 
+48 c7 46 18 00 00 00 00 
+
+48 8b d6 
+
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 6
+
+48 8b 74 24 10 
+41 80 7f 40 00 0f 84 2e 00 00 00 44 8b 5e 0c 49 c1 e3 03 4d 85 db 0f 84 1d 00 00 00 4d 8b 57 28 49 83 fa 00 0f 84 00 00 00 00 49 83 ea 08 4d 89 57 28 4d 03 57 38 4d 89 1a 
+4c 8b d2 49 c1 ea 03 
+44 89 56 0c 
+4c 8b d6 4c 33 d2 49 c1 ea 15 0f 84 45 00 00 00 4c 8b d6 49 c1 ea 09 49 bb 00 20 66 3d ae 7f 00 00 4d 03 d3 41 80 3a 02 74 2b f0 83 04 24 00 41 80 3a 00 74 20 41 c6 02 00 4d 8b 5f 48 4d 85 db 0f 84 00 00 00 00 49 83 eb 08 4d 89 5f 48 4d 03 5f 58 4d 89 13 
+48 8b f2 
+ba 01 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 8b b7 b8 01 00 00 
+48 8d 56 20 
+90 49 3b 97 c8 01 00 00 0f 87 00 00 00 00 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 8
+
+49 89 97 b8 01 00 00 
+0f 0d 8e e0 00 00 00 
+0f 0d 8e 20 01 00 00 
+0f 0d 8e 60 01 00 00 
+0f 0d 8e a0 01 00 00 
+48 c7 06 01 00 00 00 
+c7 46 08 ad de ad de 
+c7 46 0c 10 00 00 00 
+48 c7 46 10 00 00 00 00 
+48 c7 46 18 00 00 00 00 
+
+48 8b d6 
+
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 9
+
+48 8b 74 24 10 
+41 80 7f 40 00 0f 84 2e 00 00 00 44 8b 5e 14 49 c1 e3 03 4d 85 db 0f 84 1d 00 00 00 4d 8b 57 28 49 83 fa 00 0f 84 00 00 00 00 49 83 ea 08 4d 89 57 28 4d 03 57 38 4d 89 1a 
+4c 8b d2 49 c1 ea 03 
+44 89 56 14 
+4c 8b d6 4c 33 d2 49 c1 ea 15 0f 84 45 00 00 00 4c 8b d6 49 c1 ea 09 49 bb 00 20 66 3d ae 7f 00 00 4d 03 d3 41 80 3a 02 74 2b f0 83 04 24 00 41 80 3a 00 74 20 41 c6 02 00 4d 8b 5f 48 4d 85 db 0f 84 00 00 00 00 49 83 eb 08 4d 89 5f 48 4d 03 5f 58 4d 89 13 
+48 8b f2 
+ba 01 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 8b b7 b8 01 00 00 
+48 8d 56 30 
+49 3b 97 c8 01 00 00 0f 87 00 00 00 00 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 11
+
+49 89 97 b8 01 00 00 
+0f 0d 8e f0 00 00 00 
+0f 0d 8e 30 01 00 00 
+0f 0d 8e 70 01 00 00 
+0f 0d 8e b0 01 00 00 
+48 c7 06 01 00 00 00 
+c7 46 08 ad de ad de 
+c7 46 0c 08 00 00 00 
+48 c7 46 10 00 00 00 00 
+48 c7 46 18 00 00 00 00 
+48 c7 46 20 00 00 00 00 
+48 c7 46 28 00 00 00 00 
+
+48 8b d6 
+
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 12
+
+48 8b 74 24 10 
+41 80 7f 40 00 0f 84 2e 00 00 00 44 8b 5e 18 49 c1 e3 03 4d 85 db 0f 84 1d 00 00 00 4d 8b 57 28 49 83 fa 00 0f 84 00 00 00 00 49 83 ea 08 4d 89 57 28 4d 03 57 38 4d 89 1a 
+4c 8b d2 49 c1 ea 03 
+44 89 56 18 
+4c 8b d6 4c 33 d2 49 c1 ea 15 0f 84 45 00 00 00 4c 8b d6 49 c1 ea 09 49 bb 00 20 66 3d ae 7f 00 00 4d 03 d3 41 80 3a 02 74 2b f0 83 04 24 00 41 80 3a 00 74 20 41 c6 02 00 4d 8b 5f 48 4d 85 db 0f 84 00 00 00 00 49 83 eb 08 4d 89 5f 48 4d 03 5f 58 4d 89 13 
+48 8b f2 
+ba ff ff ff ff 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 74 24 10 
+ba 00 00 00 00 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 66 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c5 f8 77 c3 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 1
+
+48 be ad de ad de ad de ad de 
+ba 08 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 00 
+48 8b d0 
+48 8b 74 24 10 
+0f 1f 40 00 e9 81 fa ff ff 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 7
+
+48 be ad de ad de ad de ad de 
+ba 10 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 00 
+48 8b d0 
+e9 d2 fc ff ff 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 4
+
+48 be ad de ad de ad de ad de 
+ba 10 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 00 
+48 8b d0 
+e9 38 fb ff ff 
+HotSpotCompilation-84[Queens.queens()]
+Current Block ID 10
+
+48 be ad de ad de ad de ad de 
+ba 08 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 00 
+48 8b d0 
+e9 ca fd ff ff 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+4c 8b d6 
+4c 89 14 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 2
+
+48 8b 34 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 4
+
+48 8b 34 24 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 6
+
+48 8b 34 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 8
+
+48 8b 34 24 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 10
+
+48 8b 34 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 12
+
+48 8b 34 24 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 14
+
+48 8b 34 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 16
+
+48 8b 34 24 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 18
+
+48 8b 34 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 20
+
+48 b8 ad de ad de ad de ad de 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 1
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 5
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 13
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 19
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 17
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 11
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 15
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 9
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 3
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-85[Queens.benchmark()]
+Current Block ID 7
+
+48 8b 34 24 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-86[java.util.ArrayList.size()]
+Current Block ID 0
+
+
+8b 46 10 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-87[java.lang.invoke.LambdaForm$BasicType.basicTypeClass()]
+Current Block ID 0
+
+
+8b 46 1c 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-88[java.lang.invoke.MethodType.form()]
+Current Block ID 0
+
+
+8b 46 14 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-90[java.lang.invoke.MethodTypeForm.parameterSlotCount()]
+Current Block ID 0
+
+
+0f bf 46 0c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-92[java.lang.invoke.MethodType.ptypes()]
+Current Block ID 0
+
+
+8b 46 10 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-98[java.lang.invoke.LambdaForm$Name.type()]
+Current Block ID 0
+
+
+8b 46 10 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 44 3b c1 0f 8e 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 1
+
+8b 46 0c 
+3b c1 0f 86 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 2
+
+44 8b d1 
+42 3a 54 16 10 0f 84 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 4
+
+44 8b d1 41 ff c2 
+45 3b c2 0f 8f 00 00 00 00 e9 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 13
+0f 1f 80 00 00 00 00 
+42 3a 54 16 10 0f 84 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 14
+
+41 ff c2 
+
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 12
+
+45 3b c2 0f 8f 26 ff ff ff 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 21
+
+b8 ff ff ff ff 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 5
+
+45 8b d8 45 2b da 
+4d 63 db 
+45 8b ca 
+4d 03 d9 
+49 ff cb 
+44 8b c8 
+4d 3b cb 0f 86 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 6
+
+41 3b c2 0f 87 d8 fe ff ff 66 66 90 e9 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 17
+
+41 8b c2 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 3
+
+44 8b d1 
+e9 7a ff ff ff 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 8
+
+49 c7 c2 18 00 00 00 
+
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 19
+
+41 c7 87 84 04 00 00 e5 ff ff ff 
+4d 89 97 90 04 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 18
+
+49 c7 c2 00 00 00 00 
+e9 1c ff ff ff 
+HotSpotCompilation-104[java.lang.StringLatin1.indexOfChar(byte[], int, int, int)]
+Current Block ID 9
+
+49 c7 c2 18 00 00 00 
+e9 e3 fe ff ff 
+Queens: iterations=1 runtime: 738169us
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+90 48 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 2
+
+8b 42 08 
+49 ba 00 00 00 d3 ad 7f 00 00 
+49 8d 04 02 
+
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 3
+
+48 85 d2 0f 84 00 00 00 00 
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 5
+
+49 ba ad de ad de ad de ad de 
+90 4c 3b d0 0f 85 00 00 00 00 
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 7
+
+0f b6 42 0c 
+48 8b 6c 24 10 48 83 c4 18 0f 1f 80 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 1
+
+48 c7 c0 00 00 00 00 
+e9 65 ff ff ff 
+HotSpotCompilation-107[Queens.verifyResult(Object)]
+Current Block ID 8
+
+41 c7 87 84 04 00 00 dd ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+Queens: iterations=1 runtime: 700965us
+HotSpotCompilation-108[java.util.concurrent.locks.AbstractOwnableSynchronizer.getExclusiveOwnerThread()]
+Current Block ID 0
+
+
+8b 46 0c 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-109[java.util.concurrent.locks.AbstractQueuedSynchronizer.getState()]
+Current Block ID 0
+
+
+8b 46 10 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-110[java.util.concurrent.locks.AbstractQueuedSynchronizer.setState(int)]
+Current Block ID 0
+
+
+89 56 10 
+f0 83 04 24 00 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-111[java.util.concurrent.locks.ReentrantLock.lock()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+42 85 04 d5 00 00 00 00 
+49 c1 e2 03 
+49 8b f2 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-112[java.util.concurrent.locks.AbstractQueuedSynchronizer.compareAndSetState(int, int)]
+Current Block ID 0
+
+
+8b c2 
+f0 0f b1 4e 10 
+0f 94 c0 0f b6 c0 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-113[java.util.concurrent.locks.ReentrantLock$Sync.lock()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+4c 8b d6 
+4c 89 14 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-113[java.util.concurrent.locks.ReentrantLock$Sync.lock()]
+Current Block ID 2
+
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 d8 04 00 00 72 24 48 83 ec 08 49 8b ff 90 48 b9 00 00 00 00 00 00 00 00 ff d1 48 83 c4 08 48 b9 00 00 00 00 00 00 00 00 ff e1 0f 1f 40 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-113[java.util.concurrent.locks.ReentrantLock$Sync.lock()]
+Current Block ID 1
+
+48 8b 34 24 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-114[java.util.concurrent.locks.AbstractQueuedSynchronizer.release(int)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+4c 8b d6 
+4c 89 14 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-114[java.util.concurrent.locks.AbstractQueuedSynchronizer.release(int)]
+Current Block ID 2
+
+48 8b 34 24 
+8b 76 14 
+48 c1 e6 03 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+b8 01 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-114[java.util.concurrent.locks.AbstractQueuedSynchronizer.release(int)]
+Current Block ID 1
+
+b8 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Found String in 0
+
+49 8b 97 80 03 00 00 
+4c 8b 12 
+4c 89 54 24 10 
+4c 8b de 
+ba 00 00 00 00 
+b9 01 00 00 00 
+4c 89 5c 24 08 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 6
+
+48 8b 74 24 08 
+48 8b 54 24 10 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 1
+
+48 8b 74 24 08 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+4c 8b 54 24 10 
+4c 3b d0 0f 85 00 00 00 00 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 2
+
+48 8b 74 24 08 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+8b d0 ff c2 
+85 d2 0f 8c 00 00 00 00 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 4
+
+48 8b 74 24 08 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 66 66 0f 1f 84 00 00 00 00 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 5
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-115[java.util.concurrent.locks.ReentrantLock$NonfairSync.initialTryLock()]
+Current Block ID 3
+
+48 8b 74 24 08 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 94 02 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Found String in 0
+
+4c 8b d6 
+4c 89 14 24 
+89 54 24 14 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+44 8b d0 44 2b 54 24 14 
+48 8b 34 24 
+44 89 54 24 10 
+89 44 24 0c 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 8b b7 80 03 00 00 
+48 3b 06 0f 85 00 00 00 00 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 1
+
+8b 44 24 0c 
+8b 54 24 14 
+3b c2 
+41 0f 94 c2 45 0f b6 d2 
+3b c2 0f 85 00 00 00 00 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 2
+
+44 89 54 24 14 
+48 8b 34 24 
+48 c7 c2 00 00 00 00 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 4
+
+48 8b 34 24 
+8b 54 24 10 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+8b 44 24 14 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 d8 04 00 00 72 26 48 83 ec 08 49 8b ff 66 66 90 48 b9 00 00 00 00 00 00 00 00 ff d1 48 83 c4 08 48 b9 00 00 00 00 00 00 00 00 ff e1 0f 1f 40 00 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 3
+
+44 89 54 24 14 
+e9 6d ff ff ff 
+HotSpotCompilation-116[java.util.concurrent.locks.ReentrantLock$Sync.tryRelease(int)]
+Current Block ID 5
+
+44 8b 54 24 10 
+48 8b 34 24 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-117[java.util.concurrent.locks.ReentrantLock.unlock()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+8b 56 0c 
+85 04 d5 00 00 00 00 
+48 c1 e2 03 
+48 8b f2 
+ba 01 00 00 00 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-118[java.util.concurrent.locks.AbstractOwnableSynchronizer.setExclusiveOwnerThread(Thread)]
+Current Block ID 0
+
+
+41 80 7f 40 00 90 0f 84 2f 00 00 00 44 8b 5e 0c 49 c1 e3 03 4d 85 db 0f 84 1e 00 00 00 4d 8b 57 28 49 83 fa 00 90 0f 84 00 00 00 00 49 83 ea 08 4d 89 57 28 4d 03 57 38 4d 89 1a 
+4c 8b d2 49 c1 ea 03 
+44 89 56 0c 
+4c 8b d6 4c 33 d2 49 c1 ea 15 0f 84 4e 00 00 00 48 85 d2 0f 84 45 00 00 00 4c 8b d6 49 c1 ea 09 49 bb 00 20 66 3d ae 7f 00 00 4d 03 d3 41 80 3a 02 74 2b f0 83 04 24 00 41 80 3a 00 74 20 41 c6 02 00 4d 8b 5f 48 4d 85 db 0f 84 00 00 00 00 49 83 eb 08 4d 89 5f 48 4d 03 5f 58 4d 89 13 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-119[java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(AbstractQueuedSynchronizer$Node)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-119[java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(AbstractQueuedSynchronizer$Node)]
+Found String in 0
+
+90 48 85 f6 0f 85 00 00 00 00 
+HotSpotCompilation-119[java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(AbstractQueuedSynchronizer$Node)]
+Current Block ID 5
+
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-119[java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(AbstractQueuedSynchronizer$Node)]
+Current Block ID 2
+
+44 8b 56 14 
+45 8b da 49 c1 e3 03 
+42 83 3c d5 0c 00 00 00 00 74 b0 
+HotSpotCompilation-119[java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(AbstractQueuedSynchronizer$Node)]
+Current Block ID 4
+
+44 89 54 24 14 
+49 8b f3 
+ba 01 00 00 00 
+4c 89 5c 24 08 
+90 66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+44 8b 54 24 14 
+42 8b 34 d5 18 00 00 00 
+48 c1 e6 03 
+66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+e9 54 ff ff ff 
+Queens: iterations=1 runtime: 687839us
+Queens: iterations=1 runtime: 680507us
+StubCompilation-161[Stub<OSR_migration_end(long)void>]
+Current Block ID 0
+
+
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 48 89 44 24 48 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+48 8b fe 
+e8 00 00 00 00 
+4c 8b 94 24 e0 00 00 00 4c 8b 5c 24 08 4c 8b 44 24 10 4c 8b 4c 24 18 48 8b 4c 24 20 48 8b 5c 24 28 48 8b 7c 24 30 48 8b 54 24 38 48 8b 74 24 40 48 8b 44 24 48 4c 8b 6c 24 50 4c 8b 74 24 58 c5 fb 10 44 24 60 c5 fb 10 4c 24 68 c5 fb 10 54 24 70 c5 fb 10 5c 24 78 c5 fb 10 a4 24 80 00 00 00 c5 fb 10 ac 24 88 00 00 00 c5 fb 10 b4 24 90 00 00 00 c5 fb 10 bc 24 98 00 00 00 c5 7b 10 84 24 a0 00 00 00 c5 7b 10 8c 24 a8 00 00 00 c5 7b 10 94 24 b0 00 00 00 c5 7b 10 9c 24 b8 00 00 00 c5 7b 10 a4 24 c0 00 00 00 c5 7b 10 ac 24 c8 00 00 00 c5 7b 10 b4 24 d0 00 00 00 c5 7b 10 bc 24 d8 00 00 00 
+49 c7 87 f0 03 00 00 00 00 00 00 
+48 8b e5 5d c3 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Found String in 0
+
+4c 8b 56 10 
+4c 89 14 24 
+44 8b 5e 08 
+44 89 5c 24 14 
+44 8b 06 
+e8 00 00 00 00 
+41 8b 72 08 
+49 b9 00 00 00 d3 ad 7f 00 00 
+49 8d 34 31 
+49 b9 ad de ad de ad de ad de 
+4c 3b 4e 38 0f 85 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 1
+
+45 3b d8 0f 8f 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 15
+
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 2
+
+44 89 44 24 10 
+49 8b f2 
+48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 34 24 
+48 8b d0 
+66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+0f 1f 40 00 85 c0 0f 84 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 4
+
+44 8b 5c 24 14 
+44 8b 44 24 10 41 ff c0 
+45 3b d8 0f 8e 1a ff ff ff 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 5
+
+44 89 44 24 0c 
+48 8b 34 24 
+90 90 66 66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 34 24 
+48 8b d0 
+66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 7
+
+44 8b 44 24 10 
+41 8d 70 02 
+44 8b d6 
+e9 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 9
+66 66 66 0f 1f 84 00 00 00 00 00 66 66 66 90 0f 1f 44 00 00 
+44 89 54 24 10 
+49 8b f0 
+90 66 66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 34 24 
+48 8b d0 
+66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 11
+
+44 8b 54 24 10 41 ff c2 
+
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 8
+
+44 8b 5c 24 14 
+4c 8b 04 24 
+45 3b da 0f 8f 0f ff ff ff e9 76 fd ff ff 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 16
+
+41 c7 87 84 04 00 00 c4 ff ff ff 
+49 c7 87 90 04 00 00 94 02 00 00 
+0f 1f 40 00 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 6
+
+44 8b 44 24 0c 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 3
+
+44 8b 44 24 10 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+66 66 90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotOSRCompilation-120[Benchmark.innerBenchmarkLoop(int)@2]
+Current Block ID 10
+
+44 8b 54 24 10 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 0
+
+48 89 6c 24 20 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Found String in 0
+
+48 89 74 24 08 
+89 54 24 14 
+83 fa 01 0f 8c 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 2
+
+4c 8b d6 
+66 66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 74 24 08 
+48 8b d0 
+90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 4
+
+41 ba 01 00 00 00 
+e9 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 6
+90 
+44 89 54 24 10 
+4c 8b de 
+66 66 90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 74 24 08 
+48 8b d0 
+90 48 b8 ff ff ff ff ff ff ff ff e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 c0 0f 84 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 8
+
+44 8b 54 24 10 41 ff c2 
+
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 5
+
+8b 54 24 14 
+48 8b 74 24 08 
+66 0f 1f 44 00 00 41 3b d2 0f 8f 37 ff ff ff 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 10
+
+b8 01 00 00 00 
+48 8b 6c 24 20 48 83 c4 28 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 3
+
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+0f 1f 40 00 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-121[Benchmark.innerBenchmarkLoop(int)]
+Current Block ID 7
+
+44 8b 54 24 10 
+8b 54 24 14 
+48 8b 74 24 08 
+41 c7 87 84 04 00 00 ed ff ff ff 
+49 c7 87 90 04 00 00 14 00 00 00 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+HotSpotCompilation-122[jdk.internal.misc.InternalLock.lock()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+42 85 04 d5 00 00 00 00 
+49 c1 e2 03 
+49 8b f2 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+Queens: iterations=1 runtime: 686091us
+HotSpotCompilation-123[jdk.internal.misc.InternalLock.unlock()]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+44 8b 56 0c 
+42 85 04 d5 00 00 00 00 
+49 c1 e2 03 
+49 8b f2 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+Queens: iterations=1 runtime: 700694us
+Queens: iterations=1 runtime: 724143us
+Queens: iterations=1 runtime: 699167us
+Queens: iterations=1 runtime: 708360us
+Queens: iterations=1 runtime: 702406us
+Queens: iterations=1 runtime: 702743us
+Queens: iterations=1 runtime: 677918us
+Queens: iterations=1 runtime: 702662us
+Queens: iterations=1 runtime: 679368us
+Queens: iterations=1 runtime: 706382us
+Queens: iterations=1 runtime: 696130us
+Queens: iterations=1 runtime: 703756us
+Queens: iterations=1 runtime: 680470us
+Queens: iterations=1 runtime: 683219us
+HotSpotCompilation-124[java.nio.Buffer.limit()]
+Current Block ID 0
+
+
+8b 46 1c 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-125[jdk.internal.jimage.ImageHeader.getTableLength()]
+Current Block ID 0
+
+
+8b 46 20 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+HotSpotCompilation-126[java.lang.invoke.MethodTypeForm.erasedType()]
+Current Block ID 0
+
+
+8b 46 10 
+48 c1 e0 03 
+48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
+StubCompilation-161[Stub<new_instance_or_null(KlassPointer)Object>]
+Current Block ID 0
+
+
+4c 89 94 24 e0 00 00 00 4c 89 5c 24 08 4c 89 44 24 10 4c 89 4c 24 18 48 89 4c 24 20 48 89 5c 24 28 48 89 7c 24 30 48 89 54 24 38 48 89 74 24 40 4c 89 6c 24 50 4c 89 74 24 58 c5 fb 11 44 24 60 c5 fb 11 4c 24 68 c5 fb 11 54 24 70 c5 fb 11 5c 24 78 c5 fb 11 a4 24 80 00 00 00 c5 fb 11 ac 24 88 00 00 00 c5 fb 11 b4 24 90 00 00 00 c5 fb 11 bc 24 98 00 00 00 c5 7b 11 84 24 a0 00 00 00 c5 7b 11 8c 24 a8 00 00 00 c5 7b 11 94 24 b0 00 00 00 c5 7b 11 9c 24 b8 00 00 00 c5 7b 11 a4 24 c0 00 00 00 c5 7b 11 ac 24 c8 00 00 00 c5 7b 11 b4 24 d0 00 00 00 c5 7b 11 bc 24 d8 00 00 00 
+49 89 a7 98 03 00 00 
+49 8b ff 
+c5 f8 77 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+49 c7 87 98 03 00 00 00 00 00 00 49 c7 87 a8 03 00 00 00 00 00 00 49 c7 87 a0 03 00 00 00 00 00 00 
+4c 8b 94 24 e0 00 00 00 4c 8b 5c 24 08 4c 8b 44 24 10 4c 8b 4c 24 18 48 8b 4c 24 20 48 8b 5c 24 28 48 8b 7c 24 30 48 8b 54 24 38 48 8b 74 24 40 4c 8b 6c 24 50 4c 8b 74 24 58 c5 fb 10 44 24 60 c5 fb 10 4c 24 68 c5 fb 10 54 24 70 c5 fb 10 5c 24 78 c5 fb 10 a4 24 80 00 00 00 c5 fb 10 ac 24 88 00 00 00 c5 fb 10 b4 24 90 00 00 00 c5 fb 10 bc 24 98 00 00 00 c5 7b 10 84 24 a0 00 00 00 c5 7b 10 8c 24 a8 00 00 00 c5 7b 10 94 24 b0 00 00 00 c5 7b 10 9c 24 b8 00 00 00 c5 7b 10 a4 24 c0 00 00 00 c5 7b 10 ac 24 c8 00 00 00 c5 7b 10 b4 24 d0 00 00 00 c5 7b 10 bc 24 d8 00 00 00 
+49 8b 47 08 
+49 c7 47 08 00 00 00 00 
+48 85 c0 0f 84 00 00 00 00 
+StubCompilation-161[Stub<new_instance_or_null(KlassPointer)Object>]
+Current Block ID 2
+
+49 c7 87 f0 03 00 00 00 00 00 00 
+41 c7 87 84 04 00 00 8f ff ff ff 
+49 c7 87 90 04 00 00 00 00 00 00 
+48 8b e5 5d e9 f5 fd ff ff 
+StubCompilation-161[Stub<new_instance_or_null(KlassPointer)Object>]
+Current Block ID 1
+
+49 8b 87 f0 03 00 00 
+49 c7 87 f0 03 00 00 00 00 00 00 
+48 8b e5 5d c3 
+HotSpotCompilation-127[java.util.HashMap.newNode(int, Object, Object, HashMap$Node)]
+Current Block ID 0
+
+48 89 6c 24 10 
+
+49 8b b7 b8 01 00 00 
+4c 8d 56 20 
+4d 3b 97 c8 01 00 00 0f 87 00 00 00 00 
+HotSpotCompilation-127[java.util.HashMap.newNode(int, Object, Object, HashMap$Node)]
+Current Block ID 2
+
+4d 89 97 b8 01 00 00 
+0f 0d 8e e0 00 00 00 
+48 c7 06 01 00 00 00 
+c7 46 08 ad de ad de 
+c7 46 0c 00 00 00 00 
+48 c7 46 10 00 00 00 00 
+48 c7 46 18 00 00 00 00 
+
+
+HotSpotCompilation-127[java.util.HashMap.newNode(int, Object, Object, HashMap$Node)]
+Current Block ID 3
+
+4c 8b d6 
+4c 89 14 24 
+90 e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+48 8b 04 24 
+48 8b 6c 24 10 48 83 c4 18 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c5 f8 77 c3 
+HotSpotCompilation-127[java.util.HashMap.newNode(int, Object, Object, HashMap$Node)]
+Current Block ID 1
+
+48 be ad de ad de ad de ad de 
+e8 00 00 00 00 0f 1f 84 00 00 00 00 00 
+85 00 
+48 8b f0 
+eb 9b 
+HotSpotCompilation-128[java.util.HashMap.afterNodeInsertion(boolean)]
+Current Block ID 0
+
+
+48 83 c4 18 66 90 49 3b a7 50 04 00 00 0f 87 00 00 00 00 c3 
