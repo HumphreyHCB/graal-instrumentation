@@ -350,7 +350,7 @@ public final class GraalOptions {
     @Option(help = "Prints all the debug infomration for all Comp Units blocks", type = OptionType.Debug)
     public static final OptionKey<Boolean> DumpBlockDebugInfo = new OptionKey<Boolean>( false);
 
-    @Option(help = "WHen we perform Slowdown, do we attempet to mix the slowdown as much as psosible, this should reduce Skidding in the sampler", type = OptionType.Debug)
+    @Option(help = "WHen we perform Slowdown, we attempet to mix the slowdown as much as psosible, this should reduce Skidding in the sampler", type = OptionType.Debug)
     public static final OptionKey<Integer> MixGTSlowdown = new OptionKey<Integer>(-1);
 
 
