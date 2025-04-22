@@ -81,9 +81,9 @@ public class NodeSourcePosition extends BytecodePosition implements Iterable<Nod
     }
 
     public boolean verifyRootMethod(ResolvedJavaMethod root) {
-       // JavaMethod currentRoot = getRootMethod();
-        //assert root.equals(currentRoot) || root.getName().equals(currentRoot.getName()) && root.getSignature().toMethodDescriptor().equals(currentRoot.getSignature().toMethodDescriptor()) &&
-        //                root.getDeclaringClass().getName().equals(currentRoot.getDeclaringClass().getName()) : root + " " + currentRoot;
+       JavaMethod currentRoot = getRootMethod();
+        assert root.equals(currentRoot) || root.getName().equals(currentRoot.getName()) && root.getSignature().toMethodDescriptor().equals(currentRoot.getSignature().toMethodDescriptor()) &&
+                       root.getDeclaringClass().getName().equals(currentRoot.getDeclaringClass().getName()) : root + " " + currentRoot;
         return true;
     }
 
@@ -258,6 +258,7 @@ public class NodeSourcePosition extends BytecodePosition implements Iterable<Nod
         }
         return true;
     }
+
 
     private static boolean verifyCaller(NodeSourcePosition current, NodeSourcePosition caller) {
         if (!STRICT_SOURCE_POSITION) {
