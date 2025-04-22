@@ -11,12 +11,11 @@
 file=QueensAsyncSlowdown.txt
 
  ./latest_graalvm_home/bin/java \
-  -Djdk.graal.EnableGTSlowDown=false -Djdk.graal.LIRGTSlowDown=true -Djdk.graal.LIRBlockSlowdownFileName=BlockSlowdown1.json -Djdk.graal.ASMGTSlowDown=false \
- -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose -Djdk.graal.LogFile=out.txt \
-  -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation '-XX:CompileCommand=dontinline,*::*' -Djdk.graal.TrivialInliningSize=0 \
+ -Djdk.graal.GTChangeDebugInfo=true -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose  \
+  -XX:+UseJVMCINativeLibrary -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation -XX:JVMCILibPath=/home/hb478/repos/graal-instrumentation/sdk/mxbuild/linux-amd64/libjvmcicompiler.so.image  \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
    -agentpath:/home/hburchell/ProgramFiles/async-profiler-3.0-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=1ms,file=$file \
-  Harness Queens 500 5000
+  Harness Queens 100 5000
 
   echo "Wrote to here $file"
 

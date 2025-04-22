@@ -24,14 +24,18 @@
  */
 package jdk.graal.compiler.lir.phases;
 
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
+import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugContext.CompilerPhaseScope;
 import jdk.graal.compiler.debug.MemUseTrackerKey;
+import jdk.graal.compiler.debug.TTY;
 import jdk.graal.compiler.debug.TimerKey;
 import jdk.graal.compiler.lir.LIR;
+import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
@@ -162,5 +166,29 @@ public abstract class LIRPhase<C> {
         CharSequence name = createName();
         assert checkName(name);
         return name;
+    }
+
+    public void logDebugInformation(LIRGenerationResult lirGenRes){
+        int LirCount = 0;
+        int DebugCount = 0;
+        for (int blockId : lirGenRes.getLIR().getBlocks()) {
+            lirGenRes.getLIR();
+            if (LIR.isBlockDeleted(blockId)) {
+                continue;
+            }
+            BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
+            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+            for (LIRInstruction instruction : instructions) {
+                LirCount++;
+                if (instruction.getPosition() != null && instruction.getPosition().verify()) {
+                    DebugCount++;
+                }
+                else{
+                    
+                }
+            }
+        }
+        // jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity.NAME
+        TTY.println("LIR," + getName() + "," + DebugCount + "," + LirCount + "," + (LirCount == 0 ? "N/A" : (double) DebugCount / LirCount));
     }
 }

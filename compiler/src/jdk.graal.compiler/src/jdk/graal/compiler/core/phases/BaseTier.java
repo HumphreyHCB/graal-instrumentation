@@ -24,6 +24,10 @@
  */
 package jdk.graal.compiler.core.phases;
 
+import java.util.Comparator;
+import java.util.ListIterator;
+
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.TimerKey;
@@ -34,6 +38,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.PhaseSuite;
 import jdk.graal.compiler.serviceprovider.GraalServices;
+import jdk.graal.compiler.phases.common.GTDebugInfoLoggerHighTierPhase;
 
 public class BaseTier<C> extends PhaseSuite<C> {
 
@@ -49,6 +54,20 @@ public class BaseTier<C> extends PhaseSuite<C> {
     @SuppressWarnings({"try"})
     @Override
     protected void run(StructuredGraph graph, C context) {
+        if (GraalOptions.GTDebugInfoLog.getValue(graph.getOptions())) {
+            // 1) Locate the first GTDebugInfoLoggerHighTierPhase in the *underlying* list
+            @SuppressWarnings("unchecked")
+            Class<? extends BasePhase<? super C>> debugClass =
+                    (Class<? extends BasePhase<? super C>>) (Class<?>) GTDebugInfoLoggerHighTierPhase.class;
+            
+            ListIterator<BasePhase<? super C>> it = findPhase(debugClass, false);
+            if (it != null) {
+                // iterator is just past the matching phase
+                BasePhase<? super C> debugPhase = it.previous();
+                it.remove();              // remove it from its old position
+                prependPhase(debugPhase); // stick it back at index 0
+            }
+        }
         for (BasePhase<? super C> phase : getPhases()) {
             // Notify the runtime that most objects allocated in previous HIR phase are dead and can
             // be reclaimed. This will lower the chance of allocation failure in the next HIR phase.

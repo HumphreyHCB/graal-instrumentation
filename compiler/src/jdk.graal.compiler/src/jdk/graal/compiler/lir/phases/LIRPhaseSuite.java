@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.util.PhasePlan;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
@@ -111,6 +112,10 @@ public class LIRPhaseSuite<C> extends LIRPhase<C> implements PhasePlan<LIRPhase<
                 GraalServices.notifyLowMemoryPoint();
             }
             phase.apply(target, lirGenRes, context);
+            
+            if (GraalOptions.GTDebugInfoLog.getValue(lirGenRes.getLIR().getOptions())) {
+                phase.logDebugInformation(lirGenRes);
+            }
         }
     }
 

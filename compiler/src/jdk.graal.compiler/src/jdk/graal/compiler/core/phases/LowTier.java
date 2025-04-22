@@ -46,6 +46,7 @@ import jdk.graal.compiler.phases.common.OptimizeOffsetAddressPhase;
 import jdk.graal.compiler.phases.common.ProfileCompiledMethodsPhase;
 import jdk.graal.compiler.phases.common.PropagateDeoptimizeProbabilityPhase;
 import jdk.graal.compiler.phases.common.RemoveOpaqueValuePhase;
+import jdk.graal.compiler.phases.common.GTChangeDebugInfoLowTierPhase;
 import jdk.graal.compiler.phases.schedule.SchedulePhase;
 import jdk.graal.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
@@ -105,6 +106,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         appendPhase(new OptimizeExtendsPhase());
 
         appendPhase(new RemoveOpaqueValuePhase());
+
+        if (GraalOptions.GTChangeDebugInfo.getValue(options)) {
+            appendPhase(new GTChangeDebugInfoLowTierPhase());
+        }
         
         appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
     }

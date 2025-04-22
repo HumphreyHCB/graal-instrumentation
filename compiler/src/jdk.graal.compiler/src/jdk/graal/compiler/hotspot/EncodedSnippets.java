@@ -175,12 +175,16 @@ public class EncodedSnippets {
 
     ResolvedJavaType lookupSnippetType(Class<?> clazz) {
         SnippetResolvedJavaType type = snippetTypes.get(clazz);
-        if (type == null && isGraalClass(clazz)) {
+        if (type == null && isGraalClass(clazz) && !isCompilerMarkers(clazz)) {
             // During libgraal image building references to Graal classes from snippets are tracked.
             // If a class isn't found in this path at runtime it means something was missed.
             throw new GraalError("Missing Graal class " + clazz.getName());
         }
         return type;
+    }
+
+    public boolean isCompilerMarkers(Class<?> clazz) {
+        return clazz.getName().contains("jdk.graal.compiler.MyMarkers");
     }
 
     public void visitImmutable(Consumer<Object> visitor) {

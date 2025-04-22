@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 
 import org.graalvm.collections.EconomicMap;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.debug.CounterKey;
 import jdk.graal.compiler.debug.DebugCloseable;
@@ -333,6 +334,9 @@ public abstract class BasePhase<C> implements PhaseSizeContract {
 
     public final void apply(final StructuredGraph graph, final C context) {
         apply(graph, context, true);
+        if (GraalOptions.GTDebugInfoLog.getValue(graph.getOptions())) {
+            logDebugInformation(graph, getName());
+        }
     }
 
     /**
@@ -710,6 +714,21 @@ public abstract class BasePhase<C> implements PhaseSizeContract {
         }
 
         return getClass().equals(obj.getClass());
+    }
+
+
+    public void logDebugInformation(StructuredGraph graph, CharSequence phaseName) {
+        int NodeCount = graph.getNodeCount();
+        int SourcePositionCount = 0;
+
+            for (var node : graph.getNodes()) {
+                if (node.getNodeSourcePosition() != null && node.verify()) {
+                    SourcePositionCount++;
+                }
+            }
+            TTY.println("HIR,"+phaseName +"," + SourcePositionCount +","+ NodeCount +"," + (double) SourcePositionCount / (double) NodeCount);
+
+        
     }
 
 }
