@@ -344,4 +344,8 @@ public final class GraalOptions {
     @Option(help = "The maximum number of profiled types that will be used when compiling a profiled type check. " +
                     "Note that TypeCheckMinProfileHitProbability also influences whether profiling info is used in compiled type checks.", type = OptionType.Debug)
     public static final OptionKey<Integer> TypeCheckMaxHints = new OptionKey<>(2);
+
+    @Option(help = "The Compiler will generate addation Debug Information for IR that is gernetedted by the compiler ( Glue Code ) This" +
+    " may increase memory ussage and compile time", type = OptionType.Debug)
+    public static final OptionKey<Boolean> AdditionalCompilerDebugInformation = new OptionKey<>(false);
 }
