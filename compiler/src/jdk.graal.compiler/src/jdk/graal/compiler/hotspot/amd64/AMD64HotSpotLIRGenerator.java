@@ -634,6 +634,7 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
     @Override
     public boolean isReservedRegister(Register r) {
         return getProviders().getRegisters().isReservedRegister(r);
+    }
 
     public Value emitTSC() {
         AMD64ReadTimestampCounter timestamp = new AMD64ReadTimestampCounter();
