@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -107,6 +107,9 @@ public final class BitSets {
         return bs[wordIndex(index)] != old;
     }
 
+    /**
+     * Set all bits from lo (inclusive) to hi (inclusive).
+     */
     public static void setRange(long[] bs, int lo, int hi) {
         int wordIndexLo = wordIndex(lo);
         int wordIndexHi = wordIndex(hi);
@@ -123,6 +126,9 @@ public final class BitSets {
         bs[wordIndexHi] |= rangeHi;
     }
 
+    /**
+     * Clear all bits from lo (inclusive) to hi (inclusive).
+     */
     public static void clearRange(long[] bs, int lo, int hi) {
         int wordIndexLo = wordIndex(lo);
         int wordIndexHi = wordIndex(hi);
@@ -254,12 +260,12 @@ public final class BitSets {
             }
         }
         for (int i = bs1.length; i < bs2.length; i++) {
-            if (bs1[i] != 0) {
+            if (bs2[i] != 0) {
                 return false;
             }
         }
         for (int i = bs2.length; i < bs1.length; i++) {
-            if (bs2[i] != 0) {
+            if (bs1[i] != 0) {
                 return false;
             }
         }

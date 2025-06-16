@@ -1,15 +1,15 @@
 ---
 layout: docs
 toc_group: pgo
-link_title: Creating LCOV Coverage Reports
+link_title: Making Sense of PGO Reports Using LCOV
 permalink: /reference-manual/native-image/optimizations-and-performance/PGO/LCOV/
 ---
 
-# Creating LCOV Coverage Reports
+# Making Sense of PGO Reports Using LCOV
 
 Here you will learn how to analyze PGO profiles with the aid of LCOV-based tooling.
 
-Profile-Guided Optimizations (PGO) help you maximize the performance of your native application.
+Profile-Guided Optimization (PGO) helps you maximize the performance of your native application.
 As part of the PGO process, you create an instrumented binary and run a workload on it to generate
 a PGO profile file that you can then feed back into the build process to generate an optimized binary
 of your application.

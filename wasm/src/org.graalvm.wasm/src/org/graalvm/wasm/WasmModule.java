@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.wasm.debugging.data.DebugFunction;
@@ -55,7 +55,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 
 /**
@@ -64,7 +63,7 @@ import com.oracle.truffle.api.source.Source;
 @SuppressWarnings("static-method")
 public final class WasmModule extends SymbolTable implements TruffleObject {
     private final String name;
-    private volatile List<BiConsumer<WasmContext, WasmInstance>> linkActions;
+    private volatile List<LinkAction> linkActions;
     private final ModuleLimits limits;
 
     private Source source;
@@ -73,6 +72,9 @@ public final class WasmModule extends SymbolTable implements TruffleObject {
     @CompilationFinal(dimensions = 1) private byte[] codeSection;
     @CompilationFinal(dimensions = 1) private CodeEntry[] codeEntries;
     @CompilationFinal private boolean isParsed;
+    private volatile boolean hasBeenInstantiated;
+
+    private final ReentrantLock lock = new ReentrantLock();
 
     @CompilationFinal private int debugInfoOffset;
     @CompilationFinal private EconomicMap<Integer, DebugFunction> debugFunctions;
@@ -116,8 +118,8 @@ public final class WasmModule extends SymbolTable implements TruffleObject {
         return name;
     }
 
-    public List<BiConsumer<WasmContext, WasmInstance>> getOrRecreateLinkActions() {
-        var result = (List<BiConsumer<WasmContext, WasmInstance>>) LINK_ACTIONS.getAndSet(this, (List<BiConsumer<WasmContext, WasmInstance>>) null);
+    public List<LinkAction> getOrRecreateLinkActions() {
+        var result = (List<LinkAction>) LINK_ACTIONS.getAndSet(this, (List<LinkAction>) null);
         if (result != null) {
             return result;
         } else {
@@ -125,9 +127,24 @@ public final class WasmModule extends SymbolTable implements TruffleObject {
         }
     }
 
-    public void addLinkAction(BiConsumer<WasmContext, WasmInstance> action) {
+    public void addLinkAction(LinkAction action) {
         assert !isParsed();
         linkActions.add(action);
+    }
+
+    public boolean hasBeenInstantiated() {
+        return hasBeenInstantiated;
+    }
+
+    public void setHasBeenInstantiated() {
+        this.hasBeenInstantiated = true;
+    }
+
+    /**
+     * Private lock used for instantiation and linking.
+     */
+    public ReentrantLock getLock() {
+        return lock;
     }
 
     public ModuleLimits limits() {
@@ -245,11 +262,10 @@ public final class WasmModule extends SymbolTable implements TruffleObject {
     }
 
     @TruffleBoundary
-    public EconomicMap<Integer, DebugFunction> debugFunctions(Node node) {
+    public EconomicMap<Integer, DebugFunction> debugFunctions() {
         // lazily load debug information if needed.
         if (debugFunctions == null && hasDebugInfo()) {
-            WasmContext context = WasmContext.get(node);
-            DebugTranslator translator = new DebugTranslator(customData, context.getContextOptions().debugCompDirectory());
+            DebugTranslator translator = new DebugTranslator(customData);
             debugFunctions = translator.readCompilationUnits(customData, debugInfoOffset);
         }
         return debugFunctions;

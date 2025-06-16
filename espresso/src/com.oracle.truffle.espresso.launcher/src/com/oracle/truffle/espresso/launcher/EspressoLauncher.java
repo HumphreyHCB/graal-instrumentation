@@ -22,8 +22,13 @@
  */
 package com.oracle.truffle.espresso.launcher;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +65,7 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
     private LaunchMode launchMode = LaunchMode.LM_CLASS;
     private boolean pauseOnExit = false;
     private VersionAction versionAction = VersionAction.None;
+    private boolean versionToErr = true;
     private final Map<String, String> espressoOptions = new HashMap<>();
 
     private final class Arguments {
@@ -175,8 +181,11 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
         String jarFileName = null;
         ArrayList<String> unrecognized = new ArrayList<>();
         boolean isRelaxStaticObjectSafetyChecksSet = false;
+        int javaAgentIndex = 0;
 
-        Arguments args = new Arguments(arguments);
+        List<String> expandedArguments = expandAtFiles(arguments);
+
+        Arguments args = new Arguments(expandedArguments);
         while (args.next()) {
             String arg = args.getKey();
             switch (arg) {
@@ -203,6 +212,9 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                 case "--enable-native-access":
                     parseNumberedOption(args, "java.EnableNativeAccess", "module");
                     break;
+                case "--illegal-native-access":
+                    espressoOptions.put("java.IllegalNativeAccess", args.getValue(arg, "illegal native access"));
+                    break;
                 case "-m":
                 case "--module":
                     /* This arguments specifies in which module we find the main class. */
@@ -213,11 +225,18 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                 case "-jar":
                     jarFileName = args.getValue(arg, "jar file");
                     break;
+                case "--version":
+                    versionToErr = false;
+                    versionAction = VersionAction.PrintAndExit;
+                    break;
                 case "-version":
                     versionAction = VersionAction.PrintAndExit;
                     break;
-                case "-showversion":
                 case "--show-version":
+                    versionToErr = false;
+                    versionAction = VersionAction.PrintAndContinue;
+                    break;
+                case "-showversion":
                     versionAction = VersionAction.PrintAndContinue;
                     break;
 
@@ -253,6 +272,10 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                 case "-Xint":
                     espressoOptions.put("engine.Compilation", "false");
                     break;
+                case "-Xshare:auto":
+                case "-Xshare:off":
+                    // ignore
+                    break;
 
                 case "-XX:+PauseOnExit":
                     pauseOnExit = true;
@@ -287,7 +310,7 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                         espressoOptions.put("java.JDWPOptions", value);
                     } else if (arg.startsWith("-javaagent:")) {
                         String value = arg.substring("-javaagent:".length());
-                        espressoOptions.put(JAVA_AGENT, value);
+                        espressoOptions.put(JAVA_AGENT + "." + javaAgentIndex++, value);
                         mergeOption("java.AddModules", "java.instrument");
                     } else if (arg.startsWith("-agentlib:")) {
                         String[] split = splitEquals(arg.substring("-agentlib:".length()));
@@ -295,7 +318,7 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                     } else if (arg.startsWith("-agentpath:")) {
                         String[] split = splitEquals(arg.substring("-agentpath:".length()));
                         espressoOptions.put(AGENT_PATH + split[0], split[1]);
-                    } else if (arg.startsWith("-Xmn") || arg.startsWith("-Xms") || arg.startsWith("-Xmx") || arg.startsWith("-Xss")) {
+                    } else if (arg.startsWith("-Xmn") || arg.startsWith("-Xms") || arg.startsWith("-Xmx") || arg.startsWith("-Xss") || arg.startsWith("-XX:MaxHeapSize=")) {
                         unrecognized.add("--vm." + arg.substring(1));
                     } else if (arg.startsWith("-XX:")) {
                         handleXXArg(arg, unrecognized);
@@ -347,7 +370,7 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
 
                     mainClassName = getMainClassName(jarFileName);
                 }
-                buildJvmArgs(arguments, args.getNumberOfProcessedArgs());
+                buildJvmArgs(expandedArguments, args.getNumberOfProcessedArgs());
                 args.pushLeftoversArgs();
                 break;
             }
@@ -361,14 +384,12 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
             if (classpath == null) {
                 // (3) the environment variable CLASSPATH
                 classpath = System.getenv("CLASSPATH");
-                if (classpath == null) {
-                    // (4) the current working directory only
-                    classpath = ".";
-                }
             }
         }
 
-        espressoOptions.put("java.Classpath", classpath);
+        if (classpath != null) {
+            espressoOptions.put("java.Classpath", classpath);
+        }
 
         if (!isRelaxStaticObjectSafetyChecksSet) {
             // Since Espresso has a verifier, the Static Object Model does not need to perform shape
@@ -379,6 +400,40 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
 
         return unrecognized;
     }
+
+    private List<String> expandAtFiles(List<String> arguments) {
+        List<String> expanded = null;
+        for (int i = 0; i < arguments.size(); i++) {
+            String arg = arguments.get(i);
+            if (arg.startsWith("@")) {
+                if (expanded == null) {
+                    expanded = new ArrayList<>(arguments.subList(0, i));
+                }
+                parseArgFile(arg.substring(1, arg.length()), expanded);
+            } else if (expanded != null) {
+                expanded.add(arg);
+            }
+        }
+        return expanded == null ? arguments : expanded;
+    }
+
+    private void parseArgFile(String pathArg, List<String> expanded) {
+        Path argFilePath = Paths.get(pathArg);
+        try {
+            BufferedReader reader = Files.newBufferedReader(argFilePath);
+            new ArgFileParser(reader).parse(expanded::add);
+        } catch (IOException e) {
+            throw abort(new RuntimeException("Cannot open @argfile", e), 1);
+        }
+    }
+
+    private static final Set<String> knownPassThroughOptions = Set.of(
+                    "WhiteBoxAPI",
+                    "EnableJVMCI");
+
+    private static final Set<String> ignoredXXOptions = Set.of(
+                    "UseJVMCICompiler",
+                    "EnableDynamicAgentLoading");
 
     private void handleXXArg(String fullArg, ArrayList<String> unrecognized) {
         String arg = fullArg.substring("-XX:".length());
@@ -396,9 +451,16 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
             name = arg.substring(0, idx);
             value = arg.substring(idx + 1);
         }
+        if (ignoredXXOptions.contains(name)) {
+            getError().println("Ignoring " + arg);
+            return;
+        }
+        if (knownPassThroughOptions.contains(name)) {
+            espressoOptions.put("java." + name, value);
+            return;
+        }
         switch (name) {
             case "UnlockDiagnosticVMOptions", "UnlockExperimentalVMOptions" -> unrecognized.add("--experimental-options=" + value);
-            case "WhiteBoxAPI" -> espressoOptions.put("java." + name, value);
             case "TieredStopAtLevel" -> {
                 if ("0".equals(value)) {
                     espressoOptions.put("engine.Compilation", "false");
@@ -570,7 +632,7 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
                     version = context.getBindings("java").getMember("java.lang.VersionProps");
                     if (version.hasMember("print/(Z)V")) {
                         Value printMethod = version.getMember("print/(Z)V");
-                        printMethod.execute(/* print to stderr = */false);
+                        printMethod.execute(versionToErr);
                     } else {
                         // print is probably private
                         // fallback until we have an embedded API to call private members
@@ -637,9 +699,15 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
         String javVMInfo = system.invokeMember("getProperty", "java.vm.info").asString();
         String launcherName = "espresso";
 
+        PrintStream output = versionToErr ? getError() : getOutput();
+
         /* First line: platform version. */
-        /* Use a format more in line with GNU conventions */
-        getOutput().println(launcherName + " " + javaVersion + " " + javaVersionDate + (isLTS ? " LTS" : ""));
+        if (versionToErr) {
+            output.println(launcherName + " version \"" + javaVersion + "\" " + javaVersionDate + (isLTS ? " LTS" : ""));
+        } else {
+            /* Use a format more in line with GNU conventions */
+            output.println(launcherName + " " + javaVersion + " " + javaVersionDate + (isLTS ? " LTS" : ""));
+        }
 
         /* Second line: runtime version (ie, libraries). */
         if ("release".equals(debugLevel)) {
@@ -651,10 +719,10 @@ public final class EspressoLauncher extends AbstractLanguageLauncher {
 
         vendorVersion = vendorVersion.isEmpty() ? "" : " " + vendorVersion;
 
-        getOutput().println(javaRuntimeName + vendorVersion + " (" + debugLevel + "build " + javaRuntimeVersion + ")");
+        output.println(javaRuntimeName + vendorVersion + " (" + debugLevel + "build " + javaRuntimeVersion + ")");
 
         /* Third line: JVM information. */
-        getOutput().println(javaVMName + vendorVersion + " (" + debugLevel + "build " + javaVMVersion + ", " + javVMInfo + ")");
+        output.println(javaVMName + vendorVersion + " (" + debugLevel + "build " + javaVMVersion + ", " + javVMInfo + ")");
     }
 
     private static void handleMainUncaught(Context context, PolyglotException e) {

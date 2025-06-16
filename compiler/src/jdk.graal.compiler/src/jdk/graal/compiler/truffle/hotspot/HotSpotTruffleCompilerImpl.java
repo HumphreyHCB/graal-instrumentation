@@ -24,7 +24,7 @@
  */
 package jdk.graal.compiler.truffle.hotspot;
 
-import static jdk.graal.compiler.core.GraalCompiler.compileGraph;
+import static jdk.graal.compiler.core.GraalCompiler.compile;
 import static jdk.graal.compiler.debug.DebugOptions.DebugStubsAndSnippets;
 import static jdk.graal.compiler.hotspot.meta.HotSpotSuitesProvider.withNodeSourcePosition;
 
@@ -33,11 +33,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
+
+import org.graalvm.collections.EconomicMap;
+
+import com.oracle.truffle.compiler.TruffleCompilable;
+import com.oracle.truffle.compiler.TruffleCompilationTask;
+import com.oracle.truffle.compiler.TruffleCompilerRuntime;
+import com.oracle.truffle.compiler.hotspot.HotSpotTruffleCompiler;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.api.runtime.GraalJVMCICompiler;
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.core.CompilationWrapper.ExceptionAction;
+import jdk.graal.compiler.core.GraalCompiler;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.target.Backend;
 import jdk.graal.compiler.debug.DebugContext;
@@ -54,6 +64,7 @@ import jdk.graal.compiler.hotspot.HotSpotCompiledCodeBuilder;
 import jdk.graal.compiler.hotspot.HotSpotGraalCompilerFactory;
 import jdk.graal.compiler.hotspot.HotSpotGraalOptionValues;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntimeProvider;
+import jdk.graal.compiler.hotspot.HotSpotGraalServiceThread;
 import jdk.graal.compiler.hotspot.HotSpotGraalServices;
 import jdk.graal.compiler.hotspot.HotSpotGraphBuilderInstance;
 import jdk.graal.compiler.hotspot.meta.HotSpotLoweringProvider;
@@ -69,6 +80,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.options.OptionsParser;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.PhaseSuite;
@@ -81,19 +93,13 @@ import jdk.graal.compiler.phases.tiers.SuitesProvider;
 import jdk.graal.compiler.phases.util.Providers;
 import jdk.graal.compiler.printer.GraalDebugHandlersFactory;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-import jdk.graal.compiler.truffle.host.InjectImmutableFrameFieldsPhase;
 import jdk.graal.compiler.truffle.PartialEvaluatorConfiguration;
 import jdk.graal.compiler.truffle.TruffleCompilationIdentifier;
 import jdk.graal.compiler.truffle.TruffleCompilerConfiguration;
 import jdk.graal.compiler.truffle.TruffleCompilerImpl;
 import jdk.graal.compiler.truffle.TruffleTierConfiguration;
 import jdk.graal.compiler.truffle.host.HostInliningPhase;
-
-import com.oracle.truffle.compiler.TruffleCompilable;
-import com.oracle.truffle.compiler.TruffleCompilationTask;
-import com.oracle.truffle.compiler.TruffleCompilerRuntime;
-import com.oracle.truffle.compiler.hotspot.HotSpotTruffleCompiler;
-
+import jdk.graal.compiler.truffle.host.TruffleHostEnvironment.TruffleRuntimeScope;
 import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.code.CompiledCode;
 import jdk.vm.ci.code.InstalledCode;
@@ -131,14 +137,22 @@ public final class HotSpotTruffleCompilerImpl extends TruffleCompilerImpl implem
         return HotSpotGraalOptionValues.defaultOptions();
     }
 
-    public static HotSpotTruffleCompilerImpl create(final TruffleCompilerRuntime runtime) {
+    @Override
+    protected void parseGraalOptions(String[] options, EconomicMap<OptionKey<?>, Object> values) {
+        OptionsParser.parseOptions(options, values, OptionsParser.getOptionsLoader());
+    }
+
+    @Override
+    protected ThreadFactory getWatchDogThreadFactory() {
+        return HotSpotGraalServiceThread::new;
+    }
+
+    public static HotSpotTruffleCompilerImpl create(final TruffleCompilerRuntime runtime, Supplier<TruffleRuntimeScope> openCanCallTruffleRuntimeScope) {
         OptionValues options = HotSpotGraalOptionValues.defaultOptions();
         /*
          * Host inlining is not necessary for Truffle guest compilation so disable it.
          */
-        options = new OptionValues(options,
-                        HostInliningPhase.Options.TruffleHostInlining, Boolean.FALSE,
-                        InjectImmutableFrameFieldsPhase.Options.TruffleImmutableFrameFields, Boolean.FALSE);
+        options = new OptionValues(options, HostInliningPhase.Options.TruffleHostInlining, Boolean.FALSE);
 
         HotSpotGraalRuntimeProvider graalRuntime = (HotSpotGraalRuntimeProvider) getCompiler(options).getGraalRuntime();
         SnippetReflectionProvider snippetReflection = graalRuntime.getRequiredCapability(SnippetReflectionProvider.class);
@@ -155,7 +169,7 @@ public final class HotSpotTruffleCompilerImpl extends TruffleCompilerImpl implem
         Plugins plugins = phase.getGraphBuilderConfig().getPlugins();
 
         final TruffleCompilerConfiguration compilerConfig = new TruffleCompilerConfiguration(runtime, plugins, snippetReflection,
-                        firstTier, lastTier, knownTruffleTypes, hostSuites);
+                        firstTier, lastTier, knownTruffleTypes, hostSuites, openCanCallTruffleRuntimeScope);
 
         HotSpotTruffleCompilerImpl compiler = new HotSpotTruffleCompilerImpl(graalRuntime, compilerConfig);
 
@@ -184,7 +198,7 @@ public final class HotSpotTruffleCompilerImpl extends TruffleCompilerImpl implem
         Backend backend = createTruffleBackend(hotspotGraalRuntime, options, knownTruffleTypes, forceConfigName);
         Suites suites = backend.getSuites().getDefaultSuites(options, backend.getTarget().arch);
         LIRSuites lirSuites = backend.getSuites().getDefaultLIRSuites(options);
-        return new TruffleTierConfiguration(peConfig, backend, backend.getProviders(), suites, lirSuites, knownTruffleTypes);
+        return new TruffleTierConfiguration(peConfig, backend, backend.getProviders(), suites, lirSuites, knownTruffleTypes, null);
     }
 
     private static String resolveConfigurationName(HotSpotGraalRuntimeProvider hotspotGraalRuntime, OptionValues options, String forceConfigName) {
@@ -375,8 +389,8 @@ public final class HotSpotTruffleCompilerImpl extends TruffleCompilerImpl implem
         new HotSpotGraphBuilderInstance(lastTierProviders, newBuilderConfig, OptimisticOptimizations.ALL, null).apply(graph);
 
         PhaseSuite<HighTierContext> graphBuilderSuite = getGraphBuilderSuite(codeCache, backend.getSuites());
-        return compileGraph(graph, javaMethod, lastTierProviders, backend, graphBuilderSuite, OptimisticOptimizations.ALL, graph.getProfilingInfo(), newSuites, tier.lirSuites(),
-                        new CompilationResult(compilationId), CompilationResultBuilderFactory.Default, resultFactory, false);
+        return compile(new GraalCompiler.Request<>(graph, javaMethod, lastTierProviders, backend, graphBuilderSuite, OptimisticOptimizations.ALL, graph.getProfilingInfo(), newSuites, tier.lirSuites(),
+                        new CompilationResult(compilationId), CompilationResultBuilderFactory.Default, resultFactory, null, false));
     }
 
     @Override

@@ -24,10 +24,9 @@
  */
 package jdk.graal.compiler.hotspot.meta;
 
-import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 import static jdk.graal.compiler.hotspot.HotSpotGraalServices.isIntrinsicAvailable;
+import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.EconomicSet;
 import org.graalvm.collections.MapCursor;
 import org.graalvm.collections.Pair;
+
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.debug.TTY;
 import jdk.graal.compiler.graph.Node;
@@ -49,7 +49,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.tiers.CompilerConfiguration;
 import jdk.graal.compiler.replacements.nodes.MacroInvokable;
-
+import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.hotspot.VMIntrinsicMethod;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
@@ -59,7 +59,6 @@ import jdk.vm.ci.meta.ResolvedJavaType;
  */
 final class HotSpotInvocationPlugins extends InvocationPlugins {
     private final HotSpotGraalRuntimeProvider graalRuntime;
-    private final GraalHotSpotVMConfig config;
     private final UnimplementedGraalIntrinsics unimplementedIntrinsics;
     private EconomicMap<String, Integer> missingIntrinsicMetrics;
 
@@ -73,11 +72,10 @@ final class HotSpotInvocationPlugins extends InvocationPlugins {
 
     private final EconomicMap<String, EconomicSet<MethodKey>> disabledIntrinsics = EconomicMap.create();
 
-    HotSpotInvocationPlugins(HotSpotGraalRuntimeProvider graalRuntime, GraalHotSpotVMConfig config, CompilerConfiguration compilerConfiguration, OptionValues options) {
+    HotSpotInvocationPlugins(HotSpotGraalRuntimeProvider graalRuntime, GraalHotSpotVMConfig config, CompilerConfiguration compilerConfiguration, OptionValues options, TargetDescription target) {
         this.graalRuntime = graalRuntime;
-        this.config = config;
         if (Options.WarnMissingIntrinsic.getValue(options)) {
-            this.unimplementedIntrinsics = new UnimplementedGraalIntrinsics(graalRuntime.getTarget().arch);
+            this.unimplementedIntrinsics = new UnimplementedGraalIntrinsics(target.arch);
         } else {
             this.unimplementedIntrinsics = null;
         }
@@ -100,22 +98,6 @@ final class HotSpotInvocationPlugins extends InvocationPlugins {
     }
 
     @Override
-    protected void register(Type declaringClass, InvocationPlugin plugin, boolean allowOverwrite) {
-        if (!config.usePopCountInstruction) {
-            if ("bitCount".equals(plugin.name)) {
-                GraalError.guarantee(declaringClass.equals(Integer.class) || declaringClass.equals(Long.class), declaringClass.getTypeName());
-                return;
-            }
-        }
-        if (!config.useUnalignedAccesses) {
-            if (plugin.name.endsWith("Unaligned") && declaringClass.getTypeName().equals("jdk.internal.misc.Unsafe")) {
-                return;
-            }
-        }
-        super.register(declaringClass, plugin, allowOverwrite);
-    }
-
-    @Override
     public void checkNewNodes(GraphBuilderContext b, InvocationPlugin plugin, NodeIterable<Node> newNodes) {
         for (Node node : newNodes) {
             if (node instanceof MacroInvokable) {
@@ -135,17 +117,15 @@ final class HotSpotInvocationPlugins extends InvocationPlugins {
 
     @Override
     public boolean canBeIntrinsified(ResolvedJavaType declaringClass) {
-        boolean ok = false;
         for (Predicate<ResolvedJavaType> p : intrinsificationPredicates) {
-            ok |= p.test(declaringClass);
-        }
-        if (!ok) {
-            if (graalRuntime.isBootstrapping()) {
-                throw GraalError.shouldNotReachHere("Class declaring a method for which a Graal intrinsic is available should be trusted for intrinsification: " + declaringClass.toJavaName()); // ExcludeFromJacocoGeneratedReport
+            if (p.test(declaringClass)) {
+                return true;
             }
-            return false;
         }
-        return true;
+        if (graalRuntime.isBootstrapping()) {
+            throw GraalError.shouldNotReachHere("Class declaring a method for which a Graal intrinsic is available should be trusted for intrinsification: " + declaringClass.toJavaName()); // ExcludeFromJacocoGeneratedReport
+        }
+        return false;
     }
 
     @Override

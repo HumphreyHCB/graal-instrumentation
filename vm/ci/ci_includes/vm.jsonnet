@@ -1,4 +1,5 @@
 local utils = import '../../../ci/ci_common/common-utils.libsonnet';
+local vm_common_runspec = import '../ci_common/common-runspec.jsonnet';
 local vm_common = import '../ci_common/common.jsonnet';
 local vm_common_bench = import '../ci_common/common-bench.jsonnet';
 local vm = import 'vm.jsonnet';
@@ -12,6 +13,7 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
     local jdk = graal_common.labsjdkLatest;
     jdk + vm_common.vm_env_mixin(std.toString(jdk.jdk_version)),
 
+  deploy_espress_standalone: false,
   vm_java_21_llvm:: self.vm_java_21 + graal_common['labsjdk-ce-21-llvm'],
   vm_java_Latest_llvm:: self.vm_java_Latest + graal_common['labsjdk-ce-latest-llvm'],
 
@@ -23,7 +25,7 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
   libgraal_env: 'libgraal',
   custom_vm: {},
   vm_profiles:: [],
-  collect_profiles():: [],
+  collect_profiles(mx_prefix=vm_common.mx_vm_common):: [],
 
   mx_cmd_base_no_env: ['mx'],
 
@@ -42,8 +44,7 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
   vm_notifier_daily: vm_common.vm_base('linux', 'amd64', 'daily', deploy=true) + {
     name: 'daily-deploy-vm-notifier-linux-amd64',
     packages+: {
-      curl: '>=7.50.1',
-      git: '>=1.8.3',
+      curl: '==7.50.1',
     },
     run+: [
       ['test', ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], '!=', 'master', '||'] + self.ci_resources.infra.notify_releaser_service,
@@ -68,8 +69,7 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
   vm_notifier_weekly: vm_common.vm_base('linux', 'amd64', 'weekly', deploy=true) + {
     name: 'weekly-deploy-vm-notifier-linux-amd64',
     packages+: {
-      curl: '>=7.50.1',
-      git: '>=1.8.3',
+      curl: '==7.50.1',
     },
     run+: [
       ['test', ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], '!=', 'master', '||'] + self.ci_resources.infra.notify_indexer_service('java21', 'ce'),
@@ -81,18 +81,8 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
       'weekly-deploy-vm-base-java21-linux-aarch64',
       'weekly-deploy-vm-base-java21-linux-amd64',
       'weekly-deploy-vm-base-java21-windows-amd64',
-      'weekly-deploy-vm-standalones-java21-darwin-aarch64',
-      'weekly-deploy-vm-standalones-java21-darwin-amd64',
-      'weekly-deploy-vm-standalones-java21-linux-aarch64',
-      'weekly-deploy-vm-standalones-java21-linux-amd64',
-      'weekly-deploy-vm-standalones-java21-windows-amd64',
     ],
     notify_groups:: ['deploy'],
-  },
-
-  default_diskspace_required(os, arch, large): {
-    # `os` and `arch` are not yet used
-    'diskspace_required': if (large) then '30GB' else '25GB',
   },
 
   maven_deploy_base_functions: {
@@ -128,7 +118,7 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
      ],
      name: 'gate-vm-unittest-windows-amd64',
     }, ["sdk", "truffle", "vm"]),
-    self.vm_java_Latest + vm_common.vm_base('linux', 'amd64', 'gate') + vm_common.sulong + {
+    self.vm_java_Latest + vm_common.vm_base('linux', 'amd64', 'gate') + graal_common.deps.sulong + {
      environment+: {
        DYNAMIC_IMPORTS: '/tools,/substratevm,/sulong',
        NATIVE_IMAGES: 'polyglot',
@@ -205,65 +195,26 @@ local graal_common = import '../../../ci/ci_common/common.jsonnet';
 
 
     #
-    # Deploy GraalVM Base and Standalones
+    # Deploy Truffle Languages Standalones
     # NOTE: After adding or removing deploy jobs, please make sure you modify ce-release-artifacts.json accordingly.
     #
 
     # Linux/AMD64
-    # - JDK-Latest
-    vm_common.deploy_vm_base_javaLatest_linux_amd64,
     vm_common.deploy_vm_standalones_javaLatest_linux_amd64,
-    # - JDK21
-    vm_common.deploy_vm_base_java21_linux_amd64,
-    vm_common.deploy_vm_standalones_java21_linux_amd64,
-
     # Linux/AARCH64
-    # - JDK-Latest
-    vm_common.deploy_vm_base_javaLatest_linux_aarch64,
     vm_common.deploy_vm_standalones_javaLatest_linux_aarch64,
-    # - JDK21
-    vm_common.deploy_vm_base_java21_linux_aarch64,
-    vm_common.deploy_vm_standalones_java21_linux_aarch64,
-
     # Darwin/AMD64
-    # - JDK-Latest
-    vm_common.deploy_vm_base_javaLatest_darwin_amd64,
     vm_common.deploy_vm_standalones_javaLatest_darwin_amd64,
-    # - JDK21
-    vm_common.deploy_vm_base_java21_darwin_amd64,
-        vm_common.deploy_vm_standalones_java21_darwin_amd64,
-
     # Darwin/AARCH64
-    # - JDK-Latest
-    vm_common.deploy_vm_base_javaLatest_darwin_aarch64,
     vm_common.deploy_vm_standalones_javaLatest_darwin_aarch64,
-    # - JDK21
-    vm_common.deploy_vm_base_java21_darwin_aarch64,
-    vm_common.deploy_vm_standalones_java21_darwin_aarch64,
-
     # Windows/AMD64
-    # - JDK-Latest
-    vm_common.deploy_vm_base_javaLatest_windows_amd64,
     vm_common.deploy_vm_standalones_javaLatest_windows_amd64,
-    # - JDK21
-    vm_common.deploy_vm_base_java21_windows_amd64,
-    vm_common.deploy_vm_standalones_java21_windows_amd64,
-
-    #
-    # Deploy the GraalVM Espresso image (GraalVM Base + espresso)
-    #
-    vm_common.deploy_vm_espresso_java21_linux_amd64,
-    vm_common.deploy_vm_espresso_java21_linux_aarch64,
-    vm_common.deploy_vm_espresso_java21_darwin_amd64,
-    vm_common.deploy_vm_espresso_java21_darwin_aarch64,
-    vm_common.deploy_vm_espresso_java21_windows_amd64,
-
     # Trigger the releaser service and notify the indexer
     self.vm_notifier_daily,
     self.vm_notifier_weekly,
   ],
 
-  builds: [vm_common.verify_name(b) for b in vm_common.builds + vm_common_bench.builds + vm_bench.builds + vm_native.builds + utils.add_defined_in(builds, std.thisFile)],
+  builds: [vm_common.verify_name(b) for b in vm_common.builds + vm_common_runspec.builds + vm_common_bench.builds + vm_bench.builds + vm_native.builds + utils.add_defined_in(builds, std.thisFile)],
 
   compiler_gate:: (import '../../../compiler/ci/ci_common/gate.jsonnet')
 }

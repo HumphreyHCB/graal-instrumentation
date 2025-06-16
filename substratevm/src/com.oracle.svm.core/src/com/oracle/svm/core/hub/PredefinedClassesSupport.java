@@ -27,34 +27,34 @@ package com.oracle.svm.core.hub;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.ProtectionDomain;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
-import com.oracle.svm.core.reflect.serialize.SerializationSupport;
-import jdk.graal.compiler.java.LambdaUtils;
-import jdk.internal.org.objectweb.asm.ClassReader;
-import jdk.internal.org.objectweb.asm.ClassVisitor;
-import jdk.internal.org.objectweb.asm.ClassWriter;
-import jdk.internal.org.objectweb.asm.MethodVisitor;
-import jdk.internal.org.objectweb.asm.Opcodes;
 import org.graalvm.collections.EconomicMap;
-import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.options.Option;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
+import com.oracle.svm.core.reflect.serialize.SerializationSupport;
 import com.oracle.svm.core.util.ImageHeapMap;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.shaded.org.objectweb.asm.ClassReader;
+import com.oracle.svm.shaded.org.objectweb.asm.ClassVisitor;
+import com.oracle.svm.shaded.org.objectweb.asm.ClassWriter;
+import com.oracle.svm.shaded.org.objectweb.asm.MethodVisitor;
+import com.oracle.svm.shaded.org.objectweb.asm.Opcodes;
 import com.oracle.svm.util.ClassUtil;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
+
+import jdk.graal.compiler.api.replacements.Fold;
+import jdk.graal.compiler.java.LambdaUtils;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.util.Digest;
 
 public final class PredefinedClassesSupport {
     public static final class Options {
@@ -68,6 +68,8 @@ public final class PredefinedClassesSupport {
 
     public static final String ENABLE_BYTECODES_OPTION = SubstrateOptionsParser.commandArgument(Options.SupportPredefinedClasses, "+");
 
+    @Platforms(Platform.HOSTED_ONLY.class) private Consumer<Class<?>> validator = null;
+
     @Fold
     public static boolean supportsBytecodes() {
         return Options.SupportPredefinedClasses.getValue();
@@ -78,27 +80,9 @@ public final class PredefinedClassesSupport {
         return supportsBytecodes() && !singleton().predefinedClassesByHash.isEmpty();
     }
 
-    public static RuntimeException throwNoBytecodeClasses() {
-        if (!supportsBytecodes()) {
-            throw VMError.unsupportedFeature("Loading classes from bytecodes at runtime has been disabled. Enable with option: " + ENABLE_BYTECODES_OPTION);
-        }
-        assert !hasBytecodeClasses();
-        throw VMError.unsupportedFeature("No classes have been predefined during the image build to load from bytecodes at runtime.");
-    }
-
     @Fold
     static PredefinedClassesSupport singleton() {
         return ImageSingletons.lookup(PredefinedClassesSupport.class);
-    }
-
-    public static String hash(byte[] classData, int offset, int length) {
-        try { // Only for lookups, cryptographic properties are irrelevant
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(classData, offset, length);
-            return SubstrateUtil.toHex(md.digest());
-        } catch (NoSuchAlgorithmException e) {
-            throw VMError.shouldNotReachHere(e);
-        }
     }
 
     @Platforms(Platform.HOSTED_ONLY.class) //
@@ -107,13 +91,21 @@ public final class PredefinedClassesSupport {
     private final ReentrantLock lock = new ReentrantLock();
 
     /** Predefined classes by hash. */
-    private final EconomicMap<String, Class<?>> predefinedClassesByHash = ImageHeapMap.create();
+    private final EconomicMap<String, Class<?>> predefinedClassesByHash = ImageHeapMap.create("predefinedClassesByHash");
 
     /** Predefined classes which have already been loaded, by name. */
     private final EconomicMap<String, Class<?>> loadedClassesByName = EconomicMap.create();
 
     @Platforms(Platform.HOSTED_ONLY.class)
+    public void setRegistrationValidator(Consumer<Class<?>> consumer) {
+        validator = consumer;
+    }
+
+    @Platforms(Platform.HOSTED_ONLY.class)
     public static void registerClass(String hash, Class<?> clazz) {
+        if (singleton().validator != null) {
+            singleton().validator.accept(clazz);
+        }
         Class<?> existing = singleton().predefinedClassesByHash.putIfAbsent(hash, clazz);
         if (existing != clazz) {
             VMError.guarantee(existing == null, "Can define only one class per hash");
@@ -152,7 +144,7 @@ public final class PredefinedClassesSupport {
          * lambda-class information from the capturing class.
          */
         if (Serializable.class.isAssignableFrom(lambdaClass) &&
-                        SerializationSupport.isLambdaCapturingClassRegistered(LambdaUtils.capturingClass(lambdaClass.getName()))) {
+                        SerializationSupport.currentLayer().isLambdaCapturingClassRegistered(LambdaUtils.capturingClass(lambdaClass.getName()))) {
             try {
                 Method serializeLambdaMethod = lambdaClass.getDeclaredMethod("writeReplace");
                 RuntimeReflection.register(serializeLambdaMethod);
@@ -168,6 +160,9 @@ public final class PredefinedClassesSupport {
      */
     @Platforms(Platform.HOSTED_ONLY.class)
     public static void registerClass(Class<?> clazz) {
+        if (singleton().validator != null) {
+            singleton().validator.accept(clazz);
+        }
         singleton().predefinedClasses.add(clazz);
     }
 
@@ -176,22 +171,14 @@ public final class PredefinedClassesSupport {
         return singleton().predefinedClasses.contains(clazz);
     }
 
-    public static Class<?> loadClass(ClassLoader classLoader, String expectedName, byte[] data, int offset, int length, ProtectionDomain protectionDomain) {
-        if (!hasBytecodeClasses()) {
-            throw throwNoBytecodeClasses();
-        }
-        String hash = hash(data, offset, length);
+    public static Class<?> knownClass(byte[] data, int offset, int length) {
+        String hash = getHash(data, offset, length);
         Class<?> clazz = singleton().predefinedClassesByHash.get(hash);
-        if (clazz == null) {
-            String name = (expectedName != null) ? expectedName : "(name not specified)";
-            throw VMError.unsupportedFeature("Defining a class from new bytecodes at runtime is not supported. Class " + name +
-                            " with hash " + hash + " was not provided during the image build. Please see BuildConfiguration.md.");
-        }
-        if (expectedName != null && !expectedName.equals(clazz.getName())) {
-            throw new NoClassDefFoundError(clazz.getName() + " (wrong name: " + expectedName + ')');
-        }
-        loadClass(classLoader, protectionDomain, clazz);
         return clazz;
+    }
+
+    public static String getHash(byte[] data, int offset, int length) {
+        return Digest.digest(data, offset, length);
     }
 
     public static void loadClass(ClassLoader classLoader, ProtectionDomain protectionDomain, Class<?> clazz) {

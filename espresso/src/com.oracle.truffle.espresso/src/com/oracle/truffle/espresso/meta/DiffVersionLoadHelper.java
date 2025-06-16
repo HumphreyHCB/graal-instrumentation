@@ -20,17 +20,16 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
 package com.oracle.truffle.espresso.meta;
 
-import com.oracle.truffle.espresso.descriptors.Symbol;
-import com.oracle.truffle.espresso.descriptors.Symbol.Name;
-import com.oracle.truffle.espresso.descriptors.Symbol.Signature;
-import com.oracle.truffle.espresso.descriptors.Symbol.Type;
+import com.oracle.truffle.espresso.classfile.JavaVersion.VersionRange;
+import com.oracle.truffle.espresso.classfile.descriptors.Name;
+import com.oracle.truffle.espresso.classfile.descriptors.Signature;
+import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
+import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
-import com.oracle.truffle.espresso.runtime.JavaVersion.VersionRange;
 
 final class DiffVersionLoadHelper {
 
@@ -84,9 +83,9 @@ final class DiffVersionLoadHelper {
             return null;
         }
         if (klass == null) {
-            return null;
+            throw EspressoError.shouldNotReachHere("Missing klass for method " + name + ":" + signature);
         }
-        return klass.lookupDeclaredMethod(name, signature);
+        return klass.requireDeclaredMethod(name, signature);
     }
 
     DiffVersionLoadHelper field(VersionRange range, Symbol<Name> n, Symbol<Type> t) {
@@ -104,25 +103,24 @@ final class DiffVersionLoadHelper {
         return klass.requireDeclaredField(name, type);
     }
 
-    Field maybeHiddenfield(ObjectKlass klass) {
-        if (name == null || type == null) {
-            throw EspressoError.shouldNotReachHere();
-        }
-        Field f = klass.lookupDeclaredField(name, type);
-        if (f == null) {
-            return klass.requireHiddenField(name);
-        }
-        return f;
-    }
-
     Field notRequiredField(ObjectKlass klass) {
         if (name == null || type == null) {
             return null;
         }
         if (klass == null) {
-            return null;
+            throw EspressoError.shouldNotReachHere("Missing klass for field " + name + ":" + type);
         }
-        return klass.lookupDeclaredField(name, type);
+        return klass.requireDeclaredField(name, type);
     }
 
+    Field maybeHiddenfield(ObjectKlass klass) {
+        if (name == null || type == null) {
+            return null;
+        }
+        Field f = klass.lookupDeclaredField(name, type);
+        if (f != null) {
+            return f;
+        }
+        return klass.requireHiddenField(name);
+    }
 }

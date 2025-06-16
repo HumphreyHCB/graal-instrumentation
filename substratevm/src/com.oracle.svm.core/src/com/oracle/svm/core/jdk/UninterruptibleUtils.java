@@ -30,13 +30,13 @@ import org.graalvm.word.Pointer;
 import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordBase;
-import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
+import jdk.graal.compiler.word.Word;
 import jdk.internal.misc.Unsafe;
 
 /**
@@ -225,7 +225,7 @@ public class UninterruptibleUtils {
         protected final AtomicLong value;
 
         /**
-         * Creates a new AtomicWord with initial value {@link WordFactory#zero}.
+         * Creates a new AtomicWord with initial value {@link Word#zero}.
          */
         public AtomicWord() {
             value = new AtomicLong(0L);
@@ -238,7 +238,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final T get() {
-            return WordFactory.unsigned(value.get());
+            return Word.unsigned(value.get());
         }
 
         /**
@@ -259,7 +259,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final T getAndSet(T newValue) {
-            return WordFactory.unsigned(value.getAndSet(newValue.rawValue()));
+            return Word.unsigned(value.getAndSet(newValue.rawValue()));
         }
 
         /**
@@ -292,7 +292,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final UnsignedWord getAndAdd(UnsignedWord delta) {
-            return WordFactory.unsigned(value.getAndAdd(delta.rawValue()));
+            return Word.unsigned(value.getAndAdd(delta.rawValue()));
         }
 
         /**
@@ -303,7 +303,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final UnsignedWord addAndGet(UnsignedWord delta) {
-            return WordFactory.unsigned(value.addAndGet(delta.rawValue()));
+            return Word.unsigned(value.addAndGet(delta.rawValue()));
         }
 
         /**
@@ -314,7 +314,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final UnsignedWord getAndSubtract(UnsignedWord delta) {
-            return WordFactory.unsigned(value.getAndAdd(-delta.rawValue()));
+            return Word.unsigned(value.getAndAdd(-delta.rawValue()));
         }
 
         /**
@@ -325,7 +325,7 @@ public class UninterruptibleUtils {
          */
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public final UnsignedWord subtractAndGet(UnsignedWord delta) {
-            return WordFactory.unsigned(value.addAndGet(-delta.rawValue()));
+            return Word.unsigned(value.addAndGet(-delta.rawValue()));
         }
     }
 
@@ -346,7 +346,7 @@ public class UninterruptibleUtils {
 
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public T get() {
-            return WordFactory.pointer(value);
+            return Word.pointer(value);
         }
 
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -427,8 +427,27 @@ public class UninterruptibleUtils {
             return (a >= b) ? a : b;
         }
 
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static double max(double a, double b) {
+            if (a != a) {
+                return a;   // a is NaN
+            }
+            if ((a == 0.0d) && (b == 0.0d) && (Double.doubleToRawLongBits(a) == Double.doubleToRawLongBits(-0.0d))) {
+                // Raw conversion ok since NaN can't map to -0.0.
+                return b;
+            }
+            return (a >= b) ? a : b;
+        }
+
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         public static int clamp(int value, int min, int max) {
+            assert min <= max;
+            return min(max(value, min), max);
+        }
+
+        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+        public static long clamp(long value, long min, long max) {
+            assert min <= max;
             return min(max(value, min), max);
         }
 
@@ -453,6 +472,24 @@ public class UninterruptibleUtils {
             long floor = floorToLong(a);
             return a > floor ? floor + 1 : floor;
         }
+    }
+
+    public static class NumUtil {
+
+        /**
+         * Determines if a given {@code long} value is the range of signed int values.
+         */
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static boolean isInt(long l) {
+            return (int) l == l;
+        }
+
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static int safeToInt(long v) {
+            assert isInt(v);
+            return (int) v;
+        }
+
     }
 
     public static class Byte {
@@ -712,5 +749,40 @@ public class UninterruptibleUtils {
     public interface CharReplacer {
         @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
         char replace(char val);
+    }
+
+    public static final class ReplaceDotWithSlash implements CharReplacer {
+        @Override
+        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+        public char replace(char ch) {
+            if (ch == '.') {
+                return '/';
+            }
+            return ch;
+        }
+    }
+
+    public static class CodeUtil {
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static long signExtend(long value, int inputBits) {
+            if (inputBits < 64) {
+                if ((value >>> (inputBits - 1) & 1) == 1) {
+                    return value | (-1L << inputBits);
+                } else {
+                    return value & ~(-1L << inputBits);
+                }
+            } else {
+                return value;
+            }
+        }
+
+        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+        public static long zeroExtend(long value, int inputBits) {
+            if (inputBits < 64) {
+                return value & ~(-1L << inputBits);
+            } else {
+                return value;
+            }
+        }
     }
 }

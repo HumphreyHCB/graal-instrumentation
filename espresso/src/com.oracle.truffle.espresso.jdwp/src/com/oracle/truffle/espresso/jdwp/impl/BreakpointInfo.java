@@ -53,11 +53,13 @@ public interface BreakpointInfo {
 
     long getBci();
 
-    boolean isLineBreakpoint();
-
     boolean isExceptionBreakpoint();
 
     void addSuspendPolicy(byte suspendPolicy);
 
     byte getSuspendPolicy();
+
+    default void dispose() {
+        // do nothing by default
+    }
 }

@@ -43,7 +43,7 @@
          "--kill-with-sigquit",
          "gate",
          "--strict-mode",
-         "--extra-vm-argument=-Djdk.graal.DumpOnError=true -Djdk.graal.PrintGraphFile=true -Djdk.graal.PrintBackendCFG=true -DGCUtils.saveHeapDumpTo=." +
+         "--extra-vm-argument=-Djdk.graal.DumpOnError=true -Djdk.graal.PrintGraph=File -Djdk.graal.PrintBackendCFG=true -DGCUtils.saveHeapDumpTo=. -Djdk.internal.vm.TranslatedException.debug=true" +
            (if extra_vm_args == "" then "" else " " + extra_vm_args)
       ] + (if extra_unittest_args != "" then [
         "--extra-unittest-argument=" + extra_unittest_args,
@@ -58,6 +58,9 @@
     } else {},
     logs+: [
         "*/gcutils_heapdump_*.hprof.gz",
+    ],
+    catch_files+: [
+      "Report is located at: (?P<filename>.+\\.txt)"
     ],
     targets: ["gate"],
     python_version: "3"
@@ -83,17 +86,17 @@
     timelimit: "3:00:00",
   },
 
-  test:: s.base(no_warning_as_error=true),
+  test:: s.base(no_warning_as_error=true, extra_vm_args="-Djdk.graal.DetailedAsserts=true"),
   test_zgc:: s.base(no_warning_as_error=true, extra_vm_args="-XX:+UseZGC"),
   test_serialgc:: s.base(no_warning_as_error=true, extra_vm_args="-XX:+UseSerialGC"),
-
 
   jacoco_gate_args:: ["--jacoco-omit-excluded", "--jacoco-relativize-paths", "--jacoco-omit-src-gen", "--jacocout", "coverage", "--jacoco-format", "lcov"],
   upload_coverage:: ["mx", "sversions", "--print-repositories", "--json", "|", "coverage-uploader.py", "--associated-repos", "-"],
 
   coverage_base(ctw):: s.base(tags="build,%s" % if ctw then "ctw" else "coverage",
                               cmd_suffix=s.jacoco_gate_args,
-                              extra_vm_args=if !ctw then "" else "-DCompileTheWorld.MaxClasses=5000" /*GR-23372*/) +
+                              # Leaving assertions enabled slows down ctw enough to cause timeouts, and libgraal does not include assertions anyway.
+                              extra_vm_args=if !ctw then "" else "-da -DCompileTheWorld.MaxClasses=5000 -Djdk.graal.CompilationFailureAction=Print" /*GR-23372 for MaxClasses*/) +
   {
     teardown+: [
       s.upload_coverage,
@@ -119,7 +122,8 @@
                   "-Dtck.inlineVerifierInstrument=false",
     extra_unittest_args="--verbose truffle") + {
       environment+: {"TRACE_COMPILATION": "true"},
-      logs+: ["*/*_compilation.log"]
+      logs+: ["*/*_compilation.log"],
+      components+: ["truffle"],
     },
 
   truffle_xcomp_zgc:: s.base("build,unittest",
@@ -130,7 +134,8 @@
                   "-XX:+UseZGC",
     extra_unittest_args="--verbose truffle") + {
       environment+: {"TRACE_COMPILATION": "true"},
-      logs+: ["*/*_compilation.log"]
+      logs+: ["*/*_compilation.log"],
+      components+: ["truffle"],
     },
 
   truffle_xcomp_serialgc:: s.base("build,unittest",
@@ -141,7 +146,8 @@
                   "-XX:+UseSerialGC",
     extra_unittest_args="--verbose truffle") + {
       environment+: {"TRACE_COMPILATION": "true"},
-      logs+: ["*/*_compilation.log"]
+      logs+: ["*/*_compilation.log"],
+      components+: ["truffle"],
     },
 
   ctw:: s.base("build,ctw", no_warning_as_error=true),
@@ -160,7 +166,7 @@
   bootstrap_full_zgc:: s.base("build,bootstrapfullverify", no_warning_as_error=true, extra_vm_args="-XX:+UseZGC"),
   bootstrap_economy:: s.base("build,bootstrapeconomy", no_warning_as_error=true, extra_vm_args="-Djdk.graal.CompilerConfiguration=economy"),
 
-  style:: c.deps.eclipse + c.deps.jdt + s.base("style,fullbuild,javadoc") + galahad.include,
+  style:: c.deps.eclipse + c.deps.jdt + c.deps.spotbugs + s.base("style,fullbuild,javadoc") + galahad.exclude,
 
   avx3:: {
     capabilities+: ["avx512"],
@@ -201,29 +207,38 @@
 
   jdk_latest:: "Latest",
 
-  # This map defines the builders that run as gates. Each key in this map
-  # must correspond to the name of a build created by `make_build`.
-  # Each value in this map is an object that overrides or extends the
-  # fields of the denoted build.
-  local gates = {
-    "gate-compiler-test-labsjdk-latest-linux-amd64": t("1:00:00") + c.mach5_target,
+  # Filters out the non-style gate jobs if in CE
+  as_gates(gate_jobs):: if config.graalvm_edition == "ce" then {
+    [name]: gate_jobs[name]
+    for name in std.objectFields(gate_jobs) if utils.contains(name, "style")
+  } else gate_jobs,
+
+  # Converts the non-style gate jobs to dailies if in CE
+  as_dailies(gate_jobs):: if config.graalvm_edition == "ce" then {
+    # Force daily timelimit (assumes it is greater than any specified gate timelimit)
+    [std.strReplace(name, "gate", "daily")]: gate_jobs[name] + {timelimit: $.daily.timelimit}
+    for name in std.objectFields(gate_jobs) if !utils.contains(name, "style")
+  } else {},
+
+  # Candidates for gate jobs. In CE, these will be dailies instead of gates.
+  local gate_jobs = {
+    "gate-compiler-test-labsjdk-latest-linux-amd64": t("1:00:00"),
     "gate-compiler-test-labsjdk-latest-linux-aarch64": t("1:50:00") + s.avoid_xgene3,
-    "gate-compiler-test-labsjdk-latest-darwin-amd64": t("1:00:00") + c.mach5_target + s.ram16gb,
+    "gate-compiler-test-labsjdk-latest-darwin-amd64": t("1:00:00") + s.ram16gb,
     "gate-compiler-test-labsjdk-latest-darwin-aarch64": t("1:00:00"),
     "gate-compiler-test-labsjdk-latest-windows-amd64": t("1:30:00"),
-    "gate-compiler-test_zgc-labsjdk-latest-linux-amd64": t("1:00:00") + c.mach5_target,
+    "gate-compiler-test_zgc-labsjdk-latest-linux-amd64": t("1:00:00"),
     "gate-compiler-test_zgc-labsjdk-latest-linux-aarch64": t("1:50:00") + s.avoid_xgene3,
-    "gate-compiler-test_zgc-labsjdk-latest-darwin-amd64": t("1:00:00") + c.mach5_target + s.ram16gb,
+    "gate-compiler-test_zgc-labsjdk-latest-darwin-amd64": t("1:00:00") + s.ram16gb,
     "gate-compiler-test_zgc-labsjdk-latest-darwin-aarch64": t("1:00:00"),
 
     # Style jobs need to stay on a JDK compatible with all the style
     # checking tools (SpotBugs, Checkstyle, Eclipse formatter etc).
-    "gate-compiler-style-labsjdk-21-linux-amd64": t("45:00"),
-    "gate-compiler-build-labsjdk-latest-linux-amd64": t("25:00"),
+    "gate-compiler-style-labsjdk-latest-linux-amd64": t("45:00"),
 
-    "gate-compiler-ctw-labsjdk-latest-linux-amd64": c.mach5_target,
+    "gate-compiler-ctw-labsjdk-latest-linux-amd64": {},
     "gate-compiler-ctw-labsjdk-latest-windows-amd64": t("1:50:00"),
-    "gate-compiler-ctw_zgc-labsjdk-latest-linux-amd64": c.mach5_target,
+    "gate-compiler-ctw_zgc-labsjdk-latest-linux-amd64": {},
 
     "gate-compiler-ctw_economy-labsjdk-latest-linux-amd64": {},
     "gate-compiler-ctw_economy-labsjdk-latest-windows-amd64": t("1:50:00"),
@@ -232,13 +247,14 @@
     "gate-compiler-benchmarktest_zgc-labsjdk-latest-linux-amd64": {},
 
     "gate-compiler-truffle_xcomp-labsjdk-latest-linux-amd64": t("1:30:00"),
-    "gate-compiler-truffle_xcomp_zgc-labsjdk-latest-linux-amd64": t("1:30:00"),
-
-    "gate-compiler-bootstrap_lite-labsjdk-latest-darwin-amd64": t("1:00:00") + c.mach5_target,
-
-    "gate-compiler-bootstrap_full-labsjdk-latest-linux-amd64": s.many_cores + c.mach5_target,
-    "gate-compiler-bootstrap_full_zgc-labsjdk-latest-linux-amd64": s.many_cores + c.mach5_target
+    "gate-compiler-truffle_xcomp_zgc-labsjdk-latest-linux-amd64": t("1:30:00")
   },
+
+  # This map defines the builders that run as gates. Each key in this map
+  # must correspond to the name of a build created by `make_build`.
+  # Each value in this map is an object that overrides or extends the
+  # fields of the denoted build.
+  local gates = $.as_gates(gate_jobs),
 
   # This map defines the builders that run daily. Each key in this map
   # must be the name of a build created by `make_build` (or be the prefix
@@ -253,7 +269,12 @@
     "daily-compiler-ctw_economy-labsjdk-latest-linux-aarch64": {},
     "daily-compiler-ctw_economy-labsjdk-latest-darwin-amd64": {},
     "daily-compiler-ctw_economy-labsjdk-latest-darwin-aarch64": {},
-  },
+
+    "daily-compiler-bootstrap_lite-labsjdk-latest-darwin-amd64": {},
+
+    "daily-compiler-bootstrap_full-labsjdk-latest-linux-amd64": s.many_cores,
+    "daily-compiler-bootstrap_full_zgc-labsjdk-latest-linux-amd64": s.many_cores
+  } + $.as_dailies(gate_jobs),
 
   # This map defines the builders that run weekly. Each key in this map
   # must be the name of a build created by `make_build` (or be the prefix
@@ -264,6 +285,7 @@
     "weekly-compiler-ctw_phaseplan_fuzzing-labsjdk-latest-linux-amd64": {
       notify_groups: [],
       notify_emails: ["gergo.barany@oracle.com"],
+      logs+: ["*/graal_dumps/*/*_failure.log"],
     },
 
     "weekly-compiler-test_vec16-labsjdk-latest-linux-amd64": {},
@@ -275,17 +297,18 @@
       notify_emails: ["gergo.barany@oracle.com"],
     },
 
-    "weekly-compiler-benchmarktest-labsjdk-latestDebug-linux-amd64": t("3:00:00"),
+    "weekly-compiler-benchmarktest-labsjdk-latestDebug-linux-amd64": t("6:00:00"),
+    "weekly-compiler-benchmarktest-labsjdk-latestDebug-darwin-aarch64": t("6:00:00"),
 
     "weekly-compiler-coverage*": {},
 
-    "weekly-compiler-test_serialgc-labsjdk-latest-linux-amd64": t("1:30:00") + c.mach5_target,
-    "weekly-compiler-test_serialgc-labsjdk-latest-linux-aarch64": t("1:50:00"),
-    "weekly-compiler-test_serialgc-labsjdk-latest-darwin-amd64": t("1:30:00") + c.mach5_target,
-    "weekly-compiler-test_serialgc-labsjdk-latest-darwin-aarch64": t("1:30:00"),
+    "weekly-compiler-test_serialgc-labsjdk-latest-linux-amd64": {},
+    "weekly-compiler-test_serialgc-labsjdk-latest-linux-aarch64": {},
+    "weekly-compiler-test_serialgc-labsjdk-latest-darwin-amd64": {},
+    "weekly-compiler-test_serialgc-labsjdk-latest-darwin-aarch64": {},
 
-    "weekly-compiler-truffle_xcomp_serialgc-labsjdk-latest-linux-amd64": t("1:30:00"),
-    "weekly-compiler-truffle_xcomp_serialgc-labsjdk-latest-linux-aarch64": t("1:30:00"),
+    "weekly-compiler-truffle_xcomp_serialgc-labsjdk-latest-linux-amd64": {},
+    "weekly-compiler-truffle_xcomp_serialgc-labsjdk-latest-linux-aarch64": {},
   },
 
   # This map defines overrides and field extensions for monthly builds.
@@ -384,7 +407,7 @@
   ],
 
   # Builds run on all platforms (platform = JDK + OS + ARCH)
-  local all_platforms_builds = [self.make_build(jdk, os_arch, task).build
+  local all_platforms_builds = [self.make_build(jdk, os_arch, task).build + galahad.exclude
     for task in [
       "test",
       "truffle_xcomp",
@@ -395,33 +418,32 @@
       "bootstrap_full"
     ]
 
-    # Run jobs on latest and last LTS (21)
+    # Run jobs on latest
     for jdk in [
-      self.jdk_latest,
-      "21"
+      self.jdk_latest
     ]
     for os_arch in all_os_arches
   ],
 
   # Coverage builds run on all platforms (platform = JDK + OS + ARCH)
   # that support JaCoCo (GR-46676)
-  local all_coverage_builds = [self.make_build(jdk, os_arch, task).build
+  local all_coverage_builds = [self.make_build(jdk, os_arch, task).build + galahad.exclude
     for task in [
       "coverage",
       "coverage_ctw",
     ]
     for jdk in [
-      "21"
+      self.jdk_latest
     ]
     for os_arch in all_os_arches
   ] + [
      # Run AVX3 tests only on linux-amd64
-     self.make_build("21", "linux-amd64", "coverage_avx3").build
+     self.make_build(self.jdk_latest, "linux-amd64", "coverage_avx3").build
   ],
 
-    # Test ZGC on support platforms.  Windows requires version 1083 or later which will
+    # Test ZGC on supported platforms.  Windows requires version 1083 or later which will
     # probably require adding some capabilities.
-    local all_zgc_builds = [self.make_build(jdk, os_arch, task).build
+    local all_zgc_builds = [self.make_build(jdk, os_arch, task).build + galahad.exclude
       for jdk in [
         self.jdk_latest
       ]
@@ -436,12 +458,12 @@
         "truffle_xcomp_zgc",
         "ctw_zgc",
         "benchmarktest_zgc",
-        "bootstrap_full_zgc"
+        "bootstrap_full_zgc",
       ]
     ],
 
   # Run unittests with SerialGC.
-  local all_serialgc_builds = [self.make_build(self.jdk_latest, os_arch, task).build
+  local all_serialgc_builds = [self.make_build(self.jdk_latest, os_arch, task).build + galahad.exclude
     for os_arch in [
       "linux-amd64",
       "linux-aarch64",
@@ -466,13 +488,7 @@
     ]
   ],
 
-  local style_builds = [self.make_build("21", "linux-amd64", "style").build + {
-      environment+: {
-        # Run the strict JVMCI version check, i.e., that JVMCIVersionCheck.JVMCI_MIN_VERSION matches the versions in common.json.
-        JVMCI_VERSION_CHECK: "strict",
-      },
-  }],
-  local jdk_latest_version_check_builds = [self.make_build(self.jdk_latest, "linux-amd64", "build", extra_tasks={build:: s.base("build"),}).build + {
+  local style_builds = [self.make_build(self.jdk_latest, "linux-amd64", "style").build + {
       environment+: {
         # Run the strict JVMCI version check, i.e., that JVMCIVersionCheck.JVMCI_MIN_VERSION matches the versions in common.json.
         JVMCI_VERSION_CHECK: "strict",
@@ -480,9 +496,13 @@
   }],
 
   # Builds run on only on linux-amd64-jdk-latestDebug
-  local linux_amd64_jdk_latestDebug_builds = [self.make_build("LatestDebug", "linux-amd64", task).build
+  local jdk_latestDebug_builds = [self.make_build("LatestDebug", os_arch, task).build
     for task in [
-      "benchmarktest",
+      "benchmarktest"
+    ]
+    for os_arch in [
+      "linux-amd64",
+      "darwin-aarch64"
     ]
   ],
 
@@ -493,9 +513,8 @@
     all_zgc_builds +
     all_serialgc_builds +
     style_builds +
-    jdk_latest_version_check_builds +
     linux_amd64_jdk_latest_builds +
-    linux_amd64_jdk_latestDebug_builds,
+    jdk_latestDebug_builds,
 
   local _builds = if
       self.check_manifest(gates,     all_builds, std.thisFile, "gates").result &&

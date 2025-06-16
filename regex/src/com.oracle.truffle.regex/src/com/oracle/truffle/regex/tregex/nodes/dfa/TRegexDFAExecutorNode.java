@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -226,8 +226,8 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
     }
 
     @Override
-    public TRegexExecutorLocals createLocals(TruffleString input, int fromIndex, int index, int maxIndex) {
-        return new TRegexDFAExecutorLocals(input, fromIndex, index, maxIndex, createCGData());
+    public TRegexExecutorLocals createLocals(TruffleString input, int fromIndex, int maxIndex, int regionFrom, int regionTo, int index) {
+        return new TRegexDFAExecutorLocals(input, fromIndex, maxIndex, regionFrom, regionTo, index, createCGData());
     }
 
     @Override
@@ -273,15 +273,16 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
         CompilerAsserts.partialEvaluationConstant(codeRange);
         if (injectBranchProbability(SLOWPATH_PROBABILITY, !validArgs(locals))) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalArgumentException(String.format("Got illegal args! (fromIndex %d, initialIndex %d, maxIndex %d)",
-                            locals.getFromIndex(), locals.getIndex(), locals.getMaxIndex()));
+            throw new IllegalArgumentException(String.format("Got illegal args! (fromIndex %d, maxIndex %d, regionFrom: %d, regionTo: %d, initialIndex %d)",
+                            locals.getFromIndex(), locals.getMaxIndex(), locals.getRegionFrom(), locals.getRegionTo(), locals.getIndex()));
         }
         if (isGenericCG() || isSimpleCG()) {
             CompilerDirectives.ensureVirtualized(locals.getCGData());
         }
         // check if input is long enough for a match
         if (injectBranchProbability(UNLIKELY_PROBABILITY, props.getMinResultLength() > 0 &&
-                        (isForward() ? locals.getMaxIndex() - locals.getIndex() : locals.getIndex() - Math.max(0, locals.getFromIndex() - getPrefixLength())) < props.getMinResultLength())) {
+                        (isForward() ? locals.getMaxIndex() - locals.getIndex()
+                                        : locals.getIndex() - Math.max(locals.getRegionFrom(), locals.getFromIndex() - getPrefixLength())) < props.getMinResultLength())) {
             // no match possible, break immediately
             return isGenericCG() || isSimpleCG() ? null : (long) TRegexDFAExecutorNode.NO_MATCH;
         }
@@ -317,7 +318,7 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
                      * successors[n], where n is the number of skipped code points.
                      */
                     for (int i = 0; i < getPrefixLength(); i++) {
-                        if (injectBranchProbability(UNLIKELY_PROBABILITY, locals.getIndex() > 0)) {
+                        if (injectBranchProbability(UNLIKELY_PROBABILITY, locals.getIndex() > locals.getRegionFrom())) {
                             inputSkipIntl(locals, false, codeRange);
                         } else {
                             if (props.canFindStart()) {
@@ -405,14 +406,14 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
                     }
                     if (injectBranchProbability(EXIT_PROBABILITY, !inputHasNext(locals))) {
                         state.atEnd(locals, this);
-                        if (isBackward() && state.hasBackwardPrefixState() && locals.getIndex() > 0) {
+                        if (isBackward() && state.hasBackwardPrefixState() && locals.getIndex() > locals.getRegionFrom()) {
                             assert locals.getIndex() == locals.getFromIndex();
                             /*
                              * We have reached the starting index of the forward matcher, so we have
                              * to switch to backward-prefix-states. These states will match
                              * look-behind assertions only.
                              */
-                            locals.setCurMinIndex(0);
+                            locals.setCurMinIndex(locals.getRegionFrom());
                             ip = transitionMatch(state, ((BackwardDFAStateNode) state).getBackwardPrefixStateIndex());
                             continue outer;
                         }
@@ -670,6 +671,7 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
             } else {
                 assert curState instanceof DFAFindInnerLiteralStateNode;
                 assert isForward();
+                inputAdvance(locals);
                 DFAFindInnerLiteralStateNode state = (DFAFindInnerLiteralStateNode) curState;
                 while (true) {
                     if (injectBranchProbability(EXIT_PROBABILITY, !inputHasNext(locals))) {
@@ -734,6 +736,11 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
             if (lastTransition >= 0) {
                 locals.setLastTransition(lastTransition);
             }
+        } else if (isSimpleCG()) {
+            DFASimpleCG simpleCG = ((DFAInitialStateNode) curState).getSimpleCG();
+            if (simpleCG != null) {
+                simpleCG.getTransitions()[i].apply(locals.getCGData().results, locals.getIndex(), getProperties().tracksLastGroup(), isForward());
+            }
         }
         return successors[i];
     }
@@ -781,15 +788,14 @@ public final class TRegexDFAExecutorNode extends TRegexExecutorNode {
         return isForward() ? super.getMinIndex(locals) : ((TRegexDFAExecutorLocals) locals).getCurMinIndex();
     }
 
-    private boolean validArgs(TRegexDFAExecutorLocals locals) {
+    private static boolean validArgs(TRegexDFAExecutorLocals locals) {
         final int initialIndex = locals.getIndex();
-        final int inputLength = getInputLength(locals);
         final int fromIndex = locals.getFromIndex();
         final int maxIndex = locals.getMaxIndex();
-        return inputLength >= 0 && inputLength < Integer.MAX_VALUE - 20 &&
-                        fromIndex >= 0 && fromIndex <= inputLength &&
-                        initialIndex >= 0 && initialIndex <= maxIndex &&
-                        maxIndex >= fromIndex && maxIndex <= inputLength;
+        final int regionFrom = locals.getRegionFrom();
+        final int regionTo = locals.getRegionTo();
+        return 0 <= regionFrom && regionFrom <= fromIndex && fromIndex <= maxIndex && maxIndex <= regionTo &&
+                        regionFrom <= initialIndex && initialIndex <= regionTo;
     }
 
     private static int[] initResultOrder(int maxNumberOfNFAStates, int numberOfCaptureGroups, TRegexDFAExecutorProperties props) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -147,9 +147,9 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         runTest("testThrow");
         runTest("testRangeCheck");
         runTest("testImplicitCast");
+        runTest("testNativeCall");
     }
 
-    @SuppressWarnings("try")
     void runTest(String methodName) {
         // initialize the Truffle runtime to ensure that all intrinsics are applied
         Truffle.getRuntime();
@@ -177,7 +177,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
             }
         }
 
-        try (DebugContext.Scope ds = graph.getDebug().scope("Testing", method, graph)) {
+        try (DebugContext.Scope _ = graph.getDebug().scope("Testing", method, graph)) {
             HighTierContext context = getEagerHighTierContext();
             CanonicalizerPhase canonicalizer = createCanonicalizerPhase();
             if (run == TestRun.WITH_CONVERT_TO_GUARD) {
@@ -315,7 +315,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
     }
 
     @BytecodeInterpreterSwitch
-    @ExpectNotInlined(name = {"trivialMethod", "traceTransferToInterpreter"}, count = {1, 1})
+    @ExpectNotInlined(name = {"trivialMethod", "traceTransferToInterpreter"}, count = {1, -1})
     private static int testDominatedDeopt(int value) {
         if (value == 1) {
             CompilerDirectives.transferToInterpreterAndInvalidate(); // inlined
@@ -962,6 +962,22 @@ public class HostInliningTest extends TruffleCompilerImplTest {
     static int testImplicitCast(int value) {
         return (int) MyTypesGen.asImplicitDouble(0, value);
     }
+
+    @BytecodeInterpreterSwitch
+    @ExpectNotInlined(name = {"nativeCall"}, count = {1})
+    static int testNativeCall(int value) {
+        if (value == 42) {
+            // we do not call nativeCall directly to trigger the peek deopt logic in host inlining
+            peekNativeCall();
+        }
+        return 42;
+    }
+
+    static void peekNativeCall() {
+        nativeCall();
+    }
+
+    static native void nativeCall();
 
     static int testIndirectIntrinsicsImpl(A a) {
         return a.intrinsic(); // inlined and intrinsic

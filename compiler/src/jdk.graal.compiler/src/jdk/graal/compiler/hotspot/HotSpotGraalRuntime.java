@@ -24,15 +24,17 @@
  */
 package jdk.graal.compiler.hotspot;
 
+import static jdk.graal.compiler.core.common.GraalOptions.HotSpotPrintInlining;
 import static jdk.vm.ci.common.InitTimer.timer;
 import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
-import static jdk.graal.compiler.core.common.GraalOptions.HotSpotPrintInlining;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+
 
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
@@ -43,6 +45,7 @@ import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
+
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.api.runtime.GraalRuntime;
 import jdk.graal.compiler.core.CompilationWrapper.ExceptionAction;
@@ -51,6 +54,7 @@ import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationListenerProfiler;
 import jdk.graal.compiler.core.common.CompilerProfiler;
 import jdk.graal.compiler.core.common.GraalOptions;
+import jdk.graal.compiler.core.common.LibGraalSupport;
 import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
 import jdk.graal.compiler.core.target.Backend;
 import jdk.graal.compiler.debug.DebugContext;
@@ -61,6 +65,8 @@ import jdk.graal.compiler.debug.DiagnosticsOutputDirectory;
 import jdk.graal.compiler.debug.GlobalMetrics;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.debug.TTY;
+import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
+import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.nodes.spi.StampProvider;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.tiers.CompilerConfiguration;
@@ -68,7 +74,6 @@ import jdk.graal.compiler.replacements.SnippetCounter;
 import jdk.graal.compiler.replacements.SnippetCounter.Group;
 import jdk.graal.compiler.runtime.RuntimeProvider;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.code.stack.StackIntrospection;
 import jdk.vm.ci.common.InitTimer;
@@ -197,7 +202,10 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
         }
         this.compilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
 
-        startupLibGraal(this);
+        LibGraalSupport libgraal = LibGraalSupport.INSTANCE;
+        if (libgraal != null) {
+            libgraal.initialize();
+        }
     }
 
     private void initalizeBubo() {
@@ -260,24 +268,32 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
      */
     public enum HotSpotGC {
         // Supported GCs
-        Serial(true, true, "UseSerialGC", true),
-        Parallel(true, true, "UseParallelGC", true),
-        G1(true, true, "UseG1GC", true),
-        Z(true, true, "UseZGC", true),
+        Serial("UseSerialGC"),
+        Parallel("UseParallelGC"),
+        G1("UseG1GC"),
+        Z(true, true, flagIsSet("UseZGC")),
+        Epsilon(true, true, flagIsSet("UseEpsilonGC")),
 
         // Unsupported GCs
-        Epsilon(false, true, "UseEpsilonGC", true),
-        Shenandoah(false, true, "UseShenandoahGC", true);
+        Shenandoah(false, true, flagIsSet("UseShenandoahGC"));
 
-        HotSpotGC(boolean supported, boolean expectNamePresent, String flag, boolean expectFlagPresent) {
+        HotSpotGC(String flag) {
+            this(true, true, flagIsSet(flag));
+        }
+
+        HotSpotGC(boolean supported, boolean expectNamePresent, Predicate<GraalHotSpotVMConfig> predicate) {
             this.supported = supported;
             this.expectNamePresent = expectNamePresent;
-            this.expectFlagPresent = expectFlagPresent;
-            this.flag = flag;
+            this.predicate = predicate;
+        }
+
+        private static Predicate<GraalHotSpotVMConfig> flagIsSet(String flag) {
+            final boolean notPresent = false;
+            return config -> config.getFlag(flag, Boolean.class, notPresent, true);
         }
 
         /**
-         * Specifies if this GC supported by Graal.
+         * Specifies if this GC is supported by Graal.
          */
         final boolean supported;
 
@@ -288,18 +304,12 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
         final boolean expectNamePresent;
 
         /**
-         * The VM flag that will select this GC.
+         * The predicate that will select this GC.
          */
-        private final String flag;
-
-        /**
-         * Specifies if {@link #flag} is expected to be present in the VM.
-         */
-        final boolean expectFlagPresent;
+        private final Predicate<GraalHotSpotVMConfig> predicate;
 
         public boolean isSelected(GraalHotSpotVMConfig config) {
-            final boolean notPresent = false;
-            return config.getFlag(flag, Boolean.class, notPresent, expectFlagPresent);
+            return predicate.test(config);
         }
 
         /**
@@ -475,27 +485,21 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         outputDirectory.close();
 
-        shutdownLibGraal(this);
-    }
-
-    /**
-     * Substituted by
-     * {@code com.oracle.svm.graal.hotspot.libgraal.Target_jdk_graal_compiler_hotspot_HotSpotGraalRuntime}
-     * to notify {@code org.graalvm.libgraal.LibGraalIsolate} and call
-     * {@code org.graalvm.nativeimage.VMRuntime.initialize()}.
-     */
-    @SuppressWarnings("unused")
-    private static void startupLibGraal(HotSpotGraalRuntime runtime) {
-    }
-
-    /**
-     * Substituted by
-     * {@code com.oracle.svm.graal.hotspot.libgraal.Target_jdk_graal_compiler_hotspot_HotSpotGraalRuntime}
-     * to notify {@code org.graalvm.libgraal.LibGraalIsolate} and call
-     * {@code org.graalvm.nativeimage.VMRuntime.shutdown()}.
-     */
-    @SuppressWarnings("unused")
-    private static void shutdownLibGraal(HotSpotGraalRuntime runtime) {
+        LibGraalSupport libgraal = LibGraalSupport.INSTANCE;
+        if (libgraal != null) {
+            String callback = HotSpotGraalCompiler.Options.OnShutdownCallback.getValue(options);
+            String callbackClassName = null;
+            String callbackMethodName = null;
+            if (callback != null) {
+                int lastDot = callback.lastIndexOf('.');
+                if (lastDot < 1 || lastDot == callback.length() - 1) {
+                    throw new IllegalArgumentException(HotSpotGraalCompiler.Options.OnShutdownCallback.getName() + " value does not have <classname>.<method name> format: " + callback);
+                }
+                callbackClassName = callback.substring(0, lastDot);
+                callbackMethodName = callback.substring(lastDot + 1);
+            }
+            libgraal.shutdown(callbackClassName, callbackMethodName);
+        }
     }
 
     void clearMetrics() {

@@ -24,7 +24,7 @@
  */
 package com.oracle.svm.hosted.code;
 
-import static com.oracle.svm.common.meta.MultiMethod.DEOPT_TARGET_METHOD;
+import static com.oracle.svm.hosted.code.SubstrateCompilationDirectives.DEOPT_TARGET_METHOD;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -60,7 +60,8 @@ import com.oracle.svm.core.graal.phases.DeadStoreRemovalPhase;
 import com.oracle.svm.core.graal.phases.OptimizeExceptionPathsPhase;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.heap.RestrictHeapAccessCallees;
-import com.oracle.svm.core.meta.MethodPointer;
+import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
+import com.oracle.svm.core.meta.SubstrateMethodOffsetConstant;
 import com.oracle.svm.core.meta.SubstrateMethodPointerConstant;
 import com.oracle.svm.core.util.InterruptImageBuilding;
 import com.oracle.svm.core.util.VMError;
@@ -69,6 +70,9 @@ import com.oracle.svm.hosted.NativeImageGenerator;
 import com.oracle.svm.hosted.NativeImageOptions;
 import com.oracle.svm.hosted.ProgressReporter;
 import com.oracle.svm.hosted.diagnostic.HostedHeapDumpFeature;
+import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
+import com.oracle.svm.hosted.imagelayer.LayeredDispatchTableFeature;
+import com.oracle.svm.hosted.imagelayer.SVMImageLayerLoader;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedUniverse;
 import com.oracle.svm.hosted.phases.ImageBuildStatisticsCounterPhase;
@@ -91,7 +95,6 @@ import jdk.graal.compiler.debug.Indent;
 import jdk.graal.compiler.debug.TTY;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.Node.NodeIntrinsic;
-import jdk.graal.compiler.java.StableMethodNameFormatter;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
@@ -104,7 +107,6 @@ import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.graal.compiler.nodes.FrameState;
 import jdk.graal.compiler.nodes.GraphEncoder;
-import jdk.graal.compiler.nodes.GraphState.GuardsStage;
 import jdk.graal.compiler.nodes.GraphState.StageFlag;
 import jdk.graal.compiler.nodes.IndirectCallTargetNode;
 import jdk.graal.compiler.nodes.Invoke;
@@ -132,7 +134,6 @@ import jdk.vm.ci.code.site.Call;
 import jdk.vm.ci.code.site.ConstantReference;
 import jdk.vm.ci.code.site.DataPatch;
 import jdk.vm.ci.code.site.Infopoint;
-import jdk.vm.ci.code.site.Reference;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.VMConstant;
@@ -181,10 +182,12 @@ public class CompileQueue {
     private final boolean printMethodHistogram = NativeImageOptions.PrintMethodHistogram.getValue();
     private final boolean optionAOTTrivialInline = SubstrateOptions.AOTTrivialInline.getValue();
 
-    public record UnpublishedTrivialMethods(CompilationGraph unpublishedGraph, boolean isTrivial) {
+    public record UnpublishedTrivialMethods(CompilationGraph unpublishedGraph, boolean newlyTrivial) {
     }
 
     private final ConcurrentMap<HostedMethod, UnpublishedTrivialMethods> unpublishedTrivialMethods = new ConcurrentHashMap<>();
+
+    private final LayeredDispatchTableFeature layeredDispatchTableSupport = ImageLayerBuildingSupport.buildingSharedLayer() ? LayeredDispatchTableFeature.singleton() : null;
 
     public abstract static class CompileReason {
         /**
@@ -242,12 +245,12 @@ public class CompileQueue {
         }
     }
 
-    public static class MethodPointerConstantReason extends CompileReason {
+    public static class MethodConstantReason extends CompileReason {
 
         private final HostedMethod owner;
         private final HostedMethod callTarget;
 
-        public MethodPointerConstantReason(HostedMethod owner, HostedMethod callTarget, CompileReason prevReason) {
+        public MethodConstantReason(HostedMethod owner, HostedMethod callTarget, CompileReason prevReason) {
             super(prevReason);
             this.owner = owner;
             this.callTarget = callTarget;
@@ -255,7 +258,7 @@ public class CompileQueue {
 
         @Override
         public String toString() {
-            return "Method " + callTarget.format("%r %h.%n(%p)") + " is reachable through a method pointer from " + owner.format("%r %h.%n(%p)");
+            return "Method " + callTarget.format("%r %h.%n(%p)") + " is reachable through a method pointer/offset from " + owner.format("%r %h.%n(%p)");
         }
     }
 
@@ -267,7 +270,13 @@ public class CompileQueue {
             this.universe = universe;
         }
 
-        public abstract void beforeEncode(HostedMethod method, StructuredGraph graph, HighTierContext context);
+        @SuppressWarnings("unused")
+        public void beforeEncode(HostedMethod method, StructuredGraph graph, HighTierContext context) {
+        }
+
+        @SuppressWarnings("unused")
+        public void afterMethodCompile(HostedMethod method, StructuredGraph graph) {
+        }
 
         public void afterCompile() {
         }
@@ -355,6 +364,11 @@ public class CompileQueue {
         public Description getDescription() {
             return description;
         }
+
+        @Override
+        public DebugContext getDebug(OptionValues options, List<DebugHandlersFactory> factories) {
+            return new DebugContext.Builder(options, factories).description(getDescription()).globalMetrics(metricValues).build();
+        }
     }
 
     @SuppressWarnings("this-escape")
@@ -394,7 +408,9 @@ public class CompileQueue {
                 parseAll();
             }
 
-            if (!PointstoOptions.UseExperimentalReachabilityAnalysis.getValue(universe.hostVM().options())) {
+            // GR-59742 re-enable for open type world and layered images
+            if (SubstrateOptions.useClosedTypeWorld() && !ImageLayerBuildingSupport.buildingImageLayer() &&
+                            !PointstoOptions.UseExperimentalReachabilityAnalysis.getValue(universe.hostVM().options())) {
                 /*
                  * Reachability Analysis creates call graphs with more edges compared to the
                  * Points-to Analysis, therefore the annotations would have to be added to a lot
@@ -410,7 +426,7 @@ public class CompileQueue {
              * but are no longer reachable now.
              */
             for (HostedMethod method : universe.getMethods()) {
-                method.wrapped.setAnalyzedGraph(null);
+                method.wrapped.clearAnalyzedGraph();
             }
 
             if (ImageSingletons.contains(HostedHeapDumpFeature.class)) {
@@ -427,6 +443,7 @@ public class CompileQueue {
             createSuites();
             try (ProgressReporter.ReporterClosable ac = reporter.printCompiling()) {
                 compileAll();
+                notifyAfterCompile();
             }
 
             metricValues.print(universe.getBigBang().getOptions());
@@ -438,6 +455,9 @@ public class CompileQueue {
         }
         if (ImageSingletons.contains(HostedHeapDumpFeature.class)) {
             ImageSingletons.lookup(HostedHeapDumpFeature.class).compileQueueAfterCompilation();
+        }
+        if (ImageLayerBuildingSupport.buildingExtensionLayer()) {
+            HostedImageLayerBuildingSupport.singleton().getLoader().cleanupAfterCompilation();
         }
     }
 
@@ -531,7 +551,7 @@ public class CompileQueue {
 
         System.out.format("Code Size; Nodes Parsing; Nodes Before; Nodes After; Is Trivial;" +
                         " Deopt Target; Code Size; Nodes Parsing; Nodes Before; Nodes After; Deopt Entries; Deopt During Call;" +
-                        " Entry Points; Direct Calls; Virtual Calls; Method\n");
+                        " Entry Points; Direct Calls; Virtual Calls; Method%n");
 
         List<CompileTask> tasks = new ArrayList<>(compilations.values());
         tasks.sort(Comparator.comparing(t2 -> t2.method.format("%H.%n(%p) %r")));
@@ -549,7 +569,7 @@ public class CompileQueue {
 
                 int deoptMethodSize = 0;
                 HostedMethod deoptTargetMethod = method.getMultiMethod(DEOPT_TARGET_METHOD);
-                if (deoptTargetMethod != null) {
+                if (deoptTargetMethod != null && isRegisteredDeoptTarget(deoptTargetMethod)) {
                     CompilationInfo dci = deoptTargetMethod.compilationInfo;
 
                     numberOfDeopt += 1;
@@ -629,6 +649,13 @@ public class CompileQueue {
                      */
                     continue;
                 }
+                if (layeredForceCompilation(hMethod)) {
+                    // when layered force compilation is triggered we try to parse all graphs
+                    if (method.wrapped.getAnalyzedGraph() != null) {
+                        ensureParsed(method, null, new EntryPointReason());
+                    }
+                    continue;
+                }
                 if (hMethod.isEntryPoint() || SubstrateCompilationDirectives.singleton().isForcedCompilation(hMethod) ||
                                 hMethod.wrapped.isDirectRootMethod() && hMethod.wrapped.isSimplyImplementationInvoked()) {
                     ensureParsed(hMethod, null, new EntryPointReason());
@@ -676,12 +703,8 @@ public class CompileQueue {
         });
     }
 
-    private static boolean checkTrivial(HostedMethod method, StructuredGraph graph) {
-        if (!method.compilationInfo.isTrivialMethod() && method.canBeInlined() && InliningUtilities.isTrivialMethod(graph)) {
-            return true;
-        } else {
-            return false;
-        }
+    private static boolean checkNewlyTrivial(HostedMethod method, StructuredGraph graph) {
+        return !method.compilationInfo.isTrivialMethod() && method.canBeInlined() && InliningUtilities.isTrivialMethod(graph);
     }
 
     @SuppressWarnings("try")
@@ -706,8 +729,9 @@ public class CompileQueue {
             }
             for (Map.Entry<HostedMethod, UnpublishedTrivialMethods> entry : unpublishedTrivialMethods.entrySet()) {
                 entry.getKey().compilationInfo.setCompilationGraph(entry.getValue().unpublishedGraph);
-                if (entry.getValue().isTrivial) {
-                    entry.getKey().compilationInfo.setTrivialMethod(true);
+                if (entry.getValue().newlyTrivial) {
+                    inliningProgress = true;
+                    entry.getKey().compilationInfo.setTrivialMethod();
                 }
             }
             unpublishedTrivialMethods.clear();
@@ -721,11 +745,15 @@ public class CompileQueue {
         @Override
         public InlineInfo shouldInlineInvoke(GraphBuilderContext b, ResolvedJavaMethod method, ValueNode[] args) {
             if (makeInlineDecision((HostedMethod) b.getMethod(), (HostedMethod) method) && b.recursiveInliningDepth(method) == 0) {
-                inlinedDuringDecoding = true;
                 return InlineInfo.createStandardInlineInfo(method);
             } else {
                 return InlineInfo.DO_NOT_INLINE_WITH_EXCEPTION;
             }
+        }
+
+        @Override
+        public void notifyAfterInline(ResolvedJavaMethod methodToInline) {
+            inlinedDuringDecoding = true;
         }
     }
 
@@ -742,6 +770,11 @@ public class CompileQueue {
         @Override
         protected EncodedGraph lookupEncodedGraph(ResolvedJavaMethod method, BytecodeProvider intrinsicBytecodeProvider) {
             return ((HostedMethod) method).compilationInfo.getCompilationGraph().getEncodedGraph();
+        }
+
+        @Override
+        protected LoopScope trySimplifyInvoke(PEMethodScope methodScope, LoopScope loopScope, InvokeData invokeData, MethodCallTargetNode callTarget) {
+            return super.trySimplifyInvoke(methodScope, loopScope, invokeData, callTarget);
         }
     }
 
@@ -805,7 +838,7 @@ public class CompileQueue {
                      * that there was inlining progress, which triggers another round of inlining
                      * where only "always inline" methods are inlined.
                      */
-                    method.compilationInfo.setTrivialInliningDisabled(true);
+                    method.compilationInfo.setTrivialInliningDisabled();
                     inliningProgress = true;
 
                 } else {
@@ -815,12 +848,7 @@ public class CompileQueue {
                      * non-deterministic. This is why we are saving graphs to be published at the
                      * end of each round.
                      */
-                    if (checkTrivial(method, graph)) {
-                        unpublishedTrivialMethods.put(method, new UnpublishedTrivialMethods(CompilationGraph.encode(graph), true));
-                        inliningProgress = true;
-                    } else {
-                        unpublishedTrivialMethods.put(method, new UnpublishedTrivialMethods(CompilationGraph.encode(graph), false));
-                    }
+                    unpublishedTrivialMethods.put(method, new UnpublishedTrivialMethods(CompilationGraph.encode(graph), checkNewlyTrivial(method, graph)));
                 }
             }
         } catch (Throwable ex) {
@@ -829,6 +857,14 @@ public class CompileQueue {
     }
 
     private boolean makeInlineDecision(HostedMethod method, HostedMethod callee) {
+        if (!SubstrateOptions.UseSharedLayerStrengthenedGraphs.getValue() && callee.compilationInfo.getCompilationGraph() == null) {
+            /*
+             * We have compiled this method in a prior layer, but don't have the graph available
+             * here.
+             */
+            assert callee.isCompiledInPriorLayer() : method;
+            return false;
+        }
         if (universe.hostVM().neverInlineTrivial(method.getWrapped(), callee.getWrapped())) {
             return false;
         }
@@ -886,8 +922,6 @@ public class CompileQueue {
         runOnExecutor(this::scheduleEntryPoints);
 
         runOnExecutor(this::scheduleDeoptTargets);
-
-        notifyAfterCompile();
     }
 
     private void notifyAfterCompile() {
@@ -909,6 +943,16 @@ public class CompileQueue {
                     continue;
                 }
 
+                if (layeredForceCompilation(hMethod)) {
+                    /*
+                     * when layeredForceCompilation is triggered we try to parse all graphs.
+                     */
+                    if (method.compilationInfo.getCompilationGraph() != null) {
+                        ensureCompiled(hMethod, new EntryPointReason());
+                    }
+                    continue;
+                }
+
                 if (hMethod.isEntryPoint() || SubstrateCompilationDirectives.singleton().isForcedCompilation(hMethod) ||
                                 hMethod.wrapped.isDirectRootMethod() && hMethod.wrapped.isSimplyImplementationInvoked()) {
                     ensureCompiled(hMethod, new EntryPointReason());
@@ -923,6 +967,11 @@ public class CompileQueue {
                 }
             }
         }
+    }
+
+    private static boolean layeredForceCompilation(@SuppressWarnings("unused") HostedMethod hMethod) {
+        // GR-57021 force some methods to be compiled in initial layer
+        return false;
     }
 
     public void scheduleDeoptTargets() {
@@ -940,7 +989,21 @@ public class CompileQueue {
         }
     }
 
+    private static boolean parseInCurrentLayer(HostedMethod method) {
+        var hasAnalyzedGraph = method.wrapped.getAnalyzedGraph() != null;
+        if (!hasAnalyzedGraph && method.wrapped.reachableInCurrentLayer()) {
+            SVMImageLayerLoader imageLayerLoader = HostedImageLayerBuildingSupport.singleton().getLoader();
+            hasAnalyzedGraph = imageLayerLoader.hasStrengthenedGraph(method.wrapped);
+        }
+        assert hasAnalyzedGraph || !method.wrapped.reachableInCurrentLayer() || method.isCompiledInPriorLayer() || method.compilationInfo.inParseQueue.get() : method;
+        return hasAnalyzedGraph;
+    }
+
     protected void ensureParsed(HostedMethod method, HostedMethod callerMethod, CompileReason reason) {
+        if (!parseInCurrentLayer(method)) {
+            return;
+        }
+
         if (!(NativeImageOptions.AllowFoldMethods.getValue() || method.getAnnotation(Fold.class) == null ||
                         (callerMethod != null && metaAccess.lookupJavaType(GeneratedFoldInvocationPlugin.class).isAssignableFrom(callerMethod.getDeclaringClass())))) {
             throw VMError.shouldNotReachHere("Parsing method annotated with @" + Fold.class.getSimpleName() + ": " +
@@ -953,6 +1016,11 @@ public class CompileQueue {
     }
 
     protected final void doParse(DebugContext debug, ParseTask task) {
+        HostedMethod method = task.method;
+        if (HostedImageLayerBuildingSupport.buildingExtensionLayer()) {
+            loadPriorStrengthenedGraph(method);
+        }
+
         ParseFunction customFunction = task.method.compilationInfo.getCustomParseFunction();
         if (customFunction != null) {
             customFunction.parse(debug, task.method, task.reason, runtimeConfig);
@@ -963,6 +1031,25 @@ public class CompileQueue {
                 hooks = defaultParseHooks;
             }
             defaultParseFunction(debug, task.method, task.reason, runtimeConfig, hooks);
+        }
+    }
+
+    private static void loadPriorStrengthenedGraph(HostedMethod method) {
+        if (method.wrapped.getAnalyzedGraph() == null && method.wrapped.reachableInCurrentLayer()) {
+            /*
+             * Only the strengthened graphs of methods that need to be analyzed in the current layer
+             * are loaded.
+             */
+            SVMImageLayerLoader imageLayerLoader = HostedImageLayerBuildingSupport.singleton().getLoader();
+            boolean hasStrengthenedGraph = imageLayerLoader.hasStrengthenedGraph(method.wrapped);
+            assert method.isCompiledInPriorLayer() || method.compilationInfo.inParseQueue.get() || hasStrengthenedGraph : method;
+            if (hasStrengthenedGraph) {
+                /*
+                 * GR-59679: The loading of graphs could be even more lazy than this. It could be
+                 * loaded only when the inlining will be performed
+                 */
+                method.wrapped.setAnalyzedGraph(imageLayerLoader.getStrengthenedGraph(method.wrapped));
+            }
         }
     }
 
@@ -1011,8 +1098,8 @@ public class CompileQueue {
                 notifyBeforeEncode(method, graph);
                 assert GraphOrder.assertSchedulableGraph(graph);
                 method.compilationInfo.encodeGraph(graph);
-                if (checkTrivial(method, graph)) {
-                    method.compilationInfo.setTrivialMethod(true);
+                if (checkNewlyTrivial(method, graph)) {
+                    method.compilationInfo.setTrivialMethod();
                 }
             } catch (Throwable ex) {
                 GraalError error = ex instanceof GraalError ? (GraalError) ex : new GraalError(ex);
@@ -1117,6 +1204,26 @@ public class CompileQueue {
     }
 
     protected void ensureCompiled(HostedMethod method, CompileReason reason) {
+        if (method.isCompiledInPriorLayer()) {
+            /*
+             * Since this method was compiled in a prior layer we should not compile it again.
+             */
+            return;
+        }
+        if (ImageLayerBuildingSupport.buildingExtensionLayer() && !method.wrapped.reachableInCurrentLayer()) {
+            assert method.wrapped.isInBaseLayer();
+            /*
+             * This method was reached and analyzed in the base layer, but it was not compiled in
+             * that layer, e.g., because it was always inlined. It is referenced in the app layer,
+             * but it was not reached during this layer's analysis, so its base layer graph was not
+             * loaded. However, it is considered as a potential compilation target because it is the
+             * implementation of a method invoked in this layer. Since we don't have an analysis
+             * graph we cannot compile it, however it should not be called at run time since it was
+             * not reached during analysis. (GR-64200)
+             */
+            return;
+        }
+
         CompilationInfo compilationInfo = method.compilationInfo;
         assert method.getMultiMethodKey() != SubstrateCompilationDirectives.RUNTIME_COMPILED_METHOD;
 
@@ -1197,7 +1304,7 @@ public class CompileQueue {
             StructuredGraph graph = method.compilationInfo.createGraph(debug, getCustomizedOptions(method, debug), compilationIdentifier, true);
             customizeGraph(graph, reason);
 
-            GraalError.guarantee(graph.getGraphState().getGuardsStage() == GuardsStage.FIXED_DEOPTS,
+            GraalError.guarantee(graph.getGraphState().getGuardsStage().areDeoptsFixed(),
                             "Hosted compilations must have explicit exceptions [guard stage] %s=%s", graph, graph.getGraphState().getGuardsStage());
             GraalError.guarantee(graph.isAfterStage(StageFlag.GUARD_LOWERING),
                             "Hosted compilations must have explicit exceptions [guard lowering] %s=%s -> %s", graph, graph.getGraphState().getStageFlags(), graph.getGuardsStage());
@@ -1232,10 +1339,22 @@ public class CompileQueue {
                 CompilationResult result = backend.newCompilationResult(compilationIdentifier, method.getQualifiedName());
 
                 try (Indent indent = debug.logAndIndent("compile %s", method)) {
-                    GraalCompiler.compileGraph(graph, method, backend.getProviders(), backend, null, getOptimisticOpts(), null, suites, lirSuites, result,
-                                    new HostedCompilationResultBuilderFactory(), false);
+                    Providers providers = backend.getProviders();
+                    OptimisticOptimizations optimisticOpts = getOptimisticOpts();
+                    GraalCompiler.compile(new GraalCompiler.Request<>(graph,
+                                    method,
+                                    providers,
+                                    backend,
+                                    null,
+                                    optimisticOpts,
+                                    null,
+                                    suites,
+                                    lirSuites,
+                                    result,
+                                    new HostedCompilationResultBuilderFactory(),
+                                    false));
                 }
-                graph.getOptimizationLog().emit((m) -> m.format(StableMethodNameFormatter.METHOD_FORMAT));
+                graph.getOptimizationLog().emit();
                 method.compilationInfo.numNodesAfterCompilation = graph.getNodeCount();
 
                 if (method.isDeoptTarget()) {
@@ -1248,12 +1367,20 @@ public class CompileQueue {
                     result.setTargetCode(Arrays.copyOf(result.getTargetCode(), result.getTargetCodeSize()), result.getTargetCodeSize());
                 }
 
+                notifyAfterMethodCompile(method, graph);
+
                 return result;
             }
         } catch (Throwable ex) {
             GraalError error = ex instanceof GraalError ? (GraalError) ex : new GraalError(ex);
             error.addContext("method: " + method.format("%r %H.%n(%p)") + "  [" + reason + "]");
             throw error;
+        }
+    }
+
+    private void notifyAfterMethodCompile(HostedMethod method, StructuredGraph graph) {
+        for (Policy policy : this.policies) {
+            policy.afterMethodCompile(method, graph);
         }
     }
 
@@ -1279,13 +1406,16 @@ public class CompileQueue {
                 if (call.direct || isDynamicallyResolvedCall(result, call)) {
                     ensureCompiled(callTarget, new DirectCallReason(method, reason));
                 } else if (callTarget != null && callTarget.getImplementations() != null) {
+                    if (layeredDispatchTableSupport != null) {
+                        layeredDispatchTableSupport.recordVirtualCallTarget(method, callTarget);
+                    }
                     for (HostedMethod impl : callTarget.getImplementations()) {
                         ensureCompiled(impl, new VirtualCallReason(method, callTarget, reason));
                     }
                 }
             }
         }
-        ensureCompiledForMethodPointerConstants(method, reason, result);
+        ensureCompiledForMethodConstants(method, reason, result);
     }
 
     protected void removeDeoptTargetOptimizations(Suites suites) {
@@ -1296,15 +1426,18 @@ public class CompileQueue {
         DeoptimizationUtils.removeDeoptTargetOptimizations(lirSuites);
     }
 
-    protected final void ensureCompiledForMethodPointerConstants(HostedMethod method, CompileReason reason, CompilationResult result) {
+    protected final void ensureCompiledForMethodConstants(HostedMethod method, CompileReason reason, CompilationResult result) {
         for (DataPatch dataPatch : result.getDataPatches()) {
-            Reference reference = dataPatch.reference;
-            if (reference instanceof ConstantReference) {
-                VMConstant constant = ((ConstantReference) reference).getConstant();
-                if (constant instanceof SubstrateMethodPointerConstant) {
-                    MethodPointer pointer = ((SubstrateMethodPointerConstant) constant).pointer();
-                    HostedMethod referencedMethod = (HostedMethod) pointer.getMethod();
-                    ensureCompiled(referencedMethod, new MethodPointerConstantReason(method, referencedMethod, reason));
+            if (dataPatch.reference instanceof ConstantReference constantRef) {
+                VMConstant constant = constantRef.getConstant();
+                HostedMethod referencedMethod = null;
+                if (constant instanceof SubstrateMethodPointerConstant pointerConstant) {
+                    referencedMethod = (HostedMethod) pointerConstant.pointer().getMethod();
+                } else if (constant instanceof SubstrateMethodOffsetConstant offsetConstant) {
+                    referencedMethod = (HostedMethod) offsetConstant.offset().getMethod();
+                }
+                if (referencedMethod != null) {
+                    ensureCompiled(referencedMethod, new MethodConstantReason(method, referencedMethod, reason));
                 }
             }
         }

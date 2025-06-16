@@ -43,7 +43,7 @@ import com.oracle.svm.core.util.BasedOnJDKFile;
  *  - substratevm/src/com.oracle.svm.native.libchelper/include/amd64hotspotcpuinfo.h
  *  - substratevm/src/com.oracle.svm.native.libchelper/src/cpuid.c
  */
-@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-23+14/src/hotspot/cpu/x86/vm_version_x86.hpp#L40-L313")
+@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+23/src/hotspot/cpu/x86/vm_version_x86.hpp#L41-L348")
 @CLibrary(value = "libchelper", requireStatic = true)
 public class AMD64LibCHelper {
     @Platforms(Platform.AMD64.class)
@@ -306,6 +306,26 @@ public class AMD64LibCHelper {
         @AllowNarrowingCast
         @CField
         boolean fAVX_IFMA();
+
+        @AllowNarrowingCast
+        @CField
+        boolean fAPX_F();
+
+        @AllowNarrowingCast
+        @CField
+        boolean fSHA512();
+
+        @AllowNarrowingCast
+        @CField
+        boolean fAVX512_FP16();
+
+        @AllowNarrowingCast
+        @CField
+        boolean fAVX10_1();
+
+        @AllowNarrowingCast
+        @CField
+        boolean fAVX10_2();
     }
     // Checkstyle: resume
 }

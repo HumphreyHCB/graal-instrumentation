@@ -25,6 +25,7 @@
 package com.oracle.svm.core.meta;
 
 import com.oracle.svm.core.Uninterruptible;
+import com.oracle.svm.core.code.ImageCodeInfo;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionKind;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionType;
@@ -70,11 +71,23 @@ public interface SharedMethod extends ResolvedJavaMethod {
      */
     Deoptimizer.StubType getDeoptStubType();
 
-    boolean hasCodeOffsetInImage();
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    ImageCodeInfo getImageCodeInfo();
 
-    int getCodeOffsetInImage();
+    boolean hasImageCodeOffset();
+
+    int getImageCodeOffset();
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    int getDeoptOffsetInImage();
+    int getImageCodeDeoptOffset();
 
+    /** Always call this method indirectly, even if it is normally called directly. */
+    boolean forceIndirectCall();
+
+    /**
+     * Override to fix JVMCI incompatibility issues (caused by "JDK-8357987: [JVMCI] Add support for
+     * retrieving all methods of a ResolvedJavaType").
+     */
+    @Override
+    boolean isDeclared();
 }

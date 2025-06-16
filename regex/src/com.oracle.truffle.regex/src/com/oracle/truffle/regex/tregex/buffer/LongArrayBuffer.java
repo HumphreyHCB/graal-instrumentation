@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,6 +41,7 @@
 package com.oracle.truffle.regex.tregex.buffer;
 
 import java.util.Arrays;
+import java.util.PrimitiveIterator;
 
 import com.oracle.truffle.regex.util.EmptyArrays;
 
@@ -63,7 +64,7 @@ import com.oracle.truffle.regex.util.EmptyArrays;
  * }
  * </pre>
  */
-public class LongArrayBuffer extends AbstractArrayBuffer {
+public class LongArrayBuffer extends AbstractArrayBuffer implements Iterable<Long> {
 
     protected long[] buf;
 
@@ -92,6 +93,12 @@ public class LongArrayBuffer extends AbstractArrayBuffer {
         buf[length++] = v;
     }
 
+    public void addAll(long[] v) {
+        ensureCapacity(length + v.length);
+        System.arraycopy(v, 0, buf, length, v.length);
+        length += v.length;
+    }
+
     public long pop() {
         return buf[--length];
     }
@@ -113,7 +120,43 @@ public class LongArrayBuffer extends AbstractArrayBuffer {
         return this;
     }
 
+    public boolean contains(long value) {
+        for (long v : this) {
+            if (v == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public long[] toArray() {
         return isEmpty() ? EmptyArrays.LONG : Arrays.copyOf(buf, length);
+    }
+
+    @Override
+    public PrimitiveIterator.OfLong iterator() {
+        return new LongArrayBufferIterator(buf, length);
+    }
+
+    private static final class LongArrayBufferIterator implements PrimitiveIterator.OfLong {
+
+        private final long[] buf;
+        private final int size;
+        private int i = 0;
+
+        private LongArrayBufferIterator(long[] buf, int size) {
+            this.buf = buf;
+            this.size = size;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return i < size;
+        }
+
+        @Override
+        public long nextLong() {
+            return buf[i++];
+        }
     }
 }

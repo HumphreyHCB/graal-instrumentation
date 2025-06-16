@@ -168,9 +168,8 @@ conflicts, and they are hidden from guest-world reflection.
 ### The stack
 
 Guest threads are run on host threads 1:1. That means guest stacks use host stacks, and for virtual threads to work the
-hosting JVM must support the combination of virtual threads and Truffle, which as of December 2023 HotSpot does not.
-Likewise guest exceptions are wrapped in `EspressoException` and then thrown, so the JVM running Espresso provides
-stack unwinding services and similar.
+hosting JVM must support the combination of virtual threads and Truffle. Guest exceptions are wrapped in
+`EspressoException` and then thrown, so the JVM running Espresso provides stack unwinding services and similar.
 
 Truffle provides stack frame management. A `nodes.BytecodeNode` receives a Truffle `VirtualFrame` object, which manages
 a series of slots stored on the host stack, or when _materialized_, the frame is stored on the heap. In dynamic Truffle
@@ -186,7 +185,32 @@ change) they are never being used inconsistently. Behind the scenes then we only
 separately from everything else so the GC can find them, and thus other types of stack slot are just stored in
 uninterpreted longs.
 
-## Substitutions and extension modules
+## Substitutions
+
+Espresso can replace or wrap any method in the JDK with code that runs in host space. Defining them is easy. Make a
+class in the `com.oracle.truffle.espresso.substitutions` package annotated with `@EspressoSubstitutions`. The name is a
+simple transform of the class containing the method to replace/wrap: for a class `a.b.Foo` the name of the substitution
+class should be `Target_a_b_Foo`.
+
+You can then define static methods annotated with `@Substitution`. The arguments should be of type `StaticObject` to
+refer to an object in the guest heap, annotated with `@Inject` if you want access to `Meta`, `EspressoLanguage` or other
+internal classes. You must annotate `StaticObject` usages with `@JavaType(Foo.class)` to ensure the prototype matches
+correctly.
+
+A substitution is a Truffle node and you can also define substitutions as `Node` subclasses directly instead of having
+them generated for you by the annotation processor. Therefore, you should carefully consider whether to apply
+`@TruffleBoundary` to your substitutions using the usual heuristics (should it be inlined into the caller?)
+
+If you need to wrap a method define two extra arguments:
+
+```
+@Bind("getMeta()") Meta meta,
+@Cached("create(meta.a_b_Foo.getCallTargetNoSubstitution())") DirectCallNode original
+```
+
+and then use `original.call(self);`. Obviously, add the relevant boilerplate to the `Meta` class for this to work.
+
+## Extension modules
 
 Espresso specific features may need guest-exposed APIs to control them. For example Espresso exposes a HotSwap control
 API that lets apps register for callbacks that run when the program code is mutated.
@@ -247,3 +271,17 @@ via assumptions, based on classes loaded at runtime:
 These layers were designed to make metadata as shareable as possible via a strict separation between metadata and
 runtime data. The idea is to share up to the linked (structural) layer between contexts e.g. a second context doesn't
 need to reparse and recompute vtable, itables etc.
+
+### Debugging
+
+Java debuggers examine and control a JVM via a network protocol called JDWP. Espresso uses the
+Truffle debugging API to implement this protocol, which is in turn based on the Truffle
+instrumentation API. Instrumentation is a mechanism that can "wrap" nodes in the Truffle node tree
+with objects that delegate to the real node whilst invoking before/after code as well. In this way
+code that needs to generically monitor or control a program can be cleanly factored out of the
+language implementation.
+
+The core of the Espresso-specific code is in `DebuggerController`. High level debugging commands
+like "install breakpoint", "step over" etc. are converted into Truffle debug API calls. Truffle
+in turn calls back into Espresso via the `SuspendedCallbackImpl` to inform it when a thread has
+been suspended by the debugger, which allows Espresso to handle the event.

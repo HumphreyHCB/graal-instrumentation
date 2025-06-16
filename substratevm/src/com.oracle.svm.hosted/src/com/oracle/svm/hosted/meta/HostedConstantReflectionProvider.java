@@ -31,6 +31,7 @@ import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.hosted.ameta.AnalysisConstantReflectionProvider;
+import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
@@ -46,8 +47,8 @@ public class HostedConstantReflectionProvider extends AnalysisConstantReflection
     private final HostedMemoryAccessProvider hMemoryAccess;
 
     @SuppressWarnings("this-escape")
-    public HostedConstantReflectionProvider(HostedUniverse hUniverse, HostedMetaAccess hMetaAccess) {
-        super(hUniverse.getBigBang().getUniverse(), hUniverse.getBigBang().getMetaAccess());
+    public HostedConstantReflectionProvider(HostedUniverse hUniverse, HostedMetaAccess hMetaAccess, ClassInitializationSupport classInitializationSupport) {
+        super(hUniverse.getBigBang().getUniverse(), hUniverse.getBigBang().getMetaAccess(), classInitializationSupport);
         this.hUniverse = hUniverse;
         this.hMetaAccess = hMetaAccess;
         this.hMemoryAccess = new HostedMemoryAccessProvider(hMetaAccess, this);
@@ -70,9 +71,13 @@ public class HostedConstantReflectionProvider extends AnalysisConstantReflection
 
     @Override
     public JavaConstant readFieldValue(ResolvedJavaField field, JavaConstant receiver) {
+        return readFieldValue(field, receiver, false);
+    }
+
+    public JavaConstant readFieldValue(ResolvedJavaField field, JavaConstant receiver, boolean readRelocatableValues) {
         var hField = (HostedField) field;
         assert checkHub(receiver) : "Receiver " + receiver + " of field " + hField + " read should not be java.lang.Class. Expecting to see DynamicHub here.";
-        return super.readValue(hField.getWrapped(), receiver, true);
+        return super.readValue(hField.getWrapped(), receiver, true, readRelocatableValues);
     }
 
     private boolean checkHub(JavaConstant constant) {

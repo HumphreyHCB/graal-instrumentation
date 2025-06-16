@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import jdk.graal.compiler.debug.GraalError;
+import com.oracle.graal.pointsto.util.AtomicUtils;
 import org.graalvm.nativeimage.hosted.Feature.DuringAnalysisAccess;
 
 import com.oracle.graal.pointsto.BigBang;
@@ -49,6 +49,7 @@ import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.AnalysisFuture;
 import com.oracle.graal.pointsto.util.ConcurrentLightHashSet;
 
+import jdk.graal.compiler.debug.GraalError;
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.ModifiersProvider;
 import jdk.vm.ci.meta.ResolvedJavaField;
@@ -56,6 +57,18 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 public abstract class AnalysisElement implements AnnotatedElement {
+
+    protected static final AtomicReferenceFieldUpdater<AnalysisElement, Object> trackAcrossLayersUpdater = AtomicReferenceFieldUpdater
+                    .newUpdater(AnalysisElement.class, Object.class, "trackAcrossLayers");
+    /**
+     * See {@link AnalysisElement#isTrackedAcrossLayers} for explanation.
+     */
+    @SuppressWarnings("unused") private volatile Object trackAcrossLayers;
+    protected final boolean enableTrackAcrossLayers;
+
+    protected AnalysisElement(boolean enableTrackAcrossLayers) {
+        this.enableTrackAcrossLayers = enableTrackAcrossLayers;
+    }
 
     public abstract AnnotatedElement getWrapped();
 
@@ -112,7 +125,22 @@ public abstract class AnalysisElement implements AnnotatedElement {
 
     public abstract boolean isReachable();
 
-    protected abstract void onReachable();
+    protected abstract void onReachable(Object reason);
+
+    public void registerAsTrackedAcrossLayers(Object reason) {
+        if (enableTrackAcrossLayers && !isTrackedAcrossLayers()) {
+            AtomicUtils.atomicSetAndRun(this, reason, trackAcrossLayersUpdater, () -> onTrackedAcrossLayers(reason));
+        }
+    }
+
+    /**
+     * Indicates we need this information to be saved in the layer archive file.
+     */
+    public boolean isTrackedAcrossLayers() {
+        return AtomicUtils.isSet(this, trackAcrossLayersUpdater);
+    }
+
+    protected abstract void onTrackedAcrossLayers(Object reason);
 
     /** Return true if reachability handlers should be executed for this element. */
     public boolean isTriggered() {
@@ -370,7 +398,7 @@ public abstract class AnalysisElement implements AnnotatedElement {
 
             } else if (current instanceof ResolvedJavaField field) {
                 /**
-                 * In {@link AnalysisUniverse#lookupAllowUnresolved(JavaField}} we may register a
+                 * In {@link AnalysisUniverse#lookupAllowUnresolved(JavaField)} we may register a
                  * ResolvedJavaField as reason.
                  *
                  * We convert it to AnalysisField to print more information about why the field is
@@ -417,21 +445,16 @@ public abstract class AnalysisElement implements AnnotatedElement {
         }
 
         private boolean typeReason(AnalysisType type) {
-            if (type.isInHeap()) {
-                return maybeExpandReasonStack(type.getInHeapReason());
-            } else if (type.isAllocated()) {
-                return maybeExpandReasonStack(type.getAllocatedReason());
+            if (type.isInstantiated()) {
+                return maybeExpandReasonStack(type.getInstantiatedReason());
             } else {
                 return maybeExpandReasonStack(type.getReachableReason());
             }
         }
 
         private static String typeReasonStr(AnalysisType type) {
-            if (type.isInHeap()) {
-                return "is marked as in-heap";
-            }
-            if (type.isAllocated()) {
-                return "is marked as allocated";
+            if (type.isInstantiated()) {
+                return "is marked as instantiated";
             }
             return "is reachable";
         }
@@ -507,7 +530,7 @@ public abstract class AnalysisElement implements AnnotatedElement {
                     } else {
                         /* For virtual methods we follow back type reachability. */
                         AnalysisType declaringClass = aMethod.getDeclaringClass();
-                        assert declaringClass.isInstantiated() || declaringClass.isInHeap() || declaringClass.isAbstract() ||
+                        assert declaringClass.isInstantiated() || declaringClass.isAbstract() ||
                                         (declaringClass.isInterface() && aMethod.isDefault()) || declaringClass.isReachable() : declaringClass + " is not reachable";
                         return "implementation invoked";
                     }
@@ -516,7 +539,7 @@ public abstract class AnalysisElement implements AnnotatedElement {
                         return "inlined";
                     } else {
                         AnalysisType declaringClass = aMethod.getDeclaringClass();
-                        assert declaringClass.isInstantiated() || declaringClass.isInHeap() || declaringClass.isAbstract() ||
+                        assert declaringClass.isInstantiated() || declaringClass.isAbstract() ||
                                         (declaringClass.isInterface() && aMethod.isDefault()) || declaringClass.isReachable() : declaringClass + " is not reachable";
                         return "inlined";
                     }

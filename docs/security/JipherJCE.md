@@ -7,7 +7,7 @@ permalink: /security-guide/native-image/Jipher/
 
 # Jipher JCE with Native Image
 
-Jipher JCE is an Oracle-developed [Java Cryptography Architecture (JCA)](../reference-manual/native-image/JCASecurityServices.md) provider that packages a pre-configured and FIPS validated version of OpenSSL 3.0. 
+Jipher JCE is an Oracle-developed [Java Cryptography Architecture (JCA)](../reference-manual/native-image/JCASecurityServices.md) provider that packages a preconfigured and FIPS validated version of OpenSSL 3.0. 
 The Jipher provider supports algorithms which are allowed by [FIPS](https://en.wikipedia.org/wiki/FIPS_140), including the OpenSSL 3.0's FIPS provider. 
 Jipher provides competitive performance compared to Bouncy Castle or the default JDK providers.
 It is recommended to enable Jipher with Native Image in contexts where only FIPS-allowed algorithms should be used. 
@@ -15,8 +15,8 @@ Note that some algorithms are allowed by FIPS for specific use cases only. As a 
 
 > Note: Jipher is not available in GraalVM Community Edition. It is supported on Linux and macOS (macOS 10.15 and higher) on both AMD64 and AArch64 architectures.
 
-Jipher JARs are included in the Oracle GraalVM core package at: _lib/jipher/jipher-jce.jar_ and _lib/jipher/jipher-pki.jar_.
-To enable Jipher, pass these JARs on the application class path.
+Jipher JAR files are included in the Oracle GraalVM core package at: _lib/jipher/jipher-jce.jar_ and _lib/jipher/jipher-pki.jar_.
+To enable Jipher, pass these JAR files on the application class path.
 
 This page describes how to use Jipher with GraalVM Native Image.
 
@@ -62,82 +62,52 @@ The steps below show how to embedded Jipher in a native executable, using a simp
     }
     ```
 
-2. Compile the application with Jipher JARs on the classpath:
+2. Compile the application with Jipher JAR files on the class path:
 
     ```shell
     javac -cp $GRAALVM_HOME/lib/jipher/jipher-jce.jar:$GRAALVM_HOME/lib/jipher/jipher-pki.jar JipherExample.java
     ```
-3. Run the application on the JVM with the agent enabled. The tracing agent captures and writes down all the dynamic features encountered during a test run into multiple _*-config.json_ files.
+3. Run the application on the JVM with the agent enabled. The Tracing Agent captures and writes down all the dynamic features encountered during a test run into multiple _*-config.json_ files.
 
     ```shell
-    java java -cp $GRAALVM_HOME/lib/jipher/jipher-jce.jar:$GRAALVM_HOME/lib/jipher/jipher-pki.jar:. -agentlib:native-image-agent=config-output-dir=<path> JipherExample
+    java -cp $GRAALVM_HOME/lib/jipher/jipher-jce.jar:$GRAALVM_HOME/lib/jipher/jipher-pki.jar:. -agentlib:native-image-agent=config-output-dir=<path> JipherExample
     ```
     Where `<path>` should point to the directory in which to store the configuration files.
     It is recommended that the output directory is `/META-INF/native-image/` (if you build with Maven or Gradle, then `/resources/META-INF/native-image/`). 
     Later, when building a native executable, the `native-image` builder will pick up the files from that location automatically. 
 
-    For this Java application, the agent creates multiple configuration files. The ones to check are:
-
-    - **resource-config.json**: Jipher bundles the OpenSSL libraries (for all supported platforms) within the JAR. This file lists entries for _libjipher.so_, _fips.so_, and _openssl.cnf_ along with the corresponding checksum files. The specific entries pertain to the platform on which the agent is run, and should correspond to the platform for which the native executable is built. For example, on Linux x64, the content should be similar to:
-        ```json
+    For this Java application, the agent creates the _reachability-metadata.json_ file with the following contents:
+    ```json
+    {
+      "reflection":[
         {
-        "resources":{
-        "includes":[
-            {
-            "pattern":"\\Qlibs/linux_x64/fips.so.crc32\\E"
-            },
-            {
-            "pattern":"\\Qlibs/linux_x64/fips.so\\E"
-            },
-            {
-            "pattern":"\\Qlibs/linux_x64/libjipher.so.crc32\\E"
-            },
-            {
-            "pattern":"\\Qlibs/linux_x64/libjipher.so\\E"
-            },
-            {
-            "pattern":"\\Qlibs/linux_x64/openssl.cnf.crc32\\E"
-            },
-            {
-            "pattern":"\\Qlibs/linux_x64/openssl.cnf\\E"
-            },
-            {
-            "pattern":"\\Qlibs\\E"
-            }
-        ]},
-        "bundles":[]
+          "type":"com.oracle.jipher.internal.spi.KeyPairGen$Rsa",
+          "methods":[{"name":"<init>","parameterTypes":[] }]
+        },
+        {
+          "type":"com.oracle.jipher.internal.spi.RsaDigestSig$Sha512WithRsa",
+          "methods":[{"name":"<init>","parameterTypes":[] }]
         }
-        ```
-    - **jni-config.json**: This file lists entries from Jipher internal OpenSSL packages for Java classes with native method declarations. The content should be similar to:
-        ```json
-        {
-        "name":"[B"}
-        ,
-        {
-        "name":"[[B"}
-        ,
-        {
-        "name":"com.oracle.jipher.internal.openssl.JniOpenSsl"}
-        ,
-        {
-        "name":"java.lang.Boolean",
-        "methods":[{"name":"getBoolean","parameterTypes":["java.lang.String"] }]
-        }
-        ```
-    - **reflect-config.json**: This file lists entries from Jipher internal SPI packages for Java classes which implement the JCE SPI. The content should be similar to:
-        ```json
-        [
-        {
-        "name":"com.oracle.jipher.internal.spi.KeyPairGen$Rsa",
-        "methods":[{"name":"<init>","parameterTypes":[] }]}
-        ,
-        {
-        "name":"com.oracle.jipher.internal.spi.RsaDigestSig$Sha512WithRsa",
-        "methods":[{"name":"<init>","parameterTypes":[] }]}
-        ,
-        ...]
-        ```
-4. For the agent to discover all possible calls to Jipher, re-run the application with the agent on the JVM (you can re-run the agent as many times as needed). This will rgenerate the entire configuration suite including any negative test cases (to allow for exception classes to be captured). For the subsequent runs, use this command:
+      ],
+      "resources":[
+        {"glob":"libs/linux_x64/fips.so.crc32"},
+        {"glob":"libs/linux_x64/fips.so"},
+        {"glob":"libs/linux_x64/libjipher.so.crc32"},
+        {"glob":"libs/linux_x64/libjipher.so"},
+        {"glob":"libs/linux_x64/openssl.cnf.crc32"},
+        {"glob":"libs/linux_x64/openssl.cnf"},
+        {"glob":"libs"}
+      ],
+      "jni":[
+        {"type":"[B"},
+        {"type":"[[B"},
+        {"type":"com.oracle.jipher.internal.openssl.JniOpenSsl"},
+        {"type":"java.lang.Boolean","methods":[{"name":"getBoolean","parameterTypes":["java.lang.String"] }]}
+      ]
+    }
+   ```
+    
+4. For the agent to discover all possible calls to Jipher, re-run the application with the agent on the JVM (you can re-run the agent as many times as needed). This will regenerate the entire configuration suite including any negative test cases (to allow for exception classes to be captured). For the subsequent runs, use this command:
 
     ```shell
     java -agentlib:native-image-agent=config-merge-dir=<path> JipherExample

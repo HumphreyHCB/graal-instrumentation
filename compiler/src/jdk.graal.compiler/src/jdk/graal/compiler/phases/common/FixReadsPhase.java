@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -124,12 +124,13 @@ public class FixReadsPhase extends BasePhase<CoreProviders> {
          */
         private final NodeBitMap inferStampBitmap;
 
-        FixReadsClosure(StructuredGraph graph) {
+        FixReadsClosure(StructuredGraph graph, ScheduleResult schedule) {
+            super(schedule);
             inferStampBitmap = graph.createNodeBitMap();
         }
 
         @Override
-        protected void processNode(Node node, HIRBlock block, ScheduleResult schedule, ListIterator<Node> iter) {
+        protected void processNode(Node node, HIRBlock block, ListIterator<Node> iter) {
             if (inferStampBitmap.isMarked(node) && node instanceof ValueNode) {
                 ValueNode valueNode = (ValueNode) node;
                 if (valueNode.inferStamp()) {
@@ -682,12 +683,12 @@ public class FixReadsPhase extends BasePhase<CoreProviders> {
     protected void run(StructuredGraph graph, CoreProviders context) {
         schedulePhase.apply(graph, context);
         ScheduleResult schedule = graph.getLastSchedule();
-        FixReadsClosure fixReadsClosure = new FixReadsClosure(graph);
+        FixReadsClosure fixReadsClosure = new FixReadsClosure(graph, schedule);
         for (HIRBlock block : schedule.getCFG().getBlocks()) {
-            fixReadsClosure.processNodes(block, schedule);
+            fixReadsClosure.processNodes(block);
         }
 
-        if (GraalOptions.RawConditionalElimination.getValue(graph.getOptions())) {
+        if (GraalOptions.RawConditionalElimination.getValue(graph.getOptions()) && GraalOptions.EnableFixReadsConditionalElimination.getValue(graph.getOptions())) {
             schedule.getCFG().visitDominatorTree(createVisitor(graph, schedule, context), false);
         }
     }

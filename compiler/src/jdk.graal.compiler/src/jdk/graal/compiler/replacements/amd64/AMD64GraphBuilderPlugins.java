@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,14 @@
 package jdk.graal.compiler.replacements.amd64;
 
 import static jdk.graal.compiler.nodes.calc.FloatTypeTestNode.FloatTypeTestOp.IS_INFINITE;
+import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.CBRT;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.COS;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.EXP;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.LOG;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.LOG10;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.SIN;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.TAN;
+import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.TANH;
 
 import java.lang.reflect.Type;
 import java.util.Arrays;
@@ -48,6 +50,7 @@ import jdk.graal.compiler.nodes.calc.CompressBitsNode;
 import jdk.graal.compiler.nodes.calc.CopySignNode;
 import jdk.graal.compiler.nodes.calc.ExpandBitsNode;
 import jdk.graal.compiler.nodes.calc.FloatTypeTestNode;
+import jdk.graal.compiler.nodes.calc.FusedMultiplyAddNode;
 import jdk.graal.compiler.nodes.calc.LeftShiftNode;
 import jdk.graal.compiler.nodes.calc.MaxNode;
 import jdk.graal.compiler.nodes.calc.MinNode;
@@ -76,11 +79,7 @@ import jdk.graal.compiler.replacements.TargetGraphBuilderPlugins;
 import jdk.graal.compiler.replacements.nodes.ArrayCompareToNode;
 import jdk.graal.compiler.replacements.nodes.ArrayIndexOfNode;
 import jdk.graal.compiler.replacements.nodes.BinaryMathIntrinsicNode;
-import jdk.graal.compiler.replacements.nodes.BitCountNode;
-import jdk.graal.compiler.replacements.nodes.CountLeadingZerosNode;
-import jdk.graal.compiler.replacements.nodes.CountTrailingZerosNode;
 import jdk.graal.compiler.replacements.nodes.FloatToHalfFloatNode;
-import jdk.graal.compiler.replacements.nodes.FusedMultiplyAddNode;
 import jdk.graal.compiler.replacements.nodes.HalfFloatToFloatNode;
 import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode;
 import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
@@ -122,29 +121,6 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         Class<?> declaringClass = kind.toBoxedJavaClass();
         Class<?> type = kind.toJavaClass();
         Registration r = new Registration(plugins, declaringClass, replacements);
-        r.register(new InvocationPlugin("numberOfLeadingZeros", type) {
-            @Override
-            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode arg) {
-                b.addPush(JavaKind.Int, CountLeadingZerosNode.create(arg));
-                return true;
-            }
-        });
-        r.register(new InvocationPlugin("numberOfTrailingZeros", type) {
-            @Override
-            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode arg) {
-                b.addPush(JavaKind.Int, CountTrailingZerosNode.create(arg));
-                return true;
-            }
-        });
-
-        r.registerConditional(arch.getFeatures().contains(CPUFeature.POPCNT), new InvocationPlugin("bitCount", type) {
-            @Override
-            public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value) {
-                b.push(JavaKind.Int, b.append(new BitCountNode(value).canonical(null)));
-                return true;
-            }
-        });
-
         r.registerConditional(arch.getFeatures().contains(CPUFeature.BMI2), new InvocationPlugin("compress", type, type) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value, ValueNode mask) {
@@ -213,6 +189,8 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         registerUnaryMath(r, "sin", SIN);
         registerUnaryMath(r, "cos", COS);
         registerUnaryMath(r, "tan", TAN);
+        registerUnaryMath(r, "tanh", TANH);
+        registerUnaryMath(r, "cbrt", CBRT);
 
         registerFMA(r, arch);
         registerMinMax(r, arch);
@@ -524,8 +502,7 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
             }
 
         });
-        int jdk = Runtime.version().feature();
-        r.register(new InvocationPlugin(jdk == 21 ? "indexOfCharUnsafe" : "indexOfChar", byte[].class, int.class, int.class, int.class) {
+        r.register(new InvocationPlugin("indexOfChar", byte[].class, int.class, int.class, int.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value, ValueNode ch, ValueNode fromIndex, ValueNode max) {
                 ZeroExtendNode toChar = b.add(new ZeroExtendNode(b.add(new NarrowNode(ch, JavaKind.Char.getBitCount())), JavaKind.Int.getBitCount()));

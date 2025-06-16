@@ -30,7 +30,7 @@ import java.util.BitSet;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.PermanentBailoutException;
-import jdk.graal.compiler.core.common.cfg.Loop;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.core.common.type.ObjectStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.debug.Assertions;
@@ -40,7 +40,6 @@ import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.iterators.NodeIterable;
-import jdk.graal.compiler.hotspot.HotSpotGraalServices;
 import jdk.graal.compiler.loop.phases.LoopTransformations;
 import jdk.graal.compiler.nodeinfo.InputType;
 import jdk.graal.compiler.nodeinfo.Verbosity;
@@ -49,8 +48,10 @@ import jdk.graal.compiler.nodes.EntryMarkerNode;
 import jdk.graal.compiler.nodes.EntryProxyNode;
 import jdk.graal.compiler.nodes.FixedGuardNode;
 import jdk.graal.compiler.nodes.FixedNode;
+import jdk.graal.compiler.nodes.FixedWithNextNode;
 import jdk.graal.compiler.nodes.FrameState;
 import jdk.graal.compiler.nodes.GraphState;
+import jdk.graal.compiler.nodes.LogicNegationNode;
 import jdk.graal.compiler.nodes.LogicNode;
 import jdk.graal.compiler.nodes.LoopBeginNode;
 import jdk.graal.compiler.nodes.NodeView;
@@ -59,17 +60,19 @@ import jdk.graal.compiler.nodes.PiNode;
 import jdk.graal.compiler.nodes.StartNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
+import jdk.graal.compiler.nodes.calc.IsNullNode;
 import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.nodes.extended.OSRLocalNode;
 import jdk.graal.compiler.nodes.extended.OSRLockNode;
 import jdk.graal.compiler.nodes.extended.OSRMonitorEnterNode;
 import jdk.graal.compiler.nodes.extended.OSRStartNode;
+import jdk.graal.compiler.nodes.extended.ObjectIsArrayNode;
 import jdk.graal.compiler.nodes.java.AccessMonitorNode;
 import jdk.graal.compiler.nodes.java.InstanceOfNode;
 import jdk.graal.compiler.nodes.java.MonitorEnterNode;
 import jdk.graal.compiler.nodes.java.MonitorExitNode;
 import jdk.graal.compiler.nodes.java.MonitorIdNode;
-import jdk.graal.compiler.nodes.loop.LoopEx;
+import jdk.graal.compiler.nodes.loop.Loop;
 import jdk.graal.compiler.nodes.loop.LoopsData;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.util.GraphUtil;
@@ -80,6 +83,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.serviceprovider.SpeculationReasonGroup;
+import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaKind;
@@ -152,7 +156,7 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
             osr = getEntryMarker(graph);
             LoopsData loops = providers.getLoopsDataProvider().getLoopsData(graph);
             // Find the loop that contains the EntryMarker
-            Loop<HIRBlock> l = loops.getCFG().getNodeToBlock().get(osr).getLoop();
+            CFGLoop<HIRBlock> l = loops.getCFG().getNodeToBlock().get(osr).getLoop();
             if (l == null) {
                 break;
             }
@@ -166,7 +170,7 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
 
             l = l.getOutmostLoop();
 
-            LoopEx loop = loops.loop(l);
+            Loop loop = loops.loop(l);
             loop.loopBegin().markOsrLoop();
             LoopTransformations.peel(loop);
 
@@ -212,20 +216,19 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
                      * sure to infer a more precise one if possible.
                      */
                     proxy.value().inferStamp();
-                    Stamp narrowedStamp = proxy.value().stamp(NodeView.DEFAULT);
-                    Stamp unrestrictedStamp = proxy.stamp(NodeView.DEFAULT).unrestricted();
+                    Stamp proxyValueStamp = proxy.value().stamp(NodeView.DEFAULT);
+                    Stamp proxyUnrestrictedStamp = proxy.stamp(NodeView.DEFAULT).unrestricted();
                     ValueNode osrLocal;
                     if (i >= localsSize) {
-                        osrLocal = graph.addOrUnique(new OSRLockNode(i - localsSize, unrestrictedStamp));
+                        osrLocal = graph.addOrUnique(new OSRLockNode(i - localsSize, proxyUnrestrictedStamp));
                     } else {
-                        osrLocal = initLocal(graph, unrestrictedStamp, oopMap, i);
+                        osrLocal = initLocal(graph, proxyUnrestrictedStamp, oopMap, i);
                     }
 
                     // Speculate on the OSRLocal stamps that could be more precise.
-                    SpeculationReason reason = OSR_LOCAL_SPECULATIONS.createSpeculationReason(osrState.bci, narrowedStamp, i);
-                    if (graph.getSpeculationLog().maySpeculate(reason) && osrLocal instanceof OSRLocalNode && value.getStackKind().equals(JavaKind.Object) &&
-                                    !narrowedStamp.isUnrestricted()) {
-                        osrLocal = narrowOsrLocal(graph, narrowedStamp, osrLocal, reason, osrStart, proxy, osrState);
+                    SpeculationReason reason = OSR_LOCAL_SPECULATIONS.createSpeculationReason(osrState.bci, proxyValueStamp, i);
+                    if (graph.getSpeculationLog().maySpeculate(reason) && osrLocal instanceof OSRLocalNode && value.getStackKind().equals(JavaKind.Object) && !proxyValueStamp.isUnrestricted()) {
+                        osrLocal = narrowOsrLocal(graph, proxyValueStamp, osrLocal, reason, osrStart, proxy, osrState);
                     }
                     proxy.replaceAndDelete(osrLocal);
 
@@ -294,17 +297,45 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
      */
     private static ValueNode narrowOsrLocal(StructuredGraph graph, Stamp narrowedStamp, ValueNode osrLocal, SpeculationReason reason,
                     OSRStartNode osrStart, EntryProxyNode proxy, FrameState osrState) {
+
+        ValueNode effectiveOsrLocal = osrLocal;
+        Stamp checkedStamp = narrowedStamp;
+        FixedWithNextNode insertionPoint = osrStart;
+
         // Add guard.
-        LogicNode check = graph.addOrUniqueWithInputs(InstanceOfNode.createHelper((ObjectStamp) narrowedStamp, osrLocal, null, null));
+        LogicNode check = null;
+
+        if (checkedStamp.isBottomArrayType()) {
+            /*
+             * We are dealing with a bottom array check that has no exact type. We do not need to
+             * test against a type, it is not an instance of operation but a null check and an
+             * isArray check
+             */
+            // add a preceding null check with the same speculation reason
+            check = graph.addOrUniqueWithInputs(LogicNegationNode.create(IsNullNode.create(effectiveOsrLocal)));
+            SpeculationLog.Speculation constant = graph.getSpeculationLog().speculate(reason);
+            FixedGuardNode guard = graph.add(new FixedGuardNode(check, DeoptimizationReason.OptimizedTypeCheckViolated, DeoptimizationAction.InvalidateRecompile, constant, false));
+            graph.addAfterFixed(osrStart, guard);
+            PiNode nonNullPi = graph.addOrUnique(new PiNode(effectiveOsrLocal, ((ObjectStamp) checkedStamp).asNonNull(), guard));
+
+            insertionPoint = guard;
+
+            // with a null check
+            check = graph.addOrUnique(ObjectIsArrayNode.create(nonNullPi));
+            checkedStamp = new ObjectStamp(null, false, true, false, true);
+        } else {
+            check = graph.addOrUniqueWithInputs(InstanceOfNode.createHelper((ObjectStamp) checkedStamp, effectiveOsrLocal, null, null));
+        }
+
         SpeculationLog.Speculation constant = graph.getSpeculationLog().speculate(reason);
         FixedGuardNode guard = graph.add(new FixedGuardNode(check, DeoptimizationReason.OptimizedTypeCheckViolated, DeoptimizationAction.InvalidateRecompile, constant, false));
-        graph.addAfterFixed(osrStart, guard);
+        graph.addAfterFixed(insertionPoint, guard);
 
         // Replace with a more specific type at usages.
         // We know that we are at the root,
         // so we need to replace the proxy in the state.
-        proxy.replaceAtMatchingUsages(osrLocal, n -> n == osrState);
-        return graph.addOrUnique(new PiNode(osrLocal, narrowedStamp, guard));
+        proxy.replaceAtMatchingUsages(effectiveOsrLocal, n -> n == osrState);
+        return graph.addOrUnique(new PiNode(effectiveOsrLocal, checkedStamp, guard));
     }
 
     /**
@@ -354,11 +385,7 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
      *         {@code bci}
      */
     private static BitSet getOopMapAt(ResolvedJavaMethod method, int bci) {
-        if (!HotSpotGraalServices.hasGetOopMapAt()) {
-            return null;
-        } else {
-            return HotSpotGraalServices.getOopMapAt(method, bci);
-        }
+        return ((HotSpotResolvedJavaMethod) method).getOopMapAt(bci);
     }
 
     private static EntryMarkerNode getEntryMarker(StructuredGraph graph) {
@@ -379,7 +406,7 @@ public class OnStackReplacementPhase extends BasePhase<CoreProviders> {
     private static LoopBeginNode osrLoop(EntryMarkerNode osr, CoreProviders providers) {
         // Check that there is an OSR loop for the OSR begin
         LoopsData loops = providers.getLoopsDataProvider().getLoopsData(osr.graph());
-        Loop<HIRBlock> l = loops.getCFG().getNodeToBlock().get(osr).getLoop();
+        CFGLoop<HIRBlock> l = loops.getCFG().getNodeToBlock().get(osr).getLoop();
         if (l == null) {
             return null;
         }

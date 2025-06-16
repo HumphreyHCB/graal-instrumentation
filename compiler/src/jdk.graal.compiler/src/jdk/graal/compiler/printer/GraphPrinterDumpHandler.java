@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugDumpHandler;
 import jdk.graal.compiler.debug.DebugDumpScope;
@@ -54,7 +55,6 @@ import jdk.graal.compiler.serviceprovider.GraalServices;
 
 import jdk.vm.ci.meta.JavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.services.Services;
 
 //JaCoCo Exclude
 
@@ -92,7 +92,7 @@ public final class GraphPrinterDumpHandler implements DebugDumpHandler {
         this.printerSupplier = printerSupplier;
         /* Add the JVM and Java arguments to the graph properties to help identify it. */
         this.jvmArguments = jvmArguments();
-        this.sunJavaCommand = Services.getSavedProperty("sun.java.command");
+        this.sunJavaCommand = GraalServices.getSavedProperty("sun.java.command");
     }
 
     private static String jvmArguments() {
@@ -200,6 +200,14 @@ public final class GraphPrinterDumpHandler implements DebugDumpHandler {
                     }
                     properties.put("StageFlags", structuredGraph.getGraphState().getStageFlags());
                     properties.put("speculationLog", structuredGraph.getSpeculationLog() != null ? structuredGraph.getSpeculationLog().toString() : "null");
+
+                    CompilationAlarm currentAlarm = CompilationAlarm.current();
+                    if (currentAlarm.isEnabled()) {
+                        properties.put("elapsedCompilationAlarm", currentAlarm.elapsed());
+                        if (currentAlarm.elapsedPhaseTreeAsString() != null) {
+                            properties.put("elapsedPhaseTimes", currentAlarm.elapsedPhaseTreeAsString().toString());
+                        }
+                    }
                 }
                 if (PrintUnmodifiedGraphs.getValue(options) || lastGraph != graph || lastModCount != graph.getEdgeModificationCount()) {
                     printer.print(debug, graph, properties, nextDumpId(), format, arguments);

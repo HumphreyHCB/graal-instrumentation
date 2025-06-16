@@ -27,6 +27,7 @@ package jdk.graal.compiler.core.phases;
 import static jdk.graal.compiler.phases.common.DeadCodeEliminationPhase.Optionality.Required;
 
 import jdk.graal.compiler.core.common.GraalOptions;
+import jdk.graal.compiler.graph.Graph;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionType;
@@ -41,11 +42,14 @@ import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.common.ExpandLogicPhase;
 import jdk.graal.compiler.phases.common.FinalCanonicalizerPhase;
 import jdk.graal.compiler.phases.common.FixReadsPhase;
+import jdk.graal.compiler.phases.common.InitMemoryVerificationPhase;
 import jdk.graal.compiler.phases.common.LowTierLoweringPhase;
 import jdk.graal.compiler.phases.common.OptimizeExtendsPhase;
+import jdk.graal.compiler.phases.common.OptimizeOffsetAddressPhase;
 import jdk.graal.compiler.phases.common.ProfileCompiledMethodsPhase;
 import jdk.graal.compiler.phases.common.PropagateDeoptimizeProbabilityPhase;
 import jdk.graal.compiler.phases.common.RemoveOpaqueValuePhase;
+import jdk.graal.compiler.phases.common.TransplantGraphsPhase;
 import jdk.graal.compiler.phases.schedule.SchedulePhase;
 import jdk.graal.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
@@ -73,9 +77,15 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new ProfileCompiledMethodsPhase());
         }
 
+        if (Graph.Options.VerifyGraalGraphs.getValue(options)) {
+            appendPhase(new InitMemoryVerificationPhase());
+        }
+
         appendPhase(new LowTierLoweringPhase(canonicalizerWithGVN));
 
         appendPhase(new ExpandLogicPhase(canonicalizerWithGVN));
+
+        appendPhase(new OptimizeOffsetAddressPhase(canonicalizerWithGVN));
 
         if (GraalOptions.EnableProfiler.getValue(options)) {
             appendPhase(new BuboInstrumentationLowTierPhase(options));
@@ -108,7 +118,14 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new BuboInstrumentationLowTierDebugPhase());
         }
 
-        appendPhase(new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST_OUT_OF_LOOPS));
+        appendPhase(new SchedulePhase.FinalSchedulePhase());
+
+        /*
+         * TransplantLowTierSnippetPhase is marked as placeholder phase because we can only
+         * instantiate it once we have a suites object for the callee graphs available at some later
+         * vm specific time.
+         */
+        appendPhase(new PlaceholderPhase<>(TransplantGraphsPhase.class));
     }
 
     public final CanonicalizerPhase getCanonicalizerWithoutGVN() {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -98,6 +98,7 @@ import com.oracle.truffle.regex.tregex.nodesplitter.DFANodeSplitBailoutException
 import com.oracle.truffle.regex.tregex.parser.Counter;
 import com.oracle.truffle.regex.tregex.parser.RegexProperties;
 import com.oracle.truffle.regex.tregex.parser.ast.CharacterClass;
+import com.oracle.truffle.regex.tregex.parser.ast.Group;
 import com.oracle.truffle.regex.tregex.parser.ast.GroupBoundaries;
 import com.oracle.truffle.regex.tregex.parser.ast.RegexAST;
 import com.oracle.truffle.regex.tregex.parser.ast.RegexASTNode;
@@ -180,6 +181,10 @@ public final class DFAGenerator implements JsonConvertible {
 
     public DFAStateNodeBuilder[] getEntryStates() {
         return entryStates;
+    }
+
+    private DFAStateNodeBuilder getMaxOffsetAnchoredInitialState() {
+        return entryStates[nfa.getAnchoredEntry().length - 1];
     }
 
     private DFAStateNodeBuilder getUnanchoredInitialState() {
@@ -334,6 +339,7 @@ public final class DFAGenerator implements JsonConvertible {
         assert states[0] == null;
         short[] entryStateIDs = new short[entryStates.length];
         short[] cgLastTransition = isGenericCG() ? new short[entryStates.length] : null;
+        DFASimpleCGTransition[] initialStateSimpleCGTransitions = !isForward() && doSimpleCG ? new DFASimpleCGTransition[entryStates.length] : null;
         for (int i = 0; i < entryStates.length; i++) {
             if (entryStates[i] == null) {
                 entryStateIDs[i] = -1;
@@ -342,6 +348,8 @@ public final class DFAGenerator implements JsonConvertible {
                 if (isGenericCG()) {
                     DFACaptureGroupLazyTransitionBuilder lt = getLazyTransition(initialCGTransitions[i]);
                     cgLastTransition[i] = lt.getLastTransitionIndex();
+                } else if (!isForward() && doSimpleCG) {
+                    initialStateSimpleCGTransitions[i] = DFASimpleCGTransition.create(entryStates[i].getNfaTransitionSet().getTransition(0), false);
                 }
             }
         }
@@ -349,7 +357,9 @@ public final class DFAGenerator implements JsonConvertible {
             assert getReplacement(getUnanchoredInitialState().getId()) instanceof DFAFindInnerLiteralStateNode;
             entryStateIDs = new short[]{(short) getUnanchoredInitialState().getId(), (short) getUnanchoredInitialState().getId()};
         }
-        states[0] = new DFAInitialStateNode(entryStateIDs, cgLastTransition);
+        DFASimpleCG initialStateSimpleCG = initialStateSimpleCGTransitions == null ? null
+                        : DFASimpleCG.create(initialStateSimpleCGTransitions, DFASimpleCGTransition.getEmptyInstance(), DFASimpleCGTransition.getEmptyInstance());
+        states[0] = new DFAInitialStateNode(entryStateIDs, cgLastTransition, initialStateSimpleCG);
         if (TRegexOptions.TRegexEnableNodeSplitter) {
             states = tryMakeReducible(states);
         }
@@ -383,12 +393,45 @@ public final class DFAGenerator implements JsonConvertible {
     private void createInitialStatesBackward() {
         entryStates = new DFAStateNodeBuilder[]{null, null};
         if (nfa.hasReverseUnAnchoredEntry()) {
-            entryStates[0] = createInitialState(createTransitionBuilder(createNFATransitionSet(nfa.getReverseAnchoredEntry(), nfa.getReverseUnAnchoredEntry())));
-            entryStates[1] = createInitialState(createTransitionBuilder(createNFATransitionSet(nfa.getReverseUnAnchoredEntry())));
+            entryStates[0] = createInitialStateBackward(nfa.getReverseAnchoredEntry(), nfa.getReverseUnAnchoredEntry());
+            entryStates[1] = createInitialStateBackward(nfa.getReverseUnAnchoredEntry());
         } else {
-            entryStates[0] = createInitialState(createTransitionBuilder(createNFATransitionSet(nfa.getReverseAnchoredEntry())));
+            entryStates[0] = createInitialStateBackward(nfa.getReverseAnchoredEntry());
             entryStates[1] = null;
         }
+    }
+
+    private DFAStateNodeBuilder createInitialStateBackward(NFAStateTransition... entries) {
+        /*
+         * In forward mode, a DFA state consists of a set of NFA transitions, and a DFA state is
+         * considered final if one of its NFA transitions' targets _contains a subsequent
+         * transition_ to a NFA final state.
+         * 
+         * In backward mode, we skip the NFA's final state transitions, so the backward DFA states
+         * consist of the same NFA transitions as the forward DFA states. As a consequence of this,
+         * backward DFA states are considered final if one of their NFA transition's targets _is_ a
+         * backward NFA final state.
+         */
+        ObjectArrayBuffer<NFAStateTransition> transitionSet = compilationBuffer.getObjectBuffer1();
+        StateSet<NFA, NFAState> stateSet = StateSet.create(nfa);
+        CodePointSet cps = null;
+        GroupBoundaries groupBoundaries = null;
+        for (NFAStateTransition entry : entries) {
+            // skip past reverse entry transitions (i.e. forward final transitions)
+            for (NFAStateTransition predecessor : entry.getTarget(false).getPredecessors()) {
+                if (groupBoundaries == null) {
+                    cps = predecessor.getCodePointSet();
+                    groupBoundaries = predecessor.getGroupBoundaries();
+                } else {
+                    if (!predecessor.getGroupBoundaries().equals(groupBoundaries) || !predecessor.getCodePointSet().equals(cps)) {
+                        hasAmbiguousStates = true;
+                    }
+                }
+                stateSet.add(predecessor.getTarget(false));
+                transitionSet.add(predecessor);
+            }
+        }
+        return createInitialState(createTransitionBuilder(new TransitionSet<>(transitionSet.toArray(NFAStateTransition[]::new), stateSet)));
     }
 
     private DFAStateNodeBuilder createInitialState(DFAStateTransitionBuilder transition) {
@@ -412,15 +455,21 @@ public final class DFAGenerator implements JsonConvertible {
         boolean allPrefixStateSuccessors = true;
         outer: for (NFAStateTransition transition : state.getNfaTransitionSet().getTransitions()) {
             NFAState nfaState = transition.getTarget(isForward());
-            for (NFAStateTransition nfaTransition : nfaState.getSuccessors(isForward())) {
-                NFAState target = nfaTransition.getTarget(isForward());
-                if (!target.isFinalState(isForward()) && (!state.isBackwardPrefixState() || target.hasPrefixStates())) {
-                    anyPrefixStateSuccessors |= target.hasPrefixStates();
-                    allPrefixStateSuccessors &= target.hasPrefixStates();
-                    canonicalizer.addArgument(nfaTransition, isForward() ? nfaTransition.getCodePointSet() : target.getCharSet());
-                } else if (isForward() && target.isUnAnchoredFinalState()) {
-                    assert target == nfa.getReverseUnAnchoredEntry().getSource();
-                    break outer;
+            if (isForward()) {
+                for (NFAStateTransition nfaTransition : nfaState.getSuccessors(true)) {
+                    NFAState target = nfaTransition.getTarget(true);
+                    if (!target.isFinalState(true)) {
+                        canonicalizer.addArgument(nfaTransition, nfaTransition.getCodePointSet());
+                    } else if (target.isUnAnchoredFinalState()) {
+                        assert target == nfa.getReverseUnAnchoredEntry().getSource();
+                        break outer;
+                    }
+                }
+            } else if (!nfaState.isFinalState(false) && (!state.isBackwardPrefixState() || nfaState.hasPrefixStates())) {
+                for (NFAStateTransition nfaTransition : nfaState.getSuccessors(false)) {
+                    anyPrefixStateSuccessors |= nfaState.hasPrefixStates();
+                    allPrefixStateSuccessors &= nfaState.hasPrefixStates();
+                    canonicalizer.addArgument(nfaTransition, nfaTransition.getCodePointSet());
                 }
             }
         }
@@ -591,8 +640,13 @@ public final class DFAGenerator implements JsonConvertible {
 
     private void optimizeDFA() {
         RegexProperties props = nfa.getAst().getProperties();
+        Group root = nfa.getAst().getRoot();
 
-        doSimpleCG = (isForward() || !nfa.getAst().getProperties().hasQuantifiers() && !nfa.getAst().getProperties().hasEmptyCaptureGroups()) &&
+        boolean doSimpleCGBackward = !props.hasQuantifiers() && !props.hasEmptyCaptureGroups() &&
+                        (!root.hasCaret() || root.startsWithCaret()) &&
+                        (!root.hasDollar() || root.endsWithDollar());
+
+        doSimpleCG = (isForward() || doSimpleCGBackward) &&
                         !isBooleanMatch() &&
                         executorProps.isAllowSimpleCG() &&
                         !hasAmbiguousStates &&
@@ -601,202 +655,216 @@ public final class DFAGenerator implements JsonConvertible {
                         (isSearching() || props.hasCaptureGroups()) &&
                         (props.hasAlternations() || props.hasLookAroundAssertions());
 
-        // inner-literal-optimization
-        if (isForward() && isSearching() && !isGenericCG() && !nfa.getAst().getFlags().isSticky() && props.hasInnerLiteral() && getUnanchoredInitialState() != null) {
-            int literalEnd = props.getInnerLiteralEnd();
-            int literalStart = props.getInnerLiteralStart();
-            Sequence rootSeq = nfa.getAst().getRoot().getFirstAlternative();
+        tryInnerLiteralOptimization();
+    }
 
-            boolean prefixHasLookAhead = false;
-            // find all parser tree nodes of the prefix
-            StateSet<RegexAST, RegexASTNode> prefixAstNodes = StateSet.create(nfa.getAst());
-            for (int i = 0; i < literalStart; i++) {
-                Term t = rootSeq.getTerms().get(i);
-                prefixHasLookAhead |= t.hasLookAheads();
-                AddToSetVisitor.addCharacterClasses(prefixAstNodes, t);
-            }
-
-            // find NFA states of the prefix and the beginning and end of the literal
-            StateSet<NFA, NFAState> prefixNFAStates = StateSet.create(nfa);
-            if (nfa.getUnAnchoredInitialState() != null) {
-                prefixNFAStates.add(nfa.getUnAnchoredInitialState());
-            }
-            NFAState literalFirstState = null;
-            NFAState literalLastState = null;
-            for (NFAState s : nfa.getStates()) {
-                if (s == null) {
-                    continue;
-                }
-                if (!prefixHasLookAhead && !s.getStateSet().isEmpty() && prefixAstNodes.containsAll(s.getStateSet())) {
-                    prefixNFAStates.add(s);
-                }
-                if (s.getStateSet().contains(rootSeq.getTerms().get(literalStart))) {
-                    if (literalFirstState != null) {
-                        // multiple look-ahead assertions in the prefix are unsupported
-                        return;
-                    }
-                    literalFirstState = s;
-                }
-                if (s.getStateSet().contains(rootSeq.getTerms().get(literalEnd - 1))) {
-                    if (literalLastState != null) {
-                        // multiple look-ahead assertions in the prefix are unsupported
-                        return;
-                    }
-                    literalLastState = s;
-                }
-            }
-            if (prefixHasLookAhead) {
-                // If there are look-ahead assertions in the prefix, we cannot decide whether a
-                // given NFA state belongs to the prefix just by its AST nodes alone, since a
-                // look-ahead may be merged with nodes of the postfix as well. Therefore, we instead
-                // mark NFA states belonging to the prefix by traversing the NFA from the initial
-                // state to the literal's first state.
-                ArrayList<NFAState> bfsCur = new ArrayList<>(prefixNFAStates);
-                ArrayList<NFAState> bfsNext = new ArrayList<>();
-                if (nfa.getAnchoredInitialState() != null) {
-                    bfsCur.add(nfa.getAnchoredInitialState());
-                }
-                while (!bfsCur.isEmpty()) {
-                    for (NFAState s : bfsCur) {
-                        for (NFAStateTransition t : s.getSuccessors()) {
-                            NFAState target = t.getTarget();
-                            if (target != literalFirstState && prefixNFAStates.add(target)) {
-                                bfsNext.add(target);
-                            }
-                        }
-                    }
-                    ArrayList<NFAState> tmp = bfsCur;
-                    bfsCur = bfsNext;
-                    bfsNext = tmp;
-                    bfsNext.clear();
-                }
-            }
-            assert literalFirstState != null;
-            assert literalLastState != null;
-
-            // find the literal's beginning and end in the DFA
-            DFAStateNodeBuilder literalFirstDFAState = null;
-            DFAStateNodeBuilder literalLastDFAState = null;
-            DFAStateNodeBuilder unanchoredInitialState = getUnanchoredInitialState();
-            TBitSet visited = new TBitSet(nextID);
-            visited.set(unanchoredInitialState.getId());
-            bfsTraversalCur.clear();
-            bfsTraversalCur.add(unanchoredInitialState.getSuccessors());
-            while (!bfsTraversalCur.isEmpty()) {
-                bfsTraversalNext.clear();
-                for (DFAStateTransitionBuilder[] cur : bfsTraversalCur) {
-                    for (DFAStateTransitionBuilder t : cur) {
-                        DFAStateNodeBuilder target = t.getTarget();
-                        if (visited.get(target.getId()) || target == literalFirstDFAState) {
-                            continue;
-                        }
-                        visited.set(target.getId());
-                        StateSet<NFA, NFAState> targetStateSet = target.getNfaTransitionSet().getTargetStateSet();
-                        if (literalFirstDFAState == null && targetStateSet.contains(literalFirstState)) {
-                            literalFirstDFAState = target;
-                        }
-                        if (targetStateSet.contains(literalLastState)) {
-                            literalLastDFAState = target;
-                            bfsTraversalNext.clear();
-                            break;
-                        }
-                        bfsExpand(target);
-                    }
-                }
-                bfsSwapLists();
-            }
-            assert literalFirstDFAState != null;
-            assert literalLastDFAState != null;
-
-            if (literalStart > 0) {
-                /*
-                 * If the prefix is of variable length, we must check if it is possible to match the
-                 * literal beginning from the prefix, and bail out if that is the case. Otherwise,
-                 * the resulting DFA would produce wrong results on e.g. /a?aa/. In this exemplary
-                 * expression, the DFA would match the literal "aa" and immediately jump to the
-                 * successor of the literal's last state, which is the final state. It would never
-                 * match "aaa". If the prefix has unbounded quantifiers, the runtime complexity of
-                 * the overall match would also become quadratic in this case.
-                 */
-                if (innerLiteralPrefixIsVariableLength(rootSeq, literalStart)) {
-                    nfa.setInitialLoopBack(false);
-                    if (innerLiteralMatchesPrefix(prefixNFAStates)) {
-                        nfa.setInitialLoopBack(true);
-                        return;
-                    }
-                    nfa.setInitialLoopBack(true);
-                }
-
-                /*
-                 * Redirect all transitions to prefix states to the initial state. The prefix states
-                 * are all covered/duplicated by the backward matcher, so instead of going to the
-                 * original prefix states (where "prefix" in this case means the part of the regex
-                 * preceding the literal), we can go to the DFAFindInnerLiteralStateNode that is
-                 * inserted as the initial state, and benefit from the vectorized search for the
-                 * literal. An example for why this is important: Given the regex /.?abc[0-9]/, the
-                 * "inner literal" is abc, and the prefix is .?. The dot (.) matches everything
-                 * except newlines. When performing a search, the DFA would first search for abc,
-                 * then check that the preceding character is no newline, and then check if the
-                 * succeeding character is a digit ([0-9]). If the succeeding character is not a
-                 * digit, the DFA would check if it is a newline, and only if it is, it would go
-                 * back to the initial state and start the optimized search for abc again. In all
-                 * other cases, it would go to the state representing the dot, which would loop to
-                 * itself as long as no newline is encountered, and the optimized search would
-                 * hardly ever trigger after the first occurrence of the literal.
-                 */
-                CodePointSetAccumulator acc = compilationBuffer.getCodePointSetAccumulator1();
-                for (DFAStateNodeBuilder s : stateMap.values()) {
-                    acc.clear();
-                    if (!prefixNFAStates.containsAll(s.getNfaTransitionSet().getTargetStateSet())) {
-                        DFAStateTransitionBuilder mergedTransition = null;
-                        ObjectArrayBuffer<DFAStateTransitionBuilder> newTransitions = null;
-                        for (int i = 0; i < s.getSuccessors().length; i++) {
-                            DFAStateTransitionBuilder t = s.getSuccessors()[i];
-                            if (prefixNFAStates.containsAll(t.getTarget().getNfaTransitionSet().getTargetStateSet())) {
-                                if (mergedTransition == null) {
-                                    t.setTarget(unanchoredInitialState);
-                                    mergedTransition = t;
-                                } else if (newTransitions == null) {
-                                    newTransitions = compilationBuffer.getObjectBuffer1();
-                                    newTransitions.addAll(s.getSuccessors(), 0, i);
-                                    acc.addSet(mergedTransition.getCodePointSet());
-                                    acc.addSet(t.getCodePointSet());
-                                } else {
-                                    acc.addSet(t.getCodePointSet());
-                                }
-                            } else if (newTransitions != null) {
-                                newTransitions.add(t);
-                            }
-                        }
-                        // GR-17760: newTransitions != null implies mergedTransition != null, but
-                        // the "Fortify" tool does not see that
-                        if (newTransitions != null && mergedTransition != null) {
-                            mergedTransition.setMatcherBuilder(acc.toCodePointSet());
-                            s.setSuccessors(newTransitions.toArray(new DFAStateTransitionBuilder[newTransitions.length()]));
-                            Arrays.sort(s.getSuccessors(), Comparator.comparing(TransitionBuilder::getCodePointSet));
-                        }
-                    }
-                }
-
-                // generate a reverse matcher for the prefix
-                nfa.setInitialLoopBack(false);
-                NFAState reverseAnchoredInitialState = nfa.getReverseAnchoredEntry().getSource();
-                NFAState reverseUnAnchoredInitialState = nfa.getReverseUnAnchoredEntry().getSource();
-                nfa.getReverseAnchoredEntry().setSource(literalFirstState);
-                nfa.getReverseUnAnchoredEntry().setSource(literalFirstState);
-                assert innerLiteralPrefixMatcher == null;
-                innerLiteralPrefixMatcher = compilationRequest.createDFAExecutor(nfa, new TRegexDFAExecutorProperties(false, false, false, doSimpleCG,
-                                false, rootSeq.getTerms().get(literalStart - 1).getMinPath()), "innerLiteralPrefix");
-                innerLiteralPrefixMatcher.getProperties().setSimpleCGMustCopy(false);
-                doSimpleCG = doSimpleCG && innerLiteralPrefixMatcher.isSimpleCG();
-                nfa.setInitialLoopBack(true);
-                nfa.getReverseAnchoredEntry().setSource(reverseAnchoredInitialState);
-                nfa.getReverseUnAnchoredEntry().setSource(reverseUnAnchoredInitialState);
-            }
-            executorProps.setCanFindStart(innerLiteralCanFindMatchStart(unanchoredInitialState, literalLastDFAState));
-            registerStateReplacement(unanchoredInitialState.getId(), new DFAFindInnerLiteralStateNode((short) unanchoredInitialState.getId(),
-                            new short[]{(short) literalLastDFAState.getId()}, nfa.getAst().extractInnerLiteral()));
+    private void tryInnerLiteralOptimization() {
+        RegexProperties props = nfa.getAst().getProperties();
+        if (!(isForward() && isSearching() && !isGenericCG() && !nfa.getAst().getFlags().isSticky() && props.hasInnerLiteral() && getUnanchoredInitialState() != null)) {
+            return;
         }
+        int literalEnd = props.getInnerLiteralEnd();
+        int literalStart = props.getInnerLiteralStart();
+        Sequence rootSeq = nfa.getAst().getRoot().getFirstAlternative();
+
+        boolean maybeOverlappingLookArounds = false;
+        // find all parser tree nodes of the prefix
+        StateSet<RegexAST, RegexASTNode> prefixAstNodes = StateSet.create(nfa.getAst());
+        for (int i = 0; i < literalStart; i++) {
+            Term t = rootSeq.getTerms().get(i);
+            maybeOverlappingLookArounds |= t.hasLookArounds();
+            AddToSetVisitor.addCharacterClasses(prefixAstNodes, t);
+        }
+        boolean lookBehindsAfterLiteral = false;
+        for (int i = literalEnd; i < rootSeq.size(); i++) {
+            Term t = rootSeq.getTerms().get(i);
+            lookBehindsAfterLiteral |= t.hasLookBehinds();
+        }
+        maybeOverlappingLookArounds |= lookBehindsAfterLiteral;
+
+        // find NFA states of the prefix and the beginning and end of the literal
+        StateSet<NFA, NFAState> prefixNFAStates = StateSet.create(nfa);
+        NFAState unAnchoredInitialState = nfa.getMaxOffsetUnAnchoredInitialState();
+        if (unAnchoredInitialState != null) {
+            prefixNFAStates.add(unAnchoredInitialState);
+        }
+        NFAState literalFirstState = null;
+        NFAState literalLastState = null;
+        for (NFAState s : nfa.getStates()) {
+            if (s == null) {
+                continue;
+            }
+            if (!maybeOverlappingLookArounds && !s.getStateSet().isEmpty() && prefixAstNodes.containsAll(s.getStateSet())) {
+                prefixNFAStates.add(s);
+            }
+            if (s.getStateSet().contains(rootSeq.getTerms().get(literalStart))) {
+                if (literalFirstState != null) {
+                    // multiple look-ahead assertions in the prefix are unsupported
+                    return;
+                }
+                literalFirstState = s;
+            }
+            if (s.getStateSet().contains(rootSeq.getTerms().get(literalEnd - 1))) {
+                if (literalLastState != null) {
+                    // multiple look-ahead assertions in the prefix are unsupported
+                    return;
+                }
+                literalLastState = s;
+            }
+        }
+        if (maybeOverlappingLookArounds) {
+            // If there are look-ahead assertions in the prefix, we cannot decide whether a
+            // given NFA state belongs to the prefix just by its AST nodes alone, since a
+            // look-ahead may be merged with nodes of the postfix as well. Therefore, we instead
+            // mark NFA states belonging to the prefix by traversing the NFA from the initial
+            // state to the literal's first state.
+            ArrayList<NFAState> bfsCur = new ArrayList<>(prefixNFAStates);
+            ArrayList<NFAState> bfsNext = new ArrayList<>();
+            NFAState anchoredInitialState = nfa.getMaxOffsetAnchoredInitialState();
+            if (anchoredInitialState != null) {
+                bfsCur.add(anchoredInitialState);
+            }
+            while (!bfsCur.isEmpty()) {
+                for (NFAState s : bfsCur) {
+                    for (NFAStateTransition t : s.getSuccessors()) {
+                        NFAState target = t.getTarget();
+                        if (target != literalFirstState && prefixNFAStates.add(target)) {
+                            bfsNext.add(target);
+                        }
+                    }
+                }
+                ArrayList<NFAState> tmp = bfsCur;
+                bfsCur = bfsNext;
+                bfsNext = tmp;
+                bfsNext.clear();
+            }
+        }
+        if (literalFirstState == null || literalLastState == null) {
+            // may happen when transitions to the literal have been pruned during NFA generation
+            return;
+        }
+
+        // find the literal's beginning and end in the DFA
+        DFAStateNodeBuilder literalFirstDFAState = null;
+        DFAStateNodeBuilder literalLastDFAState = null;
+        DFAStateNodeBuilder unanchoredInitialState = getUnanchoredInitialState();
+        TBitSet visited = new TBitSet(nextID);
+        visited.set(unanchoredInitialState.getId());
+        bfsTraversalCur.clear();
+        bfsTraversalCur.add(unanchoredInitialState.getSuccessors());
+        outer: while (!bfsTraversalCur.isEmpty()) {
+            bfsTraversalNext.clear();
+            for (DFAStateTransitionBuilder[] cur : bfsTraversalCur) {
+                for (DFAStateTransitionBuilder t : cur) {
+                    DFAStateNodeBuilder target = t.getTarget();
+                    if (visited.get(target.getId())) {
+                        continue;
+                    }
+                    visited.set(target.getId());
+                    StateSet<NFA, NFAState> targetStateSet = target.getNfaTransitionSet().getTargetStateSet();
+                    if (literalFirstDFAState == null && targetStateSet.contains(literalFirstState)) {
+                        literalFirstDFAState = target;
+                    }
+                    if (targetStateSet.contains(literalLastState)) {
+                        literalLastDFAState = target;
+                        bfsTraversalNext.clear();
+                        break outer;
+                    }
+                    bfsExpand(target);
+                }
+            }
+            bfsSwapLists();
+        }
+
+        if (literalFirstDFAState == null || literalLastDFAState == null) {
+            // may happen when transitions to the literal have been pruned during DFA generation
+            return;
+        }
+
+        if (literalStart > 0 || lookBehindsAfterLiteral) {
+            /*
+             * Check if it is possible to match the literal beginning from the prefix, and bail out
+             * if that is the case. Otherwise, the resulting DFA would produce wrong results on e.g.
+             * /a?aa/. In this exemplary expression, the DFA would match the literal "aa" and
+             * immediately jump to the successor of the literal's last state, which is the final
+             * state. It would never match "aaa". If the prefix has unbounded quantifiers, the
+             * runtime complexity of the overall match would also become quadratic in this case.
+             */
+            nfa.setInitialLoopBack(false);
+            if (innerLiteralMatchesPrefix(prefixNFAStates)) {
+                nfa.setInitialLoopBack(true);
+                return;
+            }
+            nfa.setInitialLoopBack(true);
+
+            /*
+             * Redirect all transitions to prefix states to the initial state. The prefix states are
+             * all covered/duplicated by the backward matcher, so instead of going to the original
+             * prefix states (where "prefix" in this case means the part of the regex preceding the
+             * literal), we can go to the DFAFindInnerLiteralStateNode that is inserted as the
+             * initial state, and benefit from the vectorized search for the literal. An example for
+             * why this is important: Given the regex /.?abc[0-9]/, the "inner literal" is abc, and
+             * the prefix is .?. The dot (.) matches everything except newlines. When performing a
+             * search, the DFA would first search for abc, then check that the preceding character
+             * is no newline, and then check if the succeeding character is a digit ([0-9]). If the
+             * succeeding character is not a digit, the DFA would check if it is a newline, and only
+             * if it is, it would go back to the initial state and start the optimized search for
+             * abc again. In all other cases, it would go to the state representing the dot, which
+             * would loop to itself as long as no newline is encountered, and the optimized search
+             * would hardly ever trigger after the first occurrence of the literal.
+             */
+            CodePointSetAccumulator acc = compilationBuffer.getCodePointSetAccumulator1();
+            for (DFAStateNodeBuilder s : stateMap.values()) {
+                acc.clear();
+                if (!prefixNFAStates.containsAll(s.getNfaTransitionSet().getTargetStateSet())) {
+                    DFAStateTransitionBuilder mergedTransition = null;
+                    ObjectArrayBuffer<DFAStateTransitionBuilder> newTransitions = null;
+                    for (int i = 0; i < s.getSuccessors().length; i++) {
+                        DFAStateTransitionBuilder t = s.getSuccessors()[i];
+                        if (prefixNFAStates.containsAll(t.getTarget().getNfaTransitionSet().getTargetStateSet())) {
+                            if (mergedTransition == null) {
+                                t.setTarget(unanchoredInitialState);
+                                mergedTransition = t;
+                            } else if (newTransitions == null) {
+                                newTransitions = compilationBuffer.getObjectBuffer1();
+                                newTransitions.addAll(s.getSuccessors(), 0, i);
+                                acc.addSet(mergedTransition.getCodePointSet());
+                                acc.addSet(t.getCodePointSet());
+                            } else {
+                                acc.addSet(t.getCodePointSet());
+                            }
+                        } else if (newTransitions != null) {
+                            newTransitions.add(t);
+                        }
+                    }
+                    // GR-17760: newTransitions != null implies mergedTransition != null, but
+                    // the "Fortify" tool does not see that
+                    if (newTransitions != null && mergedTransition != null) {
+                        mergedTransition.setMatcherBuilder(acc.toCodePointSet());
+                        s.setSuccessors(newTransitions.toArray(new DFAStateTransitionBuilder[newTransitions.length()]));
+                        Arrays.sort(s.getSuccessors(), Comparator.comparing(TransitionBuilder::getCodePointSet));
+                    }
+                }
+            }
+
+            // generate a reverse matcher for the prefix
+            nfa.setInitialLoopBack(false);
+            NFAState reverseAnchoredInitialState = nfa.getReverseAnchoredEntry().getSource();
+            NFAState reverseUnAnchoredInitialState = nfa.getReverseUnAnchoredEntry().getSource();
+            nfa.getReverseAnchoredEntry().setSource(literalFirstState);
+            nfa.getReverseUnAnchoredEntry().setSource(literalFirstState);
+            assert innerLiteralPrefixMatcher == null;
+            int minResultLength = rootSeq.getTerms().get(literalStart).getMinPath() - 1;
+            innerLiteralPrefixMatcher = compilationRequest.createDFAExecutor(nfa, new TRegexDFAExecutorProperties(false, false, false, doSimpleCG, false, minResultLength), "innerLiteralPrefix");
+            innerLiteralPrefixMatcher.getProperties().setSimpleCGMustCopy(false);
+            doSimpleCG = doSimpleCG && innerLiteralPrefixMatcher.isSimpleCG();
+            nfa.setInitialLoopBack(true);
+            nfa.getReverseAnchoredEntry().setSource(reverseAnchoredInitialState);
+            nfa.getReverseUnAnchoredEntry().setSource(reverseUnAnchoredInitialState);
+        }
+        executorProps.setCanFindStart(innerLiteralCanFindMatchStart(unanchoredInitialState, literalLastDFAState));
+        registerStateReplacement(unanchoredInitialState.getId(), new DFAFindInnerLiteralStateNode((short) unanchoredInitialState.getId(),
+                        new short[]{(short) literalLastDFAState.getId()}, nfa.getAst().extractInnerLiteral()));
     }
 
     /**
@@ -834,21 +902,8 @@ public final class DFAGenerator implements JsonConvertible {
         return true;
     }
 
-    private static boolean innerLiteralPrefixIsVariableLength(Sequence rootSeq, int literalStart) {
-        ArrayList<Term> terms = rootSeq.getTerms();
-        if (terms.get(literalStart - 1).getMinPath() < terms.get(literalStart - 1).getMaxPath()) {
-            return true;
-        }
-        for (int i = 0; i < literalStart; i++) {
-            if (terms.get(i).hasLoops()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean innerLiteralMatchesPrefix(StateSet<NFA, NFAState> prefixNFAStates) {
-        if (innerLiteralTryMatchPrefix(prefixNFAStates, entryStates[0].getNfaTransitionSet().getTargetStateSet().copy())) {
+        if (innerLiteralTryMatchPrefix(prefixNFAStates, getMaxOffsetAnchoredInitialState().getNfaTransitionSet().getTargetStateSet().copy())) {
             return true;
         }
         for (NFAState s : prefixNFAStates) {
@@ -1130,13 +1185,71 @@ public final class DFAGenerator implements JsonConvertible {
             lazyPreFinalTransition = createWithLookup(s, maps, iTransitionToFinalState);
         }
         DFACaptureGroupPartialTransition cgLoopToSelf = null;
+        boolean cgLoopToSelfHasDependency = false;
         if (loopToSelf >= 0) {
             cgLoopToSelf = getLazyTransition(s.getSuccessors()[loopToSelf]).getPartialTransitions()[loopToSelf];
+            cgLoopToSelfHasDependency = calcCGLoopToSelfDependency(cgLoopToSelf);
         }
         short[] lastTransitionIndex = new short[s.getSuccessors().length];
         return new CGTrackingDFAStateNode(id, flags, loopToSelf, indexOfNodeId, indexOfIsFast, successors, matchers,
                         lastTransitionIndex, lazyTransitions, lazyPreAnchoredFinalTransition, lazyPreFinalTransition, createCGFinalTransition(s.getAnchoredFinalStateTransition()),
-                        createCGFinalTransition(s.getUnAnchoredFinalStateTransition()), cgLoopToSelf);
+                        createCGFinalTransition(s.getUnAnchoredFinalStateTransition()), cgLoopToSelf, cgLoopToSelfHasDependency);
+    }
+
+    /**
+     * Check if the capture group updates in the given looping transition have a dependency on their
+     * previous application in the loop. This happens when the transition contains a copy operation
+     * where the source array isn't updated at the same indices as the target array, for example:
+     * 
+     * <pre>
+     * {@code copy array 0 -> 1}
+     * {@code update array 0, indices [0, 1]}
+     * {@code update array 1, indices [1]}
+     * </pre>
+     * 
+     * In this case, array 1 at index 0 will always contain the value of array 0 of the previous
+     * loop iteration. We have to take this into account in {@link CGTrackingDFAStateNode}'s
+     * {@code afterIndexOf}-method.
+     */
+    private boolean calcCGLoopToSelfDependency(DFACaptureGroupPartialTransition cgLoopToSelf) {
+        byte[] arrayCopies = cgLoopToSelf.getArrayCopies();
+        if (cgLoopToSelf.doesReorderResults() || arrayCopies.length == 0) {
+            return false;
+        }
+        int maxArrayIndex = 0;
+        for (byte i : arrayCopies) {
+            maxArrayIndex = Math.max(maxArrayIndex, Byte.toUnsignedInt(i));
+        }
+        TBitSet[] updates = new TBitSet[maxArrayIndex + 1];
+        for (IndexOperation op : cgLoopToSelf.getIndexUpdates()) {
+            if (op.getTargetArray() > maxArrayIndex) {
+                continue;
+            }
+            TBitSet bs = new TBitSet(nfa.getAst().getNumberOfCaptureGroups() * 2);
+            for (int i = 0; i < op.getNumberOfIndices(); i++) {
+                bs.set(op.getIndex(i));
+            }
+            assert updates[op.getTargetArray()] == null;
+            updates[op.getTargetArray()] = bs;
+        }
+        TBitSet cmp = new TBitSet(nfa.getAst().getNumberOfCaptureGroups() * 2);
+        for (int i = 0; i < arrayCopies.length; i += 2) {
+            int src = Byte.toUnsignedInt(arrayCopies[i]);
+            int dst = Byte.toUnsignedInt(arrayCopies[i + 1]);
+            if (updates[src] == null) {
+                continue;
+            }
+            if (updates[dst] == null) {
+                return true;
+            }
+            cmp.clear();
+            cmp.union(updates[src]);
+            cmp.subtract(updates[dst]);
+            if (!cmp.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private DFACaptureGroupLazyTransition createWithLookup(DFAStateNodeBuilder s, EconomicMap<DFACaptureGroupPartialTransition, ArrayList<Integer>>[] maps, int i) {

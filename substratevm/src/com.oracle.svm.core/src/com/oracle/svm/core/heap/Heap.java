@@ -29,7 +29,6 @@ import java.lang.ref.ReferenceQueue;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platform;
@@ -37,17 +36,19 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.UnsignedWord;
 
-import com.oracle.svm.core.Isolates;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.PredefinedClassesSupport;
 import com.oracle.svm.core.identityhashcode.IdentityHashCodeSupport;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.option.RuntimeOptionKey;
+import com.oracle.svm.core.snippets.KnownIntrinsics;
 
 import jdk.graal.compiler.api.replacements.Fold;
 
 public abstract class Heap {
+    protected long startOffset;
+
     @Fold
     public static Heap getHeap() {
         return ImageSingletons.lookup(Heap.class);
@@ -56,6 +57,10 @@ public abstract class Heap {
     @Platforms(Platform.HOSTED_ONLY.class)
     protected Heap() {
     }
+
+    /** Verifies that the image heap was mapped correctly. */
+    @Uninterruptible(reason = "Called during startup.")
+    public abstract boolean verifyImageHeapMapping();
 
     /**
      * Notifies the heap that a new thread was attached to the VM. This allows to initialize
@@ -87,19 +92,19 @@ public abstract class Heap {
      * Walk all the objects in the heap. Must only be executed as part of a VM operation that causes
      * a safepoint.
      */
-    public abstract boolean walkObjects(ObjectVisitor visitor);
+    public abstract void walkObjects(ObjectVisitor visitor);
 
     /**
      * Walk all native image heap objects. Must only be executed as part of a VM operation that
      * causes a safepoint.
      */
-    public abstract boolean walkImageHeapObjects(ObjectVisitor visitor);
+    public abstract void walkImageHeapObjects(ObjectVisitor visitor);
 
     /**
      * Walk all heap objects except the native image heap objects. Must only be executed as part of
      * a VM operation that causes a safepoint.
      */
-    public abstract boolean walkCollectedHeapObjects(ObjectVisitor visitor);
+    public abstract void walkCollectedHeapObjects(ObjectVisitor visitor);
 
     /** Returns the number of classes in the heap (initialized as well as uninitialized). */
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -142,8 +147,7 @@ public abstract class Heap {
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public Pointer getImageHeapStart() {
-        Pointer heapBase = (Pointer) Isolates.getHeapBase(CurrentIsolate.getIsolate());
-        return heapBase.add(Heap.getHeap().getImageHeapOffsetInAddressSpace());
+        return KnownIntrinsics.heapBase().add(Heap.getHeap().getImageHeapOffsetInAddressSpace());
     }
 
     /**
@@ -231,6 +235,10 @@ public abstract class Heap {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public abstract UnsignedWord getUsedMemoryAfterLastGC();
 
+    public abstract UnsignedWord getImageHeapReservedBytes();
+
+    public abstract UnsignedWord getImageHeapCommittedBytes();
+
     /** Consider all references in the given object as needing remembered set entries. */
     @Uninterruptible(reason = "Ensure that no GC can occur between modification of the object and this call.", callerMustBe = true)
     public abstract void dirtyAllReferencesOf(Object obj);
@@ -250,4 +258,11 @@ public abstract class Heap {
      */
     @Uninterruptible(reason = "Ensure that no GC can occur between this call and usage of the salt.", callerMustBe = true)
     public abstract long getIdentityHashSalt(Object obj);
+
+    /**
+     * Sets the start offset of the heap.
+     */
+    public void setStartOffset(long startOffset) {
+        this.startOffset = startOffset;
+    }
 }

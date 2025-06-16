@@ -24,16 +24,15 @@
  */
 package com.oracle.svm.core.jdk.localization.substitutions;
 
-import static sun.security.util.SecurityConstants.GET_CLASSLOADER_PERMISSION;
-
 import java.util.Locale;
-import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import org.graalvm.nativeimage.ImageSingletons;
 
+import com.oracle.svm.core.MissingRegistrationUtils;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
@@ -118,7 +117,12 @@ final class Target_java_util_ResourceBundle {
             if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
                 MissingResourceRegistrationUtils.missingResourceBundle(baseName);
             }
-            return getBundleImpl(callerModule, callerModule, baseName, locale, control);
+            return MissingRegistrationUtils.runIgnoringMissingRegistrations(new Supplier<ResourceBundle>() {
+                @Override
+                public ResourceBundle get() {
+                    return getBundleImpl(callerModule, callerModule, baseName, locale, control);
+                }
+            });
         }
 
         // find resource bundles from unnamed module of given class loader
@@ -132,28 +136,12 @@ final class Target_java_util_ResourceBundle {
         if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
             MissingResourceRegistrationUtils.missingResourceBundle(baseName);
         }
-        return getBundleImpl(callerModule, unnamedModule, baseName, locale, control);
-    }
-
-    @Substitute
-    @SuppressWarnings({"removal", "deprecation"})
-    private static ResourceBundle getBundleFromModule(Class<?> caller,
-                    Module module,
-                    String baseName,
-                    Locale locale,
-                    ResourceBundle.Control control) {
-        Objects.requireNonNull(module);
-        Module callerModule = getCallerModule(caller);
-        if (callerModule != module) {
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                sm.checkPermission(GET_CLASSLOADER_PERMISSION);
+        return MissingRegistrationUtils.runIgnoringMissingRegistrations(new Supplier<ResourceBundle>() {
+            @Override
+            public ResourceBundle get() {
+                return getBundleImpl(callerModule, unnamedModule, baseName, locale, control);
             }
-        }
-        if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
-            MissingResourceRegistrationUtils.missingResourceBundle(baseName);
-        }
-        return getBundleImpl(callerModule, module, baseName, locale, control);
+        });
     }
 
     @Alias

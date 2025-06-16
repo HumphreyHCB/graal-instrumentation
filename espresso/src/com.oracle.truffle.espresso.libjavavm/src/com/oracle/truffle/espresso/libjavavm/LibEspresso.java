@@ -23,12 +23,14 @@
 package com.oracle.truffle.espresso.libjavavm;
 
 import java.io.PrintStream;
+import java.util.BitSet;
 
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.ObjectHandle;
 import org.graalvm.nativeimage.ObjectHandles;
 import org.graalvm.nativeimage.VMRuntime;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
+import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -48,12 +50,20 @@ public final class LibEspresso {
     private LibEspresso() {
     }
 
+    private static BitSet asBitSet(CIntPointer ignoredIndices, int nIgnoredIndices) {
+        BitSet result = new BitSet();
+        for (int i = 0; i < nIgnoredIndices; i++) {
+            result.set(ignoredIndices.read(i));
+        }
+        return result;
+    }
+
     @CEntryPoint(name = "Espresso_CreateJavaVM")
-    static int createJavaVM(@SuppressWarnings("unused") IsolateThread thread, JNIJavaVMPointer javaVMPointer, JNIEnvironmentPointer penv, JNIJavaVMInitArgs args) {
-        if (args.getVersion() < JNIVersion.JNI_VERSION_1_2() || args.getVersion() > JNIVersion.JNI_VERSION_10) {
+    static int createJavaVM(@SuppressWarnings("unused") IsolateThread thread, JNIJavaVMPointer javaVMPointer, JNIEnvironmentPointer penv, JNIJavaVMInitArgs args, CIntPointer ignoredIndices,
+                    int nIgnoredIndices) {
+        if (args.getVersion() < JNIVersion.JNI_VERSION_1_2() || args.getVersion() > JNIVersion.JNI_VERSION_21()) {
             return JNIErrors.JNI_EVERSION();
         }
-        // TODO use Launcher infra to parse graalvm specific options
         Context.Builder builder = Context.newBuilder().allowAllAccess(true);
 
         // These option need to be set before calling `Arguments.setupContext()` so that cmd line
@@ -63,7 +73,7 @@ public final class LibEspresso {
         // checks and can use unsafe casts.
         builder.option("engine.RelaxStaticObjectSafetyChecks", "true");
 
-        int result = Arguments.setupContext(builder, args);
+        int result = Arguments.setupContext(builder, args, asBitSet(ignoredIndices, nIgnoredIndices));
         if (result != JNIErrors.JNI_OK()) {
             return result;
         }
@@ -73,10 +83,14 @@ public final class LibEspresso {
         builder.option("java.ExitHost", "true");
         builder.option("java.EnableSignals", "true");
         builder.option("java.ExposeNativeJavaVM", "true");
-        Context context = builder.build();
-        context.enter();
+        builder.option("java.GuestFieldOffsetStrategy", "graal"); // most "hotspot-like"
+        Context context = null;
+        boolean entered = false;
         Value bindings;
         try {
+            context = builder.build();
+            context.enter();
+            entered = true;
             bindings = context.getBindings("java");
         } catch (PolyglotException e) {
             if (e.isExit()) {
@@ -90,8 +104,12 @@ public final class LibEspresso {
             System.exit(1);
             // this is dead code
             // it's what we should do if we supported cleanly tearing down the context in this state
-            context.leave();
-            context.close(true);
+            if (entered) {
+                context.leave();
+            }
+            if (context != null) {
+                context.close(true);
+            }
             return JNIErrors.JNI_ERR();
         }
         Value java = bindings.getMember("<JavaVM>");

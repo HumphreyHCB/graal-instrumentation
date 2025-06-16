@@ -25,6 +25,7 @@
 package jdk.graal.compiler.asm;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.function.Consumer;
 
@@ -199,7 +200,18 @@ public abstract class Assembler<T extends Enum<T>> {
      */
     public byte[] close(boolean trimmedCopy) {
         checkAndClearLabelsWithPatches();
+        finalCodeSize = position();
         return codeBuffer.close(trimmedCopy);
+    }
+
+    private int finalCodeSize = -1;
+
+    /**
+     * Returns the final code size after code emission has been completed.
+     */
+    public int finalCodeSize() {
+        assert codeBuffer.data == null : "Buffer is expected to be closed";
+        return finalCodeSize;
     }
 
     public byte[] copy(int start, int end) {
@@ -301,5 +313,15 @@ public abstract class Assembler<T extends Enum<T>> {
 
     public boolean inlineObjects() {
         return target.inlineObjects;
+    }
+
+    public static void guaranteeDifferentRegisters(Register... registers) {
+        for (int i = 0; i < registers.length - 1; ++i) {
+            for (int j = i + 1; j < registers.length; ++j) {
+                if (registers[i].equals(registers[j])) {
+                    throw new GraalError("Multiple uses of register: %s %s", registers[i], Arrays.toString(registers));
+                }
+            }
+        }
     }
 }

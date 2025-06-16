@@ -20,16 +20,13 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-
 package com.oracle.truffle.espresso.vm;
-
-import static com.oracle.truffle.espresso.vm.VM.EspressoStackElement.NATIVE_BCI;
-import static com.oracle.truffle.espresso.vm.VM.EspressoStackElement.UNKNOWN_BCI;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -38,27 +35,26 @@ import com.oracle.truffle.api.TruffleStackTraceElement;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.blocking.EspressoLock;
 import com.oracle.truffle.espresso.blocking.GuestInterruptedException;
-import com.oracle.truffle.espresso.descriptors.Symbol.Name;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols.Names;
 import com.oracle.truffle.espresso.impl.ArrayKlass;
 import com.oracle.truffle.espresso.impl.ContextAccessImpl;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Klass;
 import com.oracle.truffle.espresso.impl.Method;
+import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.nodes.BciProvider;
 import com.oracle.truffle.espresso.nodes.BytecodeNode;
 import com.oracle.truffle.espresso.nodes.EspressoRootNode;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.EspressoException;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
-import com.oracle.truffle.espresso.substitutions.Target_java_lang_Thread;
 import com.oracle.truffle.espresso.substitutions.Throws;
+import com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_Thread;
 import com.oracle.truffle.espresso.threads.State;
 import com.oracle.truffle.espresso.threads.Transition;
 
@@ -399,6 +395,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
     // region Monitor enter/exit
 
     public static void monitorEnter(@JavaType(Object.class) StaticObject obj, Meta meta) {
+        meta.getContext().getLanguage().getThreadLocalState().blockContinuationSuspension();
         final EspressoLock lock = obj.getLock(meta.getContext());
         EspressoContext context = meta.getContext();
         if (!monitorTryLock(lock)) {
@@ -438,6 +435,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
             // Espresso has its own monitor handling.
             throw meta.throwException(meta.java_lang_IllegalMonitorStateException);
         }
+        meta.getContext().getLanguage().getThreadLocalState().unblockContinuationSuspension();
         monitorUnsafeExit(lock);
     }
 
@@ -591,33 +589,18 @@ public final class InterpreterToVM extends ContextAccessImpl {
             meta.java_lang_Throwable_backtrace.setObject(throwable, throwable);
             return throwable;
         }
-        int bci = -1;
-        Method m;
         frames = new VM.StackTrace();
         FrameFilter filter = new FillInStackTraceFramesFilter();
         for (TruffleStackTraceElement element : trace) {
-            Node location = element.getLocation();
-            while (location != null) {
-                if (location instanceof BciProvider) {
-                    bci = ((BciProvider) location).getBci(element.getFrame());
-                    break;
-                }
-                location = location.getParent();
-            }
             RootCallTarget target = element.getTarget();
             if (target != null) {
                 RootNode rootNode = target.getRootNode();
                 if (rootNode instanceof EspressoRootNode) {
-                    m = ((EspressoRootNode) rootNode).getMethod();
+                    Method m = ((EspressoRootNode) rootNode).getMethod();
                     if (!filter.include(m)) {
-                        bci = UNKNOWN_BCI;
                         continue;
                     }
-                    if (m.isNative()) {
-                        bci = NATIVE_BCI;
-                    }
-                    frames.add(new VM.EspressoStackElement(m, bci));
-                    bci = UNKNOWN_BCI;
+                    frames.add(new VM.EspressoStackElement(m, element.getBytecodeIndex()));
                 }
             }
         }
@@ -645,35 +628,43 @@ public final class InterpreterToVM extends ContextAccessImpl {
         if (maxDepth == 0) {
             return frames;
         }
-        Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
-            int count;
+        try {
+            Truffle.getRuntime().iterateFrames(new FrameInstanceVisitor<>() {
+                int count;
 
-            @Override
-            public Object visitFrame(FrameInstance frameInstance) {
-                if (count >= maxDepth) {
-                    return this; // stop iteration
-                }
-                CallTarget callTarget = frameInstance.getCallTarget();
-                if (callTarget instanceof RootCallTarget) {
-                    RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
-                    if (rootNode instanceof EspressoRootNode) {
-                        EspressoRootNode espressoNode = (EspressoRootNode) rootNode;
-                        Method method = espressoNode.getMethod();
+                @Override
+                public Object visitFrame(FrameInstance frameInstance) {
+                    if (count >= maxDepth) {
+                        return this; // stop iteration
+                    }
+                    CallTarget callTarget = frameInstance.getCallTarget();
+                    if (callTarget instanceof RootCallTarget) {
+                        RootNode rootNode = ((RootCallTarget) callTarget).getRootNode();
+                        if (rootNode instanceof EspressoRootNode) {
+                            EspressoRootNode espressoNode = (EspressoRootNode) rootNode;
+                            Method method = espressoNode.getMethod();
 
-                        if (filter.include(method)) {
-                            int bci = espressoNode.readBCI(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY));
-                            frames.add(new VM.EspressoStackElement(method, bci));
-                            count++;
-                        } else {
-                            if (count == 0 && !DefaultHiddenFramesFilter.INSTANCE.include(method)) {
-                                frames.markTopFrameHidden();
+                            if (filter.include(method)) {
+                                int bci = espressoNode.readBCI(frameInstance.getFrame(FrameInstance.FrameAccess.READ_ONLY));
+                                frames.add(new VM.EspressoStackElement(method, bci));
+                                count++;
+                            } else {
+                                if (count == 0 && !DefaultHiddenFramesFilter.INSTANCE.include(method)) {
+                                    frames.markTopFrameHidden();
+                                }
                             }
                         }
                     }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+        } catch (VirtualMachineError e) {
+            throw e;
+        } catch (Throwable t) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // Avoid untyped exceptions from iterateFrames during PE
+            throw EspressoError.shouldNotReachHere(t);
+        }
         return frames;
     }
 
@@ -697,7 +688,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
                 return false;
             }
             if (!afterFillInStackTrace) {
-                if (Name.fillInStackTrace.equals(m.getName()) || Name.fillInStackTrace0.equals(m.getName())) {
+                if (Names.fillInStackTrace.equals(m.getName()) || Names.fillInStackTrace0.equals(m.getName())) {
                     return false;
                 } else {
                     afterFillInStackTrace = true;
@@ -705,7 +696,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
             }
             if (!afterThrowableInit) {
                 assert afterFillInStackTrace;
-                if (Name._init_.equals(m.getName()) && m.getMeta().java_lang_Throwable.isAssignableFrom(m.getDeclaringKlass())) {
+                if (Names._init_.equals(m.getName()) && m.getMeta().java_lang_Throwable.isAssignableFrom(m.getDeclaringKlass())) {
                     return false;
                 } else {
                     afterThrowableInit = true;

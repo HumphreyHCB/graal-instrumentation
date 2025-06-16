@@ -24,12 +24,9 @@
  */
 package com.oracle.svm.core.genscavenge;
 
-import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.UnsignedWord;
-import org.graalvm.word.WordFactory;
 
 import com.oracle.svm.core.SubstrateGCOptions;
 import com.oracle.svm.core.SubstrateUtil;
@@ -37,6 +34,9 @@ import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.genscavenge.remset.RememberedSet;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
+
+import jdk.graal.compiler.api.replacements.Fold;
+import jdk.graal.compiler.word.Word;
 
 /** Constants and variables for the size and layout of the heap and behavior of the collector. */
 public final class HeapParameters {
@@ -87,6 +87,13 @@ public final class HeapParameters {
      * Memory configuration
      */
 
+    /**
+     * Sets the {@link SubstrateGCOptions#MaxHeapSize} option value.
+     *
+     * Note that the value is used during VM initialization and stored in various places in the JDK
+     * in direct or derived form. These usages will <strong>not be updated!</strong> Thus, changing
+     * the maximum heap size at runtime is not recommended.
+     */
     public static void setMaximumHeapSize(UnsignedWord value) {
         SubstrateGCOptions.MaxHeapSize.update(value.rawValue());
     }
@@ -100,7 +107,7 @@ public final class HeapParameters {
     }
 
     public static UnsignedWord getMaximumHeapFree() {
-        return WordFactory.unsigned(SerialGCOptions.MaxHeapFree.getValue());
+        return Word.unsigned(SerialGCOptions.MaxHeapFree.getValue());
     }
 
     public static int getHeapChunkHeaderPadding() {
@@ -109,19 +116,19 @@ public final class HeapParameters {
 
     static int getMaximumYoungGenerationSizePercent() {
         int result = SerialAndEpsilonGCOptions.MaximumYoungGenerationSizePercent.getValue();
-        VMError.guarantee((result >= 0) && (result <= 100), "MaximumYoungGenerationSizePercent should be in [0 ..100]");
+        VMError.guarantee(result >= 0 && result <= 100, "MaximumYoungGenerationSizePercent should be in [0..100]");
         return result;
     }
 
     static int getMaximumHeapSizePercent() {
         int result = SerialAndEpsilonGCOptions.MaximumHeapSizePercent.getValue();
-        VMError.guarantee((result >= 0) && (result <= 100), "MaximumHeapSizePercent should be in [0 ..100]");
+        VMError.guarantee(result >= 0 && result <= 100, "MaximumHeapSizePercent should be in [0..100]");
         return result;
     }
 
     @Fold
     public static UnsignedWord getAlignedHeapChunkSize() {
-        return WordFactory.unsigned(SerialAndEpsilonGCOptions.AlignedHeapChunkSize.getValue());
+        return Word.unsigned(SerialAndEpsilonGCOptions.AlignedHeapChunkSize.getValue());
     }
 
     @Fold
@@ -136,7 +143,7 @@ public final class HeapParameters {
 
     @Fold
     public static UnsignedWord getLargeArrayThreshold() {
-        return WordFactory.unsigned(SerialAndEpsilonGCOptions.LargeArrayThreshold.getValue());
+        return Word.unsigned(SerialAndEpsilonGCOptions.LargeArrayThreshold.getValue());
     }
 
     /*
@@ -153,13 +160,18 @@ public final class HeapParameters {
     }
 
     static {
-        Word.ensureInitialized();
+        /* Calling this method ensures that the static initializer has been executed. */
     }
 
-    private static final UnsignedWord producedHeapChunkZapInt = WordFactory.unsigned(0xbaadbabe);
+    /** Freshly committed but still uninitialized Java heap memory. */
+    private static final int UNINITIALIZED_JAVA_HEAP = 0xbaadbabe;
+    /** Unused but still committed Java heap memory. */
+    private static final int UNUSED_JAVA_HEAP = 0xdeadbeef;
+
+    private static final UnsignedWord producedHeapChunkZapInt = Word.unsigned(UNINITIALIZED_JAVA_HEAP);
     private static final UnsignedWord producedHeapChunkZapWord = producedHeapChunkZapInt.shiftLeft(32).or(producedHeapChunkZapInt);
 
-    private static final UnsignedWord consumedHeapChunkZapInt = WordFactory.unsigned(0xdeadbeef);
+    private static final UnsignedWord consumedHeapChunkZapInt = Word.unsigned(UNUSED_JAVA_HEAP);
     private static final UnsignedWord consumedHeapChunkZapWord = consumedHeapChunkZapInt.shiftLeft(32).or(consumedHeapChunkZapInt);
 
     public static final class TestingBackDoor {

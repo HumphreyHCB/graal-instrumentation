@@ -42,6 +42,8 @@ import com.oracle.svm.core.stack.JavaStackWalker;
 import com.oracle.svm.core.stack.StackFrameVisitor;
 import com.oracle.svm.core.thread.VMThreads;
 
+import jdk.graal.compiler.word.Word;
+
 /** Walk the stack and verify all objects that are referenced from stack frames. */
 final class StackVerifier {
     private static final StackFrameVerificationVisitor STACK_FRAME_VISITOR = new StackFrameVerificationVisitor();
@@ -86,10 +88,17 @@ final class StackVerifier {
 
         @Override
         @RestrictHeapAccess(access = RestrictHeapAccess.Access.NO_ALLOCATION, reason = "Must not allocate while verifying the stack.")
-        public boolean visitFrame(Pointer currentSP, CodePointer currentIP, CodeInfo codeInfo, DeoptimizedFrame deoptimizedFrame) {
+        public boolean visitRegularFrame(Pointer currentSP, CodePointer currentIP, CodeInfo codeInfo) {
             verifyFrameReferencesVisitor.initialize();
-            CodeInfoTable.visitObjectReferences(currentSP, currentIP, codeInfo, deoptimizedFrame, verifyFrameReferencesVisitor);
+            CodeInfoTable.visitObjectReferences(currentSP, currentIP, codeInfo, verifyFrameReferencesVisitor);
             result &= verifyFrameReferencesVisitor.result;
+            return true;
+        }
+
+        @Override
+        @RestrictHeapAccess(access = RestrictHeapAccess.Access.NO_ALLOCATION, reason = "Must not allocate while verifying the stack.")
+        protected boolean visitDeoptimizedFrame(Pointer originalSP, CodePointer deoptStubIP, DeoptimizedFrame deoptimizedFrame) {
+            /* Nothing to do. */
             return true;
         }
     }
@@ -106,9 +115,17 @@ final class StackVerifier {
         }
 
         @Override
-        public boolean visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+        public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
+            Pointer pos = firstObjRef;
+            Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
+            while (pos.belowThan(end)) {
+                visitObjectReference(pos, compressed, holderObject);
+                pos = pos.add(referenceSize);
+            }
+        }
+
+        private void visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
             result &= HeapVerifier.verifyReference(holderObject, objRef, compressed);
-            return true;
         }
     }
 }

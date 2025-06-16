@@ -35,6 +35,7 @@ import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.meta.SharedType;
 import com.oracle.svm.core.util.VMError;
 
+import jdk.graal.compiler.debug.Assertions;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
@@ -43,6 +44,8 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 public abstract class HostedType extends HostedElement implements SharedType, WrappedJavaType, OriginalClassProvider {
+
+    public static final int INVALID_TYPECHECK_ID = -1;
 
     public static final HostedType[] EMPTY_ARRAY = new HostedType[0];
 
@@ -59,6 +62,7 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
     protected HostedType[] subTypes;
     protected HostedField[] staticFields;
 
+    boolean loadedFromPriorLayer;
     protected int typeID;
     protected HostedType uniqueConcreteImplementation;
     protected HostedMethod[] allDeclaredMethods;
@@ -94,7 +98,18 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
     // region open-world only fields
 
     protected HostedType[] typeCheckInterfaceOrder;
+    /**
+     * Flattened array of all dispatch tables methods installed in the hub for this type.
+     */
     protected HostedMethod[] openTypeWorldDispatchTables;
+    /**
+     * Used for tracking original call targets contained within the dispatch table. This is in
+     * contrast with {@link #openTypeWorldDispatchTables}, which contains the resolved methods for
+     * each of the targets for this given type. In other words,
+     *
+     * <code> openTypeWorldDispatchTables[i] = resolveMethod(openTypeWorldDispatchTableSlotTargets[i], [HostedType]) </code>
+     */
+    protected HostedMethod[] openTypeWorldDispatchTableSlotTargets;
     protected int[] itableStartingOffsets;
 
     /**
@@ -121,6 +136,9 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
      * this type is never instantiated and does not have any instantiated subtype, i.e., if no value
      * of this type can ever exist. Equal to this type if this type is instantiated, i.e, this type
      * cannot be strengthened.
+     * 
+     * For open world the strengthen stamp type is equal to this type itself if the type is not a
+     * leaf type, i.e., it cannot be extended.
      */
     protected HostedType strengthenStampType;
 
@@ -131,7 +149,7 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
         this.storageKind = storageKind;
         this.superClass = superClass;
         this.interfaces = interfaces;
-        this.typeID = -1;
+        this.typeID = INVALID_TYPECHECK_ID;
     }
 
     public HostedType getStrengthenStampType() {
@@ -148,106 +166,110 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
         return closedTypeWorldVTable;
     }
 
-    protected HostedMethod[] getOpenTypeWorldDispatchTables() {
+    public HostedMethod[] getOpenTypeWorldDispatchTables() {
         assert openTypeWorldDispatchTables != null;
         return openTypeWorldDispatchTables;
     }
 
+    public HostedMethod[] getOpenTypeWorldDispatchTableSlotTargets() {
+        assert openTypeWorldDispatchTableSlotTargets != null;
+        return openTypeWorldDispatchTableSlotTargets;
+    }
+
     public HostedMethod[] getVTable() {
-        return SubstrateOptions.closedTypeWorld() ? getClosedTypeWorldVTable() : getOpenTypeWorldDispatchTables();
+        return SubstrateOptions.useClosedTypeWorldHubLayout() ? getClosedTypeWorldVTable() : getOpenTypeWorldDispatchTables();
     }
 
     @Override
     public int getTypeID() {
-        assert typeID != -1;
+        assert typeID != INVALID_TYPECHECK_ID;
         return typeID;
     }
 
     public void setTypeCheckRange(short typeCheckStart, short typeCheckRange) {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         this.typeCheckStart = typeCheckStart;
         this.typeCheckRange = typeCheckRange;
     }
 
     public void setTypeCheckSlot(short typeCheckSlot) {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         this.typeCheckSlot = typeCheckSlot;
     }
 
     public void setClosedTypeWorldTypeCheckSlots(short[] closedTypeWorldTypeCheckSlots) {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         this.closedTypeWorldTypeCheckSlots = closedTypeWorldTypeCheckSlots;
     }
 
     public short getTypeCheckStart() {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         return typeCheckStart;
     }
 
     public short getTypeCheckRange() {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         return typeCheckRange;
     }
 
     public short getTypeCheckSlot() {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         return typeCheckSlot;
     }
 
     public short[] getClosedTypeWorldTypeCheckSlots() {
-        assert SubstrateOptions.closedTypeWorld();
+        assert SubstrateOptions.useClosedTypeWorldHubLayout();
         assert closedTypeWorldTypeCheckSlots != null;
         return closedTypeWorldTypeCheckSlots;
     }
 
     public void setTypeIDDepth(int typeIDDepth) {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         this.typeIDDepth = typeIDDepth;
     }
 
     public void setNumClassTypes(int numClassTypes) {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         this.numClassTypes = numClassTypes;
     }
 
     public void setNumInterfaceTypes(int numInterfaceTypes) {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         this.numInterfaceTypes = numInterfaceTypes;
     }
 
     public void setOpenTypeWorldTypeCheckSlots(int[] openTypeWorldTypeCheckSlots) {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         this.openTypeWorldTypeCheckSlots = openTypeWorldTypeCheckSlots;
     }
 
     public int getTypeIDDepth() {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         return typeIDDepth;
     }
 
     public int getNumClassTypes() {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         return numClassTypes;
     }
 
     public int getNumInterfaceTypes() {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         return numInterfaceTypes;
     }
 
     public int[] getOpenTypeWorldTypeCheckSlots() {
-        assert !SubstrateOptions.closedTypeWorld();
+        assert !SubstrateOptions.useClosedTypeWorldHubLayout();
         assert openTypeWorldTypeCheckSlots != null : this;
         return openTypeWorldTypeCheckSlots;
     }
 
-    /**
-     * Returns true if this type is part of the word type hierarchy, i.e, implements
-     * {@link WordBase}.
-     */
+    @Override
     public boolean isWordType() {
         /* Word types have the kind Object, but a primitive storageKind. */
-        return kind != storageKind;
+        boolean wordType = kind != storageKind;
+        assert !wordType || kind.isObject() : Assertions.errorMessage("Only words are expected to have a discrepancy between java kind and storage kind", this);
+        return wordType;
     }
 
     /**
@@ -259,8 +281,9 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
         return allDeclaredMethods;
     }
 
-    public HostedType getUniqueConcreteImplementation() {
-        return uniqueConcreteImplementation;
+    public void loadTypeID(int newTypeID) {
+        this.typeID = newTypeID;
+        this.loadedFromPriorLayer = true;
     }
 
     @Override
@@ -403,7 +426,7 @@ public abstract class HostedType extends HostedElement implements SharedType, Wr
     }
 
     @Override
-    public final ResolvedJavaType findLeastCommonAncestor(ResolvedJavaType otherType) {
+    public final HostedType findLeastCommonAncestor(ResolvedJavaType otherType) {
         return universe.lookup(wrapped.findLeastCommonAncestor(((HostedType) otherType).wrapped));
     }
 

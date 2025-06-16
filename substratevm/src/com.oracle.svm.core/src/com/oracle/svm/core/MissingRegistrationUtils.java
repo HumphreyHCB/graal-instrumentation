@@ -28,8 +28,10 @@ import java.io.Serial;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.oracle.svm.core.util.ExitStatus;
+import com.oracle.svm.core.util.VMError;
 
 public final class MissingRegistrationUtils {
 
@@ -43,12 +45,10 @@ public final class MissingRegistrationUtils {
         return SubstrateOptions.MissingRegistrationReportingMode.getValue();
     }
 
-    private static final int CONTEXT_LINES = 4;
-
     private static final AtomicReference<Set<String>> seenOutputs = new AtomicReference<>(null);
 
     public static void report(Error exception, StackTraceElement responsibleClass) {
-        if (responsibleClass != null && !MissingRegistrationSupport.singleton().reportMissingRegistrationErrors(responsibleClass)) {
+        if (missingRegistrationErrorsSuspended.get() || (responsibleClass != null && !MissingRegistrationSupport.singleton().reportMissingRegistrationErrors(responsibleClass))) {
             return;
         }
         switch (missingRegistrationReportingMode()) {
@@ -67,7 +67,7 @@ public final class MissingRegistrationUtils {
                 int printed = 0;
                 StackTraceElement entryPoint = null;
                 StringBuilder sb = new StringBuilder(exception.toString());
-                sb.append("\n");
+                sb.append(System.lineSeparator());
                 for (StackTraceElement stackTraceElement : stackTrace) {
                     if (printed == 0) {
                         String moduleName = stackTraceElement.getModuleName();
@@ -88,20 +88,40 @@ public final class MissingRegistrationUtils {
                         printLine(sb, stackTraceElement);
                         printed++;
                     }
-                    if (printed >= CONTEXT_LINES) {
+                    if (printed >= SubstrateOptions.MissingRegistrationWarnContextLines.getValue()) {
                         break;
                     }
                 }
                 if (seenOutputs.get() == null && seenOutputs.compareAndSet(null, ConcurrentHashMap.newKeySet())) {
                     /* First output, we print an explanation message */
                     System.out.println("Note: this run will print partial stack traces of the locations where a " + exception.getClass().toString() + " would be thrown " +
-                                    "when the -H:+ThrowMissingRegistrationErrors option is set. The trace stops at the first entry of JDK code and provides " + CONTEXT_LINES + " lines of context.");
+                                    "when the -H:+ThrowMissingRegistrationErrors option is set. The trace stops at the first entry of JDK code and provides " +
+                                    SubstrateOptions.MissingRegistrationWarnContextLines.getValue() + " lines of context.");
                 }
                 String output = sb.toString();
                 if (seenOutputs.get().add(output)) {
                     System.out.print(output);
                 }
             }
+        }
+    }
+
+    private static final ThreadLocal<Boolean> missingRegistrationErrorsSuspended = ThreadLocal.withInitial(() -> false);
+
+    /**
+     * Code executing inside this function will temporarily revert to throwing JDK exceptions like
+     * ({@code ClassNotFoundException} when encountering a situation that would normally cause a
+     * missing registration error. This is currently required during resource bundle lookups, where
+     * encountering an unregistered class can mean that the corresponding locale isn't included in
+     * the image, and is not a reason to abort the lookup completely.
+     */
+    public static <T> T runIgnoringMissingRegistrations(Supplier<T> callback) {
+        VMError.guarantee(!missingRegistrationErrorsSuspended.get());
+        try {
+            missingRegistrationErrorsSuspended.set(true);
+            return callback.get();
+        } finally {
+            missingRegistrationErrorsSuspended.set(false);
         }
     }
 

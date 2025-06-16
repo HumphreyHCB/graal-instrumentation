@@ -24,15 +24,16 @@
  */
 package com.oracle.svm.hosted.heap;
 
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
+import com.oracle.svm.core.encoder.SymbolEncoder;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
 import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.impl.HeapDumpSupport;
 
@@ -43,6 +44,7 @@ import com.oracle.svm.core.heap.dump.HProfType;
 import com.oracle.svm.core.heap.dump.HeapDumpMetadata;
 import com.oracle.svm.core.heap.dump.HeapDumpShutdownHook;
 import com.oracle.svm.core.heap.dump.HeapDumpStartupHook;
+import com.oracle.svm.core.heap.dump.HeapDumpSupportImpl;
 import com.oracle.svm.core.heap.dump.HeapDumpWriter;
 import com.oracle.svm.core.heap.dump.HeapDumping;
 import com.oracle.svm.core.jdk.RuntimeSupport;
@@ -51,6 +53,7 @@ import com.oracle.svm.core.meta.SharedType;
 import com.oracle.svm.core.util.ByteArrayReader;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl.AfterCompilationAccessImpl;
+import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.core.common.util.TypeConversion;
 import jdk.graal.compiler.core.common.util.UnsafeArrayTypeWriter;
@@ -60,26 +63,28 @@ import jdk.vm.ci.meta.ResolvedJavaField;
  * Heap dumping on Native Image needs some extra metadata about all the classes and fields that are
  * present in the image. The necessary information is encoded as binary data at image build time
  * (see {@link #encodeMetadata}}). When the heap dumping is triggered at run-time, the metadata is
- * decoded on the fly (see {@link com.oracle.svm.core.heap.dump.HeapDumpMetadata}) and used for
- * writing the heap dump (see {@link HeapDumpWriter}).
+ * decoded on the fly (see {@link HeapDumpMetadata}) and used for writing the heap dump (see
+ * {@link HeapDumpWriter}).
  */
 @AutomaticallyRegisteredFeature
 public class HeapDumpFeature implements InternalFeature {
+    private boolean isDataFieldReachable;
+
     @Override
     public boolean isInConfiguration(IsInConfigurationAccess access) {
         /*
-         * Include the feature unconditionally (all platforms except Windows - even unknown
-         * platforms). The code and all its data are only present in the final image if the heap
-         * dumping infrastructure is actually called by any code (e.g., VMRuntime.dumpHeap(...) or
-         * --enable-monitoring=heapdump).
+         * Include the feature unconditionally (all platforms, even unknown platforms). The static
+         * analysis ensures that the code and all its data are only present in the final image if
+         * the heap dumping infrastructure is actually called by any code (e.g.,
+         * VMRuntime.dumpHeap(...) or --enable-monitoring=heapdump).
          */
-        return !Platform.includedIn(Platform.WINDOWS.class);
+        return true;
     }
 
     @Override
     public void duringSetup(DuringSetupAccess access) {
         HeapDumpMetadata metadata = new HeapDumpMetadata();
-        HeapDumping heapDumpSupport = new com.oracle.svm.core.heap.dump.HeapDumpSupportImpl(metadata);
+        HeapDumpSupportImpl heapDumpSupport = new HeapDumpSupportImpl(metadata);
 
         ImageSingletons.add(HeapDumpSupport.class, heapDumpSupport);
         ImageSingletons.add(HeapDumping.class, heapDumpSupport);
@@ -96,16 +101,24 @@ public class HeapDumpFeature implements InternalFeature {
     }
 
     @Override
+    public void afterAnalysis(AfterAnalysisAccess access) {
+        Field dataField = ReflectionUtil.lookupField(HeapDumpMetadata.class, "data");
+        isDataFieldReachable = access.isReachable(dataField);
+    }
+
+    @Override
     public void afterCompilation(Feature.AfterCompilationAccess access) {
-        AfterCompilationAccessImpl accessImpl = (AfterCompilationAccessImpl) access;
-        byte[] metadata = encodeMetadata(accessImpl.getTypes());
-        HeapDumpMetadata.singleton().setData(metadata);
-        access.registerAsImmutable(metadata);
+        if (isDataFieldReachable) {
+            AfterCompilationAccessImpl accessImpl = (AfterCompilationAccessImpl) access;
+            byte[] metadata = encodeMetadata(accessImpl.getTypes());
+            HeapDumpMetadata.singleton().setData(metadata);
+            access.registerAsImmutable(metadata);
+        }
     }
 
     /**
      * This method writes the metadata that is needed for heap dumping into one large byte[] (see
-     * {@link com.oracle.svm.core.heap.dump.HeapDumpMetadata} for more details).
+     * {@link HeapDumpMetadata} for more details).
      */
     private static byte[] encodeMetadata(Collection<? extends SharedType> types) {
         int maxTypeId = types.stream().mapToInt(t -> t.getHub().getTypeID()).max().orElse(0);
@@ -132,12 +145,13 @@ public class HeapDumpFeature implements InternalFeature {
         /* Write the class and field information. */
         int totalFieldCount = 0;
         int classCount = 0;
+        SymbolEncoder symbolEncoder = SymbolEncoder.singleton();
         EconomicMap<String, Integer> fieldNames = EconomicMap.create();
         for (SharedType type : types) {
             if (type.isInstanceClass()) {
                 ArrayList<SharedField> instanceFields = collectFields(type.getInstanceFields(false));
                 ArrayList<SharedField> staticFields = collectFields(type.getStaticFields());
-                if (instanceFields.size() == 0 && staticFields.size() == 0) {
+                if (instanceFields.isEmpty() && staticFields.isEmpty()) {
                     continue;
                 }
 
@@ -150,12 +164,12 @@ public class HeapDumpFeature implements InternalFeature {
 
                 /* Write direct instance fields. */
                 for (SharedField field : instanceFields) {
-                    encodeField(field, output, fieldNames);
+                    encodeField(field, output, fieldNames, symbolEncoder);
                 }
 
                 /* Write static fields. */
                 for (SharedField field : staticFields) {
-                    encodeField(field, output, fieldNames);
+                    encodeField(field, output, fieldNames, symbolEncoder);
                 }
             }
         }
@@ -195,11 +209,12 @@ public class HeapDumpFeature implements InternalFeature {
         return result;
     }
 
-    private static void encodeField(SharedField field, UnsafeArrayTypeWriter output, EconomicMap<String, Integer> fieldNames) {
+    private static void encodeField(SharedField field, UnsafeArrayTypeWriter output, EconomicMap<String, Integer> fieldNames, SymbolEncoder symbolEncoder) {
         int location = field.getLocation();
         assert location >= 0;
         output.putU1(getType(field).ordinal());
-        output.putUV(addFieldName(field.getName(), fieldNames));
+        String encodedFieldName = symbolEncoder.encodeField(field.getName(), field.getDeclaringClass().getClass());
+        output.putUV(addFieldName(encodedFieldName, fieldNames));
         output.putUV(location);
     }
 

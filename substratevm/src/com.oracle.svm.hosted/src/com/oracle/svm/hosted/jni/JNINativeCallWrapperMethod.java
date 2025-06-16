@@ -108,8 +108,6 @@ class JNINativeCallWrapperMethod extends CustomSubstitutionMethod {
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
         JNIGraphKit kit = new JNIGraphKit(debug, providers, method);
 
-        InvokeWithExceptionNode handleFrame = kit.nativeCallPrologue();
-
         ValueNode callAddress;
         if (linkage.isBuiltInFunction()) {
             Function<String, CGlobalDataInfo> createSymbol = symbolName -> CGlobalDataFeature.singleton().registerAsAccessedOrGet(CGlobalDataFactory.forSymbol(symbolName));
@@ -117,45 +115,16 @@ class JNINativeCallWrapperMethod extends CustomSubstitutionMethod {
             callAddress = kit.unique(new CGlobalDataLoadAddressNode(builtinAddress));
             SVMImageHeapScanner.instance().rescanField(linkage, linkageBuiltInAddressField);
         } else {
-            callAddress = kit.nativeCallAddress(kit.createObject(linkage));
+            callAddress = kit.invokeNativeCallAddress(kit.createObject(linkage));
         }
 
-        ValueNode environment = kit.environment();
-
-        AnalysisType javaReturnType = method.getSignature().getReturnType();
-        List<AnalysisType> javaArgumentTypes = method.toParameterList();
         List<ValueNode> javaArguments = kit.getInitialArguments();
 
-        List<ValueNode> jniArguments = new ArrayList<>(2 + javaArguments.size());
-        List<AnalysisType> jniArgumentTypes = new ArrayList<>(2 + javaArguments.size());
-        AnalysisType environmentType = kit.getMetaAccess().lookupJavaType(JNIEnvironment.class);
-        AnalysisType objectHandleType = kit.getMetaAccess().lookupJavaType(JNIObjectHandle.class);
-        jniArguments.add(environment);
-        jniArgumentTypes.add(environmentType);
-        if (method.isStatic()) {
-            JavaConstant clazz = kit.getConstantReflection().asJavaClass(method.getDeclaringClass());
-            ConstantNode clazzNode = ConstantNode.forConstant(clazz, kit.getMetaAccess(), kit.getGraph());
-            ValueNode box = kit.boxObjectInLocalHandle(clazzNode);
-            jniArguments.add(box);
-            jniArgumentTypes.add(objectHandleType);
-        }
-        for (int i = 0; i < javaArguments.size(); i++) {
-            ValueNode arg = javaArguments.get(i);
-            AnalysisType argType = javaArgumentTypes.get(i);
-            if (argType.getJavaKind().isObject()) {
-                ValueNode obj = javaArguments.get(i);
-                arg = kit.boxObjectInLocalHandle(obj);
-                argType = objectHandleType;
-            }
-            jniArguments.add(arg);
-            jniArgumentTypes.add(argType);
-        }
-        assert jniArguments.size() == jniArgumentTypes.size();
-        AnalysisType jniReturnType = javaReturnType;
-        if (jniReturnType.getJavaKind().isObject()) {
-            jniReturnType = objectHandleType;
-        }
-
+        /*
+         * Acquire the lock upfront because when in a virtual thread, contention could cause
+         * migration to a different carrier thread with a different JNI environment and local handle
+         * set before the native call.
+         */
         if (getOriginal().isSynchronized()) {
             ValueNode monitorObject;
             if (method.isStatic()) {
@@ -168,6 +137,46 @@ class JNINativeCallWrapperMethod extends CustomSubstitutionMethod {
             MonitorEnterNode monitorEnter = kit.append(new MonitorEnterNode(monitorObject, monitorId));
             kit.getFrameState().pushLock(monitorEnter.object(), monitorEnter.getMonitorId());
             monitorEnter.setStateAfter(kit.getFrameState().create(kit.bci(), monitorEnter));
+        }
+
+        ValueNode environment = kit.invokeEnvironment();
+
+        /* After the JNI prologue, we must not invoke methods that may throw an exception. */
+        InvokeWithExceptionNode handleFrame = kit.invokeNativeCallPrologue();
+
+        AnalysisType javaReturnType = method.getSignature().getReturnType();
+        List<AnalysisType> javaArgumentTypes = method.toParameterList();
+
+        List<ValueNode> jniArguments = new ArrayList<>(2 + javaArguments.size());
+        List<AnalysisType> jniArgumentTypes = new ArrayList<>(2 + javaArguments.size());
+        AnalysisType environmentType = kit.getMetaAccess().lookupJavaType(JNIEnvironment.class);
+        AnalysisType objectHandleType = kit.getMetaAccess().lookupJavaType(JNIObjectHandle.class);
+        jniArguments.add(environment);
+        jniArgumentTypes.add(environmentType);
+        if (method.isStatic()) {
+            JavaConstant clazz = kit.getConstantReflection().asJavaClass(method.getDeclaringClass());
+            ConstantNode clazzNode = ConstantNode.forConstant(clazz, kit.getMetaAccess(), kit.getGraph());
+            /* Thrown exceptions may cause a memory leak, see GR-54276. */
+            ValueNode box = kit.invokeBoxObjectInLocalHandle(clazzNode);
+            jniArguments.add(box);
+            jniArgumentTypes.add(objectHandleType);
+        }
+        for (int i = 0; i < javaArguments.size(); i++) {
+            ValueNode arg = javaArguments.get(i);
+            AnalysisType argType = javaArgumentTypes.get(i);
+            if (argType.getJavaKind().isObject()) {
+                ValueNode obj = javaArguments.get(i);
+                /* Thrown exceptions may cause a memory leak, see GR-54276. */
+                arg = kit.invokeBoxObjectInLocalHandle(obj);
+                argType = objectHandleType;
+            }
+            jniArguments.add(arg);
+            jniArgumentTypes.add(argType);
+        }
+        assert jniArguments.size() == jniArgumentTypes.size();
+        AnalysisType jniReturnType = javaReturnType;
+        if (jniReturnType.getJavaKind().isObject()) {
+            jniReturnType = objectHandleType;
         }
 
         kit.getFrameState().clearLocals();
@@ -183,10 +192,14 @@ class JNINativeCallWrapperMethod extends CustomSubstitutionMethod {
         }
 
         if (javaReturnType.getJavaKind().isObject()) {
-            returnValue = kit.unboxHandle(returnValue); // before destroying handles in epilogue
+            /*
+             * Must be invoked before the handles are destroyed in the epilogue. Thrown exceptions
+             * may cause a memory leak, see GR-54276.
+             */
+            returnValue = kit.invokeUnboxHandle(returnValue);
         }
-        kit.nativeCallEpilogue(handleFrame);
-        kit.rethrowPendingException();
+        kit.invokeNativeCallEpilogue(handleFrame);
+        kit.invokeRethrowPendingException();
         if (javaReturnType.getJavaKind().isObject()) {
             // Just before return to always run the epilogue and never suppress a pending exception
             returnValue = kit.checkObjectType(returnValue, javaReturnType, false);

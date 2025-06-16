@@ -33,7 +33,7 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.EconomicSet;
 
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
-import jdk.graal.compiler.core.common.cfg.Loop;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.hightiercodegen.irwalk.StackifierIRWalker;
@@ -179,11 +179,11 @@ public class LabeledBlockGeneration {
              * Always generate a labeled block around switch statements as a target for switch arms
              * to jump out of. This can result in less than optimal code if all switch arms jump to
              * the merge block after the switch, but determining that is tricky to do correctly
-             * without having knowing the order in which blocks will be lowered.
+             * without knowing the order in which blocks will be lowered.
              */
             return true;
         }
-        return successor.getId() != block.getId() + 1;
+        return !stackifierData.isPredecessor(block, successor);
     }
 
     /**
@@ -217,9 +217,9 @@ public class LabeledBlockGeneration {
         if (elseScope == null) {
             return false;
         }
-        HIRBlock[] blocks = stackifierData.getBlocks();
-        for (int id = block.getId() + 1; id < successor.getId(); id++) {
-            if (!elseScope.getBlocks().contains(blocks[id])) {
+        HIRBlock[] sortedBlocks = stackifierData.getBlocks();
+        for (int id = stackifierData.blockOrder(block) + 1; id < stackifierData.blockOrder(successor); id++) {
+            if (!elseScope.getBlocks().contains(sortedBlocks[id])) {
                 return false;
             }
         }
@@ -249,7 +249,7 @@ public class LabeledBlockGeneration {
             HIRBlock startBlock = scope.getStartBlock();
             if (startBlock.getEndNode() instanceof IfNode) {
                 IfScopeContainer ifScopeContainer = (IfScopeContainer) stackifierData.getScopeEntry(startBlock.getEndNode());
-                return ifScopeContainer.getThenScope() == scope && scope.getLastBlock() == block;
+                return ifScopeContainer.getThenScope() == scope && scope.getLastBlock(stackifierData) == block;
             }
         }
         return false;
@@ -279,7 +279,7 @@ public class LabeledBlockGeneration {
         if (scope != null) {
             HIRBlock startBlock = scope.getStartBlock();
             if (startBlock.getEndNode() instanceof IntegerSwitchNode) {
-                return scope.getLastBlock() == block;
+                return scope.getLastBlock(stackifierData) == block;
             }
         }
         return false;
@@ -309,7 +309,6 @@ public class LabeledBlockGeneration {
      */
     private static boolean isJumpingOverCatchBlock(HIRBlock block, HIRBlock successor, StackifierData stackifierData) {
         assert block.getEndNode() instanceof InvokeWithExceptionNode : Assertions.errorMessage(block, block.getEndNode());
-        assert block.getFirstSuccessor() == successor : Assertions.errorMessage(block, successor);
         CatchScopeContainer catchScopeContainer = (CatchScopeContainer) stackifierData.getScopeEntry(block.getEndNode());
         Scope catchScope = catchScopeContainer.getCatchScope();
 
@@ -318,9 +317,9 @@ public class LabeledBlockGeneration {
         }
 
         EconomicSet<HIRBlock> blocksInCatchScope = catchScope.getBlocks();
-        HIRBlock[] allBlocks = stackifierData.getBlocks();
-        for (int id = block.getId() + 1; id < successor.getId(); id++) {
-            if (!blocksInCatchScope.contains(allBlocks[id])) {
+        HIRBlock[] sortedBlocks = stackifierData.getBlocks();
+        for (int id = stackifierData.blockOrder(block) + 1; id < stackifierData.blockOrder(successor); id++) {
+            if (!blocksInCatchScope.contains(sortedBlocks[id])) {
                 return false;
             }
         }
@@ -364,10 +363,10 @@ public class LabeledBlockGeneration {
      *         i.e. jump to the end of the loop.
      */
     public static boolean isNormalLoopExit(HIRBlock block, HIRBlock successor, StackifierData stackifierData) {
-        Loop<HIRBlock> l1 = block.getLoop();
+        CFGLoop<HIRBlock> l1 = block.getLoop();
         if (l1 != null) {
-            HIRBlock lastLoopBlock = ((LoopScopeContainer) stackifierData.getScopeEntry(l1.getHeader().getBeginNode())).getLoopScope().getLastBlock();
-            return lastLoopBlock.getId() + 1 == successor.getId();
+            HIRBlock lastLoopBlock = ((LoopScopeContainer) stackifierData.getScopeEntry(l1.getHeader().getBeginNode())).getLoopScope().getLastBlock(stackifierData);
+            return stackifierData.isPredecessor(lastLoopBlock, successor);
         }
         return false;
     }
@@ -381,8 +380,8 @@ public class LabeledBlockGeneration {
      *
      * @return sorted Set according to the ends of the {@link LabeledBlock}s
      */
-    public static SortedSet<LabeledBlock> getSortedSetByLabeledBlockEnd() {
-        return new TreeSet<>((b1, b2) -> b2.getEnd().getId() - b1.getEnd().getId());
+    public static SortedSet<LabeledBlock> getSortedSetByLabeledBlockEnd(StackifierData stackifierData) {
+        return new TreeSet<>((b1, b2) -> stackifierData.blockOrder(b2.getEnd()) - stackifierData.blockOrder(b1.getEnd()));
     }
 
     private static HIRBlock commonDominatorFor(HIRBlock b, boolean pred) {
@@ -464,15 +463,15 @@ public class LabeledBlockGeneration {
         Scope startScope = stackifierData.getEnclosingScope().get(earliestStart);
         Scope endScope = stackifierData.getEnclosingScope().get(successor);
         if (successor.isLoopHeader()) {
-            /**
+            /*
              * Special case when successor is a loop header: A loop scope includes the loopHeader
-             * (see {@link StackifierScopeComputation#computeLoopScopes()}), whereas other scopes do
+             * (see {@code StackifierScopeComputation#computeLoopScopes()}), whereas other scopes do
              * not include the basic block that creates a scope. For example, a basic block
              * containing an {@link IfNode} does not belong to the respective then-scope a
              * else-scope. Consequently, if successor is a loop Header, {@code endScope} is the
-             * loopScope created by {@code successor}. But we want to jump to just before
-             * {@code successor}. Therefore, {@code endScope} should be the scope that contains the
-             * loop created by {@code successor} which is the parent scope.
+             * loopScope created by {@code successor}. But we want to jump to just before {@code
+             * successor}. Therefore, {@code endScope} should be the scope that contains the loop
+             * created by {@code successor} which is the parent scope.
              */
             endScope = endScope.getParentScope();
         }
@@ -489,10 +488,10 @@ public class LabeledBlockGeneration {
             }
         }
         for (HIRBlock b : labeledBlockEnds.getKeys()) {
-            if (predecessor.getId() < b.getId() && b.getId() < successor.getId()) {
+            if (stackifierData.isOrderedBefore(predecessor, b) && stackifierData.isOrderedBefore(b, successor)) {
                 // a LabeledBlock ends between break and ".. }"
                 LabeledBlock forwardBlock = labeledBlockEnds.get(b);
-                if (forwardBlock.getStart().getId() < earliestStart.getId()) {
+                if (stackifierData.isOrderedBefore(forwardBlock.getStart(), earliestStart)) {
                     earliestStart = forwardBlock.getStart();
                 }
             }
@@ -520,7 +519,7 @@ public class LabeledBlockGeneration {
      */
     private void addToMaps(LabeledBlock labeledBLock) {
         if (labeledBlockStarts.get(labeledBLock.getStart()) == null) {
-            labeledBlockStarts.put(labeledBLock.getStart(), getSortedSetByLabeledBlockEnd());
+            labeledBlockStarts.put(labeledBLock.getStart(), getSortedSetByLabeledBlockEnd(stackifierData));
         }
         labeledBlockStarts.get(labeledBLock.getStart()).add(labeledBLock);
         HIRBlock endBlock = labeledBLock.getEnd();
@@ -531,7 +530,7 @@ public class LabeledBlockGeneration {
     /**
      * Generates {@link LabeledBlock}s with unique labels.
      */
-    private static class LabeledBlockGenerator {
+    private static final class LabeledBlockGenerator {
 
         private int currentId = 0;
 

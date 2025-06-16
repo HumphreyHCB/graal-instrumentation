@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -213,7 +213,10 @@ public final class Constants {
                     0x3001, 0xfefe,
                     0xff00, 0x10ffff);
 
-    // \r, \n, 0x2028, 0x2029
+    // 0x000A, LINE FEED (LF), <LF>
+    // 0x000D, CARRIAGE RETURN (CR), <CR>
+    // 0x2028, LINE SEPARATOR, <LS>
+    // 0x2029, PARAGRAPH SEPARATOR, <PS>
     public static final CodePointSet LINE_TERMINATOR = CodePointSet.createNoDedup(
                     0x000a, 0x000a,
                     0x000d, 0x000d,
@@ -255,7 +258,7 @@ public final class Constants {
 
     public static final CodePointSet WORD_CHARS_UNICODE_SETS_IGNORE_CASE = CaseFoldData.simpleCaseFold(WORD_CHARS, new CodePointSetAccumulator());
 
-    public static final CodePointSet NON_WORD_CHARS_UNICODE_SETS_IGNORE_CASE = WORD_CHARS_UNICODE_SETS_IGNORE_CASE.createInverse(CaseFoldData.FOLDABLE_CHARACTERS,
+    public static final CodePointSet NON_WORD_CHARS_UNICODE_SETS_IGNORE_CASE = WORD_CHARS_UNICODE_SETS_IGNORE_CASE.createInverse(CaseFoldData.FOLDED_CHARACTERS,
                     new CompilationBuffer(Encodings.UTF_16));
 
 }

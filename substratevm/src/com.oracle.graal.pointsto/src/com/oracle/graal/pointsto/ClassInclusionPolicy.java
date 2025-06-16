@@ -24,20 +24,24 @@
  */
 package com.oracle.graal.pointsto;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
 
 import org.graalvm.nativeimage.AnnotationAccess;
+import org.graalvm.nativeimage.hosted.Feature;
 
+import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
+import com.oracle.svm.core.annotate.TargetClass;
 
 import jdk.graal.compiler.api.replacements.Fold;
 
 /**
  * Policy used to determine which classes, methods and fields need to be included in the image when
- * the {@code IncludeAllFromPath} and/or {@code IncludeAllFromModule} options are specified
+ * {@code LayerCreate} sub-options {@code module}, {@code package} or {@code path} are specified
  * depending on the configuration.
  */
 public abstract class ClassInclusionPolicy {
@@ -52,27 +56,60 @@ public abstract class ClassInclusionPolicy {
         this.bb = bb;
     }
 
+    public static boolean isClassIncludedBase(Class<?> cls) {
+        if (Feature.class.isAssignableFrom(cls)) {
+            return false;
+        }
+
+        if (AnnotationAccess.isAnnotationPresent(cls, TargetClass.class)) {
+            return false;
+        }
+        try {
+            Class<?> enclosingClass = cls.getEnclosingClass();
+            return enclosingClass == null || isClassIncludedBase(enclosingClass);
+        } catch (LinkageError e) {
+            return true;
+        }
+    }
+
     /**
      * Determine if the given class needs to be included in the image according to the policy.
      */
-    public abstract boolean isClassIncluded(Class<?> cls);
+    public boolean isClassIncluded(Class<?> cls) {
+        Class<?> enclosingClass = cls.getEnclosingClass();
+        return isClassIncludedBase(cls) && (enclosingClass == null || isClassIncluded(enclosingClass));
+    }
 
     /**
      * Determine if the given method needs to be included in the image according to the policy.
      */
     public boolean isMethodIncluded(Executable method) {
+        return isMethodIncluded(bb.getMetaAccess().lookupJavaMethod(method));
+    }
+
+    public boolean isMethodIncluded(AnalysisMethod method) {
         /*
          * Methods annotated with @Fold should not be included in the base image as they must be
          * inlined. An extension image would inline the method as well and would not use the method
          * from the base image.
          */
-        return !AnnotationAccess.isAnnotationPresent(bb.getMetaAccess().lookupJavaMethod(method), Fold.class);
+        return !AnnotationAccess.isAnnotationPresent(method, Fold.class);
     }
 
     /**
      * Determine if the given field needs to be included in the image according to the policy.
      */
     public boolean isFieldIncluded(Field field) {
+        if (!bb.getHostVM().platformSupported(field)) {
+            return false;
+        }
+        return bb.getHostVM().isFieldIncluded(bb, field);
+    }
+
+    /**
+     * Determine if the given field needs to be included in the image according to the policy.
+     */
+    public boolean isFieldIncluded(AnalysisField field) {
         if (!bb.getHostVM().platformSupported(field)) {
             return false;
         }
@@ -91,7 +128,7 @@ public abstract class ClassInclusionPolicy {
         if (Modifier.isAbstract(cls.getModifiers()) || cls.isInterface() || cls.isPrimitive()) {
             bb.getMetaAccess().lookupJavaType(cls).registerAsReachable(reason);
         } else {
-            bb.getMetaAccess().lookupJavaType(cls).registerAsAllocated(reason);
+            bb.getMetaAccess().lookupJavaType(cls).registerAsInstantiated(reason);
         }
     }
 
@@ -101,9 +138,21 @@ public abstract class ClassInclusionPolicy {
     public abstract void includeMethod(Executable method);
 
     /**
+     * Includes the given method in the image.
+     */
+    public abstract void includeMethod(AnalysisMethod method);
+
+    /**
      * Includes the given field in the image.
      */
     public void includeField(Field field) {
+        bb.postTask(debug -> bb.addRootField(field));
+    }
+
+    /**
+     * Includes the given field in the image.
+     */
+    public void includeField(AnalysisField field) {
         bb.postTask(debug -> bb.addRootField(field));
     }
 
@@ -126,6 +175,9 @@ public abstract class ClassInclusionPolicy {
 
         @Override
         public boolean isClassIncluded(Class<?> cls) {
+            if (!super.isClassIncluded(cls)) {
+                return false;
+            }
             Class<?> enclosingClass = cls.getEnclosingClass();
             int classModifiers = cls.getModifiers();
             if (enclosingClass != null) {
@@ -143,22 +195,34 @@ public abstract class ClassInclusionPolicy {
         @Override
         public void includeMethod(Executable method) {
             bb.postTask(debug -> {
-                /*
-                 * Non-abstract methods from an abstract class or default methods from an interface
-                 * are not registered as implementation invoked by the analysis because their
-                 * declaring class cannot be marked as instantiated and AnalysisType.getTypeFlow
-                 * only includes instantiated types (see TypeFlow.addObserver). For now, to ensure
-                 * those methods are included in the image, they are manually registered as
-                 * implementation invoked.
-                 */
                 Class<?> declaringClass = method.getDeclaringClass();
-                if (!Modifier.isAbstract(method.getModifiers()) && (declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))) {
-                    AnalysisMethod analysisMethod = bb.getMetaAccess().lookupJavaMethod(method);
-                    analysisMethod.registerAsDirectRootMethod(reason);
-                    analysisMethod.registerAsImplementationInvoked(reason);
-                }
-                bb.forcedAddRootMethod(method, false, reason);
+                AnalysisMethod analysisMethod = bb.getMetaAccess().lookupJavaMethod(method);
+                registerMethod(method.getModifiers(), declaringClass, analysisMethod);
+                bb.forcedAddRootMethod(analysisMethod, analysisMethod.isConstructor(), reason);
             });
+        }
+
+        @Override
+        public void includeMethod(AnalysisMethod method) {
+            bb.postTask(debug -> {
+                Class<?> declaringClass = method.getDeclaringClass().getJavaClass();
+                registerMethod(method.getModifiers(), declaringClass, method);
+                bb.forcedAddRootMethod(method, method.isConstructor(), reason);
+            });
+        }
+
+        private void registerMethod(int methodModifiers, Class<?> declaringClass, AnalysisMethod analysisMethod) {
+            /*
+             * Non-abstract methods from an abstract class or default methods from an interface are
+             * not registered as implementation invoked by the analysis because their declaring
+             * class cannot be marked as instantiated and AnalysisType.getTypeFlow only includes
+             * instantiated types (see TypeFlow.addObserver). For now, to ensure those methods are
+             * included in the image, they are manually registered as implementation invoked.
+             */
+            if (!Modifier.isAbstract(methodModifiers) && (declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))) {
+                analysisMethod.registerAsDirectRootMethod(reason);
+                analysisMethod.registerAsImplementationInvoked(reason);
+            }
         }
     }
 
@@ -173,13 +237,13 @@ public abstract class ClassInclusionPolicy {
         }
 
         @Override
-        public boolean isClassIncluded(Class<?> cls) {
-            return true;
+        public void includeMethod(Executable method) {
+            bb.postTask(debug -> bb.addRootMethod(method, method instanceof Constructor<?>, reason));
         }
 
         @Override
-        public void includeMethod(Executable method) {
-            bb.postTask(debug -> bb.addRootMethod(method, false, reason));
+        public void includeMethod(AnalysisMethod method) {
+            bb.postTask(debug -> bb.addRootMethod(method, method.isConstructor(), reason));
         }
     }
 

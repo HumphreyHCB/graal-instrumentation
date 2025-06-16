@@ -28,10 +28,10 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.word.PointerBase;
-import org.graalvm.word.WordFactory;
 
 import com.oracle.graal.pointsto.reports.ReportUtils;
 import com.oracle.svm.core.SubstrateOptions;
@@ -63,9 +63,9 @@ public class VMFeature implements InternalFeature {
     }
 
     protected static final String getSelectedGCName() {
-        if (SubstrateOptions.UseSerialGC.getValue()) {
+        if (SubstrateOptions.useSerialGC()) {
             return "serial gc";
-        } else if (SubstrateOptions.UseEpsilonGC.getValue()) {
+        } else if (SubstrateOptions.useEpsilonGC()) {
             return "epsilon gc";
         } else {
             return "unknown gc";
@@ -114,7 +114,7 @@ public class VMFeature implements InternalFeature {
         }
 
         if (!Platform.includedIn(Platform.WINDOWS.class)) {
-            CGlobalData<PointerBase> isStaticBinaryMarker = CGlobalDataFactory.createWord(WordFactory.unsigned(SubstrateOptions.StaticExecutable.getValue() ? 1 : 0), STATIC_BINARY_MARKER_SYMBOL_NAME);
+            CGlobalData<PointerBase> isStaticBinaryMarker = CGlobalDataFactory.createWord(Word.unsigned(SubstrateOptions.StaticExecutable.getValue() ? 1 : 0), STATIC_BINARY_MARKER_SYMBOL_NAME);
             CGlobalDataFeature.singleton().registerWithGlobalHiddenSymbol(isStaticBinaryMarker);
         }
     }
