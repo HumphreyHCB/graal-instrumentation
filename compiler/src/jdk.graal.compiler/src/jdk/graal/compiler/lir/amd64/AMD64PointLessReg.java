@@ -25,6 +25,7 @@
 package jdk.graal.compiler.lir.amd64;
 
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
@@ -37,7 +38,7 @@ import jdk.graal.compiler.asm.amd64.AMD64Address;;
  */
 @Opcode("Pointless")
 public final class AMD64PointLessReg extends AMD64LIRInstruction {
-    public static final LIRInstructionClass<AMD64PointLess> TYPE = LIRInstructionClass.create(AMD64PointLess.class);
+    public static final LIRInstructionClass<AMD64PointLessReg> TYPE = LIRInstructionClass.create(AMD64PointLessReg.class);
 
     Register reg ;
     public AMD64PointLessReg(Register reg) {
@@ -48,9 +49,39 @@ public final class AMD64PointLessReg extends AMD64LIRInstruction {
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {    
         // Perform a pointless permutation on ymm0 to waste CPU cycles.
-       // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 0xFF); // Redundant shuffle operation, results in no change
-        asm.movq(reg, reg);
-        // asm.sfence();
+        switch (GraalOptions.SlowdownType.getValue(crb.getOptions())) {
+            case "MOV":
+                asm.movq(reg, reg);
+                break;
+            case "NOP":
+                asm.nop(2);
+                break;
+            case "SFENCE":    
+                asm.sfence();
+                break;
+            case "PAUSE":  
+                asm.pause();
+                break;
+            case "PP":
+                asm.subq(AMD64.rsp, 32);
+                asm.vmovdqu(new AMD64Address(AMD64.rsp, 0), AMD64.xmm0);
+                asm.vmovdqu(AMD64.xmm0, new AMD64Address(AMD64.rsp, 0));
+                asm.addq(AMD64.rsp, 32);
+                break;
+            case "RPP":
+                asm.push(reg);
+                asm.pop(reg);
+                break;
+            default:
+                asm.movq(reg, reg);
+                break;
+        }
+        //asm.movq(reg, reg);
+        //1.
+        //asm.nop(2);
+        //asm.sfence();
+        //asm.pause();
+
         
     }
 }

@@ -25,6 +25,7 @@
 package jdk.graal.compiler.lir.amd64;
 
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
@@ -49,8 +50,37 @@ public final class AMD64PointLesss extends AMD64LIRInstruction {
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler asm) {
 
         for (int index = 0; index < amount; index++) {
-            asm.movq(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length],
-                    AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+            // asm.movq(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length],
+            // AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+            switch (GraalOptions.SlowdownType.getValue(crb.getOptions())) {
+                case "MOV":
+                    asm.movq(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length],
+                            AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+                    break;
+                case "NOP":
+                    asm.nop(2);
+                    break;
+                case "SFENCE":
+                    asm.sfence();
+                    break;
+                case "PAUSE":
+                    asm.pause();
+                    break;
+                case "PP":
+                    asm.subq(AMD64.rsp, 32);
+                    asm.vmovdqu(new AMD64Address(AMD64.rsp, 0), AMD64.xmm0);
+                    asm.vmovdqu(AMD64.xmm0, new AMD64Address(AMD64.rsp, 0));
+                    asm.addq(AMD64.rsp, 32);
+                    break;
+                case "RPP":
+                    asm.push(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+                    asm.pop(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+                    break;
+                default:
+                    asm.movq(AMD64.cpuRegisters[index % AMD64.cpuRegisters.length],
+                            AMD64.cpuRegisters[index % AMD64.cpuRegisters.length]);
+                    break;
+            }
         }
 
     }

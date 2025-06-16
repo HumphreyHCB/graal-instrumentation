@@ -1,0 +1,438 @@
+Dumping LIR block debug info for :HotSpotCompilation-78[List.tail(List$Element, List$Element, List$Element)]
+
+Block 0
+  Label                        : No position
+  MOVE                         : No position
+  HotSpotLockStack             : No position
+  HotSpotLoadObjectConstant    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 2
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 4
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 6
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 8
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 9
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 11
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  SAFEPOINT                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 7
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 14
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  RETURN                       : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 15
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 17
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 18
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 20
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  SAFEPOINT                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 16
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 22
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 25
+  Label                        : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  HotSpotLoadObjectConstant    : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 27
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 28
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 30
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  SAFEPOINT                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 26
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 32
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  STACKMOVE                    : No position
+  Jump                         : No position
+
+Block 35
+  Label                        : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  HotSpotLoadObjectConstant    : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 37
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 38
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 40
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  SAFEPOINT                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 36
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 42
+  Label                        : No position
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 43
+  Label                        : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  HotSpotLoadObjectConstant    : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 45
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 46
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 48
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  SAFEPOINT                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 44
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  CmpBranch                    : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 53
+  Label                        : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  RETURN                       : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 31
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 34
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 49
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  NullCheck                    : No position
+  TestBranch                   : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 52
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 21
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  TestBranch                   : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 24
+  Label                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 41
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List$Element.getNext()>
+  UncompressPointer            : HotSpotMethod<List$Element.getNext()>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  CALL_DIRECT                  : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOVE                         : No position
+  Jump                         : No position
+
+Block 10
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 39
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 23
+  Label                        : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 33
+  Label                        : No position
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 29
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 19
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 51
+  Label                        : No position
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.tail(List$Element, List$Element, List$Element)>
+
+Block 5
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOVE                         : No position
+  MOVE                         : No position
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+
+Block 47
+  Label                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  MOV                          : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+  DEOPT                        : HotSpotMethod<List.isShorterThan(List$Element, List$Element)>
+Total LIR Instructions: 0
+Total LIR Instructions With Debug: 0
+List.tail(List$Element, List$Element, List$Element)List$Element -1 codeSignature differs cca6aa14289df962aa2614f9fe2428f695cf8b329fa2f60875408f5fb567e5b8 != b198a76cbd5c31c810618222049075cba0bdc454b1dc60feb665898fc735b7e0

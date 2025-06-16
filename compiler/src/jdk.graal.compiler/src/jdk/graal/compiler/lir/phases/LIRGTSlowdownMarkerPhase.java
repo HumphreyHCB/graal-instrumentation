@@ -58,7 +58,6 @@ import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.nodeinfo.Verbosity;
@@ -208,6 +207,16 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                 }
             }
         }
+
+        // if (instructions.size() == 2) {
+        //     for (LIRInstruction instr : instructions) {
+        //         if (instr instanceof TestBranchOp) {
+                    
+        //             skip = true;
+                    
+        //         }
+        //     }
+        // }
 
         return skip;
     }

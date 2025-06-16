@@ -93,5 +93,8 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (GraalOptions.DumpBlockDebugInfo.getValue(options)) {
             appendPhase(new LIRGTDumpBlockDebugInfo(options));
         }
+        if (GraalOptions.MarkNoSource.getValue(options)) {
+        appendPhase(new LIRGTSetAllMissingDebug());
+       }
     }
 }

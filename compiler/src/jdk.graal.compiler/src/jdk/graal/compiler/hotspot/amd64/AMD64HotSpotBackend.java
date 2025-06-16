@@ -63,6 +63,7 @@ import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.amd64.AMD64Call;
 import jdk.graal.compiler.lir.amd64.AMD64FrameMap;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
+import jdk.graal.compiler.lir.amd64.AMD64PointLessReg;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
 import jdk.graal.compiler.lir.asm.DataBuilder;
@@ -168,6 +169,8 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
                     
                     for (int i = 0; i < blockCost; i++) {
                         int regIndex = i % AMD64.cpuRegisters.length; // Wrap around the register list
+                        AMD64PointLessReg pointLessReg = new AMD64PointLessReg(AMD64.cpuRegisters[regIndex]);
+                        pointLessReg.emitCode(crb, asm);
                         asm.movq(AMD64.cpuRegisters[regIndex], AMD64.cpuRegisters[regIndex]);
                     }
                 }

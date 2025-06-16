@@ -58,7 +58,6 @@ import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.nodeinfo.Verbosity;
@@ -92,40 +91,23 @@ public class LIRGTDumpBlockDebugInfo extends PostAllocationOptimizationPhase {
         int LirCount = 0;
         int DebugCount = 0;
         for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
-        //    System.out.println("Block ID: " + blockId);
-            BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
-
-            // if (b == null) {
-            //     continue;
-            // }
-             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
-        // Set<String> uniqueMethods = new HashSet<>();
-        // Set<String> uniqueRootMethods = new HashSet<>();
-        // boolean containsBackend = false;
+            BasicBlock<?> block   = lirGenRes.getLIR().getBlockById(blockId);
+            List<LIRInstruction> insns = lirGenRes.getLIR().getLIRforBlock(block);
         
-        for (LIRInstruction instruction : instructions) {
-            LirCount++;
-            System.out.println();
-            System.out.print(instruction.name());
-            if (instruction.getPosition() == null) {
-                System.out.print(" : No position Info ");
-                //System.out.println("Comment : "+ instruction.getComment(lirGenRes));
-            } else {
-                DebugCount++;
-                 String method = instruction.getPosition().getMethod().toString();
-                 System.out.print(" : Method " + method);
-                 System.out.print(" : Source info : " + instruction.getPosition().toString());
-        //         String rootMethod = instruction.getPosition().getRootMethod().toString();
-        //         uniqueMethods.add(method);
-        //         uniqueRootMethods.add(rootMethod);
-        //         //System.out.println("Comment : "+ instruction.getComment(lirGenRes));
-             }
-        //     if (instruction instanceof AMD64GTBackendMarkerOp) {
-        //         containsBackend = true;
-                
-        //     }
-        //     System.out.println();
-         }
+            // --- Block header (blank line first) -----------------------------------
+            System.out.printf("%nBlock %d%n", blockId);
+        
+            // --- Instructions ------------------------------------------------------
+            for (LIRInstruction insn : insns) {
+                String methodInfo = (insn.getPosition() == null)
+                                    ? "No position"
+                                    : insn.getPosition().getMethod().toString();
+        
+                System.out.printf("  %-28s : %s%n", insn.name(), methodInfo);
+            }
+        
+        
+        // System.out.println();
 
         // if (uniqueMethods.size() == 1) {
         //     System.out.println("Unique Method: " + uniqueMethods.iterator().next());

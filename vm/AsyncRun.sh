@@ -12,7 +12,7 @@ file=QueensAsyncSlowdownInlining.txt
 
  ./latest_graalvm_home/bin/java \
  -Djdk.graal.LIRGTSlowDown=true  \
- -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/Data/2024_11_19_17_40_50_SlowDown_Data/Final_Queens.json -XX:+UseJVMCICompiler \
+ -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/FinalDataRefined100/Queens/Final_Queens.json -XX:+UseJVMCICompiler \
   -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Xss20m -XX:StackShadowPages=20 \
   -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
    -agentpath:/home/hburchell/ProgramFiles/async-profiler-3.0-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=1ms,file=$file \

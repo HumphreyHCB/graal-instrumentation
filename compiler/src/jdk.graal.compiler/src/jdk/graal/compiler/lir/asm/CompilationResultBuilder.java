@@ -67,7 +67,6 @@ import jdk.graal.compiler.lir.StandardOp;
 import jdk.graal.compiler.lir.StandardOp.LabelHoldingOp;
 import jdk.graal.compiler.lir.amd64.AMD64Nop;
 import jdk.graal.compiler.lir.amd64.AMD64Nops;
-import jdk.graal.compiler.lir.amd64.AMD64PointLess;
 import jdk.graal.compiler.lir.amd64.AMD64SFence;
 import jdk.graal.compiler.lir.framemap.FrameMap;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
@@ -651,27 +650,12 @@ public class CompilationResultBuilder extends CoreProvidersDelegate {
                     }
                 }
                 byte[] emittedCode = asm.copy(start, end);
-                lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
-            }
-            if (Options.CollectLIRCostInformation.getValue(options) && start < asm.position()) {
-                int end = asm.position();
-                for (CodeAnnotation codeAnnotation : compilationResult.getCodeAnnotations()) {
-                    if (codeAnnotation instanceof JumpTable) {
-                        // Skip jump table. Here we assume the jump table is at the tail of the
-                        // emitted code.
-                        int jumpTableStart = codeAnnotation.getPosition();
-                        if (jumpTableStart >= start && jumpTableStart < end) {
-                            end = jumpTableStart;
-                        }
-                    }
-                }
-                byte[] emittedCode = asm.copy(start, end);
                 String emmitedOPCode = "";
                 for (byte b : emittedCode) {
                     emmitedOPCode += String.format("%02x", b & 0xFF) + " ";
                 }
-                GTCache.addStringToID(op.getClass().toString(), emmitedOPCode);
-
+                //System.out.println("Emitted code: " + emmitedOPCode);
+                lirInstructionVerifiers.forEach(v -> v.verify(op, emittedCode));
             }
         } catch (BailoutException e) {
             throw e;
