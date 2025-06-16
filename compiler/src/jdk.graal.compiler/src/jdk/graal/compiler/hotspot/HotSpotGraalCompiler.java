@@ -27,7 +27,11 @@ package jdk.graal.compiler.hotspot;
 import static jdk.graal.compiler.core.GraalCompilerOptions.CompilationFailureAction;
 import static jdk.graal.compiler.core.common.GraalOptions.OptAssumptions;
 
+
 import java.util.Arrays;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +44,7 @@ import jdk.graal.compiler.core.CompilationWrapper;
 import jdk.graal.compiler.core.GraalCompiler;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.LibGraalSupport;
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugContext;
@@ -48,6 +53,7 @@ import jdk.graal.compiler.debug.DebugHandlersFactory;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntime.HotSpotGC;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.graal.compiler.hotspot.phases.OnStackReplacementPhase;
 import jdk.graal.compiler.java.GraphBuilderPhase;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
@@ -81,6 +87,8 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.TriState;
 import jdk.vm.ci.runtime.JVMCICompiler;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JVMCICompilerShadow, GraalCompiler.RequestedCrashHandler {
 
@@ -185,6 +193,10 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                 }
             }
 
+            if (GraalOptions.EnableProfiler.getValue(options) || GraalOptions.CountCompiledMethods.getValue(options)) {
+                addMethodToCache(task.getCompilationIdentifier());
+            }
+
             HotSpotVMConfigAccess config = new HotSpotVMConfigAccess(graalRuntime.getVMConfig().getStore());
             LibGraalSupport libgraal = LibGraalSupport.INSTANCE;
             boolean oneIsolatePerCompilation = libgraal != null &&
@@ -203,6 +215,9 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
                 }
             }
         }
+    }
+    private void addMethodToCache(CompilationIdentifier id){
+        BuboMethodCache.add(id.toString(CompilationIdentifier.Verbosity.ID) + " " + id.toString(CompilationIdentifier.Verbosity.NAME));
     }
 
     private boolean shouldRetainLocalVariables(long envAddress) {

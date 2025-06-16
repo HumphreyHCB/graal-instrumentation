@@ -34,6 +34,9 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.PlaceholderPhase;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierDebugPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.common.ExpandLogicPhase;
@@ -84,6 +87,11 @@ public class LowTier extends BaseTier<LowTierContext> {
 
         appendPhase(new OptimizeOffsetAddressPhase(canonicalizerWithGVN));
 
+        if (GraalOptions.EnableProfiler.getValue(options)) {
+            appendPhase(new BuboInstrumentationLowTierPhase(options));
+            appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
+        }
+
         appendPhase(new FixReadsPhase(true,
                         new SchedulePhase(GraalOptions.StressTestEarlyReads.getValue(options) ? SchedulingStrategy.EARLIEST : SchedulingStrategy.LATEST_OUT_OF_LOOPS_IMPLICIT_NULL_CHECKS)));
 
@@ -105,6 +113,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         appendPhase(new OptimizeExtendsPhase());
 
         appendPhase(new RemoveOpaqueValuePhase());
+        
+        if (GraalOptions.BuboDebugMode.getValue(options)) {
+            appendPhase(new BuboInstrumentationLowTierDebugPhase());
+        }
 
         appendPhase(new SchedulePhase.FinalSchedulePhase());
 

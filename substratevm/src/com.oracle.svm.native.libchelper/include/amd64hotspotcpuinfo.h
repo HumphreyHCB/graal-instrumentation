@@ -158,6 +158,7 @@ typedef union {
              fxsr      : 1,
              fxsr_opt  : 1,
              pdpe1gb   : 1,
+             rdtsc     : 1,
              rdtscp    : 1,
                        : 1,
              long_mode : 1,

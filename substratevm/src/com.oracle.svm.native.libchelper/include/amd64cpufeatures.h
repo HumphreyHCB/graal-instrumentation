@@ -75,6 +75,7 @@ typedef struct {
   uint8_t fHV;
   uint8_t fSERIALIZE;
   uint8_t fRDTSCP;
+  uint8_t fRDTSC;
   uint8_t fRDPID;
   uint8_t fFSRM;
   uint8_t fGFNI;
