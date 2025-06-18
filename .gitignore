@@ -61,3 +61,4 @@ visualizer/IdealGraphVisualizer/*/target/
 !compiler/MyJDKJarLib.jar
 !compiler/benchmarks.jar
 /compiler/BuboDumps/
+!compiler/VscodeRefLibs.jar
