@@ -13,7 +13,7 @@ export JVMCI_VERSION_CHECK=ignore
   -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
   -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
   -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation \
-  -cp benchmarks.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler \
+  -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
   Harness Towers 5 2500
 
 
