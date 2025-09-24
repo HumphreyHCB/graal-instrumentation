@@ -223,6 +223,73 @@ public class BuboPrinter {
         //System.out.println("We Captured " + ((sum / TotalSpenttime) * 100) + " % of the total Runtime with Instrumentation");
 
     }
+
+    public static void printCompUnit(HashMap<Integer, String> methods, HashMap<Integer, List<CompUnitInfo>> CompUnits) {
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics: \n");
+
+        
+        long sum = 0;
+        HashMap<Integer, Long> timmings = new HashMap<>();
+        for (int index : methods.keySet()) {
+            if (BuboNativeBuffers.readTimeAt(index) != 0) {
+                long adjusted = BuboNativeBuffers.readTimeAt(index) - BuboNativeBuffers.readCallSiteAt(index);;
+                sum += adjusted;
+                timmings.put(index, adjusted);
+            } else if (BuboNativeBuffers.readCyclesAt(index) != 0) {
+                sum += BuboNativeBuffers.readCyclesAt(index);
+                timmings.put(index, BuboNativeBuffers.readCyclesAt(index));
+            } else {
+                // method was compiled but we have no information on it
+            }
+        }
+
+        timmings = orderDataByTime(timmings);
+        int counter = 0;
+        System.out.println("");
+        System.out.println("The following is the Top 10 hottest Compilation Units");
+        int[] top10Indexes = new int[10];
+        for (int index : timmings.keySet()) {
+            if (counter >= 10) {
+                break;
+            }
+            System.out.println(methods.get(index) + " : " + (((float) timmings.get(index) / sum) * 100) + "% ");
+            top10Indexes[counter] = index;
+            counter++;
+        }
+
+        List<Map<String, Double>> listOfInlinedNodePercentage = new ArrayList<>();
+        for (int key : timmings.keySet()) {
+            double maxPercentage = ((double) timmings.get(key) / sum) * 100;
+            listOfInlinedNodePercentage.add(findInlinedNodePercentage(maxPercentage, CompUnits.get(key)));
+        }
+
+        Map<String, Double> combinedMap = combinedMap(listOfInlinedNodePercentage);
+        //combinedMap = aggregateReComps(combinedMap);
+
+        if (combinedMap.isEmpty()) {
+            return;
+        }
+
+        Map<String, Double> sortedMap = combinedMap.entrySet()
+            .stream()
+            .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+
+        System.out.println("\n\n Inlined Estimation : \n");
+
+        counter = 0;
+        for (String key : sortedMap.keySet()) {
+            if (counter >= 10) {
+                break;
+            }
+            System.out.println(key + ": " + sortedMap.get(key));
+            counter++;
+        }
+    }
     
     public static void printCompUnitandDump(long[] TimeBuffer, long[] ActivationCountBuffer, long[] CyclesBuffer, long[] CallSiteBuffer, HashMap<Integer, String> methods, HashMap<Integer, List<CompUnitInfo>> CompUnits, String filename) {
         System.out.println("\n\n");

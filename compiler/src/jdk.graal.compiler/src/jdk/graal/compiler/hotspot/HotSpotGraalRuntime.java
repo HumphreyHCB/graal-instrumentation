@@ -41,6 +41,7 @@ import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
 
 import org.graalvm.collections.EconomicMap;
@@ -209,58 +210,60 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
     }
 
     private void initalizeBubo() {
-        System.out.println("Starting Bubo Instrumentation......");
-        
-        BuboCache timeCache = new BuboCache();
-        timeCache.start();
+    System.out.println("Starting Bubo Instrumentation......");
 
-        BuboMethodCache methodCache = new BuboMethodCache();
-        methodCache.start();
+    // BuboCache timeCache = new BuboCache();
+    // timeCache.start();
 
-        BuboCompUnitCache compunitCache = new BuboCompUnitCache();
-        compunitCache.start();
+    BuboMethodCache methodCache = new BuboMethodCache();
+    methodCache.start();
 
-        Thread writingHook = new Thread(() -> {
-            System.out.println("Bubo Instrumentation Joining......");
-            try {
-                timeCache.join();
-                methodCache.join();
-                compunitCache.join();
-            } catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            System.out.println("Bubo Instrumentation Shutdown Printing......");
-            long endTime = System.currentTimeMillis();
+    BuboCompUnitCache compunitCache = new BuboCompUnitCache();
+    compunitCache.start();
 
-            if (BuboMethodCache.pointer == 0) {
-                System.out.println("Method Cache is empty, did you forget to enable the profiler");
-                System.out.println("Add the follwoing command : -Dgraal.EnableProfiler=true ");
-                int foundMethods = 0;
-                for (int i = 0; i < 200000; i++) {
-                    if (BuboCache.TimeBuffer[i] > 0) {
-                        foundMethods++;
-                    }
-                }
-                if (foundMethods > 0) {
-                    System.out.println("We did find at least one method entry in the raw cache; therefore, something was recorded, but we don't know which method it belongs to.");
-                    System.out.println("We found in the TimeBuffer :" + foundMethods + " Methods");
-                }
-                
-            }
-            else{
-            if (GraalOptions.BuboDump.getValue(options) != "") {
-                BuboPrinter.printCompUnitandDump(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer,BuboCache.CallSiteBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer, GraalOptions.BuboDump.getValue(options));
-            }
-            else{
-             BuboPrinter.printCompUnit(BuboCache.TimeBuffer,BuboCache.ActivationCountBuffer,BuboCache.CyclesBuffer,BuboCache.CallSiteBuffer, BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer);
-            }
-            }
+    Thread writingHook = new Thread(() -> {
+        System.out.println("Bubo Instrumentation Joining......");
+        try {
+            //timeCache.join();
+            methodCache.join();
+            compunitCache.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-            System.out.println("Bubo Instrumentation Sutting Down......");
+        System.out.println("Bubo Instrumentation Shutdown Printing......");
+        long endTime = System.currentTimeMillis();
+
+        int cap = jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers.capacity();
+        int scan = Math.min(cap, 200_000);
+        int nonZeroTime = jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers.countNonZeroTime(scan);
+
+        if (BuboMethodCache.pointer == 0) {
+            System.out.println("Method Cache is empty, did you forget to enable the profiler?");
+            System.out.println("Add the following flag: -Dgraal.EnableProfiler=true");
+
+            if (nonZeroTime > 0) {
+                System.out.println("Sanity check: native TimeBuffer has " + nonZeroTime +
+                                   " non-zero entries (within first " + scan + ").");
+            } else {
+                System.out.println("Sanity check: native TimeBuffer appears empty " +
+                                   "(within first " + scan + ").");
+            }
+        } else {
+            System.out.println("Method Cache Size: " + BuboMethodCache.pointer);
+            System.out.println("Sanity check: native TimeBuffer non-zero entries = " +
+                               nonZeroTime + " (within first " + scan + ").");
+        }
+        //BuboNativeBuffers.
+
+        BuboPrinter.printCompUnit(BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer);
+
+        BuboNativeBuffers.freeAll();
+        System.out.println("Bubo Instrumentation Sutting Down......");
     });
-        Runtime.getRuntime().addShutdownHook(writingHook);
-    }
+
+    Runtime.getRuntime().addShutdownHook(writingHook);
+}
 
     /**
      * Constants denoting the GC algorithms available in HotSpot. The names of the constants match

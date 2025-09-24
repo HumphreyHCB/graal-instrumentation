@@ -26,11 +26,13 @@ package jdk.graal.compiler.phases.common;
 
 import java.util.Optional;
 
+import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.nodes.calc.AddNode;
@@ -48,6 +50,7 @@ import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.code.CodeUtil;
@@ -83,15 +86,27 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             ValueNode ID = graph
                     .addWithoutUnique(new ConstantNode(JavaConstant.forInt(id), StampFactory.forKind(JavaKind.Int)));
 
+            long timePtr       = BuboNativeBuffers.timePtr();
+            long actPtr        = BuboNativeBuffers.activationPtr();
+            long cycPtr        = BuboNativeBuffers.cyclesPtr();
+            long callPtr       = BuboNativeBuffers.callSitePtr();
 
-            AddressNode TimeBuffer = createBuboAddress("TimeBuffer",ID,graph,context,StampFactory.forBuboTimeRead());
-            AddressNode ActivationCountBuffer = createBuboAddress("ActivationCountBuffer",ID,graph,context,StampFactory.forBuboActivationCountRead());
-            AddressNode CyclesBuffer = createBuboAddress("CyclesBuffer",ID,graph,context,StampFactory.forBuboCycleRead());
-            AddressNode CallSiteRead = createBuboAddress("CallSiteBuffer",ID,graph,context,StampFactory.forBuboCallSiteRead());
+            BuboMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " + graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
 
+            AddressNode TimeBuffer = createNativeArrayAddress(graph, context.getMetaAccess(), timePtr, JavaKind.Long, ID);
+            TimeBuffer.setStamp(StampFactory.forBuboTimeRead());
+
+            AddressNode ActivationCountBuffer = createNativeArrayAddress(graph, context.getMetaAccess(), actPtr, JavaKind.Long, ID);
+            ActivationCountBuffer.setStamp(StampFactory.forBuboActivationCountRead());
+
+            AddressNode CyclesBuffer = createNativeArrayAddress(graph, context.getMetaAccess(), cycPtr, JavaKind.Long, ID);
+            CyclesBuffer.setStamp(StampFactory.forBuboCycleRead());
+
+            AddressNode CallSiteRead = createNativeArrayAddress(graph, context.getMetaAccess(), callPtr, JavaKind.Long, ID);
+            CallSiteRead.setStamp(StampFactory.forBuboCallSiteRead());
 
             
-            // add a ReachabilityFenceNode this should stop our address from being optmised out
+            // add a ReachabilityFenceNode stop our address from being optmised out
             ValueNode[] list = new ValueNode[]{TimeBuffer,ActivationCountBuffer, CyclesBuffer, CallSiteRead};
             ReachabilityFenceNode fenceNode = graph.add(ReachabilityFenceNode.create(list));
             graph.addAfterFixed(graph.start(), fenceNode);
@@ -103,6 +118,37 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             // TODO: handle exception
         }
 
+    }
+
+    /**
+     * Builds an address = (const native base pointer) + index * scale.
+     * baseOffset is 0 for native blocks (no array header).
+     */
+    private AddressNode createNativeArrayAddress(StructuredGraph graph,
+                                                 MetaAccessProvider metaAccess,
+                                                 long basePtr,
+                                                 JavaKind elementKind,
+                                                 ValueNode index) {
+
+        // Treat base pointer as a constant "address".
+        ValueNode base = graph.addWithoutUnique(
+            new ConstantNode(JavaConstant.forLong(basePtr), StampFactory.forKind(JavaKind.Long)));
+
+        // Sign-extend index to word size.
+        ValueNode wordIndex;
+        if (8 > 4) {
+            wordIndex = graph.unique(new SignExtendNode(index, 8 * 8));
+        } else {
+            wordIndex = index;
+        }
+
+        int shift = CodeUtil.log2(metaAccess.getArrayIndexScale(elementKind));
+        ValueNode scaledIndex = graph.unique(new LeftShiftNode(wordIndex, ConstantNode.forInt(shift, graph)));
+
+        // No Java array header => baseOffset = 0
+        ValueNode offset = scaledIndex; // + 0
+
+        return graph.unique(new OffsetAddressNode(base, offset));
     }
 
     public AddressNode createBuboAddress(String FieldName, ValueNode ID, StructuredGraph graph, HighTierContext context, Stamp stamp) {
