@@ -9,7 +9,7 @@ import java.lang.reflect.Field;
 public final class BuboNativeBuffers {
     private static volatile Unsafe U;
 
-    // Pointers to native memory blocks:
+    // Pointers
     private static volatile long TIME_PTR;
     private static volatile long ACT_PTR;
     private static volatile long CYC_PTR;
@@ -29,7 +29,7 @@ public final class BuboNativeBuffers {
             CYC_PTR  = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
             CALL_PTR = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
 
-            // put zeroes in the memory so that it is all allocated up front
+            // put zeroes in the memory
             U.setMemory(TIME_PTR, CAPACITY * BYTES_PER_ELEM, (byte)0);
             U.setMemory(ACT_PTR,  CAPACITY * BYTES_PER_ELEM, (byte)0);
             U.setMemory(CYC_PTR,  CAPACITY * BYTES_PER_ELEM, (byte)0);
