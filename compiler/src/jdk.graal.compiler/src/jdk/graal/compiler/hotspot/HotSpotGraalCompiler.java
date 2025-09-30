@@ -90,6 +90,14 @@ import jdk.vm.ci.runtime.JVMCICompiler;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
+import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
+
 public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JVMCICompilerShadow, GraalCompiler.RequestedCrashHandler {
 
     public static final class Options {
@@ -122,7 +130,71 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
         // It is sufficient to have one compilation counter object per compiler object.
         this.compilationCounters = CompilationCounters.Options.CompilationCountLimit.getValue(options) > 0 ? new CompilationCounters(options) : null;
         this.bootstrapWatchDog = graalRuntime.isBootstrapping() && !DebugOptions.BootstrapInitializeOnly.getValue(options) ? BootstrapWatchDog.maybeCreate(graalRuntime) : null;
+        if (GraalOptions.EnableProfiler.getValue(options) && !bubo_initialized) {
+            initalizeBubo();
+        }
     }
+
+    private static volatile boolean bubo_initialized = false;
+
+    private void initalizeBubo() {
+        bubo_initialized = true;
+        System.out.println("Starting Bubo Instrumentation......");
+    
+        // BuboCache timeCache = new BuboCache();
+        // timeCache.start();
+    
+        BuboMethodCache methodCache = new BuboMethodCache();
+        methodCache.start();
+    
+        BuboCompUnitCache compunitCache = new BuboCompUnitCache();
+        compunitCache.start();
+    
+        Thread writingHook = new Thread(() -> {
+            System.out.println("Bubo Instrumentation Joining......");
+            try {
+                //timeCache.join();
+                methodCache.join();
+                compunitCache.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+    
+            System.out.println("Bubo Instrumentation Shutdown Printing......");
+            long endTime = System.currentTimeMillis();
+    
+            int cap = jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers.capacity();
+            int scan = Math.min(cap, 200_000);
+            int nonZeroTime = jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers.countNonZeroTime(scan);
+    
+            if (BuboMethodCache.pointer == 0) {
+                System.out.println("Method Cache is empty, did you forget to enable the profiler?");
+                System.out.println("Add the following flag: -Dgraal.EnableProfiler=true");
+    
+                if (nonZeroTime > 0) {
+                    System.out.println("Sanity check: native TimeBuffer has " + nonZeroTime +
+                                       " non-zero entries (within first " + scan + ").");
+                } else {
+                    System.out.println("Sanity check: native TimeBuffer appears empty " +
+                                       "(within first " + scan + ").");
+                }
+            } else {
+                System.out.println("Method Cache Size: " + BuboMethodCache.pointer);
+                System.out.println("Sanity check: native TimeBuffer non-zero entries = " +
+                                   nonZeroTime + " (within first " + scan + ").");
+            }
+            //BuboNativeBuffers.
+    
+            BuboPrinter.printCompUnit(BuboMethodCache.getBuffer(), BuboCompUnitCache.Buffer);
+    
+            //BuboNativeBuffers.freeAll();
+            System.out.println("Bubo Instrumentation Sutting Down......");
+        });
+    
+        Runtime.getRuntime().addShutdownHook(writingHook);
+        
+    }
+
 
     public List<DebugHandlersFactory> getDebugHandlersFactories() {
         if (factories == null) {
