@@ -1,53 +1,68 @@
 package jdk.graal.compiler.hotspot.meta.Bubo;
 
+import jdk.graal.compiler.serviceprovider.GlobalAtomicLong;
 import jdk.internal.misc.Unsafe;
-import java.lang.reflect.Field;
 
 /**
- * native buffers for Bubo instrumentation.
+ * Native buffers for Bubo instrumentation.
+ * 
+ * Base addresses are stored in GlobalAtomicLong so they are visible across isolates.
  */
 public final class BuboNativeBuffers {
     private static volatile Unsafe U;
 
-    // Pointers
-    private static volatile long TIME_PTR;
-    private static volatile long ACT_PTR;
-    private static volatile long CYC_PTR;
-    private static volatile long CALL_PTR;
+    // Base addresses (shareable across isolates)
+    private static final GlobalAtomicLong TIME_ADDR = new GlobalAtomicLong("Bubo.TIME_PTR", 0L);
+    private static final GlobalAtomicLong ACT_ADDR  = new GlobalAtomicLong("Bubo.ACT_PTR",  0L);
+    private static final GlobalAtomicLong CYC_ADDR  = new GlobalAtomicLong("Bubo.CYC_PTR",  0L);
+    private static final GlobalAtomicLong CALL_ADDR = new GlobalAtomicLong("Bubo.CALL_PTR", 0L);
 
     private static final int CAPACITY = 200_000;
-
     private static final long BYTES_PER_ELEM = Long.BYTES;
 
     public static void ensureInitialized() {
-        if (TIME_PTR != 0L) return;
+        if (TIME_ADDR.get() != 0L) return;
         synchronized (BuboNativeBuffers.class) {
-            if (TIME_PTR != 0L) return;
-            Unsafe u = u();
-            TIME_PTR = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
-            ACT_PTR  = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
-            CYC_PTR  = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
-            CALL_PTR = U.allocateMemory(CAPACITY * BYTES_PER_ELEM);
+            if (TIME_ADDR.get() != 0L) return;
+            Unsafe uu = u();
 
-            // put zeroes in the memory
-            U.setMemory(TIME_PTR, CAPACITY * BYTES_PER_ELEM, (byte)0);
-            U.setMemory(ACT_PTR,  CAPACITY * BYTES_PER_ELEM, (byte)0);
-            U.setMemory(CYC_PTR,  CAPACITY * BYTES_PER_ELEM, (byte)0);
-            U.setMemory(CALL_PTR, CAPACITY * BYTES_PER_ELEM, (byte)0);
+            long timePtr = uu.allocateMemory(CAPACITY * BYTES_PER_ELEM);
+            long actPtr  = uu.allocateMemory(CAPACITY * BYTES_PER_ELEM);
+            long cycPtr  = uu.allocateMemory(CAPACITY * BYTES_PER_ELEM);
+            long callPtr = uu.allocateMemory(CAPACITY * BYTES_PER_ELEM);
+
+            // Zero the memory
+            uu.setMemory(timePtr, CAPACITY * BYTES_PER_ELEM, (byte) 0);
+            uu.setMemory(actPtr,  CAPACITY * BYTES_PER_ELEM, (byte) 0);
+            uu.setMemory(cycPtr,  CAPACITY * BYTES_PER_ELEM, (byte) 0);
+            uu.setMemory(callPtr, CAPACITY * BYTES_PER_ELEM, (byte) 0);
+
+            // Publish base addresses atomically
+            TIME_ADDR.set(timePtr);
+            ACT_ADDR.set(actPtr);
+            CYC_ADDR.set(cycPtr);
+            CALL_ADDR.set(callPtr);
         }
     }
 
-    public static long timePtr()       { ensureInitialized(); return TIME_PTR; }
-    public static long activationPtr() { ensureInitialized(); return ACT_PTR; }
-    public static long cyclesPtr()     { ensureInitialized(); return CYC_PTR; }
-    public static long callSitePtr()   { ensureInitialized(); return CALL_PTR; }
+    public static long timePtr()       { ensureInitialized(); return TIME_ADDR.get(); }
+    public static long activationPtr() { ensureInitialized(); return ACT_ADDR.get(); }
+    public static long cyclesPtr()     { ensureInitialized(); return CYC_ADDR.get(); }
+    public static long callSitePtr()   { ensureInitialized(); return CALL_ADDR.get(); }
 
     public static void freeAll() {
         synchronized (BuboNativeBuffers.class) {
-            if (TIME_PTR != 0L) { U.freeMemory(TIME_PTR); TIME_PTR = 0L; }
-            if (ACT_PTR  != 0L) { U.freeMemory(ACT_PTR);  ACT_PTR  = 0L; }
-            if (CYC_PTR  != 0L) { U.freeMemory(CYC_PTR);  CYC_PTR  = 0L; }
-            if (CALL_PTR != 0L) { U.freeMemory(CALL_PTR); CALL_PTR = 0L; }
+            Unsafe uu = u();
+
+            long t = TIME_ADDR.get();
+            long a = ACT_ADDR.get();
+            long c = CYC_ADDR.get();
+            long s = CALL_ADDR.get();
+
+            if (t != 0L) { uu.freeMemory(t); TIME_ADDR.set(0L); }
+            if (a != 0L) { uu.freeMemory(a); ACT_ADDR.set(0L); }
+            if (c != 0L) { uu.freeMemory(c); CYC_ADDR.set(0L); }
+            if (s != 0L) { uu.freeMemory(s); CALL_ADDR.set(0L); }
         }
     }
 
@@ -64,36 +79,38 @@ public final class BuboNativeBuffers {
 
     public static long readTimeAt(int idx) {
         ensureInitialized();
-        return u().getLong(TIME_PTR + ((long) idx << 3));
-    }
-    public static long readActivationAt(int idx) {
-        ensureInitialized();
-        return u().getLong(ACT_PTR + ((long) idx << 3));
-    }
-    public static long readCyclesAt(int idx) {
-        ensureInitialized();
-        return u().getLong(CYC_PTR + ((long) idx << 3));
-    }
-    public static long readCallSiteAt(int idx) {
-        ensureInitialized();
-        return u().getLong(CALL_PTR + ((long) idx << 3));
+        return u().getLong(TIME_ADDR.get() + (((long) idx) << 3));
     }
 
-    /** count non-zero values up to a bound. */
+    public static long readActivationAt(int idx) {
+        ensureInitialized();
+        return u().getLong(ACT_ADDR.get() + (((long) idx) << 3));
+    }
+
+    public static long readCyclesAt(int idx) {
+        ensureInitialized();
+        return u().getLong(CYC_ADDR.get() + (((long) idx) << 3));
+    }
+
+    public static long readCallSiteAt(int idx) {
+        ensureInitialized();
+        return u().getLong(CALL_ADDR.get() + (((long) idx) << 3));
+    }
+
+    /** Count non-zero time values up to a bound. */
     public static int countNonZeroTime(int upToExclusive) {
         ensureInitialized();
         int n = Math.min(upToExclusive, CAPACITY);
         int count = 0;
-        long base = TIME_PTR;
+        long base = TIME_ADDR.get();
         Unsafe uu = u();
         for (int i = 0; i < n; i++) {
-            if (uu.getLong(base + ((long) i << 3)) != 0L) count++;
+            if (uu.getLong(base + (((long) i) << 3)) != 0L) {
+                count++;
+            }
         }
         return count;
     }
 
-
     private BuboNativeBuffers() {}
-
-
 }
