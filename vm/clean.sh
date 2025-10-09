@@ -1,7 +1,6 @@
 #! /bin/bash
 
-export JVMCI_VERSION_CHECK=ignore
-mx --java-home /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01 --env libgraal clean
+mx --java-home /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06 --env libgraal clean
 
 #/home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01
 

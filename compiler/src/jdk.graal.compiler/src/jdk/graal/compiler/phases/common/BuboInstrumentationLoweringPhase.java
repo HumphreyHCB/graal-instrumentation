@@ -64,7 +64,7 @@ public class BuboInstrumentationLoweringPhase extends LoweringPhase  {
 
     @SuppressWarnings("try")
     private void lower(StructuredGraph graph, CoreProviders context, LoweringMode mode) {
-        final LoweringToolImpl loweringTool = new LoweringToolImpl(context, null, null, null, null);
+        final LoweringToolImpl loweringTool = new LoweringToolImpl(context, null, null, null, null, null);
 
             for (Node node : graph.getNodes().filter(JavaReadNode.class)) {
                 JavaReadNode logNode = (JavaReadNode) node;

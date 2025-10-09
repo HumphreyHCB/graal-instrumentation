@@ -197,7 +197,7 @@ public class HotSpotGraalCompiler implements GraalJVMCICompiler, Cancellable, JV
     }
 
 
-    public List<DebugHandlersFactory> getDebugHandlersFactories() {
+    public List<DebugDumpHandlersFactory> getDebugHandlersFactories() {
         if (factories == null) {
             factories = Collections.singletonList(new GraalDebugHandlersFactory(graalRuntime.getHostProviders().getSnippetReflection()));
         }

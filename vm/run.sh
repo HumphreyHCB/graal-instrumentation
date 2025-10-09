@@ -4,9 +4,6 @@ MODULE=jdk.graal.compiler          # or jdk.internal.vm.compiler on some JDKs
 BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-runtime.jar
 
 
-export JVMCI_VERSION_CHECK=ignore
-
-
 ./latest_graalvm_home/bin/java \
   -Djdk.graal.TrackNodeSourcePosition=true \
   -Djdk.graal.EnableProfiler=true \
