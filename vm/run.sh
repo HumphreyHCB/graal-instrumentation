@@ -6,15 +6,16 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
 
 export JVMCI_VERSION_CHECK=ignore
 
+
 ./latest_graalvm_home/bin/java \
   -Djdk.graal.TrackNodeSourcePosition=true \
   -Djdk.graal.EnableProfiler=true \
-  -Djdk.graal.MinGraphSize=0 \
+  -Djdk.graal.MinGraphSize=120 \
   -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
   -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
   -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
-  Harness Towers 5 2500
+  Harness Towers 20 2500
 
 
   # --add-exports=${MODULE}/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
