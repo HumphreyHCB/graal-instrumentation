@@ -262,6 +262,8 @@ public abstract class Accessor {
         public abstract void setPath(SourceBuilder builder, String path);
 
         public abstract Map<String, String> getSourceOptions(Source source);
+
+        public abstract URI getOriginalURI(Source source);
     }
 
     public abstract static class InteropSupport extends Support {
@@ -552,6 +554,10 @@ public abstract class Accessor {
 
         public abstract LogRecord createLogRecord(Object loggerCache, Level level, String loggerName, String message, String className, String methodName, Object[] parameters, Throwable thrown);
 
+        public abstract boolean isKnownLoggerId(String id);
+
+        public abstract Collection<String> getKnownLoggerIds();
+
         public abstract boolean isContextBoundLogger(Object loggerCache);
 
         public abstract Object getOuterContext(Object polyglotContext);
@@ -604,12 +610,6 @@ public abstract class Accessor {
         public abstract boolean isCreateProcessSupported();
 
         public abstract ZoneId getTimeZone(Object polyglotLanguageContext);
-
-        public abstract Set<String> getLanguageIds();
-
-        public abstract Set<String> getInstrumentIds();
-
-        public abstract Set<String> getInternalIds();
 
         public abstract String getUnparsedOptionValue(OptionValues optionValues, OptionKey<?> optionKey);
 
@@ -692,7 +692,9 @@ public abstract class Accessor {
 
         public abstract void preinitializeContext(Object polyglotEngine);
 
-        public abstract void finalizeStore(Object polyglotEngine);
+        public abstract Object finalizeStore(Object polyglotEngine);
+
+        public abstract void restoreStore(Object polyglotEngine, Object finalizationResult);
 
         public abstract Object getEngineLock(Object polyglotEngine);
 
@@ -800,6 +802,8 @@ public abstract class Accessor {
 
         public abstract TruffleFile getInternalResource(Object owner, String resourceId) throws IOException;
 
+        public abstract Map<String, InternalResource> getEngineInternalResources();
+
         public abstract Path getEngineResource(Object polyglotEngine, String resourceId) throws IOException;
 
         public abstract Collection<String> getResourceIds(String componentId);
@@ -827,6 +831,7 @@ public abstract class Accessor {
         public abstract DispatchOutputStream getEngineOut(Object engine);
 
         public abstract InputStream getEngineIn(Object engine);
+
     }
 
     public abstract static class LanguageSupport extends Support {
@@ -1281,7 +1286,7 @@ public abstract class Accessor {
         @SuppressWarnings({"unchecked"})
         public abstract <T> T unsafeCast(Object value, Class<T> type, boolean condition, boolean nonNull, boolean exact);
 
-        public abstract void flushCompileQueue(Object runtimeData);
+        public abstract void shutdownCompilationForEngine(Object engineData);
 
         public abstract Object createRuntimeData(Object engine, OptionValues engineOptions, Function<String, TruffleLogger> loggerFactory, SandboxPolicy sandboxPolicy);
 
@@ -1294,6 +1299,8 @@ public abstract class Accessor {
         public abstract void onEnginePatch(Object runtimeData, OptionValues runtimeOptions, Function<String, TruffleLogger> logSupplier, SandboxPolicy sandboxPolicy);
 
         public abstract boolean onEngineClosing(Object runtimeData);
+
+        public abstract boolean onStoreCache(Object runtimeData, Path targetPath, long cancelledWord);
 
         public abstract void onEngineClosed(Object runtimeData);
 

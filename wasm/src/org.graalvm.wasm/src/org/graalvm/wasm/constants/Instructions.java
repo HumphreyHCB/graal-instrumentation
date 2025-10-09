@@ -53,6 +53,10 @@ public final class Instructions {
     public static final int LOOP = 0x03;
     public static final int IF = 0x04;
     public static final int ELSE = 0x05;
+
+    public static final int THROW = 0x08;
+    public static final int THROW_REF = 0x0A;
+
     public static final int END = 0x0B;
 
     public static final int BR = 0x0C;
@@ -66,6 +70,8 @@ public final class Instructions {
     public static final int DROP = 0x1A;
     public static final int SELECT = 0x1B;
     public static final int SELECT_T = 0x1C;
+
+    public static final int TRY_TABLE = 0x1F;
 
     public static final int LOCAL_GET = 0x20;
     public static final int LOCAL_SET = 0x21;
@@ -624,7 +630,7 @@ public final class Instructions {
     public static final int VECTOR_I16X8_RELAXED_DOT_I8X16_I7X16_S = 0x112;
     public static final int VECTOR_I32X4_RELAXED_DOT_I8X16_I7X16_ADD_S = 0x113;
 
-    private static String[] decodingTable = new String[256];
+    private static final String[] DECODING_TABLE = new String[256];
 
     private Instructions() {
     }
@@ -643,7 +649,7 @@ public final class Instructions {
                     if (representation.startsWith("atomic") || representation.startsWith("vector")) {
                         continue;
                     }
-                    decodingTable[code] = representation;
+                    DECODING_TABLE[code] = representation;
                 }
             }
         } catch (IllegalAccessException e) {
@@ -661,7 +667,7 @@ public final class Instructions {
                 result.append("   ");
             }
             final int opcode = Byte.toUnsignedInt(instructions[i]);
-            String representation = decodingTable[opcode];
+            String representation = DECODING_TABLE[opcode];
             result.append(String.format("%03d", opcode)).append(" ").append(representation).append("\n");
         }
         return result.toString();

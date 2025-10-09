@@ -62,7 +62,6 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.contract.NodeCostUtil;
 import jdk.graal.compiler.phases.util.Providers;
-import jdk.graal.compiler.replacements.CachingPEGraphDecoder;
 import jdk.graal.compiler.replacements.InlineDuringParsingPlugin;
 import jdk.graal.compiler.replacements.PEGraphDecoder;
 import jdk.graal.compiler.replacements.ReplacementsImpl;
@@ -87,7 +86,7 @@ public abstract class PartialEvaluator {
     // Configs
     protected final TruffleCompilerConfiguration config;
     // TODO GR-37097 Move to TruffleCompilerImpl
-    volatile GraphBuilderConfiguration graphBuilderConfigForParsing;
+    private volatile GraphBuilderConfiguration graphBuilderConfigForParsing;
     // Plugins
     private final GraphBuilderConfiguration graphBuilderConfigPrototype;
     private final InvocationPlugins firstTierDecodingPlugins;
@@ -114,6 +113,7 @@ public abstract class PartialEvaluator {
     protected boolean persistentEncodedGraphCache;
 
     protected final TruffleConstantFieldProvider constantFieldProvider;
+    private final TruffleCachingConstantFieldProvider graphCacheConstantFieldProvider;
 
     @SuppressWarnings("this-escape")
     public PartialEvaluator(TruffleCompilerConfiguration config, GraphBuilderConfiguration configForRoot) {
@@ -124,6 +124,7 @@ public abstract class PartialEvaluator {
         this.lastTierDecodingPlugins = createDecodingInvocationPlugins(config.lastTier().partialEvaluator(), configForRoot.getPlugins(), config.lastTier().providers());
         this.nodePlugins = createNodePlugins(configForRoot.getPlugins());
         this.constantFieldProvider = new TruffleConstantFieldProvider(this, getProviders().getConstantFieldProvider());
+        this.graphCacheConstantFieldProvider = new TruffleCachingConstantFieldProvider(this, getProviders().getConstantFieldProvider());
     }
 
     protected void initialize(OptionValues options) {
@@ -365,22 +366,14 @@ public abstract class PartialEvaluator {
         @Override
         public LoopExplosionKind loopExplosionKind(ResolvedJavaMethod method) {
             TruffleCompilerRuntime.LoopExplosionKind explosionKind = getMethodInfo(method).loopExplosion();
-            switch (explosionKind) {
-                case NONE:
-                    return LoopExplosionKind.NONE;
-                case FULL_EXPLODE:
-                    return LoopExplosionKind.FULL_EXPLODE;
-                case FULL_EXPLODE_UNTIL_RETURN:
-                    return LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN;
-                case FULL_UNROLL:
-                    return LoopExplosionKind.FULL_UNROLL;
-                case MERGE_EXPLODE:
-                    return LoopExplosionKind.MERGE_EXPLODE;
-                case FULL_UNROLL_UNTIL_RETURN:
-                    return LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN;
-                default:
-                    throw new IllegalStateException("Unsupported TruffleCompilerRuntime.LoopExplosionKind: " + String.valueOf(explosionKind));
-            }
+            return switch (explosionKind) {
+                case NONE -> LoopExplosionKind.NONE;
+                case FULL_EXPLODE -> LoopExplosionKind.FULL_EXPLODE;
+                case FULL_EXPLODE_UNTIL_RETURN -> LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN;
+                case FULL_UNROLL -> LoopExplosionKind.FULL_UNROLL;
+                case MERGE_EXPLODE -> LoopExplosionKind.MERGE_EXPLODE;
+                case FULL_UNROLL_UNTIL_RETURN -> LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN;
+            };
         }
     }
 
@@ -388,7 +381,7 @@ public abstract class PartialEvaluator {
     protected PEGraphDecoder createGraphDecoder(TruffleTierContext context, InvocationPlugins invocationPlugins, InlineInvokePlugin[] inlineInvokePlugins, ParameterPlugin parameterPlugin,
                     NodePlugin[] nodePluginList, SourceLanguagePositionProvider sourceLanguagePositionProvider, EconomicMap<ResolvedJavaMethod, EncodedGraph> graphCache,
                     Supplier<AutoCloseable> createCachedGraphScope) {
-        final GraphBuilderConfiguration newConfig = graphBuilderConfigForParsing.copy();
+        final GraphBuilderConfiguration newConfig = getGraphBuilderConfigurationCopy(context.forceNodeSourcePositions);
         InvocationPlugins parsingInvocationPlugins = newConfig.getPlugins().getInvocationPlugins();
 
         Plugins plugins = newConfig.getPlugins();
@@ -401,37 +394,46 @@ public abstract class PartialEvaluator {
         DeoptimizeOnExceptionPhase postParsingPhase = new DeoptimizeOnExceptionPhase(
                         method -> getMethodInfo(method).inlineForPartialEvaluation() == InlineKind.DO_NOT_INLINE_WITH_SPECULATIVE_EXCEPTION);
 
-        Providers baseProviders = config.lastTier().providers();
-        Providers compilationUnitProviders = config.lastTier().providers().copyWith(constantFieldProvider);
+        Providers graphCacheProviders = config.lastTier().providers().copyWith(graphCacheConstantFieldProvider);
+        Providers decoderProviders = config.lastTier().providers().copyWith(constantFieldProvider);
 
         assert !allowAssumptionsDuringParsing || !persistentEncodedGraphCache;
-        return new CachingPEGraphDecoder(config.architecture(), context.graph, compilationUnitProviders, newConfig,
+        return new CachingPEGraphDecoder(config.architecture(), context.graph, graphCacheProviders, decoderProviders, newConfig,
                         loopExplosionPlugin, decodingPlugins, inlineInvokePlugins, parameterPlugin, nodePluginList, types.OptimizedCallTarget_callInlined,
                         sourceLanguagePositionProvider, postParsingPhase, graphCache, createCachedGraphScope,
-                        createGraphBuilderPhaseInstance(compilationUnitProviders, newConfig, TruffleCompilerImpl.Optimizations),
+                        createGraphBuilderPhaseInstance(graphCacheProviders, newConfig, TruffleCompilerImpl.Optimizations),
                         allowAssumptionsDuringParsing, false, true);
+    }
+
+    private GraphBuilderConfiguration getGraphBuilderConfigurationCopy(boolean forceNodeSourcePositions) {
+        GraphBuilderConfiguration copy = getGraphBuilderConfigForParsing().copy();
+        return copy.withNodeSourcePosition(copy.trackNodeSourcePosition() || forceNodeSourcePositions);
     }
 
     protected abstract GraphBuilderPhase.Instance createGraphBuilderPhaseInstance(CoreProviders providers, GraphBuilderConfiguration graphBuilderConfig, OptimisticOptimizations optimisticOpts);
 
     @SuppressWarnings("try")
-    public void doGraphPE(TruffleTierContext context, InlineInvokePlugin inlineInvokePlugin, EconomicMap<ResolvedJavaMethod, EncodedGraph> graphCache) {
-        InlineInvokePlugin[] inlineInvokePlugins = new InlineInvokePlugin[]{
-                        inlineInvokePlugin
-        };
+    public final void doGraphPE(TruffleTierContext context, InlineInvokePlugin inlineInvokePlugin, EconomicMap<ResolvedJavaMethod, EncodedGraph> graphCache) {
         PEGraphDecoder decoder = createGraphDecoder(context,
                         context.isFirstTier() ? firstTierDecodingPlugins : lastTierDecodingPlugins,
-                        inlineInvokePlugins,
+                        new InlineInvokePlugin[]{
+                                        inlineInvokePlugin
+                        },
                         new InterceptReceiverPlugin(context.compilable),
                         nodePlugins,
                         new TruffleSourceLanguagePositionProvider(context.task),
                         graphCache, getCreateCachedGraphScope());
-        GraphSizeListener listener = new GraphSizeListener(context.compilerOptions, context.graph);
-        try (Graph.NodeEventScope ignored = context.graph.trackNodeEvents(listener)) {
-            assert !context.graph.isSubstitution();
+
+        if (TruffleCompilerOptions.maximumGraalGraphSizeEnabled(context.compilerOptions)) {
+            GraphSizeListener listener = new GraphSizeListener(context.compilerOptions, context.graph);
+            try (Graph.NodeEventScope ignored = context.graph.trackNodeEvents(listener)) {
+                assert !context.graph.isSubstitution();
+                decoder.decode(context.graph.method());
+            }
+            assert listener.graphSize == NodeCostUtil.computeGraphSize(listener.graph) : Assertions.errorMessage(listener.graph, listener.graphSize);
+        } else {
             decoder.decode(context.graph.method());
         }
-        assert listener.graphSize == NodeCostUtil.computeGraphSize(listener.graph) : Assertions.errorMessage(listener.graph, listener.graphSize);
     }
 
     /**

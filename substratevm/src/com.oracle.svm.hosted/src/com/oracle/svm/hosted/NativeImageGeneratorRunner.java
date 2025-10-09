@@ -60,6 +60,7 @@ import com.oracle.graal.pointsto.util.TimerCollection;
 import com.oracle.svm.core.FallbackExecutor;
 import com.oracle.svm.core.JavaMainWrapper;
 import com.oracle.svm.core.JavaMainWrapper.JavaMainSupport;
+import com.oracle.svm.core.JavaVersionUtil;
 import com.oracle.svm.core.OS;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.option.HostedOptionKey;
@@ -81,7 +82,6 @@ import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.util.ReflectionUtil.ReflectionUtilError;
 
 import jdk.graal.compiler.options.OptionValues;
-import com.oracle.svm.core.JavaVersionUtil;
 import jdk.vm.ci.aarch64.AArch64;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.Architecture;
@@ -386,7 +386,6 @@ public class NativeImageGeneratorRunner {
         return OS.LINUX.isCurrent() || OS.DARWIN.isCurrent() || OS.WINDOWS.isCurrent();
     }
 
-    @SuppressWarnings("try")
     private int buildImage(ImageClassLoader classLoader) {
         if (!verifyValidJavaVersionAndPlatform()) {
             return ExitStatus.BUILDER_ERROR.getValue();
@@ -407,9 +406,9 @@ public class NativeImageGeneratorRunner {
         ProgressReporter reporter = new ProgressReporter(parsedHostedOptions);
         Throwable unhandledThrowable = null;
         BuildOutcome buildOutcome = BuildOutcome.FAILED;
-        try (StopTimer ignored = totalTimer.start()) {
+        try (StopTimer _ = totalTimer.start()) {
             Timer classlistTimer = timerCollection.get(TimerCollection.Registry.CLASSLIST);
-            try (StopTimer ignored1 = classlistTimer.start()) {
+            try (StopTimer _ = classlistTimer.start()) {
                 classLoader.loadAllClasses();
             }
             if (imageName.length() == 0) {
@@ -587,15 +586,9 @@ public class NativeImageGeneratorRunner {
                     hasUserError = true;
                 }
             }
-            if (hasUserError) {
-                return ExitStatus.BUILDER_ERROR.getValue();
-            }
 
-            if (pee.getExceptions().size() > 1) {
-                System.out.println(pee.getExceptions().size() + " fatal errors detected:");
-            }
-            for (Throwable exception : pee.getExceptions()) {
-                NativeImageGeneratorRunner.reportFatalError(exception);
+            if (!hasUserError) {
+                unhandledThrowable = pee;
             }
             return ExitStatus.BUILDER_ERROR.getValue();
         } catch (Throwable e) {

@@ -37,7 +37,7 @@ import java.lang.reflect.Field;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.MissingReflectionRegistrationError;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
-import org.graalvm.word.UnsignedWord;
+import org.graalvm.word.Pointer;
 import org.graalvm.word.WordBase;
 
 import com.oracle.svm.core.SubstrateOptions;
@@ -48,6 +48,7 @@ import com.oracle.svm.core.graal.snippets.OpenTypeWorldDispatchTableSnippets;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.jdk.InternalVMMethod;
+import com.oracle.svm.core.meta.MethodRef;
 import com.oracle.svm.core.monitor.MonitorInflationCause;
 import com.oracle.svm.core.monitor.MonitorSupport;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
@@ -322,7 +323,7 @@ public final class InterpreterToVM {
 
     public static WordBase getFieldWord(Object obj, InterpreterResolvedJavaField wordField) throws SemanticJavaException {
         assert obj != null;
-        assert wordField.getType().isWordType();
+        assert wordField.isWordStorage();
         return switch (wordJavaKind()) {
             case Long -> Word.signed(getFieldLong(obj, wordField));
             case Int -> Word.signed(getFieldInt(obj, wordField));
@@ -481,7 +482,7 @@ public final class InterpreterToVM {
 
     public static void setFieldInt(int value, Object obj, InterpreterResolvedJavaField field) {
         assert obj != null;
-        assert field.getJavaKind() == JavaKind.Int || field.getType().isWordType();
+        assert field.getJavaKind() == JavaKind.Int || field.isWordStorage();
         if (field.isVolatile()) {
             U.putIntVolatile(obj, field.getOffset(), value);
         } else {
@@ -491,7 +492,7 @@ public final class InterpreterToVM {
 
     public static void setFieldLong(long value, Object obj, InterpreterResolvedJavaField field) {
         assert obj != null;
-        assert field.getJavaKind() == JavaKind.Long || field.getType().isWordType();
+        assert field.getJavaKind() == JavaKind.Long || field.isWordStorage();
         if (field.isVolatile()) {
             U.putLongVolatile(obj, field.getOffset(), value);
         } else {
@@ -690,29 +691,29 @@ public final class InterpreterToVM {
             if (!seedHub.isInterface()) {
                 vtableOffset += KnownOffsets.singleton().getVTableBaseOffset();
             } else {
-                vtableOffset += (int) OpenTypeWorldDispatchTableSnippets.determineITableStartingOffset(thisHub, seedHub.getTypeID());
+                vtableOffset += (int) OpenTypeWorldDispatchTableSnippets.determineITableStartingOffset(thisHub, seedHub.getInterfaceID());
             }
         }
-        WordBase vtableEntry = Word.objectToTrackedPointer(thisHub).readWord(vtableOffset);
+        MethodRef vtableEntry = Word.objectToTrackedPointer(thisHub).readWord(vtableOffset);
         return getSVMVTableCodePointer(vtableEntry);
     }
 
-    private static CFunctionPointer getSVMVTableCodePointer(WordBase vtableEntry) {
-        WordBase codePointer = vtableEntry;
+    private static CFunctionPointer getSVMVTableCodePointer(MethodRef vtableEntry) {
+        Pointer codePointer = (Pointer) vtableEntry;
         if (SubstrateOptions.useRelativeCodePointers()) {
-            codePointer = KnownIntrinsics.codeBase().add((UnsignedWord) codePointer);
+            codePointer = codePointer.add(KnownIntrinsics.codeBase());
         }
         return (CFunctionPointer) codePointer;
     }
 
     private static InterpreterResolvedJavaMethod peekAtInterpreterVTable(Class<?> seedClass, Class<?> thisClass, int vTableIndex, boolean isInvokeInterface) {
         ResolvedJavaType thisType;
-        if (DebuggerWithInterpreter.getValue()) {
+        if (RuntimeClassLoading.isSupported()) {
+            thisType = DynamicHub.fromClass(thisClass).getInterpreterType();
+        } else {
+            assert DebuggerWithInterpreter.getValue();
             DebuggerSupport interpreterSupport = ImageSingletons.lookup(DebuggerSupport.class);
             thisType = interpreterSupport.getUniverse().lookupType(thisClass);
-        } else {
-            assert RuntimeClassLoading.isSupported();
-            throw VMError.unimplemented("obtain java type with vtable mirror");
         }
         VMError.guarantee(thisType != null);
         VMError.guarantee(thisType instanceof InterpreterResolvedObjectType);
@@ -731,7 +732,7 @@ public final class InterpreterToVM {
             if (!seedHub.isInterface()) {
                 return vTable[vTableIndex];
             } else {
-                int iTableStartingIndex = determineITableStartingIndex(DynamicHub.fromClass(thisClass), seedHub.getTypeID());
+                int iTableStartingIndex = determineITableStartingIndex(DynamicHub.fromClass(thisClass), seedHub.getInterfaceID());
                 return vTable[iTableStartingIndex + vTableIndex];
             }
         }

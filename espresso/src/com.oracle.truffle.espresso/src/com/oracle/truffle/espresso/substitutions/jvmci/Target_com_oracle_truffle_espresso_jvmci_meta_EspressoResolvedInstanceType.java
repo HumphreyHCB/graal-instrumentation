@@ -31,12 +31,16 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.DirectCallNode;
+import com.oracle.truffle.espresso.classfile.attributes.Attribute;
+import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
+import com.oracle.truffle.espresso.classfile.attributes.RecordAttribute;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
 import com.oracle.truffle.espresso.meta.Meta;
+import com.oracle.truffle.espresso.meta.Meta.JVMCISupport;
 import com.oracle.truffle.espresso.nodes.bytecodes.InitCheck;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -82,6 +86,16 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
             ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
             return toJVMCIFields(klass.getAllDeclaredInstanceFields(), self, fieldConstructor, context, meta);
         }
+    }
+
+    @Substitution
+    public static boolean isHidden(@JavaType(Class.class) StaticObject self, @Inject EspressoContext context) {
+        return context.getVM().JVM_IsHiddenClass(self);
+    }
+
+    @Substitution
+    public static @JavaType(Class[].class) StaticObject getPermittedSubclasses0(@JavaType(Class.class) StaticObject self, @Inject EspressoContext context) {
+        return context.getVM().JVM_GetPermittedSubclasses(self);
     }
 
     private static StaticObject toJVMCIFields(Field[] fields, StaticObject holder, DirectCallNode fieldConstructor, EspressoContext context, Meta meta) {
@@ -160,20 +174,22 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
         // * This makes sure .equals works
         // * It also ensures the methods have the right i/v-table indices
         Method identityMethod = m.identity();
+        boolean poisoned = m.hasPoisonPill();
         assert meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(holder) == identityMethod.getDeclaringKlass();
         StaticObject jvmciMirror = meta.jvmci.EspressoResolvedJavaMethod.allocateInstance(context);
         meta.jvmci.HIDDEN_METHOD_MIRROR.setHiddenObject(jvmciMirror, identityMethod);
-        methodConstructor.call(jvmciMirror, holder);
+        methodConstructor.call(jvmciMirror, holder, poisoned);
         return jvmciMirror;
     }
 
     static StaticObject toJVMCIMethod(Method m, StaticObject holder, Meta meta) {
         // We need to get the identity method (see above)
         Method identityMethod = m.identity();
+        boolean poisoned = m.hasPoisonPill();
         assert meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(holder) == identityMethod.getDeclaringKlass();
         StaticObject jvmciMirror = meta.jvmci.EspressoResolvedJavaMethod.allocateInstance(meta.getContext());
         meta.jvmci.HIDDEN_METHOD_MIRROR.setHiddenObject(jvmciMirror, identityMethod);
-        meta.jvmci.EspressoResolvedJavaMethod_init.invokeDirectSpecial(jvmciMirror, holder);
+        meta.jvmci.EspressoResolvedJavaMethod_init.invokeDirectSpecial(jvmciMirror, holder, poisoned);
         return jvmciMirror;
     }
 
@@ -442,7 +458,7 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
             /*
              * Note: What espresso calls "single implementor" is called "leaf concrete subtype" by
              * JVMCI
-             * 
+             *
              * In turn, what JVMCI calls "single implementor" doesn't currently exist in espresso.
              * It would be the unique non-interface implementor of an interface, and doesn't have to
              * be concrete
@@ -474,5 +490,132 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
         Meta meta = context.getMeta();
         ObjectKlass selfKlass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
         return selfKlass.getVTable().length;
+    }
+
+    @Substitution(hasReceiver = true)
+    abstract static class GetAllMethods0 extends SubstitutionNode {
+        abstract @JavaType(internalName = "[Lcom/oracle/truffle/espresso/jvmci/meta/EspressoResolvedJavaMethod;") StaticObject execute(StaticObject self);
+
+        @Specialization
+        static StaticObject doDefault(StaticObject self,
+                        @Bind("getContext()") EspressoContext context,
+                        @Cached("create(context.getMeta().jvmci.EspressoResolvedJavaMethod_init.getCallTarget())") DirectCallNode methodConstructor) {
+            assert context.getLanguage().isInternalJVMCIEnabled();
+            Meta meta = context.getMeta();
+
+            ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
+
+            Method.MethodVersion[] declaredMethodVersions = klass.getDeclaredMethodVersions();
+            Method.MethodVersion[] mirandaMethods = klass.getMirandaMethods();
+            int resultSize = declaredMethodVersions.length;
+            if (mirandaMethods != null) {
+                for (Method.MethodVersion mirandaMethod : mirandaMethods) {
+                    if (mirandaMethod.getMethod().hasPoisonPill()) {
+                        resultSize++;
+                    }
+                }
+            }
+            StaticObject result = meta.jvmci.EspressoResolvedJavaMethod.allocateReferenceArray(resultSize);
+            StaticObject[] underlying = result.unwrap(context.getLanguage());
+            int i = 0;
+            for (Method.MethodVersion methodVersion : declaredMethodVersions) {
+                underlying[i++] = toJVMCIMethod(methodVersion.getMethod(), self, methodConstructor, context, meta);
+            }
+            if (resultSize != declaredMethodVersions.length) {
+                for (Method.MethodVersion mirandaMethod : mirandaMethods) {
+                    if (mirandaMethod.getMethod().hasPoisonPill()) {
+                        StaticObject holder;
+                        if (mirandaMethod.getDeclaringKlass() == klass) {
+                            holder = self;
+                        } else {
+                            holder = toJVMCIInstanceType(mirandaMethod.getDeclaringKlass(), meta);
+                        }
+                        underlying[i++] = toJVMCIMethod(mirandaMethod.getMethod(), holder, methodConstructor, context, meta);
+                    }
+                }
+            }
+            return result;
+        }
+    }
+
+    @Substitution(hasReceiver = true)
+    public static boolean isRecord(StaticObject self, @Inject EspressoContext context) {
+        assert context.getLanguage().isInternalJVMCIEnabled();
+        Meta meta = context.getMeta();
+        ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
+        return klass.isRecord();
+    }
+
+    @Substitution(hasReceiver = true)
+    abstract static class GetRecordComponents0 extends SubstitutionNode {
+        abstract @JavaType(internalName = "[Lcom/oracle/truffle/espresso/jvmci/meta/EspressoResolvedJavaRecordComponent;") StaticObject execute(StaticObject self);
+
+        @Specialization
+        static StaticObject doDefault(StaticObject self,
+                        @Bind("getContext()") EspressoContext context,
+                        @Cached("create(context.getMeta().jvmci.EspressoResolvedJavaRecordComponent_init.getCallTarget())") DirectCallNode methodConstructor) {
+            assert context.getLanguage().isInternalJVMCIEnabled();
+            Meta meta = context.getMeta();
+            ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
+            RecordAttribute record = (RecordAttribute) klass.getAttribute(RecordAttribute.NAME);
+            if (record == null) {
+                return StaticObject.NULL;
+            }
+            RecordAttribute.RecordComponentInfo[] components = record.getComponents();
+            StaticObject result = meta.jvmci.EspressoResolvedJavaRecordComponent.allocateReferenceArray(components.length);
+            StaticObject[] underlying = result.unwrap(context.getLanguage());
+            int i = 0;
+            for (RecordAttribute.RecordComponentInfo component : components) {
+                StaticObject guestComponent = meta.jvmci.EspressoResolvedJavaRecordComponent.allocateInstance();
+                methodConstructor.call(guestComponent, self, i, (int) component.getNameIndex(), (int) component.getDescriptorIndex());
+                underlying[i++] = guestComponent;
+            }
+            return result;
+        }
+    }
+
+    @Substitution(hasReceiver = true)
+    abstract static class GetRawAnnotationBytes extends SubstitutionNode {
+        abstract @JavaType(byte[].class) StaticObject execute(StaticObject self, int category);
+
+        @Specialization
+        static StaticObject doDefault(StaticObject self, int category,
+                        @Bind("getContext()") EspressoContext context) {
+            assert context.getLanguage().isInternalJVMCIEnabled();
+            Meta meta = context.getMeta();
+            ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
+            return getRawAnnotationBytes(klass, category, meta);
+        }
+    }
+
+    /**
+     * Gets the raw bytes of a class file annotations attribute (e.g. `RuntimeVisibleAnnotations`)
+     * aasociated with {@code attributed}.
+     *
+     * @param category {@link JVMCISupport#EspressoResolvedInstanceType_DECLARED_ANNOTATIONS},
+     *            {@link JVMCISupport#EspressoResolvedInstanceType_PARAMETER_ANNOTATIONS},
+     *            {@link JVMCISupport#EspressoResolvedInstanceType_TYPE_ANNOTATIONS} or
+     *            {@link JVMCISupport#EspressoResolvedInstanceType_ANNOTATION_DEFAULT_VALUE}
+     * @return {@link StaticObject#NULL} if the attribute denoted by {@code category} does not exist
+     *         for {@code attributed}
+     */
+    static StaticObject getRawAnnotationBytes(AttributedElement attributed, int category, Meta meta) {
+        Attribute annotations;
+        if (category == meta.jvmci.EspressoResolvedInstanceType_TYPE_ANNOTATIONS) {
+            annotations = attributed.getAttribute(Names.RuntimeVisibleTypeAnnotations);
+        } else if (category == meta.jvmci.EspressoResolvedInstanceType_DECLARED_ANNOTATIONS) {
+            annotations = attributed.getAttribute(Names.RuntimeVisibleAnnotations);
+        } else if (category == meta.jvmci.EspressoResolvedInstanceType_PARAMETER_ANNOTATIONS) {
+            annotations = attributed.getAttribute(Names.RuntimeVisibleParameterAnnotations);
+        } else if (category == meta.jvmci.EspressoResolvedInstanceType_ANNOTATION_DEFAULT_VALUE) {
+            annotations = attributed.getAttribute(Names.AnnotationDefault);
+        } else {
+            throw meta.throwIllegalArgumentExceptionBoundary();
+        }
+        if (annotations == null) {
+            return StaticObject.NULL;
+        }
+        // Defensively clone the byte array into case the caller mutates it
+        return StaticObject.wrap(annotations.getData().clone(), meta);
     }
 }

@@ -64,6 +64,7 @@ import com.oracle.truffle.espresso.classfile.ParserField;
 import com.oracle.truffle.espresso.classfile.ParserKlass;
 import com.oracle.truffle.espresso.classfile.ParserMethod;
 import com.oracle.truffle.espresso.classfile.attributes.Attribute;
+import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
 import com.oracle.truffle.espresso.classfile.attributes.EnclosingMethodAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.InnerClassesAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.NestHostAttribute;
@@ -100,7 +101,7 @@ import com.oracle.truffle.espresso.vm.InterpreterToVM;
 /**
  * Resolved non-primitive, non-array types in Espresso.
  */
-public final class ObjectKlass extends Klass {
+public final class ObjectKlass extends Klass implements AttributedElement {
 
     public static final ObjectKlass[] EMPTY_ARRAY = new ObjectKlass[0];
     public static final KlassVersion[] EMPTY_KLASSVERSION_ARRAY = new KlassVersion[0];
@@ -133,7 +134,7 @@ public final class ObjectKlass extends Klass {
     private volatile int initState = LOADED;
 
     @CompilationFinal //
-    private EspressoException linkError;
+    private StaticObject initializationError;
 
     @CompilationFinal volatile KlassVersion klassVersion;
 
@@ -159,14 +160,13 @@ public final class ObjectKlass extends Klass {
     public static final int LOADED = 0;
     public static final int LINKING = 1;
     public static final int VERIFYING = 2;
-    public static final int FAILED_LINK = 3;
-    public static final int VERIFIED = 4;
-    public static final int PREPARED = 5;
-    public static final int LINKED = 6;
-    public static final int INITIALIZING = 7;
+    public static final int VERIFIED = 3;
+    public static final int PREPARED = 4;
+    public static final int LINKED = 5;
+    public static final int INITIALIZING = 6;
     // Can be erroneous only if initialization triggered !
-    public static final int ERRONEOUS = 8;
-    public static final int INITIALIZED = 9;
+    public static final int ERRONEOUS = 7;
+    public static final int INITIALIZED = 8;
 
     private final StaticObject definingClassLoader;
 
@@ -177,6 +177,7 @@ public final class ObjectKlass extends Klass {
     private final ClassHierarchyAssumption noConcreteSubclassesAssumption;
     // endregion
 
+    @Override
     public Attribute getAttribute(Symbol<Name> attrName) {
         return getLinkedKlass().getAttribute(attrName);
     }
@@ -361,8 +362,10 @@ public final class ObjectKlass extends Klass {
         return initState >= INITIALIZED;
     }
 
-    private void setErroneousInitialization() {
+    private void setErroneousInitialization(StaticObject exception) {
+        assert exception != null;
         initState = ERRONEOUS;
+        initializationError = exception;
     }
 
     boolean isErroneous() {
@@ -377,8 +380,13 @@ public final class ObjectKlass extends Klass {
 
     @TruffleBoundary
     private EspressoException throwNoClassDefFoundError() {
+        assert isErroneous();
         Meta meta = getMeta();
-        throw meta.throwExceptionWithMessage(meta.java_lang_NoClassDefFoundError, "Erroneous class: " + getName());
+        if (StaticObject.isNull(initializationError)) {
+            throw meta.throwExceptionWithMessage(meta.java_lang_NoClassDefFoundError, "Could not initialize class: " + getExternalName());
+        } else {
+            throw meta.throwException(meta.java_lang_NoClassDefFoundError, "Could not initialize class: " + getExternalName(), initializationError);
+        }
     }
 
     @TruffleBoundary
@@ -400,8 +408,6 @@ public final class ObjectKlass extends Klass {
                 }
             }
 
-            var tls = getContext().getLanguage().getThreadLocalState();
-            tls.blockContinuationSuspension();
             try {
                 if (!isInterface()) {
                     /*
@@ -425,21 +431,19 @@ public final class ObjectKlass extends Klass {
                 // Next, execute the class or interface initialization method of C.
                 Method clinit = getClassInitializer();
                 if (clinit != null) {
-                    clinit.getCallTarget().call();
+                    clinit.invokeDirectStatic();
                 }
             } catch (EspressoException e) {
-                setErroneousInitialization();
+                setErroneousInitialization(e.getGuestException());
                 throw initializationFailed(e);
             } catch (AbstractTruffleException e) {
-                setErroneousInitialization();
+                setErroneousInitialization(StaticObject.NULL);
                 throw e;
             } catch (Throwable e) {
                 getContext().getLogger().log(Level.WARNING, "Host exception during class initialization: {0}", this.getNameAsString());
                 e.printStackTrace();
-                setErroneousInitialization();
+                setErroneousInitialization(StaticObject.NULL);
                 throw e;
-            } finally {
-                tls.unblockContinuationSuspension();
             }
             checkErroneousInitialization();
             initState = INITIALIZED;
@@ -570,7 +574,6 @@ public final class ObjectKlass extends Klass {
     @Override
     public void ensureLinked() {
         if (!isLinked()) {
-            checkErroneousLink();
             if (CompilerDirectives.isCompilationConstant(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
@@ -583,6 +586,7 @@ public final class ObjectKlass extends Klass {
         getInitLock().lock();
         try {
             if (!isLinkingOrLinked()) {
+                int initialState = initState;
                 initState = LINKING;
                 try {
                     if (getSuperKlass() != null) {
@@ -591,23 +595,17 @@ public final class ObjectKlass extends Klass {
                     for (ObjectKlass interf : getSuperInterfaces()) {
                         interf.ensureLinked();
                     }
-                } catch (EspressoException e) {
-                    setErroneousLink(e);
-                    throw e;
-                }
-                verify();
-                try {
+                    verify();
                     prepare();
-                } catch (EspressoException e) {
-                    setErroneousLink(e);
-                    throw e;
+                    initState = LINKED;
+                } catch (Throwable t) {
+                    initState = initialState;
+                    throw t;
                 }
-                initState = LINKED;
             }
         } finally {
             getInitLock().unlock();
         }
-        checkErroneousLink();
     }
 
     void initializeImpl() {
@@ -619,7 +617,6 @@ public final class ObjectKlass extends Klass {
 
     @HostCompilerDirectives.InliningCutoff
     private void doInitialize() {
-        checkErroneousLink();
         checkErroneousInitialization();
         if (CompilerDirectives.isCompilationConstant(this)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -651,37 +648,25 @@ public final class ObjectKlass extends Klass {
         return initState >= VERIFIED;
     }
 
-    private void checkErroneousLink() {
-        if (initState == FAILED_LINK) {
-            throw linkError;
-        }
-    }
-
-    private void setErroneousLink(EspressoException e) {
-        initState = FAILED_LINK;
-        linkError = e;
-    }
-
     private void verify() {
         if (!isVerified()) {
-            checkErroneousLink();
             getInitLock().lock();
             try {
                 if (!isVerifyingOrVerified()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
+                    int initialState = initState;
                     initState = VERIFYING;
                     try {
                         verifyImpl();
-                    } catch (EspressoException e) {
-                        setErroneousLink(e);
-                        throw e;
+                        initState = VERIFIED;
+                    } catch (Throwable t) {
+                        initState = initialState;
+                        throw t;
                     }
-                    initState = VERIFIED;
                 }
             } finally {
                 getInitLock().unlock();
             }
-            checkErroneousLink();
         }
     }
 
@@ -775,7 +760,7 @@ public final class ObjectKlass extends Klass {
         return constructors.toArray(Method.EMPTY_ARRAY);
     }
 
-    Method.MethodVersion[] getMirandaMethods() {
+    public Method.MethodVersion[] getMirandaMethods() {
         return getKlassVersion().mirandaMethods;
     }
 
@@ -1489,6 +1474,12 @@ public final class ObjectKlass extends Klass {
         getContext().getClassHierarchyOracle().registerNewKlassVersion(klassVersion);
 
         incrementKlassRedefinitionCount();
+        // Update the class modifiers in the guest for jdk 25+,
+        // but only call out to the guest if they have changed.
+        if (getContext().getJavaVersion().java25OrLater() && oldVersion.getClassModifiers() != klassVersion.getClassModifiers()) {
+            // update the guest value class modifiers
+            getMeta().java_lang_Class_modifiers.setChar(mirror(), (char) klassVersion.getClassModifiers());
+        }
         oldVersion.assumption.invalidate();
     }
 
@@ -1536,7 +1527,7 @@ public final class ObjectKlass extends Klass {
 
     // used by some plugins during klass redefinition
     public void reRunClinit() {
-        getClassInitializer().getCallTarget().call();
+        getClassInitializer().invokeDirectStatic();
     }
 
     private static void checkCopyMethods(KlassVersion klassVersion, Method method, Method.MethodVersion[][] table, Method.SharedRedefinitionContent content) {

@@ -41,6 +41,7 @@
 package org.graalvm.wasm;
 
 import static org.graalvm.wasm.Assert.assertByteEqual;
+import static org.graalvm.wasm.Assert.assertFunctionTypeEquals;
 import static org.graalvm.wasm.Assert.assertTrue;
 import static org.graalvm.wasm.Assert.assertUnsignedIntGreaterOrEqual;
 import static org.graalvm.wasm.Assert.assertUnsignedIntLess;
@@ -79,15 +80,18 @@ import org.graalvm.wasm.Linker.ResolutionDag.ExportFunctionSym;
 import org.graalvm.wasm.Linker.ResolutionDag.ExportGlobalSym;
 import org.graalvm.wasm.Linker.ResolutionDag.ExportMemorySym;
 import org.graalvm.wasm.Linker.ResolutionDag.ExportTableSym;
+import org.graalvm.wasm.Linker.ResolutionDag.ExportTagSym;
 import org.graalvm.wasm.Linker.ResolutionDag.ImportFunctionSym;
 import org.graalvm.wasm.Linker.ResolutionDag.ImportGlobalSym;
 import org.graalvm.wasm.Linker.ResolutionDag.ImportMemorySym;
 import org.graalvm.wasm.Linker.ResolutionDag.ImportTableSym;
+import org.graalvm.wasm.Linker.ResolutionDag.ImportTagSym;
 import org.graalvm.wasm.Linker.ResolutionDag.InitializeGlobalSym;
 import org.graalvm.wasm.Linker.ResolutionDag.Resolver;
 import org.graalvm.wasm.Linker.ResolutionDag.Sym;
 import org.graalvm.wasm.SymbolTable.FunctionType;
 import org.graalvm.wasm.api.ExecuteHostFunctionNode;
+import org.graalvm.wasm.api.ValueType;
 import org.graalvm.wasm.api.Vector128;
 import org.graalvm.wasm.constants.Bytecode;
 import org.graalvm.wasm.constants.BytecodeBitEncoding;
@@ -99,7 +103,6 @@ import org.graalvm.wasm.memory.WasmMemory;
 import org.graalvm.wasm.memory.WasmMemoryLibrary;
 
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -160,7 +163,7 @@ public class Linker {
 
     @CompilerDirectives.TruffleBoundary
     private void tryLinkOutsidePartialEvaluation(WasmInstance entryPointInstance) {
-        tryLinkOutsidePartialEvaluation(entryPointInstance, null);
+        tryLinkOutsidePartialEvaluation(entryPointInstance, ImportValueSupplier.none());
     }
 
     /**
@@ -188,9 +191,10 @@ public class Linker {
                 if (resolutionDag == null) {
                     resolutionDag = new ResolutionDag();
                 }
+                var importValues = imports.andThen(store.instantiateBuiltinInstances());
                 Map<String, WasmInstance> instances = store.moduleInstances();
                 ArrayList<Throwable> failures = new ArrayList<>();
-                final int maxStartFunctionIndex = runLinkActions(store, instances, imports, failures);
+                final int maxStartFunctionIndex = runLinkActions(store, instances, importValues, failures);
                 linkTopologically(store, failures, maxStartFunctionIndex);
                 assignTypeEquivalenceClasses(store);
                 resolutionDag = null;
@@ -330,19 +334,17 @@ public class Linker {
 
     void resolveGlobalImport(WasmStore store, WasmInstance instance, ImportDescriptor importDescriptor, int globalIndex, byte valueType, byte mutability,
                     ImportValueSupplier imports) {
+        instance.globals().setInitialized(globalIndex, false);
         final String importedGlobalName = importDescriptor.memberName();
         final String importedModuleName = importDescriptor.moduleName();
         final Runnable resolveAction = () -> {
-            final WasmGlobal externalGlobal = lookupImportObject(instance, importDescriptor, imports, WasmGlobal.class);
-            final int globalAddress;
+            assert instance.module().globalImported(globalIndex) && globalIndex == importDescriptor.targetIndex() : importDescriptor;
+            WasmGlobal externalGlobal = lookupImportObject(instance, importDescriptor, imports, WasmGlobal.class);
             final byte exportedValueType;
             final byte exportedMutability;
             if (externalGlobal != null) {
                 exportedValueType = externalGlobal.getValueType().byteValue();
                 exportedMutability = externalGlobal.getMutability();
-
-                assert globalIndex == importDescriptor.targetIndex();
-                globalAddress = store.globals().allocateExternalGlobal(externalGlobal);
             } else {
                 final WasmInstance importedInstance = store.lookupModuleInstance(importedModuleName);
                 if (importedInstance == null) {
@@ -360,7 +362,7 @@ public class Linker {
                 exportedValueType = importedInstance.symbolTable().globalValueType(exportedGlobalIndex);
                 exportedMutability = importedInstance.symbolTable().globalMutability(exportedGlobalIndex);
 
-                globalAddress = importedInstance.globalAddress(exportedGlobalIndex);
+                externalGlobal = importedInstance.externalGlobal(exportedGlobalIndex);
             }
             if (exportedValueType != valueType) {
                 throw WasmException.create(Failure.INCOMPATIBLE_IMPORT_TYPE, "Global variable '" + importedGlobalName + "' is imported into module '" + instance.name() +
@@ -372,7 +374,8 @@ public class Linker {
                                 "' with the modifier " + GlobalModifier.asString(mutability) + ", " +
                                 "'but it was exported in the module '" + importedModuleName + "' with the modifier " + GlobalModifier.asString(exportedMutability) + ".");
             }
-            instance.setGlobalAddress(globalIndex, globalAddress);
+            instance.setExternalGlobal(globalIndex, externalGlobal);
+            instance.globals().setInitialized(globalIndex, true);
         };
         final ImportGlobalSym importGlobalSym = new ImportGlobalSym(instance.name(), importDescriptor, globalIndex);
         final Sym[] dependencies = new Sym[]{new ExportGlobalSym(importedModuleName, importedGlobalName)};
@@ -386,20 +389,30 @@ public class Linker {
         resolutionDag.resolveLater(new ExportGlobalSym(module.name(), globalName), dependencies, NO_RESOLVE_ACTION);
     }
 
-    void resolveGlobalInitialization(WasmInstance instance, int globalIndex) {
-        final Sym[] dependencies = ResolutionDag.NO_DEPENDENCIES;
-        resolutionDag.resolveLater(new InitializeGlobalSym(instance.name(), globalIndex), dependencies, NO_RESOLVE_ACTION);
+    private static void initializeGlobal(WasmInstance instance, int globalIndex, Object initValue) {
+        assert !instance.globals().isInitialized(globalIndex) : globalIndex;
+        SymbolTable symbolTable = instance.symbolTable();
+        if (symbolTable.globalExternal(globalIndex)) {
+            var global = new WasmGlobal(ValueType.fromByteValue(symbolTable.globalValueType(globalIndex)), symbolTable.isGlobalMutable(globalIndex), initValue);
+            instance.setExternalGlobal(globalIndex, global);
+        } else {
+            instance.globals().store(symbolTable.globalValueType(globalIndex), symbolTable.globalAddress(globalIndex), initValue);
+        }
+        instance.globals().setInitialized(globalIndex, true);
     }
 
-    public static void initializeGlobal(WasmStore store, WasmInstance instance, int globalIndex, byte[] initBytecode) {
-        Object initValue = evalConstantExpression(store, instance, initBytecode);
-        store.globals().store(instance.module().globalValueType(globalIndex), instance.globalAddress(globalIndex), initValue);
-    }
-
-    void resolveGlobalInitialization(WasmStore store, WasmInstance instance, int globalIndex, byte[] initBytecode) {
-        final Runnable resolveAction = () -> initializeGlobal(store, instance, globalIndex, initBytecode);
-        final List<Sym> dependencies = dependenciesOfConstantExpression(instance, initBytecode);
-        resolutionDag.resolveLater(new InitializeGlobalSym(instance.name(), globalIndex), dependencies.toArray(new Sym[0]), resolveAction);
+    void resolveGlobalInitialization(WasmInstance instance, int globalIndex, byte[] initBytecode, Object initialValue) {
+        final Runnable resolveAction;
+        final Sym[] dependencies;
+        if (initBytecode == null) {
+            initializeGlobal(instance, globalIndex, initialValue);
+            resolveAction = NO_RESOLVE_ACTION;
+            dependencies = ResolutionDag.NO_DEPENDENCIES;
+        } else {
+            resolveAction = () -> initializeGlobal(instance, globalIndex, evalConstantExpression(instance, initBytecode));
+            dependencies = dependenciesOfConstantExpression(instance, initBytecode).toArray(ResolutionDag.NO_DEPENDENCIES);
+        }
+        resolutionDag.resolveLater(new InitializeGlobalSym(instance.name(), globalIndex), dependencies, resolveAction);
     }
 
     private static <T> T lookupImportObject(WasmInstance instance, ImportDescriptor importDescriptor, ImportValueSupplier resolvedImports, Class<T> expectedType) {
@@ -476,23 +489,23 @@ public class Linker {
                     boolean shared, ImportValueSupplier imports) {
         final String importedModuleName = importDescriptor.moduleName();
         final String importedMemoryName = importDescriptor.memberName();
-        // Special import of main module memory into WASI built-in module.
-        final boolean importsMainMemory = instance.module().isBuiltin() && importedModuleName.equals("main") && importedMemoryName.equals("memory");
         final Runnable resolveAction = () -> {
             final WasmMemory importedMemory;
             final WasmMemory externalMemory = lookupImportObject(instance, importDescriptor, imports, WasmMemory.class);
             if (externalMemory != null) {
-                final int contextMemoryIndex = store.memories().registerExternal(externalMemory);
+                final int contextMemoryIndex = store.memories().register(externalMemory);
                 importedMemory = store.memories().memory(contextMemoryIndex);
                 assert memoryIndex == importDescriptor.targetIndex();
             } else {
-                final WasmInstance importedInstance = importsMainMemory ? store.lookupMainModule() : store.lookupModuleInstance(importedModuleName);
+                // WASIp1 memory import should have been resolved via ImportValueSupplier above.
+                assert !instance.module().isBuiltin() : importDescriptor;
+                final WasmInstance importedInstance = store.lookupModuleInstance(importedModuleName);
                 if (importedInstance == null) {
                     throw WasmException.create(Failure.UNKNOWN_IMPORT, String.format("The module '%s', referenced in the import of memory '%s' in module '%s', does not exist",
                                     importedModuleName, importedMemoryName, instance.name()));
                 }
                 final WasmModule importedModule = importedInstance.module();
-                if (importedModule.exportedMemories().size() == 0) {
+                if (importedModule.exportedMemories().isEmpty()) {
                     throw WasmException.create(Failure.UNKNOWN_IMPORT,
                                     String.format("The imported module '%s' does not export any memories, so cannot resolve memory '%s' imported in module '%s'.",
                                                     importedModuleName, importedMemoryName, instance.name()));
@@ -529,32 +542,68 @@ public class Linker {
         });
     }
 
-    private static Object lookupGlobal(WasmStore store, WasmInstance instance, int index) {
-        final int globalAddress = instance.globalAddress(index);
-        assertTrue(globalAddress != SymbolTable.UNINITIALIZED_ADDRESS,
-                        "The global variable '" + index + " referenced in a constant expression in module '" + instance.name() + "' was not initialized.", Failure.UNSPECIFIED_MALFORMED);
-        byte type = instance.symbolTable().globalValueType(index);
-        CompilerAsserts.partialEvaluationConstant(type);
-        switch (type) {
-            case I32_TYPE:
-                return store.globals().loadAsInt(globalAddress);
-            case F32_TYPE:
-                return Float.intBitsToFloat(store.globals().loadAsInt(globalAddress));
-            case I64_TYPE:
-                return store.globals().loadAsLong(globalAddress);
-            case F64_TYPE:
-                return Double.longBitsToDouble(store.globals().loadAsLong(globalAddress));
-            case V128_TYPE:
-                return store.globals().loadAsVector128(globalAddress);
-            case FUNCREF_TYPE:
-            case EXTERNREF_TYPE:
-                return store.globals().loadAsReference(globalAddress);
-            default:
-                throw WasmException.create(Failure.UNSPECIFIED_TRAP, "Local variable cannot have the void type.");
-        }
+    void resolveTagImport(WasmStore store, WasmInstance instance, ImportDescriptor importDescriptor, int tagIndex, SymbolTable.FunctionType type, ImportValueSupplier imports) {
+        final String importedModuleName = importDescriptor.moduleName();
+        final String importedTagName = importDescriptor.memberName();
+        final Runnable resolveAction = () -> {
+            final WasmTag importedTag;
+            final WasmTag externalTag = lookupImportObject(instance, importDescriptor, imports, WasmTag.class);
+            if (externalTag != null) {
+                importedTag = externalTag;
+                assert tagIndex == importDescriptor.targetIndex();
+            } else {
+                final WasmInstance importedInstance = store.lookupModuleInstance(importedModuleName);
+                if (importedInstance == null) {
+                    throw WasmException.create(Failure.UNKNOWN_IMPORT, String.format("The module '%s', referenced in the import of tag '%s' in module '%s', does not exist",
+                                    importedModuleName, importedTagName, instance.name()));
+                }
+                final WasmModule importedModule = importedInstance.module();
+                if (importedModule.exportedTags().isEmpty()) {
+                    throw WasmException.create(Failure.UNKNOWN_IMPORT,
+                                    String.format("The imported module '%s' does not export any tags, so cannot resolve tag '%s' imported in module '%s'.",
+                                                    importedModuleName, importedTagName, instance.name()));
+                }
+                final Integer exportedTagIndex = importedModule.exportedTags().get(importedTagName);
+                if (exportedTagIndex == null) {
+                    throw WasmException.create(Failure.UNKNOWN_IMPORT,
+                                    "Tag '" + importedTagName + "', imported into module '" + instance.name() + "', was not exported in the module '" + importedModuleName + "'.");
+                }
+                importedTag = importedInstance.tag(exportedTagIndex);
+            }
+            assertFunctionTypeEquals(type, importedTag.type(), Failure.INCOMPATIBLE_IMPORT_TYPE);
+            instance.setTag(tagIndex, importedTag);
+        };
+        resolutionDag.resolveLater(new ImportTagSym(instance.name(), importDescriptor, tagIndex), new Sym[]{new ExportTagSym(importedModuleName, importedTagName)}, resolveAction);
     }
 
-    public static Object evalConstantExpression(WasmStore store, WasmInstance instance, byte[] bytecode) {
+    void resolveTagExport(WasmInstance instance, int tagIndex, String exportedTagName) {
+        final WasmModule module = instance.module();
+        final ImportDescriptor importDescriptor = module.symbolTable().importedTag(tagIndex);
+        final Sym[] dependencies = importDescriptor != null ? new Sym[]{new ImportTagSym(module.name(), importDescriptor, tagIndex)} : ResolutionDag.NO_DEPENDENCIES;
+        resolutionDag.resolveLater(new ExportTagSym(module.name(), exportedTagName), dependencies, () -> {
+        });
+    }
+
+    private static Object lookupGlobal(WasmInstance instance, int index) {
+        final SymbolTable symbolTable = instance.symbolTable();
+        final byte type = symbolTable.globalValueType(index);
+        final int globalAddress = symbolTable.globalAddress(index);
+        final GlobalRegistry globals = instance.globals();
+        if (!globals.isInitialized(index)) {
+            throw fail(Failure.UNSPECIFIED_MALFORMED, "The global variable '" + index + " referenced in a constant expression in module '" + instance.name() + "' was not initialized.");
+        }
+        return switch (type) {
+            case I32_TYPE -> globals.loadAsInt(globalAddress);
+            case F32_TYPE -> globals.loadAsFloat(globalAddress);
+            case I64_TYPE -> globals.loadAsLong(globalAddress);
+            case F64_TYPE -> globals.loadAsDouble(globalAddress);
+            case V128_TYPE -> globals.loadAsVector128(globalAddress);
+            case FUNCREF_TYPE, EXTERNREF_TYPE -> globals.loadAsReference(globalAddress);
+            default -> throw WasmException.create(Failure.UNSPECIFIED_TRAP, "Global variable cannot have the void type.");
+        };
+    }
+
+    public static Object evalConstantExpression(WasmInstance instance, byte[] bytecode) {
         int offset = 0;
         List<Object> stack = new ArrayList<>();
         while (offset < bytecode.length) {
@@ -564,13 +613,13 @@ public class Linker {
                 case Bytecode.GLOBAL_GET_U8: {
                     final int index = rawPeekU8(bytecode, offset);
                     offset++;
-                    stack.add(lookupGlobal(store, instance, index));
+                    stack.add(lookupGlobal(instance, index));
                     break;
                 }
                 case Bytecode.GLOBAL_GET_I32: {
                     final int index = rawPeekI32(bytecode, offset);
                     offset += 4;
-                    stack.add(lookupGlobal(store, instance, index));
+                    stack.add(lookupGlobal(instance, index));
                     break;
                 }
                 case Bytecode.I32_CONST_I8: {
@@ -733,7 +782,7 @@ public class Linker {
 
             final long baseAddress;
             if (offsetBytecode != null) {
-                baseAddress = ((Number) evalConstantExpression(store, instance, offsetBytecode)).longValue();
+                baseAddress = ((Number) evalConstantExpression(instance, offsetBytecode)).longValue();
             } else {
                 baseAddress = offsetAddress;
             }
@@ -778,7 +827,7 @@ public class Linker {
             final int tableAddress;
             if (externalTable != null) {
                 assert tableIndex == importDescriptor.targetIndex();
-                tableAddress = store.tables().registerExternal(externalTable);
+                tableAddress = store.tables().register(externalTable);
             } else {
                 final WasmInstance importedInstance = store.lookupModuleInstance(importDescriptor.moduleName());
                 final String importedModuleName = importDescriptor.moduleName();
@@ -787,7 +836,7 @@ public class Linker {
                 } else {
                     final WasmModule importedModule = importedInstance.module();
                     final String importedTableName = importDescriptor.memberName();
-                    if (importedModule.exportedTables().size() == 0) {
+                    if (importedModule.exportedTables().isEmpty()) {
                         throw WasmException.create(Failure.UNKNOWN_IMPORT,
                                         String.format("The imported module '%s' does not export any tables, so cannot resolve table '%s' imported in module '%s'.",
                                                         importedModuleName, importedTableName, instance.name()));
@@ -865,7 +914,7 @@ public class Linker {
         }
     }
 
-    private static Object[] extractElemItems(WasmStore store, WasmInstance instance, int bytecodeOffset, int elementCount) {
+    private static Object[] extractElemItems(WasmInstance instance, int bytecodeOffset, int elementCount) {
         int elementOffset = bytecodeOffset;
         final byte[] bytecode = instance.module().bytecode();
         final Object[] elemItems = new Object[elementCount];
@@ -904,8 +953,8 @@ public class Linker {
                 final WasmFunction function = instance.module().function(index);
                 elemItems[elementIndex] = instance.functionInstance(function);
             } else {
-                final int globalAddress = instance.globalAddress(index);
-                elemItems[elementIndex] = store.globals().loadAsReference(globalAddress);
+                assert type == BytecodeBitEncoding.ELEM_ITEM_TYPE_GLOBAL_INDEX;
+                elemItems[elementIndex] = instance.globals().loadAsReference(instance.module().globalAddress(index));
             }
         }
         return elemItems;
@@ -939,14 +988,14 @@ public class Linker {
         Assert.assertNotNull(table, String.format("No table declared or imported in the module '%s'", instance.name()), Failure.UNKNOWN_TABLE);
         final int baseAddress;
         if (offsetBytecode != null) {
-            baseAddress = (int) evalConstantExpression(store, instance, offsetBytecode);
+            baseAddress = (int) evalConstantExpression(instance, offsetBytecode);
         } else {
             baseAddress = offsetAddress;
         }
 
         Assert.assertUnsignedIntLessOrEqual(baseAddress, table.size(), Failure.OUT_OF_BOUNDS_TABLE_ACCESS);
         Assert.assertUnsignedIntLessOrEqual(baseAddress + elementCount, table.size(), Failure.OUT_OF_BOUNDS_TABLE_ACCESS);
-        final Object[] elemSegment = extractElemItems(store, instance, bytecodeOffset, elementCount);
+        final Object[] elemSegment = extractElemItems(instance, bytecodeOffset, elementCount);
         table.initialize(elemSegment, 0, baseAddress, elementCount);
     }
 
@@ -966,7 +1015,7 @@ public class Linker {
             // Do not initialize the element segment when in memory overhead mode.
             return;
         }
-        final Object[] initialValues = extractElemItems(store, instance, bytecodeOffset, elementCount);
+        final Object[] initialValues = extractElemItems(instance, bytecodeOffset, elementCount);
         instance.setElemInstance(elemSegmentId, initialValues);
     }
 
@@ -1044,10 +1093,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ExportGlobalSym)) {
+                if (!(object instanceof ExportGlobalSym that)) {
                     return false;
                 }
-                final ExportGlobalSym that = (ExportGlobalSym) object;
                 return this.moduleName.equals(that.moduleName) && this.globalName.equals(that.globalName);
             }
         }
@@ -1072,10 +1120,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof InitializeGlobalSym)) {
+                if (!(object instanceof InitializeGlobalSym that)) {
                     return false;
                 }
-                final InitializeGlobalSym that = (InitializeGlobalSym) object;
                 return this.globalIndex == that.globalIndex && this.moduleName.equals(that.moduleName);
             }
         }
@@ -1135,10 +1182,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ExportFunctionSym)) {
+                if (!(object instanceof ExportFunctionSym that)) {
                     return false;
                 }
-                final ExportFunctionSym that = (ExportFunctionSym) object;
                 return this.moduleName.equals(that.moduleName) && this.functionName.equals(that.functionName);
             }
         }
@@ -1166,10 +1212,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ImportMemorySym)) {
+                if (!(object instanceof ImportMemorySym that)) {
                     return false;
                 }
-                final ImportMemorySym that = (ImportMemorySym) object;
                 return this.moduleName.equals(that.moduleName) && this.importDescriptor.equals(that.importDescriptor) && this.memoryIndex == that.memoryIndex;
             }
         }
@@ -1194,11 +1239,67 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ExportMemorySym)) {
+                if (!(object instanceof ExportMemorySym that)) {
                     return false;
                 }
-                final ExportMemorySym that = (ExportMemorySym) object;
                 return this.moduleName.equals(that.moduleName) && this.memoryName.equals(that.memoryName);
+            }
+        }
+
+        static class ImportTagSym extends Sym {
+            final ImportDescriptor importDescriptor;
+            final int tagIndex;
+
+            ImportTagSym(String moduleName, ImportDescriptor importDescriptor, int tagIndex) {
+                super(moduleName);
+                this.importDescriptor = importDescriptor;
+                this.tagIndex = tagIndex;
+            }
+
+            @Override
+            public String toString() {
+                return String.format(Locale.ROOT, "(import tag %s from %s into %s with index %d)",
+                                importDescriptor.memberName(), importDescriptor.moduleName(), moduleName, tagIndex);
+            }
+
+            @Override
+            public int hashCode() {
+                return moduleName.hashCode() ^ importDescriptor.hashCode() ^ tagIndex;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (!(obj instanceof ImportTagSym that)) {
+                    return false;
+                }
+                return this.moduleName.equals(that.moduleName) && this.importDescriptor.equals(that.importDescriptor) && this.tagIndex == that.tagIndex;
+            }
+        }
+
+        static class ExportTagSym extends Sym {
+            final String tagName;
+
+            ExportTagSym(String moduleName, String tagName) {
+                super(moduleName);
+                this.tagName = tagName;
+            }
+
+            @Override
+            public String toString() {
+                return String.format("(export tag %s from %s)", tagName, moduleName);
+            }
+
+            @Override
+            public int hashCode() {
+                return moduleName.hashCode() ^ tagName.hashCode();
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (!(obj instanceof ExportTagSym that)) {
+                    return false;
+                }
+                return this.moduleName.equals(that.moduleName) && this.tagName.equals(that.tagName);
             }
         }
 
@@ -1222,10 +1323,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof DataSym)) {
+                if (!(object instanceof DataSym that)) {
                     return false;
                 }
-                final DataSym that = (DataSym) object;
                 return this.dataSegmentId == that.dataSegmentId && this.moduleName.equals(that.moduleName);
             }
         }
@@ -1250,10 +1350,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ImportTableSym)) {
+                if (!(object instanceof ImportTableSym that)) {
                     return false;
                 }
-                final ImportTableSym that = (ImportTableSym) object;
                 return this.moduleName.equals(that.moduleName) && this.importDescriptor.equals(that.importDescriptor);
             }
         }
@@ -1278,10 +1377,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ExportTableSym)) {
+                if (!(object instanceof ExportTableSym that)) {
                     return false;
                 }
-                final ExportTableSym that = (ExportTableSym) object;
                 return this.moduleName.equals(that.moduleName) && this.tableName.equals(that.tableName);
             }
         }
@@ -1306,10 +1404,9 @@ public class Linker {
 
             @Override
             public boolean equals(Object object) {
-                if (!(object instanceof ElemSym)) {
+                if (!(object instanceof ElemSym that)) {
                     return false;
                 }
-                final ElemSym that = (ElemSym) object;
                 return this.elemSegmentId == that.elemSegmentId && this.moduleName.equals(that.moduleName);
             }
         }

@@ -25,12 +25,17 @@
 package com.oracle.svm.graal.meta;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.WordBase;
 
+import com.oracle.svm.core.BuildPhaseProvider.AfterAnalysis;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.heap.UnknownObjectField;
 import com.oracle.svm.core.hub.DynamicHub;
@@ -45,7 +50,9 @@ import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MetaUtil;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.vm.ci.meta.UnresolvedJavaType;
 
 public class SubstrateType implements SharedType {
     private final JavaKind kind;
@@ -57,11 +64,14 @@ public class SubstrateType implements SharedType {
      * If it is not known if the type has an instance field (because the type metadata was created
      * at image runtime), it is null.
      */
-    @UnknownObjectField(canBeNull = true)//
+    @UnknownObjectField(availability = AfterAnalysis.class, canBeNull = true)//
     SubstrateField[] rawAllInstanceFields;
 
-    @UnknownObjectField(canBeNull = true)//
+    @UnknownObjectField(availability = AfterAnalysis.class, canBeNull = true)//
     protected DynamicHub uniqueConcreteImplementation;
+
+    @UnknownObjectField(availability = AfterAnalysis.class, canBeNull = true)//
+    protected SubstrateType[] permittedSubclasses;
 
     public SubstrateType(JavaKind kind, DynamicHub hub) {
         this.kind = kind;
@@ -132,6 +142,11 @@ public class SubstrateType implements SharedType {
     }
 
     @Override
+    public int getInterfaceID() {
+        return hub.getInterfaceID();
+    }
+
+    @Override
     public ResolvedJavaType resolve(ResolvedJavaType accessingClass) {
         return this;
     }
@@ -169,6 +184,16 @@ public class SubstrateType implements SharedType {
     @Override
     public boolean isEnum() {
         throw VMError.unimplemented("Enum support not implemented");
+    }
+
+    @Override
+    public boolean isRecord() {
+        throw VMError.unimplemented("Record support not implemented");
+    }
+
+    @Override
+    public List<ResolvedJavaRecordComponent> getRecordComponents() {
+        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override
@@ -296,6 +321,26 @@ public class SubstrateType implements SharedType {
     }
 
     @Override
+    public boolean isHidden() {
+        return hub.isHidden();
+    }
+
+    @Override
+    public List<? extends SubstrateType> getPermittedSubclasses() {
+        Class<?>[] hubPermittedSubclasses = hub.getPermittedSubclasses();
+        if (hubPermittedSubclasses == null) {
+            return null;
+        }
+        if (permittedSubclasses == null) {
+            permittedSubclasses = new SubstrateType[hubPermittedSubclasses.length];
+            for (int i = 0; i < hubPermittedSubclasses.length; i++) {
+                permittedSubclasses[i] = SubstrateMetaAccess.singleton().lookupJavaType(hubPermittedSubclasses[i]);
+            }
+        }
+        return Collections.unmodifiableList(Arrays.asList(permittedSubclasses));
+    }
+
+    @Override
     public SubstrateField[] getInstanceFields(boolean includeSuperclasses) {
         if (rawAllInstanceFields == null) {
             /*
@@ -402,12 +447,28 @@ public class SubstrateType implements SharedType {
     }
 
     @Override
+    public ResolvedJavaType[] getDeclaredTypes() {
+        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
+    }
+
+    @Override
     public ResolvedJavaType getEnclosingType() {
         Class<?> enclosingClass = DynamicHub.toClass(hub).getEnclosingClass();
         if (enclosingClass == null) {
             return null;
         }
         return SubstrateMetaAccess.singleton().lookupJavaType(enclosingClass);
+    }
+
+    @Override
+    public ResolvedJavaMethod getEnclosingMethod() {
+        Class<?> cls = DynamicHub.toClass(hub);
+        Method enclosingMethod = cls.getEnclosingMethod();
+        Executable enclosingExecutable = enclosingMethod != null ? enclosingMethod : cls.getEnclosingConstructor();
+        if (enclosingExecutable != null) {
+            return SubstrateMetaAccess.singleton().lookupJavaMethod(enclosingExecutable);
+        }
+        return null;
     }
 
     @Override
@@ -465,6 +526,11 @@ public class SubstrateType implements SharedType {
     @SuppressWarnings("deprecation")
     @Override
     public ResolvedJavaType getHostClass() {
+        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
+    }
+
+    @Override
+    public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
         throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 

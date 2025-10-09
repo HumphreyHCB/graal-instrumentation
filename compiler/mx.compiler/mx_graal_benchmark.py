@@ -48,6 +48,7 @@ _graal_variants = [
     ('zgc', ['-XX:+UseZGC'], 12),
     ('zgc-avx2', ['-XX:+UseZGC', '-XX:UseAVX=2'], 12),
     ('zgc-avx3', ['-XX:+UseZGC', '-XX:UseAVX=3'], 12),
+    ('shenandoah', ['-XX:+UseShenandoahGC'], 12),
     ('no-comp-oops', ['-XX:-UseCompressedOops'], 0),
     ('no-profile-info', ['-Djvmci.UseProfilingInformation=false'], 0),
     ('no-splitting', ['-Dpolyglot.engine.Splitting=false'], 0),
@@ -72,6 +73,7 @@ mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default', ['-server', '-XX:-Enabl
 mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default-serialgc', ['-server', '-XX:-EnableJVMCI', '-XX:+UseSerialGC']), _suite, 2)
 mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default-pargc', ['-server', '-XX:-EnableJVMCI', '-XX:+UseParallelGC']), _suite, 2)
 mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default-zgc', ['-server', '-XX:-EnableJVMCI', '-XX:+UseZGC']), _suite, 2)
+mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default-shenandoah', ['-server', '-XX:-EnableJVMCI', '-XX:+UseShenandoahGC']), _suite, 2)
 mx_benchmark.add_java_vm(JvmciJdkVm('server', 'default-no-tiered-comp', ['-server', '-XX:-EnableJVMCI', '-XX:-TieredCompilation']), _suite, 2)
 mx_benchmark.add_java_vm(JvmciJdkVm('server', 'hosted', ['-server', '-XX:+EnableJVMCI']), _suite, 3)
 
@@ -296,7 +298,7 @@ class JMHNativeImageBenchmarkMixin(mx_benchmark.JMHBenchmarkSuiteBase, mx_sdk_be
     def extra_profile_run_arg(self, benchmark, args, image_run_args, should_strip_run_args):
         # Don't waste time profiling the same code but still wait for compilation on HotSpot.
         user_args = super(JMHNativeImageBenchmarkMixin, self).extra_profile_run_arg(benchmark, args, image_run_args, should_strip_run_args)
-        return ['-f0', '-wi', '1', '-i5'] + mx_sdk_benchmark.strip_args_with_number(['-f', '-wi', '-i'], user_args)
+        return ['-f0', '-wi', '1', '-i3'] + mx_sdk_benchmark.strip_args_with_number(['-f', '-wi', '-i'], user_args)
 
     def benchmarkName(self):
         return self.name()

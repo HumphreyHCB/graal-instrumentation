@@ -65,6 +65,7 @@ import org.graalvm.wasm.WasmLanguage;
 import org.graalvm.wasm.WasmModule;
 import org.graalvm.wasm.WasmType;
 import org.graalvm.wasm.api.Vector128;
+import org.graalvm.wasm.api.Vector128Ops;
 import org.graalvm.wasm.debugging.data.DebugFunction;
 import org.graalvm.wasm.exception.Failure;
 import org.graalvm.wasm.exception.WasmException;
@@ -167,9 +168,10 @@ public class WasmFunctionRootNode extends WasmRootNode {
                 case WasmType.F64_TYPE:
                     return popDouble(frame, localCount);
                 case WasmType.V128_TYPE:
-                    return popVector128(frame, localCount);
+                    return Vector128Ops.SINGLETON_IMPLEMENTATION.toVector128(popVector128(frame, localCount));
                 case WasmType.FUNCREF_TYPE:
                 case WasmType.EXTERNREF_TYPE:
+                case WasmType.EXNREF_TYPE:
                     return popReference(frame, localCount);
                 default:
                     throw WasmException.format(Failure.UNSPECIFIED_INTERNAL, this, "Unknown result type: %d", resultType);
@@ -203,10 +205,11 @@ public class WasmFunctionRootNode extends WasmRootNode {
                     primitiveMultiValueStack[i] = Double.doubleToRawLongBits(popDouble(frame, localCount + i));
                     break;
                 case WasmType.V128_TYPE:
-                    objectMultiValueStack[i] = popVector128(frame, localCount + i);
+                    objectMultiValueStack[i] = Vector128Ops.SINGLETON_IMPLEMENTATION.toVector128(popVector128(frame, localCount + i));
                     break;
                 case WasmType.FUNCREF_TYPE:
                 case WasmType.EXTERNREF_TYPE:
+                case WasmType.EXNREF_TYPE:
                     objectMultiValueStack[i] = popReference(frame, localCount + i);
                     break;
                 default:
@@ -237,10 +240,11 @@ public class WasmFunctionRootNode extends WasmRootNode {
                     pushDouble(frame, i, (double) arg);
                     break;
                 case WasmType.V128_TYPE:
-                    pushVector128(frame, i, (Vector128) arg);
+                    pushVector128(frame, i, Vector128Ops.SINGLETON_IMPLEMENTATION.fromVector128((Vector128) arg));
                     break;
                 case WasmType.FUNCREF_TYPE:
                 case WasmType.EXTERNREF_TYPE:
+                case WasmType.EXNREF_TYPE:
                     pushReference(frame, i, arg);
                     break;
             }
@@ -266,10 +270,11 @@ public class WasmFunctionRootNode extends WasmRootNode {
                     pushDouble(frame, i, 0D);
                     break;
                 case WasmType.V128_TYPE:
-                    pushVector128(frame, i, Vector128.ZERO);
+                    pushVector128(frame, i, Vector128Ops.SINGLETON_IMPLEMENTATION.fromVector128(Vector128.ZERO));
                     break;
                 case WasmType.FUNCREF_TYPE:
                 case WasmType.EXTERNREF_TYPE:
+                case WasmType.EXNREF_TYPE:
                     pushReference(frame, i, WasmConstant.NULL);
                     break;
             }

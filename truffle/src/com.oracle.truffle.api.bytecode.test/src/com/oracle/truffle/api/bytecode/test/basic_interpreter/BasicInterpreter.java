@@ -288,7 +288,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation(javadoc = "Exercises interop on the operand.")
+    @Operation(javadoc = "Exercises interop on the operand.", storeBytecodeIndex = true)
     static final class ToString {
         @Specialization(limit = "2")
         public static Object doForeignObject(Object value,
@@ -302,7 +302,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
 
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     @ConstantOperand(type = BasicInterpreter.class)
     static final class Call {
 
@@ -356,7 +356,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     static final class ThrowOperation {
         @Specialization
         public static Object perform(long value,
@@ -391,7 +391,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalAccessor.class)
     static final class TeeLocal {
         @Specialization
@@ -427,7 +427,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = LocalRangeAccessor.class)
     static final class TeeLocalRange {
         @Specialization
@@ -475,7 +475,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = MaterializedLocalAccessor.class)
     static final class TeeMaterializedLocal {
         @Specialization
@@ -512,7 +512,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
     }
 
     @SuppressWarnings("unused")
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Invoke {
         @Specialization(guards = {"callTargetMatches(root.getCallTarget(), callNode.getCallTarget())"}, limit = "1")
         public static Object doRootNode(BasicInterpreter root, @Variadic Object[] args, @Cached("create(root.getCallTarget())") DirectCallNode callNode) {
@@ -550,7 +550,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class InvokeRecursive {
         @Specialization(guards = "true", excludeForUncached = true)
         public static Object doRootNode(@Variadic Object[] args, @Cached("create($rootNode.getCallTarget())") DirectCallNode callNode) {
@@ -604,7 +604,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class GetSourcePosition {
         @Specialization
         public static SourceSection doOperation(VirtualFrame frame,
@@ -614,7 +614,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class EnsureAndGetSourcePosition {
         @Specialization
         public static SourceSection doOperation(VirtualFrame frame, boolean ensure,
@@ -630,7 +630,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class GetSourcePositions {
         @Specialization
         public static SourceSection[] doOperation(VirtualFrame frame,
@@ -640,7 +640,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     @ConstantOperand(type = long.class) // (actually int, but serialization works with longs)
     public static final class CopyLocalsToFrame {
         @Specialization(guards = {"length != 0"})
@@ -662,7 +662,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class GetBytecodeLocation {
         // Note: this is just to test the API. You can bind the BytecodeLocation directly.
         @Specialization
@@ -674,7 +674,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CollectBytecodeLocations {
         @Specialization
         public static List<BytecodeLocation> perform(
@@ -702,7 +702,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CollectSourceLocations {
         @Specialization
         public static List<SourceSection> perform(
@@ -726,7 +726,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class CollectAllSourceLocations {
         @Specialization
         public static List<SourceSection[]> perform(
@@ -750,7 +750,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = true)
     public static final class Continue {
         public static final int LIMIT = 3;
 
@@ -769,7 +769,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class CurrentLocation {
         @Specialization
         public static BytecodeLocation perform(@Bind BytecodeLocation location) {
@@ -801,7 +801,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class EnableIncrementValueInstrumentation {
         @Specialization
         public static void doEnable(
@@ -834,7 +834,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     public static final class EnableDoubleValueInstrumentation {
         @Specialization
         public static void doEnable(
@@ -861,7 +861,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
                     int bytecodeIndex) {
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     static final class ExplicitBindingsTest {
         @Specialization
         @SuppressWarnings("truffle")
@@ -885,7 +885,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
         }
     }
 
-    @Operation
+    @Operation(storeBytecodeIndex = false)
     static final class ImplicitBindingsTest {
         @Specialization
         public static Bindings doDefault(
@@ -909,7 +909,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
     @Operation
     static final class Variadic0Operation {
         @Specialization
-        public static Object[] variadic(@Variadic Object[] args) {
+        public static Object[] doDefault(@Variadic Object[] args) {
             return args;
         }
     }
@@ -918,7 +918,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
     static final class Variadic1Operation {
         @Specialization
         @SuppressWarnings("unused")
-        public static Object[] variadic(long arg0, @Variadic Object[] args) {
+        public static Object[] doDefault(long arg0, @Variadic Object[] args) {
             return args;
         }
     }
@@ -927,7 +927,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
     static final class VariadicOffsetOperation {
         @Specialization
         @SuppressWarnings("unused")
-        public static Object[] variadic(@Variadic(startOffset = 4) Object[] args) {
+        public static Object[] doDefault(@Variadic(startOffset = 4) Object[] args) {
             assertTrue(args.length >= 3);
             for (int i = 0; i < 4; i++) {
                 assertNull(args[i]);
@@ -942,7 +942,7 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
 
         @Specialization
         @SuppressWarnings("unused")
-        public static Object[] pass(@Variadic Object[] args) {
+        public static Object[] doDefault(@Variadic Object[] args) {
             return args;
         }
     }
@@ -953,11 +953,97 @@ public abstract class BasicInterpreter extends DebugBytecodeRootNode implements 
 
         @Specialization
         @SuppressWarnings("unused")
-        public static Object[] pass() {
+        public static Object[] doDefault() {
             return null;
         }
     }
 
+    @Operation
+    @Variadic
+    static final class DynamicVariadicNums {
+
+        @Specialization
+        @SuppressWarnings("unused")
+        public static Object[] doDefault(long a) {
+            Object[] res = new Long[(int) a];
+            for (long i = 0; i < a; i++) {
+                res[(int) i] = i;
+            }
+            return res;
+        }
+    }
+
+    @Operation
+    static final class VariadicAddInt {
+        @Specialization
+        @SuppressWarnings("unused")
+        public static long doDefault(long a, @Variadic Object[] args) {
+            long result = 0;
+            for (Object arg : args) {
+                if (arg instanceof Long i) {
+                    result += i * a;
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new AssertionError("Expected 'arg' to be long, found: " + arg.getClass().getSimpleName());
+                }
+            }
+            return result;
+        }
+    }
+
+    @Operation
+    static final class VariadicAddLArr {
+        @Specialization
+        @SuppressWarnings("unused")
+        public static long doDefault(long[] o, @Variadic Object[] args) {
+            long result = 0;
+            for (Object arg : args) {
+                if (arg instanceof Long i) {
+                    result += i;
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new AssertionError("Expected 'arg' to be long, found: " + arg.getClass().getSimpleName());
+                }
+            }
+            return result;
+        }
+    }
+
+    @Operation
+    static final class VariadicAddIntLArr {
+        @Specialization
+        @SuppressWarnings("unused")
+        public static long doDefault(long a, long[] o, @Variadic Object[] args) {
+            long result = 0;
+            for (Object arg : args) {
+                if (arg instanceof Long i) {
+                    result += i * a;
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new AssertionError("Expected 'arg' to be long, found: " + arg.getClass().getSimpleName());
+                }
+            }
+            return result;
+        }
+    }
+
+    @Operation
+    static final class VariadicAddIntIntLArrLArr {
+        @Specialization
+        @SuppressWarnings("unused")
+        public static long doDefault(long a, long b, long[] o, long[] p, @Variadic Object[] args) {
+            long result = 0;
+            for (Object arg : args) {
+                if (arg instanceof Long i) {
+                    result += i * a * b;
+                } else {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new AssertionError("Expected 'arg' to be long, found: " + arg.getClass().getSimpleName());
+                }
+            }
+            return result;
+        }
+    }
 }
 
 class TestClosure {

@@ -42,7 +42,7 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 import org.graalvm.nativeimage.impl.RuntimeJNIAccessSupport;
 import org.graalvm.nativeimage.impl.RuntimeSystemPropertiesSupport;
@@ -58,7 +58,7 @@ import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.svm.configure.ConfigurationFile;
 import com.oracle.svm.configure.ReflectionConfigurationParser;
-import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
+import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
 import com.oracle.svm.core.c.ProjectHeaderFile;
 import com.oracle.svm.core.c.ProjectHeaderFileHeaderResolversRegistryFeature;
 import com.oracle.svm.core.code.ImageCodeInfo;
@@ -75,6 +75,8 @@ import com.oracle.svm.core.jdk.SystemInOutErrSupport;
 import com.oracle.svm.core.jdk.SystemPropertiesSupport;
 import com.oracle.svm.core.jdk.buildtimeinit.FileSystemProviderBuildTimeInitSupport;
 import com.oracle.svm.core.log.Log;
+import com.oracle.svm.core.log.Loggers;
+import com.oracle.svm.core.log.NoopLog;
 import com.oracle.svm.core.option.HostedOptionValues;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl;
@@ -92,7 +94,6 @@ import com.oracle.svm.hosted.webimage.options.WebImageOptions;
 import com.oracle.svm.hosted.webimage.snippets.WebImageNonSnippetLowerings;
 import com.oracle.svm.hosted.webimage.wasm.WasmLogHandler;
 import com.oracle.svm.util.ReflectionUtil;
-import com.oracle.svm.webimage.WebImageJSLog;
 import com.oracle.svm.webimage.WebImageSystemPropertiesSupport;
 import com.oracle.svm.webimage.api.Nothing;
 import com.oracle.svm.webimage.fs.FileSystemInitializer;
@@ -226,9 +227,9 @@ public class WebImageFeature implements InternalFeature {
 
         String entryPointConfig = WebImageOptions.EntryPointsConfig.getValue(ImageSingletons.lookup(HostedOptionValues.class));
         if (entryPointConfig != null) {
-            ConfigurationConditionResolver<ConfigurationCondition> conditionResolver = new NativeImageConditionResolver(access.getImageClassLoader(),
+            AccessConditionResolver<AccessCondition> conditionResolver = new NativeImageConditionResolver(access.getImageClassLoader(),
                             ClassInitializationSupport.singleton());
-            ReflectionConfigurationParser<ConfigurationCondition, Class<?>> parser = ConfigurationParserUtils.create(ConfigurationFile.REFLECTION, false, conditionResolver, entryPointsData, null,
+            ReflectionConfigurationParser<AccessCondition, Class<?>> parser = ConfigurationParserUtils.create(ConfigurationFile.REFLECTION, false, conditionResolver, entryPointsData, null,
                             null, null, access.getImageClassLoader());
             try {
                 parser.parseAndRegister(Path.of(entryPointConfig).toUri());
@@ -297,6 +298,7 @@ public class WebImageFeature implements InternalFeature {
         rci.initializeAtRunTime(WebImageFileSystem.class, "Static fields need to read system properties at runtime");
         rci.initializeAtRunTime(FileSystemInitializer.class, "Static fields need to read system properties at runtime");
         rci.initializeAtRunTime("java.nio.file.FileSystems$DefaultFileSystemHolder", "Parts of static initializer is substituted to inject custom FileSystemProvider");
+        rci.initializeAtRunTime("java.util.zip.ZipFile$Source", "avoid initializing wrong file system");
 
         for (Class<? extends JSObject> jsObjectSubclass : accessImpl.findSubclasses(JSObject.class)) {
             rci.initializeAtRunTime(jsObjectSubclass,
@@ -305,7 +307,7 @@ public class WebImageFeature implements InternalFeature {
         ImageSingletons.add(PlatformNativeLibrarySupport.class, new WebImageNativeLibrarySupport());
 
         switch (WebImageOptions.getBackend()) {
-            case JS, WASMGC -> Log.setLog(new WebImageJSLog());
+            case JS, WASMGC -> Loggers.setRealLog(new NoopLog());
             case WASM -> Log.finalizeDefaultLogHandler(new WasmLogHandler());
         }
 

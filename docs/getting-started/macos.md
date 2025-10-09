@@ -21,15 +21,30 @@ Select the installation option that you prefer.
 ## SDKMAN!
 
 Install Oracle GraalVM with [SDKMAN!](https://sdkman.io/){:target="_blank"}:
+
 ```bash
 sdk install java <version>-graal
 ```
 To install GraalVM Community Edition, change the distribution from `graal` to `graalce` in the command.
 
 SDKMAN! helps you install and easily switch between JDKs.
-Check which GraalVM releases are available for installation by running: 
+
+To check which GraalVM releases are available for installation, run:
+
 ```bash
 sdk list java
+```
+
+To switch to the specified GraalVM version for your current terminal session, run:
+
+```bash
+sdk use java <version>-graal
+```
+
+To set a version as the default for all new terminal sessions, run:
+
+```bash
+sdk default java <version>-graal
 ```
 
 ## From an Archive
@@ -48,7 +63,7 @@ Install GraalVM from an archive (_.tar.gz_) for the current user into any locati
     ```bash
     sudo mv graalvm-jdk-<version> /Library/Java/JavaVirtualMachines
     ```
-    To verify if the move is successful and to get a list of all installed JDKs, run `/usr/libexec/java_home -V`.
+    To verify that the move is successful and to get a list of all installed JDKs, run `/usr/libexec/java_home -V`.
 
 4. There can be multiple JDKs installed on the machine. The next step is to configure the runtime environment:
   - Set the `JAVA_HOME` environment variable to resolve to the GraalVM installation directory:
@@ -65,7 +80,7 @@ Optionally, you can specify GraalVM as the default JRE or JDK installation in yo
 
 ## Script-Friendly URLs
 
-[Script-friendly URLs](https://www.oracle.com/java/technologies/jdk-script-friendly-urls/){:target="_blank"} enable you to download GraalVM from a command line, or automatically in your script and Dockerfile by using a download URL. 
+Script-friendly URLs enable you to download GraalVM from a command line, or automatically in your script and Dockerfile by using a download URL. 
 Substitute `<version>` and `<architecture>` with the JDK version and `aarch64` or `x64` architecture.
 ```bash
 # Download with wget
@@ -92,8 +107,7 @@ xcode-select --install
 
 ### On JAVA_HOME Command
 
-The information property file, _Info.plist_, is in the top level _Contents/_ directory. 
-This means that GraalVM participates in the macOS-specific `/usr/libexec/java_home` mechanism. 
-Depending on other JDK installation(s) available, it is now possible that `/usr/libexec/java_home -v23` returns `/Library/Java/JavaVirtualMachines/<graalvm>/Contents/Home`. 
-You can run `/usr/libexec/java_home -v23 -V` to see the complete list of JVMs available to the `java_home` command. 
-This command sorts the JVMs in decreasing version order and chooses the top one as the default for the specified version.
+The information property file, _Info.plist_, is located in the top-level _Contents/_ directory.
+This allows GraalVM to integrate with the macOS-specific `/usr/libexec/java_home` mechanism.
+Depending on other installed JDKs, running `/usr/libexec/java_home -v<version>` may return `/Library/Java/JavaVirtualMachines/<graalvm>/Contents/Home`.
+To view all JVMs recognized by `java_home`, run `/usr/libexec/java_home -V`. This command lists JVMs in descending version order.

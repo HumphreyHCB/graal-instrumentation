@@ -34,11 +34,11 @@ import javax.management.MBeanServer;
 import javax.management.remote.JMXServiceURL;
 
 import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
-import com.oracle.svm.core.VMInspectionOptions;
 import com.oracle.svm.configure.ResourcesRegistry;
+import com.oracle.svm.core.VMInspectionOptions;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.jdk.NativeLibrarySupport;
@@ -46,7 +46,7 @@ import com.oracle.svm.core.jdk.PlatformNativeLibrarySupport;
 import com.oracle.svm.core.jdk.RuntimeSupport;
 import com.oracle.svm.core.jdk.management.ManagementAgentStartupHook;
 import com.oracle.svm.core.jdk.management.ManagementSupport;
-import com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry;
+import com.oracle.svm.hosted.reflect.proxy.ProxyRegistry;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
 
 @AutomaticallyRegisteredFeature
@@ -77,22 +77,22 @@ public class JmxServerFeature implements InternalFeature {
     }
 
     private static void registerJMXAgentResources() {
-        ResourcesRegistry<ConfigurationCondition> resourcesRegistry = ResourcesRegistry.singleton();
+        ResourcesRegistry<AccessCondition> resourcesRegistry = ResourcesRegistry.singleton();
 
-        resourcesRegistry.addResourceBundles(ConfigurationCondition.alwaysTrue(),
+        resourcesRegistry.addResourceBundles(AccessCondition.unconditional(),
                         "jdk.internal.agent.resources.agent");
 
-        resourcesRegistry.addResourceBundles(ConfigurationCondition.alwaysTrue(),
-                        "sun.security.util.Resources"); // required for password auth
+        resourcesRegistry.addResourceBundles(AccessCondition.unconditional(),
+                        "sun.security.util.resources.security"); // required for password auth
     }
 
     private static void configureProxy(BeforeAnalysisAccess access) {
-        DynamicProxyRegistry dynamicProxySupport = ImageSingletons.lookup(DynamicProxyRegistry.class);
+        ProxyRegistry proxyRegistry = ImageSingletons.lookup(ProxyRegistry.class);
 
-        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.rmi.Remote"),
+        proxyRegistry.registerProxy(AccessCondition.unconditional(), access.findClassByName("java.rmi.Remote"),
                         access.findClassByName("java.rmi.registry.Registry"));
 
-        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("javax.management.remote.rmi.RMIServer"));
+        proxyRegistry.registerProxy(AccessCondition.unconditional(), access.findClassByName("javax.management.remote.rmi.RMIServer"));
     }
 
     /**

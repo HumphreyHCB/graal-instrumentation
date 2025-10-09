@@ -27,12 +27,14 @@ package com.oracle.svm.core.hub;
 import static jdk.graal.compiler.options.OptionStability.EXPERIMENTAL;
 
 import java.security.ProtectionDomain;
+import java.util.function.BooleanSupplier;
 
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.impl.ClassLoadingSupport;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.SubstrateOptions;
+import com.oracle.svm.core.hub.crema.CremaSupport;
 import com.oracle.svm.core.hub.registry.ClassRegistries;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
@@ -90,18 +92,26 @@ public class RuntimeClassLoading {
             if (!optionKey.getValue()) {
                 return;
             }
+            if (!SubstrateOptions.SpawnIsolates.getValue()) {
+                /*
+                 * A metaspace is only supported if there is a contiguous address space, which is
+                 * only the case with isolate support enabled.
+                 */
+                throw UserError.invalidOptionValue(RuntimeClassLoading, RuntimeClassLoading.getValue(),
+                                "Requires isolate support, please use " + SubstrateOptionsParser.commandArgument(SubstrateOptions.SpawnIsolates, "+"));
+            }
             if (SubstrateOptions.ClosedTypeWorld.getValue()) {
                 throw UserError.invalidOptionValue(RuntimeClassLoading, RuntimeClassLoading.getValue(),
-                                "Requires an open type world, Please use " + SubstrateOptionsParser.commandArgument(SubstrateOptions.ClosedTypeWorld, "-"));
+                                "Requires an open type world, please use " + SubstrateOptionsParser.commandArgument(SubstrateOptions.ClosedTypeWorld, "-"));
             }
             if (!ClassForNameSupport.Options.ClassForNameRespectsClassLoader.getValue()) {
                 throw UserError.invalidOptionValue(RuntimeClassLoading, RuntimeClassLoading.getValue(),
-                                "Requires Class.forName to respect the classloader argument, Please use " +
+                                "Requires Class.forName to respect the classloader argument, please use " +
                                                 SubstrateOptionsParser.commandArgument(ClassForNameSupport.Options.ClassForNameRespectsClassLoader, "+"));
             }
             if (PredefinedClassesSupport.Options.SupportPredefinedClasses.getValue()) {
                 throw UserError.invalidOptionValue(RuntimeClassLoading, RuntimeClassLoading.getValue(),
-                                "Requires predefined class support to be disabled, Please use " +
+                                "Requires predefined class support to be disabled, please use " +
                                                 SubstrateOptionsParser.commandArgument(PredefinedClassesSupport.Options.SupportPredefinedClasses, "-"));
             }
         }
@@ -113,10 +123,6 @@ public class RuntimeClassLoading {
     @Fold
     public static boolean isSupported() {
         return Options.RuntimeClassLoading.getValue();
-    }
-
-    public static boolean followReflectionConfiguration() {
-        return ImageSingletons.lookup(ClassLoadingSupport.class).followReflectionConfiguration();
     }
 
     public static Class<?> defineClass(ClassLoader loader, String expectedName, byte[] b, int off, int len, ClassDefinitionInfo info) {
@@ -256,6 +262,29 @@ public class RuntimeClassLoading {
     }
 
     public static ResolvedJavaType createInterpreterType(DynamicHub hub, ResolvedJavaType analysisType) {
-        return ImageSingletons.lookup(CremaSupport.class).createInterpreterType(hub, analysisType);
+        return CremaSupport.singleton().createInterpreterType(hub, analysisType);
+    }
+
+    public static void ensureLinked(DynamicHub dynamicHub) {
+        if (dynamicHub.isLinked()) {
+            return;
+        }
+        // GR-59739 runtime linking
+    }
+
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public static final class NoRuntimeClassLoading implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return !isSupported();
+        }
+    }
+
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public static final class WithRuntimeClassLoading implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            return isSupported();
+        }
     }
 }

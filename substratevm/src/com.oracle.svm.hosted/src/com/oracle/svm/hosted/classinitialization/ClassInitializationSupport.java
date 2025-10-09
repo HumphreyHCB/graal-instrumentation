@@ -169,9 +169,22 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
     /**
      * Seal the configuration, blocking if another thread is trying to seal the configuration or an
      * unsealed-configuration window is currently open in another thread.
+     * </p>
+     * If -H:+PrintClassInitialization is set, dumps all class-initialization config into a file.
      */
     public synchronized void sealConfiguration() {
         setConfigurationSealed(true);
+        if (ClassInitializationOptions.PrintClassInitialization.getValue()) {
+            List<ClassOrPackageConfig> allConfigs = classInitializationConfiguration.allConfigs();
+            allConfigs.sort(Comparator.comparing(ClassOrPackageConfig::getName));
+            ReportUtils.report("class initialization configuration", SubstrateOptions.reportsPath(), "class_initialization_configuration", "csv", writer -> {
+                writer.println("Class or Package Name, Initialization Kind, Reasons");
+                for (ClassOrPackageConfig config : allConfigs) {
+                    writer.append(config.getName()).append(", ").append(config.getKind().toString()).append(", ")
+                                    .append(String.join(" and ", config.getReasons())).append(System.lineSeparator());
+                }
+            });
+        }
     }
 
     /**
@@ -190,17 +203,6 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
 
     private void setConfigurationSealed(boolean sealed) {
         configurationSealed = sealed;
-        if (configurationSealed && ClassInitializationOptions.PrintClassInitialization.getValue()) {
-            List<ClassOrPackageConfig> allConfigs = classInitializationConfiguration.allConfigs();
-            allConfigs.sort(Comparator.comparing(ClassOrPackageConfig::getName));
-            ReportUtils.report("class initialization configuration", SubstrateOptions.reportsPath(), "class_initialization_configuration", "csv", writer -> {
-                writer.println("Class or Package Name, Initialization Kind, Reasons");
-                for (ClassOrPackageConfig config : allConfigs) {
-                    writer.append(config.getName()).append(", ").append(config.getKind().toString()).append(", ")
-                                    .append(String.join(" and ", config.getReasons())).append(System.lineSeparator());
-                }
-            });
-        }
     }
 
     /**
@@ -267,14 +269,13 @@ public class ClassInitializationSupport implements RuntimeClassInitializationSup
      * Ensure class is initialized. Report class initialization errors in a user-friendly way if
      * class initialization fails.
      */
-    @SuppressWarnings("try")
     InitKind ensureClassInitialized(Class<?> clazz, boolean allowErrors) {
         ClassLoader libGraalLoader = (ClassLoader) loader.classLoaderSupport.getLibGraalLoader();
         ClassLoader cl = clazz.getClassLoader();
         // Graal and JVMCI make use of ServiceLoader which uses the
         // context class loader so it needs to be the libgraal loader.
         ClassLoader libGraalCCL = libGraalLoader == cl ? cl : null;
-        try (var ignore = new ContextClassLoaderScope(libGraalCCL)) {
+        try (var _ = new ContextClassLoaderScope(libGraalCCL)) {
             loader.watchdog.recordActivity();
             /*
              * This can run arbitrary user code, i.e., it can deadlock or get stuck in an endless

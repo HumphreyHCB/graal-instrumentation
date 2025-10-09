@@ -60,7 +60,7 @@ import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
-import jdk.graal.compiler.replacements.CachingPEGraphDecoder;
+import jdk.graal.compiler.truffle.CachingPEGraphDecoder;
 import jdk.graal.compiler.util.CollectionsUtil;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -232,7 +232,7 @@ public class PEGraphDecoderTest extends GraalCompilerTest {
             registerPlugins(graphBuilderConfig.getPlugins().getInvocationPlugins());
             targetGraph = new StructuredGraph.Builder(debug.getOptions(), debug, AllowAssumptions.YES).method(testMethod).build();
             GraphBuilderPhase.Instance instance = new TestGraphBuilderPhase.Instance(getProviders(), graphBuilderConfig, OptimisticOptimizations.NONE, null);
-            CachingPEGraphDecoder decoder = new CachingPEGraphDecoder(getTarget().arch, targetGraph, getProviders(), graphBuilderConfig,
+            CachingPEGraphDecoder decoder = new CachingPEGraphDecoder(getTarget().arch, targetGraph, getProviders(), getProviders(), graphBuilderConfig,
                             null, null, new InlineInvokePlugin[]{new InlineAll()}, null, null, null, null, null, graphCache, () -> null, instance, false, false, true);
 
             decoder.decode(testMethod);

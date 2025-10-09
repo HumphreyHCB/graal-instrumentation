@@ -139,7 +139,9 @@ CLSS public final com.oracle.truffle.api.HostCompilerDirectives
 innr public abstract interface static !annotation BytecodeInterpreterSwitch
 innr public abstract interface static !annotation BytecodeInterpreterSwitchBoundary
 innr public abstract interface static !annotation InliningCutoff
+innr public abstract interface static !annotation InliningRoot
 meth public static boolean inInterpreterFastPath()
+meth public static int markThreadedSwitch(int)
 supr java.lang.Object
 
 CLSS public abstract interface static !annotation com.oracle.truffle.api.HostCompilerDirectives$BytecodeInterpreterSwitch
@@ -156,6 +158,12 @@ CLSS public abstract interface static !annotation com.oracle.truffle.api.HostCom
 intf java.lang.annotation.Annotation
 
 CLSS public abstract interface static !annotation com.oracle.truffle.api.HostCompilerDirectives$InliningCutoff
+ outer com.oracle.truffle.api.HostCompilerDirectives
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[METHOD, CONSTRUCTOR])
+intf java.lang.annotation.Annotation
+
+CLSS public abstract interface static !annotation com.oracle.truffle.api.HostCompilerDirectives$InliningRoot
  outer com.oracle.truffle.api.HostCompilerDirectives
  anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
  anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[METHOD, CONSTRUCTOR])
@@ -181,6 +189,7 @@ CLSS public final static !enum com.oracle.truffle.api.InternalResource$CPUArchit
  outer com.oracle.truffle.api.InternalResource
 fld public final static com.oracle.truffle.api.InternalResource$CPUArchitecture AARCH64
 fld public final static com.oracle.truffle.api.InternalResource$CPUArchitecture AMD64
+fld public final static com.oracle.truffle.api.InternalResource$CPUArchitecture UNSUPPORTED
 meth public java.lang.String toString()
 meth public static com.oracle.truffle.api.InternalResource$CPUArchitecture getCurrent()
 meth public static com.oracle.truffle.api.InternalResource$CPUArchitecture valueOf(java.lang.String)
@@ -213,13 +222,14 @@ CLSS public final static !enum com.oracle.truffle.api.InternalResource$OS
  outer com.oracle.truffle.api.InternalResource
 fld public final static com.oracle.truffle.api.InternalResource$OS DARWIN
 fld public final static com.oracle.truffle.api.InternalResource$OS LINUX
+fld public final static com.oracle.truffle.api.InternalResource$OS UNSUPPORTED
 fld public final static com.oracle.truffle.api.InternalResource$OS WINDOWS
 meth public java.lang.String toString()
 meth public static com.oracle.truffle.api.InternalResource$OS getCurrent()
 meth public static com.oracle.truffle.api.InternalResource$OS valueOf(java.lang.String)
 meth public static com.oracle.truffle.api.InternalResource$OS[] values()
 supr java.lang.Enum<com.oracle.truffle.api.InternalResource$OS>
-hfds id
+hfds PROPERTY_ALLOW_UNSUPPORTED_PLATFORM,allowsUnsupportedPlatformValue,id
 
 CLSS public com.oracle.truffle.api.OptimizationFailedException
 cons public init(java.lang.Throwable,com.oracle.truffle.api.RootCallTarget)
@@ -1759,6 +1769,11 @@ meth public abstract java.lang.annotation.ElementType[] value()
 
 CLSS public abstract interface java.lang.constant.Constable
 meth public abstract java.util.Optional<? extends java.lang.constant.ConstantDesc> describeConstable()
+
+CLSS public abstract interface !annotation jdk.internal.vm.annotation.AOTSafeClassInitializer
+ anno 0 java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy value=RUNTIME)
+ anno 0 java.lang.annotation.Target(java.lang.annotation.ElementType[] value=[TYPE])
+intf java.lang.annotation.Annotation
 
 CLSS public abstract interface org.graalvm.options.OptionDescriptors
 fld public final static org.graalvm.options.OptionDescriptors EMPTY

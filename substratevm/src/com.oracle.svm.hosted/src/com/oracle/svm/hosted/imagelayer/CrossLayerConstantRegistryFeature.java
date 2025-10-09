@@ -25,6 +25,7 @@
 package com.oracle.svm.hosted.imagelayer;
 
 import static com.oracle.svm.hosted.imagelayer.CrossLayerConstantRegistryFeature.INVALID;
+import static com.oracle.svm.hosted.imagelayer.CrossLayerConstantRegistryFeature.NULL_CONSTANT_ID;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -52,6 +53,7 @@ import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingletonBuilderFla
 import com.oracle.svm.core.util.ObservableImageHeapMapProvider;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl;
+import com.oracle.svm.hosted.heap.ImageHeapObjectAdder;
 import com.oracle.svm.hosted.image.NativeImageHeap;
 import com.oracle.svm.hosted.meta.HostedUniverse;
 
@@ -63,6 +65,7 @@ import jdk.vm.ci.meta.JavaConstant;
 @AutomaticallyRegisteredFeature
 public class CrossLayerConstantRegistryFeature implements InternalFeature, FeatureSingleton, CrossLayerConstantRegistry {
     static final int INVALID = -1;
+    static final int NULL_CONSTANT_ID = -1;
     private static final Object NULL_CONSTANT_MARKER = new Object();
 
     private record FutureConstantCandidateInfo(ImageHeapRelocatableConstant constant) {
@@ -117,7 +120,7 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
     public void duringSetup(DuringSetupAccess access) {
         var config = (FeatureImpl.DuringSetupAccessImpl) access;
         loader = HostedImageLayerBuildingSupport.singleton().getLoader();
-        LayeredImageHeapObjectAdder.singleton().registerObjectAdder(this::addInitialObjects);
+        ImageHeapObjectAdder.singleton().registerObjectAdder(this::addInitialObjects);
         var registry = CrossLayerConstantRegistry.singletonOrNull();
         config.registerObjectToConstantReplacer(obj -> replacePriorMarkersWithConstant(registry, obj));
     }
@@ -200,16 +203,19 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
         for (var entry : finalizedFutureConstants.entrySet()) {
             // We know these constants have been installed via addInitialObjects
             Object value = entry.getValue();
+            int loaderId;
+            int offset;
             if (value == NULL_CONSTANT_MARKER) {
-                FutureTrackingInfo info = (FutureTrackingInfo) tracker.getTrackingInfo(entry.getKey());
-                tracker.updateFutureTrackingInfo(new FutureTrackingInfo(info.key(), FutureTrackingInfo.State.Final, INVALID, INVALID));
+                loaderId = NULL_CONSTANT_ID;
+                offset = INVALID;
             } else {
                 var futureConstant = (ImageHeapConstant) snippetReflection.forObject(value);
                 var objectInfo = heap.getConstantInfo(futureConstant);
-                int id = ImageHeapConstant.getConstantID(futureConstant);
-                FutureTrackingInfo info = (FutureTrackingInfo) tracker.getTrackingInfo(entry.getKey());
-                tracker.updateFutureTrackingInfo(new FutureTrackingInfo(info.key(), FutureTrackingInfo.State.Final, id, NumUtil.safeToInt(objectInfo.getOffset())));
+                loaderId = ImageHeapConstant.getConstantID(futureConstant);
+                offset = NumUtil.safeToInt(objectInfo.getOffset());
             }
+            FutureTrackingInfo info = (FutureTrackingInfo) tracker.getTrackingInfo(entry.getKey());
+            tracker.updateFutureTrackingInfo(new FutureTrackingInfo(info.key(), FutureTrackingInfo.State.Final, loaderId, offset));
         }
 
         if (ImageLayerBuildingSupport.buildingApplicationLayer()) {
@@ -222,8 +228,8 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
      * which need to be patched. The reference encoding uses the appropriate compress encoding
      * format. Both the heap offset and reference can be stored in 4-byte integers due to the length
      * restrictions of the native-image heap.
-     *
-     * has the following format:
+     * <p>
+     * Overall, this array has the following format:
      *
      * <pre>
      *     ---------------------------------
@@ -241,11 +247,14 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
      * All patching is performed relative to the initial layer's
      * {@link com.oracle.svm.core.Isolates#IMAGE_HEAP_BEGIN}, so we must subtract this offset
      * (relative to the image heap start) away from all offsets to patch.
+     * <p>
+     * In addition, within the Image Layer Section we immediately before the array store the total
+     * array size as a long value.
      */
     private void generateRelocationPatchArray() {
         int shift = ImageSingletons.lookup(CompressEncoding.class).getShift();
         List<Integer> patchArray = new ArrayList<>();
-        int heapBeginOffset = tracker.getImageHeapBeginOffset();
+        int heapBeginOffset = Heap.getHeap().getImageHeapOffsetInAddressSpace();
         assert heapBeginOffset >= 0 : "invalid image heap begin offset " + heapBeginOffset;
         for (var entry : tracker.futureKeyToPatchingOffsetsMap.entrySet()) {
             List<Integer> offsetsToPatch = entry.getValue();
@@ -253,7 +262,13 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
             VMError.guarantee(info.state() == FutureTrackingInfo.State.Final, "Invalid future %s", info);
 
             int offset = info.offset();
-            int referenceEncoding = offset == INVALID ? 0 : offset >>> shift;
+            int referenceEncoding;
+            if (offset == INVALID) {
+                referenceEncoding = 0;
+            } else {
+                assert (NumUtil.getNbitNumberInt(shift) & offset) == 0 : offset;
+                referenceEncoding = offset >>> shift;
+            }
             for (int heapOffset : offsetsToPatch) {
                 patchArray.add(heapOffset - heapBeginOffset);
                 patchArray.add(referenceEncoding);
@@ -299,20 +314,26 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
         if (idInfo instanceof FutureTrackingInfo future) {
             VMError.guarantee(!finalizedFutureConstants.containsKey(keyName), "Future was finalized in this layer: %s", future);
 
-            if (future.loaderId() == INVALID) {
-                return JavaConstant.NULL_POINTER;
-            }
-
-            if (future.state() != FutureTrackingInfo.State.Type) {
-                return loader.getOrCreateConstant(future.loaderId());
-            }
-
-            // A constant has not been stored in the heap yet. Create and cache a constant candidate
-            FutureConstantCandidateInfo info = (FutureConstantCandidateInfo) constantCandidates.computeIfAbsent(keyName, (k) -> {
-                AnalysisType type = loader.getAnalysisTypeForBaseLayerId(future.loaderId());
-                return new FutureConstantCandidateInfo(ImageHeapRelocatableConstant.create(type, k));
-            });
-            return info.constant();
+            return switch (future.state()) {
+                case Relocatable, Final -> {
+                    int constantId = future.loaderId();
+                    if (constantId == NULL_CONSTANT_ID) {
+                        yield JavaConstant.NULL_POINTER;
+                    }
+                    yield loader.getOrCreateConstant(constantId);
+                }
+                case Type -> {
+                    /*
+                     * A constant has not been stored in the heap yet. Create and cache a constant
+                     * candidate.
+                     */
+                    FutureConstantCandidateInfo info = (FutureConstantCandidateInfo) constantCandidates.computeIfAbsent(keyName, (k) -> {
+                        AnalysisType type = loader.getAnalysisTypeForBaseLayerId(future.loaderId());
+                        return new FutureConstantCandidateInfo(ImageHeapRelocatableConstant.create(type, k));
+                    });
+                    yield info.constant();
+                }
+            };
         }
 
         throw VMError.shouldNotReachHere("Missing key: %s", keyName);
@@ -395,18 +416,10 @@ public class CrossLayerConstantRegistryFeature implements InternalFeature, Featu
 }
 
 class ImageLayerIdTrackingSingleton implements LayeredImageSingleton {
-    private static final int UNKNOWN_HEAP_BEGIN_OFFSET = -1;
-
     private final Map<String, TrackingInfo> keyToTrackingInfoMap = new HashMap<>();
     final Map<String, List<Integer>> futureKeyToPatchingOffsetsMap = new ConcurrentHashMap<>();
-    private final int imageHeapBeginOffset;
 
     ImageLayerIdTrackingSingleton() {
-        this(UNKNOWN_HEAP_BEGIN_OFFSET);
-    }
-
-    ImageLayerIdTrackingSingleton(int imageHeapBeginOffset) {
-        this.imageHeapBeginOffset = imageHeapBeginOffset;
     }
 
     TrackingInfo getTrackingInfo(String key) {
@@ -417,10 +430,6 @@ class ImageLayerIdTrackingSingleton implements LayeredImageSingleton {
         assert key != null && constantId > 0 : Assertions.errorMessage(key, constantId);
         var previous = keyToTrackingInfoMap.putIfAbsent(key, new PriorTrackingInfo(constantId));
         VMError.guarantee(previous == null, "Two values are registered for this key %s", key);
-    }
-
-    public int getImageHeapBeginOffset() {
-        return imageHeapBeginOffset;
     }
 
     public void registerFutureTrackingInfo(FutureTrackingInfo info) {
@@ -451,7 +460,7 @@ class ImageLayerIdTrackingSingleton implements LayeredImageSingleton {
     }
 
     void registerPatchSite(String futureKey, int heapIndex) {
-        List<Integer> indexes = futureKeyToPatchingOffsetsMap.computeIfAbsent(futureKey, id -> new ArrayList<>());
+        List<Integer> indexes = futureKeyToPatchingOffsetsMap.computeIfAbsent(futureKey, _ -> new ArrayList<>());
         indexes.add(heapIndex);
     }
 
@@ -500,13 +509,12 @@ class ImageLayerIdTrackingSingleton implements LayeredImageSingleton {
         writer.writeIntList("futureLoaderIds", futureLoaderIds);
         writer.writeIntList("futureOffsets", futureOffsets);
 
-        writer.writeInt("imageHeapBeginOffset", imageHeapBeginOffset == UNKNOWN_HEAP_BEGIN_OFFSET ? Heap.getHeap().getImageHeapOffsetInAddressSpace() : imageHeapBeginOffset);
         return PersistFlags.CREATE;
     }
 
     @SuppressWarnings("unused")
     public static Object createFromLoader(ImageSingletonLoader loader) {
-        var tracker = new ImageLayerIdTrackingSingleton(loader.readInt("imageHeapBeginOffset"));
+        var tracker = new ImageLayerIdTrackingSingleton();
 
         Iterator<String> priorKeys = loader.readStringList("priorKeys").iterator();
         Iterator<Integer> priorIds = loader.readIntList("priorIds").iterator();
@@ -542,8 +550,21 @@ record PriorTrackingInfo(int constantId) implements TrackingInfo {
 
 record FutureTrackingInfo(String key, State state, int loaderId, int offset) implements TrackingInfo {
     enum State {
+        /**
+         * Indicates a future constant has been registered, but not yet seen in the heap. In this
+         * state {@link #loaderId} will store a typeId.
+         */
         Type,
+        /**
+         * Indicates a {@link ImageHeapRelocatableConstant} has been seen in the heap. In this state
+         * {@link #loaderId} will store a constantId referring to the
+         * {@link ImageHeapRelocatableConstant}.
+         */
         Relocatable,
+        /**
+         * Indicates the constant has been finalized. In this state {@link #loaderId} will store a
+         * constantId referring to the final {@link ImageHeapConstant}.
+         */
         Final
     }
 
@@ -555,7 +576,7 @@ record FutureTrackingInfo(String key, State state, int loaderId, int offset) imp
                 assert offset == INVALID : Assertions.errorMessage(state, offset);
                 break;
             case Final:
-                assert offset > 0 || (offset == INVALID && loaderId == INVALID) : Assertions.errorMessage(state, offset);
+                assert offset > 0 || (offset == INVALID && loaderId == NULL_CONSTANT_ID) : Assertions.errorMessage(state, offset);
         }
     }
 }

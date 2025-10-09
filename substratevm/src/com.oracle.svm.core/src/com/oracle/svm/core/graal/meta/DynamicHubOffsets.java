@@ -65,9 +65,16 @@ public class DynamicHubOffsets {
     private int numClassTypesOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int numInterfaceTypesOffset = UNINITIALIZED;
+    private int numIterableInterfaceTypesOffset = UNINITIALIZED;
+    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
+    private int interfaceIDOffset = UNINITIALIZED;
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int openTypeWorldTypeCheckSlotsOffset = UNINITIALIZED;
+
+    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
+    private int openTypeWorldInterfaceHashParamOffset = UNINITIALIZED;
+    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
+    private int openTypeWorldInterfaceHashTableOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int monitorOffsetOffset = UNINITIALIZED;
@@ -81,7 +88,7 @@ public class DynamicHubOffsets {
     private int componentTypeOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int referenceMapIndexOffset = UNINITIALIZED;
+    private int referenceMapCompressedOffsetOffset = UNINITIALIZED;
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int layerIdOffset = UNINITIALIZED;
 
@@ -161,12 +168,24 @@ public class DynamicHubOffsets {
         return numClassTypesOffset;
     }
 
-    public int getNumInterfaceTypesOffset() {
-        return numInterfaceTypesOffset;
+    public int getNumIterableInterfaceTypesOffset() {
+        return numIterableInterfaceTypesOffset;
+    }
+
+    public int getInterfaceIDOffset() {
+        return interfaceIDOffset;
     }
 
     public int getOpenTypeWorldTypeCheckSlotsOffset() {
         return openTypeWorldTypeCheckSlotsOffset;
+    }
+
+    public int getOpenTypeWorldInterfaceHashParamOffset() {
+        return openTypeWorldInterfaceHashParamOffset;
+    }
+
+    public int getOpenTypeWorldInterfaceHashTableOffset() {
+        return openTypeWorldInterfaceHashTableOffset;
     }
 
     public int getMonitorOffsetOffset() {
@@ -185,8 +204,8 @@ public class DynamicHubOffsets {
         return componentTypeOffset;
     }
 
-    public int getReferenceMapIndexOffset() {
-        return referenceMapIndexOffset;
+    public int getReferenceMapCompressedOffsetOffset() {
+        return referenceMapCompressedOffsetOffset;
     }
 
     public int getLayerIdOffset() {

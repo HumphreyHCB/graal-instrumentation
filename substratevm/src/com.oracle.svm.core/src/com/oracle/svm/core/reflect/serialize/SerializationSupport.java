@@ -31,31 +31,33 @@ import java.io.Serializable;
 import java.lang.invoke.SerializedLambda;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.util.EnumSet;
 import java.util.Objects;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.configure.RuntimeConditionSet;
 import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingletonBuilderFlags;
 import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingletonSupport;
 import com.oracle.svm.core.layeredimagesingleton.MultiLayeredImageSingleton;
-import com.oracle.svm.core.layeredimagesingleton.UnsavedSingleton;
 import com.oracle.svm.core.metadata.MetadataTracer;
 import com.oracle.svm.core.reflect.SubstrateConstructorAccessor;
+import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
+import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.MultiLayer;
+import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.ImageHeapMap;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.java.LambdaUtils;
 
-public class SerializationSupport implements MultiLayeredImageSingleton, SerializationRegistry, UnsavedSingleton {
+@SingletonTraits(access = AllAccess.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = MultiLayer.class)
+public class SerializationSupport implements SerializationRegistry {
 
     @Platforms(Platform.HOSTED_ONLY.class)
     public static SerializationSupport currentLayer() {
@@ -217,7 +219,7 @@ public class SerializationSupport implements MultiLayeredImageSingleton, Seriali
     private final EconomicMap<String, RuntimeConditionSet> lambdaCapturingClasses = EconomicMap.create();
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public void registerSerializationTargetClass(ConfigurationCondition cnd, DynamicHub hub) {
+    public void registerSerializationTargetClass(AccessCondition cnd, DynamicHub hub) {
         synchronized (classes) {
             var previous = classes.putIfAbsent(BuildPhaseProvider.isHostedUniverseBuilt() ? hub.getTypeID() : new DynamicHubKey(hub), RuntimeConditionSet.createHosted(cnd));
             if (previous != null) {
@@ -240,7 +242,7 @@ public class SerializationSupport implements MultiLayeredImageSingleton, Seriali
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public void registerLambdaCapturingClass(ConfigurationCondition cnd, String lambdaCapturingClass) {
+    public void registerLambdaCapturingClass(AccessCondition cnd, String lambdaCapturingClass) {
         synchronized (lambdaCapturingClasses) {
             var previousConditions = lambdaCapturingClasses.putIfAbsent(lambdaCapturingClass, RuntimeConditionSet.createHosted(cnd));
             if (previousConditions != null) {
@@ -267,12 +269,12 @@ public class SerializationSupport implements MultiLayeredImageSingleton, Seriali
                 return constructorAccessor;
             }
         } else {
+            if (MetadataTracer.enabled()) {
+                MetadataTracer.singleton().traceSerializationType(declaringClass);
+            }
             for (var singleton : layeredSingletons()) {
                 Object constructorAccessor = singleton.getSerializationConstructorAccessor0(declaringClass, targetConstructorClass);
                 if (constructorAccessor != null) {
-                    if (MetadataTracer.Options.MetadataTracingSupport.getValue() && MetadataTracer.singleton().enabled()) {
-                        MetadataTracer.singleton().traceSerializationType(declaringClass.getName());
-                    }
                     return constructorAccessor;
                 }
             }
@@ -280,8 +282,8 @@ public class SerializationSupport implements MultiLayeredImageSingleton, Seriali
 
         String targetConstructorClassName = targetConstructorClass.getName();
         if (ThrowMissingRegistrationErrors.hasBeenSet()) {
-            MissingSerializationRegistrationUtils.missingSerializationRegistration(declaringClass,
-                            "type " + declaringClass.getTypeName() + " with target constructor class: " + targetConstructorClassName);
+            MissingSerializationRegistrationUtils.reportSerialization(declaringClass,
+                            "type '" + declaringClass.getTypeName() + "' with target constructor class '" + targetConstructorClassName + "'");
         } else {
             throw VMError.unsupportedFeature("SerializationConstructorAccessor class not found for declaringClass: " + declaringClass.getName() +
                             " (targetConstructorClass: " + targetConstructorClassName + "). Usually adding " + declaringClass.getName() +
@@ -310,10 +312,5 @@ public class SerializationSupport implements MultiLayeredImageSingleton, Seriali
     public boolean isRegisteredForSerialization0(DynamicHub dynamicHub) {
         var conditionSet = classes.get(dynamicHub.getTypeID());
         return conditionSet != null && conditionSet.satisfied();
-    }
-
-    @Override
-    public EnumSet<LayeredImageSingletonBuilderFlags> getImageBuilderFlags() {
-        return LayeredImageSingletonBuilderFlags.ALL_ACCESS;
     }
 }

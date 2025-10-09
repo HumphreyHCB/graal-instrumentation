@@ -46,6 +46,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.HostCompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.bytecode.debug.BytecodeDebugListener;
 import com.oracle.truffle.api.frame.Frame;
@@ -197,7 +198,7 @@ public @interface GenerateBytecode {
 
     /**
      * Whether the generated interpreter should support Truffle tag instrumentation. When
-     * instrumentation is enabled, the generated builder will define <code>startTag(...)</code> and
+     * instrumentation is enabled, the generated builder will define <code>beginTag(...)</code> and
      * <code>endTag(...)</code> methods that can be used to annotate the bytecode with
      * {@link com.oracle.truffle.api.instrumentation.Tag tags}. Truffle tag instrumentation also
      * allows you to specify implicit tagging using {@link Operation#tags()}. If tag instrumentation
@@ -219,7 +220,7 @@ public @interface GenerateBytecode {
      * language {@link ProvidedTags provides} it.
      * <p>
      * Root tagging requires the probe to be notified before the {@link Prolog prolog} is executed.
-     * Implementing this behavior manually is not trivial and not recommended. It is recommended to
+     * Implementing this behaviour manually is not trivial and not recommended. It is recommended to
      * use automatic root tagging. For inlining performed by the parser it may be useful to emit
      * custom {@link RootTag root} tag using the builder methods for inlined methods. This ensures
      * that tools can still work correctly for inlined calls.
@@ -248,7 +249,7 @@ public @interface GenerateBytecode {
      * <ul>
      * <li>Allowing instruments to access the current receiver or function object.
      * <li>Implementing custom scopes for local variables instead of the default scope.
-     * <li>Hiding certain local local variables or arguments from instruments.
+     * <li>Hiding certain local variables or arguments from instruments.
      * </ul>
      * <p>
      * Minimal example of a tag node library:
@@ -282,7 +283,7 @@ public @interface GenerateBytecode {
      * <p>
      * Unsafe accesses are faster, but they do not perform array bounds checks. This means it is
      * possible (though unlikely) for unsafe accesses to cause undefined behaviour. Undefined
-     * behavior may only happen due to a bug in the Bytecode DSL implementation and not language
+     * behaviour may only happen due to a bug in the Bytecode DSL implementation and not language
      * implementation code.
      *
      * @since 24.2
@@ -290,12 +291,17 @@ public @interface GenerateBytecode {
     boolean allowUnsafe() default true;
 
     /**
-     * Whether the generated interpreter should support coroutines via a {@code yield} operation.
+     * Whether the generated interpreter should support coroutines via a built-in {@code yield}
+     * operation.
      * <p>
-     * The yield operation returns a {@link ContinuationResult} from the current point in execution.
-     * The {@link ContinuationResult} saves the current state of the interpreter so that it can be
-     * resumed at a later time. The yield and resume actions pass values, enabling communication
-     * between the caller and callee.
+     * The built-in yield operation returns a {@link ContinuationResult} from the current point in
+     * execution. The {@link ContinuationResult} saves the current state of the interpreter so that
+     * it can be resumed at a later time. The yield and resume actions pass values, enabling
+     * communication between the caller and callee.
+     * <p>
+     * If more control over the yield process is required, consider defining a custom {@link Yield}
+     * instead. You can enable built-in and custom yields separately (i.e., {@link #enableYield}
+     * does not need to be {@code true} if you only use a custom yield).
      * <p>
      * Technical note: in theoretical terms, a {@link ContinuationResult} implements an asymmetric
      * stack-less coroutine.
@@ -465,6 +471,16 @@ public @interface GenerateBytecode {
     Class<?>[] boxingEliminationTypes() default {};
 
     /**
+     * Whether constant operands of primitive type should be encoded directly in the bytecode.
+     * Inlining can reduce the number of memory reads required to access constants.
+     * <p>
+     * Currently, inlining is only supported for {@link ConstantOperand}s.
+     *
+     * @since 25.1
+     */
+    boolean inlinePrimitiveConstants() default true;
+
+    /**
      * Whether to generate introspection data for specializations. The data is accessible using
      * {@link com.oracle.truffle.api.bytecode.Instruction.Argument#getSpecializationInfo()}.
      *
@@ -536,5 +552,24 @@ public @interface GenerateBytecode {
      * @since 25.0
      */
     boolean additionalAssertions() default false;
+
+    /**
+     * Enables the use of the {@link HostCompilerDirectives#markThreadedSwitch(int) threaded switch}
+     * for the generated bytecode switch.
+     * <p>
+     * The threaded-switch mechanism reduces dispatch overhead for large or frequently executed
+     * bytecode switches, improving interpreter performance. Disabling it forces a traditional
+     * (non-threaded) switch implementation, which can be useful for benchmarking or debugging but
+     * is generally slower.
+     * <p>
+     * This option is enabled by default. It is not recommended to disable the threaded switch in
+     * production, as doing so may significantly reduce performance without improving stability. On
+     * JVMs that do not support {@link HostCompilerDirectives#markThreadedSwitch(int)} this flag has
+     * no effect.
+     *
+     * @see HostCompilerDirectives#markThreadedSwitch(int)
+     * @since 26.0
+     */
+    boolean enableThreadedSwitch() default true;
 
 }

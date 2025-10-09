@@ -182,6 +182,10 @@ public final class TruffleBaseFeature implements InternalFeature {
     }
 
     private static final String NATIVE_IMAGE_FILELIST_FILE_NAME = "native-image-resources.filelist";
+    /**
+     * When modifying the version values defined below, ensure that the corresponding version fields
+     * in {@code TruffleVersions} are also updated accordingly to maintain consistency.
+     */
     private static final Version NEXT_POLYGLOT_VERSION_UPDATE = Version.create(29, 1);
     private static final int MAX_JDK_VERSION = 29;
 
@@ -192,7 +196,7 @@ public final class TruffleBaseFeature implements InternalFeature {
 
     @Override
     public String getDescription() {
-        return "Provides support for Truffle languages";
+        return "Provides internal support for Truffle";
     }
 
     public static Class<?> lookupClass(String className) {
@@ -327,7 +331,11 @@ public final class TruffleBaseFeature implements InternalFeature {
 
     @Override
     public void afterRegistration(AfterRegistrationAccess a) {
-        if (!Boolean.getBoolean("polyglotimpl.DisableVersionChecks")) {
+        /*
+         * The actual check is now performed in the Truffle API (TruffleAPIFeature). This fallback
+         * branch can be removed once all supported Truffle versions include TruffleAPIFeature.
+         */
+        if (!Boolean.getBoolean("polyglotimpl.DisableVersionChecks") && !hasTruffleAPIFeature(a)) {
             Version truffleVersion = getTruffleVersion(a);
             Version truffleMajorMinorVersion = stripUpdateVersion(truffleVersion);
             Version featureVersion = getSVMFeatureVersion();
@@ -375,6 +383,11 @@ public final class TruffleBaseFeature implements InternalFeature {
         invokeStaticMethod("com.oracle.truffle.polyglot.InternalResourceCacheSymbol", "initialize", List.of());
 
         profilingEnabled = false;
+    }
+
+    private static boolean hasTruffleAPIFeature(AfterRegistrationAccess a) {
+        Class<?> featureClass = a.findClassByName("com.oracle.truffle.api.impl.TruffleAPIFeature");
+        return featureClass != null && ((FeatureImpl.AfterRegistrationAccessImpl) a).getFeatureHandler().containsFeature(featureClass);
     }
 
     /**
@@ -481,7 +494,7 @@ public final class TruffleBaseFeature implements InternalFeature {
     @Override
     public void registerInvocationPlugins(Providers providers, Plugins plugins, ParsingReason reason) {
         StaticObjectSupport.registerInvocationPlugins(plugins, reason);
-        TruffleInvocationPlugins.register(providers.getLowerer().getTarget().arch, plugins.getInvocationPlugins(), providers.getReplacements());
+        TruffleInvocationPlugins.register(providers.getLowerer().getTarget().arch, plugins.getInvocationPlugins());
 
         /*
          * We need to constant-fold Profile.isProfilingEnabled already during static analysis, so
@@ -586,7 +599,7 @@ public final class TruffleBaseFeature implements InternalFeature {
         libraryFactoryCacheField = access.findField("com.oracle.truffle.api.library.LibraryFactory$ResolvedDispatch", "CACHE");
         if (Options.TruffleCheckPreinitializedFiles.getValue()) {
             var classInitializationSupport = access.getHostVM().getClassInitializationSupport();
-            access.registerObjectReachableCallback(TruffleFile.class, (a1, file, reason) -> checkTruffleFile(classInitializationSupport, file));
+            access.registerObjectReachableCallback(TruffleFile.class, (_, file, _) -> checkTruffleFile(classInitializationSupport, file));
         }
 
         if (includeLanguageResources) {
@@ -627,7 +640,7 @@ public final class TruffleBaseFeature implements InternalFeature {
             UserError.abort("Detected an absolute TruffleFile %s in the image heap. " +
                             "Files with an absolute path created during the context pre-initialization may not be valid at the image execution time. " +
                             "This check can be disabled using -H:-TruffleCheckPreinitializedFiles." +
-                            classInitializationSupport.objectInstantiationTraceMessage(file, "", culprit -> ""),
+                            classInitializationSupport.objectInstantiationTraceMessage(file, "", _ -> ""),
                             file.getPath());
         }
     }
@@ -690,7 +703,7 @@ public final class TruffleBaseFeature implements InternalFeature {
             config.registerFieldValueTransformer(ReflectionUtil.lookupField(false, internalResourceRootsClass, "roots"), ResetFieldValueTransformer.INSTANCE);
         }
         if (!copyLanguageResources && !includeLanguageResources) {
-            config.registerFieldValueTransformer(ReflectionUtil.lookupField(false, internalResourceCacheClass, "useInternalResources"), (receiver, originalValue) -> false);
+            config.registerFieldValueTransformer(ReflectionUtil.lookupField(false, internalResourceCacheClass, "useInternalResources"), (_, _) -> false);
         }
     }
 
@@ -775,7 +788,7 @@ public final class TruffleBaseFeature implements InternalFeature {
     }
 
     @Override
-    public void registerGraalPhases(Providers providers, Suites suites, boolean hosted) {
+    public void registerGraalPhases(Providers providers, Suites suites, boolean hosted, boolean fallback) {
         /*
          * Please keep this code in sync with the HotSpot configuration in
          * TruffleCommunityCompilerConfiguration.
@@ -1569,10 +1582,8 @@ final class Target_com_oracle_truffle_polyglot_LanguageCache {
 final class Target_com_oracle_truffle_polyglot_PolyglotEngineImpl {
     @Substitute
     static void logFallback(String message) {
-        try (Log log = Log.log()) {
-            log.string(message.getBytes(StandardCharsets.UTF_8));
-            log.flush();
-        }
+        Log.log().string(message.getBytes(StandardCharsets.UTF_8));
+        Log.log().flush();
     }
 }
 

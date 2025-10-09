@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,7 @@ import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.HostedOptionValues;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.ReachabilityRegistrationNode;
+import com.oracle.svm.hosted.AbstractAnalysisMetadataTrackingNode;
 import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.SharedArenaSupport;
 import com.oracle.svm.hosted.code.FactoryMethodSupport;
@@ -49,6 +49,7 @@ import com.oracle.svm.hosted.methodhandles.MethodHandleInvokerRenamingSubstituti
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
+import jdk.graal.compiler.core.common.type.IntegerStamp;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.iterators.NodePredicate;
 import jdk.graal.compiler.nodes.AbstractBeginNode;
@@ -59,12 +60,14 @@ import jdk.graal.compiler.nodes.FrameState;
 import jdk.graal.compiler.nodes.FullInfopointNode;
 import jdk.graal.compiler.nodes.Invoke;
 import jdk.graal.compiler.nodes.LogicConstantNode;
+import jdk.graal.compiler.nodes.NodeView;
 import jdk.graal.compiler.nodes.ParameterNode;
 import jdk.graal.compiler.nodes.ReturnNode;
 import jdk.graal.compiler.nodes.StartNode;
 import jdk.graal.compiler.nodes.UnwindNode;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.calc.ConditionalNode;
+import jdk.graal.compiler.nodes.calc.MinMaxNode;
 import jdk.graal.compiler.nodes.extended.ValueAnchorNode;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
 import jdk.graal.compiler.nodes.java.AbstractNewObjectNode;
@@ -321,7 +324,16 @@ public class InlineBeforeAnalysisPolicyUtils {
     public AccumulativeInlineScope createAccumulativeInlineScope(AccumulativeInlineScope outer, AnalysisMethod caller, AnalysisMethod method, NodePredicate invalidNodePredicate) {
         AccumulativeCounters accumulativeCounters;
         int depth;
-        if (outer == null) {
+        if (isScopedMethod(caller)) {
+            /*
+             * Inlining into @Scope-annotated methods is required for correctness since in general,
+             * no calls may remain. Therefore, regardless if there is already an outer scope, those
+             * methods are always treated as inlining root.
+             */
+            depth = 1;
+            accumulativeCounters = new AccumulativeCounters(optionScopedAllowedNodes, optionScopedAllowedInvokes, InliningScopeType.ScopedMethod);
+
+        } else if (outer == null) {
             /*
              * The first level of method inlining, i.e., the top scope from the inlining policy
              * point of view.
@@ -338,9 +350,6 @@ public class InlineBeforeAnalysisPolicyUtils {
 
             } else if (optionTrackNeverNullInstanceFields && FactoryMethodSupport.isFactoryMethod(caller)) {
                 accumulativeCounters = new AccumulativeCounters(optionConstructorAllowedNodes, optionConstructorAllowedInvokes, InliningScopeType.ConstructorInlining);
-
-            } else if (isScopedMethod(caller)) {
-                accumulativeCounters = new AccumulativeCounters(optionScopedAllowedNodes, optionScopedAllowedInvokes, InliningScopeType.ScopedMethod);
 
             } else {
                 accumulativeCounters = new AccumulativeCounters(optionAllowedNodes, optionAllowedInvokes, InliningScopeType.None);
@@ -460,10 +469,20 @@ public class InlineBeforeAnalysisPolicyUtils {
                 return true;
             }
 
-            if (node instanceof ReachabilityRegistrationNode) {
+            if (node instanceof MinMaxNode<?> minMax && minMax.stamp(NodeView.DEFAULT) instanceof IntegerStamp) {
                 /*
-                 * These nodes do not affect compilation and are only used to execute handlers
-                 * depending on their reachability.
+                 * After GR-68934, we use MinMaxNode to represent certain min/max computations that
+                 * were previously represented using ConditionalNode. Such nodes were previously
+                 * matched by the case above, so we must continue to allow inlining for them to
+                 * avoid regressions.
+                 */
+                return true;
+            }
+
+            if (node instanceof AbstractAnalysisMetadataTrackingNode) {
+                /*
+                 * These nodes do not affect compilation and are only used to track inlined method
+                 * information or execute handlers depending on their reachability.
                  */
                 return true;
             }

@@ -26,7 +26,6 @@ package com.oracle.svm.hosted;
 
 import java.lang.ref.Reference;
 import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -44,13 +43,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
+import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.word.WordBase;
 
 import com.oracle.graal.pointsto.BigBang;
@@ -60,6 +59,7 @@ import com.oracle.graal.pointsto.api.PointstoOptions;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
 import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.infrastructure.OriginalFieldProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -69,9 +69,11 @@ import com.oracle.graal.pointsto.meta.BaseLayerType;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisGraphDecoder;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysisPolicy;
+import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.GraalAccess;
 import com.oracle.svm.common.meta.GuaranteeFolded;
 import com.oracle.svm.common.meta.MultiMethod;
+import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.MissingRegistrationSupport;
 import com.oracle.svm.core.NeverInline;
@@ -79,9 +81,10 @@ import com.oracle.svm.core.NeverInlineTrivial;
 import com.oracle.svm.core.RuntimeAssertionsSupport;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateOptions.OptimizationLevel;
+import com.oracle.svm.core.TrackDynamicAccessEnabled;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.InjectAccessors;
-import com.oracle.svm.core.c.CGlobalData;
+import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.encoder.SymbolEncoder;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallLinkage;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
@@ -109,7 +112,6 @@ import com.oracle.svm.core.util.Counter;
 import com.oracle.svm.core.util.HostedStringDeduplication;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.analysis.NativeImagePointsToAnalysis;
 import com.oracle.svm.hosted.analysis.SVMParsingSupport;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationFeature;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationOptions;
@@ -118,6 +120,8 @@ import com.oracle.svm.hosted.classinitialization.SimulateClassInitializerSupport
 import com.oracle.svm.hosted.code.InliningUtilities;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
 import com.oracle.svm.hosted.code.UninterruptibleAnnotationChecker;
+import com.oracle.svm.hosted.dynamicaccessinference.ConstantExpressionRegistry;
+import com.oracle.svm.hosted.dynamicaccessinference.StrictDynamicAccessInferenceFeature;
 import com.oracle.svm.hosted.fieldfolding.StaticFinalFieldFoldingPhase;
 import com.oracle.svm.hosted.heap.PodSupport;
 import com.oracle.svm.hosted.imagelayer.HostedDynamicLayerInfo;
@@ -129,17 +133,18 @@ import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
 import com.oracle.svm.hosted.meta.PatchedWordConstant;
 import com.oracle.svm.hosted.phases.AnalysisGraphBuilderPhase;
+import com.oracle.svm.hosted.phases.DynamicAccessMarkingPhase;
 import com.oracle.svm.hosted.phases.ImplicitAssertionsPhase;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisGraphDecoderImpl;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyImpl;
 import com.oracle.svm.hosted.phases.InlineBeforeAnalysisPolicyUtils;
-import com.oracle.svm.hosted.phases.OpenTypeWorldConvertCallTargetPhase;
 import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
 import com.oracle.svm.hosted.substitute.AutomaticUnsafeTransformationSupport;
 import com.oracle.svm.hosted.util.IdentityHashCodeUtil;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
 import jdk.graal.compiler.debug.DebugContext;
@@ -161,8 +166,11 @@ import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.virtual.phases.ea.PartialEscapePhase;
 import jdk.internal.loader.NativeLibraries;
 import jdk.internal.vm.annotation.DontInline;
+import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.Stable;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
@@ -170,10 +178,11 @@ import jdk.vm.ci.meta.ResolvedJavaType;
 public class SVMHost extends HostVM {
     private final ConcurrentHashMap<AnalysisType, DynamicHub> typeToHub = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<DynamicHub, AnalysisType> hubToType = new ConcurrentHashMap<>();
+    private final boolean verifyNamingConventions;
 
     public enum UsageKind {
         Instantiated,
-        Reachable;
+        Reachable
     }
 
     private final Map<String, Set<UsageKind>> forbiddenTypes;
@@ -198,26 +207,44 @@ public class SVMHost extends HostVM {
     private final ConcurrentMap<AnalysisMethod, Boolean> analysisTrivialMethods = new ConcurrentHashMap<>();
 
     private final Set<AnalysisField> finalFieldsInitializedOutsideOfConstructor = ConcurrentHashMap.newKeySet();
+    /**
+     * We do not allow the folding of arbitrary {@link Stable} fields if the analysis has not
+     * finished yet as it leads to non-deterministic results, because the initialization code often
+     * runs in parallel with the analysis, creating race conditions. However, we need to allow the
+     * folding of {@link Stable} fields in some cases to improve analysis precision. If we know that
+     * such fields are initialized before parsing any method that reads their values, the analysis
+     * results should still be deterministic.
+     */
+    private final Set<AnalysisField> stableFieldsToFoldBeforeAnalysis = ConcurrentHashMap.newKeySet();
     private final MultiMethodAnalysisPolicy multiMethodAnalysisPolicy;
     private final SVMParsingSupport parsingSupport;
     private final InlineBeforeAnalysisPolicy inlineBeforeAnalysisPolicy;
 
+    private final AnnotationSubstitutionProcessor annotationSubstitutions;
     private final MissingRegistrationSupport missingRegistrationSupport;
 
     private final SymbolEncoder encoder = SymbolEncoder.singleton();
 
     private final int layerId;
-    private final boolean useBaseLayer;
-    private Set<Field> excludedFields;
-    private AnalysisType cGlobalData;
-    private AnalysisType optionKey;
+    private final boolean buildingImageLayer = ImageLayerBuildingSupport.buildingImageLayer();
+    private final boolean buildingInitialLayer = ImageLayerBuildingSupport.buildingInitialLayer();
+    private final boolean buildingSharedLayer = ImageLayerBuildingSupport.buildingSharedLayer();
+    private final boolean buildingExtensionLayer = ImageLayerBuildingSupport.buildingExtensionLayer();
+
+    // All elements below are from the host VM universe, not the analysis universe
+    private Set<ResolvedJavaField> sharedLayerExcludedFields;
+    private final ResolvedJavaType optionKeyType;
+    private final ResolvedJavaType featureType;
 
     private final Boolean optionAllowUnsafeAllocationOfAllInstantiatedTypes = SubstrateOptions.AllowUnsafeAllocationOfAllInstantiatedTypes.getValue();
     private final boolean isClosedTypeWorld = SubstrateOptions.useClosedTypeWorld();
-    private final boolean enableTrackAcrossLayers;
-    private final boolean enableReachableInCurrentLayer;
-    private final boolean buildingImageLayer = ImageLayerBuildingSupport.buildingImageLayer();
     private final LayeredStaticFieldSupport layeredStaticFieldSupport;
+    private final MetaAccessProvider originalMetaAccess;
+
+    private final ConstantExpressionRegistry constantExpressionRegistry;
+
+    private final boolean trackDynamicAccess;
+    private DynamicAccessDetectionSupport dynamicAccessDetectionSupport = null;
 
     @SuppressWarnings("this-escape")
     public SVMHost(OptionValues options, ImageClassLoader loader, ClassInitializationSupport classInitializationSupport, AnnotationSubstitutionProcessor annotationSubstitutions,
@@ -225,7 +252,9 @@ public class SVMHost extends HostVM {
         super(options, loader.getClassLoader());
         this.loader = loader;
         this.classInitializationSupport = classInitializationSupport;
+        this.annotationSubstitutions = annotationSubstitutions;
         this.missingRegistrationSupport = missingRegistrationSupport;
+        this.originalMetaAccess = GraalAccess.getOriginalProviders().getMetaAccess();
         this.stringTable = HostedStringDeduplication.singleton();
         this.forbiddenTypes = setupForbiddenTypes(options);
         this.automaticUnsafeTransformations = new AutomaticUnsafeTransformationSupport(options, annotationSubstitutions, loader);
@@ -246,15 +275,20 @@ public class SVMHost extends HostVM {
         } else {
             parsingSupport = null;
         }
-        layerId = ImageLayerBuildingSupport.buildingImageLayer() ? DynamicImageLayerInfo.getCurrentLayerNumber() : 0;
-        useBaseLayer = ImageLayerBuildingSupport.buildingExtensionLayer();
-        if (ImageLayerBuildingSupport.buildingSharedLayer()) {
-            initializeExcludedFields();
+        layerId = buildingImageLayer ? DynamicImageLayerInfo.getCurrentLayerNumber() : 0;
+        if (buildingSharedLayer) {
+            initializeSharedLayerExcludedFields();
         }
+        layeredStaticFieldSupport = buildingImageLayer ? LayeredStaticFieldSupport.singleton() : null;
 
-        enableTrackAcrossLayers = ImageLayerBuildingSupport.buildingSharedLayer();
-        enableReachableInCurrentLayer = ImageLayerBuildingSupport.buildingExtensionLayer();
-        layeredStaticFieldSupport = ImageLayerBuildingSupport.buildingImageLayer() ? LayeredStaticFieldSupport.singleton() : null;
+        optionKeyType = lookupOriginalType(OptionKey.class);
+        featureType = lookupOriginalType(Feature.class);
+
+        verifyNamingConventions = SubstrateOptions.VerifyNamingConventions.getValue();
+
+        constantExpressionRegistry = StrictDynamicAccessInferenceFeature.isActive() ? ConstantExpressionRegistry.singleton() : null;
+
+        trackDynamicAccess = TrackDynamicAccessEnabled.isTrackDynamicAccessEnabled();
     }
 
     /**
@@ -268,8 +302,23 @@ public class SVMHost extends HostVM {
     }
 
     @Override
-    public boolean useBaseLayer() {
-        return useBaseLayer;
+    public boolean buildingImageLayer() {
+        return buildingImageLayer;
+    }
+
+    @Override
+    public boolean buildingInitialLayer() {
+        return buildingInitialLayer;
+    }
+
+    @Override
+    public boolean buildingSharedLayer() {
+        return buildingSharedLayer;
+    }
+
+    @Override
+    public boolean buildingExtensionLayer() {
+        return buildingExtensionLayer;
     }
 
     /**
@@ -415,7 +464,7 @@ public class SVMHost extends HostVM {
         classInitializationSupport.maybeInitializeAtBuildTime(analysisType);
 
         /* Compute the automatic substitutions. */
-        automaticUnsafeTransformations.computeTransformations(bb, this, GraalAccess.getOriginalProviders().getMetaAccess().lookupJavaType(analysisType.getJavaClass()));
+        automaticUnsafeTransformations.computeTransformations(bb, this, lookupOriginalType(analysisType.getJavaClass()));
     }
 
     @Override
@@ -732,15 +781,20 @@ public class SVMHost extends HostVM {
                 analysisTrivialMethods.put(method, true);
             }
 
+            if (trackDynamicAccess) {
+                if (dynamicAccessDetectionSupport == null) {
+                    dynamicAccessDetectionSupport = DynamicAccessDetectionSupport.instance();
+                }
+                if (dynamicAccessDetectionSupport.lookupDynamicAccessMethod(graph.method()) != null) {
+                    new DynamicAccessMarkingPhase().apply(graph, bb.getProviders(method));
+                }
+            }
+
             super.methodAfterParsingHook(bb, method, graph);
         }
     }
 
     protected void optimizeAfterParsing(BigBang bb, AnalysisMethod method, StructuredGraph graph) {
-        if (!SubstrateOptions.useClosedTypeWorldHubLayout()) {
-            new OpenTypeWorldConvertCallTargetPhase().apply(graph, getProviders(method.getMultiMethodKey()));
-        }
-
         if (PointstoOptions.EscapeAnalysisBeforeAnalysis.getValue(bb.getOptions())) {
             if (method.isOriginalMethod()) {
                 /*
@@ -795,8 +849,8 @@ public class SVMHost extends HostVM {
         for (Node n : graph.getNodes()) {
             if (n instanceof StackValueNode) {
                 containsStackValueNode.put(method, true);
-            } else if (n instanceof ReachabilityRegistrationNode node) {
-                bb.postTask(debug -> node.getRegistrationTask().ensureDone());
+            } else if (n instanceof ReachabilityCallbackNode node) {
+                bb.postTask(_ -> node.getRegistrationTask().ensureDone());
             }
         }
     }
@@ -834,7 +888,14 @@ public class SVMHost extends HostVM {
             return false;
         }
 
-        return SubstrateOptions.NeverInline.getValue().values().stream().anyMatch(re -> MethodFilter.parse(re).matches(method));
+        return SubstrateOptions.NeverInline.getValue().values().stream()
+                        .map(MethodFilter::parse)
+                        .anyMatch(filter -> filter.matches(method));
+    }
+
+    @Override
+    public boolean hasAlwaysInlineDirective(ResolvedJavaMethod method) {
+        return AnnotationAccess.isAnnotationPresent(method, AlwaysInline.class) || AnnotationAccess.isAnnotationPresent(method, ForceInline.class);
     }
 
     private InlineBeforeAnalysisPolicy inlineBeforeAnalysisPolicy(MultiMethod.MultiMethodKey multiMethodKey) {
@@ -920,121 +981,157 @@ public class SVMHost extends HostVM {
         return false;
     }
 
-    private void initializeExcludedFields() {
-        excludedFields = new HashSet<>();
+    /**
+     * Gets a {@link ResolvedJavaType} for {@code clazz} from the host VM universe.
+     */
+    private ResolvedJavaType lookupOriginalType(Class<?> clazz) {
+        return originalMetaAccess.lookupJavaType(clazz);
+    }
+
+    /**
+     * Gets a {@link ResolvedJavaField} declared in {@code declaringClass} from the host VM
+     * universe.
+     */
+    private ResolvedJavaField lookupOriginalDeclaredField(Class<?> declaringClass, String fieldName) {
+        return originalMetaAccess.lookupJavaField(ReflectionUtil.lookupField(declaringClass, fieldName));
+    }
+
+    private void initializeSharedLayerExcludedFields() {
+        sharedLayerExcludedFields = new HashSet<>();
         /*
          * These fields need to be folded as they are used in snippets, and they must be accessed
          * without producing reads with side effects.
          */
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "layoutEncoding"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "numClassTypes"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "numInterfaceTypes"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldTypeCheckSlots"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "typeIDDepth"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "typeID"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "monitorOffset"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "hubType"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "companion"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHubCompanion.class, "arrayHub"));
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHubCompanion.class, "additionalFlags"));
+
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "layoutEncoding"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "numClassTypes"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "numIterableInterfaceTypes"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "openTypeWorldTypeCheckSlots"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "openTypeWorldInterfaceHashParam"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "openTypeWorldInterfaceHashTable"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "interfaceID"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "typeIDDepth"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "typeID"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "monitorOffset"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "hubType"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "companion"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHubCompanion.class, "arrayHub"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHubCompanion.class, "additionalFlags"));
 
         /* Needs to be immutable for correct lowering of SubstrateIdentityHashCodeNode. */
-        excludedFields.add(ReflectionUtil.lookupField(DynamicHub.class, "identityHashOffset"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(DynamicHub.class, "identityHashOffset"));
 
         /*
          * Including this field makes ThreadLocalAllocation.getTlabDescriptorSize reachable through
          * ThreadLocalAllocation.regularTLAB which is accessed with
          * FastThreadLocalBytes.getSizeSupplier
          */
-        excludedFields.add(ReflectionUtil.lookupField(VMThreadLocalInfo.class, "sizeSupplier"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(VMThreadLocalInfo.class, "sizeSupplier"));
         /* This field cannot be written to (see documentation) */
-        excludedFields.add(ReflectionUtil.lookupField(Counter.Group.class, "enabled"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(Counter.Group.class, "enabled"));
         /* This field can contain a reference to a Thread, which is not allowed in the heap */
-        excludedFields.add(ReflectionUtil.lookupField(NativeLibraries.class, "nativeLibraryLockMap"));
+        sharedLayerExcludedFields.add(lookupOriginalDeclaredField(NativeLibraries.class, "nativeLibraryLockMap"));
     }
 
-    @Override
-    public boolean sortFields() {
-        /*
-         * If building layered images sort the fields by kind and name to ensure stable order.
-         * Sorting fields in general may lead to some issues. (GR-62599)
-         */
-        return ImageLayerBuildingSupport.buildingImageLayer();
+    /** If it's not one of the known builder types it must be an original VM type. */
+    private static boolean isOriginalType(ResolvedJavaType type) {
+        return !(type instanceof OriginalClassProvider);
     }
 
-    /**
-     * This method cannot use an {@link AnalysisField} because it is used before the analysis is set
-     * up.
-     */
-    @Override
-    public boolean isFieldIncluded(BigBang bb, Field field) {
-        /*
-         * Fields of type CGlobalData can use a CGlobalDataFactory which must not be reachable at
-         * run time
-         */
-        if (field.getType().equals(CGlobalData.class)) {
-            return false;
-        }
+    /** If it's not one of the known builder methods it must be an original VM method. */
+    private static boolean isOriginalMethod(ResolvedJavaMethod method) {
+        return !(method instanceof OriginalMethodProvider);
+    }
 
-        if (excludedFields.contains(field)) {
-            return false;
-        }
-        /* Options should not be in the image */
-        if (OptionKey.class.isAssignableFrom(field.getType())) {
-            return false;
-        }
-
-        /* Fields that are always folded don't need to be included. */
-        if (field.getAnnotation(GuaranteeFolded.class) != null) {
-            return false;
-        }
-
-        /* Fields from this package should not be in the image */
-        if (field.getDeclaringClass().getName().startsWith("jdk.graal.compiler")) {
-            return false;
-        }
-        /* Fields that are deleted or substituted should not be in the image */
-        if (bb instanceof NativeImagePointsToAnalysis nativeImagePointsToAnalysis) {
-            AnnotationSubstitutionProcessor annotationSubstitutionProcessor = nativeImagePointsToAnalysis.getAnnotationSubstitutionProcessor();
-            boolean included = !annotationSubstitutionProcessor.isDeleted(field) && !annotationSubstitutionProcessor.isAnnotationPresent(field, InjectAccessors.class);
-            if (!included) {
-                return false;
-            }
-        }
-
-        /* Remaining fields should match the naming conventions. */
-        if (SubstrateOptions.VerifyNamingConventions.getValue()) {
-            NativeImageGenerator.checkName(bb, field);
-        }
-
-        return super.isFieldIncluded(bb, field);
+    /** If it's not one of the known builder fields it must be an original VM fields. */
+    private static boolean isOriginalField(ResolvedJavaField field) {
+        return !(field instanceof OriginalFieldProvider);
     }
 
     /**
-     * This method needs to be kept in sync with {@link SVMHost#isFieldIncluded(BigBang, Field)}.
+     * Check if an original {@link ResolvedJavaType} should be included in the image. This method
+     * should not be called with an {@link AnalysisType} or any other SVM specific types.
      */
     @Override
-    public boolean isFieldIncluded(BigBang bb, AnalysisField field) {
-        /*
-         * Fields of type CGlobalData can use a CGlobalDataFactory which must not be reachable at
-         * run time
-         */
-        if (cGlobalData == null) {
-            cGlobalData = bb.getMetaAccess().lookupJavaType(CGlobalData.class);
-        }
-        if (field.getType().equals(cGlobalData)) {
+    public boolean isSupportedOriginalType(BigBang bb, ResolvedJavaType type) {
+        AnalysisError.guarantee(isOriginalType(type), "Expected an original VM type, found %s", type.getClass());
+
+        if (!platformSupported(type)) {
             return false;
         }
 
-        if (excludedFields.contains(OriginalFieldProvider.getJavaField(field))) {
+        if (featureType.isAssignableFrom(type)) {
+            return false;
+        }
+
+        /* Substitution types should never be reachable directly. */
+        if (AnnotationAccess.isAnnotationPresent(type, TargetClass.class)) {
+            return false;
+        }
+
+        return super.isSupportedOriginalType(bb, type);
+    }
+
+    /**
+     * Check if an {@link AnalysisMethod} should be included in the image. For checking its
+     * annotations we rely on the {@link AnnotationAccess} unwrapping mechanism to include any
+     * annotations injected in the substitution layer.
+     */
+    @Override
+    public boolean isSupportedAnalysisMethod(BigBang bb, AnalysisMethod method) {
+        if (!platformSupported(method)) {
+            return false;
+        }
+        /*
+         * Methods annotated with @Fold should not be included in the base image as they are
+         * replaced by the invocation plugin with a constant. If reachable in an extension image,
+         * the plugin will replace it again.
+         */
+        if (AnnotationAccess.isAnnotationPresent(method, Fold.class)) {
+            return false;
+        }
+        return super.isSupportedAnalysisMethod(bb, method);
+    }
+
+    /**
+     * Check if an original host VM method should be included in the image. This allows us to create
+     * the corresponding {@link AnalysisMethod} lazily, only if it needs to be analyzed.
+     * <p>
+     * There is some redundancy with {@link #isSupportedAnalysisMethod(BigBang, AnalysisMethod)},
+     * however we keep them separated due to the particularities of the substitution layer.
+     * Annotations of {@link AnalysisMethod}s can be queried directly, but for original host VM
+     * methods we need to go via the corresponding substitution method, if any, since the
+     * substitution mechanism can inject annotations in the original methods, like @{@link Fold}.
+     */
+    @Override
+    public boolean isSupportedOriginalMethod(BigBang bb, ResolvedJavaMethod method) {
+        AnalysisError.guarantee(isOriginalMethod(method), "Expected an original VM method, found %s", method.getClass());
+
+        if (!platformSupported(method)) {
+            return false;
+        }
+
+        /* If the method is substituted we need to check the substitution layer for @Fold. */
+        ResolvedJavaMethod substitutionMethod = bb.getUniverse().getSubstitutions().lookup(method);
+        if (AnnotationAccess.isAnnotationPresent(substitutionMethod, Fold.class)) {
+            return false;
+        }
+        return super.isSupportedOriginalMethod(bb, method);
+    }
+
+    /**
+     * Check if an {@link AnalysisField} should be included in the image. For checking its
+     * annotations we rely on the {@link AnnotationAccess} unwrapping mechanism to include any
+     * annotations injected in the substitution layer.
+     */
+    @Override
+    public boolean isSupportedAnalysisField(BigBang bb, AnalysisField field) {
+        if (!platformSupported(field)) {
             return false;
         }
 
         /* Options should not be in the image */
-        if (optionKey == null) {
-            optionKey = bb.getMetaAccess().lookupJavaType(OptionKey.class);
-        }
-        if (optionKey.isAssignableFrom(field.getType())) {
+        if (optionKeyType.isAssignableFrom(OriginalClassProvider.getOriginalType(field.getType()))) {
             return false;
         }
 
@@ -1043,22 +1140,73 @@ public class SVMHost extends HostVM {
             return false;
         }
 
-        /* Fields from this package should not be in the image */
-        if (field.getDeclaringClass().toJavaName().startsWith("jdk.graal.compiler")) {
-            return false;
-        }
-        /* Fields that are deleted or substituted should not be in the image */
-        boolean included = field.getAnnotation(Delete.class) == null && field.getAnnotation(InjectAccessors.class) == null;
-        if (!included) {
+        /* Fields that are deleted or substituted should not be in the image. */
+        if (field.getAnnotation(Delete.class) != null || field.getAnnotation(InjectAccessors.class) != null) {
             return false;
         }
 
         /* Remaining fields should match the naming conventions. */
-        if (SubstrateOptions.VerifyNamingConventions.getValue()) {
+        if (verifyNamingConventions) {
             NativeImageGenerator.checkName(bb, field);
         }
 
-        return super.isFieldIncluded(bb, field);
+        return super.isSupportedAnalysisField(bb, field);
+    }
+
+    /**
+     * Check if an original host VM field should be included in the image. This allows us to create
+     * the corresponding {@link AnalysisField} lazily, only if it needs to be analyzed
+     * <p>
+     * There is some redundancy with {@link #isSupportedAnalysisField(BigBang, AnalysisField)},
+     * however we keep them separated due to the particularities of the substitution layer.
+     * Annotations of {@link AnalysisField}s can be queried directly, but for original host VM
+     * fields we need to go via the corresponding substitution field, if any, since the substitution
+     * mechanism can inject annotations in the original fields, like @{@link InjectAccessors}.
+     */
+    @Override
+    public boolean isSupportedOriginalField(BigBang bb, ResolvedJavaField field) {
+        AnalysisError.guarantee(isOriginalField(field), "Expected an original VM field, found %s", field.getClass());
+
+        if (!platformSupported(field) || field.isInternal()) {
+            return false;
+        }
+
+        /* Options should not be in the image */
+        if (field.getType() instanceof ResolvedJavaType fieldType && optionKeyType.isAssignableFrom(fieldType)) {
+            return false;
+        }
+
+        /* Fields that are always folded don't need to be included. */
+        if (AnnotationAccess.isAnnotationPresent(field, GuaranteeFolded.class)) {
+            return false;
+        }
+
+        /* Fields that are deleted or substituted should not be in the image. */
+        if (annotationSubstitutions.isDeleted(field) || annotationSubstitutions.hasInjectAccessors(field)) {
+            return false;
+        }
+        /* Remaining fields should match the naming conventions. */
+        if (verifyNamingConventions) {
+            NativeImageGenerator.checkName(bb, field);
+        }
+
+        return super.isSupportedOriginalField(bb, field);
+    }
+
+    /**
+     * Checks the exclusion list to determine if field should be included in the shared layer.
+     */
+    @Override
+    public boolean isFieldIncludedInSharedLayer(ResolvedJavaField field) {
+        if (sharedLayerExcludedFields.contains(OriginalFieldProvider.getOriginalField(field))) {
+            return false;
+        }
+
+        /* Fields from the Graal compiler should not be in the shared layer unconditionally. */
+        if (field.getDeclaringClass().toJavaName().startsWith("jdk.graal.compiler")) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -1068,17 +1216,12 @@ public class SVMHost extends HostVM {
 
     @Override
     public boolean enableTrackAcrossLayers() {
-        return enableTrackAcrossLayers;
+        return buildingSharedLayer();
     }
 
     @Override
     public boolean enableReachableInCurrentLayer() {
-        return enableReachableInCurrentLayer;
-    }
-
-    @Override
-    public boolean buildingImageLayer() {
-        return buildingImageLayer;
+        return buildingExtensionLayer;
     }
 
     @Override
@@ -1113,7 +1256,10 @@ public class SVMHost extends HostVM {
                 return true;
             }
         }
-        return false;
+        if (!SubstrateOptions.NeverInlineTrivial.hasBeenSet()) {
+            return false;
+        }
+        return SubstrateOptions.NeverInlineTrivial.getValue().values().stream().anyMatch(re -> MethodFilter.parse(re).matches(callee));
     }
 
     private static boolean shouldEvaluateNeverInlineTrivialOnlyWith(Class<?>[] onlyWith) {
@@ -1175,9 +1321,63 @@ public class SVMHost extends HostVM {
         }
     }
 
+    /**
+     * Check the set of well-known {@link Stable} fields and if any of them is already initialized
+     * (has a non-default value), allow its constant folding. This method should be called <b>before
+     * analysis</b> but after all {@link Feature#beforeAnalysis} callbacks finished to give features
+     * a chance to initialize the {@link Stable} fields.
+     * 
+     * @see #stableFieldsToFoldBeforeAnalysis
+     * 
+     * @implNote The "set" is currently only a single field {@code Unsafe.memoryAccessWarned}, but
+     *           we may extend that in the future.
+     */
+    public void checkWellKnownStableFieldsBeforeAnalysis(BigBang bb) {
+        assert !BuildPhaseProvider.isAnalysisStarted() : "This method should be called before the analysis is started.";
+        /*
+         * Folding of Unsafe.memoryAccessWarned is important to remove the code that prints the
+         * warning when unsafe is used for the first time (see Unsafe.beforeMemoryAccess), which
+         * would otherwise be marked as reachable. Unsafe.memoryAccessWarned is not initialized
+         * early enough in every build, but if it is already initialized by this point, it is
+         * beneficial to fold it.
+         */
+        var field = ReflectionUtil.lookupField(loader.findClassOrFail("sun.misc.Unsafe"), "memoryAccessWarned");
+        try {
+            var memoryAccessWarned = (boolean) field.get(null);
+            if (memoryAccessWarned) {
+                allowStableFieldFoldingBeforeAnalysis(bb.getMetaAccess().lookupJavaField(field));
+            }
+        } catch (IllegalAccessException e) {
+            throw VMError.shouldNotReachHere(e);
+        }
+    }
+
+    /**
+     * @see #stableFieldsToFoldBeforeAnalysis
+     */
     public boolean allowConstantFolding(ResolvedJavaField field) {
         AnalysisField aField = field instanceof HostedField ? ((HostedField) field).getWrapped() : (AnalysisField) field;
+        if (!BuildPhaseProvider.isAnalysisFinished() && !aField.isFinal() && aField.isAnnotationPresent(Stable.class)) {
+            return stableFieldsToFoldBeforeAnalysis.contains(aField);
+        }
         return !finalFieldsInitializedOutsideOfConstructor.contains(aField);
+    }
+
+    /**
+     * Allows the given {@link Stable} field to be folded before analysis. Use with caution and only
+     * when you know that the given field is initialized before any method that reads its value is
+     * parsed, because trying to fold such a {@link Stable} field which still has a default value by
+     * the time the analysis is started results in a <b>build failure</b>, because if the
+     * initialization occurs later, the folding might result in <i>non-deterministic behavior</i>,
+     * as the field will get folded before/during analysis only in some builds when the
+     * initialization happened fast enough, resulting in unstable number of reachable methods and
+     * unstable decisions of the simulation of class initializers.
+     *
+     * @see #stableFieldsToFoldBeforeAnalysis
+     * @see SimulateClassInitializerSupport
+     */
+    public void allowStableFieldFoldingBeforeAnalysis(AnalysisField field) {
+        stableFieldsToFoldBeforeAnalysis.add(field);
     }
 
     @Override
@@ -1247,14 +1447,14 @@ public class SVMHost extends HostVM {
     }
 
     @Override
-    public Function<AnalysisType, ResolvedJavaType> getStrengthenGraphsToTargetFunction(MultiMethod.MultiMethodKey key) {
+    public Predicate<AnalysisType> getStrengthenGraphsTypePredicate(MultiMethod.MultiMethodKey key) {
         if (parsingSupport != null) {
-            var result = parsingSupport.getStrengthenGraphsToTargetFunction(key);
+            var result = parsingSupport.getStrengthenGraphsTypePredicate(key);
             if (result != null) {
                 return result;
             }
         }
-        return super.getStrengthenGraphsToTargetFunction(key);
+        return super.getStrengthenGraphsTypePredicate(key);
     }
 
     @Override
@@ -1269,5 +1469,9 @@ public class SVMHost extends HostVM {
 
     public SimulateClassInitializerSupport createSimulateClassInitializerSupport(AnalysisMetaAccess aMetaAccess) {
         return new SimulateClassInitializerSupport(aMetaAccess, this);
+    }
+
+    public ConstantExpressionRegistry getConstantExpressionRegistry() {
+        return constantExpressionRegistry;
     }
 }

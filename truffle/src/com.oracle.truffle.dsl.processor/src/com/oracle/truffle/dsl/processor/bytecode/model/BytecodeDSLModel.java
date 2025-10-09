@@ -62,10 +62,12 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 
 import com.oracle.truffle.dsl.processor.ProcessorContext;
-import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionImmediate;
+import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.ImmediateKind;
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionKind;
 import com.oracle.truffle.dsl.processor.bytecode.model.OperationModel.OperationKind;
 import com.oracle.truffle.dsl.processor.expression.DSLExpression;
+import com.oracle.truffle.dsl.processor.generator.BitSet;
+import com.oracle.truffle.dsl.processor.generator.NodeState;
 import com.oracle.truffle.dsl.processor.java.ElementUtils;
 import com.oracle.truffle.dsl.processor.library.ExportsData;
 import com.oracle.truffle.dsl.processor.model.MessageContainer;
@@ -104,6 +106,8 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     private final HashMap<TypeElement, CustomOperationModel> customRegularOperations = new HashMap<>();
     private final List<CustomOperationModel> customShortCircuitOperations = new ArrayList<>();
     private final HashMap<OperationModel, CustomOperationModel> operationsToCustomOperations = new HashMap<>();
+    private final List<CustomOperationModel> instrumentations = new ArrayList<>();
+    private final List<CustomOperationModel> customYieldOperations = new ArrayList<>();
     private LinkedHashMap<String, InstructionModel> instructions = new LinkedHashMap<>();
     // instructions indexed by # of short immediates (i.e., their lengths are [2, 4, 6, ...]).
     public InstructionModel[] invalidateInstructions;
@@ -120,11 +124,13 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     public boolean storeBciInFrame;
     public boolean bytecodeDebugListener;
     public boolean additionalAssertions;
+    public boolean inlinePrimitiveConstants;
     public boolean enableSpecializationIntrospection;
     public boolean enableTagInstrumentation;
     public boolean enableRootTagging;
     public boolean enableRootBodyTagging;
     public boolean enableBlockScoping;
+    public boolean enableThreadedSwitch;
     public String defaultLocalValue;
     public DSLExpression defaultLocalValueExpression;
     public String variadicStackLimit;
@@ -185,10 +191,10 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     public InstructionModel tagLeaveValueInstruction;
     public InstructionModel tagLeaveVoidInstruction;
     public InstructionModel tagYieldInstruction;
+    public InstructionModel tagYieldNullInstruction;
     public InstructionModel tagResumeInstruction;
     public InstructionModel clearLocalInstruction;
 
-    public final List<CustomOperationModel> instrumentations = new ArrayList<>();
     public ExportsData tagTreeNodeLibrary;
 
     /**
@@ -268,6 +274,10 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         return !getInstrumentations().isEmpty() || !getProvidedTags().isEmpty();
     }
 
+    public boolean hasYieldOperation() {
+        return enableYield || !customYieldOperations.isEmpty();
+    }
+
     public InstructionModel getInvalidateInstruction(int length) {
         if (invalidateInstructions == null) {
             return null;
@@ -303,16 +313,20 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         if (op == null) {
             return null;
         }
-        CustomOperationModel operation = new CustomOperationModel(context, this, typeElement, mirror, op);
+        CustomOperationModel customOp = new CustomOperationModel(context, this, typeElement, mirror, op);
         if (customRegularOperations.containsKey(typeElement)) {
             throw new AssertionError(String.format("Type element %s was used to instantiate more than one operation. This is a bug.", typeElement));
         }
-        customRegularOperations.put(typeElement, operation);
-        operationsToCustomOperations.put(op, operation);
+
+        customRegularOperations.put(typeElement, customOp);
+        operationsToCustomOperations.put(op, customOp);
 
         if (kind == OperationKind.CUSTOM_INSTRUMENTATION) {
             op.setInstrumentationIndex(instrumentations.size());
-            instrumentations.add(operation);
+            instrumentations.add(customOp);
+        } else if (kind == OperationKind.CUSTOM_YIELD) {
+            customOp.setCustomYield();
+            customYieldOperations.add(customOp);
         } else if (ElementUtils.typeEquals(mirror.getAnnotationType(), types.Prolog)) {
             op.setInternal();
             if (prolog != null) {
@@ -321,7 +335,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
                 return null;
             }
 
-            prolog = operation;
+            prolog = customOp;
         } else if (ElementUtils.typeEquals(mirror.getAnnotationType(), types.EpilogReturn)) {
             op.setInternal();
             op.setTransparent(true);
@@ -331,7 +345,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
                                 getSimpleName(types.EpilogReturn));
                 return null;
             }
-            epilogReturn = operation;
+            epilogReturn = customOp;
         } else if (ElementUtils.typeEquals(mirror.getAnnotationType(), types.EpilogExceptional)) {
             op.setInternal();
             if (epilogExceptional != null) {
@@ -339,10 +353,10 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
                                 getSimpleName(types.EpilogExceptional));
                 return null;
             }
-            epilogExceptional = operation;
+            epilogExceptional = customOp;
         }
 
-        return operation;
+        return customOp;
     }
 
     public CustomOperationModel customShortCircuitOperation(String name, String javadoc, AnnotationMirror mirror) {
@@ -350,7 +364,7 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         if (op == null) {
             return null;
         }
-        CustomOperationModel customOp = new CustomOperationModel(context, this, null, mirror, op);
+        CustomOperationModel customOp = new CustomOperationModel(context, this, this.getTemplateType(), mirror, op);
         customShortCircuitOperations.add(customOp);
         operationsToCustomOperations.put(op, customOp);
 
@@ -359,21 +373,6 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
 
     public CustomOperationModel getCustomOperationForType(TypeElement typeElement) {
         return customRegularOperations.get(typeElement);
-    }
-
-    public InstructionModel quickenInstruction(InstructionModel base, Signature signature, String specializationName) {
-        InstructionModel model = instruction(base.kind, base.name + "$" + specializationName, signature, specializationName);
-        for (InstructionImmediate imm : base.getImmediates()) {
-            model.addImmediate(imm.kind(), imm.name());
-        }
-        model.filteredSpecializations = base.filteredSpecializations;
-        model.nodeData = base.nodeData;
-        model.nodeType = base.nodeType;
-        model.quickeningBase = base;
-        model.operation = base.operation;
-        model.shortCircuitModel = base.shortCircuitModel;
-        base.quickenedInstructions.add(model);
-        return model;
     }
 
     public boolean overridesBytecodeDebugListenerMethod(String methodName) {
@@ -385,28 +384,23 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
             throw new IllegalArgumentException("Method with name " + methodName + " not found.");
         }
 
-        TypeElement type = getTemplateType();
-        while (type != null) {
-            if (ElementUtils.findOverride(type, e) != null) {
-                return true;
-            }
-            type = ElementUtils.castTypeElement(type.getSuperclass());
-        }
-        return false;
-
+        return ElementUtils.findOverride(e, getTemplateType()) != null;
     }
 
-    private InstructionModel instruction(InstructionKind kind, String name, Signature signature, String quickeningName) {
-        if (instructions.containsKey(name)) {
-            throw new AssertionError(String.format("Multiple instructions declared with name %s. Instruction names must be distinct.", name));
+    private InstructionModel instruction(InstructionModel instr) {
+        if (instructions.containsKey(instr.name)) {
+            throw new AssertionError(String.format("Multiple instructions declared with name %s. Instruction names must be distinct.", instr.name));
         }
-        InstructionModel instr = new InstructionModel(kind, name, signature, quickeningName);
-        instructions.put(name, instr);
+        instructions.put(instr.name, instr);
         return instr;
     }
 
     public InstructionModel instruction(InstructionKind kind, String name, Signature signature) {
-        return instruction(kind, name, signature, null);
+        return instruction(new InstructionModel(kind, name, signature));
+    }
+
+    public InstructionModel quickenInstruction(InstructionModel base, Signature signature, String specializationName) {
+        return instruction(new InstructionModel(base, specializationName, signature));
     }
 
     public InstructionModel shortCircuitInstruction(String name, ShortCircuitInstructionModel shortCircuitModel) {
@@ -436,6 +430,26 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
     }
 
     public void finalizeInstructions() {
+        for (InstructionModel instr : getInstructions()) {
+            if (instr.nodeData == null) {
+                continue;
+            }
+            /*
+             * InstructionModel.canUseNodeSingleton() depends on NodeData.isForceSpecialize() which
+             * is initialized in the parser when quickening is applied. By generating the node
+             * profile in finalizeInstructions we ensure that it is properly initialized.
+             */
+            if (!instr.canUseNodeSingleton()) {
+                instr.addImmediate(ImmediateKind.NODE_PROFILE, "node");
+            }
+            if (instr.canInlineState()) {
+                NodeState state = NodeState.create(instr.nodeData, ImmediateKind.STATE_PROFILE.width.byteSize * 8);
+                for (BitSet s : state.activeState.getSets()) {
+                    instr.addImmediate(ImmediateKind.STATE_PROFILE, s.getName(), false);
+                }
+            }
+        }
+
         BytecodeDSLBuiltins.addBuiltinsOnFinalize(this);
 
         LinkedHashMap<String, InstructionModel> newInstructions = new LinkedHashMap<>();
@@ -528,6 +542,10 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         return result;
     }
 
+    public Collection<OperationModel> getCustomYieldOperations() {
+        return customYieldOperations.stream().map(customOperation -> customOperation.operation).toList();
+    }
+
     public Collection<InstructionModel> getInstructions() {
         return instructions.values();
     }
@@ -593,5 +611,4 @@ public class BytecodeDSLModel extends Template implements PrettyPrintable {
         }
 
     }
-
 }

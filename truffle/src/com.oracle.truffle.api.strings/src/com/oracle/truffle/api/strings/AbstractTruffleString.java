@@ -86,7 +86,6 @@ public abstract sealed class AbstractTruffleString permits TruffleString, Mutabl
      * <li>{@link LazyLong}</li>
      * <li>{@link LazyConcat}</li>
      * <li>{@link NativePointer}</li>
-     * <li>{@link String} (only for caching results of {@link #toJavaStringUncached()})</li>
      * </ul>
      */
     private Object data;
@@ -155,8 +154,6 @@ public abstract sealed class AbstractTruffleString permits TruffleString, Mutabl
     private static void validateData(Object data, int offset, int length, int stride) {
         if (data instanceof byte[]) {
             TStringOps.validateRegion((byte[]) data, offset, length, stride);
-        } else if (data instanceof String) {
-            TStringOps.validateRegion(TStringUnsafe.getJavaStringArray((String) data), offset, length, stride);
         } else if (data instanceof LazyLong || data instanceof LazyConcat) {
             validateDataLazy(offset, length, stride);
         } else if (data instanceof NativePointer) {
@@ -418,10 +415,6 @@ public abstract sealed class AbstractTruffleString permits TruffleString, Mutabl
         return data instanceof AbstractTruffleString.LazyLong;
     }
 
-    final boolean isJavaString() {
-        return data instanceof String;
-    }
-
     static TruffleStringIterator forwardIterator(AbstractTruffleString a, byte[] arrayA, long offsetA, int codeRangeA, Encoding encoding) {
         return forwardIterator(a, arrayA, offsetA, codeRangeA, encoding, TruffleString.ErrorHandling.BEST_EFFORT);
     }
@@ -635,11 +628,33 @@ public abstract sealed class AbstractTruffleString permits TruffleString, Mutabl
     /**
      * Shorthand for calling the uncached version of {@link TruffleString.MaterializeNode}.
      *
+     * @deprecated since 25.1, use {@link #materializeUncached(Encoding)} instead.
      * @since 23.1
      */
+    @Deprecated(since = "25.1")
     @TruffleBoundary
     public void materializeUncached(AbstractTruffleString a, Encoding expectedEncoding) {
         TruffleString.MaterializeNode.getUncached().execute(a, expectedEncoding);
+    }
+
+    /**
+     * Shorthand for calling the uncached version of {@link TruffleString.MaterializeNode}.
+     *
+     * @since 25.1
+     */
+    @TruffleBoundary
+    public void materializeUncached(Encoding expectedEncoding) {
+        TruffleString.MaterializeNode.getUncached().execute(this, expectedEncoding);
+    }
+
+    /**
+     * Shorthand for calling the uncached version of {@link TruffleString.MaterializeSubstringNode}.
+     *
+     * @since 25.1
+     */
+    @TruffleBoundary
+    public TruffleString materializeSubstringUncached(Encoding expectedEncoding) {
+        return TruffleString.MaterializeSubstringNode.getUncached().execute(this, expectedEncoding);
     }
 
     /**
@@ -1359,7 +1374,7 @@ public abstract sealed class AbstractTruffleString permits TruffleString, Mutabl
     public final String toStringDebug() {
         Object curData = data;
         String dataString;
-        if (curData instanceof byte[] || curData instanceof NativePointer || curData instanceof String) {
+        if (curData instanceof byte[] || curData instanceof NativePointer) {
             dataString = String.format("\"%s\"", toJavaStringUncached());
         } else if (curData instanceof LazyLong lazyLong) {
             dataString = String.format("LazyLong(%d)", lazyLong.value);

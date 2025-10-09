@@ -1,7 +1,7 @@
 suite = {
   "mxversion": "7.55.2",
   "name" : "sulong",
-  "version" : "26.0.0",
+  "version" : "25.1.0",
   "release" : False,
   "versionConflictResolution" : "latest",
   "groupId": "org.graalvm.llvm",
@@ -1707,6 +1707,20 @@ suite = {
       ],
       "defaultBuild": False,
     },
+
+    "benchmarks.interpreter.llvm.native": {
+      "native": True,
+      "results": ["interpreter/"],
+      "dir": "benchmarks/interpreter",
+      "buildEnv": {
+        'NATIVE_LLVM_CC': '<toolchainGetToolPath:native,CC>',
+      },
+      "buildDependencies": ["SULONG_BOOTSTRAP_TOOLCHAIN"],
+      "vpath": True,
+      "clangFormat": False,
+      "defaultBuild": False,
+      "testProject": True,
+    }
   },
 
   "distributions" : {
@@ -1765,20 +1779,6 @@ suite = {
       "description": "Graal native LLVM engine.",
       "license": "BSD-new",
     },
-    # GR-64088: Remove when changes in language repositories are merged
-    "LLVM_NATIVE_COMMUNITY": {
-      "type": "pom",
-      "runtimeDependencies": [
-        "LLVM_NATIVE_POM",
-      ],
-      "maven": {
-        "artifactId": "llvm-native-transient",
-        "tag": ["default", "public"],
-      },
-      "description": "Temporary module to overcome cross-repository merge.",
-      "license": "BSD-new",
-    },
-
     "LLVM_POM": {
       "type": "pom",
       "runtimeDependencies": [
@@ -2273,6 +2273,66 @@ suite = {
       "license": "BSD-new",
     },
 
+    "SULONG_NINJA_TOOLCHAIN": {
+      "native" : True,
+      "platformDependent" : True,
+      "native_toolchain": {
+        "kind": "ninja",
+        "compiler": "sulong-bitcode",
+        # empty, so it defaults everything to host properties
+        "target": {},
+      },
+
+      "os_arch": {
+        "windows": {
+          "<others>": {
+            "layout": {
+              "toolchain.ninja" : {
+                "source_type": "string",
+                "value": '''
+include <ninja-toolchain:MSVC_NINJA_TOOLCHAIN>
+CL=<path:SULONG_BOOTSTRAP_TOOLCHAIN>\\bin\\<cmd:clang-cl>
+LINK=<path:SULONG_BOOTSTRAP_TOOLCHAIN>\\bin\\<cmd:lld-link>
+LIB=<path:SULONG_BOOTSTRAP_TOOLCHAIN>\\bin\\<cmd:llvm-lib>
+ML=<path:SULONG_BOOTSTRAP_TOOLCHAIN>\\bin\\<cmd:llvm-ml>
+CFLAGS=
+CXXFLAGS=
+LDFLAGS=
+'''
+              },
+            },
+            "dependencies": [
+              "SULONG_BOOTSTRAP_TOOLCHAIN",
+              "mx:MSVC_NINJA_TOOLCHAIN",
+            ],
+          },
+        },
+        "<others>": {
+          "<others>": {
+            "layout": {
+              "toolchain.ninja" : {
+                "source_type": "string",
+                "value": '''
+include <ninja-toolchain:GCC_NINJA_TOOLCHAIN>
+CC=<path:SULONG_BOOTSTRAP_TOOLCHAIN>/bin/gcc
+CXX=<path:SULONG_BOOTSTRAP_TOOLCHAIN>/bin/g++
+AR=<path:SULONG_BOOTSTRAP_TOOLCHAIN>/bin/ar
+CFLAGS=
+CXXFLAGS=
+LDFLAGS=
+'''
+              },
+            },
+            "dependencies": [
+              "SULONG_BOOTSTRAP_TOOLCHAIN",
+              "mx:GCC_NINJA_TOOLCHAIN",
+            ],
+          },
+        },
+      },
+      "maven" : False,
+    },
+
     "SULONG_BOOTSTRAP_TOOLCHAIN_NO_HOME": {
       "description" : "Bootstrap toolchain without an llvm.home. Use for bootstrapping libraries that should be contained in llvm.home.",
       "native": True,
@@ -2583,6 +2643,17 @@ suite = {
         "THIRD_PARTY_LICENSE_SULONG.txt" : "file:THIRD_PARTY_LICENSE.txt",
       },
       "license" : "BSD-new",
+    },
+
+    "SULONG_POLYBENCH_BENCHMARKS": {
+      "description": "Distribution for Sulong polybench benchmarks",
+      "layout": {
+        "./": [
+          "dependency:benchmarks.interpreter.llvm.native/*"
+        ]
+      },
+      "defaultBuild": False,
+      "testDistribution": True,
     },
   }
 }

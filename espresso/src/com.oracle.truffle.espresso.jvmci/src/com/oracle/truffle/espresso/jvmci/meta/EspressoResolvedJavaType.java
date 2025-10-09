@@ -22,12 +22,15 @@
  */
 package com.oracle.truffle.espresso.jvmci.meta;
 
+import static com.oracle.truffle.espresso.jvmci.EspressoJVMCIRuntime.runtime;
 import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedArrayType.findArrayClass;
 
 import java.lang.annotation.Annotation;
 
+import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.vm.ci.meta.UnresolvedJavaType;
 
 public abstract class EspressoResolvedJavaType implements ResolvedJavaType {
     static final Annotation[] NO_ANNOTATIONS = {};
@@ -52,17 +55,32 @@ public abstract class EspressoResolvedJavaType implements ResolvedJavaType {
     public abstract boolean isDefinitelyResolvedWithRespectTo(ResolvedJavaType accessingClass);
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredMethods() {
+    public final ResolvedJavaMethod[] getDeclaredMethods() {
         return getDeclaredMethods(true);
     }
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredConstructors() {
+    public abstract ResolvedJavaMethod[] getDeclaredMethods(boolean forceLink);
+
+    @Override
+    public final ResolvedJavaMethod[] getDeclaredConstructors() {
         return getDeclaredConstructors(true);
     }
+
+    @Override
+    public abstract ResolvedJavaMethod[] getDeclaredConstructors(boolean forceLink);
 
     @Override
     public String toString() {
         return getClass().getSimpleName() + "<" + getName() + ">";
     }
+
+    static ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, EspressoResolvedInstanceType accessingType, boolean resolve) {
+        JavaType javaType = runtime().lookupType(unresolvedJavaType.getName(), accessingType, resolve);
+        if (javaType instanceof ResolvedJavaType resolved) {
+            return resolved;
+        }
+        return null;
+    }
+
 }

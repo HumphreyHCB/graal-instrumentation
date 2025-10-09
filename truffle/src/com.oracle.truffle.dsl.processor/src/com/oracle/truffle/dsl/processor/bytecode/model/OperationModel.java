@@ -41,6 +41,8 @@
 package com.oracle.truffle.dsl.processor.bytecode.model;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
@@ -82,16 +84,17 @@ public class OperationModel implements PrettyPrintable {
 
         CUSTOM,
         CUSTOM_SHORT_CIRCUIT,
+        CUSTOM_YIELD,
         CUSTOM_INSTRUMENTATION,
     }
 
     /**
      * Models an argument to a begin/emit/end method.
      */
-    public record OperationArgument(TypeMirror builderType, TypeMirror constantType, Encoding kind, String name, String doc) {
+    public record OperationArgument(TypeMirror builderType, Encoding kind, String name, String doc, Optional<ConstantOperandModel> constantOperand) {
 
         OperationArgument(TypeMirror builderType, Encoding kind, String name, String doc) {
-            this(builderType, builderType, kind, name, doc);
+            this(builderType, kind, name, doc, Optional.empty());
         }
 
         public CodeVariableElement toVariableElement() {
@@ -107,10 +110,9 @@ public class OperationModel implements PrettyPrintable {
          * Encoding used for serialization.
          */
         public enum Encoding {
-            LANGUAGE,
             SHORT,
             INTEGER,
-            OBJECT,
+            CONSTANT,
             LOCAL,
             LOCAL_ARRAY,
             TAGS,
@@ -130,7 +132,11 @@ public class OperationModel implements PrettyPrintable {
         public static final ConstantOperandsModel NONE = new ConstantOperandsModel(List.of(), List.of());
 
         public boolean hasConstantOperands() {
-            return this != NONE;
+            return !this.equals(NONE);
+        }
+
+        public List<ConstantOperandModel> all() {
+            return Stream.concat(before.stream(), after.stream()).toList();
         }
     }
 
@@ -167,7 +173,7 @@ public class OperationModel implements PrettyPrintable {
     public CustomOperationModel customModel;
 
     // The constant operands parsed from {@code @ConstantOperand} annotations.
-    public ConstantOperandsModel constantOperands = null;
+    public ConstantOperandsModel constantOperands = ConstantOperandsModel.NONE;
 
     // Dynamic operand data supplied by builtin specs / parsed from operation specializations.
     public DynamicOperandModel[] dynamicOperands = new DynamicOperandModel[0];
@@ -192,22 +198,12 @@ public class OperationModel implements PrettyPrintable {
         this.javadoc = javadoc;
     }
 
-    public int numConstantOperandsBefore() {
-        if (constantOperands == null) {
-            return 0;
-        }
-        return constantOperands.before.size();
+    public boolean hasConstantOperands() {
+        return constantOperands.hasConstantOperands();
     }
 
     public int numDynamicOperands() {
         return dynamicOperands.length;
-    }
-
-    public int numConstantOperandsAfter() {
-        if (constantOperands == null) {
-            return 0;
-        }
-        return constantOperands.after.size();
     }
 
     public boolean hasChildren() {
@@ -317,7 +313,7 @@ public class OperationModel implements PrettyPrintable {
     }
 
     public boolean isCustom() {
-        return kind == OperationKind.CUSTOM || kind == OperationKind.CUSTOM_SHORT_CIRCUIT || kind == OperationKind.CUSTOM_INSTRUMENTATION;
+        return kind == OperationKind.CUSTOM || kind == OperationKind.CUSTOM_YIELD || kind == OperationKind.CUSTOM_SHORT_CIRCUIT || kind == OperationKind.CUSTOM_INSTRUMENTATION;
     }
 
     public boolean requiresRootOperation() {

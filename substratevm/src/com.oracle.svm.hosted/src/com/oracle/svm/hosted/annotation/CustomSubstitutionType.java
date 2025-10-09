@@ -34,8 +34,10 @@ import com.oracle.svm.core.util.VMError;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.UnresolvedJavaField;
@@ -96,6 +98,16 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public boolean isEnum() {
         return original.isEnum();
+    }
+
+    @Override
+    public boolean isRecord() {
+        return original.isRecord();
+    }
+
+    @Override
+    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
+        return original.getRecordComponents();
     }
 
     @Override
@@ -160,6 +172,11 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     }
 
     @Override
+    public ResolvedJavaType[] getDeclaredTypes() {
+        return original.getDeclaredTypes();
+    }
+
+    @Override
     public ResolvedJavaType getSingleImplementor() {
         return original.getSingleImplementor();
     }
@@ -187,6 +204,16 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public ResolvedJavaType getArrayClass() {
         return original.getArrayClass();
+    }
+
+    @Override
+    public boolean isHidden() {
+        return original.isHidden();
+    }
+
+    @Override
+    public List<? extends JavaType> getPermittedSubclasses() {
+        return original.getPermittedSubclasses();
     }
 
     @Override
@@ -237,6 +264,11 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public ResolvedJavaType getEnclosingType() {
         return original.getEnclosingType();
+    }
+
+    @Override
+    public ResolvedJavaMethod getEnclosingMethod() {
+        return original.getEnclosingMethod();
     }
 
     @Override

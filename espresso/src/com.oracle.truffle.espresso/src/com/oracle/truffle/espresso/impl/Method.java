@@ -48,6 +48,7 @@ import static com.oracle.truffle.espresso.classfile.bytecode.Bytecodes.PUTFIELD;
 import static com.oracle.truffle.espresso.classfile.bytecode.Bytecodes.PUTSTATIC;
 import static com.oracle.truffle.espresso.classfile.bytecode.Bytecodes.RET;
 import static com.oracle.truffle.espresso.classfile.bytecode.Bytecodes.RETURN;
+import static com.oracle.truffle.espresso.threads.ThreadState.IN_ESPRESSO;
 
 import java.io.PrintStream;
 import java.lang.invoke.VarHandle;
@@ -86,6 +87,7 @@ import com.oracle.truffle.espresso.classfile.ParserException;
 import com.oracle.truffle.espresso.classfile.ParserKlass;
 import com.oracle.truffle.espresso.classfile.ParserMethod;
 import com.oracle.truffle.espresso.classfile.attributes.Attribute;
+import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
 import com.oracle.truffle.espresso.classfile.attributes.CodeAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.ExceptionsAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.LineNumberTableAttribute;
@@ -126,7 +128,6 @@ import com.oracle.truffle.espresso.nodes.methodhandle.MHInvokeGenericNode.Method
 import com.oracle.truffle.espresso.nodes.methodhandle.MethodHandleIntrinsicNode;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.EspressoException;
-import com.oracle.truffle.espresso.runtime.EspressoThreadLocalState;
 import com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.shared.meta.ErrorType;
@@ -136,11 +137,12 @@ import com.oracle.truffle.espresso.shared.meta.SymbolPool;
 import com.oracle.truffle.espresso.shared.resolver.ResolvedCall;
 import com.oracle.truffle.espresso.shared.vtable.PartialMethod;
 import com.oracle.truffle.espresso.substitutions.JavaType;
+import com.oracle.truffle.espresso.threads.Transition;
 import com.oracle.truffle.espresso.vm.InterpreterToVM;
 import com.oracle.truffle.espresso.vm.VM.EspressoStackElement;
 
 public final class Method extends Member<Signature> implements MethodRef, TruffleObject, ContextAccess,
-                MethodAccess<Klass, Method, Field> {
+                MethodAccess<Klass, Method, Field>, AttributedElement {
 
     public static final Method[] EMPTY_ARRAY = new Method[0];
     public static final MethodVersion[] EMPTY_VERSION_ARRAY = new MethodVersion[0];
@@ -273,6 +275,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
         return getMethodVersion().getRefKind();
     }
 
+    @Override
     public Attribute getAttribute(Symbol<Name> attrName) {
         return getParserMethod().getAttribute(attrName);
     }
@@ -485,9 +488,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
      */
     @TruffleBoundary
     public Object invokeWithConversions(Object self, Object... args) {
-        EspressoThreadLocalState tls = getLanguage().getThreadLocalState();
-        // Impossible to call from guest code, so what is above is illegal for continuations.
-        tls.blockContinuationSuspension();
+        Transition transition = Transition.transition(IN_ESPRESSO, this);
         try {
             getLanguage().clearPendingException();
             assert args.length == SignatureSymbols.parameterCount(getParsedSignature());
@@ -509,7 +510,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
             }
             return getMeta().toHostBoxed(getCallTarget().call(filteredArgs));
         } finally {
-            tls.unblockContinuationSuspension();
+            transition.restore(this);
         }
     }
 
@@ -521,9 +522,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
      */
     @TruffleBoundary
     public Object invokeDirect(Object... args) {
-        EspressoThreadLocalState tls = getLanguage().getThreadLocalState();
-        // Impossible to call from guest code, so what is above is illegal for continuations.
-        tls.blockContinuationSuspension();
+        Transition transition = Transition.transition(IN_ESPRESSO, this);
         try {
             getLanguage().clearPendingException();
             assert !isStatic();
@@ -531,7 +530,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
             assert getDeclaringKlass().isAssignableFrom(((StaticObject) args[0]).getKlass());
             return getCallTarget().call(args);
         } finally {
-            tls.unblockContinuationSuspension();
+            transition.restore(this);
         }
     }
 
@@ -550,9 +549,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
 
     @TruffleBoundary
     public Object invokeDirectStatic(Object... args) {
-        EspressoThreadLocalState tls = getLanguage().getThreadLocalState();
-        // Impossible to call from guest code, so what is above is illegal for continuations.
-        tls.blockContinuationSuspension();
+        Transition transition = Transition.transition(IN_ESPRESSO, this);
         try {
             getLanguage().clearPendingException();
             assert isStatic();
@@ -560,7 +557,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
             getDeclaringKlass().safeInitialize();
             return getCallTarget().call(args);
         } finally {
-            tls.unblockContinuationSuspension();
+            transition.restore(this);
         }
     }
 
@@ -1395,7 +1392,7 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
     }
 
     @Override
-    public long getLastBCI() {
+    public int getLastBCI() {
         int bci = 0;
         BytecodeStream bs = new BytecodeStream(getOriginalCode());
         int end = bs.endBCI();
@@ -1966,10 +1963,10 @@ public final class Method extends Member<Signature> implements MethodRef, Truffl
         private void checkPoisonPill(Meta meta) {
             if (poisonPill) {
                 // Conflicting Maximally-specific non-abstract interface methods.
-                if (getJavaVersion().java9OrLater() && getSpecComplianceMode() == EspressoOptions.SpecComplianceMode.HOTSPOT) {
+                if (getJavaVersion().inRange(9, 24) && getSpecComplianceMode() == EspressoOptions.SpecComplianceMode.HOTSPOT) {
                     /*
                      * Supposed to be IncompatibleClassChangeError (see jvms-6.5.invokeinterface),
-                     * but HotSpot throws AbstractMethodError.
+                     * but HotSpot throws AbstractMethodError. See JDK-8356942.
                      */
                     throw meta.throwExceptionWithMessage(meta.java_lang_AbstractMethodError, "Conflicting default methods: " + getName());
                 }

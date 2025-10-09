@@ -49,6 +49,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
+import com.oracle.truffle.api.HostCompilerDirectives.InliningRoot;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImplicitCast;
@@ -82,6 +83,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.graal.compiler.truffle.host.HostInliningPhase;
+import jdk.graal.compiler.util.EconomicHashMap;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -148,6 +150,23 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         runTest("testRangeCheck");
         runTest("testImplicitCast");
         runTest("testNativeCall");
+        runTest("testBCDSLPrologIfVersion");
+        runTest("testInliningRoot");
+    }
+
+    /*
+     * Test for GR-69170
+     */
+    @BytecodeInterpreterSwitch
+    static Object testBCDSLPrologIfVersion(@SuppressWarnings("unused") int value) {
+        Object o = null;
+        if (!CompilerDirectives.inInterpreter() && CompilerDirectives.hasNextTier()) {
+            GraalDirectives.deoptimize();
+            o = new Object();
+        }
+        // must be inlined
+        trivialMethod();
+        return o;
     }
 
     void runTest(String methodName) {
@@ -232,7 +251,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
     }
 
     public static void assertInvokesFound(StructuredGraph graph, String[] notInlined, int[] counts) {
-        Map<String, Integer> found = new HashMap<>();
+        Map<String, Integer> found = new EconomicHashMap<>();
         List<Invoke> invokes = new ArrayList<>();
         invokes.addAll(graph.getNodes().filter(InvokeNode.class).snapshot());
         invokes.addAll(graph.getNodes().filter(InvokeWithExceptionNode.class).snapshot());
@@ -412,6 +431,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
     }
 
     static int notExplorable(int value) {
+        // Checkstyle: stop stable iteration order check
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
@@ -433,6 +453,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
+        // Checkstyle: resume stable iteration order check
         return value;
     }
 
@@ -981,6 +1002,13 @@ public class HostInliningTest extends TruffleCompilerImplTest {
 
     static int testIndirectIntrinsicsImpl(A a) {
         return a.intrinsic(); // inlined and intrinsic
+    }
+
+    @InliningRoot
+    static int testInliningRoot(int value) {
+        // should work just like bytecode interpreter switches
+        trivialMethod();
+        return value;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

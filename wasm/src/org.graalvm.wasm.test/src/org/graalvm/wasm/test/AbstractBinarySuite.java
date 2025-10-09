@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -66,8 +66,7 @@ public abstract class AbstractBinarySuite {
         try (Context context = contextBuilder.build()) {
             Source.Builder sourceBuilder = Source.newBuilder(WasmLanguage.ID, ByteSequence.create(binary), "main");
             Source source = sourceBuilder.build();
-            context.eval(source);
-            testCase.accept(context.getBindings(WasmLanguage.ID).getMember("main"));
+            testCase.accept(context.eval(source).newInstance().getMember("exports"));
         }
     }
 
@@ -340,6 +339,29 @@ public abstract class AbstractBinarySuite {
         }
     }
 
+    private static final class BinaryTags {
+        private final ByteArrayList attributes = new ByteArrayList();
+        private final ByteArrayList typeIndices = new ByteArrayList();
+
+        private void add(byte attribute, byte typeIndex) {
+            attributes.add(attribute);
+            typeIndices.add(typeIndex);
+        }
+
+        private byte[] generateTagSection() {
+            ByteArrayList b = new ByteArrayList();
+            b.add(getByte("0d"));
+            b.add((byte) 0); // length is patched at the end
+            b.add((byte) attributes.size());
+            for (int i = 0; i < attributes.size(); i++) {
+                b.add(attributes.get(i));
+                b.add(typeIndices.get(i));
+            }
+            b.set(1, (byte) (b.size() - 2));
+            return b.toArray();
+        }
+    }
+
     private static final class BinaryCustomSections {
         private final List<byte[]> names = new ArrayList<>();
         private final List<byte[]> sections = new ArrayList<>();
@@ -374,6 +396,7 @@ public abstract class AbstractBinarySuite {
         private final BinaryElements binaryElements = new BinaryElements();
         private final BinaryDatas binaryDatas = new BinaryDatas();
         private final BinaryGlobals binaryGlobals = new BinaryGlobals();
+        private final BinaryTags binaryTags = new BinaryTags();
 
         private final BinaryCustomSections binaryCustomSections = new BinaryCustomSections();
 
@@ -417,6 +440,11 @@ public abstract class AbstractBinarySuite {
             return this;
         }
 
+        public BinaryBuilder addTag(byte attribute, byte typeIndex) {
+            binaryTags.add(attribute, typeIndex);
+            return this;
+        }
+
         public BinaryBuilder addCustomSection(String name, byte[] section) {
             binaryCustomSections.add(name, section);
             return this;
@@ -444,8 +472,9 @@ public abstract class AbstractBinarySuite {
             final byte[] codeSection = binaryFunctions.generateCodeSection();
             final byte[] dataSection = binaryDatas.generateDataSection();
             final byte[] customSections = binaryCustomSections.generateCustomSections();
+            final byte[] tagSection = binaryTags.generateTagSection();
             final int totalLength = preamble.length + typeSection.length + functionSection.length + tableSection.length + memorySection.length + globalSection.length + exportSection.length +
-                            elementSection.length + dataCountSection.length + codeSection.length + dataSection.length + customSections.length;
+                            elementSection.length + dataCountSection.length + codeSection.length + dataSection.length + customSections.length + tagSection.length;
             final byte[] binary = new byte[totalLength];
             int length = 0;
             System.arraycopy(preamble, 0, binary, length, preamble.length);
@@ -458,6 +487,8 @@ public abstract class AbstractBinarySuite {
             length += tableSection.length;
             System.arraycopy(memorySection, 0, binary, length, memorySection.length);
             length += memorySection.length;
+            System.arraycopy(tagSection, 0, binary, length, tagSection.length);
+            length += tagSection.length;
             System.arraycopy(globalSection, 0, binary, length, globalSection.length);
             length += globalSection.length;
             System.arraycopy(exportSection, 0, binary, length, exportSection.length);

@@ -40,12 +40,18 @@ import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.hub.ClassForNameSupport;
-import com.oracle.svm.core.hub.CremaSupport;
 import com.oracle.svm.core.hub.RuntimeClassLoading;
+import com.oracle.svm.core.hub.crema.CremaSupport;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl;
+import com.oracle.svm.hosted.meta.HostedField;
+import com.oracle.svm.hosted.meta.HostedInstanceClass;
+import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
+import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaField;
+import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaMethod;
+import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaType;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedObjectType;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -102,7 +108,7 @@ public class CremaFeature implements InternalFeature {
                 if (!analysisType.isReachable()) {
                     continue;
                 }
-                assert btiUniverse.getOrCreateType(analysisType) != null : "type is reachable but not part of interpreter universe: " + analysisType;
+                assert btiUniverse.getType(analysisType) != null : "type is reachable but not part of interpreter universe: " + analysisType;
             }
         }
     }
@@ -114,8 +120,52 @@ public class CremaFeature implements InternalFeature {
         BuildTimeInterpreterUniverse iUniverse = BuildTimeInterpreterUniverse.singleton();
         Field vtableHolderField = ReflectionUtil.lookupField(InterpreterResolvedObjectType.class, "vtableHolder");
 
+        for (HostedMethod method : hUniverse.getMethods()) {
+            if (method.hasVTableIndex()) {
+                InterpreterResolvedJavaMethod iMethod = iUniverse.getMethod(method);
+                if (iMethod != null) {
+                    iMethod.setVTableIndex(method.getVTableIndex());
+                }
+            }
+        }
+
         for (HostedType hType : hUniverse.getTypes()) {
             iUniverse.mirrorSVMVTable(hType, objectType -> accessImpl.getHeapScanner().rescanField(objectType, vtableHolderField));
+        }
+    }
+
+    @Override
+    public void afterCompilation(AfterCompilationAccess access) {
+        FeatureImpl.AfterCompilationAccessImpl accessImpl = (FeatureImpl.AfterCompilationAccessImpl) access;
+        BuildTimeInterpreterUniverse iUniverse = BuildTimeInterpreterUniverse.singleton();
+        for (HostedType type : accessImpl.getUniverse().getTypes()) {
+            if (type.isPrimitive() || type.isArray() || type.isInterface()) {
+                continue;
+            }
+            InterpreterResolvedJavaType iType = iUniverse.getType(type.getWrapped());
+            if (iType == null) {
+                assert !type.getWrapped().isReachable() : "No interpreter type for " + type;
+                continue;
+            }
+
+            // Setup fields info
+            InterpreterResolvedObjectType objectType = (InterpreterResolvedObjectType) iType;
+            HostedInstanceClass instanceClass = (HostedInstanceClass) type;
+            objectType.setAfterFieldsOffset(instanceClass.getAfterFieldsOffset());
+
+            initializeInterpreterFields(iUniverse, instanceClass.getInstanceFields(false));
+            initializeInterpreterFields(iUniverse, (HostedField[]) instanceClass.getStaticFields());
+        }
+    }
+
+    private static void initializeInterpreterFields(BuildTimeInterpreterUniverse iUniverse, HostedField[] fields) {
+        for (HostedField hostedField : fields) {
+            InterpreterResolvedJavaField iField = iUniverse.getField(hostedField.getWrapped());
+            if (iField == null) {
+                assert !hostedField.isAccessed() : "No interpreter field for " + hostedField;
+                continue;
+            }
+            iUniverse.initializeJavaFieldFromHosted(hostedField, iField);
         }
     }
 

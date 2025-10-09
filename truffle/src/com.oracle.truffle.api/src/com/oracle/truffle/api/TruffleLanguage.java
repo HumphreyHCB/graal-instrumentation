@@ -2016,8 +2016,8 @@ public abstract class TruffleLanguage<C> {
          * {@link TruffleLanguage#initializeThread(Object, Thread) languages} or instruments'
          * thread-listeners. Creating a system thread does not cause a transition to multi-threaded
          * access. The {@link Env#isCreateThreadAllowed() creation permit} is not required to create
-         * a system thread, but the caller must be entered in a context to create a system thread,
-         * if not an {@link IllegalStateException} is thrown.
+         * a system thread. The caller must be either entered in a context, or in another system
+         * thread to create a new system thread. If not an {@link IllegalStateException} is thrown.
          * <p>
          * It is recommended to set an
          * {@link Thread#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
@@ -3998,7 +3998,7 @@ public abstract class TruffleLanguage<C> {
         }
 
         boolean isInitialized() {
-            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
                 boolean localInitialized = initialized;
                 if (initializedUnchangedAssumption.isValid()) {
                     return localInitialized;
@@ -4021,7 +4021,7 @@ public abstract class TruffleLanguage<C> {
         }
 
         Object getLanguageContext() {
-            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
                 Object languageContext = this.context;
                 if (contextUnchangedAssumption.isValid()) {
                     return languageContext;

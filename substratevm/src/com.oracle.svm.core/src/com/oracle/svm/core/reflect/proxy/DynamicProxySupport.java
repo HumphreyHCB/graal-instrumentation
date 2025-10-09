@@ -26,18 +26,17 @@ package com.oracle.svm.core.reflect.proxy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.regex.Pattern;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
+import org.graalvm.nativeimage.impl.TypeReachabilityCondition;
 
 import com.oracle.svm.core.configure.ConditionalRuntimeValue;
 import com.oracle.svm.core.configure.RuntimeConditionSet;
@@ -53,7 +52,6 @@ import com.oracle.svm.core.reflect.MissingReflectionRegistrationUtils;
 import com.oracle.svm.core.util.ImageHeapMap;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ClassUtil;
-import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.debug.GraalError;
@@ -108,8 +106,8 @@ public class DynamicProxySupport implements DynamicProxyRegistry, DuplicableImag
 
     @Override
     @Platforms(Platform.HOSTED_ONLY.class)
-    public synchronized void addProxyClass(ConfigurationCondition condition, Class<?>... interfaces) {
-        VMError.guarantee(condition.isRuntimeChecked(), "The condition used must be a runtime condition.");
+    public synchronized void addProxyClass(AccessCondition condition, Class<?>... interfaces) {
+        VMError.guarantee(condition instanceof TypeReachabilityCondition && ((TypeReachabilityCondition) condition).isRuntimeChecked(), "The condition used must be a runtime condition.");
         /*
          * Make a defensive copy of the interfaces array to protect against the caller modifying the
          * array.
@@ -158,7 +156,6 @@ public class DynamicProxySupport implements DynamicProxyRegistry, DuplicableImag
             }
             return clazz;
         } catch (Throwable t) {
-            LogUtils.warning("Could not create a proxy class from list of interfaces: %s. Reason: %s", Arrays.toString(interfaces), t.getMessage());
             return t;
         }
     }
@@ -191,19 +188,15 @@ public class DynamicProxySupport implements DynamicProxyRegistry, DuplicableImag
 
     @Override
     public Class<?> getProxyClass(ClassLoader loader, Class<?>... interfaces) {
-        if (MetadataTracer.Options.MetadataTracingSupport.getValue() && MetadataTracer.singleton().enabled()) {
-            List<String> interfaceNames = new ArrayList<>(interfaces.length);
-            for (Class<?> iface : interfaces) {
-                interfaceNames.add(iface.getName());
-            }
-            MetadataTracer.singleton().traceProxyType(interfaceNames);
+        if (MetadataTracer.enabled()) {
+            MetadataTracer.singleton().traceProxyType(interfaces);
         }
 
         ProxyCacheKey key = new ProxyCacheKey(interfaces);
         ConditionalRuntimeValue<Object> clazzOrError = proxyCache.get(key);
 
         if (clazzOrError == null || !clazzOrError.getConditions().satisfied()) {
-            throw MissingReflectionRegistrationUtils.errorForProxy(interfaces);
+            throw MissingReflectionRegistrationUtils.reportProxyAccess(interfaces);
         }
         if (clazzOrError.getValue() instanceof Throwable) {
             throw new GraalError((Throwable) clazzOrError.getValue());

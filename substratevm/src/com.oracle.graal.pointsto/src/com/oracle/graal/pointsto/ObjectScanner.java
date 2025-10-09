@@ -172,7 +172,7 @@ public class ObjectScanner {
     protected void scanField(AnalysisField field, JavaConstant receiver, ScanReason prevReason) {
         ScanReason reason = new FieldScan(field, receiver, prevReason);
         try {
-            if (!bb.getUniverse().getHeapScanner().isValueAvailable(field)) {
+            if (!bb.getUniverse().getHeapScanner().isValueAvailable(field, receiver)) {
                 /* The value is not available yet. */
                 return;
             }
@@ -747,7 +747,7 @@ public class ObjectScanner {
 
         @Override
         public String toString(BigBang bb) {
-            return "scanning root " + asString(bb, constant) + " embedded in" + System.lineSeparator() + INDENTATION_AFTER_NEWLINE + asStackTraceElement();
+            return "scanning root constant " + asString(bb, constant) + " embedded in" + System.lineSeparator() + INDENTATION_AFTER_NEWLINE + asStackTraceElement();
         }
 
         @Override

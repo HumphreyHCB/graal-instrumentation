@@ -24,6 +24,9 @@
  */
 package com.oracle.svm.hosted.analysis;
 
+import static com.oracle.svm.core.classinitialization.ClassInitializationInfo.InitState.FullyInitialized;
+import static com.oracle.svm.core.classinitialization.ClassInitializationInfo.InitState.InitializationError;
+
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
@@ -43,6 +46,8 @@ import com.oracle.graal.pointsto.meta.BaseLayerType;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.classinitialization.ClassInitializationInfo;
+import com.oracle.svm.core.encoder.IdentitySymbolEncoder;
+import com.oracle.svm.core.encoder.SymbolEncoder;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.DynamicHubCompanion;
 import com.oracle.svm.core.hub.RuntimeClassLoading;
@@ -55,6 +60,7 @@ import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 import com.oracle.svm.hosted.classinitialization.SimulateClassInitializerSupport;
 import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
+import com.oracle.svm.hosted.imagelayer.SVMImageLayerLoader;
 import com.oracle.svm.hosted.jdk.HostedClassLoaderPackageManagement;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -70,6 +76,7 @@ public class DynamicHubInitializer {
     private final SVMHost hostVM;
     private final AnalysisMetaAccess metaAccess;
     private final ConstantReflectionProvider constantReflection;
+    private final SymbolEncoder symbolEncoder;
 
     private final Map<InterfacesEncodingKey, DynamicHub[]> interfacesEncodings;
 
@@ -78,12 +85,14 @@ public class DynamicHubInitializer {
     private final Field hubCompanionInterfacesEncoding;
     private final Field hubCompanionAnnotationsEnumConstantsReference;
     private final Field hubCompanionInterpreterType;
+    private final SVMImageLayerLoader layerLoader;
 
     public DynamicHubInitializer(BigBang bb) {
         this.bb = bb;
         this.metaAccess = bb.getMetaAccess();
         this.hostVM = (SVMHost) bb.getHostVM();
         this.constantReflection = bb.getConstantReflectionProvider();
+        this.symbolEncoder = SymbolEncoder.singleton();
 
         this.interfacesEncodings = new ConcurrentHashMap<>();
 
@@ -92,6 +101,7 @@ public class DynamicHubInitializer {
         hubCompanionInterfacesEncoding = ReflectionUtil.lookupField(DynamicHubCompanion.class, "interfacesEncoding");
         hubCompanionAnnotationsEnumConstantsReference = ReflectionUtil.lookupField(DynamicHubCompanion.class, "enumConstantsReference");
         hubCompanionInterpreterType = ReflectionUtil.lookupField(DynamicHubCompanion.class, "interpreterType");
+        layerLoader = HostedImageLayerBuildingSupport.singleton().getLoader();
     }
 
     public void initializeMetaData(ImageHeapScanner heapScanner, AnalysisType type) {
@@ -154,7 +164,7 @@ public class DynamicHubInitializer {
             ResolvedJavaType interpreterType = RuntimeClassLoading.createInterpreterType(hub, type);
             hub.setInterpreterType(interpreterType);
             heapScanner.rescanField(hub.getCompanion(), hubCompanionInterpreterType);
-            heapScanner.rescanObject(interpreterType.getDeclaredMethods());
+            heapScanner.rescanObject(interpreterType.getDeclaredMethods(false));
         }
     }
 
@@ -165,7 +175,7 @@ public class DynamicHubInitializer {
      * GR-60254.
      */
     private boolean shouldRescanHub(ImageHeapScanner heapScanner, DynamicHub hub) {
-        if (hostVM.useBaseLayer()) {
+        if (hostVM.buildingExtensionLayer()) {
             ImageHeapConstant hubConstant = (ImageHeapConstant) heapScanner.createImageHeapConstant(hub, OtherReason.HUB);
             return hubConstant == null || !hubConstant.isInBaseLayer();
         }
@@ -175,7 +185,7 @@ public class DynamicHubInitializer {
     /**
      * For reachable classes, register class's package in appropriate class loader.
      */
-    private static void registerPackage(ImageHeapScanner heapScanner, Class<?> javaClass, DynamicHub hub) {
+    private void registerPackage(ImageHeapScanner heapScanner, Class<?> javaClass, DynamicHub hub) {
         /*
          * Due to using {@link NativeImageSystemClassLoader}, a class's ClassLoader during runtime
          * may be different from the class used to load it during native-image generation.
@@ -190,7 +200,9 @@ public class DynamicHubInitializer {
             ClassLoader runtimeClassLoader = ClassLoaderFeature.getRuntimeClassLoader(classloader);
             VMError.guarantee(runtimeClassLoader != null, "Class loader missing for class %s", hub.getName());
             String packageName = hub.getPackageName();
-            assert packageName.equals(packageValue.getName()) : Assertions.errorMessage("Package name mismatch:", packageName, packageValue.getName());
+            if (symbolEncoder instanceof IdentitySymbolEncoder) {
+                assert packageName.equals(packageValue.getName()) : Assertions.errorMessage("Package name mismatch:", packageName, packageValue.getName());
+            }
             HostedClassLoaderPackageManagement.singleton().registerPackage(runtimeClassLoader, packageName, packageValue, heapScanner::rescanObject);
         }
     }
@@ -236,18 +248,20 @@ public class DynamicHubInitializer {
 
     private void buildClassInitializationInfo(ImageHeapScanner heapScanner, AnalysisType type, DynamicHub hub, boolean rescan) {
         AnalysisError.guarantee(hub.getClassInitializationInfo() == null, "Class initialization info already computed for %s.", type.toJavaName(true));
-        boolean initializedAtBuildTime = SimulateClassInitializerSupport.singleton().trySimulateClassInitializer(bb, type);
         ClassInitializationInfo info;
         if (type.getWrapped() instanceof BaseLayerType) {
-            info = HostedImageLayerBuildingSupport.singleton().getLoader().getClassInitializationInfo(type);
+            info = layerLoader.getClassInitializationInfo(type);
         } else {
+            boolean hasInitializer = type.getClassInitializer() != null;
             boolean typeReachedTracked = ClassInitializationSupport.singleton().requiresInitializationNodeForTypeReached(type);
-            if (initializedAtBuildTime) {
-                info = type.getClassInitializer() == null ? ClassInitializationInfo.forNoInitializerInfo(typeReachedTracked)
-                                : ClassInitializationInfo.forInitializedInfo(typeReachedTracked);
+            boolean initializedOrSimulated = SimulateClassInitializerSupport.singleton().trySimulateClassInitializer(bb, type);
+
+            if (initializedOrSimulated) {
+                info = ClassInitializationInfo.forBuildTimeInitializedClass(FullyInitialized, hasInitializer, typeReachedTracked);
             } else {
-                info = buildRuntimeInitializationInfo(type, typeReachedTracked);
+                info = buildRuntimeInitializationInfo(type, hasInitializer, typeReachedTracked);
             }
+            VMError.guarantee(!type.isInBaseLayer() || layerLoader.isInitializationInfoStable(type, info));
         }
         hub.setClassInitializationInfo(info);
         if (rescan) {
@@ -255,7 +269,7 @@ public class DynamicHubInitializer {
         }
     }
 
-    private ClassInitializationInfo buildRuntimeInitializationInfo(AnalysisType type, boolean typeReachedTracked) {
+    private ClassInitializationInfo buildRuntimeInitializationInfo(AnalysisType type, boolean hasInitializer, boolean typeReachedTracked) {
         assert !type.isInitialized();
         try {
             /*
@@ -263,18 +277,17 @@ public class DynamicHubInitializer {
              * already failed in a previous attempt.
              */
             type.link();
-
         } catch (VerifyError e) {
             /* Synthesize a VerifyError to be thrown at run time. */
             AnalysisMethod throwVerifyError = metaAccess.lookupJavaMethod(ExceptionSynthesizer.throwExceptionMethod(VerifyError.class));
             bb.addRootMethod(throwVerifyError, true, "Class initialization error, registered in " + DynamicHubInitializer.class);
-            return new ClassInitializationInfo(new MethodPointer(throwVerifyError), typeReachedTracked);
+            return ClassInitializationInfo.forRuntimeTimeInitializedClass(new MethodPointer(throwVerifyError), typeReachedTracked);
         } catch (Throwable t) {
             /*
              * All other linking errors will be reported as NoClassDefFoundError when initialization
              * is attempted at run time.
              */
-            return ClassInitializationInfo.forFailedInfo(typeReachedTracked);
+            return ClassInitializationInfo.forBuildTimeInitializedClass(InitializationError, hasInitializer, typeReachedTracked);
         }
 
         /*
@@ -289,7 +302,7 @@ public class DynamicHubInitializer {
             bb.addRootMethod(classInitializer, true, "Class initialization, registered in " + DynamicHubInitializer.class);
             classInitializerFunction = new MethodPointer(classInitializer);
         }
-        return new ClassInitializationInfo(classInitializerFunction, typeReachedTracked);
+        return ClassInitializationInfo.forRuntimeTimeInitializedClass(classInitializerFunction, typeReachedTracked);
     }
 
     class InterfacesEncodingKey {

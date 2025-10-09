@@ -53,7 +53,6 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.polyglot.io.ByteSequence;
 import org.graalvm.wasm.EmbedderDataHolder;
 import org.graalvm.wasm.ImportDescriptor;
-import org.graalvm.wasm.ImportValueSupplier;
 import org.graalvm.wasm.WasmConstant;
 import org.graalvm.wasm.WasmContext;
 import org.graalvm.wasm.WasmCustomSection;
@@ -64,13 +63,13 @@ import org.graalvm.wasm.WasmLanguage;
 import org.graalvm.wasm.WasmModule;
 import org.graalvm.wasm.WasmStore;
 import org.graalvm.wasm.WasmTable;
+import org.graalvm.wasm.WasmTag;
 import org.graalvm.wasm.WasmType;
 import org.graalvm.wasm.constants.ImportIdentifier;
 import org.graalvm.wasm.exception.Failure;
 import org.graalvm.wasm.exception.WasmException;
 import org.graalvm.wasm.exception.WasmJsApiException;
-import org.graalvm.wasm.globals.DefaultWasmGlobal;
-import org.graalvm.wasm.globals.ExportedWasmGlobal;
+import org.graalvm.wasm.exception.WasmRuntimeException;
 import org.graalvm.wasm.globals.WasmGlobal;
 import org.graalvm.wasm.memory.WasmMemory;
 import org.graalvm.wasm.memory.WasmMemoryFactory;
@@ -80,7 +79,6 @@ import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -117,6 +115,13 @@ public class WebAssembly extends Dictionary {
         addMember("global_read", new Executable(WebAssembly::globalRead));
         addMember("global_write", new Executable(this::globalWrite));
 
+        addMember("tag_alloc", new Executable(WebAssembly::tagAlloc));
+        addMember("tag_type", new Executable(WebAssembly::tagType));
+
+        addMember("exn_alloc", new Executable(this::exnAlloc));
+        addMember("exn_tag", new Executable(WebAssembly::exnTag));
+        addMember("exn_read", new Executable(WebAssembly::exnRead));
+
         addMember("module_imports", new Executable(WebAssembly::moduleImports));
         addMember("module_exports", new Executable(WebAssembly::moduleExports));
 
@@ -139,102 +144,8 @@ public class WebAssembly extends Dictionary {
 
     public WasmInstance moduleInstantiate(WasmModule module, Object importObject) {
         CompilerAsserts.neverPartOfCompilation();
-        WasmStore instanceStore = new WasmStore(currentContext, currentContext.language());
-        WasmInstance instance = instantiateModule(module, instanceStore);
-        var imports = resolveModuleImports(module, importObject);
-        instance.store().linker().tryLink(instance, imports);
-        return instance;
-    }
-
-    private static WasmInstance instantiateModule(WasmModule module, WasmStore store) {
-        return store.readInstance(module);
-    }
-
-    private static ImportValueSupplier resolveModuleImports(WasmModule module, Object importObject) {
-        CompilerAsserts.neverPartOfCompilation();
-        List<Object> resolvedImports = new ArrayList<>(module.numImportedSymbols());
-
-        if (!module.importedSymbols().isEmpty()) {
-            requireImportObject(importObject);
-        }
-
-        for (ImportDescriptor descriptor : module.importedSymbols()) {
-            final int listIndex = resolvedImports.size();
-            assert listIndex == descriptor.importedSymbolIndex();
-
-            final Object member = getImportObjectMember(importObject, descriptor);
-
-            resolvedImports.add(switch (descriptor.identifier()) {
-                case ImportIdentifier.FUNCTION -> requireCallable(member, descriptor);
-                case ImportIdentifier.TABLE -> requireWasmTable(member, descriptor);
-                case ImportIdentifier.MEMORY -> requireWasmMemory(member, descriptor);
-                case ImportIdentifier.GLOBAL -> requireWasmGlobal(member, descriptor);
-                default -> throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, "Unknown import descriptor type: " + descriptor.identifier());
-            });
-        }
-
-        assert resolvedImports.size() == module.numImportedSymbols();
-        return (importDesc, instance) -> {
-            // Import values are only valid in the module where they were resolved.
-            if (instance.module() == module) {
-                return resolvedImports.get(importDesc.importedSymbolIndex());
-            } else {
-                return null;
-            }
-        };
-    }
-
-    private static Object requireImportObject(Object importObject) {
-        InteropLibrary interop = InteropLibrary.getUncached(importObject);
-        if (interop.isNull(importObject) || !interop.hasMembers(importObject)) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Module requires imports, but import object is undefined.");
-        }
-        return importObject;
-    }
-
-    private static Object getImportObjectMember(Object importObject, ImportDescriptor descriptor) {
-        try {
-            final InteropLibrary importObjectInterop = InteropLibrary.getUncached(importObject);
-            if (!importObjectInterop.isMemberReadable(importObject, descriptor.moduleName())) {
-                throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Import object does not contain module \"%s\".", descriptor.moduleName());
-            }
-            final Object importedModuleObject = importObjectInterop.readMember(importObject, descriptor.moduleName());
-            final InteropLibrary moduleObjectInterop = InteropLibrary.getUncached(importedModuleObject);
-            if (!moduleObjectInterop.isMemberReadable(importedModuleObject, descriptor.memberName())) {
-                throw WasmJsApiException.format(WasmJsApiException.Kind.LinkError, "Import module object \"%s\" does not contain \"%s\".", descriptor.moduleName(), descriptor.memberName());
-            }
-            return moduleObjectInterop.readMember(importedModuleObject, descriptor.memberName());
-        } catch (UnknownIdentifierException | UnsupportedMessageException e) {
-            throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, "Unexpected state.");
-        }
-    }
-
-    private static Object requireCallable(Object member, ImportDescriptor importDescriptor) {
-        if (!(member instanceof WasmFunctionInstance || InteropLibrary.getUncached().isExecutable(member))) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.LinkError, "Member " + member + " " + importDescriptor + " is not callable.");
-        }
-        return member;
-    }
-
-    private static WasmMemory requireWasmMemory(Object member, ImportDescriptor importDescriptor) {
-        if (!(member instanceof WasmMemory memory)) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.LinkError, "Member " + member + " " + importDescriptor + " is not a valid memory.");
-        }
-        return memory;
-    }
-
-    private static WasmTable requireWasmTable(Object member, ImportDescriptor importDescriptor) {
-        if (!(member instanceof WasmTable table)) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.LinkError, "Member " + member + " " + importDescriptor + " is not a valid table.");
-        }
-        return table;
-    }
-
-    private static WasmGlobal requireWasmGlobal(Object member, ImportDescriptor importDescriptor) {
-        if (!(member instanceof WasmGlobal global)) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.LinkError, "Member " + member + " " + importDescriptor + " is not a valid global.");
-        }
-        return global;
+        final WasmStore store = new WasmStore(currentContext, currentContext.language());
+        return module.createInstance(store, importObject, WasmJsApiException.provider(), true);
     }
 
     private static String makeModuleName(byte[] data) {
@@ -346,6 +257,7 @@ public class WebAssembly extends Dictionary {
             final Integer globalIndex = module.exportedGlobals().get(name);
             final Integer tableIndex = module.exportedTables().get(name);
             final Integer memoryIndex = module.exportedMemories().get(name);
+            final Integer tagIndex = module.exportedTags().get(name);
 
             if (memoryIndex != null) {
                 String shared = module.memoryIsShared(memoryIndex) ? "shared" : "single";
@@ -358,6 +270,8 @@ public class WebAssembly extends Dictionary {
                 String valueType = ValueType.fromByteValue(module.globalValueType(globalIndex)).toString();
                 String mutability = module.isGlobalMutable(globalIndex) ? "mut" : "con";
                 list.add(new ModuleExportDescriptor(name, ImportExportKind.global.name(), valueType + " " + mutability));
+            } else if (tagIndex != null) {
+                list.add(new ModuleExportDescriptor(name, ImportExportKind.tag.name(), WebAssembly.tagTypeToString(module, tagIndex)));
             } else {
                 throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, "Exported symbol list does not match the actual exports.");
             }
@@ -379,6 +293,7 @@ public class WebAssembly extends Dictionary {
         final EconomicMap<ImportDescriptor, Integer> importedGlobalDescriptors = module.importedGlobalDescriptors();
         final EconomicMap<ImportDescriptor, Integer> importedTableDescriptors = module.importedTableDescriptors();
         final EconomicMap<ImportDescriptor, Integer> importedMemoryDescriptors = module.importedMemoryDescriptors();
+        final EconomicMap<ImportDescriptor, Integer> importedTagDescriptors = module.importTagDescriptors();
         final ArrayList<ModuleImportDescriptor> list = new ArrayList<>();
         for (ImportDescriptor descriptor : module.importedSymbols()) {
             switch (descriptor.identifier()) {
@@ -403,9 +318,18 @@ public class WebAssembly extends Dictionary {
                     }
                     break;
                 case ImportIdentifier.GLOBAL:
-                    final Integer index = importedGlobalDescriptors.get(descriptor);
-                    String valueType = ValueType.fromByteValue(module.globalValueType(index)).toString();
+                    final Integer globalIndex = importedGlobalDescriptors.get(descriptor);
+                    String valueType = ValueType.fromByteValue(module.globalValueType(globalIndex)).toString();
                     list.add(new ModuleImportDescriptor(descriptor.moduleName(), descriptor.memberName(), ImportExportKind.global.name(), valueType));
+                    break;
+                case ImportIdentifier.TAG:
+                    final Integer tagIndex = importedTagDescriptors.get(descriptor);
+                    if (tagIndex != null) {
+                        list.add(new ModuleImportDescriptor(descriptor.moduleName(), descriptor.memberName(), ImportExportKind.tag.name(),
+                                        WebAssembly.tagTypeToString(module, tagIndex)));
+                    } else {
+                        throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, "Tag import inconsistent.");
+                    }
                     break;
                 default:
                     throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, "Unknown import descriptor type: " + descriptor.identifier());
@@ -518,11 +442,11 @@ public class WebAssembly extends Dictionary {
         if (Integer.compareUnsigned(initial, JS_LIMITS.tableInstanceSizeLimit()) > 0) {
             throw new WasmJsApiException(WasmJsApiException.Kind.RangeError, "Min table size exceeds implementation limit");
         }
-        if (elemKind != TableKind.externref && elemKind != TableKind.anyfunc) {
+        if (elemKind != TableKind.externref && elemKind != TableKind.anyfunc && elemKind != TableKind.exnref) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Element type must be a reftype");
         }
-        if (!refTypes && elemKind == TableKind.externref) {
-            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Element type must be anyfunc. Enable reference types to support externref");
+        if (!refTypes && (elemKind == TableKind.externref || elemKind == TableKind.exnref)) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Element type must be anyfunc. Enable wasm.BulkMemoryAndRefTypes to support other reference types");
         }
         final int maxAllowedSize = minUnsigned(maximum, JS_LIMITS.tableInstanceSizeLimit());
         return new WasmTable(initial, maximum, maxAllowedSize, elemKind.byteValue(), initialValue);
@@ -530,13 +454,12 @@ public class WebAssembly extends Dictionary {
 
     private static Object tableGrow(Object[] args) {
         checkArgumentCount(args, 2);
-        if (!(args[0] instanceof WasmTable)) {
+        if (!(args[0] instanceof WasmTable table)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm table");
         }
         if (!(args[1] instanceof Integer)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Second argument must be integer");
         }
-        WasmTable table = (WasmTable) args[0];
         int delta = (Integer) args[1];
         if (args.length > 2) {
             return tableGrow(table, delta, args[2]);
@@ -554,13 +477,12 @@ public class WebAssembly extends Dictionary {
 
     private static Object tableRead(Object[] args) {
         checkArgumentCount(args, 2);
-        if (!(args[0] instanceof WasmTable)) {
+        if (!(args[0] instanceof WasmTable table)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm table");
         }
         if (!(args[1] instanceof Integer)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Second argument must be integer");
         }
-        WasmTable table = (WasmTable) args[0];
         int index = (Integer) args[1];
         return tableRead(table, index);
     }
@@ -575,13 +497,12 @@ public class WebAssembly extends Dictionary {
 
     private Object tableWrite(Object[] args) {
         checkArgumentCount(args, 3);
-        if (!(args[0] instanceof WasmTable)) {
+        if (!(args[0] instanceof WasmTable table)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm table");
         }
         if (!(args[1] instanceof Integer)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Second argument must be integer");
         }
-        WasmTable table = (WasmTable) args[0];
         int index = (Integer) args[1];
         return tableWrite(table, index, args[2]);
     }
@@ -613,10 +534,9 @@ public class WebAssembly extends Dictionary {
 
     private static Object tableSize(Object[] args) {
         checkArgumentCount(args, 1);
-        if (!(args[0] instanceof WasmTable)) {
+        if (!(args[0] instanceof WasmTable table)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm table");
         }
-        WasmTable table = (WasmTable) args[0];
         return tableSize(table);
     }
 
@@ -665,6 +585,15 @@ public class WebAssembly extends Dictionary {
         return typeInfo.toString();
     }
 
+    private static String tagTypeToString(WasmModule module, int tagIndex) {
+        CompilerAsserts.neverPartOfCompilation();
+        final int attribute = module.tagAttribute(tagIndex);
+        assert attribute == WasmTag.Attribute.EXCEPTION;
+        final int typeIndex = module.tagTypeIndex(tagIndex);
+
+        return FuncType.fromFunctionType(module.typeAt(typeIndex)).toString();
+    }
+
     private static Object memAlloc(Object[] args) {
         checkArgumentCount(args, 1);
         InteropLibrary lib = InteropLibrary.getUncached();
@@ -711,13 +640,12 @@ public class WebAssembly extends Dictionary {
 
     private static Object memGrow(Object[] args) {
         checkArgumentCount(args, 2);
-        if (!(args[0] instanceof WasmMemory)) {
+        if (!(args[0] instanceof WasmMemory memory)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm memory");
         }
         if (!(args[1] instanceof Integer)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Second argument must be integer");
         }
-        WasmMemory memory = (WasmMemory) args[0];
         int delta = (Integer) args[1];
         return memGrow(memory, delta);
     }
@@ -889,23 +817,23 @@ public class WebAssembly extends Dictionary {
         try {
             switch (valueType) {
                 case i32:
-                    return new DefaultWasmGlobal(valueType, mutable, valueInterop.asInt(value));
+                    return new WasmGlobal(valueType, mutable, valueInterop.asInt(value));
                 case i64:
-                    return new DefaultWasmGlobal(valueType, mutable, valueInterop.asLong(value));
+                    return new WasmGlobal(valueType, mutable, valueInterop.asLong(value));
                 case f32:
-                    return new DefaultWasmGlobal(valueType, mutable, Float.floatToRawIntBits(valueInterop.asFloat(value)));
+                    return new WasmGlobal(valueType, mutable, Float.floatToRawIntBits(valueInterop.asFloat(value)));
                 case f64:
-                    return new DefaultWasmGlobal(valueType, mutable, Double.doubleToRawLongBits(valueInterop.asDouble(value)));
+                    return new WasmGlobal(valueType, mutable, Double.doubleToRawLongBits(valueInterop.asDouble(value)));
                 case anyfunc:
                     if (!refTypes || !(value == WasmConstant.NULL || value instanceof WasmFunctionInstance)) {
                         throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Invalid value type");
                     }
-                    return new DefaultWasmGlobal(valueType, mutable, value);
+                    return new WasmGlobal(valueType, mutable, value);
                 case externref:
                     if (!refTypes) {
                         throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Invalid value type");
                     }
-                    return new DefaultWasmGlobal(valueType, mutable, value);
+                    return new WasmGlobal(valueType, mutable, value);
                 default:
                     throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Invalid value type");
             }
@@ -916,10 +844,9 @@ public class WebAssembly extends Dictionary {
 
     private static Object globalRead(Object[] args) {
         checkArgumentCount(args, 1);
-        if (!(args[0] instanceof WasmGlobal)) {
+        if (!(args[0] instanceof WasmGlobal global)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm global");
         }
-        WasmGlobal global = (WasmGlobal) args[0];
         return globalRead(global);
     }
 
@@ -935,7 +862,7 @@ public class WebAssembly extends Dictionary {
                 return Double.longBitsToDouble(global.loadAsLong());
             case anyfunc:
             case externref:
-                return global.loadAsObject();
+                return global.loadAsReference();
 
         }
         throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Incorrect internal Global type");
@@ -943,10 +870,9 @@ public class WebAssembly extends Dictionary {
 
     private Object globalWrite(Object[] args) {
         checkArgumentCount(args, 2);
-        if (!(args[0] instanceof WasmGlobal)) {
+        if (!(args[0] instanceof WasmGlobal global)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm global");
         }
-        WasmGlobal global = (WasmGlobal) args[0];
         return globalWrite(global, args[1]);
     }
 
@@ -987,29 +913,124 @@ public class WebAssembly extends Dictionary {
                 if (!(value == WasmConstant.NULL || value instanceof WasmFunctionInstance)) {
                     throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Global type %s, value: %s", valueType, value);
                 } else {
-                    global.storeObject(value);
+                    global.storeReference(value);
                 }
                 break;
             case externref:
                 if (!refTypes) {
                     throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Invalid value type. Reference types are not enabled");
                 }
-                global.storeObject(value);
+                global.storeReference(value);
                 break;
         }
         return WasmConstant.VOID;
     }
 
+    public static Object tagAlloc(Object[] args) {
+        checkArgumentCount(args, 1);
+        final InteropLibrary lib = InteropLibrary.getUncached();
+        final FuncType type;
+        try {
+            final String typeString = lib.asString(args[0]);
+            type = FuncType.fromString(typeString);
+        } catch (UnsupportedMessageException e) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument (func type) must be convertible to String");
+        } catch (IllegalArgumentException e) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Invalid func type");
+        }
+        return tagAlloc(type);
+    }
+
+    public static WasmTag tagAlloc(FuncType type) {
+        return new WasmTag(type.toFunctionType());
+    }
+
+    public static Object tagType(Object[] args) {
+        checkArgumentCount(args, 1);
+        if (!(args[0] instanceof WasmTag tag)) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be a wasm tag");
+        }
+        return tag.type().toString();
+    }
+
+    public Object exnAlloc(Object[] args) {
+        checkArgumentCount(args, 1);
+        if (!(args[0] instanceof WasmTag tag)) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be a wasm tag");
+        }
+        final FuncType type = FuncType.fromFunctionType(tag.type());
+        final int paramCount = type.paramCount();
+        checkArgumentCount(args, paramCount + 1);
+        final Object[] fields = new Object[paramCount];
+        for (int i = 0; i < paramCount; i++) {
+            final ValueType paramType = type.paramTypeAt(i);
+            final Object value = args[i + 1];
+            switch (paramType) {
+                case i32:
+                    if (!(value instanceof Integer)) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Param type %s, value: %s", paramType, value);
+                    }
+                    break;
+                case i64:
+                    if (!(value instanceof Long)) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Param type %s, value: %s", paramType, value);
+                    }
+                    break;
+                case f32:
+                    if (!(value instanceof Float)) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Param type %s, value: %s", paramType, value);
+                    }
+                    break;
+                case f64:
+                    if (!(value instanceof Double)) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Param type %s, value: %s", paramType, value);
+                    }
+                    break;
+                case anyfunc:
+                    if (!refTypes) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Invalid value type. Reference types are not enabled");
+                    }
+                    if (!(value == WasmConstant.NULL || value instanceof WasmFunctionInstance)) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Param type %s, value: %s", paramType, value);
+                    }
+                    break;
+                case externref:
+                    if (!refTypes) {
+                        throw WasmJsApiException.format(WasmJsApiException.Kind.TypeError, "Invalid value type. Reference types are not enabled");
+                    }
+                    break;
+            }
+            fields[i] = value;
+        }
+        return new WasmRuntimeException(null, tag, fields);
+    }
+
+    public static Object exnTag(Object[] args) {
+        checkArgumentCount(args, 1);
+        if (!(args[0] instanceof WasmRuntimeException exn)) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be a wasm exception");
+        }
+        return exn.tag();
+    }
+
+    public static Object exnRead(Object[] args) {
+        checkArgumentCount(args, 1);
+        if (!(args[0] instanceof WasmRuntimeException exn)) {
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be a wasm exception");
+        }
+        // Should return exn.fields.
+        // WasmRuntimeException already exposes its fields as array elements.
+        return exn;
+    }
+
     private static Object instanceExport(Object[] args) {
         checkArgumentCount(args, 2);
-        if (!(args[0] instanceof WasmInstance)) {
+        if (!(args[0] instanceof WasmInstance instance)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "First argument must be wasm instance");
         }
-        if (!(args[1] instanceof String)) {
+        if (!(args[1] instanceof String name)) {
             throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, "Second argument must be string");
         }
-        WasmInstance instance = (WasmInstance) args[0];
-        String name = (String) args[1];
         return instanceExport(instance, name);
     }
 
@@ -1019,26 +1040,21 @@ public class WebAssembly extends Dictionary {
         Integer globalIndex = instance.module().exportedGlobals().get(name);
         Integer tableIndex = instance.module().exportedTables().get(name);
         Integer memoryIndex = instance.module().exportedMemories().get(name);
+        Integer tagIndex = instance.module().exportedTags().get(name);
 
         if (function != null) {
             return instance.functionInstance(function);
         } else if (globalIndex != null) {
-            final int index = globalIndex;
-            final int address = instance.globalAddress(index);
-            if (address < 0) {
-                return instance.store().globals().externalGlobal(address);
-            } else {
-                final ValueType valueType = ValueType.fromByteValue(instance.symbolTable().globalValueType(index));
-                final boolean mutable = instance.symbolTable().isGlobalMutable(index);
-                return new ExportedWasmGlobal(valueType, mutable, instance.store().globals(), address);
-            }
+            return instance.externalGlobal(globalIndex);
         } else if (memoryIndex != null) {
             return instance.memory(memoryIndex);
         } else if (tableIndex != null) {
             final int address = instance.tableAddress(tableIndex);
             return instance.store().tables().table(address);
+        } else if (tagIndex != null) {
+            return instance.tag(tagIndex);
         } else {
-            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, name + " is not a exported name of the given instance");
+            throw new WasmJsApiException(WasmJsApiException.Kind.TypeError, name + " is not an exported name of the given instance");
         }
     }
 
