@@ -26,6 +26,7 @@ package jdk.graal.compiler.hotspot;
 
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.vm.ci.code.CompiledCode;
 import jdk.vm.ci.code.InstalledCode;
 import jdk.vm.ci.hotspot.HotSpotCodeCacheProvider;
@@ -46,8 +47,14 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
 
     @Override
     public void notifyShutdown() {
+        if (Thread.currentThread().getName().contains("DestroyJavaVM")) {
+             System.out.println("HotSpotGraalVMEventListener.notifyShutdown: DestroyJavaVM detected");
+             System.out.println("Count " +BuboNativeBuffers.countNonZeroTime(200_000));  
+        }
         if (runtime != null) {
+            //System.out.println("HotSpotGraalVMEventListener.notifyShutdown " + this.hashCode());
             runtime.shutdown();
+            
         }
     }
 
@@ -55,11 +62,13 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
     public void notifyInstall(HotSpotCodeCacheProvider codeCache, InstalledCode installedCode, CompiledCode compiledCode) {
         DebugContext debug = DebugContext.forCurrentThread();
         if (debug.isDumpEnabled(DebugContext.BASIC_LEVEL)) {
+            
             debug.dump(DebugContext.BASIC_LEVEL, installedCode, "After code installation");
         }
         if (debug.isLogEnabled()) {
             debug.log("%s", codeCache.disassemble(installedCode));
         }
+         //System.out.println("HotSpotGraalVMEventListener.install: " + this.hashCode());
     }
 
     @Override
