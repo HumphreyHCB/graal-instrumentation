@@ -51,7 +51,7 @@ import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
-
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.code.CodeUtil;
 
@@ -91,7 +91,9 @@ public class BuboInstrumentationHighTierPhase extends BasePhase<HighTierContext>
             long cycPtr        = BuboNativeBuffers.cyclesPtr();
             long callPtr       = BuboNativeBuffers.callSitePtr();
 
-            BuboMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " + graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
+            //BuboMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " + graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
+            BuboNativeMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " + graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
+
 
             AddressNode TimeBuffer = createNativeArrayAddress(graph, context.getMetaAccess(), timePtr, JavaKind.Long, ID);
             TimeBuffer.setStamp(StampFactory.forBuboTimeRead());

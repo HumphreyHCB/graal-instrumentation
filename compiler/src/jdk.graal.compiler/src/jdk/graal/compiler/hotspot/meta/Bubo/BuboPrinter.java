@@ -426,6 +426,107 @@ public class BuboPrinter {
         }
     }
 
+    public static void printHotMethodsTop10() {
+        // Ensure both native components are ready
+        BuboNativeMethodCache.ensureInitialized();
+        BuboNativeBuffers.ensureInitialized();
+
+        System.out.println("\n\n");
+        System.out.println("Bubo Agent collected the following metrics:\n");
+
+        // ID -> method name (e.g., "HotSpotCompilation-96 Towers$TowersDisk.setNext(...)")
+        Map<Integer, String> methods = BuboNativeMethodCache.getBuffer();
+        if (methods.isEmpty()) {
+            System.out.println("No methods recorded.");
+            return;
+        }
+
+        long sum = 0L;
+        Map<Integer, Long> timings = new HashMap<>();
+
+        for (int id : methods.keySet()) {
+            long t  = BuboNativeBuffers.readTimeAt(id);
+            long cs = BuboNativeBuffers.readCallSiteAt(id);
+            long cy = BuboNativeBuffers.readCyclesAt(id);
+
+            if (t != 0L) {
+                long adjusted = t - cs;
+                if (adjusted < 0) adjusted = 0; // clamp just in case
+                sum += adjusted;
+                timings.put(id, adjusted);
+            } else if (cy != 0L) {
+                sum += cy;
+                timings.put(id, cy);
+            } else {
+                // compiled but no timing info; skip
+            }
+        }
+
+        if (timings.isEmpty() || sum == 0L) {
+            System.out.println("No non-zero timing data.");
+            return;
+        }
+
+        // Sort by time descending
+        LinkedHashMap<Integer, Long> sorted =
+                timings.entrySet().stream()
+                        .sorted(Map.Entry.<Integer, Long>comparingByValue().reversed())
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (a, b) -> a,
+                                LinkedHashMap::new));
+
+        System.out.println();
+        System.out.println("The following is the Top 10 hottest Compilation Units");
+
+        int shown = 0;
+        for (Map.Entry<Integer, Long> e : sorted.entrySet()) {
+            if (shown >= 10) break;
+            int id = e.getKey();
+            long v = e.getValue();
+            String name = methods.getOrDefault(id, ("<unknown-" + id + ">"));
+            float pct = (float) v * 100.0f / (float) sum;
+            System.out.println(name + " : " + pct + "% ");
+            shown++;
+        }
+    }
+
+    /** If you want the sorted map back instead of printing. */
+    public static LinkedHashMap<Integer, Long> getHotMethodsSorted() {
+        BuboNativeMethodCache.ensureInitialized();
+        BuboNativeBuffers.ensureInitialized();
+
+        Map<Integer, String> methods = BuboNativeMethodCache.getBuffer();
+        Map<Integer, Long> timings = new HashMap<>();
+        long sum = 0L;
+
+        for (int id : methods.keySet()) {
+            long t  = BuboNativeBuffers.readTimeAt(id);
+            long cs = BuboNativeBuffers.readCallSiteAt(id);
+            long cy = BuboNativeBuffers.readCyclesAt(id);
+
+            if (t != 0L) {
+                long adjusted = Math.max(0L, t - cs);
+                sum += adjusted;
+                timings.put(id, adjusted);
+            } else if (cy != 0L) {
+                sum += cy;
+                timings.put(id, cy);
+            }
+        }
+
+        if (timings.isEmpty()) return new LinkedHashMap<>();
+
+        return timings.entrySet().stream()
+                .sorted(Map.Entry.<Integer, Long>comparingByValue().reversed())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (a, b) -> a,
+                        LinkedHashMap::new));
+    }
+
 
 
     public static void addToFile(String line, String Filename) {

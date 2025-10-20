@@ -341,8 +341,8 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
         }
 
-        BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]),
-                methodInfos);
+        // BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]),
+        //         methodInfos);
     }
 
 }

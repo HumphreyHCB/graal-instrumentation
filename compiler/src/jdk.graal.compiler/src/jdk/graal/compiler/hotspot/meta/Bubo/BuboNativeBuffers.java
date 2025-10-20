@@ -36,8 +36,7 @@ public final class BuboNativeBuffers {
             uu.setMemory(actPtr,  CAPACITY * BYTES_PER_ELEM, (byte) 0);
             uu.setMemory(cycPtr,  CAPACITY * BYTES_PER_ELEM, (byte) 0);
             uu.setMemory(callPtr, CAPACITY * BYTES_PER_ELEM, (byte) 0);
-
-            // Publish base addresses atomically
+            
             TIME_ADDR.set(timePtr);
             ACT_ADDR.set(actPtr);
             CYC_ADDR.set(cycPtr);

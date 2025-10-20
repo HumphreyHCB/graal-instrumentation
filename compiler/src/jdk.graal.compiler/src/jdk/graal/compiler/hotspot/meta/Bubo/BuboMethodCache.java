@@ -17,6 +17,7 @@ public class BuboMethodCache extends Thread  {
     
     public static void add(String method)
     {
+        System.out.println("Adding method to cache: " + method + " at position " + pointer);
         Buffer[pointer] = method;
         pointer++;
     }

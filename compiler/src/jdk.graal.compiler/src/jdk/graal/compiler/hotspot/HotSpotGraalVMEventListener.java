@@ -27,6 +27,10 @@ package jdk.graal.compiler.hotspot;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
+import jdk.graal.compiler.serviceprovider.GlobalAtomicLong;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.vm.ci.code.CompiledCode;
 import jdk.vm.ci.code.InstalledCode;
 import jdk.vm.ci.hotspot.HotSpotCodeCacheProvider;
@@ -45,16 +49,15 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
         this.runtime = runtime;
     }
 
+    private static volatile GlobalAtomicLong shutdownPrinted = new GlobalAtomicLong("GraalVMEventListener.SHUTDOWN_PRINTED", 0L)    ;
+
     @Override
     public void notifyShutdown() {
-        if (Thread.currentThread().getName().contains("DestroyJavaVM")) {
-             System.out.println("HotSpotGraalVMEventListener.notifyShutdown: DestroyJavaVM detected");
-             System.out.println("Count " +BuboNativeBuffers.countNonZeroTime(200_000));  
+        if (Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
+            BuboPrinter.printHotMethodsTop10();
         }
         if (runtime != null) {
-            //System.out.println("HotSpotGraalVMEventListener.notifyShutdown " + this.hashCode());
             runtime.shutdown();
-            
         }
     }
 
