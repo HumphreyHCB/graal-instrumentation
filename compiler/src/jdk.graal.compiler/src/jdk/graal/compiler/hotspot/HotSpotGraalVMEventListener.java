@@ -24,6 +24,7 @@
  */
 package jdk.graal.compiler.hotspot;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
@@ -53,7 +54,7 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
 
     @Override
     public void notifyShutdown() {
-        if (Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
+        if (GraalOptions.EnableProfiler.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
             BuboPrinter.printHotMethodsTop10();
         }
         if (runtime != null) {
