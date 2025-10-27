@@ -528,6 +528,16 @@ public class BuboPrinter {
     }
 
 
+    public static void BuboLIRPrint() {
+
+        for (int i = 0; i < BuboNativeBuffers.capacity(); i++) {
+            long t = BuboNativeBuffers.readActivationAt(i);
+            if (t != 0l) {
+                System.out.println("Index : " + i + " Activation Count : " + t);
+            }
+        }
+
+    }
 
     public static void addToFile(String line, String Filename) {
         String filename = Filename;
