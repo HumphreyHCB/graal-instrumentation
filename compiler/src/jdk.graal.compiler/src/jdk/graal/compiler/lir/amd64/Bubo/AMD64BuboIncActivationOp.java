@@ -2,23 +2,29 @@
  * Copyright (c) 2025, Oracle…
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  */
-package jdk.graal.compiler.lir.amd64;
+package jdk.graal.compiler.lir.amd64.Bubo;
 
 import static jdk.vm.ci.code.ValueUtil.asRegister;
 
 import jdk.graal.compiler.asm.amd64.AMD64Address;
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
 import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
+import jdk.graal.compiler.lir.ConstantValue;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.SyncPort;
+import jdk.graal.compiler.lir.amd64.AMD64LIRInstruction;
+import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
+import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.meta.AllocatableValue;
+import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.Value;
 
 /**
- * *(activationAddress) += 1L  (non-atomic)
+ * For a given compilation id, increments the activation counter stored in the Bubo native buffer.
  */
 @SyncPort(from = "", sha1 = "")
 @Opcode("AMD64_BUBO_INC_ACT")
@@ -30,9 +36,10 @@ public final class AMD64BuboIncActivationOp extends AMD64LIRInstruction {
     @Temp({OperandFlag.REG}) private Value addrTmp;
     @Temp({OperandFlag.REG}) private Value tmp;
 
-    public AMD64BuboIncActivationOp(LIRGeneratorTool tool, Value activationAddr) {
+    public AMD64BuboIncActivationOp(LIRGeneratorTool tool, int CompilationId) {
         super(TYPE);
-        this.activationAddrValue = activationAddr;
+
+        this.activationAddrValue = new ConstantValue(LIRKind.value(AMD64Kind.QWORD), JavaConstant.forLong(BuboNativeBuffers.activationPtr() + (((long) CompilationId) << 3)));
         // temps are 64-bit GPRs
         this.addrTmp = tool.newVariable(LIRKind.value(jdk.vm.ci.amd64.AMD64Kind.QWORD));
         this.tmp    = tool.newVariable(LIRKind.value(jdk.vm.ci.amd64.AMD64Kind.QWORD));
