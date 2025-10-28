@@ -159,6 +159,13 @@ public class LIRGenerationResult {
         return compilationId.toString(Verbosity.NAME);
     }
 
+    public int getCompilationId() {
+        if (compilationId == null || compilationId == CompilationIdentifier.INVALID_COMPILATION_ID) {
+            return -1;
+        }
+        return Integer.parseInt(compilationId.toString(Verbosity.ID).split("-")[1]);
+    }
+
     /**
      * Return the first position to insert a LIR instruction. No instruction should be inserted
      * before this position.
