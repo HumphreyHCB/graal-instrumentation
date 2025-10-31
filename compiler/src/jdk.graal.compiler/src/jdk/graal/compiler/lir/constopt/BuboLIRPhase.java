@@ -164,9 +164,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         }
 
         // 3) Insert END+DELTA before the first Return op (keep terminator last)
-        boolean endInserted = false;
 
-        for (int b = 0; b < blocks.length && !endInserted; b++) {
+        for (int b = 0; b < blocks.length; b++) {
             BasicBlock<?> block = blocks[b];
             List<LIRInstruction> insns = lir.getLIRforBlock(block);
 
@@ -179,21 +178,19 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 if (op instanceof AMD64HotSpotReturnOp) {
                     //AMD64BuboRDTSCToSlot tscStart = new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot);
 
-                    AMD64BuboRDTSCToSlot tscEnd = new AMD64BuboRDTSCToSlot(lirGen, tscEndSlot);
+                    //AMD64BuboRDTSCToSlot tscEnd = new AMD64BuboRDTSCToSlot(lirGen, tscEndSlot);
 
                     AMD64BuboWriteDeltaRDTSC tscDeltaWrite = new AMD64BuboWriteDeltaRDTSC(
                             lirGen,
-                            tscStartSlot, tscEndSlot,
+                            tscStartSlot,
                             baseAddress,
                             compilationId,
-                            /* atomic = */ false // safer single-instruction update
+                            /* atomic = */ true // safer single-instruction update
                     );
 
                     // Insert BEFORE the return (return must remain last)
                     buf.append(i, tscDeltaWrite); // will end up closest to the return
-                    buf.append(i, tscEnd);
-                    //buf.append(i, tscStart);      // will execute first of the three
-                    endInserted = true;
+                   // buf.append(i, tscEnd);
                     break;
                 }
             }
