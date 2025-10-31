@@ -33,13 +33,14 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
         super(TYPE);
         this.dstSlot = dstSlot;
         this.raxTmp = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.rdxTmp = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.rdxTmp = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
     }
 
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
         // Preserve method return in RAX (live across return paths)
         masm.movq(asRegister(raxTmp), AMD64.rax);
+         masm.movq(asRegister(rdxTmp), AMD64.rdx);
 
         // rdtsc -> EDX:EAX (low in EAX, high in EDX)
         masm.rdtsc();
@@ -58,6 +59,7 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
         masm.movq(addr, AMD64.rax);
 
         // Restore original return value to RAX
+        masm.movq(AMD64.rdx, asRegister(rdxTmp));
         masm.movq(AMD64.rax, asRegister(raxTmp));
     }
 }
