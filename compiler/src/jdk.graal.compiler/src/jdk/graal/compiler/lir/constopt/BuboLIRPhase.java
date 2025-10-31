@@ -70,138 +70,147 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
     }
 
     @Override
-    protected void run(TargetDescription target, LIRGenerationResult lirGenRes, PreAllocationOptimizationContext context) {
+    protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
+            PreAllocationOptimizationContext context) {
         if (lirGenRes.getCompilationUnitName()
                 .contains("Stub")) {
-                    // Skip stubs, they garrentee no new registers
+            // Skip stubs, they garrentee no new registers
             return;
         }
 
-        runTest(target, lirGenRes, context);
-        
-        
         // final LIR lir = lirGenRes.getLIR();
         // final LIRGeneratorTool lirGen = context.lirGen;
-        // //lir.getControlFlowGraph().getBlocks()
-        //  for (BasicBlock<?> block : lir.getControlFlowGraph().getBlocks()) {
-        //     final List<LIRInstruction> insns = lir.getLIRforBlock((block));
 
-        //     final LIRInsertionBuffer buf = new LIRInsertionBuffer();
-        //     buf.init(insns);
+        // BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
 
-        //     for (int i = 0; i < insns.size(); i++) {
-        //         LIRInstruction op = insns.get(i);
-        //         if (op instanceof AMD64HotSpotReturnOp) {
+        // for (int b = 0; b < blocks.length; b++) {
+        // final BasicBlock<?> block = blocks[b];
+        // final List<LIRInstruction> insns = lir.getLIRforBlock(block);
 
-        //             AMD64BuboExitLog exitLogInstr = new AMD64BuboExitLog(
-        //                 lirGen,
-        //                 BuboNativeBuffers.activationPtr(), // baseAddress
-        //                 lirGenRes.getCompilationId()       // compilationId
-        //             );
+        // final LIRInsertionBuffer buf = new LIRInsertionBuffer();
+        // buf.init(insns);
 
-        //             // Insert *before* the return
-        //             buf.append(i, exitLogInstr);
+        // for (int i = 0; i < insns.size(); i++) {
+        // LIRInstruction op = insns.get(i);
 
-                    
-        //         }
-        //     }
-        //     buf.finish();
+        // if (op instanceof AMD64ReadTimestampCounter) {
+        // // Try to get a stable block id if available; fall back to block.toString()
+        // String blockId;
+        // try {
+        // blockId = "id=" + block.getId();
+        // } catch (Throwable t) {
+        // blockId = block.toString(); // safe fallback
         // }
+
+        // System.out.printf(
+        // "Found AMD64ReadTimestampCounter in method %s | block %d/%d (%s) | insn %d/%d
+        // | op=%s%n",
+        // lirGenRes.getCompilationUnitName(),
+        // b + 1, blocks.length,
+        // blockId,
+        // i + 1, insns.size(),
+        // op
+        // );
+        // }
+        // }
+
+        // buf.finish();
+        // }
+
+        runTest(target, lirGenRes, context);
+
     }
 
-
-    
     protected void runTest(TargetDescription target,
-                    LIRGenerationResult lirGenRes,
-                    PreAllocationOptimizationContext context) {
-
-        // Skip stubs (no new regs guaranteed)
-        if (lirGenRes.getCompilationUnitName().contains("Stub")) {
-            return;
-        }
+            LIRGenerationResult lirGenRes,
+            PreAllocationOptimizationContext context) {
 
         final LIR lir = lirGenRes.getLIR();
         final LIRGeneratorTool lirGen = context.lirGen;
 
-        // allocate one 64-bit spill slot for the first RDTSC value
-        final VirtualStackSlot tscStartSlot =
-                lirGenRes.getFrameMapBuilder().allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
-
-        final VirtualStackSlot tscEndSlot =
-                lirGenRes.getFrameMapBuilder().allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
+        final VirtualStackSlot tscStartSlot = lirGenRes.getFrameMapBuilder()
+                .allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
+        final VirtualStackSlot tscEndSlot = lirGenRes.getFrameMapBuilder()
+                .allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
 
         final long baseAddress = BuboNativeBuffers.activationPtr();
         final int compilationId = lirGenRes.getCompilationId();
 
-        boolean insertedForMethod = false; // only once per method
+        // 1) First pass: find the FIRST AMD64ReadTimestampCounter (your start marker)
+        BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
+        int startBlockIdx = -1;
+        int startInsnIdx = -1;
 
-        for (BasicBlock<?> block : lir.getControlFlowGraph().getBlocks()) {
-            final List<LIRInstruction> insns = lir.getLIRforBlock(block);
+        for (int b = 0; b < blocks.length; b++) {
+            BasicBlock<?> block = blocks[b];
+            List<LIRInstruction> insns = lir.getLIRforBlock(block);
+            for (int i = 0; i < insns.size(); i++) {
+                if (insns.get(i) instanceof AMD64ReadTimestampCounter) {
+                    startBlockIdx = b;
+                    startInsnIdx = i;
+                    break;
+                }
+            }
+            if (startBlockIdx >= 0)
+                break;
+        }
 
-            final LIRInsertionBuffer buf = new LIRInsertionBuffer();
+        //If no start found, do nothing for this method
+        if (startBlockIdx < 0) {
+            return;
+        }
+
+        //2) Insert START just before that AMD64ReadTimestampCounter
+        {
+            BasicBlock<?> sb = blocks[startBlockIdx];
+            List<LIRInstruction> sin = lir.getLIRforBlock(sb);
+            LIRInsertionBuffer sbuf = new LIRInsertionBuffer();
+            sbuf.init(sin);
+
+            AMD64BuboRDTSCToSlot tscStart = new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot);
+            sbuf.append(startInsnIdx, tscStart); // insert directly before the marker
+
+            sbuf.finish();
+        }
+
+        // 3) Insert END+DELTA before the first Return op (keep terminator last)
+        boolean endInserted = false;
+
+        for (int b = 0; b < blocks.length && !endInserted; b++) {
+            BasicBlock<?> block = blocks[b];
+            List<LIRInstruction> insns = lir.getLIRforBlock(block);
+
+            LIRInsertionBuffer buf = new LIRInsertionBuffer();
             buf.init(insns);
 
             for (int i = 0; i < insns.size(); i++) {
-                if (insertedForMethod) {
-                    break; // we already instrumented one return, done
-                }
-
                 LIRInstruction op = insns.get(i);
+
                 if (op instanceof AMD64HotSpotReturnOp) {
+                    //AMD64BuboRDTSCToSlot tscStart = new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot);
 
-                    // 1) start timestamp -> spill slot
-                    AMD64BuboRDTSCToSlot tscStart =
-                            new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot);
+                    AMD64BuboRDTSCToSlot tscEnd = new AMD64BuboRDTSCToSlot(lirGen, tscEndSlot);
 
-                    AMD64BuboRDTSCToSlot tscEnd =
-                            new AMD64BuboRDTSCToSlot(lirGen, tscEndSlot);
+                    AMD64BuboWriteDeltaRDTSC tscDeltaWrite = new AMD64BuboWriteDeltaRDTSC(
+                            lirGen,
+                            tscStartSlot, tscEndSlot,
+                            baseAddress,
+                            compilationId,
+                            /* atomic = */ false // safer single-instruction update
+                    );
 
-                    // 2) end timestamp, delta = end - [spill], add to native buffer
-
-                    AMD64BuboWriteDeltaRDTSC tscDeltaWrite =
-                            new AMD64BuboWriteDeltaRDTSC(
-                                    lirGen,
-                                    tscStartSlot, tscEndSlot,
-                                    baseAddress,
-                                    compilationId, false
-                            );
-
-                    // Insert *before* the return in this precise order.
-                    // LIRInsertionBuffer.append(i, ...) inserts before insns[i];
-                    // appending twice at the same index preserves order (first appended ends up earlier).
-                    buf.append(i, tscStart);
+                    // Insert BEFORE the return (return must remain last)
+                    buf.append(i, tscDeltaWrite); // will end up closest to the return
                     buf.append(i, tscEnd);
-                    buf.append(i, tscDeltaWrite);
-
-                    insertedForMethod = true;
-                    // no "i++" adjustment needed; both were inserted before the return
+                    //buf.append(i, tscStart);      // will execute first of the three
+                    endInserted = true;
+                    break;
                 }
             }
+
             buf.finish();
-
-            if (insertedForMethod) {
-                break; // we’re done for this method
-            }
         }
+
     }
-
-    // inside your AMD64 LIR generator subclass (so getArithmetic()/emitConstant exist)
-    private static Value getrdtscValue(LIRGeneratorTool lirGen, AMD64ReadTimestampCounter rdtsc) {
-        // lo32 = EAX, hi32 = EDX
-        AllocatableValue lo32 = rdtsc.getLowResult();
-        AllocatableValue hi32 = rdtsc.getHighResult();
-
-        // Zero-extend both to 64-bit
-        Value lo64 = lirGen.getArithmetic().emitZeroExtend(lo32, 32, 64);
-        Value hi64 = lirGen.getArithmetic().emitZeroExtend(hi32, 32, 64);
-
-        // Shift high by 32
-        Value shift32 = new ConstantValue(LIRKind.value(AMD64Kind.DWORD), JavaConstant.forInt(32));
-        Value hiShifted = lirGen.getArithmetic().emitShl(hi64, shift32);
-
-        // (hi << 32) | lo
-        return lirGen.getArithmetic().emitOr(hiShifted, lo64);
-    }
-
 
 }

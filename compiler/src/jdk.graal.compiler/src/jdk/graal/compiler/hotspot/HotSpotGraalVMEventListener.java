@@ -31,6 +31,7 @@ import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
 import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
+import jdk.graal.compiler.lir.phases.BuboPostLIRPhase;
 import jdk.graal.compiler.serviceprovider.GlobalAtomicLong;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.vm.ci.code.CompiledCode;
@@ -55,9 +56,9 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
 
     @Override
     public void notifyShutdown() {
-        if (GraalOptions.EnableProfiler.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
-            BuboPrinter.printHotMethodsTop10();
-        }
+        //if (GraalOptions.EnableProfiler.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
+        //    BuboPrinter.printHotMethodsTop10();
+        //}
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
             BuboPrinter.BuboLIRPrint();
         }

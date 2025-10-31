@@ -62,6 +62,7 @@ import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
+import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 
 /**
  * Adds Instrumentation to the start and end of all method compilations.
@@ -90,259 +91,265 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, LowTierContext context) {
-        try {
-
-            // find the address node added in the high tier phase, using the BuboVoidStamp
-            OffsetAddressNode CallSiteBuffer = null;
-            OffsetAddressNode TimeBuffer = null;
-            OffsetAddressNode ActivationCountBuffer = null;
-            OffsetAddressNode CyclesBuffer = null;
-
-            // find the ReachabilityFenceNode we inserted earlyer, and all of the address
-            // nodes it has saved
-            for (ReachabilityFenceNode node : graph.getNodes().filter(ReachabilityFenceNode.class)) {
-                if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
-                    for (OffsetAddressNode element : node.getValues().filter(OffsetAddressNode.class)) {
-                        // Since we don't have direct stamp checks in the iteration, we assume these
-                        // nodes
-                        // are distinguished by their creation conditions outside this snippet.
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
-                            TimeBuffer = element;
-                        }
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
-                            ActivationCountBuffer = element;
-                        }
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
-                            CyclesBuffer = element;
-                        }
-                        if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCallSiteRead())) {
-                            CallSiteBuffer = element;
-                        }
-
+        //try {
+            ClockTimeNode startTimea = graph.add(new ClockTimeNode());
+            graph.addAfterFixed(graph.start(), startTimea);
+                    if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+                        return; // already instrumented in LIR phase
                     }
                 }
-            }
 
-            if (TimeBuffer != null && ActivationCountBuffer != null
-                    && CyclesBuffer != null) {
-                double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
-                if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
+        //     // find the address node added in the high tier phase, using the BuboVoidStamp
+        //     OffsetAddressNode CallSiteBuffer = null;
+        //     OffsetAddressNode TimeBuffer = null;
+        //     OffsetAddressNode ActivationCountBuffer = null;
+        //     OffsetAddressNode CyclesBuffer = null;
 
-                    // Start time at the root of the Graph
-                    ClockTimeNode startTime = graph.add(new ClockTimeNode());
-                    graph.addAfterFixed(graph.start(), startTime);
+        //     // find the ReachabilityFenceNode we inserted earlyer, and all of the address
+        //     // nodes it has saved
+        //     for (ReachabilityFenceNode node : graph.getNodes().filter(ReachabilityFenceNode.class)) {
+        //         if (node.stamp(NodeView.DEFAULT) == StampFactory.forBuboVoid()) {
+        //             for (OffsetAddressNode element : node.getValues().filter(OffsetAddressNode.class)) {
+        //                 // Since we don't have direct stamp checks in the iteration, we assume these
+        //                 // nodes
+        //                 // are distinguished by their creation conditions outside this snippet.
+        //                 if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboTimeRead())) {
+        //                     TimeBuffer = element;
+        //                 }
+        //                 if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboActivationCountRead())) {
+        //                     ActivationCountBuffer = element;
+        //                 }
+        //                 if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCycleRead())) {
+        //                     CyclesBuffer = element;
+        //                 }
+        //                 if (element.stamp(NodeView.DEFAULT).equals(StampFactory.forBuboCallSiteRead())) {
+        //                     CallSiteBuffer = element;
+        //                 }
 
-                    for (InvokeNode invokeNode : graph.getNodes().filter(InvokeNode.class)) {
-                        ClockTimeNode invokeStartTime = graph.add(new ClockTimeNode());
-                        graph.addBeforeFixed(invokeNode, invokeStartTime);
+        //             }
+        //         }
+        //     }
 
-                        ClockTimeNode invokeEndTime = graph.add(new ClockTimeNode());
-                        graph.addAfterFixed(invokeNode, invokeEndTime);
+        //     if (TimeBuffer != null && ActivationCountBuffer != null
+        //             && CyclesBuffer != null) {
+        //         double graphCycleCost = NodeCostUtil.computeGraphCycles(graph, true);
+        //         if (graphCycleCost >= GraalOptions.MinGraphSize.getValue(options)) {
 
-                        SubNode Time = graph.addWithoutUnique(new SubNode(invokeEndTime, invokeStartTime));
+        //             // Start time at the root of the Graph
+        //             ClockTimeNode startTime = graph.add(new ClockTimeNode());
+        //             graph.addAfterFixed(graph.start(), startTime);
 
-                        // read the current value store in call site Buffer
-                        JavaReadNode readCurrentValue = graph
-                                .add(new JavaReadNode(JavaKind.Long, CallSiteBuffer,
-                                        NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                        graph.addAfterFixed(invokeEndTime, readCurrentValue);
+        //             for (InvokeNode invokeNode : graph.getNodes().filter(InvokeNode.class)) {
+        //                 ClockTimeNode invokeStartTime = graph.add(new ClockTimeNode());
+        //                 graph.addBeforeFixed(invokeNode, invokeStartTime);
 
-                        // add the store time with the new time
-                        AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
+        //                 ClockTimeNode invokeEndTime = graph.add(new ClockTimeNode());
+        //                 graph.addAfterFixed(invokeNode, invokeEndTime);
 
-                        // write this value back
-                        JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                                CallSiteBuffer,
-                                NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                                false));
-                        graph.addAfterFixed(readCurrentValue, memoryWrite);
+        //                 SubNode Time = graph.addWithoutUnique(new SubNode(invokeEndTime, invokeStartTime));
 
-                        // store aggregate
+        //                 // read the current value store in call site Buffer
+        //                 JavaReadNode readCurrentValue = graph
+        //                         .add(new JavaReadNode(JavaKind.Long, CallSiteBuffer,
+        //                                 NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //                 graph.addAfterFixed(invokeEndTime, readCurrentValue);
 
-                    }
+        //                 // add the store time with the new time
+        //                 AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
-                    // for each return node
-                    for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
+        //                 // write this value back
+        //                 JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                         CallSiteBuffer,
+        //                         NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+        //                         false));
+        //                 graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                        try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
+        //                 // store aggregate
 
-                            // add the end time call
-                            ClockTimeNode endTime = graph.add(new ClockTimeNode());
-                            graph.addBeforeFixed(returnNode, endTime);
+        //             }
 
-                            SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
+        //             // for each return node
+        //             for (ReturnNode returnNode : graph.getNodes(ReturnNode.TYPE)) {
 
-                            // read the current value store in the array index
-                            JavaReadNode readCurrentValue = graph
-                                    .add(new JavaReadNode(JavaKind.Long, TimeBuffer,
-                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                            graph.addAfterFixed(endTime, readCurrentValue);
+        //                 try (DebugCloseable s = returnNode.asFixedNode().withNodeSourcePosition()) {
 
-                            // add the store time with the new time
-                            AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
+        //                     // add the end time call
+        //                     ClockTimeNode endTime = graph.add(new ClockTimeNode());
+        //                     graph.addBeforeFixed(returnNode, endTime);
 
-                            // write this value back
-                            JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                                    TimeBuffer,
-                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                                    false));
-                            graph.addAfterFixed(readCurrentValue, memoryWrite);
+        //                     SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
-                            // activation writing
-                            // read the current value store in the array index
-                            JavaReadNode readCurrentValueinActivationCountBuffer = graph
-                                    .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
-                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                            graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
+        //                     // read the current value store in the array index
+        //                     JavaReadNode readCurrentValue = graph
+        //                             .add(new JavaReadNode(JavaKind.Long, TimeBuffer,
+        //                                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //                     graph.addAfterFixed(endTime, readCurrentValue);
 
-                            ValueNode one = graph.addWithoutUnique(
-                                    new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                            // add the store time with the new time
-                            AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+        //                     // add the store time with the new time
+        //                     AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
-                            // write this value back
-                            JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
-                                    ActivationCountBuffer,
-                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
-                                    false));
-                            graph.addAfterFixed(readCurrentValueinActivationCountBuffer,
-                                    memoryWriteActivationCountBuffer);
+        //                     // write this value back
+        //                     JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                             TimeBuffer,
+        //                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+        //                             false));
+        //                     graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                        }
+        //                     // activation writing
+        //                     // read the current value store in the array index
+        //                     JavaReadNode readCurrentValueinActivationCountBuffer = graph
+        //                             .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
+        //                                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //                     graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
 
-                    }
+        //                     ValueNode one = graph.addWithoutUnique(
+        //                             new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+        //                     // add the store time with the new time
+        //                     AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
 
-                    // for each UnwindNode node
-                    for (UnwindNode unwindNode : graph.getNodes(UnwindNode.TYPE)) {
+        //                     // write this value back
+        //                     JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                             ActivationCountBuffer,
+        //                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
+        //                             false));
+        //                     graph.addAfterFixed(readCurrentValueinActivationCountBuffer,
+        //                             memoryWriteActivationCountBuffer);
 
-                        try (DebugCloseable s = unwindNode.asFixedNode().withNodeSourcePosition()) {
+        //                 }
 
-                            // add the end time call
-                            ClockTimeNode endTime = graph.add(new ClockTimeNode());
-                            graph.addBeforeFixed(unwindNode, endTime);
+        //             }
 
-                            SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
+        //             // for each UnwindNode node
+        //             for (UnwindNode unwindNode : graph.getNodes(UnwindNode.TYPE)) {
 
-                            // read the current value store in the array index
-                            JavaReadNode readCurrentValue = graph
-                                    .add(new JavaReadNode(JavaKind.Long, TimeBuffer,
-                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                            graph.addAfterFixed(endTime, readCurrentValue);
+        //                 try (DebugCloseable s = unwindNode.asFixedNode().withNodeSourcePosition()) {
 
-                            // add the store time with the new time
-                            AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
+        //                     // add the end time call
+        //                     ClockTimeNode endTime = graph.add(new ClockTimeNode());
+        //                     graph.addBeforeFixed(unwindNode, endTime);
 
-                            // write this value back
-                            JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                                    TimeBuffer,
-                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                                    false));
-                            graph.addAfterFixed(readCurrentValue, memoryWrite);
+        //                     SubNode Time = graph.addWithoutUnique(new SubNode(endTime, startTime));
 
-                            // activation writing
-                            // read the current value store in the array index
-                            JavaReadNode readCurrentValueinActivationCountBuffer = graph
-                                    .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
-                                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                            graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
+        //                     // read the current value store in the array index
+        //                     JavaReadNode readCurrentValue = graph
+        //                             .add(new JavaReadNode(JavaKind.Long, TimeBuffer,
+        //                                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //                     graph.addAfterFixed(endTime, readCurrentValue);
 
-                            ValueNode one = graph.addWithoutUnique(
-                                    new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                            // add the store time with the new time
-                            AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+        //                     // add the store time with the new time
+        //                     AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, Time));
 
-                            // write this value back
-                            JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
-                                    ActivationCountBuffer,
-                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
-                                    false));
-                            graph.addAfterFixed(readCurrentValueinActivationCountBuffer,
-                                    memoryWriteActivationCountBuffer);
+        //                     // write this value back
+        //                     JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                             TimeBuffer,
+        //                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+        //                             false));
+        //                     graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                        }
+        //                     // activation writing
+        //                     // read the current value store in the array index
+        //                     JavaReadNode readCurrentValueinActivationCountBuffer = graph
+        //                             .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
+        //                                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //                     graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
 
-                    }
+        //                     ValueNode one = graph.addWithoutUnique(
+        //                             new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+        //                     // add the store time with the new time
+        //                     AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
 
-                } else {
+        //                     // write this value back
+        //                     JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                             ActivationCountBuffer,
+        //                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
+        //                             false));
+        //                     graph.addAfterFixed(readCurrentValueinActivationCountBuffer,
+        //                             memoryWriteActivationCountBuffer);
 
-                    // the grapgh is too expensive to fully instrument collecting time
-                    // so instead we will get amout of cycles everytime it actvates
+        //                 }
 
-                    // read the current value store in the array index
-                    JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, CyclesBuffer,
-                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                    graph.addAfterFixed(graph.start(), readCurrentValue);
+        //             }
 
-                    ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(
-                            JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
+        //         } else {
 
-                    // add the estimatedCost curent value in the array
-                    AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
+        //             // the grapgh is too expensive to fully instrument collecting time
+        //             // so instead we will get amout of cycles everytime it actvates
 
-                    // write this value back
-                    JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
-                            CyclesBuffer,
-                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
-                            false));
-                    graph.addAfterFixed(readCurrentValue, memoryWrite);
+        //             // read the current value store in the array index
+        //             JavaReadNode readCurrentValue = graph.add(new JavaReadNode(JavaKind.Long, CyclesBuffer,
+        //                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //             graph.addAfterFixed(graph.start(), readCurrentValue);
 
-                    // activation writing
-                    // read the current value store in the array index
-                    JavaReadNode readCurrentValueinActivationCountBuffer = graph
-                            .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
-                                    NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
-                    graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
+        //             ValueNode estimatedCost = graph.addWithoutUnique(new ConstantNode(
+        //                     JavaConstant.forInt((int) Math.round(graphCycleCost)), StampFactory.forKind(JavaKind.Int)));
 
-                    ValueNode one = graph.addWithoutUnique(
-                            new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
-                    // add the store time with the new time
-                    AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+        //             // add the estimatedCost curent value in the array
+        //             AddNode aggregate = graph.addWithoutUnique(new AddNode(readCurrentValue, estimatedCost));
 
-                    // write this value back
-                    JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
-                            ActivationCountBuffer,
-                            NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
-                            false));
-                    graph.addAfterFixed(readCurrentValueinActivationCountBuffer, memoryWriteActivationCountBuffer);
+        //             // write this value back
+        //             JavaWriteNode memoryWrite = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                     CyclesBuffer,
+        //                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), aggregate, BarrierType.ARRAY,
+        //                     false));
+        //             graph.addAfterFixed(readCurrentValue, memoryWrite);
 
-                }
-            } else {
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.print("ERROR: Custom Instruments Failure");
-            System.out.print("---------------------------------------------------------------------------");
-            System.out.print("---------------------------------------------------------------------------");
-            System.out.print("---------------------------------------------------------------------------");
-        }
-        HashMap<String, Double> nodeRatioMap = new HashMap<>();
-        nodeRatioMap.put("Null", 0D); // fill null
-        Map<Node, Double> GraphCyclesMap = NodeCostUtil.computeGraphCyclesMap(graph, true);
-        for (Node node : GraphCyclesMap.keySet()) {
-            NodeSourcePosition nsp = node.getNodeSourcePosition();
-            if (nsp == null) {
-                continue;
-            } else {
-                if (nsp.getMethod().isNative()
-                        || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
-                    continue;
-                }
-                String key = nsp.getMethod().getDeclaringClass().getName() + "." + nsp.getMethod().getName();
-                if (nodeRatioMap.containsKey(key)) {
-                    nodeRatioMap.put(key, nodeRatioMap.get(key) + GraphCyclesMap.get(node));
-                } else {
-                    nodeRatioMap.put(key, Math.max(1, GraphCyclesMap.get(node)));
-                }
-            }
-        }
+        //             // activation writing
+        //             // read the current value store in the array index
+        //             JavaReadNode readCurrentValueinActivationCountBuffer = graph
+        //                     .add(new JavaReadNode(JavaKind.Long, ActivationCountBuffer,
+        //                             NamedLocationIdentity.getArrayLocation(JavaKind.Long), null, null, false));
+        //             graph.addAfterFixed(memoryWrite, readCurrentValueinActivationCountBuffer);
 
-        List<CompUnitInfo> methodInfos = new ArrayList<>();
-        for (String method : nodeRatioMap.keySet()) {
-            methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
-        }
+        //             ValueNode one = graph.addWithoutUnique(
+        //                     new ConstantNode(JavaConstant.forInt(1), StampFactory.forKind(JavaKind.Int)));
+        //             // add the store time with the new time
+        //             AddNode add1 = graph.addWithoutUnique(new AddNode(readCurrentValue, one));
+
+        //             // write this value back
+        //             JavaWriteNode memoryWriteActivationCountBuffer = graph.add(new JavaWriteNode(JavaKind.Long,
+        //                     ActivationCountBuffer,
+        //                     NamedLocationIdentity.getArrayLocation(JavaKind.Long), add1, BarrierType.ARRAY,
+        //                     false));
+        //             graph.addAfterFixed(readCurrentValueinActivationCountBuffer, memoryWriteActivationCountBuffer);
+
+        //         }
+        //     } else {
+        //     }
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        //     System.out.print("ERROR: Custom Instruments Failure");
+        //     System.out.print("---------------------------------------------------------------------------");
+        //     System.out.print("---------------------------------------------------------------------------");
+        //     System.out.print("---------------------------------------------------------------------------");
+        // }
+        // HashMap<String, Double> nodeRatioMap = new HashMap<>();
+        // nodeRatioMap.put("Null", 0D); // fill null
+        // Map<Node, Double> GraphCyclesMap = NodeCostUtil.computeGraphCyclesMap(graph, true);
+        // for (Node node : GraphCyclesMap.keySet()) {
+        //     NodeSourcePosition nsp = node.getNodeSourcePosition();
+        //     if (nsp == null) {
+        //         continue;
+        //     } else {
+        //         if (nsp.getMethod().isNative()
+        //                 || nsp.getMethod().getDeclaringClass().getName().contains("Ljdk/graal/compiler/")) {
+        //             continue;
+        //         }
+        //         String key = nsp.getMethod().getDeclaringClass().getName() + "." + nsp.getMethod().getName();
+        //         if (nodeRatioMap.containsKey(key)) {
+        //             nodeRatioMap.put(key, nodeRatioMap.get(key) + GraphCyclesMap.get(node));
+        //         } else {
+        //             nodeRatioMap.put(key, Math.max(1, GraphCyclesMap.get(node)));
+        //         }
+        //     }
+        // }
+
+        // List<CompUnitInfo> methodInfos = new ArrayList<>();
+        // for (String method : nodeRatioMap.keySet()) {
+        //     methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
+        // }
 
         // BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]),
         //         methodInfos);
-    }
+    
 
 }

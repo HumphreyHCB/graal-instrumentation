@@ -69,9 +69,9 @@ public class HighTier extends BaseTier<HighTierContext> {
     public HighTier(OptionValues options) {
         CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
-        if (GraalOptions.EnableProfiler.getValue(options)) {
-            appendPhase(new BuboInstrumentationHighTierPhase());
-        }
+        //if (GraalOptions.EnableProfiler.getValue(options)) {
+        //    //appendPhase(new BuboInstrumentationHighTierPhase());
+        //}
 
         if (Options.Inline.getValue(options)) {
             appendPhase(new InliningPhase(new GreedyInliningPolicy(null), canonicalizer));
