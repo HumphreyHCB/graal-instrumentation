@@ -28,23 +28,16 @@ import static jdk.graal.compiler.lir.phases.LIRPhase.Options.LIROptimization;
 
 import java.util.List;
 
-import jdk.graal.compiler.asm.amd64.AMD64Assembler.AMD64Op;
-import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
-import jdk.graal.compiler.lir.ConstantValue;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.VirtualStackSlot;
-import jdk.graal.compiler.lir.amd64.AMD64Call;
 import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
-import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboExitLog;
-import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboIncActivationOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
-import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWrite;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
@@ -54,9 +47,6 @@ import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.TargetDescription;
-import jdk.vm.ci.meta.AllocatableValue;
-import jdk.vm.ci.meta.JavaConstant;
-import jdk.vm.ci.meta.Value;
 
 /**
  */

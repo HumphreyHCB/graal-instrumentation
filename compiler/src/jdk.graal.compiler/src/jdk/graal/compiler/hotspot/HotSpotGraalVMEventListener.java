@@ -31,7 +31,6 @@ import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
 import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
-import jdk.graal.compiler.lir.phases.BuboPostLIRPhase;
 import jdk.graal.compiler.serviceprovider.GlobalAtomicLong;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
 import jdk.vm.ci.code.CompiledCode;

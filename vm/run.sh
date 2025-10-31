@@ -6,8 +6,7 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
 
 ./latest_graalvm_home/bin/java \
   -Djdk.graal.TrackNodeSourcePosition=true \
-  -Djdk.graal.EnableProfiler=false \
-  -Djdk.graal.MinGraphSize=120 \
+  -Djdk.graal.EnableProfiler=true \
   -Djdk.graal.BuboLIRPhase=true \
   -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
   -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
