@@ -29,6 +29,7 @@ import jdk.graal.compiler.lir.ControlFlowOptimizer;
 import jdk.graal.compiler.lir.EdgeMoveOptimizer;
 import jdk.graal.compiler.lir.NullCheckOptimizer;
 import jdk.graal.compiler.lir.RedundantMoveElimination;
+import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 import jdk.graal.compiler.lir.profiling.MethodProfilingPhase;
 import jdk.graal.compiler.lir.profiling.MoveProfilingPhase;
 import jdk.graal.compiler.lir.phases.PostAllocationOptimizationPhase.PostAllocationOptimizationContext;
@@ -82,6 +83,9 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         }
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
+        }
+        if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+            appendPhase(new BuboVerifyPostAllocPhase() );
         }
     }
 }
