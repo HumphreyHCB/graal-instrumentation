@@ -338,13 +338,13 @@ public class BuboInstrumentationLowTierPhase extends BasePhase<LowTierContext> {
             }
         }
 
-        List<CompUnitInfo> methodInfos = new ArrayList<>();
-        for (String method : nodeRatioMap.keySet()) {
-            methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
-        }
+        // List<CompUnitInfo> methodInfos = new ArrayList<>();
+        // for (String method : nodeRatioMap.keySet()) {
+        //     methodInfos.add(new CompUnitInfo(method, nodeRatioMap.get(method)));
+        // }
 
-        BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]),
-                methodInfos);
+        // BuboCompUnitCache.add(Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]),
+        //         methodInfos);
     }
     
 

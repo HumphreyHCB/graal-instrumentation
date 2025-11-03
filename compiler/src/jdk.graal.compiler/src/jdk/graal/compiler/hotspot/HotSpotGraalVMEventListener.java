@@ -55,9 +55,9 @@ public class HotSpotGraalVMEventListener implements HotSpotVMEventListener {
 
     @Override
     public void notifyShutdown() {
-        //if (GraalOptions.EnableProfiler.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
-        //    BuboPrinter.printHotMethodsTop10();
-        //}
+        if (GraalOptions.EnableProfiler.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
+            BuboPrinter.printHotMethodsTop10();
+        }
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(runtime.getOptions()) && Thread.currentThread().getName().contains("DestroyJavaVM") && shutdownPrinted.compareAndSet(0L, 1L)) {
             BuboPrinter.BuboLIRPrint();
         }
