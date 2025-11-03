@@ -28,6 +28,7 @@ import static jdk.graal.compiler.phases.common.DeadCodeEliminationPhase.Optional
 
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.graph.Graph;
+import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
@@ -37,6 +38,7 @@ import jdk.graal.compiler.phases.PlaceholderPhase;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierDebugPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierPhase;
+import jdk.graal.compiler.phases.common.BuboInstrumentationGraphMarkersLowTierPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
@@ -92,6 +94,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         if (GraalOptions.EnableProfiler.getValue(options)) {
             appendPhase(new BuboInstrumentationLowTierPhase(options));
             appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
+        }
+
+        if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+            appendPhase(new BuboInstrumentationGraphMarkersLowTierPhase(options));
         }
 
         appendPhase(new FixReadsPhase(true,

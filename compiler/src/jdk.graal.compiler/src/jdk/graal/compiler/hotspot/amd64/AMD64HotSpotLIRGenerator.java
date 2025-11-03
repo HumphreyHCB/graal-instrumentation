@@ -73,6 +73,7 @@ import jdk.graal.compiler.lir.Variable;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.lir.amd64.AMD64AddressValue;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.StrategySwitchOp;
+import jdk.graal.compiler.lir.amd64.AMD64GraphStartOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.MoveFromRegOp;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
@@ -639,6 +640,13 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
     @Override
     public boolean isReservedRegister(Register r) {
         return getProviders().getRegisters().isReservedRegister(r);
+    }
+
+    @Override
+    public Value emitGraphStart() {
+            AMD64GraphStartOp op = new AMD64GraphStartOp(this);
+            append(op);
+            return op.getDef();
     }
 
     public Value emitTSC() {

@@ -684,6 +684,13 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     }
 
     /**
+     * Emits Just Nops, functions as an start point of the grpagh
+     */
+    default Value emitGraphStart() {
+        throw new GraalError("tryed to emit Graph start, but the arch is no supported, this is a Bubo Related Node", target().arch);
+    }
+
+    /**
      * Emits Just RDTSC, without the PID
      */
     default Value emitTSC() {

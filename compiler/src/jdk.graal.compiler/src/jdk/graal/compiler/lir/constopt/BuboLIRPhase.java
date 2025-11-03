@@ -12,7 +12,7 @@ import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.VirtualStackSlot;
-import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
+import jdk.graal.compiler.lir.amd64.AMD64GraphStartOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
@@ -21,6 +21,7 @@ import jdk.graal.compiler.lir.phases.PreAllocationOptimizationPhase;
 import jdk.graal.compiler.options.NestedBooleanOptionKey;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
+import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.TargetDescription;
 
@@ -34,7 +35,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
     public static class Options {
         @Option(help = "Enable Bubo Lir Phase.", type = OptionType.Debug)
         public static final NestedBooleanOptionKey BuboLIRPhase =
-                new NestedBooleanOptionKey(LIROptimization, true);
+                new NestedBooleanOptionKey(LIROptimization, false);
     }
 
 
@@ -59,8 +60,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         final long baseAddress = BuboNativeBuffers.activationPtr();
         final int compilationId = lirGenRes.getCompilationId();
 
-        // 1) Find the first AMD64ReadTimestampCounter marker.
-        MarkerPos marker = findFirstRdtscMarker(lir);
+        // 1) Find the first AMD64GraphStartOp marker.
+        MarkerPos marker = findGraphStartMarker(lir);
 
         // If no marker exists, nothing to do for this method.
         if (!marker.found()) {
@@ -97,14 +98,14 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
     /**
      * Scans blocks in order and returns the first (block, insn) at which an
-     * {@link AMD64ReadTimestampCounter} appears.
+     * {@link AMD64GraphStartOp} appears.
      */
-    private static MarkerPos findFirstRdtscMarker(LIR lir) {
+    private static MarkerPos findGraphStartMarker(LIR lir) {
         BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
         for (int b = 0; b < blocks.length; b++) {
             List<LIRInstruction> insns = lir.getLIRforBlock(blocks[b]);
             for (int i = 0; i < insns.size(); i++) {
-                if (insns.get(i) instanceof AMD64ReadTimestampCounter) {
+                if (insns.get(i) instanceof AMD64GraphStartOp) {
                     return new MarkerPos(b, i);
                 }
             }
