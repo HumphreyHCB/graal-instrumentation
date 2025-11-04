@@ -529,11 +529,12 @@ public class BuboPrinter {
 
 
     public static void BuboLIRPrint() {
+        BuboNativeMethodCache.ensureInitialized();
 
         for (int i = 0; i < BuboNativeBuffers.capacity(); i++) {
             long t = BuboNativeBuffers.readActivationAt(i);
             if (t != 0l) {
-                System.out.println("Index : " + i + " Activation Count : " + t);
+                System.out.println("Index : " + BuboNativeMethodCache.getBuffer().get(i) + " Activation Count : " + t);
             }
         }
 

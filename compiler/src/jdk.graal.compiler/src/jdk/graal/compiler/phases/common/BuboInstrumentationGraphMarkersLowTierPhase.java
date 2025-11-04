@@ -62,9 +62,12 @@ import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
 import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 
+import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 /**
  * Adds Instrumentation to the start and end of all method compilations.
  */
@@ -92,6 +95,7 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, LowTierContext context) {
+            BuboNativeMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " + graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
 
             StartofGraphNode start = graph.add(new StartofGraphNode());
             graph.addAfterFixed(graph.start(), start);
