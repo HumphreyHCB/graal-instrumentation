@@ -1,3 +1,3 @@
 #! /bin/bash
 
-mx --java-home /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01 build
+mx --java-home /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06 build
