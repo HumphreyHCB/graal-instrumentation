@@ -4671,6 +4671,11 @@ public class AMD64Assembler extends AMD64BaseAssembler implements MemoryReadInte
         emitByte(0xEE);
     }
 
+    public final void rdpmc() {
+        emitByte(0x0F);
+        emitByte(0x33);
+    }
+
     public final void rdtsc() {
         emitByte(0x0F);
         emitByte(0x31);

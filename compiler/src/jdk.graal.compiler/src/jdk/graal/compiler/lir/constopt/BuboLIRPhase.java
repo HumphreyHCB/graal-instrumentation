@@ -6,6 +6,7 @@ import java.util.List;
 
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.lir.LIR;
@@ -13,7 +14,10 @@ import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.lir.amd64.AMD64GraphStartOp;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboIncActivationOp;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDPMCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDPMC;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
@@ -31,6 +35,7 @@ import jdk.vm.ci.code.TargetDescription;
  *  (2) An inline end+delta+accumulate op before every AMD64HotSpotReturnOp.
  */
 public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
+
 
     public static class Options {
         @Option(help = "Enable Bubo Lir Phase.", type = OptionType.Debug)
@@ -53,6 +58,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 final LIR lir = lirGenRes.getLIR();
         final LIRGeneratorTool lirGen = context.lirGen;
 
+        //markAndCountMethodBounds(lir, lirGen, lirGenRes);
+
         // One start slot per compilation unit.
         final VirtualStackSlot tscStartSlot =
                 lirGenRes.getFrameMapBuilder().allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
@@ -62,6 +69,10 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         // 1) Find the first AMD64GraphStartOp marker.
         MarkerPos marker = findGraphStartMarker(lir);
+
+        jdk.graal.compiler.hotspot.meta.Bubo.BuboPmcSetup.ensureInitialized();
+        //BuboPmcBridge.hostInitFromAgentProperty();
+        //System.out.println("Found Index : " + BuboNativeBuffers.pmcIndexPtr());
 
         // If no marker exists, nothing to do for this method.
         if (!marker.found()) {
@@ -74,6 +85,64 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         // 3) Insert an inline end+delta+accumulate before every return.
         instrumentAllReturns(lir, context.lirGen, tscStartSlot, baseAddress, compilationId);
     }
+
+
+private static void markAndCountMethodBounds(LIR lir,
+                                             LIRGeneratorTool lirGen,
+                                             LIRGenerationResult lirGenRes) {
+
+    BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
+
+    for (BasicBlock<?> block : blocks) {
+        final List<LIRInstruction> insns = lir.getLIRforBlock(block);
+        if (insns.isEmpty()) {
+            continue;
+        }
+
+        LIRInsertionBuffer buf = new LIRInsertionBuffer();
+        buf.init(insns);
+
+        NodeSourcePosition prevPos = insns.get(0).getPosition();
+
+        for (int i = 1; i < insns.size(); i++) {
+            LIRInstruction op = insns.get(i);
+            NodeSourcePosition curPos = op.getPosition();
+
+            boolean changed = false;
+
+            if (prevPos == null && curPos != null) {
+                // we were in "synthetic" land, now we hit a real source
+                changed = true;
+            } else if (prevPos != null && curPos != null) {
+                // both real, compare them
+                changed = !prevPos.equals(curPos);
+            } else if (prevPos != null && curPos == null) {
+                // real → null: treat as same, do NOT mark
+                changed = false;
+            } else {
+                // null → null: no change
+                changed = false;
+            }
+
+            if (changed) {
+                AMD64BuboIncActivationOp incOp =
+                        new AMD64BuboIncActivationOp(lirGen, lirGenRes.getCompilationId());
+                buf.append(i, incOp);
+                prevPos = curPos;
+            } else {
+                // still update prevPos when curPos is non-null,
+                // so future comparisons use the newest real source
+                if (curPos != null) {
+                    prevPos = curPos;
+                }
+            }
+        }
+
+        buf.finish();
+    }
+}
+
+
 
 
 
@@ -126,7 +195,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
-        buf.append(marker.insnIndex, new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot));
+        buf.append(marker.insnIndex, new AMD64BuboRDPMCToSlot(lirGen, tscStartSlot));
         buf.finish();
     }
 
@@ -151,9 +220,9 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
             for (int i = 0; i < insns.size(); i++) {
                 if (insns.get(i) instanceof AMD64HotSpotReturnOp) {
-                    // Fresh instance per return
-                    AMD64BuboWriteDeltaRDTSC endDelta =
-                            new AMD64BuboWriteDeltaRDTSC(
+                    //Fresh instance per return
+                    AMD64BuboWriteDeltaRDPMC endDelta =
+                            new AMD64BuboWriteDeltaRDPMC(
                                     lirGen,
                                     tscStartSlot,
                                     baseAddress,
