@@ -70,7 +70,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         // 1) Find the first AMD64GraphStartOp marker.
         MarkerPos marker = findGraphStartMarker(lir);
 
-        jdk.graal.compiler.hotspot.meta.Bubo.BuboPmcSetup.ensureInitialized();
+        //jdk.graal.compiler.hotspot.meta.Bubo.BuboPmcSetup.ensureInitialized();
         //BuboPmcBridge.hostInitFromAgentProperty();
         //System.out.println("Found Index : " + BuboNativeBuffers.pmcIndexPtr());
 
@@ -195,7 +195,7 @@ private static void markAndCountMethodBounds(LIR lir,
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
-        buf.append(marker.insnIndex, new AMD64BuboRDPMCToSlot(lirGen, tscStartSlot));
+        buf.append(marker.insnIndex, new AMD64BuboRDTSCToSlot(lirGen, tscStartSlot));
         buf.finish();
     }
 
@@ -221,16 +221,16 @@ private static void markAndCountMethodBounds(LIR lir,
             for (int i = 0; i < insns.size(); i++) {
                 if (insns.get(i) instanceof AMD64HotSpotReturnOp) {
                     //Fresh instance per return
-                    AMD64BuboWriteDeltaRDPMC endDelta =
-                            new AMD64BuboWriteDeltaRDPMC(
+                    AMD64BuboWriteDeltaRDTSC endDelta =
+                            new AMD64BuboWriteDeltaRDTSC(
                                     lirGen,
                                     tscStartSlot,
                                     baseAddress,
                                     compilationId,
                                     /* atomic = */ true);
 
-                    // Insert before the return.
-                    buf.append(i, endDelta);
+                   // Insert before the return.
+                   buf.append(i, endDelta);
                 }
             }
 
