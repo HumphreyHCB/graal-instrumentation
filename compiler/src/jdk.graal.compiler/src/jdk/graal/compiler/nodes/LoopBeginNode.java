@@ -491,8 +491,17 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
         peelings++;
     }
 
+    private int loopId = -1;
+
+    public void setLoopId(int loopId) {
+        this.loopId = loopId;
+    }
+
     @Override
     public void generate(NodeLIRBuilderTool gen) {
+        if (loopId != -1) {
+            gen.getLIRGeneratorTool().emitLoopStart(loopId, getNodeSourcePosition());
+        }
         if (mayEmitThreadedCode()) {
             gen.emitStartRecordingThreadedSwitch();
         }

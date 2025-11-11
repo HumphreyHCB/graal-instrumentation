@@ -46,6 +46,7 @@ import jdk.graal.compiler.core.common.spi.LIRKindTool;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.GraalHotSpotVMConfig;
 import jdk.graal.compiler.hotspot.HotSpotBackend;
 import jdk.graal.compiler.hotspot.HotSpotDebugInfoBuilder;
@@ -74,6 +75,8 @@ import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.lir.amd64.AMD64AddressValue;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.StrategySwitchOp;
 import jdk.graal.compiler.lir.amd64.AMD64GraphStartOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.MoveFromRegOp;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
@@ -645,6 +648,20 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
     @Override
     public Value emitGraphStart() {
             AMD64GraphStartOp op = new AMD64GraphStartOp(this);
+            append(op);
+            return op.getDef();
+    }
+
+    @Override
+    public Value emitLoopStart(int loopId, NodeSourcePosition position) {
+            AMD64LoopStartOp op = new AMD64LoopStartOp(this, loopId, position);
+            append(op);
+            return op.getDef();
+    }
+
+    @Override
+    public Value emitLoopEnd(int loopId, NodeSourcePosition position) {
+            AMD64LoopEndOp op = new AMD64LoopEndOp(this, loopId, position);
             append(op);
             return op.getDef();
     }

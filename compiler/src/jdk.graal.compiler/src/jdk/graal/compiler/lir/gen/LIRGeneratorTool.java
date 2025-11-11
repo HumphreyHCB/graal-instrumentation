@@ -37,6 +37,7 @@ import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
 import jdk.graal.compiler.core.common.spi.ForeignCallLinkage;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.lir.LIRFrameState;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.LIRValueUtil;
@@ -689,6 +690,17 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     default Value emitGraphStart() {
         throw new GraalError("tryed to emit Graph start, but the arch is no supported, this is a Bubo Related Node", target().arch);
     }
+
+
+    default Value emitLoopStart(int id,NodeSourcePosition position) {
+        throw new GraalError("tryed to emit LoopEnd, but the arch is no supported, this is a Bubo Related Node", target().arch);
+    }
+
+
+    default Value emitLoopEnd(int id, NodeSourcePosition position) {
+        throw new GraalError("tryed to emit LoopEnd, but the arch is no supported, this is a Bubo Related Node", target().arch);
+    }
+
 
     /**
      * Emits Just RDTSC, without the PID
