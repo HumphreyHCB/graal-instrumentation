@@ -4,6 +4,7 @@ import jdk.graal.compiler.asm.amd64.AMD64Address;
 import jdk.graal.compiler.asm.amd64.AMD64Assembler.ConditionFlag;
 import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
 import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.Opcode;
 import jdk.graal.compiler.lir.VirtualStackSlot;
@@ -36,23 +37,26 @@ public final class AMD64BuboWriteDeltaRDTSC extends AMD64LIRInstruction {
 
     private final JavaConstant addrConst;
     private final boolean atomic;
+    private final int loopId;
 
     public AMD64BuboWriteDeltaRDTSC(
             LIRGeneratorTool lirGen,
             VirtualStackSlot startSlot,
             long baseAddress,
-            int compilationId,
+            int compilationId,  int loopId,
             boolean atomic) {
         super(TYPE);
         this.startSlot = startSlot;
         this.atomic = atomic;
+        this.loopId = loopId;
 
-        long addr = baseAddress + ((long) compilationId) * 8L;
+        long addr = BuboNativeBuffers.cyclesLoopAddr(compilationId, loopId);
+        //long addr = baseAddress + ((long) compilationId) * 8L;
         this.addrConst = JavaConstant.forLong(addr);
 
         // allocate temps
-        this.raxTmp  = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.rdxTmp  = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
+        this.raxTmp = AMD64.rax.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.rdxTmp = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.QWORD));
         this.end64   = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
         this.start64 = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
         this.delta   = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
@@ -65,7 +69,7 @@ public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
     masm.movq(asRegister(raxTmp), AMD64.rax);
     masm.movq(asRegister(rdxTmp), AMD64.rdx);
 
-    // load start from stack
+     // load start from stack
     AMD64Address sAddr = (AMD64Address) crb.asAddress(startSlot);
     masm.movq(asRegister(start64), sAddr);
 

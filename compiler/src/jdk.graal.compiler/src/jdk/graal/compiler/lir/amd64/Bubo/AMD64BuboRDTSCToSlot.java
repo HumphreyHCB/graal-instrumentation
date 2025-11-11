@@ -23,7 +23,7 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
 
     // Use fixed architectural regs for reading the post-RDTSC values.
 
-    // Model architectural clobbers as fixed TEMP regs, 64-bit width.
+    // Model architectural clobbers as fixed TEMP regs, 64-bit width
     @Temp({OperandFlag.REG}) private AllocatableValue raxTmp;
     @Temp({OperandFlag.REG}) private AllocatableValue rdxTmp;
 
@@ -32,8 +32,8 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
     public AMD64BuboRDTSCToSlot(LIRGeneratorTool lirGen, VirtualStackSlot dstSlot) {
         super(TYPE);
         this.dstSlot = dstSlot;
-        this.raxTmp = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.rdxTmp = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
+        this.raxTmp = AMD64.rax.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.rdxTmp = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.QWORD));
     }
 
     @Override
