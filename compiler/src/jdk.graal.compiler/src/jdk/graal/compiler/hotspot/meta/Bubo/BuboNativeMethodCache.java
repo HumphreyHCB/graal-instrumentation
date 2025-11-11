@@ -33,7 +33,6 @@ public final class BuboNativeMethodCache {
 
     private static volatile Unsafe U;
 
-    // ---- Public API ----
 
     /** Ensure the native buffer exists (exactly once across all isolates). */
     public static void ensureInitialized() {
