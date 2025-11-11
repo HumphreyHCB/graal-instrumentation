@@ -528,17 +528,38 @@ public class BuboPrinter {
     }
 
 
-    public static void BuboLIRPrint() {
-        BuboNativeMethodCache.ensureInitialized();
+        public static void BuboLIRPrint() {
+            BuboNativeMethodCache.ensureInitialized();
+            BuboNativeBuffers.ensureInitialized();
 
-        for (int i = 0; i < BuboNativeBuffers.capacity(); i++) {
-            long t = BuboNativeBuffers.readActivationAt(i);
-            if (t != 0l) {
-                System.out.println("Index : " + BuboNativeMethodCache.getBuffer().get(i) + " Activation Count : " + t);
+            // compId -> methodName
+            var methodMap = BuboNativeMethodCache.getBuffer();
+
+            final int maxLoops = BuboNativeBuffers.MAX_LOOPS_PER_COMP;
+            final int capacity = BuboNativeBuffers.capacity();
+
+            // how many compilation "rows" can we store?
+            final int maxComps = capacity / maxLoops;
+
+            for (int compId = 0; compId < maxComps; compId++) {
+                String name = methodMap.get(compId);
+                boolean printedHeader = false;
+
+                for (int loopId = 0; loopId < maxLoops; loopId++) {
+                    // flat index = compId * maxLoops + loopId
+                    int flat = compId * maxLoops + loopId;
+                    long val = BuboNativeBuffers.readCyclesAt(flat);
+                    if (val != 0L) {
+                        if (!printedHeader) {
+                            System.out.println("Comp " + compId + " (" + (name != null ? name : "<unknown>") + ") loops:");
+                            printedHeader = true;
+                        }
+                        System.out.println("  loop " + loopId + " = " + val);
+                    }
+                }
             }
         }
 
-    }
 
     public static void addToFile(String line, String Filename) {
         String filename = Filename;
