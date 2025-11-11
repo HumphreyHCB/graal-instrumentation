@@ -24,16 +24,13 @@
  */
 package jdk.graal.compiler.phases.common;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.graph.Node;
-import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.nodes.ClockTimeNode;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.GraphState;
@@ -46,25 +43,19 @@ import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.extended.JavaWriteNode;
 import jdk.graal.compiler.nodes.java.ReachabilityFenceNode;
 import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
-import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.nodes.ReturnNode;
-import jdk.graal.compiler.nodes.StartofGraphNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.UnwindNode;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.contract.NodeCostUtil;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
-import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.graph.NodeSourcePosition;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.CompUnitInfo;
-import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 
 /**
  * Adds Instrumentation to the start and end of all method compilations.
