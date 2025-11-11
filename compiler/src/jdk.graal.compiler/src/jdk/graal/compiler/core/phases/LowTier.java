@@ -96,10 +96,6 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new BuboInstrumentationLoweringPhase(canonicalizerWithGVN));
         }
 
-        if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
-            appendPhase(new BuboInstrumentationGraphMarkersLowTierPhase(options));
-        }
-
         appendPhase(new FixReadsPhase(true,
                         new SchedulePhase(GraalOptions.StressTestEarlyReads.getValue(options) ? SchedulingStrategy.EARLIEST : SchedulingStrategy.LATEST_OUT_OF_LOOPS_IMPLICIT_NULL_CHECKS)));
 
@@ -127,7 +123,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         if (GraalOptions.BuboDebugMode.getValue(options)) {
             appendPhase(new BuboInstrumentationLowTierDebugPhase());
         }
-
+        
+        if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+            appendPhase(new BuboInstrumentationGraphMarkersLowTierPhase(options));
+        }
         appendPhase(new SchedulePhase.FinalSchedulePhase());
 
         /*
