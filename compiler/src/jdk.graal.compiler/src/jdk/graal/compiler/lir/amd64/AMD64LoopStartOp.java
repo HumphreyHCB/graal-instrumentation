@@ -45,8 +45,8 @@ public final class AMD64LoopStartOp extends AMD64LIRInstruction {
     @Def({ OperandFlag.REG })
     private AllocatableValue def; // virtual
 
-    public int loopId;
-    public NodeSourcePosition position;
+    public final int loopId;
+    public final NodeSourcePosition position;
 
     public AMD64LoopStartOp(LIRGeneratorTool gen, int loopId, NodeSourcePosition position) {
         super(TYPE);
