@@ -11,6 +11,7 @@ import java.util.Map;
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopSourceCache;
@@ -20,6 +21,7 @@ import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
 import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboIncActivationOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
@@ -73,9 +75,6 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         final long baseAddress = BuboNativeBuffers.activationPtr();
         final int compilationId = lirGenRes.getCompilationId();
 
-        // collect ALL start/end markers, grouped by loopId
-        // Map<Integer, List<MarkerPos>> startsById = new HashMap<>();
-        // Map<Integer, List<MarkerPos>> endsById = new HashMap<>();
         List<MarkerPos> markers = new ArrayList<>();
         BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
 
@@ -111,7 +110,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         // insert starts only
         for (MarkerPos marker : markers) {
             if (marker.LoopStart) {
-                insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId), marker);
+                insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId),compilationId, marker);
             }
         }
 
@@ -168,17 +167,36 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
     private static void insertStartBeforeMarker(LIR lir,
             LIRGeneratorTool lirGen,
-            VirtualStackSlot slot,
+            VirtualStackSlot slot, int compilationId,
             MarkerPos marker) {
 
         BasicBlock<?> block = lir.getControlFlowGraph().getBlocks()[marker.blockIndex];
-        List<LIRInstruction> insns = lir.getLIRforBlock(block);
+       List<LIRInstruction> insns = lir.getLIRforBlock(block);
+    //      System.out.println("Start of Lir Bloc + mark block index "+ marker.blockIndex);           
+    //     for (LIRInstruction lirInstruction : insns) {
+    //         System.out.println(lirInstruction);
+    //     }
+    //    System.out.println("pred count : " + block.getPredecessorCount());
+       //block.getpr
+
+    //    for (int i = 0; i < block.getPredecessorCount(); i++) {
+    //     BasicBlock<?> predblock = block.getPredecessorAt(i);
+    //     List<LIRInstruction> insnss = lir.getLIRforBlock(predblock);
+    //     LIRInsertionBuffer buf = new LIRInsertionBuffer();
+    //     buf.init(insnss);
+    //     buf.append(insnss.size() -1, new AMD64BuboRDTSCToSlot(lirGen, slot));
+    //     buf.append(insnss.size() -1, new AMD64BuboIncActivationOp(lirGen,compilationId));
+    //     buf.finish();
+    //    }
+
+        
 
         loopStartSources.put(marker.loopId, "no source for now");
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
         buf.append(marker.insnIndex, new AMD64BuboRDTSCToSlot(lirGen, slot));
+        buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen,compilationId));
         buf.finish();
     }
 
@@ -204,6 +222,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 true);
 
         buf.append(marker.insnIndex, endDelta);
+        buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen,compilationId + 1000));
 
         String startSrc = loopStartSources.get(marker.loopId);
         String endSrc = "no source for now";

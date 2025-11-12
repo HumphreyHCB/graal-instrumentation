@@ -560,6 +560,15 @@ public class BuboPrinter {
                     }
                 }
             }
+
+            for (int i = 0; i < BuboNativeBuffers.capacity(); i++) {
+                long val = BuboNativeBuffers.readActivationAt(i);
+                if (val != 0L) {
+                    String name = methodMap.get(i);
+                    System.out.println("Start, Comp : " + name + " Act Count : " + val);
+                    System.out.println("End, Comp : " + name + " Act Count : " + BuboNativeBuffers.readActivationAt(i+ 1000));
+                }
+            }
         }
 
 
