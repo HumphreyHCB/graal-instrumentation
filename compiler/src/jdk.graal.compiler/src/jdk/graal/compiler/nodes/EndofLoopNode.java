@@ -23,12 +23,12 @@ public final class EndofLoopNode extends FixedWithNextNode implements LIRLowerab
 
     public static final NodeClass<EndofLoopNode> TYPE = NodeClass.create(EndofLoopNode.class);
     
-    private static int LOOP_ID = -1;
-    private NodeSourcePosition position;
+    public final int LOOP_ID;
+    public final NodeSourcePosition position;
 
     public EndofLoopNode(int loopId, NodeSourcePosition position) {
         super(TYPE, StampFactory.forVoid());
-        LOOP_ID = loopId;
+        this.LOOP_ID = loopId;
         this.position = position;
 
     }

@@ -23,12 +23,12 @@ public final class StartofLoopNode extends FixedWithNextNode implements LIRLower
 
     public static final NodeClass<StartofLoopNode> TYPE = NodeClass.create(StartofLoopNode.class);
     
-    private int LOOP_ID = -1;
-    private NodeSourcePosition position;
+    private final int LOOP_ID;
+    private final NodeSourcePosition position;
 
     public StartofLoopNode(int loopId, NodeSourcePosition position) {
         super(TYPE, StampFactory.forVoid());
-        LOOP_ID = loopId;
+        this.LOOP_ID = loopId;
         this.position = position;
 
     }
