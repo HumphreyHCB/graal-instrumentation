@@ -7,19 +7,14 @@
 
 # mx --java-home /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 igv
 # JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore JAVA_HOME=/usr/lib/jvm/java-11-openjdk-11.0.22.0.7-2.el9.x86_64 mx c1visualizer
-mx --java-home \
- /home/hburchell/Downloads/labsjdk-ce-21.0.2-jvmci-23.1-b33 \
- vm  \
-  -Dgraal.EnableProfiler=false -Dgraal.MinGraphSize=80 -Dgraal.BuboDebugMode=false  \
- -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
-  -Dgraal.CompilationFailureAction=Diagnose \
-  -Dgraal.Dump=:5 -Dgraal.PrintGraph=Network -Dgraal.PrintBackendCFG=true \
-  -XX:+UseJVMCICompiler  \
-  --add-exports \
-  jdk.graal.compiler/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
-  -cp /home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/mxbuild/dists/graal.jar:/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler:benchmarks.jar \
-  -javaagent:/home/hburchell/Repos/graal-dev/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  Harness Towers 300 2500  
+mx --java-home /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06 vm  \
+  -Dgraal.Dump=:2 \
+  -Djdk.graal.TrackNodeSourcePosition=true \
+  -Djdk.graal.EnableProfiler=false \
+  -Djdk.graal.BuboLIRPhase=true  \
+  -Djdk.graal.MethodFilter=Mandelbrot.* \
+  -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
+  Harness Mandelbrot 20 750
 
 #  HelloWorld 
   

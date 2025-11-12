@@ -9,8 +9,11 @@ import java.util.List;
 import java.util.Map;
 
 import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopSourceCache;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
@@ -22,6 +25,7 @@ import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
 import jdk.graal.compiler.lir.phases.PreAllocationOptimizationPhase;
+import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
 import jdk.graal.compiler.options.NestedBooleanOptionKey;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
@@ -32,19 +36,24 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
     public static class Options {
         @Option(help = "Enable Bubo Lir Phase.", type = OptionType.Debug)
-        public static final NestedBooleanOptionKey BuboLIRPhase =
-                new NestedBooleanOptionKey(LIROptimization, false);
+        public static final NestedBooleanOptionKey BuboLIRPhase = new NestedBooleanOptionKey(LIROptimization, false);
     }
 
     private static final class MarkerPos {
         final int blockIndex;
         final int insnIndex;
         final int loopId;
-        MarkerPos(int blockIndex, int insnIndex, int loopId) {
+        final NodeSourcePosition pos;
+        final boolean LoopStart;
+
+        MarkerPos(int blockIndex, int insnIndex, int loopId, NodeSourcePosition pos, boolean LoopStart) {
             this.blockIndex = blockIndex;
             this.insnIndex = insnIndex;
             this.loopId = loopId;
+            this.pos = pos;
+            this.LoopStart = LoopStart;
         }
+
         @Override
         public String toString() {
             return "b=" + blockIndex + ", insn=" + insnIndex;
@@ -53,8 +62,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
     @Override
     protected void run(TargetDescription target,
-                       LIRGenerationResult lirGenRes,
-                       PreAllocationOptimizationContext context) {
+            LIRGenerationResult lirGenRes,
+            PreAllocationOptimizationContext context) {
         if (shouldSkip(lirGenRes)) {
             return;
         }
@@ -64,61 +73,62 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         final long baseAddress = BuboNativeBuffers.activationPtr();
         final int compilationId = lirGenRes.getCompilationId();
 
-        //  collect ALL start/end markers, grouped by loopId
-        Map<Integer, List<MarkerPos>> startsById = new HashMap<>();
-        Map<Integer, List<MarkerPos>> endsById   = new HashMap<>();
+        // collect ALL start/end markers, grouped by loopId
+        // Map<Integer, List<MarkerPos>> startsById = new HashMap<>();
+        // Map<Integer, List<MarkerPos>> endsById = new HashMap<>();
+        List<MarkerPos> markers = new ArrayList<>();
         BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
-        for (int b = 0; b < blocks.length; b++) {
-            List<LIRInstruction> insns = lir.getLIRforBlock(blocks[b]);
-            for (int i = 0; i < insns.size(); i++) {
-                LIRInstruction op = insns.get(i);
+
+        for (int block = 0; block < blocks.length; block++) {
+            List<LIRInstruction> insns = lir.getLIRforBlock(blocks[block]);
+            for (int instruction = 0; instruction < insns.size(); instruction++) {
+                LIRInstruction op = insns.get(instruction);
+
                 if (op instanceof AMD64LoopStartOp) {
-                    int id = ((AMD64LoopStartOp) op).loopId;
-                    startsById.computeIfAbsent(id, k -> new ArrayList<>())
-                              .add(new MarkerPos(b, i, id));
+                    AMD64LoopStartOp StartOp = (AMD64LoopStartOp) op;
+                    markers.add(new MarkerPos(block, instruction, StartOp.loopId, StartOp.position, true));
                 } else if (op instanceof AMD64LoopEndOp) {
-                    int id = ((AMD64LoopEndOp) op).loopId;
-                    endsById.computeIfAbsent(id, k -> new ArrayList<>())
-                            .add(new MarkerPos(b, i, id));
+                    AMD64LoopEndOp EndOp = (AMD64LoopEndOp) op;
+                    markers.add(new MarkerPos(block, instruction, EndOp.loopId, EndOp.position, false));
                 }
             }
         }
 
-
-        // loopIds that have BOTH starts and ends
-        HashSet<Integer> instrumentableIds = new HashSet<>();
-        instrumentableIds.addAll(startsById.keySet());
-        instrumentableIds.retainAll(endsById.keySet());
-
-        //  drop loopIds whose earliest end is before earliest start
-        removeBadOrderIds(instrumentableIds, startsById, endsById, lirGenRes);
-
-        if (instrumentableIds.isEmpty()) {return;}
-
-        // allocate spill for each instrumentable loopId
-        Map<Integer, VirtualStackSlot> loopSlots = new HashMap<>();
-        for (int id : instrumentableIds) {
-            VirtualStackSlot slot = lirGenRes.getFrameMapBuilder()
-                    .allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
-            loopSlots.put(id, slot);
+        if (markers.isEmpty()) {
+            return;
         }
 
-        // insert starts only for instrumentable ids
-        for (int id : instrumentableIds) {
-            for (MarkerPos m : startsById.get(id)) {
-                insertStartBeforeMarker(lir, lirGen, loopSlots.get(id), m);
+        // allocate spill
+        Map<Integer, VirtualStackSlot> loopSlots = new HashMap<>();
+        for (MarkerPos marker : markers) {
+            if (marker.LoopStart && !loopSlots.containsKey(marker.loopId)) {
+                VirtualStackSlot slot = lirGenRes.getFrameMapBuilder()
+                        .allocateSpillSlot(LIRKind.value(AMD64Kind.QWORD));
+                loopSlots.put(marker.loopId, slot);
+            }
+        }
+
+        // insert starts only
+        for (MarkerPos marker : markers) {
+            if (marker.LoopStart) {
+                insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId), marker);
             }
         }
 
         // insert ends only for instrumentable ids
-        instrumentLoopEnds(lir, lirGen, loopSlots, baseAddress, compilationId, instrumentableIds);
+        for (MarkerPos marker : markers) {
+            if (!marker.LoopStart) {
+                instrumentLoopEnds(lir, lirGen, loopSlots.get(marker.loopId), baseAddress, compilationId, marker);
+            }
+        }
+        
     }
 
     private static void removeBadOrderIds(HashSet<Integer> instrumentableIds,
-                                          Map<Integer, List<MarkerPos>> startsById,
-                                          Map<Integer, List<MarkerPos>> endsById,
-                                          LIRGenerationResult lirGenRes) {
-                //  drop loopIds whose earliest end is before earliest start
+            Map<Integer, List<MarkerPos>> startsById,
+            Map<Integer, List<MarkerPos>> endsById,
+            LIRGenerationResult lirGenRes) {
+        // drop loopIds whose earliest end is before earliest start
         HashSet<Integer> badOrderIds = new HashSet<>();
         for (int id : instrumentableIds) {
             List<MarkerPos> sList = startsById.get(id);
@@ -140,8 +150,9 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
             if (minEndBlock < minStartBlock) {
                 // skip this loop entirely
-                System.out.println("[BUBO]   skip loopId=" + id +" comp="+ lirGenRes.getCompilationUnitName() + " because earliest end(b=" + minEndBlock +
-                                   ") < earliest start(b=" + minStartBlock + ")");
+                System.out.println("[BUBO]   skip loopId=" + id + " comp=" + lirGenRes.getCompilationUnitName()
+                        + " because earliest end(b=" + minEndBlock +
+                        ") < earliest start(b=" + minStartBlock + ")");
                 badOrderIds.add(id);
             }
         }
@@ -153,12 +164,17 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         return name.contains("Stub") || name.contains("HotSpotOSRCompilation");
     }
 
+    static Map<Integer, String> loopStartSources = new HashMap<>();
+
     private static void insertStartBeforeMarker(LIR lir,
-                                                LIRGeneratorTool lirGen,
-                                                VirtualStackSlot slot,
-                                                MarkerPos marker) {
+            LIRGeneratorTool lirGen,
+            VirtualStackSlot slot,
+            MarkerPos marker) {
+
         BasicBlock<?> block = lir.getControlFlowGraph().getBlocks()[marker.blockIndex];
         List<LIRInstruction> insns = lir.getLIRforBlock(block);
+
+        loopStartSources.put(marker.loopId, "no source for now");
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
@@ -167,46 +183,36 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
     }
 
     private static void instrumentLoopEnds(LIR lir,
-                                           LIRGeneratorTool lirGen,
-                                           Map<Integer, VirtualStackSlot> loopSlots,
-                                           long baseAddress,
-                                           int compilationId,
-                                           HashSet<Integer> instrumentableIds) {
+            LIRGeneratorTool lirGen,
+            VirtualStackSlot slot,
+            long baseAddress,
+            int compilationId,
+            MarkerPos marker) {
 
-        BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
+        BasicBlock<?> block = lir.getControlFlowGraph().getBlocks()[marker.blockIndex];
+        List<LIRInstruction> insns = lir.getLIRforBlock(block);
 
-        for (BasicBlock<?> block : blocks) {
-            List<LIRInstruction> insns = lir.getLIRforBlock(block);
-            LIRInsertionBuffer buf = new LIRInsertionBuffer();
-            buf.init(insns);
+        LIRInsertionBuffer buf = new LIRInsertionBuffer();
+        buf.init(insns);
 
-            for (int i = 0; i < insns.size(); i++) {
-                LIRInstruction op = insns.get(i);
-                if (op instanceof AMD64LoopEndOp) {
-                    int loopId = ((AMD64LoopEndOp) op).loopId;
-                    if (!instrumentableIds.contains(loopId)) {
-                        // no start
-                        continue;
-                    }
-                    VirtualStackSlot slot = loopSlots.get(loopId);
-                    if (slot == null) {
-                        continue;
-                    }
+        AMD64BuboWriteDeltaRDTSC endDelta = new AMD64BuboWriteDeltaRDTSC(
+                lirGen,
+                slot,
+                baseAddress,
+                compilationId,
+                marker.loopId,
+                true);
 
-                    AMD64BuboWriteDeltaRDTSC endDelta =
-                            new AMD64BuboWriteDeltaRDTSC(
-                                    lirGen,
-                                    slot,
-                                    baseAddress,
-                                    compilationId,
-                                    loopId,
-                                    true);
+        buf.append(marker.insnIndex, endDelta);
 
-                    buf.append(i, endDelta);
-                }
-            }
+        String startSrc = loopStartSources.get(marker.loopId);
+        String endSrc = "no source for now";
 
-            buf.finish();
-        }
+        String combined = startSrc + " | " + endSrc;
+
+        BuboNativeLoopSourceCache.add(compilationId, marker.loopId, combined);
+
+        buf.finish();
+
     }
 }

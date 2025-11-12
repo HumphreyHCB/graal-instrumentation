@@ -5,12 +5,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
+import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.EndofLoopNode;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.LoopBeginNode;
 import jdk.graal.compiler.nodes.LoopExitNode;
+import jdk.graal.compiler.nodes.ReturnNode;
+import jdk.graal.compiler.nodes.StartofLoopNode;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.BasePhase;
@@ -43,7 +47,21 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
 
         BuboNativeMethodCache.add(graph.compilationId().toString(CompilationIdentifier.Verbosity.ID) + " " +graph.compilationId().toString(CompilationIdentifier.Verbosity.NAME));
 
+        int ida = 0;
+        for (int i = 0; i < 3; i++) {
+            
+         StartofLoopNode start =  graph.add(new StartofLoopNode(ida, graph.start().getNodeSourcePosition()));
+         graph.addAfterFixed(graph.start(), start);
 
+         for (Node node : graph.getNodes()) {
+            if (node instanceof ReturnNode) {
+                EndofLoopNode end = graph.add(new EndofLoopNode(ida, node.getNodeSourcePosition()));
+                graph.addBeforeFixed((ReturnNode)node, end);
+            }
+         }
+         ida++;
+                 }
+                 
         // collect all loop exits
         List<LoopExitNode> exits = graph.getNodes().filter(LoopExitNode.class).snapshot();
         if (exits.isEmpty()) {return;}
@@ -52,20 +70,26 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
         HashMap<LoopBeginNode, Integer> beginToId = new HashMap<>();
         int nextId = 0;
 
-        for (LoopExitNode exit : exits) {
-            LoopBeginNode begin = exit.loopBegin();
-            if (begin == null) {continue;}
+        // for (LoopExitNode exit : exits) {
+        //     LoopBeginNode begin = exit.loopBegin();
+        //     if (begin == null) {continue;}
 
-            Integer id = beginToId.get(begin);
-            if (id == null) {
-                id = nextId++;
-                beginToId.put(begin, id);
-                begin.setLoopId(id); // tell the begin to print a marker with the given ID
-            }
+        //      Integer id = beginToId.get(begin);
+        //      if (id == null) {
+        //          id = nextId++;
+        //          beginToId.put(begin, id);
+        //         StartofLoopNode start =  graph.add(new StartofLoopNode(id, exit.getNodeSourcePosition()));
+        //         graph.addAfterFixed(begin, start);
+        //      }
+        //      else{
+        //         StartofLoopNode start =  graph.add(new StartofLoopNode(id, exit.getNodeSourcePosition()));
+        //         graph.addAfterFixed(begin, start);
+        //      }
 
-            // insert our marker right after the exit
-            EndofLoopNode end = graph.add(new EndofLoopNode(id, exit.getNodeSourcePosition()));
-            graph.addAfterFixed(exit, end);
-        }
+
+        //     // insert our marker right after the exit
+        //     EndofLoopNode end = graph.add(new EndofLoopNode(id, exit.getNodeSourcePosition()));
+        //     graph.addAfterFixed(exit, end);
+        // }
     }
 }
