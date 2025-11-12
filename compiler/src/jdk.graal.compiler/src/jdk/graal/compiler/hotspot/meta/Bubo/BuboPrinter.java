@@ -535,12 +535,13 @@ public class BuboPrinter {
             // compId -> methodName
             var methodMap = BuboNativeMethodCache.getBuffer();
 
+            Map<Integer, Map<Integer, String>> loopsourceMap = BuboNativeLoopSourceCache.snapshot();
+
             final int maxLoops = BuboNativeBuffers.MAX_LOOPS_PER_COMP;
             final int capacity = BuboNativeBuffers.capacity();
 
             // how many compilation "rows" can we store?
             final int maxComps = capacity / maxLoops;
-
             for (int compId = 0; compId < maxComps; compId++) {
                 String name = methodMap.get(compId);
                 boolean printedHeader = false;
@@ -554,7 +555,8 @@ public class BuboPrinter {
                             System.out.println("Comp " + compId + " (" + (name != null ? name : "<unknown>") + ") loops:");
                             printedHeader = true;
                         }
-                        System.out.println("  loop " + loopId + " = " + val);
+                        //System.out.println("  loop " + loopId + " = " + val );
+                        System.out.println("  loop " + loopId + " = " + val + " Source: " +  loopsourceMap.get(compId).get(loopId));
                     }
                 }
             }
