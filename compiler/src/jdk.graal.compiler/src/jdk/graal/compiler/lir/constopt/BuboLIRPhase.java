@@ -4,14 +4,11 @@ import static jdk.graal.compiler.lir.phases.LIRPhase.Options.LIROptimization;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import jdk.graal.compiler.core.common.LIRKind;
-import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
-import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopSourceCache;
@@ -27,7 +24,6 @@ import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
 import jdk.graal.compiler.lir.phases.PreAllocationOptimizationPhase;
-import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
 import jdk.graal.compiler.options.NestedBooleanOptionKey;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
@@ -123,40 +119,6 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         
     }
 
-    private static void removeBadOrderIds(HashSet<Integer> instrumentableIds,
-            Map<Integer, List<MarkerPos>> startsById,
-            Map<Integer, List<MarkerPos>> endsById,
-            LIRGenerationResult lirGenRes) {
-        // drop loopIds whose earliest end is before earliest start
-        HashSet<Integer> badOrderIds = new HashSet<>();
-        for (int id : instrumentableIds) {
-            List<MarkerPos> sList = startsById.get(id);
-            List<MarkerPos> eList = endsById.get(id);
-
-            int minStartBlock = Integer.MAX_VALUE;
-            for (MarkerPos mp : sList) {
-                if (mp.blockIndex < minStartBlock) {
-                    minStartBlock = mp.blockIndex;
-                }
-            }
-
-            int minEndBlock = Integer.MAX_VALUE;
-            for (MarkerPos mp : eList) {
-                if (mp.blockIndex < minEndBlock) {
-                    minEndBlock = mp.blockIndex;
-                }
-            }
-
-            if (minEndBlock < minStartBlock) {
-                // skip this loop entirely
-                System.out.println("[BUBO]   skip loopId=" + id + " comp=" + lirGenRes.getCompilationUnitName()
-                        + " because earliest end(b=" + minEndBlock +
-                        ") < earliest start(b=" + minStartBlock + ")");
-                badOrderIds.add(id);
-            }
-        }
-        instrumentableIds.removeAll(badOrderIds);
-    }
 
     private static boolean shouldSkip(LIRGenerationResult lirGenRes) {
         String name = lirGenRes.getCompilationUnitName();
@@ -172,26 +134,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         BasicBlock<?> block = lir.getControlFlowGraph().getBlocks()[marker.blockIndex];
        List<LIRInstruction> insns = lir.getLIRforBlock(block);
-    //      System.out.println("Start of Lir Bloc + mark block index "+ marker.blockIndex);           
-    //     for (LIRInstruction lirInstruction : insns) {
-    //         System.out.println(lirInstruction);
-    //     }
-    //    System.out.println("pred count : " + block.getPredecessorCount());
-       //block.getpr
 
-    //    for (int i = 0; i < block.getPredecessorCount(); i++) {
-    //     BasicBlock<?> predblock = block.getPredecessorAt(i);
-    //     List<LIRInstruction> insnss = lir.getLIRforBlock(predblock);
-    //     LIRInsertionBuffer buf = new LIRInsertionBuffer();
-    //     buf.init(insnss);
-    //     buf.append(insnss.size() -1, new AMD64BuboRDTSCToSlot(lirGen, slot));
-    //     buf.append(insnss.size() -1, new AMD64BuboIncActivationOp(lirGen,compilationId));
-    //     buf.finish();
-    //    }
-
-        
-
-        loopStartSources.put(marker.loopId, "no source for now");
+        loopStartSources.put(marker.loopId, marker.pos.toString("-"));
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
@@ -225,7 +169,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen,compilationId + 1000));
 
         String startSrc = loopStartSources.get(marker.loopId);
-        String endSrc = "no source for now";
+        String endSrc = marker.pos.toString("-");
 
         String combined = startSrc + " | " + endSrc;
 
