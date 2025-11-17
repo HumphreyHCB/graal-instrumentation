@@ -10,6 +10,8 @@ import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.core.common.cfg.CFGLoop;
+import jdk.graal.compiler.graph.Node;
+import jdk.graal.compiler.nodes.EndNode;
 import jdk.graal.compiler.nodes.EndofLoopNode;
 import jdk.graal.compiler.nodes.FixedNode;
 import jdk.graal.compiler.nodes.GraphState;
@@ -57,11 +59,26 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
 
         Map<LoopBeginNode, Integer> beginToId = new IdentityHashMap<>();
 
+
+        // find all begins and tag them , and their assocated Ends
         for (LoopBeginNode begin : begins) {
             beginToId.put(begin, ida);
-            StartofLoopNode start = graph.add(new StartofLoopNode(ida, begin.inputs().first().getNodeSourcePosition()));
-            graph.addBeforeFixed((FixedNode) begin.inputs().first(), start);
 
+
+            // sometimes there a if node so we want to find the only and last EndNode
+            Node correctInput = null;
+            for (Node in : begin.inputs()) {
+                if (in instanceof EndNode) {
+                    correctInput = in;
+                    break;
+                }
+            }
+
+            // tags Starts
+            StartofLoopNode start = graph.add(new StartofLoopNode(ida, correctInput.getNodeSourcePosition()));
+            graph.addBeforeFixed((FixedNode) correctInput, start);
+
+            // for eahc of its ends tag them aswell
             for (LoopExitNode exit : begin.loopExits()) {
                 EndofLoopNode end = graph.add(new EndofLoopNode(ida, exit.getNodeSourcePosition()));
                 graph.addAfterFixed(exit, end);
@@ -70,6 +87,7 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
             ida++;
         }
 
+        // store a map of child and parent loops
         storeLoopNestingToNative(graph, begins, beginToId);
 
     }
@@ -86,24 +104,25 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
 
         IdentityHashMap<CFGLoop<?>, Integer> loopToIda = new IdentityHashMap<>();
 
+
+        // for each begin loop, find its ida, e.g the arbitrary id we gave it earlyer 
         for (LoopBeginNode begin : begins) {
             BasicBlock<?> block = cfg.blockFor(begin);
-            if (block == null) {
-                continue;
-            }
+            if (block == null) {continue;}
+
             CFGLoop<?> loop = block.getLoop();
-            if (loop == null) {
-                continue;
-            }
+            if (loop == null) {continue;}
+
             Integer ida = beginToId.get(begin);
             if (ida != null) {
                 loopToIda.put(loop, ida);
             }
         }
 
-        // Build "child:parent,child:parent,..." string
+        // Build "child:parent,child:parent,..."
         StringBuilder sb = new StringBuilder();
         
+        // for each loop construct the child:parent map, but we have the ida's for it 
         boolean first = true;
         for (CFGLoop<?> loop : loops) {
             Integer childId = loopToIda.get(loop);
