@@ -26,10 +26,6 @@ public final class BuboNativeLoopNestingCache {
     private BuboNativeLoopNestingCache() {
     }
 
-    // -------------------------------------------------------------------------
-    // public API
-    // -------------------------------------------------------------------------
-
     /**
      * Store the loop nesting encoding string for a given compilation id.
      *
