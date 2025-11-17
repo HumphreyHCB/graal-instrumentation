@@ -105,6 +105,16 @@ public final class BuboNativeBuffers {
         return TIME_ADDR.get() + (idx << 3);
     }
 
+    public static long activationLoopAddr(int compilationId, int loopId) {
+        ensureInitialized();
+        long idx = flatIndex(compilationId, loopId);
+        if (idx >= CAPACITY) {
+            return ACT_ADDR.get() + (((long) compilationId) << 3);
+        }
+        return ACT_ADDR.get() + (idx << 3);
+    }
+
+
     /**
      * Same for cycles.
      */
