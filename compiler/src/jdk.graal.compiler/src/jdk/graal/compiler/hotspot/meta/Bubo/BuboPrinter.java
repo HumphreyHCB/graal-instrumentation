@@ -571,7 +571,7 @@ public class BuboPrinter {
 
                     // System.out.println(" loop " + loopId + " = " + val );
                     System.out.println(
-                            "  loop " + loopId + " = " + val + " Source: " + loopsourceMap.get(compId).get(loopId));
+                            "  loop " + loopId + " Cycles: " + val + " || Activation Count:"+ BuboNativeBuffers.readActivationAt(flat)  + " Source: " + loopsourceMap.get(compId).get(loopId));
                 }
             }
         }
