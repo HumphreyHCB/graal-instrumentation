@@ -74,6 +74,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         List<MarkerPos> markers = new ArrayList<>();
         BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
 
+        // collect all markers, all starts and ends
         for (int block = 0; block < blocks.length; block++) {
             List<LIRInstruction> insns = lir.getLIRforBlock(blocks[block]);
             for (int instruction = 0; instruction < insns.size(); instruction++) {
@@ -106,7 +107,7 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         // insert starts only
         for (MarkerPos marker : markers) {
             if (marker.LoopStart) {
-                insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId),compilationId, marker);
+                insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId), compilationId, marker);
             }
         }
 
@@ -116,9 +117,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 instrumentLoopEnds(lir, lirGen, loopSlots.get(marker.loopId), baseAddress, compilationId, marker);
             }
         }
-        
-    }
 
+    }
 
     private static boolean shouldSkip(LIRGenerationResult lirGenRes) {
         String name = lirGenRes.getCompilationUnitName();
@@ -133,14 +133,18 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
             MarkerPos marker) {
 
         BasicBlock<?> block = lir.getControlFlowGraph().getBlocks()[marker.blockIndex];
-       List<LIRInstruction> insns = lir.getLIRforBlock(block);
+        List<LIRInstruction> insns = lir.getLIRforBlock(block);
 
-        loopStartSources.put(marker.loopId, marker.pos.toString("-"));
+        if (marker.pos == null) {
+            loopStartSources.put(marker.loopId, "Source Missing");
+        } else {
+            loopStartSources.put(marker.loopId, marker.pos.toString("-"));
+        }
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
         buf.append(marker.insnIndex, new AMD64BuboRDTSCToSlot(lirGen, slot));
-        buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen,compilationId));
+        buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen, compilationId, marker.loopId));
         buf.finish();
     }
 
@@ -166,10 +170,14 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 true);
 
         buf.append(marker.insnIndex, endDelta);
-        buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen,compilationId + 1000));
 
         String startSrc = loopStartSources.get(marker.loopId);
-        String endSrc = marker.pos.toString("-");
+        String endSrc;
+        if (marker.pos == null) {
+            endSrc = " No Source";
+        } else {
+            endSrc = marker.pos.toString("-");
+        }
 
         String combined = startSrc + " | " + endSrc;
 
