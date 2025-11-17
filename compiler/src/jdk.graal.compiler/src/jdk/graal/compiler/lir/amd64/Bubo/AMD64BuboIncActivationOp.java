@@ -36,10 +36,10 @@ public final class AMD64BuboIncActivationOp extends AMD64LIRInstruction {
     @Temp({OperandFlag.REG}) private Value addrTmp;
     @Temp({OperandFlag.REG}) private Value tmp;
 
-    public AMD64BuboIncActivationOp(LIRGeneratorTool tool, int CompilationId) {
-        super(TYPE);
+    public AMD64BuboIncActivationOp(LIRGeneratorTool tool, int CompilationId, int loopId) {
+        super(TYPE);    
 
-        this.activationAddrValue = new ConstantValue(LIRKind.value(AMD64Kind.QWORD), JavaConstant.forLong(BuboNativeBuffers.activationPtr() + (((long) CompilationId) << 3)));
+        this.activationAddrValue = new ConstantValue(LIRKind.value(AMD64Kind.QWORD), JavaConstant.forLong(BuboNativeBuffers.activationLoopAddr(CompilationId, loopId)));
         // temps are 64-bit GPRs
         this.addrTmp = tool.newVariable(LIRKind.value(jdk.vm.ci.amd64.AMD64Kind.QWORD));
         this.tmp    = tool.newVariable(LIRKind.value(jdk.vm.ci.amd64.AMD64Kind.QWORD));
