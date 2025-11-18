@@ -38,6 +38,7 @@ import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.core.common.GraalOptions;
 
 public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocationOptimizationContext> {
     public static class Options {
@@ -83,6 +84,12 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         }
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
+        }
+        if (GraalOptions.LIRGTSlowDown.getValue(options)) {
+            appendPhase(new LIRGTSlowdownPhasePost(options));
+        }
+        if (GraalOptions.GTMarkBasicBlocks.getValue(options)) {
+            appendPhase(new LIRGTSlowdownMarkerPhase(options));
         }
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
             appendPhase(new BuboVerifyPostAllocPhase() );

@@ -374,4 +374,25 @@ public final class GraalOptions {
 
     @Option(help = "Enables tracing of threaded switch optimization decisions.", type = OptionType.Debug)
     public static final OptionKey<Boolean> TraceThreadedSwitchOptimization = new OptionKey<>(false);
+
+        @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
+
+    @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
+
+    @Option(help = "The name of the JSON file containing LIR instruction costs.", type = OptionType.Debug)
+    public static final OptionKey<String> LIRCostFileName = new OptionKey<>("LIRCostVaware5.json");
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<String> LIRBlockSlowdownFileName = new OptionKey<>("BlockSlowdown.json");
+
+    @Option(help = "Inserts pointless nodes with numbered ID, these will be picked up but Vtune for later analysis", type = OptionType.Debug)
+    public static final OptionKey<Boolean> GTMarkBasicBlocks = new OptionKey<Boolean>( false);
+
+    @Option(help = "Disable codeEntryAlignment", type = OptionType.Debug)
+    public static final OptionKey<Boolean> DisableCodeEntryAlignment = new OptionKey<Boolean>(false);
+
+    @Option(help = "WHen we perform Slowdown, we attempet to mix the slowdown as much as psosible, this should reduce Skidding in the sampler", type = OptionType.Debug)
+    public static final OptionKey<Integer> MixGTSlowdown = new OptionKey<Integer>(-1);
 }

@@ -28,6 +28,7 @@ import static jdk.graal.compiler.core.common.GraalOptions.HotSpotPrintInlining;
 import static jdk.vm.ci.common.InitTimer.timer;
 import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -35,15 +36,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-
+import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboCompUnitCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboMethodCache;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
-import jdk.graal.compiler.hotspot.meta.Bubo.BuboPrinter;
-
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
 
@@ -67,8 +62,6 @@ import jdk.graal.compiler.debug.DiagnosticsOutputDirectory;
 import jdk.graal.compiler.debug.GlobalMetrics;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.debug.TTY;
-import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
-import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
 import jdk.graal.compiler.hotspot.replaycomp.ReplayCompilationSupport;
 import jdk.graal.compiler.nodes.spi.StampProvider;
 import jdk.graal.compiler.options.OptionValues;
@@ -220,6 +213,19 @@ public final class HotSpotGraalRuntime implements HotSpotGraalRuntimeProvider {
 
         runtimeStartTime = System.nanoTime();
         bootstrapJVMCI = config.getFlag("BootstrapJVMCI", Boolean.class);
+
+                if(GraalOptions.LIRBlockSlowdownFileName.getValue(options) != GraalOptions.LIRCostFileName.getDefaultValue() ){
+
+            try {
+
+                GTBlockSlowDownLookUp.loadMethodBlockCostsFromJSON(GraalOptions.LIRBlockSlowdownFileName.getValue(options));
+
+            } catch (IOException e) {
+                System.out.println("Somthing has gone wrong when trying to dynamicly load the LIRBlockSlowdownFileName");
+                e.printStackTrace();
+            }
+
+        }
 
         CompilerProfiler selectedCompilerProfiler = GraalServices.loadSingle(CompilerProfiler.class, false);
         if (replayCompilationSupport != null) {
