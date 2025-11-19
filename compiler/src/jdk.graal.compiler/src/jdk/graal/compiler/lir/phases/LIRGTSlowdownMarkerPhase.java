@@ -43,6 +43,7 @@ import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
+import jdk.graal.compiler.core.common.CompilationIdentifier;
 
 public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
@@ -55,7 +56,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-        if (lirGenRes.getCompilationUnitName()
+        if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
                 .contains("HotSpotOSRCompilation")) {
             return;
         }

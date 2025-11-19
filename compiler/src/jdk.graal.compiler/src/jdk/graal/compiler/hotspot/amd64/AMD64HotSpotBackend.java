@@ -159,26 +159,28 @@ public class AMD64HotSpotBackend extends HotSpotHostBackend implements LIRGenera
             AMD64HotSpotMacroAssembler asm = (AMD64HotSpotMacroAssembler) crb.asm;
 
             int verifiedEntryPointOffset = asm.position();
+            
             if (!isStub) {
-                                if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString().contains("HotSpotOSRCompilation")) {
-                    // if (crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED).contains("JsonPureStringParser.read")) {
-                    //  System.out.println((crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED)));
-                    // }
-                asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Lower 8 bits of the marker ID
-                asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Upper 8 bits of the marker ID
-                }
+                // asm.movq(AMD64.rax, AMD64.rax);
+                //                 if (GraalOptions.GTMarkBasicBlocks.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString(jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity.DETAILED).contains("HotSpotOSRCompilation")) {
+                //     // if (crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED).contains("JsonPureStringParser.read")) {
+                //     //  System.out.println((crb.compilationResult.getCompilationId().toString(Verbosity.DETAILED)));
+                //     // }
+                // asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Lower 8 bits of the marker ID
+                // asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, 255, AVXSize.XMM); // Upper 8 bits of the marker ID
+                // }
 
-                if (GraalOptions.LIRGTSlowDown.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString().contains("HotSpotOSRCompilation")) { 
-                    int blockCost = GTBlockSlowDownLookUp.getBlockCost(
-                        crb.compilationResult.getCompilationId().toString(), 
-                        65535
-                    );
+                // if (GraalOptions.LIRGTSlowDown.getValue(getRuntime().getOptions()) && !crb.compilationResult.getCompilationId().toString(jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity.DETAILED).contains("HotSpotOSRCompilation")) { 
+                //     int blockCost = GTBlockSlowDownLookUp.getBlockCost(
+                //         crb.compilationResult.getCompilationId().toString(), 
+                //         65535
+                //     );
                     
-                    for (int i = 0; i < blockCost; i++) {
-                        int regIndex = i % AMD64.cpuRegisters.size(); // Wrap around the register list
-                        asm.movq(AMD64.cpuRegisters.get(regIndex), AMD64.cpuRegisters.get(regIndex));
-                    }
-                }
+                //     for (int i = 0; i < blockCost; i++) {
+                //         int regIndex = i % AMD64.cpuRegisters.size(); // Wrap around the register list
+                //         asm.movq(AMD64.cpuRegisters.get(regIndex), AMD64.cpuRegisters.get(regIndex));
+                //     }
+                // }
                 emitStackOverflowCheck(crb);
                 // assert asm.position() - verifiedEntryPointOffset >=
                 // PATCHED_VERIFIED_ENTRY_POINT_INSTRUCTION_SIZE;
