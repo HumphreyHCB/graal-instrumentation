@@ -45,11 +45,9 @@ import static com.oracle.truffle.api.source.Source.CONTENT_NONE;
 import static com.oracle.truffle.polyglot.EngineAccessor.INSTRUMENT;
 import static com.oracle.truffle.polyglot.EngineAccessor.LANGUAGE;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.ref.Reference;
@@ -58,18 +56,20 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.polyglot.Engine;
@@ -83,6 +83,7 @@ import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.FileSystem.Selector;
 import org.graalvm.polyglot.io.MessageTransport;
 import org.graalvm.polyglot.io.ProcessHandler;
+import org.graalvm.polyglot.proxy.Proxy;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -92,6 +93,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.impl.DefaultTruffleRuntime;
 import com.oracle.truffle.api.impl.DispatchOutputStream;
+import com.oracle.truffle.api.impl.TruffleVersions;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -109,28 +111,25 @@ import com.oracle.truffle.polyglot.PolyglotLoggers.EngineLoggerProvider;
  */
 public final class PolyglotImpl extends AbstractPolyglotImpl {
 
+    private static final Set<String> TRUFFLE_ENTERPRISE_OPTIONS = Set.of(
+                    "engine.Cache",
+                    "engine.CacheLoad",
+                    "engine.CacheStore",
+                    "engine.CacheStoreEnabled",
+                    "engine.DebugCacheLoad",
+                    "engine.DebugCacheStore",
+                    "engine.SpawnIsolate");
+
     /*
      * Used to prevent implementations of accessible API classes.
      */
     static final Object SECRET = new Object();
     static final Object[] EMPTY_ARGS = new Object[0];
 
-    static final String TRUFFLE_VERSION;
-    static {
-        if (Boolean.getBoolean("polyglotimpl.DisableVersionChecks")) {
-            TRUFFLE_VERSION = null;
-        } else {
-            InputStream in = PolyglotImpl.class.getResourceAsStream("/META-INF/graalvm/org.graalvm.truffle/version");
-            if (in == null) {
-                throw new InternalError("Truffle API must have a version file.");
-            }
-            try (BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                TRUFFLE_VERSION = r.readLine();
-            } catch (IOException ioe) {
-                throw new InternalError(ioe);
-            }
-        }
-    }
+    /*
+     * Accessed reflectively by TruffleBaseFeature.
+     */
+    static final String TRUFFLE_VERSION = TruffleVersions.TRUFFLE_API_VERSION == null ? null : TruffleVersions.TRUFFLE_API_VERSION.toString();
 
     private final PolyglotSourceDispatch sourceDispatch = new PolyglotSourceDispatch(this);
     private final PolyglotSourceSectionDispatch sourceSectionDispatch = new PolyglotSourceSectionDispatch(this);
@@ -277,6 +276,7 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
                     boolean registerInActiveEngines, Object polyglotHostService) {
         PolyglotEngineImpl impl = null;
         try {
+            validateVendorOptions(options);
             validateSandbox(sandboxPolicy);
             if (TruffleOptions.AOT) {
                 EngineAccessor.ACCESSOR.initializeNativeImageTruffleLocator();
@@ -404,6 +404,27 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
                             To disable this warning use the '--engine.WarnInterpreterOnly=false' option or the '-Dpolyglot.engine.WarnInterpreterOnly=false' system property.""", reason));
         }
 
+    }
+
+    private void validateVendorOptions(Map<String, String> options) {
+        if (this != this.getRootImpl()) {
+            return;
+        }
+        Set<String> usedEnterpriseOptions = new HashSet<>();
+        for (String key : options.keySet()) {
+            if (TRUFFLE_ENTERPRISE_OPTIONS.contains(key) || key.startsWith("sandbox.") || key.equals("sandbox")) {
+                usedEnterpriseOptions.add(key);
+            }
+        }
+        if (!usedEnterpriseOptions.isEmpty()) {
+            String optionNames = usedEnterpriseOptions.stream().map((s) -> '\'' + s + '\'').collect(Collectors.joining(", "));
+            throw PolyglotEngineException.illegalArgument(String.format(
+                            "The following options %s require Truffle Enterprise Extensions to be available on the classpath or module path. " +
+                                            "Please ensure that the 'org.graalvm.truffle:truffle-enterprise' Maven artifact is correctly included in your build configuration. " +
+                                            "Note that Truffle Enterprise Extensions are only supported when running on Oracle GraalVM or Oracle JDK. " +
+                                            "Remove these option or add the 'org.graalvm.truffle:truffle-enterprise' artefact to resolve this issue.",
+                            optionNames));
+        }
     }
 
     private void validateSandbox(SandboxPolicy sandboxPolicy) {
@@ -546,10 +567,12 @@ public final class PolyglotImpl extends AbstractPolyglotImpl {
              */
             if (hostValue instanceof TruffleObject) {
                 guestValue = hostValue;
-            } else if (getAPIAccess().isProxy(hostValue)) {
-                guestValue = EngineAccessor.HOST.toDisconnectedHostProxy(hostValue);
             } else {
-                guestValue = EngineAccessor.HOST.toDisconnectedHostObject(hostValue);
+                if (hostValue instanceof Proxy) {
+                    guestValue = EngineAccessor.HOST.toDisconnectedHostProxy(hostValue);
+                } else {
+                    guestValue = EngineAccessor.HOST.toDisconnectedHostObject(hostValue);
+                }
             }
             return getAPIAccess().newValue(hostValue instanceof BigInteger ? disconnectedBigIntegerHostValue : disconnectedHostValue, null, guestValue, null);
         }

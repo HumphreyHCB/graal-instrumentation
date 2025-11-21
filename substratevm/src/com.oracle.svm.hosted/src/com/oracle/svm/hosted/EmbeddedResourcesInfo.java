@@ -56,7 +56,19 @@ public class EmbeddedResourcesInfo {
         }
 
         Resources.ModuleResourceKey key = Resources.createStorageKey(module, resource);
-        registeredResources.compute(key, (k, v) -> {
+
+        /*
+         * If we already have an entry with this key, and it was a NEGATIVE_QUERY, the new resource
+         * would either be ignored if it was another NEGATIVE_QUERY or it will override existing
+         * NEGATIVE_QUERY for that key. In both cases we can remove previous NEGATIVE_QUERY since it
+         * will be replaced with either new NEGATIVE_QUERY or with resource that exists.
+         */
+        List<SourceAndOrigin> existingEntries = registeredResources.get(key);
+        if (existingEntries != null && existingEntries.size() == 1 && isNegativeQuery(existingEntries.get(0))) {
+            registeredResources.remove(key);
+        }
+
+        registeredResources.compute(key, (_, v) -> {
             if (v == null) {
                 ArrayList<SourceAndOrigin> newValue = new ArrayList<>();
                 newValue.add(new SourceAndOrigin(source, origin));
@@ -82,5 +94,9 @@ public class EmbeddedResourcesInfo {
             }
             return v;
         });
+    }
+
+    private static boolean isNegativeQuery(SourceAndOrigin entry) {
+        return entry.source().equalsIgnoreCase("") && ((String) entry.origin()).equalsIgnoreCase("");
     }
 }

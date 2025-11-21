@@ -35,10 +35,7 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
-
-import jdk.internal.misc.Unsafe;
 
 @TargetClass(className = "jdk.internal.misc.VM")
 public final class Target_jdk_internal_misc_VM {
@@ -69,20 +66,18 @@ public final class Target_jdk_internal_misc_VM {
     @Alias @InjectAccessors(DirectMemoryAccessors.class) //
     private static long directMemory;
     @Alias @InjectAccessors(PageAlignDirectMemoryAccessors.class) //
-    @TargetElement(onlyWith = JDKLatest.class) //
     private static Boolean pageAlignDirectMemory;
-
-    @Alias @InjectAccessors(PageAlignDirectMemoryJDK21Accessors.class) //
-    @TargetElement(name = "pageAlignDirectMemory", onlyWith = JDK21OrEarlier.class) //
-    private static boolean pageAlignDirectMemoryJDK21;
 }
 
 final class DirectMemoryAccessors {
-    /*
-     * Not volatile to avoid a memory barrier when reading the values. Instead, an explicit barrier
-     * is inserted when writing the values.
+    /**
+     * This field needs to be volatile to ensure that reads emit a LOAD-LOAD barrier. Without this
+     * barrier, subsequent reads could be reordered before the read of {@link #initialized},
+     * allowing threads to observe an uninitialized value for {@link #directMemory}. We could
+     * directly emit a LOAD-LOAD barrier instead, but it doesn't make any difference in terms of the
+     * used instructions on any of the relevant CPU architectures.
      */
-    private static boolean initialized;
+    private static volatile boolean initialized;
     private static long directMemory;
 
     static long getDirectMemory() {
@@ -108,27 +103,16 @@ final class DirectMemoryAccessors {
             newDirectMemory = Runtime.getRuntime().maxMemory();
         }
 
-        /*
-         * The initialization is not synchronized, so multiple threads can race. Usually this will
-         * lead to the same value, unless the runtime options are modified concurrently - which is
-         * possible but not a case we care about.
-         */
         directMemory = newDirectMemory;
-
-        /* Ensure values are published to other threads before marking fields as initialized. */
-        Unsafe.getUnsafe().storeFence();
+        /* STORE_STORE barrier is executed as part of the volatile write. */
         initialized = true;
-
         return newDirectMemory;
     }
 }
 
 final class PageAlignDirectMemoryAccessors {
-    /*
-     * Not volatile to avoid a memory barrier when reading the values. Instead, an explicit barrier
-     * is inserted when writing the values.
-     */
-    private static boolean initialized;
+    /** See {@link DirectMemoryAccessors#initialized} on why this needs to be volatile. */
+    @SuppressWarnings("javadoc") private static volatile boolean initialized;
     private static boolean pageAlignDirectMemory;
 
     static Boolean getPageAlignDirectMemory() {
@@ -140,15 +124,7 @@ final class PageAlignDirectMemoryAccessors {
 
     private static void initialize() {
         pageAlignDirectMemory = Boolean.getBoolean("sun.nio.PageAlignDirectMemory");
-
-        /* Ensure values are published to other threads before marking fields as initialized. */
-        Unsafe.getUnsafe().storeFence();
+        /* STORE_STORE barrier is executed as part of the volatile write. */
         initialized = true;
-    }
-}
-
-final class PageAlignDirectMemoryJDK21Accessors {
-    static boolean getPageAlignDirectMemory() {
-        return PageAlignDirectMemoryAccessors.getPageAlignDirectMemory();
     }
 }

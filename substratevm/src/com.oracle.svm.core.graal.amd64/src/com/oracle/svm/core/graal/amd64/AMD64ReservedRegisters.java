@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.core.graal.amd64;
 
+import static jdk.vm.ci.amd64.AMD64.r13;
 import static jdk.vm.ci.amd64.AMD64.r14;
 import static jdk.vm.ci.amd64.AMD64.r15;
 
@@ -31,18 +32,24 @@ import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.ReservedRegisters;
+import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
+import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
+import com.oracle.svm.core.traits.SingletonTraits;
 
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.Register;
 
+@SingletonTraits(access = AllAccess.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 public final class AMD64ReservedRegisters extends ReservedRegisters {
 
     public static final Register THREAD_REGISTER = r15;
-    public static final Register HEAP_BASE_REGISTER_CANDIDATE = r14;
+    public static final Register HEAP_BASE_REGISTER = r14;
+    public static final Register CODE_BASE_REGISTER_CANDIDATE = r13;
 
     @Platforms(Platform.HOSTED_ONLY.class)
     AMD64ReservedRegisters() {
-        super(AMD64.rsp, THREAD_REGISTER, HEAP_BASE_REGISTER_CANDIDATE);
+        super(AMD64.rsp, THREAD_REGISTER, HEAP_BASE_REGISTER, CODE_BASE_REGISTER_CANDIDATE);
     }
 
     @Override

@@ -42,7 +42,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import jdk.graal.compiler.options.OptionsContainer;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
@@ -74,6 +73,7 @@ import com.oracle.svm.util.StringUtil;
 import jdk.graal.compiler.options.OptionDescriptor;
 import jdk.graal.compiler.options.OptionDescriptors;
 import jdk.graal.compiler.options.OptionStability;
+import jdk.graal.compiler.options.OptionsContainer;
 import jdk.graal.compiler.options.OptionsParser;
 
 class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
@@ -97,8 +97,8 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
     record HostedOptionInfo(Boolean isStable, Boolean isBoolean) {
     }
 
-    private final HostedOptionInfo injectedKnownHostedRegularOptionInfo = new HostedOptionInfo(false, false);
-    private final HostedOptionInfo injectedKnownHostedBooleanOptionInfo = new HostedOptionInfo(false, true);
+    private final HostedOptionInfo[] injectedKnownHostedRegularOptionInfo = {new HostedOptionInfo(true, false), new HostedOptionInfo(false, false)};
+    private final HostedOptionInfo[] injectedKnownHostedBooleanOptionInfo = {new HostedOptionInfo(true, true), new HostedOptionInfo(false, true)};
 
     private final Map<String, HostedOptionInfo> allOptionNames;
 
@@ -170,7 +170,7 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
                         Class<? extends APIOptionGroup> groupClass = apiAnnotation.group();
                         APIOptionGroup g = group = groupInstances.computeIfAbsent(groupClass, ReflectionUtil::newInstance);
                         String groupName = APIOption.Utils.groupName(group);
-                        GroupInfo groupInfo = groupInfos.computeIfAbsent(groupName, (n) -> new GroupInfo(g));
+                        GroupInfo groupInfo = groupInfos.computeIfAbsent(groupName, _ -> new GroupInfo(g));
                         if (group.helpText() == null || group.helpText().isEmpty()) {
                             VMError.shouldNotReachHere(String.format("APIOptionGroup %s(%s) needs to provide help text", groupClass.getName(), group.name()));
                         }
@@ -295,16 +295,23 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
     }
 
     void injectKnownHostedOption(String optionName) {
+        int variant;
         String baseOptionName;
-        HostedOptionInfo optionInfo;
-        if (optionName.endsWith("=")) {
-            baseOptionName = optionName.substring(0, optionName.length() - 1);
-            optionInfo = injectedKnownHostedRegularOptionInfo;
+        if (optionName.startsWith("$")) {
+            variant = 0; // stable
+            baseOptionName = optionName.substring(1);
         } else {
+            variant = 1; // unstable
             baseOptionName = optionName;
-            optionInfo = injectedKnownHostedBooleanOptionInfo;
         }
-        allOptionNames.put(baseOptionName, optionInfo);
+        HostedOptionInfo[] injectedKnownHostedOptionInfo;
+        if (baseOptionName.endsWith("=")) {
+            baseOptionName = baseOptionName.substring(0, baseOptionName.length() - 1);
+            injectedKnownHostedOptionInfo = injectedKnownHostedRegularOptionInfo;
+        } else {
+            injectedKnownHostedOptionInfo = injectedKnownHostedBooleanOptionInfo;
+        }
+        allOptionNames.put(baseOptionName, injectedKnownHostedOptionInfo[variant]);
     }
 
     @Override
@@ -410,7 +417,10 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
         OptionInfo option = null;
         boolean whitespaceSeparated = false;
         String[] optionNameAndOptionValue = null;
-        OptionOrigin argumentOrigin = OptionOrigin.from(argQueue.argumentOrigin);
+        String argumentOriginString = OptionOrigin.from(argQueue.argumentOrigin).toString();
+        if (nativeImage.useBundle()) {
+            argumentOriginString = nativeImage.bundleSupport.cleanupBuilderOutput(argumentOriginString);
+        }
         found: for (OptionInfo optionInfo : apiOptions.values()) {
             for (String variant : optionInfo.variants) {
                 String optionName;
@@ -437,7 +447,7 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
                         argQueue.poll();
                         String optionValue = argQueue.peek();
                         if (optionValue == null) {
-                            NativeImage.showError(headArg + " from " + argumentOrigin + " requires option argument");
+                            NativeImage.showError(headArg + " from " + argumentOriginString + " requires option argument");
                         }
                         option = optionInfo;
                         optionNameAndOptionValue = new String[]{headArg, optionValue};
@@ -457,14 +467,14 @@ class APIOptionHandler extends NativeImage.OptionHandler<NativeImage> {
         }
         if (option != null) {
             if (!option.deprecationWarning.isEmpty()) {
-                LogUtils.warning("Using a deprecated option " + optionNameAndOptionValue[0] + " from " + argumentOrigin + ". " + option.deprecationWarning);
+                LogUtils.warning("Using a deprecated option " + optionNameAndOptionValue[0] + " from " + argumentOriginString + ". " + option.deprecationWarning);
             }
             String builderOption = option.builderOption;
             /* If option is in group, defaultValue has different use */
             String optionValue = option.group != null ? null : option.defaultValue;
             if (optionNameAndOptionValue.length == 2) {
                 if (option.defaultFinal) {
-                    NativeImage.showError("Passing values to option " + optionNameAndOptionValue[0] + " from " + argumentOrigin + " is not supported.");
+                    NativeImage.showError("Passing values to option " + optionNameAndOptionValue[0] + " from " + argumentOriginString + " is not supported.");
                 }
                 optionValue = optionNameAndOptionValue[1];
             }

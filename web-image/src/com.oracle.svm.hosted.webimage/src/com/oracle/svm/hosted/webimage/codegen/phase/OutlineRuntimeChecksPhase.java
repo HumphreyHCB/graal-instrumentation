@@ -28,8 +28,8 @@ package com.oracle.svm.hosted.webimage.codegen.phase;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.svm.webimage.functionintrinsics.ImplicitExceptions;
 import com.oracle.svm.core.graal.nodes.ThrowBytecodeExceptionNode;
+import com.oracle.svm.webimage.functionintrinsics.ImplicitExceptions;
 
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.graph.Node;
@@ -149,12 +149,15 @@ public class OutlineRuntimeChecksPhase extends BasePhase<CoreProviders> {
          * {@link ThrowBytecodeExceptionNode}.
          *
          * @param node A {@link BytecodeExceptionNode} followed immediately by an {@link UnwindNode}
-         *            or a {@link ThrowBytecodeExceptionNode}
+         *            or just a {@link ThrowBytecodeExceptionNode}
          */
         static void find(FixedNode node, List<Pattern> patterns) {
-            boolean isNullCheck = node.predecessor() instanceof BeginNode;
-            isNullCheck = isNullCheck && node.predecessor().predecessor() instanceof IfNode;
-            isNullCheck = isNullCheck && singleInput(node.predecessor().predecessor()) instanceof IsNullNode;
+            Node predecessor = node.predecessor();
+            boolean isNullCheck = predecessor instanceof BeginNode;
+            Node secondPredecessor = predecessor.predecessor();
+            // It has to be an if node where the NPE is thrown in the true-successor
+            isNullCheck = isNullCheck && secondPredecessor instanceof IfNode ifNode && ifNode.trueSuccessor() == predecessor;
+            isNullCheck = isNullCheck && singleInput(secondPredecessor) instanceof IsNullNode;
 
             if (isNullCheck) {
                 NullCheckPattern pattern = new NullCheckPattern(node);
@@ -203,6 +206,16 @@ public class OutlineRuntimeChecksPhase extends BasePhase<CoreProviders> {
          */
         @Override
         void replace(CoreProviders providers) {
+            if (ifNode.isDeleted()) {
+                /*
+                 * This case can happen when both branches of an if node throw a bytecode exception;
+                 * e.g. if (array == null) where the true successor throws a NullPointerException,
+                 * and the other throws an ArrayIndexOutOfBoundsException, which is then replaced
+                 * with checkNullPointer(array) followed by ThrowBytecodeException(OUT_OF_BOUNDS).
+                 */
+                return;
+            }
+
             StructuredGraph graph = ifNode.graph();
 
             /*

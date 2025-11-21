@@ -30,8 +30,8 @@ package com.oracle.svm.webimage.longemulation;
  *  which is licensed under Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
  */
 
-import org.graalvm.webimage.api.JS;
 import org.graalvm.nativeimage.Platforms;
+import org.graalvm.webimage.api.JS;
 
 import com.oracle.svm.webimage.annotation.JSRawCall;
 import com.oracle.svm.webimage.platform.WebImageJSPlatform;
@@ -577,6 +577,22 @@ public class Long64 {
 
     public static Long64 xor(Long64 left, Long64 right) {
         return xorInternal(left.low, left.high, right.low, right.high);
+    }
+
+    public static Long64 min(Long64 left, Long64 right) {
+        return lessThan(left, right) ? left : right;
+    }
+
+    public static Long64 max(Long64 left, Long64 right) {
+        return lessThan(left, right) ? right : left;
+    }
+
+    public static Long64 umin(Long64 left, Long64 right) {
+        return belowThan(left, right) ? left : right;
+    }
+
+    public static Long64 umax(Long64 left, Long64 right) {
+        return belowThan(left, right) ? right : left;
     }
 
     public static Long64 abs(Long64 x) {

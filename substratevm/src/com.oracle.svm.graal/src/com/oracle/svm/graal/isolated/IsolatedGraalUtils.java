@@ -39,9 +39,15 @@ import org.graalvm.word.PointerBase;
 import org.graalvm.word.WordBase;
 
 import com.oracle.svm.core.SubstrateOptions;
+import com.oracle.svm.core.SubstrateSegfaultHandler;
 import com.oracle.svm.core.c.function.CEntryPointOptions;
 import com.oracle.svm.core.c.function.IsolateSupportImpl;
 import com.oracle.svm.core.deopt.SubstrateInstalledCode;
+import com.oracle.svm.core.graal.isolated.ClientHandle;
+import com.oracle.svm.core.graal.isolated.ClientIsolateThread;
+import com.oracle.svm.core.graal.isolated.CompilerIsolateThread;
+import com.oracle.svm.core.graal.isolated.IsolatedCompileClient;
+import com.oracle.svm.core.graal.isolated.IsolatedCompileContext;
 import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 import com.oracle.svm.core.handles.PrimitiveArrayView;
 import com.oracle.svm.core.log.Log;
@@ -127,6 +133,10 @@ public final class IsolatedGraalUtils {
 
         /* Compilation isolates do the reference handling manually to avoid the extra thread. */
         appendArgument(builder, SubstrateOptions.ConcealedOptions.AutomaticReferenceHandling, false);
+
+        /* Disable signal handling for compilation isolates. */
+        appendArgument(builder, SubstrateOptions.EnableSignalHandling, false);
+        appendArgument(builder, SubstrateSegfaultHandler.Options.InstallSegfaultHandler, false);
     }
 
     private static void appendOptionsExplicitlySetForCompilationIsolates(CreateIsolateParameters.Builder builder) {
@@ -211,12 +221,13 @@ public final class IsolatedGraalUtils {
         VMRuntime.initialize();
     }
 
-    public static InstalledCode compileInNewIsolateAndInstall(SubstrateMethod method) {
+    public static InstalledCode compileInNewIsolateAndInstall(SubstrateMethod method, SubstrateInstalledCode.Factory installedCodeFactory) {
         InstalledCode installedCode;
         CompilerIsolateThread context = createCompilationIsolate();
         IsolatedCompileClient.set(new IsolatedCompileClient(context));
         try {
-            ClientHandle<SubstrateInstalledCode> installedCodeHandle = compileInNewIsolateAndInstall0(context, (ClientIsolateThread) CurrentIsolate.getCurrentThread(), ImageHeapObjects.ref(method));
+            ClientHandle<SubstrateInstalledCode> installedCodeHandle = compileInNewIsolateAndInstall0(context,
+                            (ClientIsolateThread) CurrentIsolate.getCurrentThread(), ImageHeapObjects.ref(method), IsolatedCompileClient.get().hand(installedCodeFactory));
             Isolates.tearDownIsolate(context);
             installedCode = (InstalledCode) IsolatedCompileClient.get().unhand(installedCodeHandle);
         } finally {
@@ -227,8 +238,8 @@ public final class IsolatedGraalUtils {
 
     @CEntryPoint(exceptionHandler = IsolatedCompileContext.ResetContextWordExceptionHandler.class, include = CEntryPoint.NotIncludedAutomatically.class, publishAs = CEntryPoint.Publish.NotPublished)
     @CEntryPointOptions(epilogue = IsolatedCompileContext.ExitCompilationEpilogue.class, callerEpilogue = IsolatedCompileContext.ExceptionRethrowCallerEpilogue.class)
-    private static ClientHandle<SubstrateInstalledCode> compileInNewIsolateAndInstall0(
-                    @SuppressWarnings("unused") @CEntryPoint.IsolateThreadContext CompilerIsolateThread isolate, ClientIsolateThread clientIsolate, ImageHeapRef<SubstrateMethod> methodRef) {
+    private static ClientHandle<SubstrateInstalledCode> compileInNewIsolateAndInstall0(@SuppressWarnings("unused") @CEntryPoint.IsolateThreadContext CompilerIsolateThread isolate,
+                    ClientIsolateThread clientIsolate, ImageHeapRef<SubstrateMethod> methodRef, ClientHandle<? extends SubstrateInstalledCode.Factory> installedCodeFactoryHandle) {
 
         IsolatedCompileContext.set(new IsolatedCompileContext(clientIsolate));
         // The context is cleared in the CEntryPointOptions.epilogue (also in case of an exception)
@@ -237,8 +248,7 @@ public final class IsolatedGraalUtils {
         RuntimeConfiguration runtimeConfiguration = TruffleRuntimeCompilationSupport.getRuntimeConfig();
         DebugContext debug = new Builder(RuntimeOptionValues.singleton(), new GraalDebugHandlersFactory(runtimeConfiguration.getProviders().getSnippetReflection())).build();
         CompilationResult compilationResult = SubstrateGraalUtils.doCompile(debug, TruffleRuntimeCompilationSupport.getRuntimeConfig(), TruffleRuntimeCompilationSupport.getLIRSuites(), method);
-        ClientHandle<SubstrateInstalledCode> installedCodeHandle = IsolatedRuntimeCodeInstaller.installInClientIsolate(
-                        methodRef, compilationResult, IsolatedHandles.nullHandle());
+        ClientHandle<SubstrateInstalledCode> installedCodeHandle = IsolatedRuntimeCodeInstaller.installInClientIsolate(methodRef, compilationResult, installedCodeFactoryHandle);
         Log.log().string("Code for " + method.format("%H.%n(%p)") + ": " + compilationResult.getTargetCodeSize() + " bytes").newline();
 
         return installedCodeHandle;

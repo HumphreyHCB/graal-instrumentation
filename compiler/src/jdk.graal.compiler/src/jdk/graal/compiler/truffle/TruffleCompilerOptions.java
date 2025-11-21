@@ -34,6 +34,7 @@ import com.oracle.truffle.compiler.TruffleCompilerOptionDescriptor;
 import com.oracle.truffle.compiler.TruffleCompilerOptionDescriptor.Type;
 
 import jdk.graal.compiler.core.common.GraalOptions;
+import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.java.BytecodeParserOptions;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionDescriptor;
@@ -247,12 +248,16 @@ public class TruffleCompilerOptions implements OptionsContainer {
     @Option(help = "Run the partial escape analysis iteratively in Truffle compilation.", type = OptionType.Debug) //
     public static final OptionKey<Boolean> IterativePartialEscape = new OptionKey<>(false);
 
+    @Option(help = "Time limit in seconds before a compilation expires and throws a bailout (0 to disable the limit). ", type = OptionType.Debug) //
+    public static final OptionKey<Double> CompilationTimeout = new OptionKey<>(100D);
+
     @Option(help = "Logs inlined targets for statistical purposes (default: false).") //
     public static final OptionKey<Boolean> LogInlinedTargets = new OptionKey<>(false);
 
-    @Option(help = "Stop partial evaluation when the graph exceeded this size (default: 150000, syntax: [1, inf))", type = OptionType.Debug) //
-    public static final OptionKey<Integer> MaximumGraalGraphSize = new OptionKey<>(150_000);
+    @Option(help = "Stop partial evaluation when the graph exceeded this size, disabled if < 0. (default: -1, syntax: [-inf, inf))", type = OptionType.Debug) //
+    public static final OptionKey<Integer> MaximumGraalGraphSize = new OptionKey<>(-1);
 
+    
     private static final String EXPANSION_SYNTAX = "(syntax: true|false|peTier|truffleTier|lowTier|<tier>,<tier>,...)";
 
     private static final String EXPANSION_VALUES = "Accepted values are:%n" +
@@ -271,6 +276,14 @@ public class TruffleCompilerOptions implements OptionsContainer {
 
     @Option(help = "Enable node source positions in truffle partial evaluations.", type = OptionType.Debug) //
     public static final OptionKey<Boolean> NodeSourcePositions = new OptionKey<>(false);
+
+    @Option(help = "Threshold for enabling deopt cycle detection for a call target. When the number of successful compilation of the call target reaches the threshold, " + //
+            "deopt cycle detection is enabled for the call target. (negative integer means the detection is never enabled, default: 15)")
+    public static final OptionKey<Integer> DeoptCycleDetectionThreshold = new OptionKey<>(15);
+
+    @Option(help = "Maximum allowed repeats of the same compiled code for the same compilable. " + //
+            "Works only if the detection of repeated compilation is enabled after DeoptCycleDetectionThreshold has been reached for the compilable. (negative integer means 0, default: 0)", type = OptionType.Debug) //
+    public static final OptionKey<Integer> DeoptCycleDetectionAllowedRepeats = new OptionKey<>(0);
 
     @Option(help = "Allow assumptions during parsing of seed graphs for partial evaluation. Disables the persistent encoded graph cache 'engine.EncodedGraphCache'. (default: false).", type = OptionType.Debug) //
     public static final OptionKey<Boolean> ParsePEGraphsWithAssumptions = new OptionKey<>(false);
@@ -353,7 +366,7 @@ public class TruffleCompilerOptions implements OptionsContainer {
         return null;
     }
 
-    static OptionValues updateValues(OptionValues graalOptions) {
+    static OptionValues updateValues(OptionValues graalOptions, EconomicMap<OptionKey<?>, Object> parsedTruffleOptions) {
         OptionValues options = graalOptions;
         if (ExpansionStatistics.isEnabled(options)) {
             options = enableNodeSourcePositions(options);
@@ -365,7 +378,19 @@ public class TruffleCompilerOptions implements OptionsContainer {
          * PEA.
          */
         options = new OptionValues(options, BytecodeParserOptions.DoNotMoveAllocationsWithOOMEHandlers, false);
-        return options;
+
+        EconomicMap<OptionKey<?>, Object> extraPairs = OptionValues.asMap(BytecodeParserOptions.DoNotMoveAllocationsWithOOMEHandlers, false);
+        if (!CompilationAlarm.Options.CompilationExpirationPeriod.hasBeenSet(options)) {
+            // Forward the truffle timeout to the compiler
+            double compilationExpiration;
+            if (parsedTruffleOptions.containsKey(CompilationTimeout)) {
+                compilationExpiration = (double) parsedTruffleOptions.get(CompilationTimeout);
+            } else {
+                compilationExpiration = CompilationTimeout.getValue(options);
+            }
+            extraPairs.put(CompilationAlarm.Options.CompilationExpirationPeriod, compilationExpiration);
+        }
+        return new OptionValues(options, extraPairs);
     }
 
     public static String validateOption(String key, String uncheckedValue) {
@@ -384,4 +409,8 @@ public class TruffleCompilerOptions implements OptionsContainer {
         }
     }
 
+    public static boolean maximumGraalGraphSizeEnabled(OptionValues options) {
+        int val = MaximumGraalGraphSize.getValue(options);
+        return val > 0;
+    }
 }

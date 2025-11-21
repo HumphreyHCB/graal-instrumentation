@@ -34,13 +34,13 @@ import static com.oracle.truffle.espresso.classfile.Constants.REF_invokeVirtual;
 import static com.oracle.truffle.espresso.classfile.Constants.REF_newInvokeSpecial;
 import static com.oracle.truffle.espresso.classfile.Constants.REF_putField;
 import static com.oracle.truffle.espresso.classfile.Constants.REF_putStatic;
-import static com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics.PolySigIntrinsics.InvokeGeneric;
-import static com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics.PolySigIntrinsics.None;
+import static com.oracle.truffle.espresso.shared.meta.SignaturePolymorphicIntrinsic.InvokeGeneric;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.ALL_KINDS;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.CONSTANTS;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.CONSTANTS_BEFORE_16;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.LM_UNCONDITIONAL;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.MN_CALLER_SENSITIVE;
+import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.MN_HIDDEN_MEMBER;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.MN_IS_CONSTRUCTOR;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.MN_IS_FIELD;
 import static com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.Constants.MN_IS_METHOD;
@@ -57,6 +57,7 @@ import org.graalvm.collections.Pair;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.espresso.EspressoLanguage;
+import com.oracle.truffle.espresso.classfile.ParserKlass;
 import com.oracle.truffle.espresso.classfile.descriptors.ByteSequence;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Signature;
@@ -74,9 +75,8 @@ import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.EspressoException;
 import com.oracle.truffle.espresso.runtime.EspressoLinkResolver;
-import com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics;
-import com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics.PolySigIntrinsics;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
+import com.oracle.truffle.espresso.shared.meta.SignaturePolymorphicIntrinsic;
 import com.oracle.truffle.espresso.shared.resolver.CallSiteType;
 import com.oracle.truffle.espresso.shared.resolver.ResolvedCall;
 import com.oracle.truffle.espresso.substitutions.EspressoSubstitutions;
@@ -437,7 +437,7 @@ public final class Target_java_lang_invoke_MethodHandleNatives {
 
         // Check if we got a polymorphic signature method, in which case we may need to force
         // the creation of a new signature symbol.
-        PolySigIntrinsics mhMethodId = getPolysignatureIntrinsicID(flags, resolutionKlass, refKind, name);
+        SignaturePolymorphicIntrinsic mhMethodId = getPolysignatureIntrinsicID(flags, resolutionKlass, refKind, name);
 
         if (mhMethodId == InvokeGeneric) {
             // Can not resolve InvokeGeneric, as we would miss the invoker and appendix.
@@ -463,16 +463,16 @@ public final class Target_java_lang_invoke_MethodHandleNatives {
         }
     }
 
-    private static PolySigIntrinsics getPolysignatureIntrinsicID(int flags, Klass resolutionKlass, int refKind, Symbol<Name> name) {
-        PolySigIntrinsics mhMethodId = None;
+    private static SignaturePolymorphicIntrinsic getPolysignatureIntrinsicID(int flags, Klass resolutionKlass, int refKind, Symbol<Name> name) {
+        SignaturePolymorphicIntrinsic mhMethodId = null;
         if (Constants.flagHas(flags, MN_IS_METHOD) &&
-                        Meta.isSignaturePolymorphicHolderType(resolutionKlass.getType())) {
+                        ParserKlass.isSignaturePolymorphicHolderType(resolutionKlass.getType())) {
             if (refKind == REF_invokeVirtual ||
                             refKind == REF_invokeSpecial ||
                             refKind == REF_invokeStatic) {
-                PolySigIntrinsics iid = MethodHandleIntrinsics.getId(name, resolutionKlass);
-                if (iid != None &&
-                                ((refKind == REF_invokeStatic) == (iid.isStaticPolymorphicSignature()))) {
+                SignaturePolymorphicIntrinsic iid = SignaturePolymorphicIntrinsic.getId(name, resolutionKlass);
+                if (iid != null &&
+                                ((refKind == REF_invokeStatic) == (iid.isStaticSignaturePolymorphic()))) {
                     mhMethodId = iid;
                 }
             }
@@ -504,9 +504,9 @@ public final class Target_java_lang_invoke_MethodHandleNatives {
     }
 
     @TruffleBoundary
-    private static Symbol<Signature> lookupSignature(Meta meta, ByteSequence desc, PolySigIntrinsics iid) {
+    private static Symbol<Signature> lookupSignature(Meta meta, ByteSequence desc, SignaturePolymorphicIntrinsic iid) {
         Symbol<Signature> signature;
-        if (iid != None) {
+        if (iid != null) {
             signature = meta.getSignatures().getOrCreateValidSignature(desc);
         } else {
             signature = meta.getSignatures().lookupValidSignature(desc);
@@ -639,6 +639,9 @@ public final class Target_java_lang_invoke_MethodHandleNatives {
         if (target.isCallerSensitive()) {
             res |= MN_CALLER_SENSITIVE;
         }
+        if (target.isHidden()) {
+            res |= MN_HIDDEN_MEMBER;
+        }
         return res;
     }
 
@@ -713,6 +716,7 @@ public final class Target_java_lang_invoke_MethodHandleNatives {
         // @CallerSensitive annotation detected
         public static final int MN_CALLER_SENSITIVE = 0x00100000;
         public static final int MN_TRUSTED_FINAL = 0x00200000; // trusted final field
+        public static final int MN_HIDDEN_MEMBER = 0x00400000; /*- members defined in a hidden class or with @Hidden */
         public static final int MN_REFERENCE_KIND_SHIFT = 24; // refKind
         public static final int MN_REFERENCE_KIND_MASK = 0x0F000000 >> MN_REFERENCE_KIND_SHIFT;
         // The SEARCH_* bits are not for MN.flags but for the matchFlags argument of MHN.getMembers:

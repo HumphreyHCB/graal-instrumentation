@@ -31,22 +31,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.oracle.svm.webimage.wasm.types.WasmValType;
+import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.webimage.codegen.WebImageBackend;
+import com.oracle.svm.hosted.webimage.codegen.reconstruction.ReconstructionData;
+import com.oracle.svm.hosted.webimage.codegen.reconstruction.ScheduleWithReconstructionResult;
 import com.oracle.svm.hosted.webimage.wasm.ast.Function;
 import com.oracle.svm.hosted.webimage.wasm.ast.FunctionTypeDescriptor;
 import com.oracle.svm.hosted.webimage.wasm.ast.TypeUse;
 import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
 import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmIdFactory;
 import com.oracle.svm.hosted.webimage.wasm.phases.WebImageWasmLMAddressLowering;
-import com.oracle.svm.hosted.meta.HostedMethod;
+import com.oracle.svm.webimage.wasm.types.WasmValType;
 
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.cfg.BlockMap;
 import jdk.graal.compiler.graph.Node;
-import jdk.graal.compiler.hightiercodegen.reconstruction.ReconstructionData;
-import jdk.graal.compiler.hightiercodegen.reconstruction.ScheduleWithReconstructionResult;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilderFactory;
 import jdk.graal.compiler.lir.asm.EntryPointDecorator;
 import jdk.graal.compiler.lir.phases.LIRSuites;

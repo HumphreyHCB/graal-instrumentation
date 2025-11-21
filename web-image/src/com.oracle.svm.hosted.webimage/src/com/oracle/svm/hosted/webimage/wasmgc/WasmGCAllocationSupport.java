@@ -37,10 +37,10 @@ import com.oracle.svm.core.reflect.MissingReflectionRegistrationUtils;
 import com.oracle.svm.core.snippets.SnippetRuntime;
 import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.webimage.wasmgc.codegen.WebImageWasmGCProviders;
-import com.oracle.svm.hosted.webimage.wasmgc.snippets.WasmGCAllocationSnippets;
 import com.oracle.svm.hosted.meta.HostedMetaAccess;
 import com.oracle.svm.hosted.meta.HostedType;
+import com.oracle.svm.hosted.webimage.wasmgc.codegen.WebImageWasmGCProviders;
+import com.oracle.svm.hosted.webimage.wasmgc.snippets.WasmGCAllocationSnippets;
 
 import jdk.graal.compiler.graph.Node.NodeIntrinsic;
 import jdk.graal.compiler.nodes.java.DynamicNewArrayNode;
@@ -95,7 +95,7 @@ public class WasmGCAllocationSupport {
         } else if (componentType == DynamicHub.fromClass(void.class)) {
             throw new IllegalArgumentException("Cannot allocate void array.");
         } else if (componentType.getArrayHub() == null || !componentType.getArrayHub().isInstantiated()) {
-            throw MissingReflectionRegistrationUtils.errorForArray(DynamicHub.toClass(componentType), 1);
+            throw MissingReflectionRegistrationUtils.reportArrayInstantiation(DynamicHub.toClass(componentType), 1);
         } else {
             throw VMError.shouldNotReachHereUnexpectedInput(componentType); // ExcludeFromJacocoGeneratedReport
         }

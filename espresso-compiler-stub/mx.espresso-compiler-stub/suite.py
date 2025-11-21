@@ -22,7 +22,7 @@
 #
 
 suite = {
-    "mxversion": "7.33.0",
+    "mxversion": "7.58.0",
     "name": "espresso-compiler-stub",
     "version": "24.2.0",
     "release": False,
@@ -76,11 +76,15 @@ suite = {
                 "jdk.internal.vm.ci": [
                     "jdk.vm.ci.code",
                     "jdk.vm.ci.meta",
+                    "jdk.vm.ci.meta.annotation",
                     "jdk.vm.ci.runtime",
                 ],
             },
-            "javaCompliance": "8+",
+            "javaCompliance": "21+",
             "checkstyle": "com.oracle.truffle.espresso",
+            # Reference to jdk.vm.ci.meta.annotation
+            # causes spotbugs analysis to fail due to missing classes
+            "spotbugs": "false"
         },
     },
 

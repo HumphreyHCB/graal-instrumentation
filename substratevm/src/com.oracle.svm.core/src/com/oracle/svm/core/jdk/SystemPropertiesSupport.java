@@ -25,7 +25,6 @@
 package com.oracle.svm.core.jdk;
 
 import static jdk.graal.compiler.core.common.LibGraalSupport.LIBGRAAL_SETTING_PROPERTY_PREFIX;
-import static jdk.graal.compiler.nodes.extended.MembarNode.FenceKind.STORE_STORE;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +35,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import com.oracle.svm.core.SubstrateOptions;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
@@ -44,14 +42,14 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.RuntimeSystemProperties;
 import org.graalvm.nativeimage.impl.RuntimeSystemPropertiesSupport;
 
-import com.oracle.svm.core.SubstrateUtil;
+import com.oracle.svm.core.FutureDefaultsOptions;
+import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.VM;
 import com.oracle.svm.core.c.locale.LocaleSupport;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.nodes.extended.MembarNode;
 
 /**
  * This class maintains the system properties at run time.
@@ -69,6 +67,15 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
     private static final String[] HOSTED_PROPERTIES = {
                     "java.version",
                     "java.version.date",
+                    "java.class.version",
+                    "java.runtime.version",
+                    "java.specification.name",
+                    "java.specification.vendor",
+                    "java.specification.version",
+                    "java.specification.maintenance.version",
+                    "java.vm.specification.name",
+                    "java.vm.specification.vendor",
+                    "java.vm.specification.version",
                     ImageInfo.PROPERTY_IMAGE_KIND_KEY,
                     /*
                      * We do not support cross-compilation for now. Separators might also be cached
@@ -83,14 +90,7 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
                     "native.encoding",
                     "stdout.encoding",
                     "stderr.encoding",
-                    "java.class.version",
-                    "java.runtime.version",
-                    "java.specification.name",
-                    "java.specification.vendor",
-                    "java.specification.version",
-                    "java.vm.specification.name",
-                    "java.vm.specification.vendor",
-                    "java.vm.specification.version"
+                    "stdin.encoding",
     };
 
     /** System properties that are computed at run time on first access. */
@@ -128,7 +128,7 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
         initializeProperty("java.vendor", vm.vendor);
         initializeProperty("java.vendor.url", vm.vendorUrl);
         initializeProperty("java.vendor.version", vm.vendorVersion);
-        assert vm.info.equals(vm.info.toLowerCase(Locale.ROOT)) : "java.vm.info should not contain uppercase characters";
+        assert vm.info.equals(vm.info.toLowerCase(Locale.ROOT)) : "java.vm.info should not contain uppercase characters: " + vm.info;
         initializeProperty("java.vm.info", vm.info);
         initializeProperty("java.vm.name", "Substrate VM");
         initializeProperty("java.vm.vendor", vm.vendor);
@@ -140,6 +140,10 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
         initializeProperty("sun.arch.data.model", Integer.toString(ConfigurationValues.getTarget().wordJavaKind.getBitCount()));
 
         initializeProperty(ImageInfo.PROPERTY_IMAGE_CODE_KEY, ImageInfo.PROPERTY_IMAGE_CODE_VALUE_RUNTIME);
+
+        for (String futureDefault : FutureDefaultsOptions.getFutureDefaults()) {
+            initializeProperty(FutureDefaultsOptions.SYSTEM_PROPERTY_PREFIX + futureDefault, Boolean.TRUE.toString());
+        }
 
         ArrayList<LazySystemProperty> lazyProperties = new ArrayList<>();
         lazyProperties.add(new LazySystemProperty(UserSystemProperty.NAME, this::userNameValue));
@@ -287,8 +291,8 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
         }
 
         /*
-         * No memory barrier is needed because the loop above already emits one STORE_STORE barrier
-         * per initialized system property.
+         * No memory barrier is needed here (same reasoning as for
+         * LazySystemProperty.markAsInitialized()).
          */
         allPropertiesInitialized = true;
     }
@@ -311,13 +315,7 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
         }
 
         LazySystemProperty property = lazySystemProperties.get(key);
-        if (property != null) {
-            ensureInitialized(property);
-        }
-    }
-
-    private void ensureInitialized(LazySystemProperty property) {
-        if (!property.isInitialized()) {
+        if (property != null && !property.isInitialized()) {
             initializeProperty(property);
         }
     }
@@ -378,11 +376,12 @@ public abstract class SystemPropertiesSupport implements RuntimeSystemProperties
             return supplier.get();
         }
 
+        /**
+         * No memory barrier is needed here because the involved maps ({@link #initialProperties}
+         * and {@link #currentProperties}) already use acquire/release semantics when a value is
+         * added or accessed.
+         */
         public void markAsInitialized() {
-            if (!SubstrateUtil.HOSTED) {
-                /* Ensure that other threads see consistent values once 'initialized' is true. */
-                MembarNode.memoryBarrier(STORE_STORE);
-            }
             initialized = true;
         }
     }

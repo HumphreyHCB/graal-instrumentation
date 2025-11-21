@@ -50,7 +50,6 @@ import com.oracle.svm.core.jfr.events.EveryChunkNativePeriodicEvents;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 
 import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.jfr.FlightRecorder;
 import jdk.jfr.internal.LogLevel;
 import jdk.jfr.internal.LogTag;
@@ -78,14 +77,14 @@ public class JfrManager {
 
     public static RuntimeSupport.Hook initializationHook() {
         /* Parse arguments early on so that we can tear down the isolate more easily if it fails. */
-        return isFirstIsolate -> {
+        return _ -> {
             parseFlightRecorderLogging();
             parseFlightRecorderOptions();
         };
     }
 
     public static RuntimeSupport.Hook startupHook() {
-        return isFirstIsolate -> {
+        return _ -> {
             periodicEventSetup();
 
             boolean startRecording = SubstrateOptions.FlightRecorder.getValue() || !SubstrateOptions.StartFlightRecording.getValue().isEmpty();
@@ -148,17 +147,12 @@ public class JfrManager {
     }
 
     private static void setRepositoryBasePath(String repositoryPath) throws IOException {
-        if (JavaVersionUtil.JAVA_SPEC == 21) {
-            Target_jdk_jfr_internal_SecuritySupport_SafePath_JDK21 repositorySafePath = new Target_jdk_jfr_internal_SecuritySupport_SafePath_JDK21(repositoryPath);
-            SubstrateUtil.cast(Repository.getRepository(), Target_jdk_jfr_internal_Repository_JDK21.class).setBasePath(repositorySafePath);
-        } else {
-            Path path = Paths.get(repositoryPath);
-            SubstrateUtil.cast(Repository.getRepository(), Target_jdk_jfr_internal_Repository.class).setBasePath(path);
-        }
+        Path path = Paths.get(repositoryPath);
+        SubstrateUtil.cast(Repository.getRepository(), Target_jdk_jfr_internal_Repository.class).setBasePath(path);
     }
 
     public static RuntimeSupport.Hook shutdownHook() {
-        return isFirstIsolate -> {
+        return _ -> {
             /*
              * Everything should already have been torn down by JVM.destroyJFR(), which is called in
              * a shutdown hook. So in this method we should only unregister periodic events.

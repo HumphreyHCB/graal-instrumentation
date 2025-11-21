@@ -55,6 +55,12 @@ public interface LibGraalSupport {
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD})
     @interface HostedOnly {
+        /**
+         * The name of a libgraal build-time system property that allows the annotated element to be
+         * used at libgraal run time. The value of the property is parsed using
+         * {@link Boolean#parseBoolean}.
+         */
+        String unlessTrue() default "";
     }
 
     /**
@@ -117,7 +123,7 @@ public interface LibGraalSupport {
      * Dumps the heap to {@code outputFile} in hprof format.
      *
      * @param live if true, performs a full GC first so that only live objects are dumped
-     * @throws IOException if an IO error occurred dyring dumping
+     * @throws IOException if an IO error occurred during dumping
      * @throws UnsupportedOperationException if this operation is not supported.
      */
     void dumpHeap(String outputFile, boolean live) throws IOException;
@@ -165,6 +171,8 @@ public interface LibGraalSupport {
 
     /**
      * Returns true if the current runtime is in the libgraal native image (i.e. SVM).
+     *
+     * This method is intrinsified by Native Image to return true.
      */
     static boolean inLibGraalRuntime() {
         return false;
@@ -177,7 +185,7 @@ public interface LibGraalSupport {
     LibGraalSupport INSTANCE = Init.init();
 
     /**
-     * Initializaton support for {@link LibGraalSupport#INSTANCE}.
+     * Initialization support for {@link LibGraalSupport#INSTANCE}.
      */
     class Init {
         @SuppressWarnings("try")

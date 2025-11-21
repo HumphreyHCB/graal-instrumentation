@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,11 +25,11 @@
 package com.oracle.graal.reachability;
 
 import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.pointsto.AbstractAnalysisEngine;
@@ -150,15 +150,18 @@ public abstract class ReachabilityAnalysisEngine extends AbstractAnalysisEngine 
     }
 
     @Override
-    public AnalysisType addRootField(Field field) {
-        AnalysisField analysisField = getMetaAccess().lookupJavaField(field);
-        return addRootField(analysisField);
-    }
-
-    @Override
     public AnalysisType addRootField(AnalysisField analysisField) {
         analysisField.registerAsAccessed("root field");
         return analysisField.getType();
+    }
+
+    @Override
+    public void injectFieldTypes(AnalysisField aField, List<AnalysisType> customTypes, boolean canBeNull) {
+        assert aField.getStorageKind().isObject();
+        aField.registerAsAccessed("@UnknownObjectField annotated field.");
+        for (AnalysisType declaredType : customTypes) {
+            declaredType.registerAsReachable("injected field types for unknown annotated field " + aField.format("%H.%n"));
+        }
     }
 
     @Override
@@ -166,24 +169,19 @@ public abstract class ReachabilityAnalysisEngine extends AbstractAnalysisEngine 
         assert otherRoots.length == 0 : otherRoots;
         ReachabilityAnalysisMethod method = (ReachabilityAnalysisMethod) m;
         if (m.isStatic()) {
-            postTask(() -> {
-                if (method.registerAsDirectRootMethod(reason)) {
-                    markMethodImplementationInvoked(method, reason);
-                }
-            });
+            if (method.registerAsDirectRootMethod(reason)) {
+                postTask(() -> markMethodImplementationInvoked(method, reason));
+            }
+
         } else if (invokeSpecial) {
             AnalysisError.guarantee(!method.isAbstract(), "Abstract methods cannot be registered as special invoke entry point.");
-            postTask(() -> {
-                if (method.registerAsDirectRootMethod(reason)) {
-                    markMethodImplementationInvoked(method, reason);
-                }
-            });
+            if (method.registerAsDirectRootMethod(reason)) {
+                postTask(() -> markMethodImplementationInvoked(method, reason));
+            }
         } else {
-            postTask(() -> {
-                if (method.registerAsVirtualRootMethod(reason)) {
-                    markMethodInvoked(method, reason);
-                }
-            });
+            if (method.registerAsVirtualRootMethod(reason)) {
+                postTask(() -> markMethodInvoked(method, reason));
+            }
         }
         return method;
     }
@@ -296,6 +294,7 @@ public abstract class ReachabilityAnalysisEngine extends AbstractAnalysisEngine 
 
     @Override
     public boolean finish() throws InterruptedException {
+        assert isInitialized();
         do {
             runReachability();
             assert executor.getPostedOperations() == 0 : executor.getPostedOperations();

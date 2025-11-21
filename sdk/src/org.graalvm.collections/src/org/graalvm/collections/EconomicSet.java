@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -167,8 +167,7 @@ public interface EconomicSet<E> extends UnmodifiableEconomicSet<E> {
 
     /**
      * Creates a new set guaranteeing insertion order when iterating over its elements with the
-     * default {@link Equivalence#DEFAULT} comparison strategy and inserts all elements of the
-     * specified collection.
+     * default {@link Equivalence#DEFAULT} comparison strategy.
      *
      * @since 19.0
      */
@@ -205,5 +204,28 @@ public interface EconomicSet<E> extends UnmodifiableEconomicSet<E> {
      */
     static <E> EconomicSet<E> create(Equivalence strategy, UnmodifiableEconomicSet<E> c) {
         return EconomicMapImpl.create(strategy, c, true);
+    }
+
+    /**
+     * Creates a new set guaranteeing insertion order when iterating over its elements with the
+     * default {@link Equivalence#DEFAULT} comparison strategy and inserts all elements of the
+     * specified iterable.
+     *
+     * @since 25.1
+     */
+    static <E> EconomicSet<E> create(Iterable<E> c) {
+        EconomicSet<E> set = create();
+        set.addAll(c);
+        return set;
+    }
+
+    /**
+     * Return an empty, unmodifiable {@link EconomicSet}.
+     *
+     * @since 25.0
+     */
+    @SuppressWarnings("unchecked")
+    static <E> EconomicSet<E> emptySet() {
+        return (EconomicSet<E>) EmptySet.EMPTY_SET;
     }
 }

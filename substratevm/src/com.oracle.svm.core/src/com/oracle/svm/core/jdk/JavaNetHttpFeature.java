@@ -27,19 +27,27 @@ package com.oracle.svm.core.jdk;
 import java.util.Optional;
 
 import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
 import com.oracle.svm.configure.ResourcesRegistry;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
+import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
+import com.oracle.svm.core.traits.SingletonTraits;
+import com.oracle.svm.util.HostModuleUtil;
+import com.oracle.svm.util.ResolvedJavaModule;
+import com.oracle.svm.util.ResolvedJavaModuleLayer;
 
 @AutomaticallyRegisteredFeature
+@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 public class JavaNetHttpFeature extends JNIRegistrationUtil implements InternalFeature {
 
-    private static Optional<Module> requiredModule() {
-        return ModuleLayer.boot().findModule("java.net.http");
+    private static Optional<ResolvedJavaModule> requiredModule() {
+        return ResolvedJavaModuleLayer.boot().findModule("java.net.http");
     }
 
     @Override
@@ -49,7 +57,7 @@ public class JavaNetHttpFeature extends JNIRegistrationUtil implements InternalF
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        JavaNetHttpFeature.class.getModule().addReads(requiredModule().get());
+        HostModuleUtil.addReads(JavaNetHttpFeature.class, requiredModule().get());
     }
 
     @Override
@@ -72,10 +80,11 @@ public class JavaNetHttpFeature extends JNIRegistrationUtil implements InternalF
 }
 
 @AutomaticallyRegisteredFeature
+@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 class SimpleWebServerFeature implements InternalFeature {
 
-    private static Optional<Module> requiredModule() {
-        return ModuleLayer.boot().findModule("jdk.httpserver");
+    private static Optional<ResolvedJavaModule> requiredModule() {
+        return ResolvedJavaModuleLayer.boot().findModule("jdk.httpserver");
     }
 
     @Override
@@ -85,7 +94,7 @@ class SimpleWebServerFeature implements InternalFeature {
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        SimpleWebServerFeature.class.getModule().addReads(requiredModule().get());
+        HostModuleUtil.addReads(SimpleWebServerFeature.class, requiredModule().get());
 
         RuntimeClassInitializationSupport rci = ImageSingletons.lookup(RuntimeClassInitializationSupport.class);
         rci.initializeAtRunTime("sun.net.httpserver.simpleserver", "Allocates InetAddress in class initializers");
@@ -93,8 +102,8 @@ class SimpleWebServerFeature implements InternalFeature {
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        access.registerReachabilityHandler(a -> {
-            ResourcesRegistry.singleton().addResourceBundles(ConfigurationCondition.alwaysTrue(), "sun.net.httpserver.simpleserver.resources.simpleserver");
+        access.registerReachabilityHandler(_ -> {
+            ResourcesRegistry.singleton().addResourceBundles(AccessCondition.unconditional(), false, "sun.net.httpserver.simpleserver.resources.simpleserver");
         }, access.findClassByName("sun.net.httpserver.simpleserver.SimpleFileServerImpl"));
     }
 }

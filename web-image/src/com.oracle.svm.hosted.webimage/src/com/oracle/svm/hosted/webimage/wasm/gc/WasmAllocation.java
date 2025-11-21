@@ -38,8 +38,6 @@ import org.graalvm.word.Pointer;
 import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
 
-import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
-import com.oracle.svm.webimage.wasmgc.annotation.WasmExport;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.JavaMemoryUtil;
@@ -58,6 +56,8 @@ import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.UnsignedUtils;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmTrapNode;
+import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
+import com.oracle.svm.webimage.wasmgc.annotation.WasmExport;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.options.Option;
@@ -809,21 +809,18 @@ public final class WasmAllocation {
         }
     }
 
-    public static boolean walkObjects(ObjectVisitor visitor) {
+    public static void walkObjects(ObjectVisitor visitor) {
         Pointer currentBlock = MemoryLayout.getAllocatorBase();
         while (currentBlock.belowThan(MemoryLayout.getAllocatorTop())) {
             BlockHeader header = StackValue.get(BlockHeader.class);
             readBlockHeader(currentBlock, header);
 
             if (header.getIsObject()) {
-                if (!visitor.visitObject(getInnerPointer(currentBlock).toObjectNonNull())) {
-                    return false;
-                }
+                visitor.visitObject(getInnerPointer(currentBlock).toObjectNonNull());
             }
 
             currentBlock = getNextBlock(currentBlock, header);
         }
-        return true;
     }
 
     /**

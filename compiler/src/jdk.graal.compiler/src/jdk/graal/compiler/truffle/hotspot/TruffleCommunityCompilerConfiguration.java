@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,20 +24,17 @@
  */
 package jdk.graal.compiler.truffle.hotspot;
 
-import jdk.graal.compiler.core.phases.CommunityCompilerConfiguration;
-import jdk.graal.compiler.core.phases.HighTier;
-import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Plugins;
-import jdk.graal.compiler.nodes.spi.Replacements;
-import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.truffle.host.InjectImmutableFrameFieldsPhase;
-import jdk.graal.compiler.truffle.host.HostInliningPhase;
-import jdk.graal.compiler.truffle.substitutions.TruffleInvocationPlugins;
+import java.util.function.Supplier;
 
 import com.oracle.truffle.compiler.TruffleCompilerRuntime;
 
+import jdk.graal.compiler.core.phases.CommunityCompilerConfiguration;
+import jdk.graal.compiler.core.phases.HighTier;
+import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Plugins;
+import jdk.graal.compiler.options.OptionValues;
+import jdk.graal.compiler.truffle.host.HostInliningPhase;
+import jdk.graal.compiler.truffle.substitutions.TruffleInvocationPlugins;
 import jdk.vm.ci.code.Architecture;
-
-import java.util.function.Supplier;
 
 /**
  * Central place to register Truffle related compiler phases and plugins for host Java compilation
@@ -63,21 +60,20 @@ public final class TruffleCommunityCompilerConfiguration extends CommunityCompil
 
     public static void installCommunityHighTier(OptionValues options, HighTier defaultHighTier) {
         HostInliningPhase.install(defaultHighTier, options);
-        InjectImmutableFrameFieldsPhase.install(defaultHighTier, options);
     }
 
     @Override
-    public void registerGraphBuilderPlugins(Architecture arch, Plugins plugins, OptionValues options, Replacements replacements) {
-        super.registerGraphBuilderPlugins(arch, plugins, options, replacements);
-        registerCommunityGraphBuilderPlugins(arch, plugins, options, replacements);
+    public void registerGraphBuilderPlugins(Architecture arch, Plugins plugins, OptionValues options) {
+        super.registerGraphBuilderPlugins(arch, plugins, options);
+        registerCommunityGraphBuilderPlugins(arch, plugins, options);
     }
 
-    public static void registerCommunityGraphBuilderPlugins(Architecture arch, Plugins plugins, OptionValues options, Replacements replacements) {
+    public static void registerCommunityGraphBuilderPlugins(Architecture arch, Plugins plugins, OptionValues options) {
         HostInliningPhase.installInlineInvokePlugin(plugins, options);
         plugins.getInvocationPlugins().defer(new Runnable() {
             @Override
             public void run() {
-                TruffleInvocationPlugins.register(arch, plugins.getInvocationPlugins(), replacements);
+                TruffleInvocationPlugins.register(arch, plugins.getInvocationPlugins());
             }
         });
     }

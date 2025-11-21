@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,6 +43,7 @@ import com.oracle.truffle.runtime.OptimizedTruffleRuntime;
 
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.graph.Graph;
 import jdk.graal.compiler.graph.Node;
@@ -62,6 +63,7 @@ import jdk.graal.compiler.truffle.TruffleCompilerImpl;
 import jdk.graal.compiler.truffle.TruffleDebugJavaMethod;
 import jdk.graal.compiler.truffle.TruffleTierContext;
 import jdk.graal.compiler.truffle.phases.TruffleTier;
+import jdk.graal.compiler.util.CollectionsUtil;
 import jdk.vm.ci.code.BailoutException;
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
@@ -71,8 +73,8 @@ import jdk.vm.ci.meta.SpeculationLog;
 
 public abstract class PartialEvaluationTest extends TruffleCompilerImplTest {
 
-    private static final Set<String> WRAPPER_CLASSES = Set.of(Boolean.class.getName(), Byte.class.getName(), Character.class.getName(), Float.class.getName(), Integer.class.getName(),
-                    Long.class.getName(), Short.class.getName(), Double.class.getName());
+    private static final Set<String> WRAPPER_CLASSES = CollectionsUtil.setOf(Boolean.class.getName(), Byte.class.getName(), Character.class.getName(), Float.class.getName(),
+                    Integer.class.getName(), Long.class.getName(), Short.class.getName(), Double.class.getName());
 
     protected CompilationResult lastCompilationResult;
     DebugContext lastDebug;
@@ -287,7 +289,7 @@ public abstract class PartialEvaluationTest extends TruffleCompilerImplTest {
         TruffleCompilationTask task = newTask();
         TruffleCompilerImpl compiler = getTruffleCompiler(compilable);
         try (TruffleCompilation compilation = compiler.openCompilation(task, compilable)) {
-            try (DebugContext.Scope s = debug.scope("TruffleCompilation", new TruffleDebugJavaMethod(task, compilable))) {
+            try (DebugContext.Scope _ = debug.scope("TruffleCompilation", new TruffleDebugJavaMethod(task, compilable))) {
                 SpeculationLog speculationLog = compilable.getCompilationSpeculationLog();
                 if (speculationLog != null) {
                     speculationLog.collectFailedSpeculations();
@@ -298,14 +300,15 @@ public abstract class PartialEvaluationTest extends TruffleCompilerImplTest {
                 TruffleTier truffleTier = compiler.getTruffleTier();
                 final PartialEvaluator partialEvaluator = compiler.getPartialEvaluator();
                 try (PerformanceInformationHandler handler = PerformanceInformationHandler.install(
-                                compiler.getConfig().runtime(), compiler.getOrCreateCompilerOptions(compilable))) {
+                                compiler.getConfig().runtime(), compiler.getOrCreateCompilerOptions(compilable));
+                                CompilationAlarm alarm = CompilationAlarm.trackCompilationPeriod(debug.getOptions())) {
                     final TruffleTierContext context = TruffleTierContext.createInitialContext(partialEvaluator,
                                     compiler.getOrCreateCompilerOptions(compilable),
                                     debug, compilable,
                                     compilation.getCompilationId(), speculationLog,
                                     task,
                                     handler);
-                    try (Graph.NodeEventScope nes = nodeEventListener == null ? null : context.graph.trackNodeEvents(nodeEventListener)) {
+                    try (Graph.NodeEventScope _ = nodeEventListener == null ? null : context.graph.trackNodeEvents(nodeEventListener)) {
                         truffleTier.apply(context.graph, context);
                         lastCompiledGraph = context.graph;
                         return context.graph;

@@ -54,6 +54,7 @@ import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedUniverse;
+import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.graph.Node;
@@ -136,7 +137,7 @@ public class DeoptimizationUtils {
             return false;
         }
 
-        if (method.getAnnotation(DeoptTest.class) != null) {
+        if (AnnotationUtil.getAnnotation(method, DeoptTest.class) != null) {
             return true;
         }
 
@@ -169,7 +170,7 @@ public class DeoptimizationUtils {
         if (Uninterruptible.Utils.isUninterruptible(method)) {
             return false;
         }
-        if (method.getAnnotation(RestrictHeapAccess.class) != null) {
+        if (AnnotationUtil.getAnnotation(method, RestrictHeapAccess.class) != null) {
             return false;
         }
         if (StubCallingConvention.Utils.hasStubCallingConvention(method)) {
@@ -219,13 +220,41 @@ public class DeoptimizationUtils {
 
     static void removeDeoptTargetOptimizations(Suites suites) {
         GraalConfiguration.hostedInstance().removeDeoptTargetOptimizations(suites);
-
         PhaseSuite<HighTierContext> highTier = suites.getHighTier();
         highTier.removePhase(PartialEscapePhase.class);
         highTier.removePhase(ReadEliminationPhase.class);
         highTier.removePhase(BoxNodeOptimizationPhase.class);
         PhaseSuite<MidTierContext> midTier = suites.getMidTier();
         midTier.removePhase(FloatingReadPhase.class);
+        replaceFixReadsPhase(suites);
+    }
+
+    static void removeDeoptTargetOptimizations(LIRSuites lirSuites) {
+        ListIterator<LIRPhase<PostAllocationOptimizationPhase.PostAllocationOptimizationContext>> it = lirSuites.getPostAllocationOptimizationStage().findPhase(RedundantMoveElimination.class);
+        if (it != null) {
+            it.remove();
+        }
+        setNeverSpillConstants(lirSuites);
+    }
+
+    static void removeDeoptTargetFallbackOptimizations(@SuppressWarnings("unused") Suites suites) {
+        replaceFixReadsPhase(suites);
+    }
+
+    static void removeDeoptTargetFallbackOptimizations(LIRSuites lirSuites) {
+        setNeverSpillConstants(lirSuites);
+    }
+
+    /**
+     * At deoptimization entry points we need to be able to recreate the stack from the
+     * {@code LIRFrameState}. As constants are not part of the state, we must not spill them. See
+     * {@code VerifyDeoptLIRFrameStatesPhase#doState}.
+     */
+    private static void setNeverSpillConstants(LIRSuites lirSuites) {
+        lirSuites.getAllocationStage().findPhaseInstance(RegisterAllocationPhase.class).setNeverSpillConstants(true);
+    }
+
+    private static void replaceFixReadsPhase(Suites suites) {
         PhaseSuite<LowTierContext> lowTier = suites.getLowTier();
         ListIterator<BasePhase<? super LowTierContext>> it = lowTier.findPhase(FixReadsPhase.class);
         if (it != null) {
@@ -234,14 +263,6 @@ public class DeoptimizationUtils {
             boolean replaceInputsWithConstants = false;
             it.add(new FixReadsPhase(replaceInputsWithConstants, fixReads.getSchedulePhase()));
         }
-    }
-
-    static void removeDeoptTargetOptimizations(LIRSuites lirSuites) {
-        ListIterator<LIRPhase<PostAllocationOptimizationPhase.PostAllocationOptimizationContext>> it = lirSuites.getPostAllocationOptimizationStage().findPhase(RedundantMoveElimination.class);
-        if (it != null) {
-            it.remove();
-        }
-        lirSuites.getAllocationStage().findPhaseInstance(RegisterAllocationPhase.class).setNeverSpillConstants(true);
     }
 
     public static boolean isDeoptEntry(HostedMethod method, CompilationResult compilation, Infopoint infopoint) {
@@ -304,7 +325,7 @@ public class DeoptimizationUtils {
                     long encodedBci = FrameInfoEncoder.encodeBci(frame.getBCI(), FrameState.StackState.of(frame));
 
                     BytecodeFrame previous = encodedBciMap.put(encodedBci, frame);
-                    assert previous == null : "duplicate encoded bci " + encodedBci + " in deopt target " + method + " found.\n\n" + frame +
+                    assert previous == null : "duplicate encoded bci " + encodedBci + " (original=" + frame.getBCI() + ") in deopt target " + method + " found.\n\n" + frame +
                                     "\n\n" + previous;
                 }
 

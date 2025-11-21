@@ -214,4 +214,23 @@ public interface TruffleCompilable {
      */
     Map<String, String> getCompilerOptions();
 
+    /**
+     * Returns the number of successful compilations of this compilable. All compilation tiers are
+     * counted together.
+     */
+    default int getSuccessfulCompilationCount() {
+        return 0;
+    }
+
+    /**
+     * Returns <code>true</code> if this compilable can be inlined. Please note that this does not
+     * mean it will always be inlined, as inlining is a complex process that takes many factors into
+     * account. If this method returns <code>false</code>, it will never be inlined. This typically
+     * means that compilation with this compilable as the root has failed.
+     * 
+     * 
+     */
+    default boolean canBeInlined() {
+        return true;
+    }
 }

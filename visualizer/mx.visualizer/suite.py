@@ -21,7 +21,7 @@
 # questions.
 
 suite = {
-  "mxversion": "7.33.0",
+  "mxversion": "7.55.2",
   "name" : "visualizer",
 
 
@@ -50,19 +50,6 @@ suite = {
       "dependencies" : [
         "IdealGraphVisualizer",
       ],
-    },
-
-    "IGV_DATA_SETTINGS": {
-      "dependencies" : [
-        "IGV",
-      ],
-      "layout" : {
-        "./": [
-          "file:IdealGraphVisualizer/Data/build/classes/*",
-          "file:IdealGraphVisualizer/Settings/build/classes/*"
-          ],
-      },
-      "defaultBuild" : False,
     },
   },
 }

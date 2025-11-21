@@ -40,6 +40,7 @@ import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.thread.VMOperation;
 import com.oracle.svm.core.thread.VMThreads;
 
+import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.word.Word;
 
 public final class YoungGeneration extends Generation {
@@ -49,6 +50,7 @@ public final class YoungGeneration extends Generation {
     private final GreyObjectsWalker[] survivorGreyObjectsWalkers;
     private final ChunksAccounting survivorsToSpacesAccounting;
     private final int maxSurvivorSpaces;
+    private final HeapAllocation heapAllocation = new HeapAllocation();
 
     @Platforms(Platform.HOSTED_ONLY.class)
     YoungGeneration(String name) {
@@ -67,6 +69,11 @@ public final class YoungGeneration extends Generation {
         }
     }
 
+    @Fold
+    public static HeapAllocation getHeapAllocation() {
+        return HeapImpl.getHeapImpl().getYoungGeneration().heapAllocation;
+    }
+
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public int getMaxSurvivorSpaces() {
         return maxSurvivorSpaces;
@@ -74,7 +81,8 @@ public final class YoungGeneration extends Generation {
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     void tearDown() {
-        ThreadLocalAllocation.tearDown();
+        heapAllocation.tearDown();
+        TlabSupport.tearDown();
         eden.tearDown();
         for (int i = 0; i < maxSurvivorSpaces; i++) {
             survivorFromSpaces[i].tearDown();
@@ -83,22 +91,12 @@ public final class YoungGeneration extends Generation {
     }
 
     @Override
-    public boolean walkObjects(ObjectVisitor visitor) {
-        /* Flush the thread-local allocation data. */
-        ThreadLocalAllocation.disableAndFlushForAllThreads();
-
-        if (!getEden().walkObjects(visitor)) {
-            return false;
-        }
+    public void walkObjects(ObjectVisitor visitor) {
+        getEden().walkObjects(visitor);
         for (int i = 0; i < maxSurvivorSpaces; i++) {
-            if (!survivorFromSpaces[i].walkObjects(visitor)) {
-                return false;
-            }
-            if (!survivorToSpaces[i].walkObjects(visitor)) {
-                return false;
-            }
+            survivorFromSpaces[i].walkObjects(visitor);
+            survivorToSpaces[i].walkObjects(visitor);
         }
-        return true;
     }
 
     @Override
@@ -112,8 +110,10 @@ public final class YoungGeneration extends Generation {
 
     public void logChunks(Log log, boolean allowUnsafe) {
         if (allowUnsafe) {
+            heapAllocation.logChunks(log, eden.getShortName());
+
             for (IsolateThread thread = VMThreads.firstThreadUnsafe(); thread.isNonNull(); thread = VMThreads.nextThread(thread)) {
-                logTlabChunks(log, thread);
+                TlabSupport.logTlabChunks(log, thread, eden.getShortName());
             }
         }
 
@@ -122,15 +122,6 @@ public final class YoungGeneration extends Generation {
             this.survivorFromSpaces[i].logChunks(log);
             this.survivorToSpaces[i].logChunks(log);
         }
-    }
-
-    private void logTlabChunks(Log log, IsolateThread thread) {
-        ThreadLocalAllocation.Descriptor tlab = HeapImpl.getTlabUnsafe(thread);
-        AlignedHeapChunk.AlignedHeader aChunk = tlab.getAlignedChunk();
-        HeapChunkLogging.logChunks(log, aChunk, eden.getShortName(), false);
-
-        UnalignedHeapChunk.UnalignedHeader uChunk = tlab.getUnalignedChunk();
-        HeapChunkLogging.logChunks(log, uChunk, eden.getShortName(), false);
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -283,7 +274,7 @@ public final class YoungGeneration extends Generation {
         // survivor space. If it does not, we return null here to tell the caller.
         int age = originalSpace.getNextAgeForPromotion();
         Space toSpace = getSurvivorToSpaceAt(age - 1);
-        return toSpace.copyAlignedObject(original, originalSpace);
+        return ObjectPromoter.copyAlignedObject(original, originalSpace, toSpace);
     }
 
     @AlwaysInline("GC performance")
@@ -298,7 +289,7 @@ public final class YoungGeneration extends Generation {
 
         int age = originalSpace.getNextAgeForPromotion();
         Space toSpace = getSurvivorToSpaceAt(age - 1);
-        toSpace.promoteUnalignedHeapChunk(originalChunk, originalSpace);
+        ObjectPromoter.promoteUnalignedHeapChunk(originalChunk, originalSpace, toSpace);
         return original;
     }
 
@@ -314,9 +305,9 @@ public final class YoungGeneration extends Generation {
         int age = originalSpace.getNextAgeForPromotion();
         Space toSpace = getSurvivorToSpaceAt(age - 1);
         if (isAligned) {
-            toSpace.promoteAlignedHeapChunk((AlignedHeapChunk.AlignedHeader) originalChunk, originalSpace);
+            ObjectPromoter.promoteAlignedHeapChunk((AlignedHeapChunk.AlignedHeader) originalChunk, originalSpace, toSpace);
         } else {
-            toSpace.promoteUnalignedHeapChunk((UnalignedHeapChunk.UnalignedHeader) originalChunk, originalSpace);
+            ObjectPromoter.promoteUnalignedHeapChunk((UnalignedHeapChunk.UnalignedHeader) originalChunk, originalSpace, toSpace);
         }
         return true;
     }
@@ -385,4 +376,10 @@ public final class YoungGeneration extends Generation {
         }
         return false;
     }
+
+    void makeParseable() {
+        TlabSupport.disableAndFlushForAllThreads();
+        heapAllocation.retireChunksToEden();
+    }
+
 }

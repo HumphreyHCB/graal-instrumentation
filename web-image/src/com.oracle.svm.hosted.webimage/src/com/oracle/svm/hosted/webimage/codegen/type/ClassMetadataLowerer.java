@@ -26,9 +26,9 @@ package com.oracle.svm.hosted.webimage.codegen.type;
 
 import static com.oracle.svm.hosted.webimage.codegen.RuntimeConstants.RUNTIME_SYMBOL;
 import static com.oracle.svm.hosted.webimage.codegen.RuntimeConstants.UNDEFINED;
-import static jdk.graal.compiler.hightiercodegen.Emitter.of;
-import static jdk.graal.compiler.hightiercodegen.Emitter.ofArray;
-import static jdk.graal.compiler.hightiercodegen.Emitter.ofObject;
+import static com.oracle.svm.webimage.hightiercodegen.Emitter.of;
+import static com.oracle.svm.webimage.hightiercodegen.Emitter.ofArray;
+import static com.oracle.svm.webimage.hightiercodegen.Emitter.ofObject;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -39,25 +39,25 @@ import java.util.stream.Collectors;
 
 import org.graalvm.webimage.api.JSObject;
 
-import com.oracle.svm.webimage.JSKeyword;
-import com.oracle.svm.webimage.api.Nothing;
-import com.oracle.svm.webimage.type.TypeControl;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.config.ObjectLayout;
 import com.oracle.svm.core.meta.SharedType;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.graal.meta.SubstrateField;
-import com.oracle.svm.hosted.webimage.JSCodeBuffer;
-import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
-import com.oracle.svm.hosted.webimage.codegen.RuntimeConstants;
-import com.oracle.svm.hosted.webimage.util.ReflectUtil;
 import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedInstanceClass;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedType;
+import com.oracle.svm.hosted.webimage.JSCodeBuffer;
+import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
+import com.oracle.svm.hosted.webimage.codegen.RuntimeConstants;
+import com.oracle.svm.hosted.webimage.js.JSKeyword;
+import com.oracle.svm.hosted.webimage.util.ReflectUtil;
+import com.oracle.svm.webimage.api.Nothing;
+import com.oracle.svm.webimage.hightiercodegen.Emitter;
+import com.oracle.svm.webimage.hightiercodegen.IEmitter;
+import com.oracle.svm.webimage.type.TypeControl;
 
-import jdk.graal.compiler.hightiercodegen.Emitter;
-import jdk.graal.compiler.hightiercodegen.IEmitter;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaType;

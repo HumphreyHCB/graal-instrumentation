@@ -23,16 +23,51 @@
 package com.oracle.truffle.espresso.substitutions;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.util.function.Supplier;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.espresso.EspressoLanguage;
+import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.meta.EspressoError;
+import com.oracle.truffle.espresso.nodes.EspressoRootNode;
+import com.oracle.truffle.espresso.nodes.IntrinsicSubstitutorNode;
 import com.oracle.truffle.espresso.nodes.quick.invoke.inline.InlinedFrameAccess;
 import com.oracle.truffle.espresso.nodes.quick.invoke.inline.InlinedMethodPredicate;
+import com.oracle.truffle.espresso.runtime.EspressoContext;
+import com.oracle.truffle.espresso.vm.VM;
 
 public abstract class JavaSubstitution extends SubstitutionProfiler {
+
+    // Throws an EspressoError with a nice message.
+    public static EspressoError unimplemented() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        Method currentMethod = JavaSubstitution.getCurrentMethod();
+        throw EspressoError.unimplemented(currentMethod.getDeclaringKlass().getExternalName() + "." + currentMethod.getName() + currentMethod.getRawSignature());
+    }
+
+    public static EspressoError shouldNotReachHere() {
+        CompilerDirectives.transferToInterpreterAndInvalidate();
+        Method currentMethod = JavaSubstitution.getCurrentMethod();
+        throw EspressoError.shouldNotReachHere(currentMethod.getDeclaringKlass().getExternalName() + "." + currentMethod.getName() + currentMethod.getRawSignature());
+    }
+
+    private static Method getCurrentMethod() {
+        EspressoContext ctx = EspressoContext.get(null);
+        return Truffle.getRuntime().iterateFrames(
+                        frameInstance -> {
+                            EspressoRootNode root = VM.getEspressoRootFromFrame(frameInstance, ctx);
+                            if (root == null) {
+                                return null;
+                            }
+                            assert root.getMethodNode() instanceof IntrinsicSubstitutorNode ||
+                                            (root.getMethodNode() instanceof InstrumentableNode.WrapperNode wrapper && wrapper.getDelegateNode() instanceof IntrinsicSubstitutorNode) : //
+                                            "Calling JavaSubstitution.unimplemented() not from a substitution.";
+                            return root.getMethod();
+                        });
+    }
 
     public static final class Factory {
         private final Object methodName;
@@ -45,7 +80,7 @@ public abstract class JavaSubstitution extends SubstitutionProfiler {
         private final byte flags;
         private final InlinedMethodPredicate guard;
 
-        private final Constructor<? extends JavaSubstitution> constructor;
+        private final Supplier<? extends JavaSubstitution> factory;
 
         public Factory(Object methodName,
                         Object substitutionClassName,
@@ -55,7 +90,7 @@ public abstract class JavaSubstitution extends SubstitutionProfiler {
                         LanguageFilter filter,
                         byte flags,
                         InlinedMethodPredicate guard,
-                        Constructor<? extends JavaSubstitution> constructor) {
+                        Supplier<? extends JavaSubstitution> factory) {
             this.methodName = methodName;
             this.substitutionClassName = substitutionClassName;
             this.returnType = returnType;
@@ -64,7 +99,7 @@ public abstract class JavaSubstitution extends SubstitutionProfiler {
             this.filter = filter;
             this.flags = flags;
             this.guard = guard;
-            this.constructor = constructor;
+            this.factory = factory;
         }
 
         public String[] getMethodNames() {
@@ -99,17 +134,16 @@ public abstract class JavaSubstitution extends SubstitutionProfiler {
             return isTrivial() || isFlag(SubstitutionFlag.InlineInBytecode);
         }
 
+        public boolean needsSignatureMangle() {
+            return isFlag(SubstitutionFlag.needsSignatureMangle);
+        }
+
         public InlinedMethodPredicate guard() {
             return guard;
         }
 
         public JavaSubstitution create() {
-            try {
-                return constructor.newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw EspressoError.shouldNotReachHere("Failed substitution creation: ", e);
-            }
+            return factory.get();
         }
 
         private boolean isFlag(byte flag) {

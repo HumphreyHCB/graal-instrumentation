@@ -24,9 +24,9 @@
  */
 package com.oracle.svm.hosted.webimage.js;
 
-import jdk.graal.compiler.hightiercodegen.CodeGenTool;
-import jdk.graal.compiler.hightiercodegen.IEmitter;
 import com.oracle.svm.webimage.functionintrinsics.JSFunctionDefinition;
+import com.oracle.svm.webimage.hightiercodegen.CodeGenTool;
+import com.oracle.svm.webimage.hightiercodegen.IEmitter;
 
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 

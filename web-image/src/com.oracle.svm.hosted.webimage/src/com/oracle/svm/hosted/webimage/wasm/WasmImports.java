@@ -29,10 +29,10 @@ import static com.oracle.svm.webimage.wasm.types.WasmPrimitiveType.f32;
 import static com.oracle.svm.webimage.wasm.types.WasmPrimitiveType.f64;
 import static com.oracle.svm.webimage.wasm.types.WasmPrimitiveType.i32;
 
-import com.oracle.svm.webimage.wasmgc.WasmExtern;
 import com.oracle.svm.hosted.webimage.wasm.ast.ImportDescriptor;
 import com.oracle.svm.hosted.webimage.wasm.ast.TypeUse;
 import com.oracle.svm.hosted.webimage.wasm.snippets.WasmImportForeignCallDescriptor;
+import com.oracle.svm.webimage.wasmgc.WasmExtern;
 
 /**
  * Collection of functions imported from the embedder to perform external operations.
@@ -65,6 +65,7 @@ public class WasmImports {
     public static final ImportDescriptor.Function F64Tanh = new ImportDescriptor.Function(MODULE_COMPAT, "f64tanh", TypeUse.forUnary(f64, f64), "Math.tanh");
     public static final ImportDescriptor.Function F64Exp = new ImportDescriptor.Function(MODULE_COMPAT, "f64exp", TypeUse.forUnary(f64, f64), "Math.exp");
     public static final ImportDescriptor.Function F64Pow = new ImportDescriptor.Function(MODULE_COMPAT, "f64pow", TypeUse.forBinary(f64, f64, f64), "Math.pow");
+    public static final ImportDescriptor.Function F64Cbrt = new ImportDescriptor.Function(MODULE_COMPAT, "f64cbrt", TypeUse.forBinary(f64, f64, f64), "Math.cbrt");
 
     /**
      * Signature: {@code printBytes(fd, bytePtr, numBytes)}.

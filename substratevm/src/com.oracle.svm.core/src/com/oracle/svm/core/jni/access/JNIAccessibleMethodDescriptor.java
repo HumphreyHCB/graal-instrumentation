@@ -69,7 +69,7 @@ public final class JNIAccessibleMethodDescriptor {
         return of(methodName, parameterTypes, null);
     }
 
-    private static JNIAccessibleMethodDescriptor of(String methodName, Class<?>[] parameterTypes, Class<?> returnType) {
+    public static JNIAccessibleMethodDescriptor of(String methodName, Class<?>[] parameterTypes, Class<?> returnType) {
         StringBuilder sb = new StringBuilder("(");
         for (Class<?> type : parameterTypes) {
             sb.append(MetaUtil.toInternalName(type.getName()));
@@ -98,10 +98,19 @@ public final class JNIAccessibleMethodDescriptor {
         return WRAPPED_CSTRING_EQUIVALENCE.equals(name, INITIALIZER_NAME);
     }
 
+    /**
+     * Returns the method name as a String. Can be used if the descriptor is known to be a String
+     * (i.e., it does not come from a JNI call); otherwise, use {@link #getNameConvertToString()}.
+     */
     public String getName() {
         return (String) name;
     }
 
+    /**
+     * Returns the method signature as a String. Can be used if the descriptor is known to be a
+     * String (i.e., it does not come from a JNI call); otherwise, use
+     * {@link #getSignatureConvertToString()}.
+     */
     public String getSignature() {
         return (String) signature;
     }
@@ -111,6 +120,13 @@ public final class JNIAccessibleMethodDescriptor {
      */
     public String getNameConvertToString() {
         return name.toString();
+    }
+
+    /**
+     * Performs a potentially costly conversion to string, only for slow paths.
+     */
+    public String getSignatureConvertToString() {
+        return signature.toString();
     }
 
     public String getSignatureWithoutReturnType() {

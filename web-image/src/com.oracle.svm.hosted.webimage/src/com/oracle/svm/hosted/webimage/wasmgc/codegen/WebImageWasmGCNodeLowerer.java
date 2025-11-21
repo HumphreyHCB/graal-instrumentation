@@ -30,25 +30,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
+import com.oracle.svm.util.OriginalClassProvider;
 import com.oracle.graal.pointsto.results.StrengthenGraphs;
-import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
-import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
-import com.oracle.svm.webimage.wasm.WasmForeignCallDescriptor;
-import com.oracle.svm.webimage.wasm.types.WasmUtil.Extension;
-import com.oracle.svm.webimage.wasmgc.WasmExtern;
-import com.oracle.svm.webimage.wasmgc.WasmGCJSConversion;
+import com.oracle.svm.core.graal.nodes.FloatingWordCastNode;
 import com.oracle.svm.core.graal.nodes.LoweredDeadEndNode;
 import com.oracle.svm.core.graal.nodes.ReadExceptionObjectNode;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.DynamicHubCompanion;
 import com.oracle.svm.core.snippets.SnippetRuntime;
+import com.oracle.svm.hosted.meta.HostedMethod;
+import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.webimage.codegen.WebImageJSNodeLowerer;
 import com.oracle.svm.hosted.webimage.codegen.node.ReadIdentityHashCodeNode;
 import com.oracle.svm.hosted.webimage.codegen.node.WriteIdentityHashCodeNode;
 import com.oracle.svm.hosted.webimage.js.JSBody;
 import com.oracle.svm.hosted.webimage.js.JSBodyNode;
 import com.oracle.svm.hosted.webimage.js.JSBodyWithExceptionNode;
+import com.oracle.svm.hosted.webimage.options.WebImageOptions;
 import com.oracle.svm.hosted.webimage.wasm.WasmJSCounterparts;
 import com.oracle.svm.hosted.webimage.wasm.WebImageWasmOptions;
 import com.oracle.svm.hosted.webimage.wasm.ast.Instruction;
@@ -72,11 +70,16 @@ import com.oracle.svm.hosted.webimage.wasmgc.ast.id.GCKnownIds;
 import com.oracle.svm.hosted.webimage.wasmgc.ast.id.WebImageWasmGCIds;
 import com.oracle.svm.hosted.webimage.wasmgc.types.WasmGCUtil;
 import com.oracle.svm.hosted.webimage.wasmgc.types.WasmRefType;
-import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.util.ReflectionUtil;
+import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
+import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
+import com.oracle.svm.webimage.wasm.WasmForeignCallDescriptor;
+import com.oracle.svm.webimage.wasm.types.WasmUtil.Extension;
+import com.oracle.svm.webimage.wasmgc.WasmExtern;
+import com.oracle.svm.webimage.wasmgc.WasmGCJSConversion;
 
 import jdk.graal.compiler.core.common.type.AbstractObjectStamp;
+import jdk.graal.compiler.core.common.type.AbstractPointerStamp;
 import jdk.graal.compiler.core.common.type.PrimitiveStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.TypeReference;
@@ -240,6 +243,37 @@ public class WebImageWasmGCNodeLowerer extends WebImageWasmNodeLowerer {
         return new Instruction.Return(result);
     }
 
+    @Override
+    protected Instruction lowerExpression(ValueNode n, WasmIRWalker.Requirements reqs) {
+        Instruction inst = super.lowerExpression(n, reqs);
+
+        /*
+         * Produce a constant null value for always-null stamps.
+         *
+         * Always null stamps are a bit of a special case because they often don't have concrete
+         * type information, which is required in WasmGC because even null-constant have a static
+         * type. For that reason, the actual instruction are emitted as a top-level instruction and
+         * dropped (since it may have a side effect) and we simply return a "ref.null none", which
+         * represents the bottom type and thus satisfies all subtype checks, at all usages.
+         */
+        if (n.stamp(NodeView.DEFAULT) instanceof AbstractPointerStamp pointerStamp && pointerStamp.alwaysNull()) {
+            if (!(inst instanceof Instruction.LocalGet)) {
+                /*
+                 * We can't just not emit the instruction, it may have side effects, so we just emit
+                 * it in the same block and ignore its output (which is guaranteed to be null).
+                 *
+                 * If the node's value was stored in a variable and would be just loaded here, we
+                 * can omit this, as there are no side-effects.
+                 */
+                masm.genInst(new Instruction.Drop(inst));
+            }
+
+            return new Instruction.RefNull(WasmRefType.NONE);
+        } else {
+            return inst;
+        }
+    }
+
     protected Instruction lowerUnwind(UnwindNode n) {
         return new Instruction.Call(masm().getKnownIds().throwTemplate.requestFunctionId(), lowerExpression(n.exception()));
     }
@@ -283,11 +317,14 @@ public class WebImageWasmGCNodeLowerer extends WebImageWasmNodeLowerer {
             case JSBodyNode jsBody -> lowerJSBody(jsBody);
             case JSBodyWithExceptionNode jsBody -> lowerJSBody(jsBody);
             case WordCastNode wordCast -> lowerWordCast(wordCast);
+            case FloatingWordCastNode wordCast -> lowerFloatingWordCast(wordCast);
             default -> {
                 assert !isForbiddenNode(n) : reportForbiddenNode(n);
+                if (WebImageOptions.DebugOptions.VerificationPhases.getValue()) {
+                    throw GraalError.shouldNotReachHere("Tried to lower unknown node: " + n);
+                }
                 // TODO GR-47009 Stop generating stub code.
                 yield getStub(n);
-                // throw GraalError.shouldNotReachHere("Tried to lower unknown node: " + n);
             }
         };
     }
@@ -1078,7 +1115,8 @@ public class WebImageWasmGCNodeLowerer extends WebImageWasmNodeLowerer {
         return returnValue;
     }
 
-    private Instruction lowerWordCast(WordCastNode n) {
+    @Override
+    protected Instruction lowerWordCast(WordCastNode n) {
         // TODO GR-60168 Eliminate WordCastNodes completely. They are fundamentally not supportable
         // under WasmGC
         logError("This method should never be reached and cannot be supported.");

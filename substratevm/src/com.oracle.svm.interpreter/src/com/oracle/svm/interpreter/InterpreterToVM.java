@@ -37,6 +37,7 @@ import java.lang.reflect.Field;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.MissingReflectionRegistrationError;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
+import org.graalvm.word.Pointer;
 import org.graalvm.word.WordBase;
 
 import com.oracle.svm.core.SubstrateOptions;
@@ -45,10 +46,13 @@ import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.graal.meta.KnownOffsets;
 import com.oracle.svm.core.graal.snippets.OpenTypeWorldDispatchTableSnippets;
 import com.oracle.svm.core.hub.DynamicHub;
+import com.oracle.svm.core.hub.DynamicHubUtils;
 import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.jdk.InternalVMMethod;
+import com.oracle.svm.core.meta.MethodRef;
 import com.oracle.svm.core.monitor.MonitorInflationCause;
 import com.oracle.svm.core.monitor.MonitorSupport;
+import com.oracle.svm.core.snippets.KnownIntrinsics;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaField;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaMethod;
@@ -320,7 +324,7 @@ public final class InterpreterToVM {
 
     public static WordBase getFieldWord(Object obj, InterpreterResolvedJavaField wordField) throws SemanticJavaException {
         assert obj != null;
-        assert wordField.getType().isWordType();
+        assert wordField.isWordStorage();
         return switch (wordJavaKind()) {
             case Long -> Word.signed(getFieldLong(obj, wordField));
             case Int -> Word.signed(getFieldInt(obj, wordField));
@@ -479,7 +483,7 @@ public final class InterpreterToVM {
 
     public static void setFieldInt(int value, Object obj, InterpreterResolvedJavaField field) {
         assert obj != null;
-        assert field.getJavaKind() == JavaKind.Int || field.getType().isWordType();
+        assert field.getJavaKind() == JavaKind.Int || field.isWordStorage();
         if (field.isVolatile()) {
             U.putIntVolatile(obj, field.getOffset(), value);
         } else {
@@ -489,7 +493,7 @@ public final class InterpreterToVM {
 
     public static void setFieldLong(long value, Object obj, InterpreterResolvedJavaField field) {
         assert obj != null;
-        assert field.getJavaKind() == JavaKind.Long || field.getType().isWordType();
+        assert field.getJavaKind() == JavaKind.Long || field.isWordStorage();
         if (field.isVolatile()) {
             U.putLongVolatile(obj, field.getOffset(), value);
         } else {
@@ -674,34 +678,37 @@ public final class InterpreterToVM {
         }
     }
 
-    static CFunctionPointer peekAtSVMVTable(Class<?> seedClass, Class<?> thisClass, int vTableIndex, boolean isInvokeInterface) {
-        DynamicHub seedHub = DynamicHub.fromClass(seedClass);
+    static CFunctionPointer peekAtSVMVTable(Class<?> callTargetClass, Class<?> thisClass, int vTableIndex, boolean isInvokeInterface) {
+        DynamicHub callTargetHub = DynamicHub.fromClass(callTargetClass);
         DynamicHub thisHub = DynamicHub.fromClass(thisClass);
 
-        int vtableOffset = KnownOffsets.singleton().getVTableOffset(vTableIndex, false);
+        /*
+         * invokeinterface can be on a j.l.Object method, otherwise the seedClass must be an
+         * interface.
+         */
+        VMError.guarantee(callTargetHub.isInterface() == isInvokeInterface || callTargetClass == Object.class);
 
-        if (SubstrateOptions.useClosedTypeWorldHubLayout()) {
-            vtableOffset += KnownOffsets.singleton().getVTableBaseOffset();
-        } else {
-            VMError.guarantee(seedHub.isInterface() == isInvokeInterface);
+        int vtableOffset = DynamicHubUtils.determineDispatchTableOffset(thisHub, callTargetHub, vTableIndex);
+        MethodRef vtableEntry = Word.objectToTrackedPointer(thisHub).readWord(vtableOffset);
+        return getSVMVTableCodePointer(vtableEntry);
+    }
 
-            if (!seedHub.isInterface()) {
-                vtableOffset += KnownOffsets.singleton().getVTableBaseOffset();
-            } else {
-                vtableOffset += (int) OpenTypeWorldDispatchTableSnippets.determineITableStartingOffset(thisHub, seedHub.getTypeID());
-            }
+    private static CFunctionPointer getSVMVTableCodePointer(MethodRef vtableEntry) {
+        Pointer codePointer = (Pointer) vtableEntry;
+        if (SubstrateOptions.useRelativeCodePointers()) {
+            codePointer = codePointer.add(KnownIntrinsics.codeBase());
         }
-        return Word.objectToTrackedPointer(thisHub).readWord(vtableOffset);
+        return (CFunctionPointer) codePointer;
     }
 
     private static InterpreterResolvedJavaMethod peekAtInterpreterVTable(Class<?> seedClass, Class<?> thisClass, int vTableIndex, boolean isInvokeInterface) {
         ResolvedJavaType thisType;
-        if (DebuggerWithInterpreter.getValue()) {
+        if (RuntimeClassLoading.isSupported()) {
+            thisType = DynamicHub.fromClass(thisClass).getInterpreterType();
+        } else {
+            assert DebuggerWithInterpreter.getValue();
             DebuggerSupport interpreterSupport = ImageSingletons.lookup(DebuggerSupport.class);
             thisType = interpreterSupport.getUniverse().lookupType(thisClass);
-        } else {
-            assert RuntimeClassLoading.isSupported();
-            throw VMError.unimplemented("obtain java type with vtable mirror");
         }
         VMError.guarantee(thisType != null);
         VMError.guarantee(thisType instanceof InterpreterResolvedObjectType);
@@ -711,19 +718,20 @@ public final class InterpreterToVM {
 
         DynamicHub seedHub = DynamicHub.fromClass(seedClass);
 
-        if (SubstrateOptions.useClosedTypeWorldHubLayout()) {
-            VMError.guarantee(vTableIndex > 0 && vTableIndex < vTable.length);
-            return vTable[vTableIndex];
-        } else {
-            VMError.guarantee(seedHub.isInterface() == isInvokeInterface);
+        /*
+         * invokeinterface can be on a j.l.Object method, otherwise the seedClass must be an
+         * interface.
+         */
+        VMError.guarantee(seedHub.isInterface() == isInvokeInterface || seedClass == Object.class);
 
-            if (!seedHub.isInterface()) {
-                return vTable[vTableIndex];
-            } else {
-                int iTableStartingIndex = determineITableStartingIndex(DynamicHub.fromClass(thisClass), seedHub.getTypeID());
-                return vTable[iTableStartingIndex + vTableIndex];
-            }
+        int idx;
+        if (SubstrateOptions.useClosedTypeWorldHubLayout() || !seedHub.isInterface()) {
+            idx = vTableIndex;
+        } else {
+            idx = vTableIndex + determineITableStartingIndex(DynamicHub.fromClass(thisClass), seedHub.getInterfaceID());
         }
+        VMError.guarantee(idx >= 0 && idx < vTable.length);
+        return vTable[idx];
     }
 
     private static int determineITableStartingIndex(DynamicHub thisHub, int interfaceID) {
@@ -740,20 +748,23 @@ public final class InterpreterToVM {
     }
 
     public static Object dispatchInvocation(InterpreterResolvedJavaMethod seedMethod, Object[] calleeArgs, boolean isVirtual0, boolean forceStayInInterpreter, boolean preferStayInInterpreter,
-                    boolean isInvokeInterface)
+                    boolean isInvokeInterface, boolean quiet)
                     throws SemanticJavaException {
-        boolean goThroughPLT;
+        // True if we need to go through the platform ABI, e.g. calling an entry point of a
+        // compilation unit.
+        boolean callCompiledTarget;
+
         boolean isVirtual = isVirtual0;
 
         if (forceStayInInterpreter) {
             // Force execution in the interpreter, transitively, for all callees in the call
             // subtree.
-            goThroughPLT = false;
+            callCompiledTarget = false;
         } else {
             // Not forced to transitively "stay in interpreter"; but still; it may be "preferred" to
             // execute this callee (and only this one) in the interpreter, if possible e.g. Step
             // Into.
-            goThroughPLT = !preferStayInInterpreter;
+            callCompiledTarget = !preferStayInInterpreter;
         }
 
         InterpreterResolvedObjectType seedDeclaringClass = seedMethod.getDeclaringClass();
@@ -764,10 +775,12 @@ public final class InterpreterToVM {
 
         CFunctionPointer calleeFtnPtr = Word.nullPointer();
 
-        if (goThroughPLT) {
+        if (callCompiledTarget) {
             if (seedMethod.hasNativeEntryPoint()) {
                 calleeFtnPtr = seedMethod.getNativeEntryPoint();
-                traceInterpreter("got native entry point: ").hex(calleeFtnPtr).newline();
+                if (!quiet) {
+                    traceInterpreter("got native entry point: ").hex(calleeFtnPtr).newline();
+                }
             } else if (seedMethod.getVTableIndex() == VTBL_NO_ENTRY) {
                 /*
                  * does not always hold. Counter example: j.io.BufferedWriter::min, because it gets
@@ -775,18 +788,18 @@ public final class InterpreterToVM {
                  */
                 // InterpreterUtil.guarantee(!isVirtual, "leaveInterpreter is virtual %s",
                 // seedMethod);
-                goThroughPLT = false;
+                callCompiledTarget = false;
 
                 /* arguments to Log methods might have side-effects */
-                if (InterpreterTraceSupport.getValue()) {
+                if (InterpreterTraceSupport.getValue() && !quiet) {
                     traceInterpreter("fall back to interp for compile entry ").string(seedMethod.toString()).string(" because it has not been compiled.").newline();
                 }
             } else if (seedMethod.getVTableIndex() == VTBL_ONE_IMPL) {
-                goThroughPLT = seedMethod.getOneImplementation().hasNativeEntryPoint();
+                callCompiledTarget = seedMethod.getOneImplementation().hasNativeEntryPoint();
             } else if (!isVirtual && seedMethod.hasVTableIndex()) {
-                goThroughPLT = false;
+                callCompiledTarget = false;
                 /* arguments to Log methods might have side-effects */
-                if (InterpreterTraceSupport.getValue()) {
+                if (InterpreterTraceSupport.getValue() && !quiet) {
                     traceInterpreter("invokespecial: ").string(seedMethod.toString()).newline();
                 }
             } else if (isVirtual && !seedMethod.hasVTableIndex()) {
@@ -798,7 +811,7 @@ public final class InterpreterToVM {
         if (isVirtual && (seedMethod.isFinalFlagSet() || calleeArgs[0].getClass().isArray() || seedDeclaringClass.isLeaf() || seedMethod.isPrivate())) {
             isVirtual = false;
             /* arguments to Log methods might have side-effects */
-            if (InterpreterTraceSupport.getValue()) {
+            if (InterpreterTraceSupport.getValue() && !quiet) {
                 traceInterpreter("reverting virtual call to invokespecial: ").string(seedMethod.toString()).newline();
             }
         }
@@ -813,17 +826,17 @@ public final class InterpreterToVM {
             Class<?> seedClazz = seedDeclaringClass.getJavaClass();
             int vtableIndex = seedMethod.getVTableIndex();
 
-            if (goThroughPLT) {
+            if (callCompiledTarget) {
                 // determine virtual call target via SVM vtable dispatch
                 calleeFtnPtr = peekAtSVMVTable(seedClazz, thisClazz, vtableIndex, isInvokeInterface);
 
                 if (calleeFtnPtr.equal(InterpreterMethodPointerHolder.getMethodNotCompiledHandler())) {
                     // can happen e.g. due to devirtualization, need to stay in interpreter in
                     // this scenario
-                    goThroughPLT = false;
+                    callCompiledTarget = false;
 
                     /* arguments to Log methods might have side-effects */
-                    if (InterpreterTraceSupport.getValue()) {
+                    if (InterpreterTraceSupport.getValue() && !quiet) {
                         traceInterpreter("fall back to interp (vtable entry) for compile entry ").string(seedMethod.toString()).string(" because it has not been compiled.").newline();
                     }
                 }
@@ -834,9 +847,9 @@ public final class InterpreterToVM {
         } else if (seedMethod.getVTableIndex() == VTBL_ONE_IMPL) {
             targetMethod = seedMethod.getOneImplementation();
             /* arguments to Log methods might have side-effects */
-            if (InterpreterTraceSupport.getValue()) {
+            if (InterpreterTraceSupport.getValue() && !quiet) {
                 traceInterpreter("found oneImpl: ").string(targetMethod.toString());
-                if (goThroughPLT) {
+                if (callCompiledTarget) {
                     calleeFtnPtr = targetMethod.getNativeEntryPoint();
                     traceInterpreter(" ... with compiled entry=").hex(calleeFtnPtr);
                 }
@@ -845,28 +858,27 @@ public final class InterpreterToVM {
             VMError.guarantee(targetMethod != null, "VTBL_ONE_IMPL implies that oneImplementation is available in seedMethod");
         }
 
-        if (!targetMethod.hasBytecodes() && !goThroughPLT && calleeFtnPtr.isNonNull()) {
-            goThroughPLT = true;
+        if (!targetMethod.hasBytecodes() && !callCompiledTarget && calleeFtnPtr.isNonNull()) {
+            callCompiledTarget = true;
             /* arguments to Log methods might have side-effects */
-            if (InterpreterTraceSupport.getValue()) {
+            if (InterpreterTraceSupport.getValue() && !quiet) {
                 traceInterpreter("cannot interpret ").string(targetMethod.toString()).string(" falling back to compiled version ").hex(calleeFtnPtr).newline();
             }
         }
 
-        if (!goThroughPLT && targetMethod.isNative()) {
+        if (!callCompiledTarget && (targetMethod.isNative() && targetMethod.getSignaturePolymorphicIntrinsic() == null)) {
             /* no way to execute target in interpreter, fall back to compiled code */
-            /* example: MethodHandle.invokeBasic */
             VMError.guarantee(targetMethod.hasNativeEntryPoint());
             calleeFtnPtr = targetMethod.getNativeEntryPoint();
             VMError.guarantee(calleeFtnPtr.isNonNull());
-            goThroughPLT = true;
+            callCompiledTarget = true;
         }
 
         /* arguments to Log methods might have side-effects */
-        if (InterpreterOptions.InterpreterTraceSupport.getValue()) {
+        if (InterpreterOptions.InterpreterTraceSupport.getValue() && !quiet) {
             traceInterpreter(" ".repeat(Interpreter.logIndent.get()))
                             .string(" -> calling (")
-                            .string(goThroughPLT ? "plt" : "interp").string(") ")
+                            .string(callCompiledTarget ? "compiled" : "interp").string(") ")
                             .string(targetMethod.hasNativeEntryPoint() ? "(compiled entry available) " : "");
             if (targetMethod.hasNativeEntryPoint()) {
                 traceInterpreter("(addr: ").hex(calleeFtnPtr).string(" ) ");
@@ -878,9 +890,15 @@ public final class InterpreterToVM {
         }
 
         Object retObj = null;
-        if (goThroughPLT) {
+        if (callCompiledTarget) {
             VMError.guarantee(!forceStayInInterpreter);
             VMError.guarantee(calleeFtnPtr.isNonNull());
+
+            // Note: This won't work when PLTGOT is involved, because each method will have its
+            // unique PLT stub address.
+            if (calleeFtnPtr.equal(InterpreterMethodPointerHolder.getMethodNotCompiledHandler())) {
+                VMError.shouldNotReachHere("Trying to dispatch to compiled code for AOT method " + seedMethod + " but it was not compiled because it was not seen as reachable by analysis");
+            }
 
             // wrapping of exceptions is done in leaveInterpreter
             retObj = InterpreterStubSection.leaveInterpreter(calleeFtnPtr, targetMethod, targetMethod.getDeclaringClass(), calleeArgs);

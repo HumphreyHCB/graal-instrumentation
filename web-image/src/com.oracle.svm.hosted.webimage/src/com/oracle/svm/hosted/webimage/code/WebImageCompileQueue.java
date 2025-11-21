@@ -31,21 +31,21 @@ import static com.oracle.svm.hosted.webimage.metrickeys.UniverseMetricKeys.COMPI
 import java.util.Collections;
 import java.util.Set;
 
-import org.graalvm.webimage.api.JSObject;
 import org.graalvm.collections.UnmodifiableEconomicMap;
+import org.graalvm.webimage.api.JSObject;
 
 import com.oracle.graal.pointsto.util.CompletionExecutor;
 import com.oracle.svm.core.graal.GraalConfiguration;
 import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 import com.oracle.svm.core.option.HostedOptionValues;
 import com.oracle.svm.hosted.FeatureHandler;
+import com.oracle.svm.hosted.code.CompileQueue;
+import com.oracle.svm.hosted.meta.HostedMethod;
+import com.oracle.svm.hosted.meta.HostedUniverse;
 import com.oracle.svm.hosted.webimage.logging.LoggableMetric;
 import com.oracle.svm.hosted.webimage.logging.LoggerContext;
 import com.oracle.svm.hosted.webimage.logging.LoggerScope;
 import com.oracle.svm.hosted.webimage.options.WebImageOptions;
-import com.oracle.svm.hosted.code.CompileQueue;
-import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.hosted.meta.HostedUniverse;
 
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.MetricKey;
@@ -110,12 +110,32 @@ public abstract class WebImageCompileQueue extends CompileQueue {
     }
 
     @Override
+    protected Suites createFallbackSuites() {
+        return GraalConfiguration.hostedInstance().createFallbackSuites(HostedOptionValues.singleton(), true, null);
+    }
+
+    @Override
+    protected Suites createFallbackDeoptTargetSuites() {
+        return null;
+    }
+
+    @Override
     protected LIRSuites createLIRSuites() {
         return null;
     }
 
     @Override
     protected LIRSuites createDeoptTargetLIRSuites() {
+        return null;
+    }
+
+    @Override
+    protected LIRSuites createFallbackLIRSuites() {
+        return null;
+    }
+
+    @Override
+    protected LIRSuites createFallbackDeoptTargetLIRSuites() {
         return null;
     }
 
@@ -130,7 +150,17 @@ public abstract class WebImageCompileQueue extends CompileQueue {
     }
 
     @Override
+    protected void removeDeoptTargetFallbackOptimizations(Suites suites) {
+        // In Web Image, no suite modifications are necessary since it uses its own phase suites.
+    }
+
+    @Override
     protected void removeDeoptTargetOptimizations(LIRSuites lirSuites) {
+        // In Web Image, no suite modifications are necessary since it uses its own phase suites.
+    }
+
+    @Override
+    protected void removeDeoptTargetFallbackOptimizations(LIRSuites lirSuites) {
         // In Web Image, no suite modifications are necessary since it uses its own phase suites.
     }
 

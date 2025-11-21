@@ -31,18 +31,16 @@ import java.util.List;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.impl.RuntimeSerializationSupport;
 
-import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
-
-import jdk.graal.compiler.util.json.JsonParserException;
+import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
 
 public abstract class SerializationConfigurationParser<C> extends ConditionalConfigurationParser {
 
     public static final String CUSTOM_TARGET_CONSTRUCTOR_CLASS_KEY = "customTargetConstructorClass";
 
-    protected final ConfigurationConditionResolver<C> conditionResolver;
+    protected final AccessConditionResolver<C> conditionResolver;
     protected final RuntimeSerializationSupport<C> serializationSupport;
 
-    public static <C> SerializationConfigurationParser<C> create(boolean combinedFileSchema, ConfigurationConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport,
+    public static <C> SerializationConfigurationParser<C> create(boolean combinedFileSchema, AccessConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport,
                     EnumSet<ConfigurationParserOption> parserOptions) {
         if (combinedFileSchema) {
             return new SerializationMetadataParser<>(conditionResolver, serializationSupport, parserOptions);
@@ -51,7 +49,7 @@ public abstract class SerializationConfigurationParser<C> extends ConditionalCon
         }
     }
 
-    public SerializationConfigurationParser(ConfigurationConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport,
+    public SerializationConfigurationParser(AccessConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport,
                     EnumSet<ConfigurationParserOption> parserOptions) {
         super(parserOptions);
         this.serializationSupport = serializationSupport;
@@ -67,12 +65,11 @@ public abstract class SerializationConfigurationParser<C> extends ConditionalCon
     protected abstract void parseSerializationDescriptorObject(EconomicMap<String, Object> data, boolean lambdaCapturingType);
 
     protected void registerType(ConfigurationTypeDescriptor targetSerializationClass, C condition) {
-        if (targetSerializationClass instanceof NamedConfigurationTypeDescriptor namedClass) {
-            serializationSupport.register(condition, namedClass.name());
-        } else if (targetSerializationClass instanceof ProxyConfigurationTypeDescriptor proxyClass) {
-            serializationSupport.registerProxyClass(condition, proxyClass.interfaceNames());
-        } else {
-            throw new JsonParserException("Unknown configuration type descriptor: %s".formatted(targetSerializationClass.toString()));
+        switch (targetSerializationClass.getDescriptorType()) {
+            case NAMED -> serializationSupport.register(condition, ((NamedConfigurationTypeDescriptor) targetSerializationClass).name());
+            case PROXY -> serializationSupport.registerProxyClass(condition, ((ProxyConfigurationTypeDescriptor) targetSerializationClass).interfaceNames());
+            case LAMBDA -> serializationSupport.registerLambdaCapturingClass(condition,
+                            ((NamedConfigurationTypeDescriptor) ((LambdaConfigurationTypeDescriptor) targetSerializationClass).declaringClass()).name());
         }
     }
 }

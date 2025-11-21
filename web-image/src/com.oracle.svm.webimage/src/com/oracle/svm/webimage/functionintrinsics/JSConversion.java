@@ -28,19 +28,20 @@ package com.oracle.svm.webimage.functionintrinsics;
 import java.lang.reflect.Constructor;
 import java.math.BigInteger;
 
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.Platforms;
 import org.graalvm.webimage.api.JS;
 import org.graalvm.webimage.api.JSBigInt;
 import org.graalvm.webimage.api.JSBoolean;
-import org.graalvm.webimage.api.JSError;
+import org.graalvm.webimage.api.ThrownFromJavaScript;
 import org.graalvm.webimage.api.JSNumber;
 import org.graalvm.webimage.api.JSObject;
 import org.graalvm.webimage.api.JSString;
 import org.graalvm.webimage.api.JSSymbol;
 import org.graalvm.webimage.api.JSUndefined;
 import org.graalvm.webimage.api.JSValue;
-import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.Platforms;
 
+import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.webimage.JSExceptionSupport;
 import com.oracle.svm.webimage.JSNameGenerator;
 import com.oracle.svm.webimage.annotation.JSRawCall;
@@ -48,7 +49,6 @@ import com.oracle.svm.webimage.annotation.WebImage;
 import com.oracle.svm.webimage.platform.WebImageJSPlatform;
 import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
 import com.oracle.svm.webimage.wasmgc.annotation.WasmExport;
-import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.vm.ci.meta.JavaKind;
@@ -674,11 +674,11 @@ public abstract class JSConversion {
      * Ensures that objects that are thrown in {@link JS}-annotated methods are a subclass of
      * {@link Throwable}. If a {@link Throwable} exception is thrown, it gets simply rethrown.
      * Otherwise, the exception object is converted to Java according ot the conversion rules
-     * specified by {@link JS} and wrapped into a {@link JSError}.
+     * specified by {@link JS} and wrapped into a {@link ThrownFromJavaScript}.
      *
      * @param excp thrown object. Due to JavaScript semantics this can be an arbitrary type.
-     * @throws Throwable the original {@link Throwable} or {@link JSError} which warps the converted
-     *             thrown JavaScript object
+     * @throws Throwable the original {@link Throwable} or {@link ThrownFromJavaScript} which warps
+     *             the converted thrown JavaScript object
      */
     public static void handleJSError(Object excp) throws Throwable {
         if (JSExceptionSupport.isThrowable(excp)) {
@@ -692,7 +692,7 @@ public abstract class JSConversion {
                 throw t;
             }
 
-            throw new JSError(obj);
+            throw new ThrownFromJavaScript(obj);
         }
     }
 }

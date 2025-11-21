@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,20 @@
  */
 package com.oracle.svm.core.graal.amd64;
 
+import static jdk.vm.ci.amd64.AMD64.rax;
+import static jdk.vm.ci.amd64.AMD64.rsp;
+import static jdk.vm.ci.amd64.AMD64.xmm0;
+
+import java.util.List;
+
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.c.struct.RawField;
+import org.graalvm.nativeimage.c.struct.RawStructure;
+import org.graalvm.nativeimage.c.struct.SizeOf;
+import org.graalvm.nativeimage.impl.InternalPlatform;
+import org.graalvm.word.Pointer;
+import org.graalvm.word.PointerBase;
+
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.c.struct.OffsetOf;
 import com.oracle.svm.core.config.ConfigurationValues;
@@ -32,6 +46,7 @@ import com.oracle.svm.core.graal.code.InterpreterAccessStubData;
 import com.oracle.svm.core.graal.meta.SubstrateRegisterConfig;
 import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.util.VMError;
+
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.asm.Label;
 import jdk.graal.compiler.asm.amd64.AMD64Address;
@@ -43,20 +58,9 @@ import jdk.graal.compiler.word.Word;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.StackSlot;
 import jdk.vm.ci.meta.AllocatableValue;
-import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.c.struct.RawField;
-import org.graalvm.nativeimage.c.struct.RawStructure;
-import org.graalvm.nativeimage.c.struct.SizeOf;
-import org.graalvm.word.Pointer;
-import org.graalvm.word.PointerBase;
-
-import static jdk.vm.ci.amd64.AMD64.rax;
-import static jdk.vm.ci.amd64.AMD64.rsp;
-import static jdk.vm.ci.amd64.AMD64.xmm0;
 
 public class AMD64InterpreterStubs {
 
@@ -92,7 +96,7 @@ public class AMD64InterpreterStubs {
             /* sp points to InterpreterData struct */
             masm.movq(createAddress(offsetAbiSpReg()), spCopy);
 
-            RegisterArray gps = getRegisterConfig().getJavaGeneralParameterRegs();
+            List<Register> gps = getRegisterConfig().getJavaGeneralParameterRegs();
             VMError.guarantee(gps.size() == 6);
 
             masm.movq(createAddress(offsetAbiGp0()), gps.get(0));
@@ -102,7 +106,7 @@ public class AMD64InterpreterStubs {
             masm.movq(createAddress(offsetAbiGp4()), gps.get(4));
             masm.movq(createAddress(offsetAbiGp5()), gps.get(5));
 
-            RegisterArray fps = getRegisterConfig().getFloatingPointParameterRegs();
+            List<Register> fps = getRegisterConfig().getFloatingPointParameterRegs();
 
             masm.movq(createAddress(offsetAbiFpArg0()), fps.get(0));
             masm.movq(createAddress(offsetAbiFpArg1()), fps.get(1));
@@ -116,7 +120,7 @@ public class AMD64InterpreterStubs {
                 masm.movq(createAddress(offsetAbiFpArg6()), fps.get(6));
                 masm.movq(createAddress(offsetAbiFpArg7()), fps.get(7));
             } else {
-                assert Platform.includedIn(Platform.WINDOWS.class);
+                assert Platform.includedIn(InternalPlatform.WINDOWS_BASE.class);
                 VMError.guarantee(fps.size() == 4);
             }
 
@@ -154,7 +158,7 @@ public class AMD64InterpreterStubs {
         public void enter(CompilationResultBuilder crb) {
             super.enter(crb);
             AMD64MacroAssembler masm = (AMD64MacroAssembler) crb.asm;
-            RegisterArray gps = getRegisterConfig().getJavaGeneralParameterRegs();
+            List<Register> gps = getRegisterConfig().getJavaGeneralParameterRegs();
 
             /* sp points to four reserved stack slots for this stub */
 
@@ -175,8 +179,8 @@ public class AMD64InterpreterStubs {
         @Override
         public void leave(CompilationResultBuilder crb) {
             AMD64MacroAssembler masm = (AMD64MacroAssembler) crb.asm;
-            RegisterArray gps = getRegisterConfig().getJavaGeneralParameterRegs();
-            RegisterArray fps = getRegisterConfig().getFloatingPointParameterRegs();
+            List<Register> gps = getRegisterConfig().getJavaGeneralParameterRegs();
+            List<Register> fps = getRegisterConfig().getFloatingPointParameterRegs();
 
             /* Save call target */
             Register callTarget = AMD64.r10;
@@ -195,7 +199,7 @@ public class AMD64InterpreterStubs {
 
             /* Copy prepared outgoing args to the stack where the ABI expects it */
             Register calleeSpArgs = AMD64.r12;
-            Register interpDataSp = AMD64.r13;
+            Register interpDataSp = AMD64.r9;
             masm.movq(interpDataSp, new AMD64Address(rax, offsetAbiSpReg()));
             masm.movq(calleeSpArgs, rsp);
 
@@ -555,7 +559,7 @@ public class AMD64InterpreterStubs {
 
         private static int upperFpEnd() {
             /* only 4 floating point regs on Windows, 8 otherwise */
-            return Platform.includedIn(Platform.WINDOWS.class) ? 3 : 7;
+            return Platform.includedIn(InternalPlatform.WINDOWS_BASE.class) ? 3 : 7;
         }
 
         @Override

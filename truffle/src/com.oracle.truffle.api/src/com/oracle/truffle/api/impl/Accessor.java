@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,6 +82,7 @@ import org.graalvm.polyglot.SandboxPolicy;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractHostAccess;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractHostLanguageService;
+import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractValueDispatch;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.LogHandler;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.MessageEndpoint;
@@ -262,6 +263,8 @@ public abstract class Accessor {
         public abstract void setPath(SourceBuilder builder, String path);
 
         public abstract Map<String, String> getSourceOptions(Source source);
+
+        public abstract URI getOriginalURI(Source source);
     }
 
     public abstract static class InteropSupport extends Support {
@@ -405,7 +408,7 @@ public abstract class Accessor {
 
         public abstract Map<String, LanguageInfo> getInternalLanguages(Object polyglotObject);
 
-        public abstract LanguageInfo getHostLanguage(Object polyglotLanguageContext);
+        public abstract LanguageInfo getHostLanguage(Object vmObject);
 
         public abstract Map<String, LanguageInfo> getPublicLanguages(Object polyglotObject);
 
@@ -431,7 +434,7 @@ public abstract class Accessor {
 
         public abstract void assertReturnParityLeave(Node probe, Object polyglotEngine);
 
-        public abstract Object toGuestValue(Node node, Object obj, Object languageContext);
+        public abstract Object toGuestValue(Node node, Object obj);
 
         public abstract Object getPolyglotEngine(Object polyglotLanguageInstance);
 
@@ -552,6 +555,10 @@ public abstract class Accessor {
 
         public abstract LogRecord createLogRecord(Object loggerCache, Level level, String loggerName, String message, String className, String methodName, Object[] parameters, Throwable thrown);
 
+        public abstract boolean isKnownLoggerId(Object loggerCache, String id);
+
+        public abstract Collection<String> getKnownLoggerIds(Object loggerCache);
+
         public abstract boolean isContextBoundLogger(Object loggerCache);
 
         public abstract Object getOuterContext(Object polyglotContext);
@@ -605,12 +612,6 @@ public abstract class Accessor {
 
         public abstract ZoneId getTimeZone(Object polyglotLanguageContext);
 
-        public abstract Set<String> getLanguageIds();
-
-        public abstract Set<String> getInstrumentIds();
-
-        public abstract Set<String> getInternalIds();
-
         public abstract String getUnparsedOptionValue(OptionValues optionValues, OptionKey<?> optionKey);
 
         public abstract String getRelativePathInResourceRoot(TruffleFile truffleFile);
@@ -625,7 +626,11 @@ public abstract class Accessor {
 
         public abstract LanguageInfo getLanguageInfo(Object vmObject, Class<? extends TruffleLanguage<?>> languageClass);
 
-        public abstract Object getDefaultLanguageView(TruffleLanguage<?> truffleLanguage, Object value);
+        public abstract Object getDefaultLanguageView(Object polyglotLanguageContext, Object value);
+
+        public abstract String getLanguageId(Node anchor, Class<? extends TruffleLanguage<?>> languageClass);
+
+        public abstract Class<? extends TruffleLanguage<?>> getLanguageClass(Node anchor, String languageId);
 
         public abstract Object getLanguageView(LanguageInfo viewLanguage, Object value);
 
@@ -692,7 +697,9 @@ public abstract class Accessor {
 
         public abstract void preinitializeContext(Object polyglotEngine);
 
-        public abstract void finalizeStore(Object polyglotEngine);
+        public abstract Object finalizeStore(Object polyglotEngine);
+
+        public abstract void restoreStore(Object polyglotEngine, Object finalizationResult);
 
         public abstract Object getEngineLock(Object polyglotEngine);
 
@@ -800,6 +807,8 @@ public abstract class Accessor {
 
         public abstract TruffleFile getInternalResource(Object owner, String resourceId) throws IOException;
 
+        public abstract Map<String, InternalResource> getEngineInternalResources();
+
         public abstract Path getEngineResource(Object polyglotEngine, String resourceId) throws IOException;
 
         public abstract Collection<String> getResourceIds(String componentId);
@@ -826,7 +835,20 @@ public abstract class Accessor {
 
         public abstract DispatchOutputStream getEngineOut(Object engine);
 
+        public abstract <T> T getOrCreateBytecodeData(Object languageInstance, Function<Object, T> create);
+
         public abstract InputStream getEngineIn(Object engine);
+
+        public abstract void forEachLoadedRootNode(Object sharingLayer, Consumer<RootNode> rootNodeUpdater);
+
+        public abstract Object getSharingLayer(Object languageInstance);
+
+        public abstract Context getContextAPI(Object polyglotContextImpl);
+
+        public abstract AbstractValueDispatch lookupValueCache(Object polyglotContextImpl, Object value);
+
+        public abstract Object getHostLanguageContext(Object internalContext);
+
     }
 
     public abstract static class LanguageSupport extends Support {
@@ -968,6 +990,7 @@ public abstract class Accessor {
         public abstract OptionDescriptors createOptionDescriptorsUnion(OptionDescriptors... descriptors);
 
         public abstract InternalResource.Env createInternalResourceEnv(InternalResource resource, BooleanSupplier contextPreinitializationCheck);
+
     }
 
     public abstract static class InstrumentSupport extends Support {
@@ -1148,16 +1171,6 @@ public abstract class Accessor {
         public abstract TruffleProcessBuilder createProcessBuilder(Object polylgotLanguageContext, FileSystem fileSystem, List<String> command);
     }
 
-    public abstract static class SomSupport extends Support {
-
-        static final String IMPL_CLASS_NAME = "com.oracle.truffle.api.staticobject.SomAccessor";
-
-        protected SomSupport() {
-            super(IMPL_CLASS_NAME);
-        }
-
-    }
-
     public abstract static class RuntimeSupport {
 
         static final Object PERMISSION = new Object();
@@ -1207,6 +1220,11 @@ public abstract class Accessor {
          * @param osrNode the node which can be on-stack replaced
          * @return result if OSR was performed, or {@code null}.
          */
+        public abstract boolean pollBytecodeOSRBackEdge(BytecodeOSRNode osrNode, int count);
+
+        /*
+         * To be removed after deprecation expired.
+         */
         public abstract boolean pollBytecodeOSRBackEdge(BytecodeOSRNode osrNode);
 
         public abstract Object tryBytecodeOSR(BytecodeOSRNode osrNode, long target, Object interpreterState, Runnable beforeTransfer, VirtualFrame parentFrame);
@@ -1223,13 +1241,6 @@ public abstract class Accessor {
         public abstract void onOSRNodeReplaced(BytecodeOSRNode osrNode, Node oldNode, Node newNode, CharSequence reason);
 
         /**
-         * Same as {@link #transferOSRFrame(BytecodeOSRNode, Frame, Frame, long, Object)}, but
-         * fetches the target metadata.
-         */
-        // Support for deprecated frame transfer: GR-38296
-        public abstract void transferOSRFrame(BytecodeOSRNode osrNode, Frame source, Frame target, long bytecodeTarget);
-
-        /**
          * Transfers state from the {@code source} frame into the {@code target} frame. This method
          * should only be used inside OSR code. The frames must have the same layout as the frame
          * passed when executing the {@code osrNode}.
@@ -1238,6 +1249,8 @@ public abstract class Accessor {
          * @param source the frame to transfer state from
          * @param target the frame to transfer state into
          * @param bytecodeTarget the target location OSR executes from (e.g., bytecode index).
+         * @param targetMetadata Additional metadata associated with this {@code target} for the
+         *            default frame transfer behavior.
          */
         public abstract void transferOSRFrame(BytecodeOSRNode osrNode, Frame source, Frame target, long bytecodeTarget, Object targetMetadata);
 
@@ -1281,7 +1294,7 @@ public abstract class Accessor {
         @SuppressWarnings({"unchecked"})
         public abstract <T> T unsafeCast(Object value, Class<T> type, boolean condition, boolean nonNull, boolean exact);
 
-        public abstract void flushCompileQueue(Object runtimeData);
+        public abstract void shutdownCompilationForEngine(Object engineData);
 
         public abstract Object createRuntimeData(Object engine, OptionValues engineOptions, Function<String, TruffleLogger> loggerFactory, SandboxPolicy sandboxPolicy);
 
@@ -1294,6 +1307,8 @@ public abstract class Accessor {
         public abstract void onEnginePatch(Object runtimeData, OptionValues runtimeOptions, Function<String, TruffleLogger> logSupplier, SandboxPolicy sandboxPolicy);
 
         public abstract boolean onEngineClosing(Object runtimeData);
+
+        public abstract boolean onStoreCache(Object runtimeData, Path targetPath, long cancelledWord);
 
         public abstract void onEngineClosed(Object runtimeData);
 
@@ -1316,6 +1331,8 @@ public abstract class Accessor {
         public abstract boolean isLegacyCompilerOption(String key);
 
         public abstract <T> ThreadLocal<T> createTerminatingThreadLocal(Supplier<T> initialValue, Consumer<T> onThreadTermination);
+
+        public abstract void setInitializedTimestamp(CallTarget target, long timestamp);
     }
 
     public abstract static class LanguageProviderSupport extends Support {
@@ -1363,18 +1380,6 @@ public abstract class Accessor {
         public abstract List<String> getInternalResourceIds(Object truffleInstrumentProvider);
 
         public abstract InternalResource createInternalResource(Object truffleInstrumentProvider, String resourceId);
-    }
-
-    public abstract static class DynamicObjectSupport extends Support {
-
-        static final String IMPL_CLASS_NAME = "com.oracle.truffle.object.DynamicObjectSupportImpl";
-
-        protected DynamicObjectSupport() {
-            super(IMPL_CLASS_NAME);
-        }
-
-        public abstract <T> Iterable<T> lookupTruffleService(Class<T> type);
-
     }
 
     /*
@@ -1474,6 +1479,19 @@ public abstract class Accessor {
 
     }
 
+    public abstract static class BytecodeSupport extends Support {
+
+        static final String IMPL_CLASS_NAME = "com.oracle.truffle.api.bytecode.BytecodeAccessor$BytecodeSupportImpl";
+
+        protected BytecodeSupport() {
+            super(IMPL_CLASS_NAME);
+        }
+
+        public abstract void registerInstructionTracerFactory(Object hostLanguage, Function<? extends Object, ? extends Object> tracerFactory);
+
+        public abstract <T> List<T> getEngineInstructionTracers(Object hostLanguage, Function<? extends Object, T> tracerFactory);
+    }
+
     public final void transferOSRFrameStaticSlot(FrameWithoutBoxing sourceFrame, FrameWithoutBoxing targetFrame, int slot) {
         sourceFrame.transferOSRStaticSlot(targetFrame, slot);
     }
@@ -1500,8 +1518,8 @@ public abstract class Accessor {
         private static final Accessor.RuntimeSupport RUNTIME;
         private static final Accessor.LanguageProviderSupport LANGUAGE_PROVIDER;
         private static final Accessor.InstrumentProviderSupport INSTRUMENT_PROVIDER;
-        private static final DynamicObjectSupport DYNAMIC_OBJECT;
         private static final Accessor.MemorySupport MEMORY_SUPPORT;
+        private static final Accessor.BytecodeSupport BYTECODE;
 
         static {
             // Eager load all accessors so the above fields are all set and all methods are
@@ -1519,9 +1537,9 @@ public abstract class Accessor {
             RUNTIME = getTVMCI().createRuntimeSupport(RuntimeSupport.PERMISSION);
             LANGUAGE_PROVIDER = loadSupport(LanguageProviderSupport.IMPL_CLASS_NAME);
             INSTRUMENT_PROVIDER = loadSupport(InstrumentProviderSupport.IMPL_CLASS_NAME);
-            DYNAMIC_OBJECT = loadSupport(DynamicObjectSupport.IMPL_CLASS_NAME);
             MEMORY_SUPPORT = loadSupport(MemorySupport.IMPL_CLASS_NAME);
             STRINGS = loadSupport(StringsSupport.IMPL_CLASS_NAME);
+            BYTECODE = loadSupport(BytecodeSupport.IMPL_CLASS_NAME);
         }
 
         @SuppressWarnings("unchecked")
@@ -1618,6 +1636,10 @@ public abstract class Accessor {
         return Constants.HOST;
     }
 
+    public final BytecodeSupport bytecodeSupport() {
+        return Constants.BYTECODE;
+    }
+
     public final IOSupport ioSupport() {
         return Constants.IO;
     }
@@ -1628,10 +1650,6 @@ public abstract class Accessor {
 
     public final InstrumentProviderSupport instrumentProviderSupport() {
         return Constants.INSTRUMENT_PROVIDER;
-    }
-
-    public final DynamicObjectSupport dynamicObjectSupport() {
-        return Constants.DYNAMIC_OBJECT;
     }
 
     public final MemorySupport memorySupport() {

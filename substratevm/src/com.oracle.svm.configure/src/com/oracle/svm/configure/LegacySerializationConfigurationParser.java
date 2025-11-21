@@ -32,9 +32,8 @@ import java.util.List;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.impl.RuntimeSerializationSupport;
-import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 
-import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
+import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
 import com.oracle.svm.util.LogUtils;
 
 import jdk.graal.compiler.util.json.JsonParserException;
@@ -47,7 +46,7 @@ final class LegacySerializationConfigurationParser<C> extends SerializationConfi
 
     private final ProxyConfigurationParser<C> proxyConfigurationParser;
 
-    LegacySerializationConfigurationParser(ConfigurationConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport, EnumSet<ConfigurationParserOption> parserOptions) {
+    LegacySerializationConfigurationParser(AccessConditionResolver<C> conditionResolver, RuntimeSerializationSupport<C> serializationSupport, EnumSet<ConfigurationParserOption> parserOptions) {
         super(conditionResolver, serializationSupport, parserOptions);
         this.proxyConfigurationParser = new ProxyConfigurationParser<>(conditionResolver, parserOptions, serializationSupport::registerProxyClass);
     }
@@ -96,8 +95,8 @@ final class LegacySerializationConfigurationParser<C> extends SerializationConfi
                             Arrays.asList(CUSTOM_TARGET_CONSTRUCTOR_CLASS_KEY, CONDITIONAL_KEY));
         }
 
-        NamedConfigurationTypeDescriptor targetSerializationClass = new NamedConfigurationTypeDescriptor(asString(data.get(NAME_KEY)));
-        UnresolvedConfigurationCondition unresolvedCondition = parseCondition(data, false);
+        NamedConfigurationTypeDescriptor targetSerializationClass = NamedConfigurationTypeDescriptor.fromJSONName(asString(data.get(NAME_KEY)));
+        UnresolvedAccessCondition unresolvedCondition = parseCondition(data, false);
         var condition = conditionResolver.resolveCondition(unresolvedCondition);
         if (!condition.isPresent()) {
             return;

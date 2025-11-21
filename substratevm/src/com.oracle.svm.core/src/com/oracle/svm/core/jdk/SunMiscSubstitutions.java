@@ -43,11 +43,11 @@ import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.heap.ReferenceAccess;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.LayoutEncoding;
-import com.oracle.svm.core.hub.PredefinedClassesSupport;
+import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.memory.NativeMemory;
 import com.oracle.svm.core.nmt.NmtCategory;
 import com.oracle.svm.core.os.VirtualMemoryProvider;
-import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.core.util.BasedOnJDKFile;
 
 import jdk.graal.compiler.nodes.extended.MembarNode;
 import jdk.graal.compiler.word.Word;
@@ -98,13 +98,7 @@ final class Target_jdk_internal_misc_Unsafe_Core {
     }
 
     @Substitute
-    @TargetElement(name = "arrayBaseOffset", onlyWith = JDK21OrEarlier.class)
-    public int arrayBaseOffsetJDK21(Class<?> clazz) {
-        return (int) LayoutEncoding.getArrayBaseOffset(DynamicHub.fromClass(clazz).getLayoutEncoding()).rawValue();
-    }
-
-    @Substitute
-    @TargetElement(name = "arrayBaseOffset", onlyWith = JDKLatest.class)
+    @TargetElement(name = "arrayBaseOffset")
     public long arrayBaseOffset(Class<?> clazz) {
         return LayoutEncoding.getArrayBaseOffset(DynamicHub.fromClass(clazz).getLayoutEncoding()).rawValue();
     }
@@ -142,11 +136,6 @@ final class Target_jdk_internal_misc_Unsafe_Core {
     @Substitute
     public void ensureClassInitialized(Class<?> c) {
         DynamicHub.fromClass(c).ensureInitialized();
-    }
-
-    @Substitute
-    private Class<?> defineClass(String name, byte[] b, int off, int len, ClassLoader loader, ProtectionDomain protectionDomain) {
-        return PredefinedClassesSupport.loadClass(loader, name, b, off, len, protectionDomain);
     }
 
     @Substitute
@@ -198,9 +187,12 @@ final class Target_jdk_internal_misc_Unsafe_Core {
     private native int arrayIndexScale0(Class<?> arrayClass);
 
     @Substitute
+    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+16/src/hotspot/share/prims/unsafe.cpp#L708-L712")
+    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+16/src/hotspot/share/prims/unsafe.cpp#L649-L705")
     @SuppressWarnings("unused")
     private Class<?> defineClass0(String name, byte[] b, int off, int len, ClassLoader loader, ProtectionDomain protectionDomain) {
-        throw VMError.unsupportedFeature("Target_Unsafe_Core.defineClass0(String, byte[], int, int, ClassLoader, ProtectionDomain)");
+        // Note that if name is not null, it is a binary name in either / or .-form
+        return RuntimeClassLoading.defineClass(loader, name, b, off, len, new RuntimeClassLoading.ClassDefinitionInfo(protectionDomain));
     }
 }
 

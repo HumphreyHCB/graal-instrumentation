@@ -67,6 +67,7 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
     protected LoopType loopType;
     protected int unrollFactor;
     protected boolean osrLoop;
+    protected boolean mayEmitThreadedCode = false;
     protected boolean nonCountedStripMinedOuter;
     protected boolean nonCountedStripMinedInner;
     protected boolean countedStripMinedOuter;
@@ -210,7 +211,6 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
         super(TYPE);
         loopOrigFrequency = 1;
         unswitches = 0;
-        splits = 0;
         loopEndsSafepointState = SafepointState.ENABLED;
         loopExitsSafepointState = SafepointState.ENABLED;
         guestLoopEndsSafepointState = SafepointState.ENABLED;
@@ -483,10 +483,6 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
         return forwardEndAt(0);
     }
 
-    public void incrementSplits() {
-        splits++;
-    }
-
     public int peelings() {
         return peelings;
     }
@@ -497,7 +493,10 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
 
     @Override
     public void generate(NodeLIRBuilderTool gen) {
-        // Nothing to emit, since this is node is used for structural purposes only.
+        if (mayEmitThreadedCode()) {
+            gen.emitStartRecordingThreadedSwitch();
+        }
+        // Otherwise nothing to emit, since this node is used for structural purposes only.
     }
 
     @Override
@@ -711,6 +710,14 @@ public final class LoopBeginNode extends AbstractMergeNode implements IterableNo
 
     public boolean isOsrLoop() {
         return osrLoop;
+    }
+
+    public boolean mayEmitThreadedCode() {
+        return mayEmitThreadedCode;
+    }
+
+    public void markThreadedCode() {
+        mayEmitThreadedCode = true;
     }
 
     @Override

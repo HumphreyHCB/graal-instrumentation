@@ -34,14 +34,14 @@ import org.graalvm.nativeimage.c.type.CTypeConversion;
 
 import com.oracle.svm.core.c.function.CEntryPointOptions;
 import com.oracle.svm.core.deopt.SubstrateInstalledCode;
+import com.oracle.svm.core.graal.isolated.ClientHandle;
+import com.oracle.svm.core.graal.isolated.ClientIsolateThread;
+import com.oracle.svm.core.graal.isolated.CompilerHandle;
+import com.oracle.svm.core.graal.isolated.CompilerIsolateThread;
+import com.oracle.svm.core.graal.isolated.IsolatedCompileClient;
+import com.oracle.svm.core.graal.isolated.IsolatedCompileContext;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.graal.isolated.ClientHandle;
-import com.oracle.svm.graal.isolated.ClientIsolateThread;
-import com.oracle.svm.graal.isolated.CompilerHandle;
-import com.oracle.svm.graal.isolated.CompilerIsolateThread;
 import com.oracle.svm.graal.isolated.IsolatedCodeInstallBridge;
-import com.oracle.svm.graal.isolated.IsolatedCompileClient;
-import com.oracle.svm.graal.isolated.IsolatedCompileContext;
 import com.oracle.svm.graal.isolated.IsolatedHandles;
 import com.oracle.svm.graal.isolated.IsolatedObjectConstant;
 import com.oracle.svm.graal.isolated.IsolatedObjectProxy;
@@ -164,6 +164,16 @@ final class IsolatedCompilableTruffleAST extends IsolatedObjectProxy<SubstrateCo
         var optionsHandle = IsolatedCompileContext.get().hand(options);
         getCompilerOptions0(IsolatedCompileContext.get().getClient(), handle, optionsHandle);
         return options;
+    }
+
+    @Override
+    public int getSuccessfulCompilationCount() {
+        return getSuccessfulCompilationCount0(IsolatedCompileContext.get().getClient(), handle);
+    }
+
+    @Override
+    public boolean canBeInlined() {
+        return canBeInlined0(IsolatedCompileContext.get().getClient(), handle);
     }
 
     @CEntryPoint(exceptionHandler = IsolatedCompileClient.WordExceptionHandler.class, include = CEntryPoint.NotIncludedAutomatically.class, publishAs = CEntryPoint.Publish.NotPublished)
@@ -292,6 +302,20 @@ final class IsolatedCompilableTruffleAST extends IsolatedObjectProxy<SubstrateCo
                     CompilerHandle<Map<String, String>> targetPropertiesHandle) {
         Map<String, String> targetProperties = IsolatedCompileContext.get().unhand(targetPropertiesHandle);
         readCompilerOptions(targetProperties, BinaryInput.create(buffer, bufferLength));
+    }
+
+    @CEntryPoint(exceptionHandler = IsolatedCompileClient.IntExceptionHandler.class, include = CEntryPoint.NotIncludedAutomatically.class, publishAs = CEntryPoint.Publish.NotPublished)
+    @CEntryPointOptions(callerEpilogue = IsolatedCompileClient.ExceptionRethrowCallerEpilogue.class)
+    private static int getSuccessfulCompilationCount0(@SuppressWarnings("unused") ClientIsolateThread client, ClientHandle<SubstrateCompilableTruffleAST> handle) {
+        SubstrateCompilableTruffleAST compilable = IsolatedCompileClient.get().unhand(handle);
+        return compilable.getSuccessfulCompilationCount();
+    }
+
+    @CEntryPoint(exceptionHandler = IsolatedCompileClient.BooleanExceptionHandler.class, include = CEntryPoint.NotIncludedAutomatically.class, publishAs = CEntryPoint.Publish.NotPublished)
+    @CEntryPointOptions(callerEpilogue = IsolatedCompileClient.ExceptionRethrowCallerEpilogue.class)
+    private static boolean canBeInlined0(@SuppressWarnings("unused") ClientIsolateThread client, ClientHandle<SubstrateCompilableTruffleAST> handle) {
+        SubstrateCompilableTruffleAST compilable = IsolatedCompileClient.get().unhand(handle);
+        return compilable.canBeInlined();
     }
 
     private static Map<String, String> readCompilerOptions(Map<String, String> map, BinaryInput in) {

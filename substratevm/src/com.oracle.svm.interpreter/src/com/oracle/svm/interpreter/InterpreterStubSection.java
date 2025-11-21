@@ -40,7 +40,6 @@ import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
-import org.graalvm.nativeimage.impl.UnmanagedMemorySupport;
 import org.graalvm.word.Pointer;
 
 import com.oracle.objectfile.BasicProgbitsSectionImpl;
@@ -59,10 +58,13 @@ import com.oracle.svm.core.graal.code.SubstrateCallingConventionKind;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionType;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.jdk.InternalVMMethod;
+import com.oracle.svm.core.memory.NativeMemory;
+import com.oracle.svm.core.nmt.NmtCategory;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.image.AbstractImage;
 import com.oracle.svm.hosted.image.NativeImage;
 import com.oracle.svm.hosted.image.RelocatableBuffer;
+import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaMethod;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedObjectType;
 import com.oracle.svm.interpreter.metadata.InterpreterUnresolvedSignature;
@@ -76,7 +78,6 @@ import jdk.vm.ci.code.ValueKindFactory;
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
-import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 @InternalVMMethod
@@ -176,12 +177,12 @@ public abstract class InterpreterStubSection {
     public abstract int getVTableStubSize();
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public void markEnterStubPatch(ResolvedJavaMethod enterStub) {
+    public void markEnterStubPatch(HostedMethod enterStub) {
         markEnterStubPatch(stubsBufferImpl, enterStub);
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    protected abstract void markEnterStubPatch(ObjectFile.ProgbitsSectionImpl pltBuffer, ResolvedJavaMethod enterStub);
+    protected abstract void markEnterStubPatch(ObjectFile.ProgbitsSectionImpl pltBuffer, HostedMethod enterStub);
 
     @Deoptimizer.DeoptStub(stubType = Deoptimizer.StubType.InterpreterEnterStub)
     @NeverInline("needs ABI boundary")
@@ -277,35 +278,35 @@ public abstract class InterpreterStubSection {
 
         switch (returnType.getJavaKind()) {
             case Boolean:
-                assert retVal instanceof Boolean;
+                InterpreterUtil.assertion(retVal instanceof Boolean, "invalid return type");
                 accessHelper.setGpReturn(enterData, ((Boolean) retVal) ? 1 : 0);
                 break;
             case Byte:
-                assert retVal instanceof Byte;
+                InterpreterUtil.assertion(retVal instanceof Byte, "invalid return type");
                 accessHelper.setGpReturn(enterData, ((Byte) retVal).longValue());
                 break;
             case Short:
-                assert retVal instanceof Short;
+                InterpreterUtil.assertion(retVal instanceof Short, "invalid return type");
                 accessHelper.setGpReturn(enterData, ((Short) retVal).longValue());
                 break;
             case Char:
-                assert retVal instanceof Character;
+                InterpreterUtil.assertion(retVal instanceof Character, "invalid return type");
                 accessHelper.setGpReturn(enterData, ((Character) retVal).charValue());
                 break;
             case Int:
-                assert retVal instanceof Integer;
+                InterpreterUtil.assertion(retVal instanceof Integer, "invalid return type");
                 accessHelper.setGpReturn(enterData, ((Integer) retVal).longValue());
                 break;
             case Long:
-                assert retVal instanceof Long;
+                InterpreterUtil.assertion(retVal instanceof Long, "invalid return type");
                 accessHelper.setGpReturn(enterData, (Long) retVal);
                 break;
             case Float:
-                assert retVal instanceof Float;
+                InterpreterUtil.assertion(retVal instanceof Float, "invalid return type");
                 accessHelper.setFpReturn(enterData, Float.floatToRawIntBits((float) retVal));
                 break;
             case Double:
-                assert retVal instanceof Double;
+                InterpreterUtil.assertion(retVal instanceof Double, "invalid return type");
                 accessHelper.setFpReturn(enterData, Double.doubleToRawLongBits((double) retVal));
                 break;
             case Object:
@@ -356,7 +357,7 @@ public abstract class InterpreterStubSection {
 
         Pointer stackBuffer = Word.nullPointer();
         if (stackSize > 0) {
-            stackBuffer = ImageSingletons.lookup(UnmanagedMemorySupport.class).malloc(Word.unsigned(stackSize));
+            stackBuffer = NativeMemory.malloc(Word.unsigned(stackSize), NmtCategory.Interpreter);
             accessHelper.setSp(leaveData, stackSize, stackBuffer);
         }
 
@@ -421,7 +422,7 @@ public abstract class InterpreterStubSection {
         } finally {
             if (stackSize > 0) {
                 VMError.guarantee(stackBuffer.isNonNull());
-                ImageSingletons.lookup(UnmanagedMemorySupport.class).free(stackBuffer);
+                NativeMemory.free(stackBuffer);
             }
         }
 

@@ -24,13 +24,12 @@
  */
 package com.oracle.svm.configure;
 
-import static org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition.TYPE_REACHABLE_KEY;
-import static org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition.TYPE_REACHED_KEY;
+import static com.oracle.svm.configure.UnresolvedAccessCondition.TYPE_REACHABLE_KEY;
+import static com.oracle.svm.configure.UnresolvedAccessCondition.TYPE_REACHED_KEY;
 
 import java.util.EnumSet;
 
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 
 public abstract class ConditionalConfigurationParser extends ConfigurationParser {
     public static final String CONDITIONAL_KEY = "condition";
@@ -46,7 +45,7 @@ public abstract class ConditionalConfigurationParser extends ConfigurationParser
         return base;
     }
 
-    protected UnresolvedConfigurationCondition parseCondition(EconomicMap<String, Object> data, boolean runtimeCondition) {
+    protected UnresolvedAccessCondition parseCondition(EconomicMap<String, Object> data, boolean runtimeCondition) {
         Object conditionData = data.get(CONDITIONAL_KEY);
         if (conditionData != null) {
             EconomicMap<String, Object> conditionObject = asMap(conditionData, "Attribute '" + CONDITIONAL_KEY + "' must be an object");
@@ -61,8 +60,8 @@ public abstract class ConditionalConfigurationParser extends ConfigurationParser
                 Object object = conditionObject.get(TYPE_REACHED_KEY);
                 var condition = parseTypeContents(object);
                 if (condition.isPresent()) {
-                    String className = ((NamedConfigurationTypeDescriptor) condition.get()).name();
-                    return UnresolvedConfigurationCondition.create(className);
+                    NamedConfigurationTypeDescriptor namedDescriptor = checkConditionType(condition.get());
+                    return UnresolvedAccessCondition.create(namedDescriptor);
                 }
             } else if (conditionObject.containsKey(TYPE_REACHABLE_KEY)) {
                 if (runtimeCondition && !checkOption(ConfigurationParserOption.TREAT_ALL_TYPE_REACHABLE_CONDITIONS_AS_TYPE_REACHED)) {
@@ -71,12 +70,19 @@ public abstract class ConditionalConfigurationParser extends ConfigurationParser
                 Object object = conditionObject.get(TYPE_REACHABLE_KEY);
                 var condition = parseTypeContents(object);
                 if (condition.isPresent()) {
-                    String className = ((NamedConfigurationTypeDescriptor) condition.get()).name();
-                    return UnresolvedConfigurationCondition.create(className, checkOption(ConfigurationParserOption.TREAT_ALL_TYPE_REACHABLE_CONDITIONS_AS_TYPE_REACHED));
+                    NamedConfigurationTypeDescriptor namedDescriptor = checkConditionType(condition.get());
+                    return UnresolvedAccessCondition.create(namedDescriptor, checkOption(ConfigurationParserOption.TREAT_ALL_TYPE_REACHABLE_CONDITIONS_AS_TYPE_REACHED));
                 }
             }
         }
-        return UnresolvedConfigurationCondition.alwaysTrue();
+        return UnresolvedAccessCondition.unconditional();
+    }
+
+    private static NamedConfigurationTypeDescriptor checkConditionType(ConfigurationTypeDescriptor type) {
+        if (!(type instanceof NamedConfigurationTypeDescriptor)) {
+            failOnSchemaError("condition should be a fully qualified class name.");
+        }
+        return (NamedConfigurationTypeDescriptor) type;
     }
 
 }

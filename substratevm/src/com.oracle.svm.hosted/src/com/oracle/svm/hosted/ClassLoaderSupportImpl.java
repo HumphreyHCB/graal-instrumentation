@@ -54,9 +54,13 @@ import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 
 import com.oracle.svm.core.ClassLoaderSupport;
+import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
+import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
+import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.ClasspathUtils;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
@@ -64,6 +68,7 @@ import com.oracle.svm.util.ClassUtil;
 
 import jdk.internal.module.Modules;
 
+@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 public class ClassLoaderSupportImpl extends ClassLoaderSupport {
 
     private final NativeImageClassLoaderSupport classLoaderSupport;
@@ -72,7 +77,7 @@ public class ClassLoaderSupportImpl extends ClassLoaderSupport {
 
     private final Map<String, Set<Module>> packageToModules;
 
-    private record ConditionalResource(ConfigurationCondition condition, String resourceName, Object origin) {
+    private record ConditionalResource(AccessCondition condition, String resourceName, Object origin) {
     }
 
     public ClassLoaderSupportImpl(NativeImageClassLoaderSupport classLoaderSupport) {
@@ -179,7 +184,7 @@ public class ClassLoaderSupportImpl extends ClassLoaderSupport {
                 relativeFilePath = String.valueOf(RESOURCES_INTERNAL_PATH_SEPARATOR);
             }
 
-            var conditionsWithOrigins = shouldIncludeEntry(null, collector, relativeFilePath, Path.of(relativeFilePath).toUri(), includeCurrent);
+            var conditionsWithOrigins = shouldIncludeEntry(null, collector, relativeFilePath, entry.toUri(), includeCurrent);
             for (var conditionWithOrigin : conditionsWithOrigins) {
                 includeResource(collector, null, relativeFilePath, conditionWithOrigin.condition(), conditionWithOrigin.origin());
             }
@@ -220,13 +225,13 @@ public class ClassLoaderSupportImpl extends ClassLoaderSupport {
         }
     }
 
-    private static void includeResource(ResourceCollector collector, Module module, String name, ConfigurationCondition condition, Object origin) {
+    private static void includeResource(ResourceCollector collector, Module module, String name, AccessCondition condition, Object origin) {
         collector.addResourceConditionally(module, name, condition, origin);
     }
 
     private static List<ConditionWithOrigin> shouldIncludeEntry(Module module, ResourceCollector collector, String fileName, URI uri, boolean includeCurrent) {
         if (includeCurrent && !(fileName.endsWith(".class") || fileName.endsWith(".jar"))) {
-            return Collections.singletonList(new ConditionWithOrigin(ConfigurationCondition.alwaysTrue(), "Include all"));
+            return Collections.singletonList(new ConditionWithOrigin(AccessCondition.unconditional(), "Include all"));
         }
 
         return collector.isIncluded(module, fileName, uri);
@@ -266,7 +271,11 @@ public class ClassLoaderSupportImpl extends ClassLoaderSupport {
             } else {
                 Modules.addOpensToAllUnnamed(module, packageName);
             }
-            resourceBundles.add(ResourceBundle.getBundle(bundleName, locale, module));
+            try {
+                resourceBundles.add(ResourceBundle.getBundle(bundleName, locale, module));
+            } catch (InternalError e) {
+                // ignore, nothing we can do
+            }
         }
         return resourceBundles;
     }

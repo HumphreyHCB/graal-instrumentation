@@ -27,13 +27,13 @@ package com.oracle.svm.core.genscavenge;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-import jdk.graal.compiler.word.Word;
 import org.graalvm.word.Pointer;
 
 import com.oracle.svm.core.genscavenge.remset.RememberedSet;
 import com.oracle.svm.core.identityhashcode.IdentityHashCodeSupport;
 import com.oracle.svm.core.image.ImageHeapObject;
 
+import jdk.graal.compiler.word.Word;
 import sun.nio.ch.DirectBuffer;
 
 /** Chunk writer that uses the same methods as memory management during image runtime. */
@@ -53,19 +53,20 @@ public class RuntimeImageHeapChunkWriter implements ImageHeapChunkWriter {
 
     @Override
     public void initializeAlignedChunk(int chunkPosition, long topOffset, long endOffset, long offsetToPreviousChunk, long offsetToNextChunk) {
-        AlignedHeapChunk.AlignedHeader header = (AlignedHeapChunk.AlignedHeader) getChunkPointerInBuffer(chunkPosition);
-        header.setTopOffset(Word.unsigned(topOffset));
-        header.setEndOffset(Word.unsigned(endOffset));
-        header.setSpace(null);
-        header.setOffsetToPreviousChunk(Word.unsigned(offsetToPreviousChunk));
-        header.setOffsetToNextChunk(Word.unsigned(offsetToNextChunk));
-        header.setIdentityHashSalt(Word.zero(), IdentityHashCodeSupport.IDENTITY_HASHCODE_SALT_LOCATION);
+        initializeChunk(chunkPosition, topOffset, endOffset, offsetToPreviousChunk, offsetToNextChunk);
     }
 
     @Override
-    public void initializeUnalignedChunk(int chunkPosition, long topOffset, long endOffset, long offsetToPreviousChunk, long offsetToNextChunk) {
+    public void initializeUnalignedChunk(int chunkPosition, long topOffset, long endOffset, long offsetToPreviousChunk, long offsetToNextChunk, long objectSize) {
+        initializeChunk(chunkPosition, topOffset, endOffset, offsetToPreviousChunk, offsetToNextChunk);
+
         UnalignedHeapChunk.UnalignedHeader header = (UnalignedHeapChunk.UnalignedHeader) getChunkPointerInBuffer(chunkPosition);
-        header.setTopOffset(Word.unsigned(topOffset));
+        UnalignedHeapChunk.initializeObjectStartOffset(header, Word.unsigned(objectSize));
+    }
+
+    private void initializeChunk(int chunkPosition, long topOffset, long endOffset, long offsetToPreviousChunk, long offsetToNextChunk) {
+        HeapChunk.Header<?> header = (HeapChunk.Header<?>) getChunkPointerInBuffer(chunkPosition);
+        header.setTopOffset(Word.unsigned(topOffset), HeapChunk.CHUNK_HEADER_TOP_IDENTITY);
         header.setEndOffset(Word.unsigned(endOffset));
         header.setSpace(null);
         header.setOffsetToPreviousChunk(Word.unsigned(offsetToPreviousChunk));
@@ -80,7 +81,7 @@ public class RuntimeImageHeapChunkWriter implements ImageHeapChunkWriter {
     }
 
     @Override
-    public void enableRememberedSetForUnalignedChunk(int chunkPosition) {
+    public void enableRememberedSetForUnalignedChunk(int chunkPosition, long objectSize) {
         UnalignedHeapChunk.UnalignedHeader header = (UnalignedHeapChunk.UnalignedHeader) getChunkPointerInBuffer(chunkPosition);
         RememberedSet.get().enableRememberedSetForChunk(header);
     }

@@ -108,6 +108,7 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
      */
     public int getPCRelativeOffset(Label label) {
         assert label.isBound();
+        registerPatchInCodeSnippetRecord(position(), label);
         int offset = label.position() - position();
         assert (offset & 0b11) == 0 : "unexpected alignment";
         return offset;
@@ -447,35 +448,33 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
      * @param needsImmAnnotation Flag denoting if annotation should be added.
      */
     private void mov32(Register dst, int imm, boolean needsImmAnnotation) {
-        MovAction[] includeSet = {MovAction.SKIPPED, MovAction.SKIPPED};
         int pos = position();
 
         // Split 32-bit imm into low16 and high16 parts.
         int low16 = imm & 0xFFFF;
         int high16 = (imm >>> 16) & 0xFFFF;
 
+        if (needsImmAnnotation) {
+            movz(32, dst, low16, 0);
+            movk(32, dst, high16, 16);
+            MovAction[] includeSet = {MovAction.USED, MovAction.USED};
+            annotateImmediateMovSequence(pos, includeSet);
+            return;
+        }
+
         // Generate code sequence with a combination of MOVZ or MOVN with MOVK.
         if (high16 == 0) {
             movz(32, dst, low16, 0);
-            includeSet[0] = MovAction.USED;
         } else if (high16 == 0xFFFF) {
             movn(32, dst, low16 ^ 0xFFFF, 0);
-            includeSet[0] = MovAction.NEGATED;
         } else if (low16 == 0) {
             movz(32, dst, high16, 16);
-            includeSet[1] = MovAction.USED;
         } else if (low16 == 0xFFFF) {
             movn(32, dst, high16 ^ 0xFFFF, 16);
-            includeSet[1] = MovAction.NEGATED;
         } else {
             // Neither of the 2 parts is all-0s or all-1s. Generate 2 instructions.
             movz(32, dst, low16, 0);
             movk(32, dst, high16, 16);
-            includeSet[0] = MovAction.USED;
-            includeSet[1] = MovAction.USED;
-        }
-        if (needsImmAnnotation) {
-            annotateImmediateMovSequence(pos, includeSet);
         }
     }
 
@@ -494,7 +493,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
      * @param needsImmAnnotation Flag denoting if annotation should be added.
      */
     private void mov64(Register dst, long imm, boolean needsImmAnnotation) {
-        MovAction[] includeSet = {MovAction.SKIPPED, MovAction.SKIPPED, MovAction.SKIPPED, MovAction.SKIPPED};
         int pos = position();
         int[] chunks = new int[4];
         int zeroCount = 0;
@@ -511,21 +509,29 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             chunks[i] = chunk;
         }
 
+        if (needsImmAnnotation) {
+            // Generate one MOVZ and three MOVKs
+            movz(64, dst, chunks[0], 0);
+            movk(64, dst, chunks[1], 16);
+            movk(64, dst, chunks[2], 32);
+            movk(64, dst, chunks[3], 48);
+            MovAction[] includeSet = {MovAction.USED, MovAction.USED, MovAction.USED, MovAction.USED};
+            annotateImmediateMovSequence(pos, includeSet);
+            return;
+        }
+
         // Generate code sequence with a combination of MOVZ or MOVN with MOVK.
         if (zeroCount == 4) {
             // Generate only one MOVZ.
             movz(64, dst, 0, 0);
-            includeSet[0] = MovAction.USED;
         } else if (negCount == 4) {
             // Generate only one MOVN.
             movn(64, dst, 0, 0);
-            includeSet[0] = MovAction.NEGATED;
         } else if (zeroCount == 3) {
             // Generate only one MOVZ.
             for (int i = 0; i < 4; i++) {
                 if (chunks[i] != 0) {
                     movz(64, dst, chunks[i], i * 16);
-                    includeSet[i] = MovAction.USED;
                     break;
                 }
             }
@@ -534,7 +540,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (int i = 0; i < 4; i++) {
                 if (chunks[i] != 0xFFFF) {
                     movn(64, dst, chunks[i] ^ 0xFFFF, i * 16);
-                    includeSet[i] = MovAction.NEGATED;
                     break;
                 }
             }
@@ -544,14 +549,12 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (i = 0; i < 4; i++) {
                 if (chunks[i] != 0) {
                     movz(64, dst, chunks[i], i * 16);
-                    includeSet[i] = MovAction.USED;
                     break;
                 }
             }
             for (int k = i + 1; k < 4; k++) {
                 if (chunks[k] != 0) {
                     movk(64, dst, chunks[k], k * 16);
-                    includeSet[k] = MovAction.USED;
                     break;
                 }
             }
@@ -561,14 +564,12 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (i = 0; i < 4; i++) {
                 if (chunks[i] != 0xFFFF) {
                     movn(64, dst, chunks[i] ^ 0xFFFF, i * 16);
-                    includeSet[i] = MovAction.NEGATED;
                     break;
                 }
             }
             for (int k = i + 1; k < 4; k++) {
                 if (chunks[k] != 0xFFFF) {
                     movk(64, dst, chunks[k], k * 16);
-                    includeSet[k] = MovAction.USED;
                     break;
                 }
             }
@@ -578,7 +579,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (i = 0; i < 4; i++) {
                 if (chunks[i] != 0) {
                     movz(64, dst, chunks[i], i * 16);
-                    includeSet[i] = MovAction.USED;
                     break;
                 }
             }
@@ -586,7 +586,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (int k = i + 1; k < 4; k++) {
                 if (chunks[k] != 0) {
                     movk(64, dst, chunks[k], k * 16);
-                    includeSet[k] = MovAction.USED;
                     numMovks++;
                 }
             }
@@ -597,7 +596,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (i = 0; i < 4; i++) {
                 if (chunks[i] != 0xFFFF) {
                     movn(64, dst, chunks[i] ^ 0xFFFF, i * 16);
-                    includeSet[i] = MovAction.NEGATED;
                     break;
                 }
             }
@@ -605,7 +603,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             for (int k = i + 1; k < 4; k++) {
                 if (chunks[k] != 0xFFFF) {
                     movk(64, dst, chunks[k], k * 16);
-                    includeSet[k] = MovAction.USED;
                     numMovks++;
                 }
             }
@@ -616,13 +613,6 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
             movk(64, dst, chunks[1], 16);
             movk(64, dst, chunks[2], 32);
             movk(64, dst, chunks[3], 48);
-            includeSet[0] = MovAction.USED;
-            includeSet[1] = MovAction.USED;
-            includeSet[2] = MovAction.USED;
-            includeSet[3] = MovAction.USED;
-        }
-        if (needsImmAnnotation) {
-            annotateImmediateMovSequence(pos, includeSet);
         }
     }
 
@@ -2011,6 +2001,89 @@ public abstract class AArch64MacroAssembler extends AArch64Assembler {
     @Override
     public void halt() {
         illegal();
+    }
+
+    /**
+     * In IP-related instructions, the offset relative to the current IP is embedded within specific
+     * bits of the instruction. This helper method updates the embedded offset located at
+     * {@code instruction[high:low]} by adding an additional offset.
+     *
+     * For example:
+     *
+     * <pre>
+     * XXXX XXX0 0000 0000 0000 0000 001X XXXX
+     *         |                       |
+     *       High                     Low
+     * </pre>
+     *
+     * The above instruction points to the immediate next instruction. Adding an additional offset
+     * of {@code 0b10} results in:
+     *
+     * <pre>
+     * XXXX XXX0 0000 0000 0000 0000 011X XXXX
+     *         |                       |
+     *       High                     Low
+     * </pre>
+     *
+     * Note that both the original embedded offset and {@code additionalOffset} are right-shifted by
+     * two, as specified by the encoding.
+     */
+    private static int addOffset(int instruction, int high, int low, int additionalOffset) {
+        int mask = NumUtil.getNbitNumberInt(high) - NumUtil.getNbitNumberInt(low);
+        int value = instruction & mask;
+        int offsetSign = value >>> (high - 1) & 1;
+        // sign extend
+        if (offsetSign == 1) {
+            value = value | (-1 << high);
+        }
+
+        int embeddedOffset = value >> low;
+        int newOffset = embeddedOffset + additionalOffset;
+        int newOffsetInPlace = (newOffset << low) & mask;
+        return (instruction & ~mask) | newOffsetInPlace;
+    }
+
+    private static final int BCOND_OPCODE_MASK = 0xFF000000;
+    private static final int BCOND_OFFSET_HIGH = 24;
+    private static final int BCOND_OFFSET_LOW = 5;
+    private static final int B_OPCODE_MASK = 0xFC000000;
+    private static final int B_OFFSET_HIGH = 26;
+    private static final int B_OFFSET_LOW = 0;
+    private static final int CBZ_OPCODE_MASK = 0x7E000000;
+    private static final int CBZ_OFFSET_HIGH = 24;
+    private static final int CBZ_OFFSET_LOW = 5;
+    private static final int TBZ_OPCODE_MASK = 0x7E000000;
+    private static final int TBZ_OFFSET_HIGH = 19;
+    private static final int TBZ_OFFSET_LOW = 5;
+    private static final int ADR_OPCODE_MASK = 0x1F000000;
+    private static final int ADR_OFFSET_HIGH = 24;
+    private static final int ADR_OFFSET_LOW = 5;
+
+    @Override
+    protected void patchRelativeJumpTarget(int patchPos, int jumpTargetOffset) {
+        final int instruction = getInt(patchPos);
+        GraalError.guarantee((jumpTargetOffset & 0b11) == 0, "jumpTargetOffset %d has to be a multiple of 4", jumpTargetOffset);
+        int weightedOffset = jumpTargetOffset >> 2;
+
+        // Decode the instruction, apply the additional offset to the encoded imm
+        if ((instruction & BCOND_OPCODE_MASK) == Instruction.BCOND.encoding) {
+            // b.cond instruction
+            emitInt(addOffset(instruction, BCOND_OFFSET_HIGH, BCOND_OFFSET_LOW, weightedOffset), patchPos);
+        } else if ((instruction & B_OPCODE_MASK) == UnconditionalBranchImmOp) {
+            // b instruction
+            emitInt(addOffset(instruction, B_OFFSET_HIGH, B_OFFSET_LOW, weightedOffset), patchPos);
+        } else if ((instruction & CBZ_OPCODE_MASK) == CompareBranchOp) {
+            // cbz, cbnz instructions
+            emitInt(addOffset(instruction, CBZ_OFFSET_HIGH, CBZ_OFFSET_LOW, weightedOffset), patchPos);
+        } else if ((instruction & TBZ_OPCODE_MASK) == Instruction.TBZ.encoding) {
+            // tbz, tbnz instructions
+            emitInt(addOffset(instruction, TBZ_OFFSET_HIGH, TBZ_OFFSET_LOW, weightedOffset), patchPos);
+        } else if ((instruction & ADR_OPCODE_MASK) == PcRelImmOp) {
+            // adr instruction. Here we assume the lower two bits are always 0
+            emitInt(addOffset(instruction, ADR_OFFSET_HIGH, ADR_OFFSET_LOW, weightedOffset), patchPos);
+        } else {
+            throw GraalError.shouldNotReachHereUnexpectedValue(instruction); // ExcludeFromJacocoGeneratedReport
+        }
     }
 
     /**

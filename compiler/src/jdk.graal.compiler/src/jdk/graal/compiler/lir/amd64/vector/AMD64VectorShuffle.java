@@ -97,6 +97,7 @@ import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.PlatformKind;
 import jdk.vm.ci.meta.Value;
 
 public class AMD64VectorShuffle {
@@ -150,10 +151,12 @@ public class AMD64VectorShuffle {
                 }
                 case DWORD, SINGLE -> new PermuteOp(result, source, indices, encoding);
                 case QWORD, DOUBLE -> {
-                    if (encoding == AMD64SIMDInstructionEncoding.EVEX || avxSize != YMM) {
+                    if (encoding == AMD64SIMDInstructionEncoding.EVEX && avxSize != XMM) {
                         yield new PermuteOp(result, source, indices, encoding);
-                    } else {
+                    } else if (avxSize == YMM) {
                         yield new PermuteOpWithTemps(gen, result, source, indices, encoding, 2, false);
+                    } else {
+                        yield new PermuteOpWithTemps(gen, result, source, indices, encoding, 1, false);
                     }
                 }
                 default -> throw GraalError.shouldNotReachHereUnexpectedValue(eKind);
@@ -255,21 +258,35 @@ public class AMD64VectorShuffle {
                 }
                 case DWORD, SINGLE -> throw GraalError.shouldNotReachHere("should be PermuteOp");
                 case QWORD, DOUBLE -> {
-                    GraalError.guarantee(encoding == AMD64SIMDInstructionEncoding.VEX && avxSize == YMM, "should be PermuteOp");
-                    Register indexReg = asRegister(indices);
-                    Register xtmp1Reg = asRegister(xtmps[0]);
-                    Register xtmp2Reg = asRegister(xtmps[1]);
+                    if (avxSize == YMM) {
+                        GraalError.guarantee(encoding == AMD64SIMDInstructionEncoding.VEX, "should be PermuteOp");
+                        Register indexReg = asRegister(indices);
+                        Register xtmp1Reg = asRegister(xtmps[0]);
+                        Register xtmp2Reg = asRegister(xtmps[1]);
 
-                    // Transform into an int permute by transforming a 64-bit index with value v
-                    // into a pair of 32-bit indices v + 2, v * 2 + 1
-                    VexShiftOp.VPSLLQ.encoding(encoding).emit(masm, YMM, xtmp1Reg, indexReg, Integer.SIZE + 1);
-                    AMD64Address inc = (AMD64Address) crb.asLongConstRef(JavaConstant.forLong(1L << Integer.SIZE));
-                    VexRMOp.VPBROADCASTQ.encoding(encoding).emit(masm, YMM, xtmp2Reg, inc);
-                    VexRVMOp.VPOR.encoding(encoding).emit(masm, YMM, xtmp2Reg, xtmp1Reg, xtmp2Reg);
-                    VexShiftOp.VPSLLQ.encoding(encoding).emit(masm, YMM, xtmp1Reg, indexReg, 1);
-                    VexRVMOp.VPOR.encoding(encoding).emit(masm, YMM, xtmp1Reg, xtmp1Reg, xtmp2Reg);
-                    VexRVMOp op = eKind == AMD64Kind.QWORD ? VexRVMOp.VPERMD : VexRVMOp.VPERMPS;
-                    op.encoding(encoding).emit(masm, YMM, asRegister(result), xtmp1Reg, asRegister(source));
+                        // Transform into an int permute by transforming a 64-bit index with value v
+                        // into a pair of 32-bit indices v + 2, v * 2 + 1
+                        VexShiftOp.VPSLLQ.encoding(encoding).emit(masm, YMM, xtmp1Reg, indexReg, Integer.SIZE + 1);
+                        AMD64Address inc = (AMD64Address) crb.asLongConstRef(JavaConstant.forLong(1L << Integer.SIZE));
+                        VexRMOp.VPBROADCASTQ.encoding(encoding).emit(masm, YMM, xtmp2Reg, inc);
+                        VexRVMOp.VPOR.encoding(encoding).emit(masm, YMM, xtmp2Reg, xtmp1Reg, xtmp2Reg);
+                        VexShiftOp.VPSLLQ.encoding(encoding).emit(masm, YMM, xtmp1Reg, indexReg, 1);
+                        VexRVMOp.VPOR.encoding(encoding).emit(masm, YMM, xtmp1Reg, xtmp1Reg, xtmp2Reg);
+                        VexRVMOp op = eKind == AMD64Kind.QWORD ? VexRVMOp.VPERMD : VexRVMOp.VPERMPS;
+                        op.encoding(encoding).emit(masm, YMM, asRegister(result), xtmp1Reg, asRegister(source));
+                    } else {
+                        GraalError.guarantee(avxSize == XMM, "should be PermuteOp");
+                        Register xtmpReg = asRegister(xtmps[0]);
+                        /*
+                         * VPERMILPD uses the SECOND bit in each element as the index. Note that
+                         * although the textual description of the instruction in the Intel SDM
+                         * (March 2025) says that "The control bits are located at bit 0 of each
+                         * quadword element", the pseudocode in the same manual as well as
+                         * experiments show that it is actually the bit 1 that is the control bit.
+                         */
+                        VexShiftOp.VPSLLQ.encoding(encoding).emit(masm, XMM, xtmpReg, asRegister(indices), 1);
+                        VexRVMOp.VPERMILPD.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(source), xtmpReg);
+                    }
                 }
                 default -> throw GraalError.shouldNotReachHereUnexpectedValue(eKind);
             }
@@ -340,6 +357,132 @@ public class AMD64VectorShuffle {
                     VexRVMOp.EVPBLENDMB.emit(masm, ZMM, asRegister(result), xtmp2Reg, xtmp1Reg, ktmpReg);
                 }
                 default -> throw GraalError.shouldNotReachHereUnexpectedValue(avxSize);
+            }
+        }
+    }
+
+    /**
+     * A slice operation, see {@link jdk.graal.compiler.vector.nodes.amd64.AMD64SimdSliceNode}.
+     */
+    public static final class SliceOp extends AMD64LIRInstruction {
+        public static final LIRInstructionClass<SliceOp> TYPE = LIRInstructionClass.create(SliceOp.class);
+
+        @Def({OperandFlag.REG}) protected AllocatableValue result;
+        @Alive({OperandFlag.REG}) protected AllocatableValue src1;
+        @Alive({OperandFlag.REG}) protected AllocatableValue src2;
+        @Temp({OperandFlag.REG, OperandFlag.ILLEGAL}) protected AllocatableValue tmp1;
+        @Temp({OperandFlag.REG, OperandFlag.ILLEGAL}) protected AllocatableValue tmp2;
+        private final int originInBytes;
+        private final AMD64SIMDInstructionEncoding encoding;
+
+        public SliceOp(AMD64LIRGenerator gen, AllocatableValue result, AllocatableValue src1, AllocatableValue src2, int origin, AMD64SIMDInstructionEncoding encoding) {
+            super(TYPE);
+            AMD64Kind eKind = ((AMD64Kind) result.getPlatformKind()).getScalar();
+            this.result = result;
+            this.src1 = src1;
+            this.src2 = src2;
+            this.originInBytes = origin * eKind.getSizeInBytes();
+            this.encoding = encoding;
+            allocateTempIfNecessary(gen);
+        }
+
+        @Override
+        public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
+            int resultSize = result.getPlatformKind().getSizeInBytes();
+            switch (resultSize) {
+                case 4 -> {
+                    if (src1.equals(src2) && originInBytes == 2) {
+                        VexRMIOp.VPSHUFLW.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(src1), 0x1);
+                    } else {
+                        VexRMIOp.VPSHUFD.encoding(encoding).emit(masm, XMM, asRegister(tmp1), asRegister(src1), 0);
+                        VexRVMIOp.VPALIGNR.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(src2), asRegister(tmp1), originInBytes + 12);
+                    }
+                }
+                case 8 -> {
+                    if (src1.equals(src2) && originInBytes % 2 == 0) {
+                        int imm;
+                        if (originInBytes == 2) {
+                            imm = 0b00111001;
+                        } else if (originInBytes == 4) {
+                            imm = 0b01001110;
+                        } else {
+                            GraalError.guarantee(originInBytes == 6, "unexpected originInBytes %d", originInBytes);
+                            imm = 0b10010011;
+                        }
+                        VexRMIOp.VPSHUFLW.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(src1), imm);
+                    } else {
+                        VexRMIOp.VPSHUFD.encoding(encoding).emit(masm, XMM, asRegister(tmp1), asRegister(src1), 0x40);
+                        VexRVMIOp.VPALIGNR.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(src2), asRegister(tmp1), originInBytes + 8);
+                    }
+                }
+                case 16 -> VexRVMIOp.VPALIGNR.encoding(encoding).emit(masm, XMM, asRegister(result), asRegister(src2), asRegister(src1), originInBytes);
+                case 32 -> {
+                    if (encoding == AMD64SIMDInstructionEncoding.VEX || originInBytes % Integer.BYTES != 0) {
+                        Register tmp = originInBytes == 16 ? asRegister(result) : asRegister(tmp1);
+                        if (encoding == AMD64SIMDInstructionEncoding.VEX) {
+                            VexRVMIOp.VPERM2I128.emit(masm, YMM, tmp, asRegister(src1), asRegister(src2), 0x21);
+                        } else {
+                            VexRVMIOp.EVALIGND.emit(masm, YMM, tmp, asRegister(src2), asRegister(src1), 4);
+                        }
+                        if (originInBytes < 16) {
+                            VexRVMIOp.VPALIGNR.encoding(encoding).emit(masm, YMM, asRegister(result), asRegister(tmp1), asRegister(src1), originInBytes);
+                        } else if (originInBytes > 16) {
+                            VexRVMIOp.VPALIGNR.encoding(encoding).emit(masm, YMM, asRegister(result), asRegister(src2), asRegister(tmp1), originInBytes - 16);
+                        }
+                    } else {
+                        VexRVMIOp.EVALIGND.emit(masm, YMM, asRegister(result), asRegister(src2), asRegister(src1), originInBytes / Integer.BYTES);
+                    }
+                }
+                case 64 -> {
+                    GraalError.guarantee(encoding == AMD64SIMDInstructionEncoding.EVEX, "unexpected encoding with 512-bit vector");
+                    if (originInBytes % 4 != 0) {
+                        if (originInBytes < 16) {
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp1), asRegister(src2), asRegister(src1), 4);
+                            VexRVMIOp.EVPALIGNR.emit(masm, ZMM, asRegister(result), asRegister(tmp1), asRegister(src1), originInBytes);
+                        } else if (originInBytes < 32) {
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp1), asRegister(src2), asRegister(src1), 4);
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp2), asRegister(src2), asRegister(src1), 8);
+                            VexRVMIOp.EVPALIGNR.emit(masm, ZMM, asRegister(result), asRegister(tmp2), asRegister(tmp1), originInBytes - 16);
+                        } else if (originInBytes < 48) {
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp1), asRegister(src2), asRegister(src1), 8);
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp2), asRegister(src2), asRegister(src1), 12);
+                            VexRVMIOp.EVPALIGNR.emit(masm, ZMM, asRegister(result), asRegister(tmp2), asRegister(tmp1), originInBytes - 32);
+                        } else {
+                            VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(tmp1), asRegister(src2), asRegister(src1), 12);
+                            VexRVMIOp.EVPALIGNR.emit(masm, ZMM, asRegister(result), asRegister(src2), asRegister(tmp1), originInBytes - 48);
+                        }
+                    } else {
+                        VexRVMIOp.EVALIGND.emit(masm, ZMM, asRegister(result), asRegister(src2), asRegister(src1), originInBytes / Integer.BYTES);
+                    }
+                }
+                default -> GraalError.shouldNotReachHereUnexpectedValue(resultSize);
+            }
+        }
+
+        private void allocateTempIfNecessary(AMD64LIRGenerator gen) {
+            PlatformKind resultKind = result.getPlatformKind();
+            boolean needsTemp;
+            if (resultKind.getSizeInBytes() < XMM.getBytes()) {
+                needsTemp = !src1.equals(src2) || originInBytes % 2 != 0;
+            } else if (resultKind.getSizeInBytes() == XMM.getBytes()) {
+                needsTemp = false;
+            } else if (encoding == AMD64SIMDInstructionEncoding.VEX) {
+                needsTemp = true;
+            } else {
+                needsTemp = (originInBytes % Integer.BYTES != 0);
+            }
+            if (needsTemp) {
+                tmp1 = gen.newVariable(LIRKind.value(resultKind));
+            } else {
+                tmp1 = Value.ILLEGAL;
+            }
+
+            if (resultKind.getSizeInBytes() == ZMM.getBytes() && originInBytes % Integer.BYTES != 0 &&
+                            originInBytes > 16 && originInBytes < 48) {
+                GraalError.guarantee(!tmp1.equals(Value.ILLEGAL), "must have tmp1 with originInBytes = %d", originInBytes);
+                tmp2 = gen.newVariable(LIRKind.value(resultKind));
+            } else {
+                tmp2 = Value.ILLEGAL;
             }
         }
     }

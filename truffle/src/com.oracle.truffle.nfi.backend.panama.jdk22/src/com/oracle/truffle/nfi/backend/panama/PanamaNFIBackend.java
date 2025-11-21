@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,10 @@
  */
 package com.oracle.truffle.nfi.backend.panama;
 
+import java.lang.foreign.SymbolLookup;
+import java.util.EnumMap;
+import java.util.Map;
+
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
@@ -53,37 +57,39 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
+import com.oracle.truffle.nfi.backend.panama.PanamaNFIBackendFactory.LoadDefaultNodeGen;
+import com.oracle.truffle.nfi.backend.panama.PanamaNFIBackendFactory.LoadLibraryNodeGen;
 import com.oracle.truffle.nfi.backend.panama.PanamaSignature.PanamaSignatureBuilder;
 import com.oracle.truffle.nfi.backend.spi.NFIBackend;
 import com.oracle.truffle.nfi.backend.spi.NFIBackendLibrary;
 import com.oracle.truffle.nfi.backend.spi.types.NativeLibraryDescriptor;
 import com.oracle.truffle.nfi.backend.spi.types.NativeSimpleType;
 import com.oracle.truffle.nfi.backend.spi.util.ProfiledArrayBuilder.ArrayBuilderFactory;
-import com.oracle.truffle.nfi.backend.panama.PanamaNFIBackendFactory.LoadDefaultNodeGen;
-import com.oracle.truffle.nfi.backend.panama.PanamaNFIBackendFactory.LoadLibraryNodeGen;
-
-import java.lang.foreign.SymbolLookup;
-import java.util.EnumMap;
-import java.util.Map;
 
 @ExportLibrary(NFIBackendLibrary.class)
 @SuppressWarnings("static-method")
 final class PanamaNFIBackend implements NFIBackend {
 
     private final PanamaNFILanguage language;
-    private Map<NativeSimpleType, PanamaType> simpleTypes;
+    private final Map<NativeSimpleType, PanamaType> simpleTypes;
+    private final Map<NativeSimpleType, PanamaType> arrayTypes;
 
     PanamaNFIBackend(PanamaNFILanguage language) {
         this.language = language;
+        simpleTypes = new EnumMap<>(NativeSimpleType.class);
+        arrayTypes = new EnumMap<>(NativeSimpleType.class);
         initializeTypes();
     }
 
     private void initializeTypes() {
-        simpleTypes = new EnumMap<>(NativeSimpleType.class);
         for (NativeSimpleType type : NativeSimpleType.values()) {
             switch (type) {
-                case VOID, UINT8, SINT8, UINT16, SINT16, UINT32, SINT32, UINT64, SINT64, POINTER, FLOAT, DOUBLE -> simpleTypes.put(type, new PanamaType(type));
+                case VOID, UINT8, SINT8, UINT16, SINT16, UINT32, SINT32, UINT64, SINT64, POINTER, FLOAT, DOUBLE -> simpleTypes.put(type, PanamaType.createSimple(type));
                 default -> simpleTypes.put(type, null);
+            }
+            switch (type) {
+                case UINT8, SINT8, UINT16, SINT16, UINT32, SINT32, UINT64, SINT64, FLOAT, DOUBLE -> arrayTypes.put(type, PanamaType.createArray(type));
+                default -> arrayTypes.put(type, null);
             }
         }
     }
@@ -163,10 +169,10 @@ final class PanamaNFIBackend implements NFIBackend {
         return simpleTypes.get(type);
     }
 
+    @SuppressWarnings("unused")
     @ExportMessage
     Object getArrayType(NativeSimpleType type) {
-        // TODO
-        return null;
+        return arrayTypes.get(type);
     }
 
     @ExportMessage

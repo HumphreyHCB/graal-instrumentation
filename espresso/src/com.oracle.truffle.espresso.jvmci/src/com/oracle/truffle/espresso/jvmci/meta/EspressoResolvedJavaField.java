@@ -22,7 +22,8 @@
  */
 package com.oracle.truffle.espresso.jvmci.meta;
 
-import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedJavaType.NO_ANNOTATIONS;
+import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.DECLARED_ANNOTATIONS;
+import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.TYPE_ANNOTATIONS;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.ENUM;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.HIDDEN;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.STABLE_FIELD;
@@ -35,16 +36,16 @@ import static java.lang.reflect.Modifier.STATIC;
 import static java.lang.reflect.Modifier.TRANSIENT;
 import static java.lang.reflect.Modifier.VOLATILE;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
-import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaType;
+import jdk.vm.ci.meta.annotation.AbstractAnnotated;
+import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-public final class EspressoResolvedJavaField implements ResolvedJavaField {
+public final class EspressoResolvedJavaField extends AbstractAnnotated implements ResolvedJavaField {
     private static final int JVM_FIELDS_MODIFIERS = PUBLIC | PRIVATE | PROTECTED | STATIC | FINAL | VOLATILE | TRANSIENT | ENUM | SYNTHETIC;
 
     private final EspressoResolvedInstanceType holder;
@@ -105,31 +106,8 @@ public final class EspressoResolvedJavaField implements ResolvedJavaField {
     private native JavaType getType0(UnresolvedJavaType unresolved);
 
     @Override
-    public ResolvedJavaType getDeclaringClass() {
+    public EspressoResolvedInstanceType getDeclaringClass() {
         return holder;
-    }
-
-    @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
-        return getMirror().getAnnotation(annotationClass);
-    }
-
-    private native boolean hasAnnotations();
-
-    @Override
-    public Annotation[] getAnnotations() {
-        if (!hasAnnotations()) {
-            return NO_ANNOTATIONS;
-        }
-        return getMirror().getAnnotations();
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        if (!hasAnnotations()) {
-            return NO_ANNOTATIONS;
-        }
-        return getMirror().getDeclaredAnnotations();
     }
 
     @Override
@@ -151,6 +129,22 @@ public final class EspressoResolvedJavaField implements ResolvedJavaField {
     }
 
     private native Field getMirror0();
+
+    @Override
+    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
+        byte[] bytes = getRawAnnotationBytes(DECLARED_ANNOTATIONS);
+        EspressoResolvedInstanceType container = getDeclaringClass();
+        return AnnotationsInfo.make(bytes, container.getConstantPool(), container);
+    }
+
+    @Override
+    public AnnotationsInfo getTypeAnnotationInfo() {
+        byte[] bytes = getRawAnnotationBytes(TYPE_ANNOTATIONS);
+        EspressoResolvedInstanceType container = getDeclaringClass();
+        return AnnotationsInfo.make(bytes, container.getConstantPool(), container);
+    }
+
+    private native byte[] getRawAnnotationBytes(int category);
 
     @Override
     public boolean equals(Object o) {

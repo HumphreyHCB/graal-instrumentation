@@ -27,7 +27,6 @@ package com.oracle.svm.webimage.heap;
 import java.lang.ref.Reference;
 import java.util.List;
 
-import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.word.Pointer;
@@ -44,6 +43,8 @@ import com.oracle.svm.core.heap.RuntimeCodeInfoGCSupport;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.option.RuntimeOptionKey;
 import com.oracle.svm.core.util.VMError;
+
+import jdk.graal.compiler.word.Word;
 
 /**
  * SVM requires a {@link Heap} to be in the {@link ImageSingletons}. This class acts as a dummy
@@ -93,18 +94,15 @@ public class WebImageJSHeap extends Heap {
     }
 
     @Override
-    public boolean walkObjects(ObjectVisitor visitor) {
-        return false;
+    public void walkObjects(ObjectVisitor visitor) {
     }
 
     @Override
-    public boolean walkImageHeapObjects(ObjectVisitor visitor) {
-        return false;
+    public void walkImageHeapObjects(ObjectVisitor visitor) {
     }
 
     @Override
-    public boolean walkCollectedHeapObjects(ObjectVisitor visitor) {
-        return false;
+    public void walkCollectedHeapObjects(ObjectVisitor visitor) {
     }
 
     @Override
@@ -114,7 +112,7 @@ public class WebImageJSHeap extends Heap {
     }
 
     @Override
-    protected List<Class<?>> getAllClasses() {
+    protected List<Class<?>> getClassesInImageHeap() {
         return null;
     }
 
@@ -141,8 +139,13 @@ public class WebImageJSHeap extends Heap {
     }
 
     @Override
-    public int getPreferredAddressSpaceAlignment() {
-        return 0;
+    public int getHeapBaseAlignment() {
+        return 1;
+    }
+
+    @Override
+    public int getImageHeapAlignment() {
+        return 1;
     }
 
     @Override
@@ -230,16 +233,6 @@ public class WebImageJSHeap extends Heap {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public UnsignedWord getUsedMemoryAfterLastGC() {
         return Word.zero();
-    }
-
-    @Override
-    public UnsignedWord getImageHeapReservedBytes() {
-        throw VMError.unimplemented("Native Memory Tracking is not supported");
-    }
-
-    @Override
-    public UnsignedWord getImageHeapCommittedBytes() {
-        throw VMError.unimplemented("Native Memory Tracking is not supported");
     }
 
     @Override

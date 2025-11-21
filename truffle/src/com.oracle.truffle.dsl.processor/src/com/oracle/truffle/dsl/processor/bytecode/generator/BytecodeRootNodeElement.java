@@ -66,6 +66,8 @@ import java.io.DataOutputStream;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.invoke.VarHandle;
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -76,6 +78,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +110,6 @@ import javax.lang.model.util.ElementFilter;
 import com.oracle.truffle.dsl.processor.ProcessorContext;
 import com.oracle.truffle.dsl.processor.SuppressFBWarnings;
 import com.oracle.truffle.dsl.processor.TruffleTypes;
-import com.oracle.truffle.dsl.processor.bytecode.generator.BytecodeRootNodeElement.BuilderElement.OperationDataClassesFactory.ScopeDataElement;
 import com.oracle.truffle.dsl.processor.bytecode.generator.BytecodeRootNodeElement.BuilderElement.SerializationRootNodeElement;
 import com.oracle.truffle.dsl.processor.bytecode.model.BytecodeDSLModel;
 import com.oracle.truffle.dsl.processor.bytecode.model.ConstantOperandModel;
@@ -118,6 +120,7 @@ import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.Immediat
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.ImmediateWidth;
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionEncoding;
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionImmediate;
+import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionImmediateEncoding;
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel.InstructionKind;
 import com.oracle.truffle.dsl.processor.bytecode.model.OperationModel;
 import com.oracle.truffle.dsl.processor.bytecode.model.OperationModel.OperationArgument;
@@ -140,6 +143,7 @@ import com.oracle.truffle.dsl.processor.java.model.CodeNames;
 import com.oracle.truffle.dsl.processor.java.model.CodeTree;
 import com.oracle.truffle.dsl.processor.java.model.CodeTreeBuilder;
 import com.oracle.truffle.dsl.processor.java.model.CodeTypeElement;
+import com.oracle.truffle.dsl.processor.java.model.CodeTypeMirror;
 import com.oracle.truffle.dsl.processor.java.model.CodeTypeMirror.ArrayCodeTypeMirror;
 import com.oracle.truffle.dsl.processor.java.model.CodeTypeMirror.WildcardTypeMirror;
 import com.oracle.truffle.dsl.processor.java.model.CodeTypeParameterElement;
@@ -174,6 +178,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     // Limit from HotSpot to be classified as a huge method and therefore not be JIT compiled
     private static final int JAVA_JIT_BYTECODE_LIMIT = 8000;
 
+    // The abstract builder and descriptor class (different from builderType if
+    // GenerateBytecodeTestVariants used)
+    private final TypeMirror abstractBuilderType;
+
     private final ProcessorContext context = ProcessorContext.getInstance();
     private final TruffleTypes types = context.getTypes();
     private final BytecodeDSLModel model;
@@ -202,13 +210,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
     // Root node and ContinuationLocation classes to support yield.
     private final ContinuationRootNodeImplElement continuationRootNodeImpl;
-    private final ContinuationLocationElement continuationLocation;
 
     // Implementations of public classes that Truffle interpreters interact with.
     private final BytecodeRootNodesImplElement bytecodeRootNodesImpl = new BytecodeRootNodesImplElement();
 
     // Helper classes that map instructions/operations/tags to constant integral values.
-    private final InstructionConstantsElement instructionsElement = new InstructionConstantsElement();
+    private final InstructionsElement instructionsElement = new InstructionsElement();
+    private final BytecodeDescriptorElement bytecodeDescriptorElement = new BytecodeDescriptorElement();
     private final OperationConstantsElement operationsElement = new OperationConstantsElement();
     private final FrameTagConstantsElement frameTagsElement;
 
@@ -222,19 +230,25 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     private AbstractBytecodeNodeElement abstractBytecodeNode;
     private TagNodeElement tagNode;
     private TagRootNodeElement tagRootNode;
+    private InstructionTracerAccessImplElement instructionTracerAccessImplElement;
+    private InstructionDescriptorImplElement instructionDescriptorImpl;
+    private InstructionDescriptorListElement instructionDescriptorList;
     private InstructionImplElement instructionImpl;
     private SerializationRootNodeElement serializationRootNode;
 
     private Map<TypeMirror, CodeExecutableElement> expectMethods = new HashMap<>();
 
-    BytecodeRootNodeElement(BytecodeDSLModel model) {
+    BytecodeRootNodeElement(BytecodeDSLModel model, TypeMirror abstractBuilderType) {
         super(Set.of(PUBLIC, FINAL), ElementKind.CLASS, ElementUtils.findPackageElement(model.getTemplateType()), model.getName());
         if (model.hasErrors()) {
             throw new IllegalArgumentException("Models with errors are not supported.");
         }
+
         this.model = model;
+        this.abstractBuilderType = abstractBuilderType == null ? types.BytecodeBuilder : abstractBuilderType;
         this.bytecodeBuilderType = builder.asType();
-        this.parserType = generic(types.BytecodeParser, bytecodeBuilderType);
+
+        this.parserType = generic(types.BytecodeParser, abstractBuilderType == null ? bytecodeBuilderType : abstractBuilderType);
         setSuperClass(model.getTemplateType().asType());
         addField(this, Set.of(PRIVATE, STATIC, FINAL), int[].class, EMPTY_INT_ARRAY, "new int[0]");
 
@@ -250,12 +264,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         this.createDocBuilder().startDoc().lines(model.pp()).end();
         mergeSuppressWarnings(this, "static-method");
 
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             continuationRootNodeImpl = new ContinuationRootNodeImplElement();
-            continuationLocation = new ContinuationLocationElement();
         } else {
             continuationRootNodeImpl = null;
-            continuationLocation = null;
         }
 
         // Define constants for accessing the frame.
@@ -267,12 +279,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             frameTagsElement = null;
         }
 
-        this.instructionImpl = this.add(new InstructionImplElement());
+        if (model.enableInstructionTracing) {
+            this.instructionTracerAccessImplElement = new InstructionTracerAccessImplElement();
+        }
+        this.instructionDescriptorImpl = new InstructionDescriptorImplElement();
+        this.instructionDescriptorList = new InstructionDescriptorListElement();
+
+        this.instructionImpl = new InstructionImplElement();
 
         if (model.enableTagInstrumentation) {
-            this.tagNode = this.add(new TagNodeElement());
-            this.tagRootNode = this.add(new TagRootNodeElement());
+            this.tagNode = new TagNodeElement();
+            this.tagRootNode = new TagRootNodeElement();
         }
+
+        this.add(bytecodeDescriptorElement);
 
         this.abstractBytecodeNode = this.add(new AbstractBytecodeNodeElement());
         if (model.enableTagInstrumentation) {
@@ -316,12 +336,25 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         builder.lazyInit();
         this.add(builder);
 
+        if (model.enableInstructionTracing) {
+            this.add(instructionTracerAccessImplElement);
+            instructionTracerAccessImplElement.lazyInit();
+        }
+        this.add(instructionDescriptorImpl);
+        this.add(instructionDescriptorList);
+        this.add(instructionImpl);
+
+        if (model.enableTagInstrumentation) {
+            this.add(tagNode);
+            this.add(tagRootNode);
+        }
+
+        instructionDescriptorImpl.lazyInit();
         instructionImpl.lazyInit();
 
         configEncoder = this.add(createBytecodeConfigEncoderClass());
 
-        CodeExecutableElement newConfigBuilder = this.add(new CodeExecutableElement(Set.of(PUBLIC, STATIC), types.BytecodeConfig_Builder, "newConfigBuilder"));
-        newConfigBuilder.createBuilder().startReturn().startStaticCall(types.BytecodeConfig, "newBuilder").staticReference(configEncoder.asType(), "INSTANCE").end().end();
+        this.add(createNewConfigBuilder());
 
         // Define implementations for the public classes that Truffle interpreters interact
         // with.
@@ -331,6 +364,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         // Define helper classes containing the constants for instructions and operations.
         instructionsElement.lazyInit();
         this.add(instructionsElement);
+
+        bytecodeDescriptorElement.lazyInit();
+
+        CodeVariableElement descriptor = new CodeVariableElement(Set.of(PUBLIC, STATIC, FINAL), bytecodeDescriptorElement.asType(), "BYTECODE");
+        descriptor.createInitBuilder().startNew(bytecodeDescriptorElement.asType()).end();
+        this.getEnclosedElements().add(0, descriptor);
 
         operationsElement.lazyInit();
         this.add(operationsElement);
@@ -348,10 +387,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         this.add(new LocalVariableListElement());
 
         // Define the classes that implement continuations (yield).
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             continuationRootNodeImpl.lazyInit();
             this.add(continuationRootNodeImpl);
-            this.add(continuationLocation);
         }
 
         int numHandlerKinds = 0;
@@ -418,7 +456,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         // Define serialization methods and helper fields.
         if (model.enableSerialization) {
             this.add(createSerialize());
-            this.add(createDoSerialize());
             this.add(createDeserialize());
         }
 
@@ -460,8 +497,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         this.add(createGetBytecodeNodeImpl());
         this.add(createGetBytecodeRootNode());
 
+        this.add(createInvalidate());
+
         this.add(createGetRootNodes());
-        this.addOptional(createCountTowardsStackTraceLimit());
         this.add(createGetSourceSection());
         CodeExecutableElement translateStackTraceElement = this.addOptional(createTranslateStackTraceElement());
         if (translateStackTraceElement != null) {
@@ -502,10 +540,22 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             abstractBytecodeNode.add(new CodeVariableElement(Set.of(VOLATILE), arrayOf(type(byte.class)), "oldBytecodes"));
         }
 
-        // this should be at the end after all methods have been added.
+        /*
+         * These calls should occur after all methods have been added. They use the generated root
+         * node's method set to determine what method delegate/stub methods to generate.
+         */
+        if (model.hasYieldOperation()) {
+            continuationRootNodeImpl.addRootNodeDelegateMethods();
+        }
         if (model.enableSerialization) {
             addMethodStubsToSerializationRootNode();
         }
+    }
+
+    private CodeExecutableElement createNewConfigBuilder() {
+        CodeExecutableElement method = new CodeExecutableElement(Set.of(PUBLIC, STATIC), types.BytecodeConfig_Builder, "newConfigBuilder");
+        method.createBuilder().startReturn().startStaticCall(types.BytecodeConfig, "newBuilder").staticReference(configEncoder.asType(), "INSTANCE").end().end();
+        return method;
     }
 
     private CodeExecutableElement createValidateVariadicStackLimit() {
@@ -581,7 +631,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         b.string("0"); // bci
         b.string("maxLocals"); // sp
         b.string("frame");
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             b.string("frame");
             b.string("null");
         }
@@ -595,6 +645,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         NodeConstants nodeConsts = new NodeConstants();
         BytecodeDSLNodeGeneratorPlugs plugs = new BytecodeDSLNodeGeneratorPlugs(BytecodeRootNodeElement.this, instr);
         FlatNodeGenFactory factory = new FlatNodeGenFactory(context, GeneratorMode.DEFAULT, instr.nodeData, consts, nodeConsts, plugs);
+
+        boolean forceFrame = false;
+        if (isStoreBciEnabled(model, InterpreterTier.CACHED)) {
+            for (SpecializationData s : instr.nodeData.getReachableSpecializations()) {
+                if (isStoreBciBeforeSpecialization(model, InterpreterTier.CACHED, instr, s)) {
+                    forceFrame = true;
+                }
+            }
+        }
+        factory.setForceFrameInExecuteAndSpecialize(forceFrame);
 
         String className = cachedDataClassName(instr);
         CodeTypeElement el = new CodeTypeElement(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, className);
@@ -616,6 +676,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         nodeConsts.addToClass(el);
 
         if (instr.canUseNodeSingleton()) {
+
+            for (VariableElement field : ElementFilter.fieldsIn(el.getEnclosedElements())) {
+                if (field.getModifiers().contains(STATIC)) {
+                    continue;
+                }
+                // safety check so we never have inconsistent conditions
+                throw new AssertionError("Instruction " + instr + " is used as singleton but has node fields " + field);
+            }
+
             el.addAnnotationMirror(new CodeAnnotationMirror(types.DenyReplace));
             CodeVariableElement singleton = new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL),
                             el.asType(), "SINGLETON");
@@ -645,7 +714,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     private String encodeState(String bci, String sp, String useContinuationFrame) {
         String result = "";
         if (useContinuationFrame != null) {
-            if (!model.enableYield) {
+            if (!model.hasYieldOperation()) {
                 throw new AssertionError();
             }
             result += String.format("((%s ? 1L : 0L) << 48) | ", useContinuationFrame);
@@ -680,14 +749,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     }
 
     private String decodeUseContinuationFrame(String state) {
-        if (!model.enableYield) {
+        if (!model.hasYieldOperation()) {
             throw new AssertionError();
         }
         return String.format("(%s & (1L << 48)) != 0", state);
     }
 
     private String clearUseContinuationFrame(String target) {
-        if (!model.enableYield) {
+        if (!model.hasYieldOperation()) {
             throw new AssertionError();
         }
         return String.format("(%s & ~(1L << 48))", target);
@@ -699,7 +768,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         ex.addParameter(new CodeVariableElement(type(int.class), "bci"));
         ex.addParameter(new CodeVariableElement(type(int.class), "sp"));
         ex.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             /**
              * When an {@link BytecodeRootNode} is suspended, its frame gets materialized. Resuming
              * execution with this materialized frame would provide unsatisfactory performance.
@@ -737,7 +806,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         b.startCall("bc", "continueAt");
         b.string("this");
         b.string("frame");
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             b.string("localFrame");
         }
         b.string("state");
@@ -750,13 +819,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         b.lineComment("Bytecode or tier changed");
         b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
 
-        if (model.isBytecodeUpdatable()) {
+        if (model.isBytecodeUpdatable() || model.hasYieldOperation()) {
             b.declaration(abstractBytecodeNode.asType(), "oldBytecode", "bc");
             b.statement("bc = this.bytecode");
-            b.startAssign("state").startCall("oldBytecode.transitionState");
+
+            if (model.isBytecodeUpdatable()) {
+                b.startAssign("state");
+            } else {
+                b.startStatement();
+            }
+            b.startCall("oldBytecode.transition");
             b.string("bc");
-            b.string("state");
-            if (model.enableYield) {
+            if (model.isBytecodeUpdatable()) {
+                b.string("state");
+            }
+            if (model.hasYieldOperation()) {
                 b.string("continuationRootNode");
             }
             b.end(2);
@@ -776,10 +853,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     private Element createIsCaptureFramesForTrace() {
         CodeExecutableElement ex = overrideImplementRootNodeMethod(model, "isCaptureFramesForTrace", new String[]{"compiled"}, new TypeMirror[]{type(boolean.class)});
         CodeTreeBuilder b = ex.createBuilder();
-        if (model.storeBciInFrame) {
+        if (model.captureFramesForTrace) {
+            b.lineComment("GenerateBytecode#captureFramesForTrace is true.");
             b.statement("return true");
-        } else {
+        } else if (model.storeBciInFrame) {
+            b.lineComment("GenerateBytecode#storeBytecodeIndexInFrame is true, so the frame is needed for location computations.");
+            b.statement("return true");
+        } else if (model.enableUncachedInterpreter) {
+            b.lineComment("The uncached interpreter (which is never compiled) needs the frame for location computations.");
+            b.lineComment("This may capture the frame in more situations than strictly necessary, but doing so in the interpreter is inexpensive.");
             b.statement("return !compiled");
+        } else {
+            b.lineComment("GenerateBytecode#captureFramesForTrace is not true, and the interpreter does not need the frame for location lookups.");
+            b.statement("return false");
         }
         return ex;
     }
@@ -788,6 +874,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         CodeExecutableElement ex = overrideImplementRootNodeMethod(model, "findBytecodeIndex", new String[]{"node", "frame"});
         mergeSuppressWarnings(ex, "hiding");
         CodeTreeBuilder b = ex.createBuilder();
+        b.startAssert().string("!(node instanceof ").type(types.BytecodeRootNode).string("): ").doubleQuote("A BytecodeRootNode should not be used as a call location.").end();
         if (model.storeBciInFrame) {
             b.startIf().string("node == null").end().startBlock();
             b.statement("return -1");
@@ -805,7 +892,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.declaration(types.Node, "prev", "node");
             b.declaration(types.Node, "current", "node");
             b.startWhile().string("current != null").end().startBlock();
-            b.startIf().string("current ").instanceOf(abstractBytecodeNode.asType()).string(" b").end().startBlock();
+            b.startIf().string("current").instanceOf(abstractBytecodeNode.asType()).string(" b").end().startBlock();
             b.statement("bytecode = b");
             b.statement("break");
             b.end();
@@ -827,7 +914,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         CodeTreeBuilder b = ex.createBuilder();
         b.startDeclaration(types.BytecodeNode, "bc").startStaticCall(types.BytecodeNode, "get").string("callNode").end().end();
         b.startIf().string("bc == null || !(bc instanceof AbstractBytecodeNode bytecodeNode)").end().startBlock();
-        b.startReturn().string("super.findInstrumentableCallNode(callNode, frame, bytecodeIndex)").end();
+        ExecutableElement superImpl = ElementUtils.findMethodInClassHierarchy(ElementUtils.findMethod(types.RootNode, "findInstrumentableCallNode"), model.templateType);
+        if (superImpl.getModifiers().contains(ABSTRACT)) {
+            // edge case: root node could redeclare findInstrumentableCallNode as abstract.
+            b.startReturn().string("null").end();
+        } else {
+            b.startReturn().string("super.findInstrumentableCallNode(callNode, frame, bytecodeIndex)").end();
+        }
         b.end();
         b.statement("return bytecodeNode.findInstrumentableCallNode(bytecodeIndex)");
         return ex;
@@ -966,7 +1059,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             result.add(createInitializedVariable(Set.of(PRIVATE, STATIC, FINAL), int.class, BCI_INDEX, reserved++ + ""));
         }
 
-        if (model.enableYield) {
+        if (model.hasYieldOperation()) {
             result.add(createInitializedVariable(Set.of(PRIVATE, STATIC, FINAL), int.class, COROUTINE_FRAME_INDEX, reserved++ + ""));
         }
 
@@ -1059,28 +1152,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return ex;
     }
 
-    private CodeExecutableElement createCountTowardsStackTraceLimit() {
-        ExecutableElement executable = ElementUtils.findOverride(ElementUtils.findMethod(types.RootNode, "countsTowardsStackTraceLimit"), model.templateType);
-        if (executable != null) {
-            return null;
-        }
-        CodeExecutableElement ex = overrideImplementRootNodeMethod(model, "countsTowardsStackTraceLimit");
-        if (ex.getModifiers().contains(Modifier.FINAL)) {
-            // already overridden by the root node.
-            return null;
-        }
-
-        ex.getModifiers().remove(Modifier.ABSTRACT);
-        ex.getModifiers().add(Modifier.FINAL);
-        CodeTreeBuilder b = ex.createBuilder();
-        /*
-         * We do override with false by default to avoid materialization of sources during stack
-         * walking.
-         */
-        b.returnTrue();
-        return ex;
-    }
-
     private CodeExecutableElement createGetSourceSection() {
         CodeExecutableElement ex = GeneratorUtils.override(types.Node, "getSourceSection");
         CodeTreeBuilder b = ex.createBuilder();
@@ -1153,6 +1224,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
     private CodeTypeElement createLoopCounter() {
         addField(loopCounter, Set.of(PRIVATE, STATIC, FINAL), int.class, "REPORT_LOOP_STRIDE", "1 << 8");
+        addField(loopCounter, Set.of(PRIVATE, STATIC, FINAL), double.class, "REPORT_LOOP_PROBABILITY", "(double)1 / (double)REPORT_LOOP_STRIDE");
         addField(loopCounter, Set.of(PRIVATE), int.class, "value");
 
         return loopCounter;
@@ -1173,22 +1245,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         """, model.getName()));
 
         CodeTreeBuilder b = ex.getBuilder();
-
-        b.declaration("BytecodeRootNodesImpl", "nodes", "new BytecodeRootNodesImpl(parser, config)");
-        b.startAssign("Builder builder").startNew(builder.getSimpleName().toString());
-        b.string("language");
-        b.string("nodes");
-        b.string("config");
-        b.end(2);
-
-        b.startStatement().startCall("parser", "parse");
-        b.string("builder");
-        b.end(2);
-
-        b.startStatement().startCall("builder", "finish").end(2);
-
-        b.startReturn().string("nodes").end();
-
+        b.statement("return BYTECODE.create(language, config, parser)");
         return ex;
     }
 
@@ -1240,75 +1297,33 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         Serializes the bytecode nodes parsed by the {@code parser}.
                         All metadata (e.g., source info) is serialized (even if it has not yet been parsed).
                         <p>
-                        Unlike {@link BytecodeRootNodes#serialize}, this method does not use already-constructed root nodes,
-                        so it cannot serialize field values that get set outside of the parser.
+                        Unlike the {@link BytecodeRootNodes#serialize} instance method, which replays builder
+                        calls that were already validated during the original bytecode parse, this method
+                        does <strong>not</strong> validate the builder calls performed by the {@code parser}.
+                        Validation will happen (as usual) when the bytes are deserialized.
+                        <p>
+                        Additionally, this method cannot serialize field values that get set outside of the
+                        parser, unlike the {@link BytecodeRootNodes#serialize} instance method, which has
+                        access to the instances being serialized.
 
                         @param buffer the buffer to write the byte output to.
                         @param callback the language-specific serializer for constants in the bytecode.
                         @param parser the parser.
                         """);
 
-        CodeTreeBuilder init = CodeTreeBuilder.createBuilder();
-        init.startNew("Builder");
-        init.string("null"); // language not needed for serialization
-        init.startGroup();
-        init.startNew(bytecodeRootNodesImpl.asType());
-        init.string("parser");
-        init.staticReference(types.BytecodeConfig, "COMPLETE");
-        init.end(2);
-        init.staticReference(types.BytecodeConfig, "COMPLETE");
-        init.end();
-
         CodeTreeBuilder b = method.createBuilder();
-
-        b.declaration("Builder", "builder", init.build());
-
-        b.startStatement();
-        b.startCall("doSerialize");
-        b.string("buffer");
-        b.string("callback");
-        b.string("builder");
-        b.string("null"); // existingNodes
-        b.end(2);
-
-        return withTruffleBoundary(method);
-    }
-
-    private CodeExecutableElement createDoSerialize() {
-        CodeExecutableElement method = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(void.class), "doSerialize");
-        method.addParameter(new CodeVariableElement(type(DataOutput.class), "buffer"));
-        method.addParameter(new CodeVariableElement(types.BytecodeSerializer, "callback"));
-        method.addParameter(new CodeVariableElement(bytecodeBuilderType, "builder"));
-        method.addParameter(new CodeVariableElement(generic(List.class, model.getTemplateType().asType()), "existingNodes"));
-        method.addThrownType(type(IOException.class));
-
-        CodeTreeBuilder b = method.createBuilder();
-
-        b.startTryBlock();
-
-        b.startStatement().startCall("builder", "serialize");
-        b.string("buffer");
-        b.string("callback");
-        b.string("existingNodes");
-        b.end().end();
-
-        b.end().startCatchBlock(type(IOError.class), "e");
-        b.startThrow().cast(type(IOException.class), "e.getCause()").end();
-        b.end();
-
-        return withTruffleBoundary(method);
+        b.statement("BYTECODE.serialize(buffer, callback, parser)");
+        return method;
     }
 
     private CodeExecutableElement createDeserialize() {
         CodeExecutableElement method = new CodeExecutableElement(Set.of(PUBLIC, STATIC),
                         generic(types.BytecodeRootNodes, model.getTemplateType().asType()), "deserialize");
-
         method.addParameter(new CodeVariableElement(model.languageClass, "language"));
         method.addParameter(new CodeVariableElement(types.BytecodeConfig, "config"));
         method.addParameter(new CodeVariableElement(generic(Supplier.class, DataInput.class), "input"));
         method.addParameter(new CodeVariableElement(types.BytecodeDeserializer, "callback"));
         method.addThrownType(type(IOException.class));
-
         addJavadoc(method,
                         """
                                         Deserializes a byte sequence to bytecode nodes. The bytes must have been produced by a previous call to {@link #serialize}.").newLine()
@@ -1320,15 +1335,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                                         """);
 
         CodeTreeBuilder b = method.createBuilder();
-
-        b.startTryBlock();
-
-        b.statement("return create(language, config, (b) -> b.deserialize(input, callback, null))");
-        b.end().startCatchBlock(type(IOError.class), "e");
-        b.startThrow().cast(type(IOException.class), "e.getCause()").end();
-        b.end();
-
-        return withTruffleBoundary(method);
+        b.statement("return BYTECODE.deserialize(language, config, input, callback)");
+        return method;
     }
 
     private CodeExecutableElement createGetBytecodeNode() {
@@ -1347,6 +1355,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), abstractBytecodeNode.asType(), "getBytecodeNodeImpl");
         CodeTreeBuilder b = ex.createBuilder();
         b.startReturn().string("bytecode").end();
+        return ex;
+    }
+
+    private CodeExecutableElement createInvalidate() {
+        CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "invalidate");
+        ex.addParameter(new CodeVariableElement(type(String.class), "reason"));
+        CodeTreeBuilder b = ex.createBuilder();
+        b.statement("this.reportReplace(this, this, reason)");
         return ex;
     }
 
@@ -1413,8 +1429,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             ex.addParameter(new CodeVariableElement(e.asType(), e.getSimpleName().toString() + "_"));
         }
         ex.addParameter(new CodeVariableElement(type(CharSequence.class), "reason"));
-        if (model.enableYield) {
-            ex.addParameter(new CodeVariableElement(generic(ArrayList.class, continuationLocation.asType()), "continuationLocations"));
+        if (model.hasYieldOperation()) {
+            ex.addParameter(new CodeVariableElement(type(int[].class), "continuations"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "continuationsIndex"));
         }
 
         CodeTreeBuilder b = ex.createBuilder();
@@ -1447,14 +1464,44 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(2);
             b.end();
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
+                if (model.enableInstructionTracing) {
+                    b.declaration(type(int.class), "oldConstantOffset", "oldBytecode.isInstructionTracingEnabled() ? 1 : 0");
+                    b.declaration(type(int.class), "newConstantOffset", "newBytecode.isInstructionTracingEnabled() ? 1 : 0");
+                }
+
                 // We need to patch the BytecodeNodes for continuations.
-                b.startStatement().startCall("oldBytecode.updateContinuationRootNodes");
+                b.startFor().string("int i = 0; i < continuationsIndex; i = i + CONTINUATION_LENGTH").end().startBlock();
+                b.declaration(type(int.class), "constantPoolIndex", "continuations[i + CONTINUATION_OFFSET_CPI]");
+                b.declaration(type(int.class), "continuationBci", "continuations[i + CONTINUATION_OFFSET_BCI]");
+
+                if (model.enableInstructionTracing) {
+                    b.lineComment("The constant offset is 1 with instruction tracing enabled. See INSTRUCTION_TRACER_CONSTANT_INDEX.");
+                    b.lineComment("We need to align constant indices for the continuation root node updates.");
+                    b.declaration(type(int.class), "oldConstantPoolIndex", "constantPoolIndex - newConstantOffset + oldConstantOffset");
+                } else {
+                    b.declaration(type(int.class), "oldConstantPoolIndex", "constantPoolIndex");
+                }
+
+                b.startDeclaration(continuationRootNodeImpl.asType(), "continuationRootNode");
+                b.cast(continuationRootNodeImpl.asType());
+                b.string("oldBytecode.constants[oldConstantPoolIndex]");
+                b.end();
+
+                b.startAssert().string("oldBytecode.constants[oldConstantPoolIndex] == newBytecode.constants[constantPoolIndex]").end();
+
+                b.lineComment("locations may become null if they are no longer reachable.");
+                b.declaration(types.BytecodeLocation, "newLocation", "continuationBci == -1 ? null : newBytecode.getBytecodeLocation(continuationBci)");
+
+                b.startStatement().startCall("continuationRootNode", "updateBytecodeLocation");
+                b.string("newLocation");
+                b.string("oldBytecode");
                 b.string("newBytecode");
                 b.string("reason");
-                b.string("continuationLocations");
-                b.string("bytecodes_ != null");
                 b.end(2);
+                b.end();
+
+                b.end(); // for
             }
         }
 
@@ -1557,11 +1604,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         b.end();
 
         long mask = 1L;
-        if (model.getInstrumentations().size() > MAX_INSTRUMENTATIONS) {
+        if (model.getInstrumentationsCount() > MAX_INSTRUMENTATIONS) {
             throw new AssertionError("Unsupported instrumentation size.");
         }
         if (model.getProvidedTags().size() > MAX_TAGS) {
             throw new AssertionError("Unsupported instrumentation size.");
+        }
+
+        if (model.traceInstructionInstrumentationIndex != -1) {
+            mask |= 1L << (INSTRUMENTATION_OFFSET + model.traceInstructionInstrumentationIndex);
         }
 
         for (int i = 0; i < model.getInstrumentations().size(); i++) {
@@ -1580,9 +1631,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         CodeExecutableElement encodeInstrumentation = GeneratorUtils.override(types.BytecodeConfigEncoder, "encodeInstrumentation", new String[]{"c"});
         CodeTreeBuilder b = encodeInstrumentation.createBuilder();
 
-        if (!model.getInstrumentations().isEmpty()) {
+        if (model.hasInstrumentations()) {
             b.declaration("long", "encoding", "0L");
-            boolean elseIf = false;
+            boolean elseIf = b.startIf(false);
+            b.string("c == ").typeLiteral(types.InstructionTracer);
+            b.end().startBlock();
+            if (model.enableInstructionTracing) {
+                b.statement("encoding |= 0x" + Integer.toHexString(1 << model.traceInstructionInstrumentationIndex));
+            } else {
+                b.lineComment("Instruction tracing disabled");
+            }
+            b.end();
             for (CustomOperationModel customOperation : model.getInstrumentations()) {
                 elseIf = b.startIf(elseIf);
                 b.string("c == ").typeLiteral(customOperation.operation.instruction.nodeType.asType());
@@ -1595,7 +1654,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         b.startThrow().startNew(type(IllegalArgumentException.class)).startCall("String.format").doubleQuote(
                         "Invalid instrumentation specified. Instrumentation '%s' does not exist or is not an instrumentation for '" + ElementUtils.getQualifiedName(model.templateType) + "'. " +
                                         "Instrumentations can be specified using the @Instrumentation annotation.").string("c.getName()").end().end().end();
-        if (!model.getInstrumentations().isEmpty()) {
+        if (model.hasInstrumentations()) {
             b.end(); // else
             b.startReturn().string("encoding << 1").end();
         }
@@ -1618,6 +1677,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         CodeTreeBuilder b = ex.createBuilder();
         b.startIf().string("!this.nodes.isParsed()").end().startBlock();
         emitThrowIllegalStateException(ex, b, "A call target cannot be created until bytecode parsing completes. Request a call target after the parse is complete instead.");
+        b.end();
+
+        b.startStatement();
+        b.startCall("BYTECODE.prepareForCall");
+        b.startCall("getLanguage").typeLiteral(model.languageClass).end();
+        b.string("this");
+        b.end();
         b.end();
         return ex;
     }
@@ -1648,9 +1714,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         CodeExecutableElement ex = overrideImplementRootNodeMethod(model, "prepareForCompilation", new String[]{"rootCompilation", "compilationTier", "lastTier"});
+        ex.getModifiers().add(Modifier.FINAL);
         CodeTreeBuilder b = ex.createBuilder();
+
+        b.startReturn();
         // Disable compilation for the uncached interpreter.
-        b.startReturn().string("bytecode.getTier() != ").staticReference(types.BytecodeTier, "UNCACHED").end();
+        b.string("bytecode.getTier() != ").staticReference(types.BytecodeTier, "UNCACHED");
+
+        ExecutableElement parentImpl = ElementUtils.findMethodInClassHierarchy(ElementUtils.findMethod(types.RootNode, "prepareForCompilation", 3), model.templateType);
+        if (parentImpl != null && !parentImpl.getModifiers().contains(ABSTRACT)) {
+            // Delegate to the parent impl.
+            b.string(" && ").startCall("super.prepareForCompilation").variables(ex.getParameters()).end();
+        }
+        b.end();
         return ex;
     }
 
@@ -1772,6 +1848,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return abstractBytecodeNode;
     }
 
+    CodeTypeElement getContinuationRootNodeImpl() {
+        return continuationRootNodeImpl;
+    }
+
     private ExecutableElement createCachedExecute(BytecodeDSLNodeGeneratorPlugs plugs, FlatNodeGenFactory factory, CodeTypeElement el, InstructionModel instruction) {
         plugs.setInstruction(instruction);
         TypeMirror returnType = instruction.signature.returnType;
@@ -1828,6 +1908,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
     private static String executeMethodName(InstructionModel instruction) {
         return "execute" + instruction.getQualifiedQuickeningName();
+    }
+
+    private static int getStackEffect(InstructionModel instr) {
+        return (instr.signature.isVoid ? 0 : 1) - instr.signature.dynamicOperandCount;
     }
 
     private void serializationWrapException(CodeTreeBuilder b, Runnable r) {
@@ -2191,7 +2275,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
     }
 
     private String localFrame() {
-        return model.enableYield ? "localFrame" : "frame";
+        return model.hasYieldOperation() ? "localFrame" : "frame";
     }
 
     // Helpers to generate common strings
@@ -2218,12 +2302,41 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return b.build();
     }
 
+    private static String encodeInlinedConstant(ImmediateKind kind, String value) {
+        return switch (kind) {
+            case CONSTANT_LONG, CONSTANT_INT, CONSTANT_SHORT -> value;
+            case CONSTANT_DOUBLE -> "Double.doubleToRawLongBits(" + value + ")";
+            case CONSTANT_FLOAT -> "Float.floatToRawIntBits(" + value + ")";
+            case CONSTANT_CHAR -> "(short) (" + value + " - " + (1 << 15) + ")";
+            case CONSTANT_BYTE -> value; // byte can implicitly widen to short
+            case CONSTANT_BOOL -> "(short) (" + value + " ? 1 : 0)";
+            default -> {
+                throw new AssertionError("Unexpected inlined constant operand kind " + kind);
+            }
+        };
+    }
+
+    private CodeTree decodeInlinedConstant(ImmediateKind kind, CodeTree value) {
+        return switch (kind) {
+            case CONSTANT_LONG, CONSTANT_INT, CONSTANT_SHORT -> value;
+            case CONSTANT_DOUBLE -> CodeTreeBuilder.createBuilder().startCall("Double.longBitsToDouble").tree(value).end().build();
+            case CONSTANT_FLOAT -> CodeTreeBuilder.createBuilder().startCall("Float.intBitsToFloat").tree(value).end().build();
+            case CONSTANT_CHAR -> CodeTreeBuilder.createBuilder().startGroup().cast(type(char.class)).startParantheses().tree(value).string(" + " + (1 << 15)).end(2).build();
+            case CONSTANT_BYTE -> CodeTreeBuilder.createBuilder().startGroup().cast(type(byte.class)).tree(value).end().build();
+            case CONSTANT_BOOL -> CodeTreeBuilder.createBuilder().startGroup().tree(value).string(" != 0").end().build();
+            default -> {
+                throw new AssertionError("Unexpected inlined constant operand kind " + kind);
+            }
+        };
+    }
+
     static CodeTree readImmediate(String bc, String bci, InstructionImmediate immediate) {
         CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
         String accessor = switch (immediate.kind().width) {
             case BYTE -> "getByte";
             case SHORT -> "getShort";
             case INT -> "getIntUnaligned";
+            case LONG -> "getLongUnaligned";
         };
         b.startCall("BYTES", accessor);
         b.string(bc);
@@ -2235,20 +2348,32 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return b.build();
     }
 
-    private static CodeTree writeImmediate(String bc, String bci, String value, InstructionImmediate immediate) {
+    CodeTree readConstantImmediate(String bc, String bci, String bytecodeNode, InstructionImmediate imm, TypeMirror immediateType) {
+        if (imm.kind() == ImmediateKind.CONSTANT) {
+            return readConstFastPath(readImmediate(bc, bci, imm), bytecodeNode + ".constants", immediateType);
+        } else {
+            return decodeInlinedConstant(imm.kind(), readImmediate(bc, bci, imm));
+        }
+    }
+
+    static CodeTree writeImmediate(String bc, String bci, String value, InstructionImmediateEncoding immediate) {
+        return writeImmediate(bc, bci, CodeTreeBuilder.singleString(value), immediate);
+    }
+
+    static CodeTree writeImmediate(String bc, String bci, CodeTree value, InstructionImmediateEncoding immediate) {
         CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
-        String accessor = switch (immediate.kind().width) {
+        String accessor = switch (immediate.width()) {
             case BYTE -> "putByte";
             case SHORT -> "putShort";
             case INT -> "putInt";
+            case LONG -> "putLong";
         };
         b.startCall("BYTES", accessor);
         b.string(bc);
         b.startGroup();
-        b.string(bci).string(" + ").string(immediate.offset()).string(" ");
-        b.startComment().string(" imm ", immediate.name(), " ").end();
+        b.string(bci).string(" + ").string(immediate.offset());
         b.end();
-        b.string(value);
+        b.tree(value);
         b.end();
         return b.build();
     }
@@ -2269,33 +2394,29 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return String.format("BYTES.putByte(%s, %s, %s)", array, index, value);
     }
 
-    static CodeTree readConstFastPath(CodeTree index) {
-        return readConst(index, "consts", null);
+    private CodeTree readConstFastPath(CodeTree index, String constants) {
+        return readConstFastPath(index, constants, null);
     }
 
-    static CodeTree readConstFastPath(CodeTree index, TypeMirror knownType) {
-        return readConst(index, "consts", knownType);
+    private CodeTree readConstFastPath(CodeTree index, String constants, TypeMirror knownType) {
+        return readConst(index, uncheckedCast(type(Object[].class), constants), knownType);
     }
 
-    static CodeTree readConst(String index, String constants) {
-        return readConst(CodeTreeBuilder.singleString(index), constants, null);
+    private static CodeTree readConst(String index, String constants) {
+        return readConst(CodeTreeBuilder.singleString(index), CodeTreeBuilder.singleString(constants), null);
     }
 
-    static CodeTree readConst(CodeTree index, String constants, TypeMirror knownType) {
+    static CodeTree readConst(CodeTree index, CodeTree constants, TypeMirror knownType) {
         CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
-        boolean needsCast = knownType != null && !ElementUtils.isObject(knownType);
-        if (needsCast) {
-            b.startCall("ACCESS.uncheckedCast");
-        }
         b.startCall("ACCESS.readObject");
-        b.string(constants);
+        b.tree(constants);
         b.tree(index);
         b.end();
-        if (needsCast) {
-            b.typeLiteral(ElementUtils.boxType(knownType));
-            b.end();
+        CodeTree tree = b.build();
+        if (knownType != null && !ElementUtils.isObject(knownType)) {
+            tree = uncheckedCast(ElementUtils.boxType(knownType), tree);
         }
-        return b.build();
+        return tree;
     }
 
     private static CodeTree readIntArray(String array, String index) {
@@ -2321,17 +2442,26 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return readTagNode(expectedType, "tagRoot.tagNodes", index);
     }
 
-    private static CodeTree readTagNode(TypeMirror expectedType, String tagNodes, CodeTree index) {
+    private static CodeTree uncheckedCast(TypeMirror type, String value) {
+        return uncheckedCast(type, CodeTreeBuilder.singleString(value));
+    }
+
+    private static CodeTree uncheckedCast(TypeMirror type, CodeTree value) {
         CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
         b.startCall("ACCESS.uncheckedCast");
+        b.tree(value);
+        b.typeLiteral(type);
+        b.end();
+        return b.build();
+    }
+
+    private static CodeTree readTagNode(TypeMirror expectedType, String tagNodes, CodeTree index) {
+        CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
         b.startCall("ACCESS.readObject");
         b.string(tagNodes);
         b.tree(index);
         b.end();
-
-        b.typeLiteral(expectedType);
-        b.end();
-        return b.build();
+        return uncheckedCast(expectedType, b.build());
     }
 
     private static CodeTree readTagNodeSafe(CodeTree index) {
@@ -2341,11 +2471,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return b.build();
     }
 
-    private static CodeTree readNodeProfile(TypeMirror expectedType, CodeTree index) {
+    private CodeTree readNodeProfile(TypeMirror expectedType, CodeTree index) {
         CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
         b.startCall("ACCESS.uncheckedCast");
         b.startCall("ACCESS.readObject");
-        b.string("cachedNodes");
+        b.tree(uncheckedCast(arrayOf(types.Node), "this.cachedNodes_"));
         b.tree(index);
         b.end();
         b.typeLiteral(expectedType);
@@ -2522,8 +2652,117 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         return instr.getInternalName() + "Node";
     }
 
+    private static GeneratedTypeMirror getCachedDataClassType(InstructionModel instr) {
+        return new GeneratedTypeMirror("", cachedDataClassName(instr));
+    }
+
     private static String childString(int numChildren) {
         return numChildren + ((numChildren == 1) ? " child" : " children");
+    }
+
+    private void emitValidateInstructionTracer(CodeTreeBuilder b) {
+        b.startStatement().startStaticCall(type(Objects.class), "requireNonNull").string("tracer").end().end();
+        b.declaration("var", "exclusiveDescriptor", "tracer.getExclusiveBytecodeDescriptor()");
+        b.startIf().string("exclusiveDescriptor != null && exclusiveDescriptor != BYTECODE").end().startBlock();
+        b.startThrow().startNew(type(IllegalArgumentException.class));
+        b.startStaticCall(type(String.class), "format");
+        b.doubleQuote("The passed instruction tracer is exclusive to %s, but it was installed for %s.");
+        b.string("exclusiveDescriptor").string("BYTECODE");
+        b.end(); // static call
+        b.end().end(); // throw, new
+        b.end(); // if block
+    }
+
+    /**
+     * Whether we store the bci at the beginning of an instruction execute, e.g. if all
+     * specializations require it or some other condition requires it.
+     */
+    public static boolean isStoreBciBeforeExecute(BytecodeDSLModel model, InterpreterTier tier, InstructionModel instr) {
+        if (!isStoreBciEnabled(model, tier)) {
+            return false;
+        }
+        if (instr.operation == null) {
+            return false;
+        }
+        switch (instr.operation.kind) {
+            case RETURN:
+            case YIELD:
+            case TAG:
+            case CUSTOM_YIELD: // custom yield always needs to set the bci
+                return true;
+            case CUSTOM:
+            case CUSTOM_INSTRUMENTATION:
+            case CUSTOM_SHORT_CIRCUIT:
+                if (instr.operation.kind == OperationKind.CUSTOM_YIELD) {
+                    return true;
+                }
+                CustomOperationModel custom = instr.operation.customModel;
+                if (!custom.shouldStoreBytecodeIndex()) {
+                    return false;
+                }
+
+                for (SpecializationData s : instr.nodeData.getReachableSpecializations()) {
+                    // if we use cached values in guards we need to store before execute regardless
+                    // otherwise the bytecode index is not up-to-date in the guard
+                    if (custom.shouldStoreBytecodeIndex(s) && s.isAnyGuardBoundWithCache()) {
+                        return true;
+                    }
+                }
+                for (SpecializationData s : instr.nodeData.getReachableSpecializations()) {
+                    if (!custom.shouldStoreBytecodeIndex(s)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            default:
+                return false;
+        }
+
+    }
+
+    /**
+     * Returns <code>true</code> if we should set the bytecode index just before the specialization.
+     */
+    public static boolean isStoreBciBeforeSpecialization(BytecodeDSLModel model, InterpreterTier tier, InstructionModel instr, SpecializationData specialization) {
+        if (!isStoreBciEnabled(model, tier)) {
+            return false;
+        }
+        switch (instr.kind) {
+            case CUSTOM:
+            case CUSTOM_SHORT_CIRCUIT:
+                CustomOperationModel custom = instr.operation.customModel;
+                if (!custom.shouldStoreBytecodeIndex(specialization)) {
+                    // does never perform any calls
+                    return false;
+                }
+                if (isStoreBciBeforeExecute(model, tier, instr)) {
+                    // already stored in execute
+                    return false;
+                }
+                return true;
+            default:
+                return false;
+
+        }
+    }
+
+    /**
+     * Returns <code>true</code> if bytecode index storing in the frame is enabled, else
+     * <code>false</code>.
+     */
+    public static boolean isStoreBciEnabled(BytecodeDSLModel model, InterpreterTier tier) {
+        return model.storeBciInFrame || tier == InterpreterTier.UNCACHED;
+    }
+
+    /**
+     * When in the uncached interpreter or an interpreter with storeBciInFrame set to true, we need
+     * to store the bci in the frame before escaping operations (e.g., returning, yielding,
+     * throwing) or potentially-escaping operations (e.g., a custom operation that could invoke
+     * another root node).
+     */
+    public static void storeBciInFrame(CodeTreeBuilder b, String frame, String bci) {
+        b.statement("FRAMES.setInt(" + frame + ", " + BCI_INDEX + ", ", bci, ")");
     }
 
     enum InterpreterTier {
@@ -2570,20 +2809,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private static final String UNINIT = "UNINITIALIZED";
 
         private final CodeVariableElement uninitialized = add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(byte.class), UNINIT));
-        private final SavedStateElement savedState = add(new SavedStateElement());
-        private final OperationStackEntryElement operationStackEntry = add(new OperationStackEntryElement());
-        private final ConstantPoolElement constantPool = add(new ConstantPoolElement());
+        private final RootStackElement rootStackElement = add(new RootStackElement());
+        private final OperationStackElement operationStack = add(new OperationStackElement());
 
         private final BytecodeLocalImplElement bytecodeLocalImpl = add(new BytecodeLocalImplElement());
         private final BytecodeLabelImplElement bytecodeLabelImpl = add(new BytecodeLabelImplElement());
-
-        private final TypeMirror unresolvedLabelsType = generic(HashMap.class, types.BytecodeLabel, generic(context.getDeclaredType(ArrayList.class), context.getDeclaredType(Integer.class)));
-        private final Map<InstructionEncoding, CodeExecutableElement> doEmitInstructionMethods = new TreeMap<>();
-        private final Map<OperationModel, CodeTypeElement> dataClasses = new HashMap<>();
-
-        private ScopeDataElement scopeDataType;
-
-        private List<CodeVariableElement> builderState;
 
         private SerializationLocalElement serializationLocal;
         private SerializationLabelElement serializationLabel;
@@ -2594,6 +2824,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private CodeExecutableElement validateLocalScope;
         private CodeExecutableElement validateMaterializedLocalScope;
 
+        private OperationFields operationFields;
+
         BuilderElement() {
             super(Set.of(PUBLIC, STATIC, FINAL), ElementKind.CLASS, null, "Builder");
         }
@@ -2602,18 +2834,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             addJavadoc(this, """
                             Builder class to generate bytecode. An interpreter can invoke this class with its {@link com.oracle.truffle.api.bytecode.BytecodeParser} to generate bytecode.
                             """);
-            this.setSuperClass(model.abstractBuilderType);
+            this.setSuperClass(abstractBuilderType);
             this.setEnclosingElement(BytecodeRootNodeElement.this);
 
-            this.builderState = createBuilderState();
-            this.savedState.lazyInit(builderState);
-            this.addAll(builderState);
+            this.rootStackElement.lazyInit();
 
             this.uninitialized.createInitBuilder().string(-1).end();
-            this.add(createOperationNames());
 
-            this.addAll(new OperationDataClassesFactory().create());
-            this.operationStackEntry.lazyInit();
+            this.operationFields = new OperationFields();
+            this.operationStack.lazyInit(operationFields);
             this.bytecodeLocalImpl.lazyInit();
             this.bytecodeLabelImpl.lazyInit();
 
@@ -2625,8 +2854,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "instrumentations"));
             this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(boolean.class), "parseSources"));
             this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), generic(ArrayList.class, BytecodeRootNodeElement.this.asType()), "builtNodes"));
-            this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numRoots"));
             this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), generic(ArrayList.class, types.Source), "sources"));
+            this.add(new CodeVariableElement(Set.of(PRIVATE), rootStackElement.asType(), "state"));
+            this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numRoots"));
 
             if (model.enableSerialization) {
                 BytecodeRootNodeElement.this.serializationRootNode = this.add(new SerializationRootNodeElement());
@@ -2644,8 +2874,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createCreateLocalAllParameters());
             this.add(createCreateLabel());
             this.addAll(createSourceSectionUnavailableHelpers());
-            this.add(createRegisterUnresolvedLabel());
-            this.add(createResolveUnresolvedLabel());
 
             for (OperationModel operation : model.getOperations()) {
                 if (omitBuilderMethods(operation)) {
@@ -2664,6 +2892,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             this.add(createBeginOperation());
             this.add(createEndOperation());
+            this.add(createVerifyOperation());
             this.add(createValidateRootOperationBegin());
             this.add(createGetCurrentRootOperationData());
             this.add(createBeforeChild());
@@ -2672,8 +2901,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createCheckOverflowShort());
             this.add(createCheckOverflowInt());
             this.add(createCheckBci());
-            this.add(createUpdateMaxStackHeight());
-            this.add(createEnsureBytecodeCapacity());
 
             if (model.hasCustomVariadic) {
                 this.add(createDoEmitVariadicBeforeChild());
@@ -2683,42 +2910,42 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
             }
 
+            if (model.enableTagInstrumentation) {
+                this.add(createFindOuterTag());
+            }
+
             this.add(createDoEmitFinallyHandler());
-            this.add(createDoCreateExceptionHandler());
 
             this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "PATCH_CURRENT_SOURCE")).createInitBuilder().string("-2");
             this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "PATCH_NODE_SOURCE")).createInitBuilder().string("-3");
 
-            this.add(createDoPatchSourceInfo());
-            this.add(createDoEmitSourceInfo());
             this.add(createFinish());
             this.add(createBeforeEmitBranch());
             this.add(createBeforeEmitReturn());
-            this.add(createPatchHandlerTable());
             this.add(createDoEmitRootSourceSection());
-            this.add(createAllocateNode());
-            this.add(createAllocateBytecodeLocal());
-            this.add(createAllocateBranchProfile());
-            if (model.enableYield) {
-                this.add(createAllocateContinuationConstant());
-
+            if (model.hasYieldOperation()) {
                 if (model.enableTagInstrumentation) {
-                    this.add(createDoEmitTagYield());
+                    this.add(createDoEmitTagYield(model.tagYieldInstruction));
                     this.add(createDoEmitTagResume());
+
+                    if (model.tagYieldNullInstruction != null) {
+                        this.add(createDoEmitTagYield(model.tagYieldNullInstruction));
+                    }
                 }
             }
 
             if (model.enableBlockScoping) {
                 this.add(createGetCurrentScope());
             }
-            this.add(createDoEmitLocal());
-            this.add(createDoEmitLocalConstantIndices());
-            this.add(createAllocateLocalsTableEntry());
-
             if (model.enableSerialization) {
                 this.add(createSerialize());
                 this.add(createSerializeFinallyGenerator());
                 this.add(createDeserialize());
+            }
+
+            if (model.enableInstructionTracing) {
+                this.add(createFindOrCreateInstructionTracer());
+                this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "INSTRUCTION_TRACER_CONSTANT_INDEX")).createInitBuilder().string("0");
             }
 
             this.add(createToString());
@@ -2726,81 +2953,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createFailArgument());
             this.add(createDumpAt());
 
-            this.addAll(doEmitInstructionMethods.values());
-        }
-
-        private List<CodeVariableElement> createBuilderState() {
-            List<CodeVariableElement> list = new ArrayList<>();
-            list.addAll(List.of(
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "operationSequenceNumber"),
-                            new CodeVariableElement(Set.of(PRIVATE), new ArrayCodeTypeMirror(operationStackEntry.asType()), "operationStack"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "operationSp"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "rootOperationSp"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numLocals"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numLabels"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numNodes"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numHandlers"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numConditionalBranches"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(byte[].class), "bc"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "bci"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "currentStackHeight"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "maxStackHeight"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int[].class), "sourceInfo"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "sourceInfoIndex"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int[].class), "handlerTable"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "handlerTableSize"),
-                            new CodeVariableElement(Set.of(PRIVATE), arrayOf(type(int.class)), "locals"),
-                            new CodeVariableElement(Set.of(PRIVATE), type(int.class), "localsTableIndex"),
-                            new CodeVariableElement(Set.of(PRIVATE), unresolvedLabelsType, "unresolvedLabels"),
-                            new CodeVariableElement(Set.of(PRIVATE), constantPool.asType(), "constantPool")));
-
-            CodeVariableElement reachable = new CodeVariableElement(Set.of(PRIVATE), type(boolean.class), "reachable");
-            reachable.createInitBuilder().string("true");
-            list.add(reachable);
-
-            if (model.enableYield) {
-                /**
-                 * Invariant: Continuation locations are sorted by bci, which means we can iterate
-                 * over the bytecodes and continuation locations in lockstep (i.e., the i-th yield
-                 * instruction uses the i-th continuation location).
-                 */
-                list.add(new CodeVariableElement(Set.of(PRIVATE), generic(ArrayList.class, continuationLocation.asType()), "continuationLocations"));
-            }
-
-            if (model.enableBlockScoping) {
-                list.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "maxLocals"));
-            }
-
-            if (model.enableTagInstrumentation) {
-                list.add(new CodeVariableElement(Set.of(PRIVATE), generic(type(List.class), tagNode.asType()), "tagRoots"));
-                list.add(new CodeVariableElement(Set.of(PRIVATE), generic(type(List.class), tagNode.asType()), "tagNodes"));
-            }
-
-            // must be last
-            list.add(new CodeVariableElement(Set.of(PRIVATE), savedState.asType(), "savedState"));
-            return list;
-        }
-
-        private String getDataClassName(OperationModel operation) {
-            switch (operation.kind) {
-                case STORE_LOCAL:
-                case STORE_LOCAL_MATERIALIZED:
-                    if (!model.usesBoxingElimination()) {
-                        // optimization: we are reusing the bytecode local as data class
-                        return ElementUtils.getSimpleName(bytecodeLocalImpl);
-                    }
-                    break;
-                case LOAD_LOCAL_MATERIALIZED:
-                case LOAD_LOCAL:
-                    // optimization: we are reusing the bytecode local as data class
-                    return ElementUtils.getSimpleName(bytecodeLocalImpl);
-            }
-
-            CodeTypeElement type = dataClasses.get(operation);
-            if (type == null) {
-                return null;
-            }
-            return type.getSimpleName().toString();
+            this.rootStackElement.lateInit();
         }
 
         private CodeExecutableElement createReparseConstructor() {
@@ -2829,8 +2982,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("this.parseSources = parseSources");
             b.statement("this.sources = parseSources ? new ArrayList<>(4) : null");
             b.statement("this.builtNodes = new ArrayList<>()");
-            b.statement("this.operationStack = new OperationStackEntry[8]");
-            b.statement("this.rootOperationSp = -1");
+
+            b.startAssign("this.state").startStaticCall(rootStackElement.asType(), "acquire").end().end();
+            b.statement("this.state.instrumentations = instrumentations");
 
             return ctor;
         }
@@ -2839,7 +2993,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeExecutableElement ctor = new CodeExecutableElement(Set.of(PRIVATE), null, "Builder");
             ctor.addParameter(new CodeVariableElement(model.languageClass, "language"));
             ctor.addParameter(new CodeVariableElement(bytecodeRootNodesImpl.asType(), "nodes"));
-            ctor.addParameter(new CodeVariableElement(types.BytecodeConfig, "config"));
+            ctor.addParameter(new CodeVariableElement(type(long.class), "configEncoding"));
 
             CodeTreeBuilder javadoc = ctor.createDocBuilder();
             javadoc.startJavadoc();
@@ -2852,16 +3006,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("this.language = language");
             b.statement("this.nodes = nodes");
             b.statement("this.reparseReason = null");
-            b.statement("long encoding = BytecodeConfigEncoderImpl.decode(config)");
+            b.statement("long encoding = configEncoding");
             b.statement("this.tags = (int)((encoding >> " + TAG_OFFSET + ") & 0xFFFF_FFFF)");
             b.statement("this.instrumentations = (int)((encoding >> " + INSTRUMENTATION_OFFSET + ") & 0x7FFF_FFFF)");
             b.statement("this.parseSources = (encoding & 0x1) != 0");
             b.statement("this.parseBytecodes = true");
             b.statement("this.sources = parseSources ? new ArrayList<>(4) : null");
             b.statement("this.builtNodes = new ArrayList<>()");
-            b.statement("this.operationStack = new OperationStackEntry[8]");
-            b.statement("this.rootOperationSp = -1");
 
+            b.startAssign("this.state").startStaticCall(rootStackElement.asType(), "acquire").end().end();
+            b.statement("this.state.instrumentations = instrumentations");
             return ctor;
         }
 
@@ -2876,30 +3030,27 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             type(void.class), "markReachable");
             method.addParameter(new CodeVariableElement(type(boolean.class), "newReachable"));
             CodeTreeBuilder b = method.createBuilder();
-            b.statement("this.reachable = newReachable");
+            b.statement("state.reachable = newReachable");
             b.startTryBlock();
 
             buildOperationStackWalk(b, () -> {
-                b.declaration(operationStackEntry.asType(), "operation", "operationStack[i]");
                 b.startSwitch().string("operation.operation").end().startBlock();
                 for (OperationModel op : model.getOperations()) {
                     switch (op.kind) {
                         case ROOT:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
-                            b.statement("operationData.reachable = newReachable");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
+                            b.tree(operationStack.write(op, operationFields.reachable, "newReachable"));
                             b.statement("return");
                             b.end();
                             break;
                         case IF_THEN:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.lineComment("Unreachable condition branch makes the if and parent block unreachable.");
-                            b.statement("operationData.thenReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("operationData.thenReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -2907,17 +3058,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.end();
                             break;
                         case IF_THEN_ELSE:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.lineComment("Unreachable condition branch makes the if, then and parent block unreachable.");
-                            b.statement("operationData.thenReachable = newReachable");
-                            b.statement("operationData.elseReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
+                            b.tree(operationStack.write(op, operationFields.elseReachable, "newReachable"));
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("operationData.thenReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
                             b.end().startElseIf().string("operation.childCount == 2").end().startBlock();
-                            b.statement("operationData.elseReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.elseReachable, "newReachable"));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -2925,17 +3075,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.end();
                             break;
                         case CONDITIONAL:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.lineComment("Unreachable condition branch makes the if, then and parent block unreachable.");
-                            b.statement("operationData.thenReachable = newReachable");
-                            b.statement("operationData.elseReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
+                            b.tree(operationStack.write(op, operationFields.elseReachable, "newReachable"));
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("operationData.thenReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.thenReachable, "newReachable"));
                             b.end().startElseIf().string("operation.childCount == 2").end().startBlock();
-                            b.statement("operationData.elseReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.elseReachable, "newReachable"));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -2943,12 +3092,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.end();
                             break;
                         case TRY_CATCH:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
-                            b.statement("operationData.tryReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.tryReachable, "newReachable"));
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("operationData.catchReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.catchReachable, "newReachable"));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -2956,13 +3104,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.end();
                             break;
                         case WHILE:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
-                            b.statement("operationData.bodyReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.bodyReachable, "newReachable"));
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("operationData.bodyReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.bodyReachable, "newReachable"));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -2971,13 +3118,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case TRY_FINALLY:
                         case TRY_CATCH_OTHERWISE:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
+                            b.startCase().tree(createOperationConstant(op)).end().startCaseBlock();
                             b.startIf().string("operation.childCount == 0").end().startBlock();
-                            b.statement("operationData.tryReachable = newReachable");
+                            b.tree(operationStack.write(op, operationFields.tryReachable, "newReachable"));
                             if (op.kind == OperationKind.TRY_CATCH_OTHERWISE) {
                                 b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                                b.statement("operationData.catchReachable = newReachable");
+                                b.tree(operationStack.write(op, operationFields.catchReachable, "newReachable"));
                             }
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
@@ -2991,7 +3137,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             });
 
             b.end().startFinallyBlock();
-            b.startAssert().string("updateReachable() == this.reachable : ").doubleQuote("Inconsistent reachability detected.").end();
+            b.startAssert().string("updateReachable() == state.reachable : ").doubleQuote("Inconsistent reachability detected.").end();
             b.end();
 
             return method;
@@ -3008,26 +3154,23 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             doc.end();
 
             CodeTreeBuilder b = method.createBuilder();
-            b.statement("boolean oldReachable = reachable");
+            b.statement("boolean oldReachable = state.reachable");
             buildOperationStackWalk(b, () -> {
-                b.declaration(operationStackEntry.asType(), "operation", "operationStack[i]");
                 b.startSwitch().string("operation.operation").end().startBlock();
                 for (OperationModel op : model.getOperations()) {
                     switch (op.kind) {
                         case ROOT:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
-                            b.statement("this.reachable = operationData.reachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.reachable));
                             b.statement("return oldReachable");
                             b.end();
                             break;
                         case IF_THEN:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("this.reachable = operationData.thenReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.thenReachable));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -3036,14 +3179,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case IF_THEN_ELSE:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.lineComment("Unreachable condition branch makes the if, then and parent block unreachable.");
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("this.reachable = operationData.thenReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.thenReachable));
                             b.end().startElseIf().string("operation.childCount == 2").end().startBlock();
-                            b.statement("this.reachable = operationData.elseReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.elseReachable));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -3052,14 +3194,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case CONDITIONAL:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.lineComment("Unreachable condition branch makes the if, then and parent block unreachable.");
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("this.reachable = operationData.thenReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.thenReachable));
                             b.end().startElseIf().string("operation.childCount == 2").end().startBlock();
-                            b.statement("this.reachable = operationData.elseReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.elseReachable));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -3068,11 +3209,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case TRY_CATCH:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
-                            b.statement("this.reachable = operationData.tryReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.tryReachable));
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("this.reachable = operationData.catchReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.catchReachable));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -3081,11 +3221,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case WHILE:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
                             b.statement("continue");
                             b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
-                            b.statement("this.reachable = operationData.bodyReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.bodyReachable));
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
                             b.end();
@@ -3095,12 +3234,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         case TRY_FINALLY:
                         case TRY_CATCH_OTHERWISE:
                             b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            emitCastOperationData(b, op, "i");
                             b.startIf().string("operation.childCount == 0").end().startBlock();
-                            b.statement("this.reachable = operationData.tryReachable");
+                            b.statement("state.reachable = " + operationStack.read(op, operationFields.tryReachable));
                             if (op.kind == OperationKind.TRY_CATCH_OTHERWISE) {
-                                b.end().startElseIf().string("operation.childCount == 2").end().startBlock();
-                                b.statement("this.reachable = operationData.catchReachable");
+                                b.end().startElseIf().string("operation.childCount == 1").end().startBlock();
+                                b.statement("state.reachable = " + operationStack.read(op, operationFields.catchReachable));
                             }
                             b.end().startElseBlock();
                             b.lineComment("Invalid child index, but we will fail in the end method.");
@@ -3216,6 +3354,31 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             serializationElements.writeBytes(b, "bytes");
             b.startReturn().string(safeCastShort("serialization.finallyGeneratorCount++")).end();
 
+            return method;
+        }
+
+        private CodeExecutableElement createFindOrCreateInstructionTracer() {
+            CodeExecutableElement method = new CodeExecutableElement(Set.of(PRIVATE),
+                            instructionTracerAccessImplElement.asType(), "findOrCreateInstructionTracer");
+            CodeTreeBuilder b = method.createBuilder();
+
+            b.declaration(instructionTracerAccessImplElement.asType(), "tracer", "null");
+            b.startIf().string("reparseReason != null").end().startBlock();
+            b.startDeclaration(arrayOf(type(Object.class)), "previousConstants");
+            b.string("((").type(abstractBytecodeNode.asType()).string(") nodes.getNode(numRoots - 1).getBytecodeNode()).constants");
+            b.end();
+            b.startIf().string("INSTRUCTION_TRACER_CONSTANT_INDEX < previousConstants.length && previousConstants[INSTRUCTION_TRACER_CONSTANT_INDEX] instanceof ").type(
+                            instructionTracerAccessImplElement.asType()).string(
+                                            " t").end().startBlock();
+            b.statement("tracer = t");
+            b.end(); // if constant
+            b.end(); // if reparse
+
+            b.startIf().string("tracer == null").end().startBlock();
+            b.startAssign("tracer").startNew(instructionTracerAccessImplElement.asType()).string("language").end().end();
+            b.end();
+
+            b.statement("return tracer");
             return method;
         }
 
@@ -3425,9 +3588,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private void buildSerializeOperationArgument(CodeTreeBuilder before, CodeTreeBuilder after, OperationArgument argument) {
             String argumentName = argument.name();
             switch (argument.kind()) {
-                case LANGUAGE:
-                    before.statement("serialization.language = language");
-                    break;
                 case LOCAL:
                     String serializationLocalCls = serializationLocal.getSimpleName().toString();
                     serializationElements.writeShort(after, safeCastShort(String.format("((%s) %s).contextDepth", serializationLocalCls, argumentName)));
@@ -3472,7 +3632,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 case INTEGER:
                     serializationElements.writeInt(after, argumentName);
                     break;
-                case OBJECT: {
+                case CONSTANT: {
+                    if (argument.constantOperand().isPresent()) {
+                        ConstantOperandModel constantOperand = argument.constantOperand().get();
+                        if (constantOperand.kind() != ImmediateKind.CONSTANT) {
+                            // Special case: inlined constant operands.
+                            buildSerializeInlinedConstant(after, constantOperand.kind(), argument);
+                            break;
+                        }
+                    }
                     String index = argumentName + "_index";
                     before.startDeclaration(type(int.class), index);
                     before.startCall("serialization.serializeObject").string(argumentName).end();
@@ -3495,12 +3663,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
         }
 
+        private void buildSerializeInlinedConstant(CodeTreeBuilder b, ImmediateKind kind, OperationArgument argument) {
+            String encoded = encodeInlinedConstant(kind, argument.name());
+            switch (kind.width) {
+                case LONG -> serializationElements.writeLong(b, encoded);
+                case INT -> serializationElements.writeInt(b, encoded);
+                case SHORT -> serializationElements.writeShort(b, encoded);
+                case BYTE -> serializationElements.writeByte(b, encoded);
+            }
+        }
+
         private void buildDeserializeOperationArgument(CodeTreeBuilder b, OperationArgument argument) {
             TypeMirror argType = argument.builderType();
             String argumentName = argument.name();
             switch (argument.kind()) {
-                case LANGUAGE:
-                    break;
                 case LOCAL:
                     b.declaration(argType, argumentName, "context.getContext(buffer.readShort()).locals.get(buffer.readShort())");
                     break;
@@ -3525,12 +3701,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end(); // if
                     b.end();
                     break;
-                case OBJECT:
+                case CONSTANT:
                     b.startDeclaration(argType, argumentName);
-                    if (!ElementUtils.isObject(argType)) {
-                        b.cast(argType);
+                    if (argument.constantOperand().isPresent() && argument.constantOperand().get().kind() != ImmediateKind.CONSTANT) {
+                        // Special case: inlined constant operands.
+                        buildDeserializeInlinedConstant(b, argument.constantOperand().get().kind());
+                    } else {
+                        if (!ElementUtils.isObject(argType)) {
+                            b.cast(argType);
+                        }
+                        b.string("context.consts.get(buffer.readInt())");
                     }
-                    b.string("context.consts.get(buffer.readInt())");
                     b.end(); // declaration
                     break;
                 case FINALLY_GENERATOR:
@@ -3543,11 +3724,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
         }
 
+        private void buildDeserializeInlinedConstant(CodeTreeBuilder b, ImmediateKind kind) {
+            CodeTree read = CodeTreeBuilder.singleString(switch (kind.width) {
+                case BYTE -> "buffer.readByte()";
+                case SHORT -> "buffer.readShort()";
+                case INT -> "buffer.readInt()";
+                case LONG -> "buffer.readLong()";
+            });
+            b.tree(decodeInlinedConstant(kind, read));
+        }
+
         private CodeExecutableElement createFinish() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "finish");
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.startIf().string("operationSp != 0").end().startBlock();
+            b.startIf().string("state.operationSp != 0").end().startBlock();
             b.startThrow().startCall("failState").doubleQuote("Unexpected parser end - there are still operations on the stack. Did you forget to end them?").end().end();
             b.end();
 
@@ -3555,6 +3746,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startStatement().string("nodes.setNodes(builtNodes.toArray(new ").type(BytecodeRootNodeElement.this.asType()).string("[0]))").end();
             b.end();
             b.statement("assert nodes.validate()");
+
+            b.startStatement().startStaticCall(rootStackElement.asType(), "release").string("state").end().end();
+            b.lineComment("make sure its no longer used");
+            b.statement("this.state = null");
+
             return ex;
         }
 
@@ -3618,25 +3814,27 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             if (model.enableBlockScoping) {
-                TypeMirror scopeType = scopeDataType.asType();
-                b.declaration(scopeType, "scope", "getCurrentScope()");
-                b.declaration(type(short.class), "localIndex", "allocateBytecodeLocal() /* unique global index */");
-                b.declaration(type(short.class), "frameIndex", safeCastShort("USER_LOCALS_START_INDEX + scope.frameOffset + scope.numLocals") + " /* location in frame */");
-                b.declaration(type(int.class), "tableIndex", "doEmitLocal(localIndex, frameIndex, name, info) /* index in global table */");
+                b.declaration(operationStack.asType(), "scope", "getCurrentScope()");
+                b.declaration(type(short.class), "localIndex", "state.allocateBytecodeLocal() /* unique global index */");
+                b.declaration(type(short.class), "frameIndex", safeCastShort("USER_LOCALS_START_INDEX + scope.getFrameOffset() + scope.getNumLocals()") + " /* location in frame */");
+                b.declaration(type(int.class), "tableIndex", "state.doEmitLocal(localIndex, frameIndex, name, info) /* index in global table */");
                 b.statement("scope.registerLocal(tableIndex)");
             } else {
-                b.declaration(type(short.class), "localIndex", "allocateBytecodeLocal() /* unique global index */");
+                b.declaration(type(short.class), "localIndex", "state.allocateBytecodeLocal() /* unique global index */");
                 b.declaration(type(short.class), "frameIndex", safeCastShort("USER_LOCALS_START_INDEX + localIndex") + " /* location in frame */");
-                b.statement("doEmitLocal(name, info)");
+                b.statement("state.doEmitLocal(name, info)");
             }
 
             b.startDeclaration(bytecodeLocalImpl.asType(), "local");
 
             b.startNew(bytecodeLocalImpl.asType()).string("frameIndex");
             b.string("localIndex");
-            b.string("((RootData) operationStack[this.rootOperationSp].data).index");
+            b.startCall("safeCastShort");
+            b.string(operationStack.read(model.rootOperation, "state.operationStack[state.rootOperationSp]", operationFields.index));
+            b.end();
             if (model.enableBlockScoping) {
                 b.string("scope");
+                b.string("scope.sequenceNumber");
             }
 
             b.end(); // new
@@ -3647,13 +3845,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         private CodeExecutableElement createGetCurrentScope() {
-            TypeMirror scopeType = scopeDataType.asType();
+            TypeMirror scopeType = operationStack.asType();
             CodeExecutableElement method = new CodeExecutableElement(Set.of(PRIVATE),
                             scopeType, "getCurrentScope");
             CodeTreeBuilder b = method.createBuilder();
             buildOperationStackWalk(b, () -> {
-                b.startIf().string("operationStack[i].data instanceof ").type(scopeType).string(" e").end().startBlock();
-                b.statement("return e");
+                b.startSwitch().string("operation.operation").end().startBlock();
+                b.startCase().tree(createOperationConstant(model.rootOperation)).end();
+                b.startCase().tree(createOperationConstant(model.blockOperation)).end();
+                b.startCaseBlock();
+                b.statement("return operation");
+                b.end();
                 b.end();
             });
             b.startThrow().startCall("failState").doubleQuote("Invalid scope for local variable.").end().end();
@@ -3688,20 +3890,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * TryCatch(emitLabel(lbl), branch(lbl)) is unreasonable but passes the check).
              * Requiring labels to be defined in Root or Block operations prevents this edge case.
              */
+            b.declaration(operationStack.asType(), "operationStack", "state.peekOperation()");
             b.startIf();
-            b.string("operationSp == 0 || (operationStack[operationSp - 1].operation != ").tree(createOperationConstant(model.blockOperation));
-            b.string(" && operationStack[operationSp - 1].operation != ").tree(createOperationConstant(model.rootOperation)).string(")");
+            b.string("operationStack == null || (operationStack.operation != ").tree(createOperationConstant(model.blockOperation));
+            b.string(" && operationStack.operation != ").tree(createOperationConstant(model.rootOperation)).string(")");
             b.end().startBlock();
             b.startThrow().startCall("failState").doubleQuote("Labels must be created inside either Block or Root operations.").end().end();
             b.end();
 
             b.startAssign("BytecodeLabel result").startNew(bytecodeLabelImpl.asType());
-            b.string("numLabels++");
+            b.string("state.numLabels++");
             b.string(UNINIT);
-            b.string("operationStack[operationSp - 1].sequenceNumber");
+            b.string("operationStack.sequenceNumber");
             b.end(2);
 
-            b.statement("operationStack[operationSp - 1].addDeclaredLabel(result)");
+            b.statement("operationStack.addDeclaredLabel(result)");
 
             b.startReturn().string("result").end();
 
@@ -3730,85 +3933,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return List.of(begin, end);
         }
 
-        private CodeExecutableElement createRegisterUnresolvedLabel() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "registerUnresolvedLabel");
-            ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "immediateBci"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-            b.declaration(generic(context.getDeclaredType(ArrayList.class), context.getDeclaredType(Integer.class)), "locations", "unresolvedLabels.computeIfAbsent(label, k -> new ArrayList<>())");
-            b.startStatement().startCall("locations.add");
-            b.string("immediateBci");
-            b.end(2);
-
-            return ex;
-        }
-
-        private CodeExecutableElement createResolveUnresolvedLabel() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "resolveUnresolvedLabel");
-            ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "stackHeight"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.statement("BytecodeLabelImpl impl = (BytecodeLabelImpl) label");
-            b.statement("assert !impl.isDefined()");
-            b.statement("impl.bci = bci");
-            b.declaration(generic(List.class, context.getDeclaredType(Integer.class)), "sites", "unresolvedLabels.remove(impl)");
-            b.startIf().string("sites != null").end().startBlock();
-            b.startFor().startGroup().type(context.getDeclaredType(Integer.class)).string(" site : sites").end(2).startBlock();
-
-            b.statement(writeInt("bc", "site", "impl.bci"));
-            b.end(2);
-
-            return ex;
-        }
-
-        private CodeVariableElement createOperationNames() {
-            CodeVariableElement fld = new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(String[].class), "OPERATION_NAMES");
-
-            CodeTreeBuilder b = fld.createInitBuilder();
-            b.startNewArray((ArrayType) type(String[].class), null);
-            b.string("null");
-
-            int i = 1;
-            for (OperationModel op : model.getOperations()) {
-                if (op.id != i) {
-                    throw new AssertionError(op.toString());
-                }
-
-                i++;
-                b.doubleQuote(op.name);
-            }
-
-            b.end();
-
-            return fld;
-        }
-
-        private CodeExecutableElement createBeginOperation() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "beginOperation");
-            ex.addParameter(new CodeVariableElement(type(int.class), "id"));
-            ex.addParameter(new CodeVariableElement(type(Object.class), "data"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startIf().string("operationSp == operationStack.length").end().startBlock(); // {
-            b.startAssign("operationStack").startStaticCall(type(Arrays.class), "copyOf");
-            b.string("operationStack");
-            b.string("operationStack.length * 2");
-            b.end(2);
-            b.end(); // }
-
-            b.startAssign("operationStack[operationSp++]").startNew(operationStackEntry.asType());
-            b.string("id");
-            b.string("data");
-            b.string("operationSequenceNumber++");
-            b.end(2);
-
-            return ex;
-        }
-
         private static String getBuilderMethodJavadocHeader(String action, OperationModel operation) {
             StringBuilder sb = new StringBuilder(action);
 
@@ -3816,6 +3940,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 sb.append(" a custom ");
                 switch (operation.kind) {
                     case CUSTOM:
+                    case CUSTOM_YIELD:
                     case CUSTOM_INSTRUMENTATION:
                         CustomOperationModel customOp = operation.parent.getCustomOperationForOperation(operation);
                         sb.append("{@link ");
@@ -4012,14 +4137,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startStatement().startCall("validateRootOperationBegin").end(2);
             }
 
-            if (operation.constantOperands != null && operation.constantOperands.hasConstantOperands()) {
+            if (operation.hasConstantOperands()) {
                 int index = 0;
                 for (ConstantOperandModel operand : operation.constantOperands.before()) {
                     buildConstantOperandValidation(b, operand.type(), operation.getOperationBeginArgumentName(index++));
                 }
             }
 
-            List<String> constantOperandIndices = emitConstantBeginOperands(b, operation);
+            List<String> constantOperandValues = emitConstantBeginOperands(b, operation);
 
             if (operation.kind == OperationKind.CUSTOM_INSTRUMENTATION) {
                 int mask = 1 << operation.instrumentationIndex;
@@ -4036,19 +4161,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             if (operation.kind == OperationKind.TAG) {
-                b.declaration(tagNode.asType(), "node", "new TagNode(encodedTags & this.tags, bci)");
-                b.startIf().string("tagNodes == null").end().startBlock();
-                b.statement("tagNodes = new ArrayList<>()");
+                b.declaration(tagNode.asType(), "node", "new TagNode(encodedTags & this.tags, state.bci)");
+                b.startIf().string("state.tagNodes == null").end().startBlock();
+                b.statement("state.tagNodes = new ArrayList<>()");
                 b.end();
-                b.declaration(type(int.class), "nodeId", "tagNodes.size()");
-                b.statement("tagNodes.add(node)");
+                b.declaration(type(int.class), "nodeId", "state.tagNodes.size()");
+                b.statement("state.tagNodes.add(node)");
             }
 
             switch (operation.kind) {
                 case ROOT:
                 case BLOCK:
                     if (model.enableBlockScoping) {
-                        b.declaration(scopeDataType.asType(), "parentScope", "getCurrentScope()");
+                        b.declaration(operationStack.asType(), "parentScope", "getCurrentScope()");
                     }
                     break;
                 case STORE_LOCAL: /* LOAD_LOCAL handled by createEmit */
@@ -4062,34 +4187,25 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startStatement().startCall("beforeChild").end(2);
             }
 
-            /**
-             * NB: createOperationBeginData is side-effecting: it can emit declarations that are
+            /*
+             * NB: initOperationBeginData is side-effecting: it can emit declarations that are
              * referenced by the returned CodeTree. We have to call it before we start the
              * beginOperation call.
              */
-            CodeTree operationData = createOperationBeginData(b, operation, constantOperandIndices);
-            if (operationData != null) {
-                String dataClassName = getDataClassName(operation);
-                b.declaration(dataClassName, "operationData", operationData);
-                b.startStatement().startCall("beginOperation");
-                b.tree(createOperationConstant(operation));
-                b.string("operationData");
-                b.end(2);
-            } else {
-                b.startStatement().startCall("beginOperation");
-                b.tree(createOperationConstant(operation));
-                b.string("null");
-                b.end(2);
-            }
+            Map<OperationField, String> initValues = initOperationBeginData(b, operation, constantOperandValues);
+            b.startDeclaration(operationStack.asType(), "operation").startCall("beginOperation");
+            b.tree(createOperationConstant(operation));
+            b.end(2);
+            b.tree(operationStack.createInitialize(operation, "operation", initValues));
 
             switch (operation.kind) {
                 case BLOCK:
                     if (model.enableBlockScoping) {
-                        b.statement("operationData.frameOffset = parentScope.frameOffset + parentScope.numLocals");
+                        b.tree(operationStack.write(operation, operationFields.frameOffset, "parentScope.getFrameOffset() + parentScope.getNumLocals()"));
                     }
                     break;
                 case TAG:
-                    buildEmitInstruction(b, model.tagEnterInstruction, "nodeId");
+                    buildEmitInstruction(b, null, model.tagEnterInstruction, "nodeId");
                     break;
                 case WHILE:
                 case RETURN:
@@ -4129,7 +4245,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             if (model.enableBlockScoping) {
-                b.startIf().string("!localImpl.scope.valid").end().startBlock();
+                b.startIf().string("localImpl.scope.sequenceNumber != localImpl.scopeSequenceNumber || !localImpl.scope.getValid()").end().startBlock();
                 b.startThrow().startCall("failArgument").doubleQuote("Local variable scope of this local is no longer valid.").end().end();
                 b.end();
             }
@@ -4140,25 +4256,29 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     // The scope check above suffices to check nesting.
                 } else {
                     // Otherwise, ensure the local's root is on the stack.
+                    b.declaration(rootStackElement.asType(), "currentState", "this.state");
+                    b.startWhile().string("currentState != null").end().startBlock();
                     buildOperationStackWalk(b, "0", () -> {
-                        b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                        b.startSwitch().string("operation.operation").end().startBlock();
                         b.startCase().tree(createOperationConstant(model.rootOperation)).end();
                         b.startCaseBlock();
-                        emitCastOperationData(b, model.rootOperation, "i", "rootOperationData");
-                        b.startIf().string("rootOperationData.index == localImpl.rootIndex").end().startBlock();
+                        b.startIf().string(operationStack.read(model.rootOperation, "operation", operationFields.index), " == localImpl.rootIndex").end().startBlock();
                         b.lineComment("root node found");
                         b.statement("return");
                         b.end();
                         b.end(); // case root
                         b.end(); // switch
-                    });
+                    }, "currentState");
+                    b.statement("currentState = currentState.parent");
+                    b.end();
+
                     b.startThrow().startCall("failArgument").doubleQuote(
                                     "Local variables used in materialized accesses must belong to the current root node or an outer root node.").end().end();
                 }
             } else {
                 // Local must belong to the current root node.
-                b.declaration(dataClasses.get(model.rootOperation).asType(), "rootOperationData", "getCurrentRootOperationData()");
-                b.startIf().string("rootOperationData.index != localImpl.rootIndex").end().startBlock();
+                b.declaration(operationStack.asType(), "rootOperation", "getCurrentRootOperationData()");
+                b.startIf().string(operationStack.read(model.rootOperation, "rootOperation", operationFields.index), " != localImpl.rootIndex").end().startBlock();
 
                 String materializedAccessAdvice = "Consider using materialized local accesses (i.e., LoadLocalMaterialized/StoreLocalMaterialized or MaterializedLocalAccessor) to access locals from an outer root node.";
                 if (!model.enableMaterializedLocalAccesses) {
@@ -4205,54 +4325,28 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
             }
 
-            b.startIf().string("bc != null").end().startBlock(); // {
-            b.startAssign("savedState").startNew(savedState.asType());
-            b.variables(builderState);
-            b.end(2);
+            b.startIf().string("state.rootOperationSp != -1").end().startBlock(); // {
+            b.statement("state = state.getNext()");
             b.end(); // }
+            b.statement("state.rootOperationSp = state.operationSp");
+            b.statement("state.instrumentations = instrumentations");
 
-            /*
-             * We initialize the fields declared on builderState here when beginRoot is called.
-             */
-            b.statement("operationSequenceNumber = 0");
-            b.statement("rootOperationSp = operationSp");
-
-            b.statement("reachable = true");
-            if (model.enableTagInstrumentation) {
-                b.statement("tagRoots = null");
-                b.statement("tagNodes = null");
-            }
-
-            b.statement("numLocals = 0");
-            if (model.enableBlockScoping) {
-                b.statement("maxLocals = numLocals");
-            }
-            b.statement("numLabels = 0");
-            b.statement("numNodes = 0");
-            b.statement("numHandlers = 0");
-            b.statement("numConditionalBranches = 0");
-            b.statement("constantPool = new ConstantPool()");
-
-            b.statement("bc = new byte[32]");
-            b.statement("bci = 0");
-            b.statement("currentStackHeight = 0");
-            b.statement("maxStackHeight = 0");
-            b.statement("handlerTable = new int[2 * EXCEPTION_HANDLER_LENGTH]");
-            b.statement("handlerTableSize = 0");
-            b.statement("locals = null");
-            b.statement("localsTableIndex = 0");
-            b.statement("unresolvedLabels = new HashMap<>()");
-            if (model.enableYield) {
-                b.statement("continuationLocations = new ArrayList<>()");
-            }
-            b.startIf().string("parseSources").end().startBlock();
-            b.statement("sourceInfo = new int[3 * SOURCE_INFO_LENGTH]");
-            b.statement("sourceInfoIndex = 0");
+            Map<OperationField, String> initValues = new HashMap<>();
+            initValues.put(operationFields.index, safeCastShort("numRoots++"));
+            b.startDeclaration(operationStack.asType(), "operation").startCall("beginOperation");
+            b.tree(createOperationConstant(rootOperation));
+            b.end(2);
+            b.tree(operationStack.createInitialize(rootOperation, "operation", initValues));
             b.end();
 
-            b.startStatement().string("RootData operationData = ");
-            b.tree(createOperationData("RootData", safeCastShort("numRoots++")));
-            b.end();
+            if (model.enableInstructionTracing) {
+                int mask = 1 << model.traceInstructionInstrumentationIndex;
+                b.startIf().string("(instrumentations & ").string("0x", Integer.toHexString(mask)).string(") != 0").end().startBlock();
+                b.statement("int constantIndex = state.addConstant(findOrCreateInstructionTracer())");
+                b.statement("assert constantIndex == INSTRUCTION_TRACER_CONSTANT_INDEX");
+                b.end();
+            }
+
             b.startIf().string("reparseReason == null").end().startBlock();
             b.statement("builtNodes.add(null)");
             b.startIf().string("builtNodes.size() > Short.MAX_VALUE").end().startBlock();
@@ -4261,13 +4355,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             if (model.enableBlockScoping) {
-                b.statement("operationData.frameOffset = numLocals");
+                b.tree(operationStack.write(rootOperation, operationFields.frameOffset, "state.numLocals"));
             }
-
-            b.startStatement().startCall("beginOperation");
-            b.tree(createOperationConstant(rootOperation));
-            b.string("operationData");
-            b.end(2);
 
             if (model.prolog != null || model.epilogExceptional != null || model.epilogReturn != null) {
                 if (model.enableRootTagging) {
@@ -4278,11 +4367,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 if (model.prolog != null) {
                     if (model.prolog.operation.operationEndArguments.length != 0) {
                         // If the prolog has end constants, we'll need to patch them in endRoot.
-                        b.statement("operationData.prologBci = bci");
+                        b.tree(operationStack.write(rootOperation, operationFields.prologBci, "state.bci"));
                     }
 
-                    List<String> constantOperandIndices = emitConstantOperands(b, model.prolog.operation);
-                    buildEmitOperationInstruction(b, model.prolog.operation, constantOperandIndices);
+                    List<String> constantOperandValues = emitConstantOperands(b, model.prolog.operation);
+                    buildEmitOperationInstruction(b, model.prolog.operation, constantOperandValues);
                 }
                 if (model.epilogReturn != null) {
                     buildBegin(b, model.epilogReturn.operation);
@@ -4372,70 +4461,84 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             });
         }
 
-        private CodeTree createOperationBeginData(CodeTreeBuilder b, OperationModel operation, List<String> constantOperandIndices) {
-            String className = getDataClassName(operation);
-            return switch (operation.kind) {
-                case STORE_LOCAL, STORE_LOCAL_MATERIALIZED -> {
-                    String local = "(BytecodeLocalImpl)" + operation.getOperationBeginArgumentName(0);
-                    if (model.usesBoxingElimination()) {
-                        yield createOperationData(className, local);
-                    } else {
-                        yield CodeTreeBuilder.singleString(local);
-                    }
-                }
-                case LOAD_LOCAL_MATERIALIZED, LOAD_LOCAL -> CodeTreeBuilder.singleString("(BytecodeLocalImpl)" + operation.getOperationBeginArgumentName(0));
-                case IF_THEN -> createOperationData(className, "this.reachable");
-                case IF_THEN_ELSE -> createOperationData(className, "this.reachable", "this.reachable");
-                case CONDITIONAL -> createOperationData(className, "this.reachable", "this.reachable");
-                case WHILE -> createOperationData(className, "bci", "this.reachable");
-                case TRY_CATCH -> createOperationData(className, "++numHandlers", safeCastShort("currentStackHeight"), "bci", "this.reachable", "this.reachable", "this.reachable");
-                case TRY_FINALLY -> createOperationData(className, "++numHandlers", safeCastShort("currentStackHeight"), operation.getOperationBeginArgumentName(0), "bci", "this.reachable",
-                                "this.reachable",
-                                "false");
-                case TRY_CATCH_OTHERWISE -> createOperationData(className, "++numHandlers", safeCastShort("currentStackHeight"), operation.getOperationBeginArgumentName(0), "bci", "this.reachable",
-                                "this.reachable",
-                                "this.reachable");
-                case FINALLY_HANDLER -> createOperationData(className, "finallyOperationSp");
-                case CUSTOM, CUSTOM_INSTRUMENTATION -> {
-                    if (operation.isTransparent) {
-                        yield createOperationData(className);
-                    } else {
-                        // [childBcis, constants, locals...]
-                        String[] args = new String[2];
-
-                        CodeTreeBuilder childBciArrayBuilder = CodeTreeBuilder.createBuilder();
-                        int numChildBcis = operation.instruction.getImmediates(ImmediateKind.BYTECODE_INDEX).size();
-                        if (numChildBcis == 0) {
-                            args[0] = EMPTY_INT_ARRAY;
-                        } else {
-                            childBciArrayBuilder.startNewArray(arrayOf(type(int.class)), null);
-                            for (int i = 0; i < numChildBcis; i++) {
-                                childBciArrayBuilder.string(UNINIT);
-                            }
-                            childBciArrayBuilder.end();
-                            args[0] = childBciArrayBuilder.toString();
+        private Map<OperationField, String> initOperationBeginData(CodeTreeBuilder b, OperationModel operation, List<String> constantOperandValues) {
+            Map<OperationField, String> values = new HashMap<>();
+            switch (operation.kind) {
+                case ROOT:
+                    throw new AssertionError("should not reach here");
+                case STORE_LOCAL:
+                case STORE_LOCAL_MATERIALIZED:
+                case LOAD_LOCAL_MATERIALIZED:
+                case LOAD_LOCAL:
+                    values.put(operationFields.local, "(BytecodeLocalImpl)" + operation.getOperationBeginArgumentName(0));
+                    break;
+                case IF_THEN:
+                    values.put(operationFields.thenReachable, "state.reachable");
+                    break;
+                case IF_THEN_ELSE:
+                case CONDITIONAL:
+                    values.put(operationFields.thenReachable, "state.reachable");
+                    values.put(operationFields.elseReachable, "state.reachable");
+                    break;
+                case WHILE:
+                    values.put(operationFields.whileStartBci, "state.bci");
+                    values.put(operationFields.bodyReachable, "state.reachable");
+                    break;
+                case TRY_CATCH:
+                    values.put(operationFields.handlerId, "++state.numHandlers");
+                    values.put(operationFields.stackHeight, "state.currentStackHeight");
+                    values.put(operationFields.tryStartBci, "state.bci");
+                    values.put(operationFields.operationReachable, "state.reachable");
+                    values.put(operationFields.tryReachable, "state.reachable");
+                    values.put(operationFields.catchReachable, "state.reachable");
+                    break;
+                case TRY_FINALLY:
+                    values.put(operationFields.handlerId, "++state.numHandlers");
+                    values.put(operationFields.stackHeight, "state.currentStackHeight");
+                    values.put(operationFields.finallyGenerator, operation.getOperationBeginArgumentName(0));
+                    values.put(operationFields.tryStartBci, "state.bci");
+                    values.put(operationFields.operationReachable, "state.reachable");
+                    values.put(operationFields.tryReachable, "state.reachable");
+                    values.put(operationFields.catchReachable, "false");
+                    break;
+                case TRY_CATCH_OTHERWISE:
+                    values.put(operationFields.handlerId, "++state.numHandlers");
+                    values.put(operationFields.stackHeight, "state.currentStackHeight");
+                    values.put(operationFields.finallyGenerator, operation.getOperationBeginArgumentName(0));
+                    values.put(operationFields.tryStartBci, "state.bci");
+                    values.put(operationFields.operationReachable, "state.reachable");
+                    values.put(operationFields.tryReachable, "state.reachable");
+                    values.put(operationFields.catchReachable, "state.reachable");
+                    break;
+                case FINALLY_HANDLER:
+                    values.put(operationFields.finallyOperationSp, "finallyOperationSp");
+                    break;
+                case CUSTOM:
+                case CUSTOM_YIELD:
+                case CUSTOM_INSTRUMENTATION:
+                    if (operation.hasConstantOperands()) {
+                        List<OperationField> fields = operationFields.getConstants(operation.constantOperands.before(), false);
+                        if (fields.size() != constantOperandValues.size()) {
+                            throw new AssertionError("Expected %d constant operands but %d values were provided.".formatted(fields.size(), constantOperandValues.size()));
                         }
-
-                        CodeTreeBuilder constantsArrayBuilder = CodeTreeBuilder.createBuilder();
-                        if (constantOperandIndices == null || constantOperandIndices.size() == 0) {
-                            args[1] = EMPTY_INT_ARRAY;
-                        } else {
-                            constantsArrayBuilder.startNewArray(arrayOf(type(int.class)), null);
-                            for (String constantIndex : constantOperandIndices) {
-                                constantsArrayBuilder.string(constantIndex);
-                            }
-                            constantsArrayBuilder.end();
-                            args[1] = constantsArrayBuilder.toString();
+                        for (int i = 0; i < fields.size(); i++) {
+                            values.put(fields.get(i), constantOperandValues.get(i));
                         }
-
-                        yield createOperationData(className, args);
                     }
-                }
-                case CUSTOM_SHORT_CIRCUIT -> createOperationData(className);
-                case TAG -> createOperationData(className, "nodeId", "this.reachable", "this.currentStackHeight", "node");
-                case RETURN -> createOperationData(className);
-                case BLOCK -> createOperationData(className, "this.currentStackHeight");
-                case SOURCE -> {
+                    break;
+                case CUSTOM_SHORT_CIRCUIT:
+                case RETURN:
+                    break;
+                case TAG:
+                    values.put(operationFields.nodeId, "nodeId");
+                    values.put(operationFields.operationReachable, "state.reachable");
+                    values.put(operationFields.startStackHeight, "state.currentStackHeight");
+                    values.put(operationFields.node, "node");
+                    break;
+                case BLOCK:
+                    values.put(operationFields.startStackHeight, "state.currentStackHeight");
+                    break;
+                case SOURCE:
                     b.startIf().string(operation.getOperationBeginArgumentName(0) + ".hasBytes()").end().startBlock();
                     b.startThrow().startCall("failArgument").doubleQuote("Byte-based sources are not supported.").end(2);
                     b.end();
@@ -4445,107 +4548,103 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement("index = sources.size()");
                     b.statement("sources.add(" + operation.getOperationBeginArgumentName(0) + ")");
                     b.end();
-                    yield createOperationData(className, "index");
-                }
-                case SOURCE_SECTION -> {
+
+                    values.put(operationFields.sourceIndex, "index");
+                    break;
+
+                case SOURCE_SECTION:
                     b.declaration(type(int.class), "foundSourceIndex", "-1");
+                    b.declaration(rootStackElement.asType(), "currentState", "this.state");
+                    b.startWhile().string("currentState != null").end().startBlock();
                     b.string("loop: ");
                     // NB: walk entire operation stack, not just until root operation.
                     buildOperationStackWalk(b, "0", () -> {
-                        b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                        b.startSwitch().string("currentState.operationStack[i].operation").end().startBlock();
 
                         b.startCase().tree(createOperationConstant(model.sourceOperation)).end();
                         b.startCaseBlock();
-                        emitCastOperationData(b, model.sourceOperation, "i", "sourceData");
-                        b.statement("foundSourceIndex = sourceData.sourceIndex");
+                        emitCastOperationData(b, model.sourceOperation, "i", "sourceData", "currentState", false);
+                        b.statement("foundSourceIndex = ", operationStack.read(model.sourceOperation, "sourceData", operationFields.sourceIndex));
                         b.statement("break loop");
                         b.end(); // case epilog
                         b.end(); // switch
-                    });
+                    }, "currentState");
+                    b.statement("currentState = currentState.parent");
+                    b.end();
 
                     b.startIf().string("foundSourceIndex == -1").end().startBlock();
                     b.startThrow().startCall("failState").doubleQuote("No enclosing Source operation found - each SourceSection must be enclosed in a Source operation.").end().end();
                     b.end();
 
                     b.declaration(type(int.class), "startBci");
-                    b.startIf().string("rootOperationSp == -1").end().startBlock();
+                    b.startIf().string("state.rootOperationSp == -1").end().startBlock();
                     b.lineComment("not in a root yet");
                     b.statement("startBci = 0");
                     b.end().startElseBlock();
-                    b.statement("startBci = bci");
+                    b.statement("startBci = state.bci");
                     b.end();
 
+                    values.put(operationFields.sourceIndex, "foundSourceIndex");
+                    values.put(operationFields.startBci, "startBci");
+
                     if (operation.operationBeginArguments.length == 0) {
-                        yield createOperationData(className, "foundSourceIndex", "startBci", "-2", "-2");
+                        values.put(operationFields.start, "-2");
+                        values.put(operationFields.length, "-2");
                     } else {
-                        String index = operation.getOperationBeginArgumentName(0);
-                        String length = operation.getOperationBeginArgumentName(1);
+                        String indexName = operation.getOperationBeginArgumentName(0);
+                        String lengthName = operation.getOperationBeginArgumentName(1);
 
-                        emitValidateSourceSection(b, index, length);
+                        emitValidateSourceSection(b, indexName, lengthName);
 
-                        yield createOperationData(className, "foundSourceIndex", "startBci", index, length);
+                        values.put(operationFields.start, indexName);
+                        values.put(operationFields.length, lengthName);
                     }
-                }
-                default -> {
-                    if (operation.isTransparent) {
-                        yield createOperationData(className);
-                    } else {
-                        yield null;
-                    }
-                }
-
-            };
+                    break;
+            }
+            return values;
         }
 
-        /**
-         * For type-safety, we use data classes to manage operation state during building. These
-         * data classes are generated by {@link OperationDataClassesFactory}.
-         */
-        private CodeTree createOperationData(String dataClassName, String... args) {
-            CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
-
-            b.startNew(dataClassName);
-            for (String arg : args) {
-                b.string(arg);
-            }
-            b.end();
-
-            return b.build();
+        private CodeExecutableElement createBeginOperation() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "beginOperation");
+            ex.addParameter(new CodeVariableElement(type(int.class), "id"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.statement("return state.pushOperation(id)");
+            return ex;
         }
 
         private CodeExecutableElement createEndOperation() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStackEntry.asType(), "endOperation");
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "endOperation");
+            ex.addParameter(new CodeVariableElement(type(int.class), "id"));
+
+            CodeTreeBuilder b = ex.createBuilder();
+            b.statement("verifyOperation(id)");
+            b.statement("return state.popOperation()");
+
+            return ex;
+        }
+
+        private CodeExecutableElement createVerifyOperation() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "verifyOperation");
             ex.addParameter(new CodeVariableElement(type(int.class), "id"));
 
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.startIf().string("operationSp == 0").end().startBlock(); // {
+            b.declaration(operationStack.asType(), "entry", "state.peekOperation()");
+            b.startIf().string("entry == null").end().startBlock(); // {
             b.startThrow().startCall("failState");
             b.doubleQuote("Unexpected operation end - there are no operations on the stack. Did you forget a beginRoot()?");
             b.end(2);
             b.end(); // }
 
-            b.statement("OperationStackEntry entry = operationStack[operationSp - 1]");
-
-            b.startIf().string("entry.operation != id").end().startBlock(); // {
+            b.startElseIf().string("entry.operation != id").end().startBlock(); // {
             b.startThrow().startCall("failState");
-            b.startGroup().doubleQuote("Unexpected operation end, expected end").string(" + OPERATION_NAMES[entry.operation] + ").doubleQuote(", but got end").string(" +  OPERATION_NAMES[id]").end();
+            b.doubleQuote("Unexpected operation end, expected end%s, but got end%s.");
+            b.startStaticCall(operationsElement.asType(), "getName").string("entry.operation").end();
+            b.startStaticCall(operationsElement.asType(), "getName").string("id").end();
             b.end(2); // throw, call
             b.end(); // }
 
-            b.startIf().string("entry.declaredLabels != null").end().startBlock();
-            b.startFor().string("BytecodeLabel label : entry.declaredLabels").end().startBlock();
-            b.statement("BytecodeLabelImpl impl = (BytecodeLabelImpl) label");
-            b.startIf().string("!impl.isDefined()").end().startBlock();
-            b.startThrow().startCall("failState");
-            b.string("\"Operation \" + OPERATION_NAMES[id] + \" ended without emitting one or more declared labels.\"");
-            b.end(2); // throw, call
-            b.end(3);
-
-            b.statement("operationStack[operationSp - 1] = null");
-            b.statement("operationSp -= 1");
-
-            b.statement("return entry");
+            b.statement("return entry ");
 
             return ex;
         }
@@ -4592,14 +4691,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            if (operation.constantOperands != null && operation.constantOperands.hasConstantOperands()) {
+            if (operation.hasConstantOperands()) {
                 int index = 0;
                 for (ConstantOperandModel operand : operation.constantOperands.after()) {
                     buildConstantOperandValidation(b, operand.type(), operation.getOperationEndArgumentName(index++));
                 }
             }
 
-            List<String> constantOperandIndices = emitConstantOperands(b, operation);
+            List<String> constantOperandValues = emitConstantOperands(b, operation);
 
             if (operation.kind == OperationKind.CUSTOM_INSTRUMENTATION) {
                 int mask = 1 << operation.instrumentationIndex;
@@ -4608,17 +4707,24 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            if (operation.kind == OperationKind.FINALLY_HANDLER) {
-                b.startStatement().startCall("endOperation");
-                b.tree(createOperationConstant(operation));
-                b.end(2);
-                // FinallyHandler doesn't need to validate its children or call afterChild.
-                return ex;
+            switch (operation.kind) {
+                case FINALLY_HANDLER:
+                    b.startStatement().startCall("endOperation");
+                    b.tree(createOperationConstant(operation));
+                    b.end(2);
+                    // FinallyHandler doesn't need to validate its children or call afterChild.
+                    return ex;
+                case TRY_FINALLY:
+                    b.startDeclaration(operationStack.asType(), "operation").startCall("verifyOperation");
+                    b.tree(createOperationConstant(operation));
+                    b.end(2);
+                    break;
+                default:
+                    b.startDeclaration(operationStack.asType(), "operation").startCall("endOperation");
+                    b.tree(createOperationConstant(operation));
+                    b.end(2);
+                    break;
             }
-
-            b.startDeclaration(operationStackEntry.asType(), "operation").startCall("endOperation");
-            b.tree(createOperationConstant(operation));
-            b.end(2);
 
             if (operation.kind == OperationKind.CUSTOM_SHORT_CIRCUIT) {
                 // Short-circuiting operations should have at least one child.
@@ -4640,14 +4746,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            if (operation.isTransparent) {
-                emitCastCurrentOperationData(b, operation);
-            }
-
             switch (operation.kind) {
                 case CUSTOM_SHORT_CIRCUIT:
                     InstructionModel shortCircuitInstruction = operation.instruction;
-                    emitCastCurrentOperationData(b, operation);
                     if (shortCircuitInstruction.shortCircuitModel.returnConvertedBoolean()) {
                         /*
                          * All operands except the last are automatically converted when testing the
@@ -4657,9 +4758,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         buildEmitBooleanConverterInstruction(b, shortCircuitInstruction);
                     }
                     // Go through the work list and fill in the branch target for each branch.
-                    b.startFor().string("int site : operationData.branchFixupBcis").end().startBlock();
-                    b.statement(writeInt("bc", "site", "bci"));
+
+                    b.declaration(type(int[].class), "branchFixupBcis", operationStack.read(operation, operationFields.branchFixupBcis));
+                    b.declaration(type(int.class), "numBranchFixupBcis", operationStack.read(operation, operationFields.numBranchFixupBcis));
+
+                    b.startFor().string("int i = 0; i < numBranchFixupBcis; i++").end().startBlock();
+                    b.statement(writeInt("state.bc", "branchFixupBcis[i]", "state.bci"));
                     b.end();
+
                     break;
                 case SOURCE_SECTION:
 
@@ -4671,107 +4777,99 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                         emitValidateSourceSection(b, index, length);
 
-                        b.startStatement().startCall("doPatchSourceInfo");
-                        b.string("operationData.nodeId");
-                        b.string("operationData.start");
+                        b.startStatement().startCall("state.doPatchSourceInfo");
+                        b.string("this.builtNodes");
+
+                        b.string(operationStack.read(operation, operationFields.sourceNodeId));
+                        b.string(operationStack.read(operation, operationFields.start));
                         b.string(index);
                         b.string(length);
                         b.end(2);
 
-                        b.startStatement().startCall("doEmitSourceInfo");
-                        b.string("operationData.sourceIndex");
-                        b.string("operationData.startBci");
-                        b.string("bci");
+                        b.startStatement().startCall("state.doEmitSourceInfo");
+                        b.string(operationStack.read(operation, operationFields.sourceIndex));
+                        b.string(operationStack.read(operation, operationFields.startBci));
+                        b.string("state.bci");
                         b.string(index);
                         b.string(length);
                         b.end(2);
                     } else {
-                        b.startStatement().startCall("doEmitSourceInfo");
-                        b.string("operationData.sourceIndex");
-                        b.string("operationData.startBci");
-                        b.string("bci");
-                        b.string("operationData.start");
-                        b.string("operationData.length");
+                        b.startStatement().startCall("state.doEmitSourceInfo");
+                        b.string(operationStack.read(operation, operationFields.sourceIndex));
+                        b.string(operationStack.read(operation, operationFields.startBci));
+                        b.string("state.bci");
+                        b.string(operationStack.read(operation, operationFields.start));
+                        b.string(operationStack.read(operation, operationFields.length));
                         b.end(2);
                     }
                     break;
                 case SOURCE:
                     break;
                 case IF_THEN_ELSE:
-                    emitCastCurrentOperationData(b, operation);
-                    b.statement("markReachable(operationData.thenReachable || operationData.elseReachable)");
+                    b.statement("markReachable(", operationStack.read(operation, operationFields.thenReachable), " || ", operationStack.read(operation, operationFields.elseReachable),
+                                    ")");
                     break;
                 case IF_THEN:
                 case WHILE:
                     b.statement("updateReachable()");
                     break;
                 case CONDITIONAL:
-                    emitCastCurrentOperationData(b, operation);
-                    b.statement("markReachable(operationData.thenReachable || operationData.elseReachable)");
+                    b.statement("markReachable(", operationStack.read(operation, operationFields.thenReachable), " || ", operationStack.read(operation, operationFields.elseReachable),
+                                    ")");
                     if (model.usesBoxingElimination()) {
-                        buildEmitInstruction(b, operation.instruction, emitMergeConditionalArguments(operation.instruction));
+                        buildEmitInstruction(b, null, operation.instruction, emitMergeConditionalArguments(operation.instruction));
                     }
                     break;
                 case TRY_CATCH:
-                    emitCastCurrentOperationData(b, operation);
-                    b.statement("markReachable(operationData.tryReachable || operationData.catchReachable)");
+                    b.statement("markReachable(", operationStack.read(operation, operationFields.tryReachable), " || ", operationStack.read(operation, operationFields.catchReachable),
+                                    ")");
                     break;
                 case TRY_FINALLY:
-                    emitCastCurrentOperationData(b, operation);
-                    emitFinallyHandlersAfterTry(b, operation, "operationSp");
-                    emitFixFinallyBranchBci(b);
-                    b.statement("markReachable(operationData.tryReachable)");
+                    emitFinallyHandlersAfterTry(b, operation);
+                    emitFixFinallyBranchBci(b, operation);
+                    b.statement("state.popOperation()");
+                    b.statement("markReachable(", operationStack.read(operation, operationFields.tryReachable), ")");
                     break;
                 case TRY_CATCH_OTHERWISE:
-                    emitCastCurrentOperationData(b, operation);
-                    b.statement("markReachable(operationData.tryReachable || operationData.catchReachable)").end();
-                    break;
-                case YIELD:
-                    if (model.enableTagInstrumentation) {
-                        b.statement("doEmitTagYield()");
-                    }
-                    buildEmitOperationInstruction(b, operation, null);
-
-                    if (model.enableTagInstrumentation) {
-                        b.statement("doEmitTagResume()");
-                    }
+                    b.statement("markReachable(", operationStack.read(operation, operationFields.tryReachable), " || ", operationStack.read(operation, operationFields.catchReachable),
+                                    ")");
                     break;
                 case RETURN:
-                    emitCastCurrentOperationData(b, operation);
-                    b.statement("beforeEmitReturn(operationData.childBci)");
+                    String bci = "-1";
+                    if (model.usesBoxingElimination()) {
+                        bci = operationStack.read(operation, operationFields.childBci);
+                    }
+                    b.statement("beforeEmitReturn(", bci, ")");
                     buildEmitOperationInstruction(b, operation, null);
                     b.statement("markReachable(false)");
                     break;
                 case TAG:
-                    b.declaration(tagNode.asType(), "tagNode", "operationData.node");
+                    b.declaration(tagNode.asType(), "tagNode", operationStack.read(operation, operationFields.node));
 
                     b.startIf().string("(encodedTags & this.tags) != tagNode.tags").end().startBlock();
                     emitThrowIllegalArgumentException(b, "The tags provided to endTag do not match the tags provided to the corresponding beginTag call.");
                     b.end();
 
                     b.lineComment("If this tag operation is nested in another, add it to the outer tag tree. Otherwise, it becomes a tag root.");
-                    b.declaration(type(boolean.class), "outerTagFound", "false");
-                    buildOperationStackWalk(b, () -> {
-                        b.startIf().string("operationStack[i].data instanceof TagOperationData t").end().startBlock();
-                        b.startIf().string("t.children == null").end().startBlock();
-                        b.statement("t.children = new ArrayList<>(3)");
-                        b.end();
-                        b.statement("t.children.add(tagNode)");
-                        b.statement("outerTagFound = true");
-                        b.statement("break");
-                        b.end(); // if tag operation
-                    });
+                    b.declaration(operationStack.asType(), "outerTag", "findOuterTag()");
 
                     // Otherwise, this tag is the root of a tag tree.
-                    b.startIf().string("!outerTagFound").end().startBlock();
-                    b.startIf().string("tagRoots == null").end().startBlock();
-                    b.statement("tagRoots = new ArrayList<>(3)");
+                    b.startIf().string("outerTag == null").end().startBlock();
+                    b.startIf().string("state.tagRoots == null").end().startBlock();
+                    b.statement("state.tagRoots = new ArrayList<>(3)");
                     b.end();
-                    b.statement("tagRoots.add(tagNode)");
-                    b.end(); // if !outerTagFound
+                    b.statement("state.tagRoots.add(tagNode)");
+                    b.end().startElseBlock(); // if !outerTagFound
+
+                    b.startIf().string(operationStack.read(model.tagOperation, "outerTag", operationFields.tagChildren), " == null").end().startBlock();
+                    b.tree(operationStack.write(model.tagOperation, "outerTag", operationFields.tagChildren, "new ArrayList<>(3)"));
+                    b.end();
+                    b.statement(operationStack.read(model.tagOperation, "outerTag", operationFields.tagChildren), ".add(tagNode)");
+
+                    b.end();
 
                     b.declaration(arrayOf(tagNode.asType()), "children");
-                    b.declaration(generic(type(List.class), tagNode.asType()), "operationChildren", "operationData.children");
+                    b.declaration(generic(type(List.class), tagNode.asType()), "operationChildren", operationStack.read(operation, operationFields.tagChildren));
 
                     // Set the children array and adopt children.
                     b.startIf().string("operationChildren == null").end().startBlock();
@@ -4784,43 +4882,47 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end();
 
                     b.statement("tagNode.children = children");
-                    b.statement("tagNode.returnBci = bci");
+                    b.statement("tagNode.returnBci = state.bci");
 
-                    b.startIf().string("operationData.producedValue").end().startBlock();
+                    b.startIf().string(operationStack.read(operation, operationFields.producedValue)).end().startBlock();
                     String[] args;
                     InstructionImmediate imm = operation.instruction.getImmediate(ImmediateKind.BYTECODE_INDEX);
                     if (imm == null) {
-                        args = new String[]{"operationData.nodeId"};
+                        args = new String[]{operationStack.read(operation, operationFields.nodeId)};
                     } else {
-                        args = new String[]{"operationData.nodeId", "operationData.childBci"};
+                        args = new String[]{operationStack.read(operation, operationFields.nodeId), operationStack.read(operation, operationFields.childBci)};
                     }
 
-                    b.startIf().string("operationData.operationReachable").end().startBlock();
+                    b.startIf().string(operationStack.read(operation, operationFields.operationReachable)).end().startBlock();
                     /*
                      * Leaving the tag leave is always reachable, because probes may decide to
                      * return at any point and we need a point where we can continue.
                      */
                     b.statement("markReachable(true)");
-                    buildEmitInstruction(b, model.tagLeaveValueInstruction, args);
-                    b.statement("doCreateExceptionHandler(operationData.handlerStartBci, bci, HANDLER_TAG_EXCEPTIONAL, operationData.nodeId, operationData.startStackHeight)");
+                    buildEmitInstruction(b, null, model.tagLeaveValueInstruction, args);
+                    b.statement("state.doCreateExceptionHandler(", operationStack.read(operation, operationFields.handlerStartBci), ", state.bci, HANDLER_TAG_EXCEPTIONAL, ",
+                                    operationStack.read(operation, operationFields.nodeId), ", ",
+                                    operationStack.read(operation, operationFields.startStackHeight), ")");
                     b.end().startElseBlock();
-                    buildEmitInstruction(b, model.tagLeaveValueInstruction, args);
+                    buildEmitInstruction(b, null, model.tagLeaveValueInstruction, args);
                     b.end();
 
-                    emitCallAfterChild(b, operation, "true", "bci - " + model.tagLeaveValueInstruction.getInstructionLength());
+                    emitCallAfterChild(b, operation, "true", "state.bci - " + model.tagLeaveValueInstruction.getInstructionLength());
 
                     b.end().startElseBlock();
 
-                    b.startIf().string("operationData.operationReachable").end().startBlock();
+                    b.startIf().string(operationStack.read(operation, operationFields.operationReachable)).end().startBlock();
                     /*
                      * Leaving the tag leave is always reachable, because probes may decide to
                      * return at any point and we need a point where we can continue.
                      */
                     b.statement("markReachable(true)");
-                    buildEmitInstruction(b, model.tagLeaveVoidInstruction, "operationData.nodeId");
-                    b.statement("doCreateExceptionHandler(operationData.handlerStartBci, bci, HANDLER_TAG_EXCEPTIONAL, operationData.nodeId, operationData.startStackHeight)");
+                    buildEmitInstruction(b, null, model.tagLeaveVoidInstruction, operationStack.read(operation, operationFields.nodeId));
+                    b.statement("state.doCreateExceptionHandler(", operationStack.read(operation, operationFields.handlerStartBci), ", state.bci, HANDLER_TAG_EXCEPTIONAL, ",
+                                    operationStack.read(operation, operationFields.nodeId),
+                                    ", ", operationStack.read(operation, operationFields.startStackHeight), ")");
                     b.end().startElseBlock();
-                    buildEmitInstruction(b, model.tagLeaveVoidInstruction, "operationData.nodeId");
+                    buildEmitInstruction(b, null, model.tagLeaveVoidInstruction, operationStack.read(operation, operationFields.nodeId));
                     b.end();
 
                     emitCallAfterChild(b, operation, "false", "-1");
@@ -4829,14 +4931,31 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                     break;
                 case BLOCK:
+                    b.startIf().string("!operation.validateDeclaredLabels()").end().startBlock();
+                    b.startThrow().startCall("failState");
+                    b.string("\"Operation Block ended without emitting one or more declared labels.\"");
+                    b.end(2); // throw, call
+                    b.end();
+
                     if (model.enableBlockScoping) {
                         // local table entries are emitted at the end of the block.
-                        createEndLocalsBlock(b, false);
+                        createEndLocalsBlock(b, operation);
+                    }
+
+                    break;
+                case YIELD, CUSTOM_YIELD:
+                    if (model.enableTagInstrumentation) {
+                        b.statement("doEmitTagYield()");
+                    }
+                    buildEmitOperationInstruction(b, operation, constantOperandValues);
+
+                    if (model.enableTagInstrumentation) {
+                        b.declaration(type(int.class), "tagResumeBci", "doEmitTagResume()");
                     }
                     break;
                 default:
                     if (operation.instruction != null) {
-                        buildEmitOperationInstruction(b, operation, constantOperandIndices);
+                        buildEmitOperationInstruction(b, operation, constantOperandValues);
                     }
                     break;
             }
@@ -4845,7 +4964,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 // handled in tag section
             } else if (operation.isTransparent) {
                 // custom transparent operations have the operation cast on the stack
-                emitCallAfterChild(b, operation, "operationData.producedValue", "operationData.childBci");
+                String bci = null;
+                if (model.usesBoxingElimination()) {
+                    bci = operationStack.read(operation, operationFields.childBci);
+                }
+                emitCallAfterChild(b, operation, operationStack.read(operation, operationFields.producedValue), bci);
             } else if (operation.kind == OperationKind.CUSTOM_SHORT_CIRCUIT) {
                 b.declaration(type(int.class), "nextBci");
                 b.startIf().string("operation.childCount <= 1").end().startBlock();
@@ -4854,24 +4977,37 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 ShortCircuitInstructionModel shortCircuitModel = operation.instruction.shortCircuitModel;
                 if (shortCircuitModel.returnConvertedBoolean()) {
                     // We emit a boolean converter instruction above. Compute its bci.
-                    b.string("bci - " + shortCircuitModel.booleanConverterInstruction().getInstructionLength());
+                    b.string("state.bci - " + shortCircuitModel.booleanConverterInstruction().getInstructionLength());
                 } else {
                     // The child bci points to the instruction producing this last value.
-                    b.string("operationData.childBci");
+                    String childBci = "-1";
+                    if (model.usesBoxingElimination()) {
+                        childBci = operationStack.read(operation, operationFields.childBci);
+                    }
+                    b.string(childBci);
                 }
                 b.end();  // statement
                 b.end(); // if block
 
                 b.startElseBlock();
                 b.lineComment("Multi child -> boxing elimination not possible use short-circuit bci to disable it.");
-                b.statement("nextBci = operationData.shortCircuitBci");
+
+                String shortCircuitBci = "-1";
+                if (model.usesBoxingElimination()) {
+                    shortCircuitBci = operationStack.read(operation, operationFields.shortCircuitBci);
+                }
+                b.statement("nextBci = ", shortCircuitBci);
                 b.end();
 
                 emitCallAfterChild(b, operation, "true", "nextBci");
+            } else if (model.enableTagInstrumentation && (operation.kind == OperationKind.YIELD || operation.kind == OperationKind.CUSTOM_YIELD)) {
+                // The "childBci" can change depending on whether tag.resume was emitted.
+                // We don't BE yields/tag.resume but the BE machinery needs a valid bci.
+                emitCallAfterChild(b, operation, "true", "tagResumeBci != -1 ? tagResumeBci : state.bci - " + operation.instruction.getInstructionLength());
             } else {
                 String nextBci;
                 if (operation.instruction != null) {
-                    nextBci = "bci - " + operation.instruction.getInstructionLength();
+                    nextBci = "state.bci - " + operation.instruction.getInstructionLength();
                 } else {
                     nextBci = "-1";
                 }
@@ -4884,6 +5020,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     buildEnd(b, model.tagOperation, tagConstants.getSimpleName().toString());
                 }
             }
+
+            return ex;
+        }
+
+        private CodeExecutableElement createFindOuterTag() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "findOuterTag");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.declaration(type(boolean.class), "outerTagFound", "false");
+            buildOperationStackWalk(b, () -> {
+                b.startIf().string("operation.operation == ").tree(createOperationConstant(model.tagOperation)).end().startBlock();
+                b.statement("return operation");
+                b.end(); // if tag operation
+            });
+
+            b.statement("return null");
 
             return ex;
         }
@@ -4913,7 +5064,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private void emitCallAfterChild(CodeTreeBuilder b, OperationModel op, String producedValue, String childBci) {
             b.startStatement().startCall("afterChild");
             b.tree(createOperationConstant(op));
-            b.string(producedValue).string(childBci);
+            b.string(producedValue);
+            if (model.usesBoxingElimination()) {
+                b.string(childBci);
+            }
             b.end(2);
         }
 
@@ -4928,17 +5082,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             });
         }
 
-        private void createEndLocalsBlock(CodeTreeBuilder b, boolean isRoot) {
-            b.startIf().string("operationData.numLocals > 0").end().startBlock();
-            b.statement("maxLocals = Math.max(maxLocals, operationData.frameOffset + operationData.numLocals)");
-            b.startFor().string("int index = 0; index < operationData.numLocals; index++").end().startBlock();
-            b.statement("locals[operationData.locals[index] + LOCALS_OFFSET_END_BCI] = bci");
-            if (!isRoot) {
-                buildEmitInstruction(b, model.clearLocalInstruction, safeCastShort("locals[operationData.locals[index] + LOCALS_OFFSET_FRAME_INDEX]"));
+        private void createEndLocalsBlock(CodeTreeBuilder b, OperationModel operation) {
+            b.startIf().string(operationStack.read(operation, operationFields.numLocals), " > 0").end().startBlock();
+
+            b.statement("state.maxLocals = Math.max(state.maxLocals, ", operationStack.read(operation, operationFields.frameOffset), " + ",
+                            operationStack.read(operation, operationFields.numLocals), ")");
+            b.startFor().string("int index = 0; index < ", operationStack.read(operation, operationFields.numLocals), "; index++").end().startBlock();
+
+            b.statement("state.locals[", operationStack.read(operation, operationFields.locals), "[index] + LOCALS_OFFSET_END_BCI] = state.bci");
+            if (operation.kind == OperationKind.BLOCK) {
+                buildEmitInstruction(b, null, model.clearLocalInstruction,
+                                safeCastShort("state.locals[" + operationStack.read(operation, operationFields.locals) + "[index] + LOCALS_OFFSET_FRAME_INDEX]"));
             }
             b.end(); // for
             b.end(); // block
-            b.statement("operationData.valid = false");
+            b.tree(operationStack.write(operation, operationFields.valid, "false"));
         }
 
         private CodeExecutableElement createEndRoot(OperationModel rootOperation) {
@@ -4976,33 +5134,41 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             if (needsRootBlock()) {
-                emitCastOperationData(b, model.blockOperation, "operationSp - 1", "blockOperation");
-                b.startIf().string("!blockOperation.producedValue").end().startBlock();
+                emitCastOperationData(b, model.blockOperation, "state.operationSp - 1", "blockOperation");
+                b.startIf().string("!", operationStack.read(model.blockOperation, "blockOperation", operationFields.producedValue)).end().startBlock();
                 buildEmit(b, model.loadNullOperation);
                 b.end();
                 buildEnd(b, model.blockOperation);
-                emitCastOperationData(b, model.rootOperation, "rootOperationSp");
+                emitCastOperationData(b, model.rootOperation, "state.rootOperationSp");
             } else {
-                emitCastOperationData(b, model.rootOperation, "rootOperationSp");
-                b.startIf().string("!operationData.producedValue").end().startBlock();
+                emitCastOperationData(b, model.rootOperation, "state.rootOperationSp");
+                b.startIf().string("!", operationStack.read(model.blockOperation, operationFields.producedValue)).end().startBlock();
                 buildEmit(b, model.loadNullOperation);
                 b.end();
             }
+
+            b.startIf().string("!state.operationStack[state.rootOperationSp].validateDeclaredLabels()").end().startBlock();
+            b.startThrow().startCall("failState");
+            b.string("\"Operation Root ended without emitting one or more declared labels.\"");
+            b.end(2); // throw, call
+            b.end();
 
             if (model.prolog != null || model.epilogExceptional != null || model.epilogReturn != null) {
                 if (model.prolog != null) {
                     // Patch the end constants.
                     OperationModel prologOperation = model.prolog.operation;
-                    List<InstructionImmediate> constantOperands = prologOperation.instruction.getImmediates(ImmediateKind.CONSTANT);
-                    int endConstantsOffset = prologOperation.constantOperands.before().size();
-
-                    for (OperationArgument operationArgument : model.prolog.operation.operationEndArguments) {
+                    List<ConstantOperandModel> after = prologOperation.constantOperands.after();
+                    if (prologOperation.operationEndArguments.length != after.size()) {
+                        throw new AssertionError("The prolog operation has %d arguments, but there are %d constant operands specified at the end.".formatted(
+                                        prologOperation.operationEndArguments.length, after.size()));
+                    }
+                    for (OperationArgument operationArgument : prologOperation.operationEndArguments) {
                         buildConstantOperandValidation(b, operationArgument.builderType(), operationArgument.name());
                     }
-
                     for (int i = 0; i < prologOperation.operationEndArguments.length; i++) {
-                        InstructionImmediate immediate = constantOperands.get(endConstantsOffset + i);
-                        b.statement(writeImmediate("bc", "operationData.prologBci", "constantPool.addConstant(" + prologOperation.operationEndArguments[i].name() + ")", immediate));
+                        String constantOperandValue = emitConstantOperand(b, prologOperation.operationEndArguments[i], prologOperation.constantOperandAfterNames.get(i));
+                        InstructionImmediate immediate = prologOperation.instruction.constantOperandImmediates.get(after.get(i));
+                        b.statement(writeImmediate("state.bc", operationStack.read(rootOperation, operationFields.prologBci), constantOperandValue, immediate.encoding()));
                     }
                 }
 
@@ -5016,7 +5182,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 if (model.epilogExceptional != null) {
                     b.lineComment("Emit epilog special exception handler");
-                    b.statement("doCreateExceptionHandler(0, bci, HANDLER_EPILOG_EXCEPTIONAL, -1, -1)");
+                    b.statement("state.doCreateExceptionHandler(0, state.bci, HANDLER_EPILOG_EXCEPTIONAL, -1, -1)");
                 }
 
                 if (model.enableRootTagging) {
@@ -5036,45 +5202,47 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(2);
 
             if (model.enableBlockScoping) {
-                createEndLocalsBlock(b, true);
+                createEndLocalsBlock(b, rootOperation);
             }
 
             for (VariableElement e : ElementFilter.fieldsIn(abstractBytecodeNode.getEnclosedElements())) {
                 b.defaultDeclaration(e.asType(), e.getSimpleName().toString() + "_");
             }
 
-            b.statement("doEmitRootSourceSection(operationData.index)");
+            b.statement("doEmitRootSourceSection(", operationStack.read(model.rootOperation, operationFields.index), ")");
             b.startIf().string("parseSources").end().startBlock();
-            CodeTree copyOf = CodeTreeBuilder.createBuilder().startStaticCall(type(Arrays.class), "copyOf").string("sourceInfo").string("sourceInfoIndex").end().build();
+            CodeTree copyOf = CodeTreeBuilder.createBuilder().startStaticCall(type(Arrays.class), "copyOf").string("state.sourceInfo").string("state.sourceInfoIndex").end().build();
             b.startAssign("sourceInfo_").tree(copyOf).end();
             b.startAssign("sources_").string("sources").end();
             b.end();
 
             b.startIf().string("parseBytecodes").end().startBlock();
 
-            b.startAssign("bytecodes_").startStaticCall(type(Arrays.class), "copyOf").string("bc").string("bci").end().end();
-            b.startAssign("constants_").string("constantPool.toArray()").end();
-            b.startAssign("handlers_").startStaticCall(type(Arrays.class), "copyOf").string("handlerTable").string("handlerTableSize").end().end();
+            b.startAssign("bytecodes_").startStaticCall(type(Arrays.class), "copyOf").string("state.bc").string("state.bci").end().end();
+            b.startAssign("constants_").string("state.toConstants()").end();
+            b.startAssign("handlers_").startStaticCall(type(Arrays.class), "copyOf").string("state.handlerTable").string("state.handlerTableSize").end().end();
             b.startAssign("sources_").string("sources").end();
-            b.startAssign("numNodes_").string("numNodes").end();
-            b.startAssign("locals_").string("locals == null ? " + EMPTY_INT_ARRAY + " : ").startStaticCall(type(Arrays.class), "copyOf").string("locals").string(
-                            "localsTableIndex").end().end();
+            b.startAssign("numNodes_").string("state.numNodes").end();
+            b.startAssign("locals_").string("state.locals == null ? " + EMPTY_INT_ARRAY + " : ").startStaticCall(type(Arrays.class), "copyOf").string("state.locals").string(
+                            "state.localsTableIndex").end().end();
+            b.end().startElseBlock();
+            b.statement("state.toConstants()");
             b.end();
 
             if (model.enableTagInstrumentation) {
-                b.startIf().string("tags != 0 && this.tagNodes != null").end().startBlock();
-                b.startDeclaration(arrayOf(tagNode.asType()), "tagNodes_").string("this.tagNodes.toArray(TagNode[]::new)").end();
+                b.startIf().string("tags != 0 && state.tagNodes != null").end().startBlock();
+                b.startDeclaration(arrayOf(tagNode.asType()), "tagNodes_").string("state.tagNodes.toArray(TagNode[]::new)").end();
 
                 b.declaration(tagNode.asType(), "tagTree_");
 
-                b.startAssert().string("!this.tagRoots.isEmpty()").end();
-                b.startIf().string("this.tagRoots.size() == 1").end().startBlock();
-                b.startAssign("tagTree_").string("this.tagRoots.get(0)").end();
+                b.startAssert().string("!state.tagRoots.isEmpty()").end();
+                b.startIf().string("state.tagRoots.size() == 1").end().startBlock();
+                b.startAssign("tagTree_").string("state.tagRoots.get(0)").end();
                 b.end().startElseBlock();
                 b.startAssign("tagTree_").startNew(tagNode.asType());
                 b.string("0").string("-1");
                 b.end().end();
-                b.statement("tagTree_.children = tagTree_.insert(this.tagRoots.toArray(TagNode[]::new))");
+                b.statement("tagTree_.children = tagTree_.insert(state.tagRoots.toArray(TagNode[]::new))");
                 b.end();
 
                 b.startAssign("tagRoot_");
@@ -5088,28 +5256,53 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             b.declaration(BytecodeRootNodeElement.this.asType(), "result", (CodeTree) null);
+
+            if (model.hasYieldOperation()) {
+                b.declaration(type(int[].class), "continuations", "state.continuations");
+                b.declaration(type(int.class), "continuationsIndex", "state.continuationsIndex");
+            }
+
             b.startIf().string("reparseReason != null").end().startBlock(); // {
-            b.statement("result = builtNodes.get(operationData.index)");
+            b.statement("result = builtNodes.get(", operationStack.read(model.rootOperation, operationFields.index), ")");
 
             b.startIf().string("parseBytecodes").end().startBlock();
             b.declaration(abstractBytecodeNode.asType(), "oldBytecodeNode", "result.bytecode");
             b.statement("assert result.maxLocals == " + maxLocals());
             b.statement("assert result.nodes == this.nodes");
-            b.statement("assert constants_.length == oldBytecodeNode.constants.length");
             b.startAssert();
             b.string("result.getFrameDescriptor().getNumberOfSlots() == ");
             buildFrameSize(b);
             b.end();
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
+
+                if (model.enableInstructionTracing) {
+                    b.declaration(type(int.class), "oldConstantOffset", "oldBytecodeNode.isInstructionTracingEnabled() ? 1 : 0");
+                    b.startDeclaration(type(int.class), "newConstantOffset");
+                    int mask = 1 << model.traceInstructionInstrumentationIndex;
+                    b.string("(this.instrumentations & ").string("0x", Integer.toHexString(mask)).string(") != 0 ? 1 : 0");
+                    b.end(); // delcaration
+                    b.statement("assert constants_.length - newConstantOffset == oldBytecodeNode.constants.length - oldConstantOffset");
+                } else {
+                    b.statement("assert constants_.length == oldBytecodeNode.constants.length");
+                }
+
                 /**
                  * Copy ContinuationRootNodes into new constant array *before* we update the new
                  * bytecode, otherwise a racy thread may read it as null
                  */
-                b.startFor().type(continuationLocation.asType()).string(" continuationLocation : continuationLocations").end().startBlock();
-                b.declaration(type(int.class), "constantPoolIndex", "continuationLocation.constantPoolIndex");
+                b.startFor().string("int i = 0; i < continuationsIndex; i = i + CONTINUATION_LENGTH").end().startBlock();
+                b.declaration(type(int.class), "constantPoolIndex", "continuations[i + CONTINUATION_OFFSET_CPI]");
+                if (model.enableInstructionTracing) {
+                    b.lineComment("The constant offset is 1 with instruction tracing enabled. See INSTRUCTION_TRACER_CONSTANT_INDEX.");
+                    b.lineComment("We need to align constant indices for the continuation root node updates.");
+                    b.declaration(type(int.class), "oldConstantPoolIndex", "constantPoolIndex - newConstantOffset + oldConstantOffset");
+                } else {
+                    b.declaration(type(int.class), "oldConstantPoolIndex", "constantPoolIndex");
+                }
                 b.startDeclaration(continuationRootNodeImpl.asType(), "continuationRootNode");
-                b.cast(continuationRootNodeImpl.asType()).string("oldBytecodeNode.constants[constantPoolIndex]");
+                b.cast(continuationRootNodeImpl.asType()).string("oldBytecodeNode.constants[oldConstantPoolIndex]");
+
                 b.end();
 
                 b.startStatement().startCall("ACCESS.writeObject");
@@ -5117,13 +5310,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.string("constantPoolIndex");
                 b.string("continuationRootNode");
                 b.end(2);
-
                 b.end();
             }
 
             b.end();
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.startDeclaration(abstractBytecodeNode.asType(), "bytecodeNode");
             } else {
                 b.startStatement();
@@ -5133,13 +5325,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.string(e.getSimpleName().toString() + "_");
             }
             b.string("this.reparseReason");
-            if (model.enableYield) {
-                b.string("continuationLocations");
+            if (model.hasYieldOperation()) {
+                b.string("continuations");
+                b.string("continuationsIndex");
             }
             b.end();
             b.end();
 
-            b.startAssert().string("result.buildIndex == operationData.index").end();
+            b.startAssert().string("result.buildIndex == ", operationStack.read(model.rootOperation, operationFields.index)).end();
 
             b.end().startElseBlock(); // } {
 
@@ -5164,33 +5357,36 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.string("nodes"); // BytecodeRootNodesImpl
             b.string(maxLocals());
             if (model.usesBoxingElimination()) {
-                b.string("numLocals");
+                b.string("state.numLocals");
             }
-            b.string("operationData.index");
+            b.string(operationStack.read(model.rootOperation, operationFields.index));
 
             for (VariableElement e : ElementFilter.fieldsIn(abstractBytecodeNode.getEnclosedElements())) {
                 b.string(e.getSimpleName().toString() + "_");
             }
             b.end(2);
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.declaration(types.BytecodeNode, "bytecodeNode", "result.getBytecodeNode()");
 
-                b.startFor().type(continuationLocation.asType()).string(" continuationLocation : continuationLocations").end().startBlock();
-                b.declaration(type(int.class), "constantPoolIndex", "continuationLocation.constantPoolIndex");
+                b.startFor().string("int i = 0; i < continuationsIndex; i = i + CONTINUATION_LENGTH").end().startBlock();
+                b.declaration(type(int.class), "constantPoolIndex", "continuations[i + CONTINUATION_OFFSET_CPI]");
+                b.declaration(type(int.class), "continuationBci", "continuations[i + CONTINUATION_OFFSET_BCI]");
+                // Convert the relative sp to an absolute index in the frame.
+                b.declaration(type(int.class), "continuationSp", "continuations[i + CONTINUATION_OFFSET_SP] + " + maxLocals());
 
                 b.declaration(types.BytecodeLocation, "location");
-                b.startIf().string("continuationLocation.bci == -1").end().startBlock();
+                b.startIf().string("continuationBci == -1").end().startBlock();
                 b.statement("location = null");
                 b.end().startElseBlock();
-                b.startAssign("location").string("bytecodeNode.getBytecodeLocation(continuationLocation.bci)").end();
+                b.startAssign("location").string("bytecodeNode.getBytecodeLocation(continuationBci)").end();
                 b.end(); // block
 
                 b.startDeclaration(continuationRootNodeImpl.asType(), "continuationRootNode").startNew(continuationRootNodeImpl.asType());
                 b.string("language");
                 b.string("result.getFrameDescriptor()");
                 b.string("result");
-                b.string("continuationLocation.sp");
+                b.string("continuationSp");
                 b.string("location");
                 b.end(2);
 
@@ -5203,22 +5399,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            b.startAssert().string("operationData.index <= numRoots").end();
-            b.statement("builtNodes.set(operationData.index, result)");
+            b.startAssert().string(operationStack.read(model.rootOperation, operationFields.index), " <= numRoots").end();
+            b.statement("builtNodes.set(", operationStack.read(model.rootOperation, operationFields.index), ", result)");
 
             b.end(); // }
 
-            b.statement("rootOperationSp = -1");
+            b.statement("state.reset()");
 
-            b.startIf().string("savedState == null").end().startBlock(); // {
-            b.lineComment("invariant: bc is null when no root node is being built");
-            b.statement("bc = null");
-            b.end().startElseBlock(); // } {
-            for (CodeVariableElement state : builderState) {
-                if (state != null) {
-                    b.startAssign("this." + state.getName()).string("savedState." + state.getName()).end();
-                }
-            }
+            b.startIf().string("state.parent != null").end().startBlock(); // {
+            b.statement("state = state.parent");
             b.end();
 
             b.startReturn().string("result").end();
@@ -5226,14 +5415,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         private void buildFrameSize(CodeTreeBuilder b) {
-            b.string("maxStackHeight + ").string(maxLocals());
+            b.string("state.maxStackHeight + ").string(maxLocals());
         }
 
         private String maxLocals() {
             if (model.enableBlockScoping) {
-                return "maxLocals + USER_LOCALS_START_INDEX";
+                return "state.maxLocals + USER_LOCALS_START_INDEX";
             } else {
-                return "numLocals + USER_LOCALS_START_INDEX";
+                return "state.numLocals + USER_LOCALS_START_INDEX";
             }
         }
 
@@ -5272,14 +5461,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * Note: lowerLimit is inclusive (iteration will include lowerLimit).
          */
         private void buildOperationStackWalk(CodeTreeBuilder b, String lowerLimit, Runnable r) {
-            b.startFor().string("int i = operationSp - 1; i >= ", lowerLimit, "; i--").end().startBlock();
+            buildOperationStackWalk(b, lowerLimit, r, "state");
+        }
 
-            b.startIf().string("operationStack[i].operation == ").tree(createOperationConstant(model.finallyHandlerOperation)).end().startBlock();
-            b.startAssign("i").startParantheses();
-            emitCastOperationDataUnchecked(b, model.finallyHandlerOperation, "i");
-            b.end();
-            b.string(".finallyOperationSp");
-            b.end(); // assign
+        private void buildOperationStackWalk(CodeTreeBuilder b, String lowerLimit, Runnable r, String state) {
+            b.startFor().string("int i = ", state, ".operationSp - 1; i >= ", lowerLimit, "; i--").end().startBlock();
+            b.declaration(operationStack.asType(), "operation", state + ".operationStack[i]");
+            b.startIf().string("operation.operation == ").tree(createOperationConstant(model.finallyHandlerOperation)).end().startBlock();
+            b.startAssign("i").string(operationStack.read(List.of(model.finallyHandlerOperation), operationFields.finallyOperationSp)).end();
             b.statement("continue");
             b.end(); // if
 
@@ -5292,7 +5481,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * Common case for a operation stack walks; walks until we hit the current root operation.
          */
         private void buildOperationStackWalk(CodeTreeBuilder b, Runnable r) {
-            buildOperationStackWalk(b, "rootOperationSp", r);
+            buildOperationStackWalk(b, "state.rootOperationSp", r);
         }
 
         /**
@@ -5304,29 +5493,26 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * Note: lowerLimit is inclusive (iteration will start from lowerLimit).
          */
         private void buildOperationStackWalkFromBottom(CodeTreeBuilder b, String lowerLimit, Runnable r) {
-            b.startFor().string("int i = ", lowerLimit, "; i < operationSp; i++").end().startBlock();
-
-            b.startIf();
-            b.string("operationStack[i].operation == ").tree(createOperationConstant(model.tryFinallyOperation));
-            b.string(" || operationStack[i].operation == ").tree(createOperationConstant(model.tryCatchOtherwiseOperation));
-            b.end().startBlock();
-
-            if (!getDataClassName(model.tryFinallyOperation).equals(getDataClassName(model.tryCatchOtherwiseOperation))) {
-                throw new AssertionError("TryFinally and TryCatchOtherwise operations have different data classes.");
-            }
-            b.startDeclaration(type(int.class), "finallyHandlerSp");
-            b.startParantheses();
-            emitCastOperationDataUnchecked(b, model.tryFinallyOperation, "i");
-            b.end();
-            b.string(".finallyHandlerSp");
-            b.end();
-
+            b.startFor().string("int i = ", lowerLimit, "; i < state.operationSp; i++").end().startBlock();
+            b.declaration(operationStack.asType(), "operation", "state.operationStack[i]");
+            b.startSwitch().string("operation.operation").end().startBlock();
+            b.startCase().tree(createOperationConstant(model.tryFinallyOperation)).end();
+            b.startCase().tree(createOperationConstant(model.tryCatchOtherwiseOperation)).end();
+            b.startCaseBlock();
+            b.declaration(type(int.class), "finallyHandlerSp", operationStack.read(List.of(model.tryFinallyOperation, model.tryFinallyOperation), operationFields.finallyHandlerSp));
             b.startIf().string("finallyHandlerSp != ", UNINIT).end().startBlock();
             b.statement("i = finallyHandlerSp - 1");
             b.statement("continue");
             b.end(); // if finallyHandlerSp set
 
-            b.end(); // if finally try operation
+            b.statement("break");
+
+            b.end(); // case block
+            b.caseDefault().startCaseBlock();
+            b.statement("break");
+            b.end();
+
+            b.end(); // switch
 
             r.run();
 
@@ -5334,38 +5520,25 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         private void emitCastOperationData(CodeTreeBuilder b, OperationModel operation, String sp) {
-            emitCastOperationData(b, operation, sp, "operationData");
+            emitCastOperationData(b, operation, sp, "operation");
         }
 
         private void emitCastOperationData(CodeTreeBuilder b, OperationModel operation, String sp, String localName) {
-            b.startIf();
-            b.string("!(operationStack[" + sp + "].data instanceof ");
-            String dataClassName = getDataClassName(operation);
-            b.string(dataClassName);
-            b.string(" ").string(localName).string(")");
-            b.end().startBlock();
-            emitThrowAssertionError(b, "\"Data class " + dataClassName + " expected, but was \" + operationStack[" + sp + "].data");
-            b.end();
+            emitCastOperationData(b, operation, sp, localName, "state", true);
         }
 
-        private void emitCastCurrentOperationData(CodeTreeBuilder b, OperationModel operation) {
-            b.startIf();
-            b.string("!(operation.data instanceof ");
-            String dataClassName = getDataClassName(operation);
-            b.string(dataClassName);
-            b.string(" ").string("operationData").string(")");
-            b.end().startBlock();
-            emitThrowAssertionError(b, "\"Data class " + dataClassName + " expected, but was \" + operation.data");
+        private void emitCastOperationData(CodeTreeBuilder b, OperationModel operation, String sp, String localName, String stateName, boolean checkOperation) {
+            b.startDeclaration(operationStack.asType(), localName);
+            b.string(stateName, ".operationStack[", sp, "]");
             b.end();
-        }
-
-        private void emitCastOperationDataUnchecked(CodeTreeBuilder b, OperationModel operation, String sp) {
-            String dataClassName = getDataClassName(operation);
-            b.string("(", dataClassName, ") operationStack[", sp, "].data");
+            if (checkOperation) {
+                b.startAssert().string(localName, ".operation == ").tree(createOperationConstant(operation)).end();
+            }
         }
 
         /**
-         * Produces code to emit finally handler(s) after the try block.
+         * Produces code to emit finally handler(s) after the try block. Expects the finally
+         * operation be on the top of the operation stack (at operationSp - 1).
          *
          * For TryFinally, emits both regular and exceptional handlers; for TryCatchOtherwise, just
          * emits the regular handler.
@@ -5373,67 +5546,69 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * NB: each call to doEmitFinallyHandler must happen regardless of reachability so that the
          * frame and constant pool layouts are consistent across reparses.
          */
-        private void emitFinallyHandlersAfterTry(CodeTreeBuilder b, OperationModel op, String finallyHandlerSp) {
-            b.declaration(type(int.class), "handlerSp", "currentStackHeight + 1 /* reserve space for the exception */");
-            b.statement("updateMaxStackHeight(handlerSp)");
+        private void emitFinallyHandlersAfterTry(CodeTreeBuilder b, OperationModel op) {
+            b.declaration(type(int.class), "handlerSp", "state.currentStackHeight + 1 /* reserve space for the exception */");
+            b.statement("state.updateMaxStackHeight(handlerSp)");
             b.declaration(type(int.class), "exHandlerIndex", UNINIT);
 
-            b.startIf().string("operationData.operationReachable").end().startBlock();
+            b.startIf().string(operationStack.read(op, operationFields.operationReachable)).end().startBlock();
             b.lineComment("register exception table entry");
-            b.statement("exHandlerIndex = doCreateExceptionHandler(operationData.tryStartBci, bci, HANDLER_CUSTOM, -operationData.handlerId, handlerSp)");
+            b.statement("exHandlerIndex = state.doCreateExceptionHandler(", operationStack.read(op, operationFields.tryStartBci), ", state.bci, HANDLER_CUSTOM, -",
+                            operationStack.read(op, operationFields.handlerId), ", handlerSp)");
             b.end();
 
             b.lineComment("emit handler for normal completion case");
-            b.statement("doEmitFinallyHandler(operationData, ", finallyHandlerSp, ")");
+            b.statement("doEmitFinallyHandler(operation, state.operationSp - 1)");
             b.lineComment("the operation was popped, so manually update reachability. try is reachable if neither it nor the finally handler exited early.");
-            b.statement("operationData.tryReachable = operationData.tryReachable && this.reachable");
 
-            b.startIf().string("this.reachable").end().startBlock();
-            b.statement("operationData.endBranchFixupBci = bci + " + model.branchInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset());
-            buildEmitInstruction(b, model.branchInstruction, new String[]{UNINIT});
+            b.tree(operationStack.write(op, operationFields.tryReachable, operationStack.read(op, operationFields.tryReachable) + " && state.reachable"));
+
+            b.startIf().string("state.reachable").end().startBlock();
+            buildEmitInstruction(b, "branchTargetBci", model.branchInstruction, new String[]{UNINIT});
+            b.tree(operationStack.write(op, operationFields.endBranchFixupBci, "branchTargetBci + " + model.branchInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset()));
             b.end();
 
-            b.startIf().string("operationData.operationReachable").end().startBlock();
+            b.startIf().string(operationStack.read(op, operationFields.operationReachable)).end().startBlock();
             b.lineComment("update exception table; force handler code to be reachable");
-            b.statement("this.reachable = true");
+            b.statement("state.reachable = true");
 
-            b.startStatement().startCall("patchHandlerTable");
-            b.string("operationData.extraTableEntriesStart");
-            b.string("operationData.extraTableEntriesEnd");
-            b.string("operationData.handlerId");
-            b.string("bci");
+            b.startStatement().startCall("state.patchHandlerTable");
+            b.string(operationStack.read(op, operationFields.extraTableEntriesStart));
+            b.string(operationStack.read(op, operationFields.extraTableEntriesEnd));
+            b.string(operationStack.read(op, operationFields.handlerId));
+            b.string("state.bci");
             b.string("handlerSp");
             b.end(2);
 
             b.startIf().string("exHandlerIndex != ", UNINIT).end().startBlock();
-            b.statement("handlerTable[exHandlerIndex + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = bci");
+            b.statement("state.handlerTable[exHandlerIndex + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = state.bci");
             b.end();
 
             b.end(); // if operationReachable
 
             if (op.kind != OperationKind.TRY_CATCH_OTHERWISE) {
                 b.lineComment("emit handler for exceptional case");
-                b.statement("currentStackHeight = handlerSp");
-                b.statement("doEmitFinallyHandler(operationData, " + finallyHandlerSp + ")");
-                buildEmitInstruction(b, model.throwInstruction);
+                b.statement("state.currentStackHeight = handlerSp");
+                b.statement("doEmitFinallyHandler(operation, state.operationSp - 1)");
+                buildEmitInstruction(b, null, model.throwInstruction);
             }
         }
 
         /**
          * Produces code to patch the regular finally handler's branch over the exceptional handler.
          */
-        private void emitFixFinallyBranchBci(CodeTreeBuilder b) {
+        private void emitFixFinallyBranchBci(CodeTreeBuilder b, OperationModel op) {
             // The regular handler branches over the exceptional handler. Patch its bci.
-            b.startIf().string("operationData.endBranchFixupBci != ", UNINIT).end().startBlock();
-            b.statement(writeInt("bc", "operationData.endBranchFixupBci", "bci"));
+            b.startIf().string(operationStack.read(op, operationFields.endBranchFixupBci), " != ", UNINIT).end().startBlock();
+            b.statement(writeInt("state.bc", operationStack.read(op, operationFields.endBranchFixupBci), "state.bci"));
             b.end();
         }
 
-        private void buildEmitOperationInstruction(CodeTreeBuilder b, OperationModel operation, List<String> constantOperandIndices) {
-            buildEmitOperationInstruction(b, operation, null, "operationSp", constantOperandIndices);
+        private void buildEmitOperationInstruction(CodeTreeBuilder b, OperationModel operation, List<String> constantOperandValues) {
+            buildEmitOperationInstruction(b, operation, null, constantOperandValues);
         }
 
-        private void buildEmitOperationInstruction(CodeTreeBuilder b, OperationModel operation, String customChildBci, String sp, List<String> constantOperandIndices) {
+        private void buildEmitOperationInstruction(CodeTreeBuilder b, OperationModel operation, String customChildBci, List<String> constantOperandValues) {
             String[] args = switch (operation.kind) {
                 case LOAD_LOCAL -> {
                     List<String> immediates = new ArrayList<>();
@@ -5444,66 +5619,65 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     yield immediates.toArray(String[]::new);
                 }
                 case STORE_LOCAL -> {
-                    emitCastCurrentOperationData(b, operation);
-                    String local = model.usesBoxingElimination() ? "operationData.local" : "operationData";
                     List<String> immediates = new ArrayList<>();
-                    immediates.add(local + ".frameIndex");
+                    immediates.add(operationStack.read(operation, operationFields.local) + ".frameIndex");
                     if (model.localAccessesNeedLocalIndex()) {
-                        immediates.add(local + ".localIndex");
+                        immediates.add(operationStack.read(operation, operationFields.local) + ".localIndex");
                     }
                     if (model.usesBoxingElimination()) {
-                        immediates.add("operationData.childBci");
+                        immediates.add(operationStack.read(operation, operationFields.childBci));
                     }
                     yield immediates.toArray(String[]::new);
                 }
                 case STORE_LOCAL_MATERIALIZED -> {
-                    emitCastCurrentOperationData(b, operation);
-                    String local = model.usesBoxingElimination() ? "operationData.local" : "operationData";
                     List<String> immediates = new ArrayList<>();
-                    immediates.add(local + ".frameIndex");
-                    immediates.add(local + ".rootIndex");
+                    immediates.add(operationStack.read(operation, operationFields.local) + ".frameIndex");
+                    immediates.add(operationStack.read(operation, operationFields.local) + ".rootIndex");
                     if (model.materializedLocalAccessesNeedLocalIndex()) {
-                        immediates.add(local + ".localIndex");
+                        immediates.add(operationStack.read(operation, operationFields.local) + ".localIndex");
                     }
                     if (model.usesBoxingElimination()) {
-                        immediates.add("operationData.childBci");
+                        immediates.add(operationStack.read(operation, operationFields.childBci));
                     }
                     yield immediates.toArray(String[]::new);
                 }
                 case LOAD_LOCAL_MATERIALIZED -> {
-                    emitCastCurrentOperationData(b, operation);
                     List<String> immediates = new ArrayList<>();
-                    immediates.add("operationData.frameIndex");
-                    immediates.add("operationData.rootIndex");
+                    immediates.add(operationStack.read(operation, operationFields.local) + ".frameIndex");
+                    immediates.add(operationStack.read(operation, operationFields.local) + ".rootIndex");
                     if (model.materializedLocalAccessesNeedLocalIndex()) {
-                        immediates.add("operationData.localIndex");
+                        immediates.add(operationStack.read(operation, operationFields.local) + ".localIndex");
                     }
                     yield immediates.toArray(String[]::new);
                 }
                 case RETURN, LOAD_NULL -> new String[]{};
                 case LOAD_ARGUMENT -> new String[]{safeCastShort(operation.getOperationBeginArgumentName(0))};
-                case LOAD_CONSTANT -> new String[]{"constantPool.addConstant(" + operation.getOperationBeginArgumentName(0) + ")"};
+                case LOAD_CONSTANT -> new String[]{"state.addConstant(" + operation.getOperationBeginArgumentName(0) + ")"};
                 case YIELD -> {
-                    b.declaration(type(short.class), "constantPoolIndex", "allocateContinuationConstant()");
-
-                    b.declaration(type(int.class), "continuationBci");
-                    b.startIf().string("reachable").end().startBlock();
-                    b.statement("continuationBci = bci + " + operation.instruction.getInstructionLength());
-                    b.end().startElseBlock();
-                    b.statement("continuationBci = -1");
-                    b.end();
-
-                    b.startStatement().startCall("continuationLocations.add");
-                    b.startNew(continuationLocation.asType()).string("constantPoolIndex").string("continuationBci").string("currentStackHeight").end();
-                    b.end(2); // statement + call
-                    b.end();
+                    b.declaration(type(short.class), "constantPoolIndex", "state.allocateContinuationConstant()");
                     yield new String[]{"constantPoolIndex"};
                 }
-                case CUSTOM, CUSTOM_INSTRUMENTATION -> buildCustomInitializer(b, operation, operation.instruction, customChildBci, sp, constantOperandIndices);
+                case CUSTOM, CUSTOM_YIELD, CUSTOM_INSTRUMENTATION -> buildCustomInitializer(b, operation, operation.instruction, customChildBci, constantOperandValues);
                 case CUSTOM_SHORT_CIRCUIT -> throw new AssertionError("Tried to emit a short circuit instruction directly. These operations should only be emitted implicitly.");
                 default -> throw new AssertionError("Reached an operation " + operation.name + " that cannot be initialized. This is a bug in the Bytecode DSL processor.");
             };
-            buildEmitInstruction(b, operation.instruction, args);
+
+            switch (operation.kind) {
+                case CUSTOM_YIELD:
+                case YIELD:
+                    buildEmitInstruction(b, "continuationBci", operation.instruction, args);
+                    b.startStatement().startCall("state.doEmitContinuation");
+                    b.string("constantPoolIndex").string("continuationBci != -1 ? continuationBci + " + operation.instruction.getInstructionLength() + " : -1");
+                    b.string("state.currentStackHeight");
+                    b.end();
+                    b.end(2); // statement + call
+                    b.end();
+                    break;
+                default:
+                    buildEmitInstruction(b, null, operation.instruction, args);
+                    break;
+            }
+
         }
 
         private void buildEmitLabel(CodeTreeBuilder b, OperationModel operation) {
@@ -5513,20 +5687,22 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startThrow().startCall("failState").doubleQuote("BytecodeLabel already emitted. Each label must be emitted exactly once.").end().end();
             b.end();
 
-            b.startIf().string("labelImpl.declaringOp != operationStack[operationSp - 1].sequenceNumber").end().startBlock();
+            b.startIf().string("labelImpl.declaringOp != state.peekOperation().sequenceNumber").end().startBlock();
             b.startThrow().startCall("failState").doubleQuote("BytecodeLabel must be emitted inside the same operation it was created in.").end().end();
             b.end();
 
-            b.startIf().string("operationStack[operationSp - 1].data instanceof " + getDataClassName(model.blockOperation) + " blockData").end().startBlock();
-            b.startAssert().string("this.currentStackHeight == blockData.startStackHeight").end();
+            b.declaration(operationStack.asType(), "operation", "state.peekOperation()");
+
+            b.startIf().string("operation.operation == ").tree(createOperationConstant(model.blockOperation)).end().startBlock();
+            b.startAssert().string("state.currentStackHeight == ", operationStack.read(model.blockOperation, "operation", operationFields.startStackHeight)).end();
             b.end().startElseBlock();
-            b.startAssert().string("operationStack[operationSp - 1].data instanceof " + getDataClassName(model.rootOperation)).end();
-            b.startAssert().string("this.currentStackHeight == 0").end();
+            b.startAssert().string("operation.operation == ").tree(createOperationConstant(model.rootOperation)).end();
+            b.startAssert().string("state.currentStackHeight == 0").end();
             b.end();
 
-            b.startStatement().startCall("resolveUnresolvedLabel");
+            b.startStatement().startCall("state.resolveUnresolvedLabel");
             b.string("labelImpl");
-            b.string("currentStackHeight");
+            b.string("state.currentStackHeight");
             b.end(2);
         }
 
@@ -5535,7 +5711,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             b.declaration(type(int.class), "declaringOperationSp", UNINIT);
             buildOperationStackWalk(b, () -> {
-                b.startIf().string("operationStack[i].sequenceNumber == labelImpl.declaringOp").end().startBlock();
+                b.startIf().string("operation.sequenceNumber == labelImpl.declaringOp").end().startBlock();
                 b.statement("declaringOperationSp = i");
                 b.statement("break");
                 b.end();
@@ -5555,10 +5731,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             b.declaration(type(int.class), "targetStackHeight");
-            b.startIf().string("operationStack[declaringOperationSp].data instanceof " + getDataClassName(model.blockOperation) + " blockData").end().startBlock();
-            b.startAssign("targetStackHeight").string("blockData.startStackHeight").end();
+
+            b.declaration(operationStack.asType(), "operation", "state.operationStack[declaringOperationSp]");
+
+            b.startIf().string("operation.operation == ").tree(createOperationConstant(model.blockOperation)).end().startBlock();
+            b.startAssign("targetStackHeight").string(operationStack.read(model.blockOperation, "operation", operationFields.startStackHeight)).end();
             b.end().startElseBlock();
-            b.startAssert().string("operationStack[declaringOperationSp].data instanceof " + getDataClassName(model.rootOperation)).end();
+            b.startAssert().string("operation.operation == ").tree(createOperationConstant(model.rootOperation)).end();
             b.startAssign("targetStackHeight").string("0").end();
             b.end();
 
@@ -5568,48 +5747,45 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * If the label sp doesn't match the current sp, we need to pop before branching.
              */
             b.lineComment("Pop any extra values off the stack before branching.");
-            b.declaration(type(int.class), "stackHeightBeforeBranch", "currentStackHeight");
-            b.startWhile().string("targetStackHeight != currentStackHeight").end().startBlock();
-            buildEmitInstruction(b, model.popInstruction, emitPopArguments("-1"));
+            b.declaration(type(int.class), "stackHeightBeforeBranch", "state.currentStackHeight");
+            b.startWhile().string("targetStackHeight != state.currentStackHeight").end().startBlock();
+            buildEmitInstruction(b, null, model.popInstruction, emitPopArguments("-1"));
             b.end();
             b.lineComment("If the branch is not taken (e.g., control branches over it) the values are still on the stack.");
-            b.statement("currentStackHeight = stackHeightBeforeBranch");
+            b.statement("state.currentStackHeight = stackHeightBeforeBranch");
 
-            b.startIf().string("this.reachable").end().startBlock();
+            b.startIf().string("state.reachable").end().startBlock();
+
+            buildEmitInstruction(b, "branchTargetBci", model.branchInstruction, UNINIT);
             /**
              * Mark the branch target as uninitialized. Add this location to a work list to be
              * processed once the label is defined.
              */
-            b.startStatement().startCall("registerUnresolvedLabel");
+            b.startStatement().startCall("state.registerUnresolvedLabel");
             b.string("labelImpl");
-            b.string("bci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset());
+            b.string("branchTargetBci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset());
             b.end(2);
             b.end(); // if reachable
-
-            buildEmitInstruction(b, model.branchInstruction, UNINIT);
         }
 
         private void buildEmitLoadException(CodeTreeBuilder b, OperationModel operation) {
-            b.declaration(type(short.class), "exceptionStackHeight", UNINIT);
+            b.declaration(type(int.class), "exceptionStackHeight", UNINIT);
             b.string("loop: ");
             buildOperationStackWalk(b, () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
-
+                b.startSwitch().string("operation.operation").end().startBlock();
                 b.startCase().tree(createOperationConstant(model.tryCatchOperation)).end();
-                b.startBlock();
-                emitCastOperationData(b, model.tryCatchOperation, "i");
-                b.startIf().string("operationStack[i].childCount == 1").end().startBlock();
-                b.statement("exceptionStackHeight = operationData.stackHeight");
+                b.startCaseBlock();
+                b.startIf().string("operation.childCount == 1").end().startBlock();
+                b.statement("exceptionStackHeight = ", operationStack.read(model.tryCatchOperation, operationFields.stackHeight));
                 b.statement("break loop");
                 b.end();
                 b.statement("break");
                 b.end(); // case TryCatch
 
                 b.startCase().tree(createOperationConstant(model.tryCatchOtherwiseOperation)).end();
-                b.startBlock();
-                emitCastOperationData(b, model.tryCatchOtherwiseOperation, "i");
-                b.startIf().string("operationStack[i].childCount == 1").end().startBlock();
-                b.statement("exceptionStackHeight = operationData.stackHeight");
+                b.startCaseBlock();
+                b.startIf().string("operation.childCount == 1").end().startBlock();
+                b.statement("exceptionStackHeight = ", operationStack.read(model.tryCatchOtherwiseOperation, operationFields.stackHeight));
                 b.statement("break loop");
                 b.end();
                 b.statement("break");
@@ -5622,7 +5798,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startThrow().startCall("failState").doubleQuote("LoadException can only be used in the catch operation of a TryCatch/TryCatchOtherwise operation in the current root.").end().end();
             b.end();
 
-            buildEmitInstruction(b, operation.instruction, "exceptionStackHeight");
+            buildEmitInstruction(b, null, operation.instruction, "safeCastShort(exceptionStackHeight)");
         }
 
         private CodeExecutableElement createValidateRootOperationBegin() {
@@ -5630,7 +5806,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.startIf().string("rootOperationSp == -1").end().startBlock(); // {
+            b.startIf().string("state.rootOperationSp == -1").end().startBlock(); // {
             b.startThrow().startCall("failState");
             b.doubleQuote("Unexpected operation emit - no root operation present. Did you forget a beginRoot()?");
             b.end(2);
@@ -5640,14 +5816,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         private CodeExecutableElement createGetCurrentRootOperationData() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), dataClasses.get(model.rootOperation).asType(), "getCurrentRootOperationData");
-
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "getCurrentRootOperationData");
             CodeTreeBuilder b = ex.createBuilder();
             b.startStatement().startCall("validateRootOperationBegin").end(2);
-
-            emitCastOperationData(b, model.rootOperation, "rootOperationSp", "rootOperationData");
-            b.startReturn().string("rootOperationData").end();
-
+            b.statement("return state.operationStack[state.rootOperationSp]");
             return ex;
         }
 
@@ -5691,7 +5863,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            if (operation.constantOperands != null && operation.constantOperands.hasConstantOperands()) {
+            if (operation.hasConstantOperands()) {
                 int index = 0;
                 for (ConstantOperandModel operand : operation.constantOperands.before()) {
                     buildConstantOperandValidation(b, operand.type(), operation.getOperationBeginArgumentName(index++));
@@ -5702,7 +5874,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
             }
 
-            List<String> constantOperandIndices = emitConstantOperands(b, operation);
+            List<String> constantOperandValues = emitConstantOperands(b, operation);
 
             if (operation.kind == OperationKind.CUSTOM_INSTRUMENTATION) {
                 int mask = 1 << operation.instrumentationIndex;
@@ -5729,11 +5901,24 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 case LABEL -> buildEmitLabel(b, operation);
                 case BRANCH -> buildEmitBranch(b, operation);
                 case LOAD_EXCEPTION -> buildEmitLoadException(b, operation);
+                case CUSTOM_YIELD -> {
+                    if (operation.instruction.signature.dynamicOperandCount != 0) {
+                        throw new AssertionError("expected custom yield to have 0 dynamic operands: " + operation.instruction);
+                    }
+
+                    if (model.enableTagInstrumentation) {
+                        b.statement("doEmitTagYieldNull()");
+                    }
+                    buildEmitOperationInstruction(b, operation, constantOperandValues);
+                    if (model.enableTagInstrumentation) {
+                        b.statement("doEmitTagResume()");
+                    }
+                }
                 default -> {
                     if (operation.instruction == null) {
                         throw new AssertionError("operation did not have instruction");
                     }
-                    buildEmitOperationInstruction(b, operation, constantOperandIndices);
+                    buildEmitOperationInstruction(b, operation, constantOperandValues);
                 }
             }
 
@@ -5747,7 +5932,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     break;
             }
 
-            emitCallAfterChild(b, operation, String.valueOf(!operation.isVoid), operation.instruction != null ? "bci - " + operation.instruction.getInstructionLength() : "-1");
+            emitCallAfterChild(b, operation, String.valueOf(!operation.isVoid), operation.instruction != null ? "state.bci - " + operation.instruction.getInstructionLength() : "-1");
 
             if (operation.isCustom() && !operation.customModel.implicitTags.isEmpty()) {
                 VariableElement tagConstants = lookupTagConstant(operation.customModel.implicitTags);
@@ -5793,22 +5978,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 return List.of();
             }
 
-            int numConstantOperands = operation.numConstantOperandsBefore();
-            if (numConstantOperands == 0) {
+            List<ConstantOperandModel> constantOperandsBefore = operation.constantOperands.before();
+            if (constantOperandsBefore.isEmpty()) {
                 return List.of();
             }
 
-            List<String> result = new ArrayList<>(numConstantOperands);
-            for (int i = 0; i < numConstantOperands; i++) {
-                /**
-                 * Eagerly allocate space for the constants. Even if the node is not emitted (e.g.,
-                 * it's a disabled instrumentation), we need the constant pool to be stable.
-                 */
-                String constantPoolIndex = operation.getConstantOperandBeforeName(i) + "Index";
-                b.startDeclaration(type(int.class), constantPoolIndex);
-                buildAddArgumentConstant(b, operation.operationBeginArguments[i]);
-                b.end();
-                result.add(constantPoolIndex);
+            List<String> result = new ArrayList<>(constantOperandsBefore.size());
+            for (int i = 0; i < constantOperandsBefore.size(); i++) {
+                result.add(emitConstantOperand(b, operation.operationBeginArguments[i], operation.getConstantOperandBeforeName(i)));
             }
             return result;
         }
@@ -5827,27 +6004,24 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (instruction == null) {
                 return List.of();
             }
-            int numConstantOperandsBefore = operation.numConstantOperandsBefore();
-            int numConstantOperandsAfter = operation.numConstantOperandsAfter();
-            int numConstantOperands = numConstantOperandsBefore + numConstantOperandsAfter;
-            if (numConstantOperands == 0) {
+            List<ConstantOperandModel> before = operation.constantOperands.before();
+            List<ConstantOperandModel> after = operation.constantOperands.after();
+            if (before.isEmpty() && after.isEmpty()) {
                 return List.of();
             }
 
             boolean inEmit = !operation.hasChildren();
-            List<String> result = new ArrayList<>(numConstantOperands);
-            for (int i = 0; i < numConstantOperandsBefore; i++) {
-                if (inEmit) {
-                    String variable = operation.getConstantOperandBeforeName(i) + "Index";
-                    b.startDeclaration(type(int.class), variable);
-                    buildAddArgumentConstant(b, operation.operationBeginArguments[i]);
-                    b.end();
-                    result.add(variable);
-                } else {
-                    result.add("operationData.constants[" + i + "]");
+            List<String> result = new ArrayList<>(before.size() + after.size());
+            if (inEmit) {
+                for (int i = 0; i < before.size(); i++) {
+                    result.add(emitConstantOperand(b, operation.operationBeginArguments[i], operation.getConstantOperandBeforeName(i)));
+                }
+            } else {
+                for (var field : operationFields.getConstants(before, false)) {
+                    result.add(operationStack.read(operation, field));
                 }
             }
-            for (int i = 0; i < numConstantOperandsAfter; i++) {
+            for (int i = 0; i < after.size(); i++) {
                 if (model.prolog != null && operation == model.prolog.operation) {
                     /**
                      * Special case: when emitting the prolog in beginRoot, end constants are not
@@ -5855,18 +6029,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                      */
                     result.add(UNINIT);
                 } else {
-                    String variable = operation.getConstantOperandAfterName(i) + "Index";
-                    b.startDeclaration(type(int.class), variable);
-                    buildAddArgumentConstant(b, operation.operationEndArguments[i]);
-                    b.end();
-                    result.add(variable);
+                    result.add(emitConstantOperand(b, operation.operationEndArguments[i], operation.getConstantOperandAfterName(i)));
                 }
 
             }
             return result;
         }
 
-        private String[] buildCustomInitializer(CodeTreeBuilder b, OperationModel operation, InstructionModel instruction, String customChildBci, String sp, List<String> constantOperandIndices) {
+        private String[] buildCustomInitializer(CodeTreeBuilder b, OperationModel operation, InstructionModel instruction, String customChildBci, List<String> constantOperandValues) {
             if (operation.kind == OperationKind.CUSTOM_SHORT_CIRCUIT) {
                 throw new AssertionError("short circuit operations should not be emitted directly.");
             }
@@ -5875,22 +6045,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 throw new AssertionError("customChildBci can only be used with a single child.");
             }
 
-            boolean inEmit = !operation.hasChildren();
-
-            if (!inEmit && !operation.isTransparent()) {
-                // make "operationData" available for endX methods.
-                if (sp.equals("operationSp")) {
-                    emitCastCurrentOperationData(b, operation);
-                } else {
-                    emitCastOperationData(b, operation, sp);
-                }
-            }
-
             if (operation.isVariadic) {
                 b.declaration(type(int.class), "variadicCount", "operation.childCount - " + (operation.instruction.signature.dynamicOperandCount - 1));
 
-                b.startIf().string("operationData.variadicCountPatchIndex != -1").end().startBlock();
-                b.statement(writeInt("bc", "operationData.variadicCountPatchIndex", "variadicCount"));
+                b.startIf().string(operationStack.read(operation, operationFields.variadicCountPatchIndex), " != -1").end().startBlock();
+                b.statement(writeInt("state.bc", operationStack.read(operation, operationFields.variadicCountPatchIndex), "variadicCount"));
                 b.end();
 
                 b.startStatement().startCall("doEmitVariadicEnd");
@@ -5899,12 +6058,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
                 b.string("variadicCount");
                 if (model.hasVariadicReturn) {
-                    b.string("operationData.variadicReturnIndices");
+                    b.string(operationStack.read(operation, operationFields.variadicReturnIndices));
+                    b.string(operationStack.read(operation, operationFields.numVariadicReturnIndices));
                 }
                 b.end().end();
             }
 
-            List<InstructionImmediate> immediates = instruction.getImmediates();
+            List<InstructionImmediate> immediates = instruction.getExplicitImmediates();
             String[] args = new String[immediates.size()];
 
             int childBciIndex = 0;
@@ -5921,182 +6081,143 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                                     throw new AssertionError("Unexpected transparent child.");
                                 }
                                 childBciIndex++;
-                                yield "operationData.childBci";
+                                yield operationStack.read(operation, operationFields.childBci);
                             } else {
                                 String childBci = "childBci" + childBciIndex;
-                                b.declaration(type(int.class), childBci, "operationData.childBcis[" + childBciIndex + "]");
+                                b.declaration(type(int.class), childBci, operationStack.read(operation, operationFields.getChildBci(childBciIndex, false)));
                                 childBciIndex++;
                                 yield childBci;
                             }
                         }
                     }
-                    case CONSTANT -> constantOperandIndices.get(constantIndex++);
-                    case NODE_PROFILE -> "allocateNode()";
+                    case CONSTANT -> {
+                        if (constantIndex < constantOperandValues.size()) {
+                            yield constantOperandValues.get(constantIndex++);
+                        } else if (operation.kind == OperationKind.CUSTOM_YIELD) {
+                            // The continuation root is the last constant, after constant operands.
+                            b.declaration(type(short.class), "constantPoolIndex", "state.allocateContinuationConstant()");
+                            yield "constantPoolIndex";
+                        } else {
+                            throw new AssertionError("Operation has more constant immediates than constant operands: " + operation);
+                        }
+                    }
+                    case CONSTANT_LONG, CONSTANT_DOUBLE, CONSTANT_INT, CONSTANT_FLOAT, CONSTANT_SHORT, CONSTANT_CHAR, CONSTANT_BOOL, CONSTANT_BYTE -> constantOperandValues.get(constantIndex++);
+                    case NODE_PROFILE -> "state.allocateNode()";
                     case TAG_NODE -> "node";
-                    case FRAME_INDEX, LOCAL_INDEX, LOCAL_ROOT, SHORT, INTEGER, BRANCH_PROFILE, STACK_POINTER -> throw new AssertionError(
-                                    "Operation " + operation.name + " takes an immediate " + immediate.name() + " with unexpected kind " + immediate.kind() +
-                                                    ". This is a bug in the Bytecode DSL processor.");
+                    case FRAME_INDEX, LOCAL_INDEX, SHORT, STATE_PROFILE, LOCAL_ROOT, INTEGER, BRANCH_PROFILE, STACK_POINTER -> throw new AssertionError("Operation " + operation.name +
+                                    " takes an immediate " + immediate.name() + " with unexpected kind " + immediate.kind() + ". This is a bug in the Bytecode DSL processor.");
+
                 };
             }
 
             return args;
         }
 
-        private void buildAddArgumentConstant(CodeTreeBuilder b, OperationArgument argument) {
-            b.startCall("constantPool.addConstant");
-            if (ElementUtils.typeEquals(argument.builderType(), argument.constantType())) {
-                b.string(argument.name());
-            } else {
-                b.startStaticCall(argument.constantType(), "constantOf");
-                if (ElementUtils.typeEquals(argument.constantType(), types.MaterializedLocalAccessor)) {
-                    // Materialized accessors also need the root index.
-                    b.startGroup();
-                    b.startParantheses().cast(bytecodeLocalImpl.asType()).string(argument.name()).end();
-                    b.string(".rootIndex");
+        private String emitConstantOperand(CodeTreeBuilder b, OperationArgument argument, String constantOperandName) {
+            ConstantOperandModel constantOperand = argument.constantOperand().orElseThrow(() -> new AssertionError("Operation argument " + argument + " did not have a constant operand."));
+            if (constantOperand.kind() == ImmediateKind.CONSTANT) {
+                /**
+                 * Eagerly allocate space for the constants. Even if the node is not emitted (e.g.,
+                 * it's a disabled instrumentation), we need the constant pool to be stable.
+                 */
+                String constantPoolIndex = constantOperandName + "Index";
+                b.startDeclaration(type(int.class), constantPoolIndex);
+                b.startCall("state.addConstant");
+                if (ElementUtils.typeEquals(argument.builderType(), constantOperand.type())) {
+                    b.string(argument.name());
+                } else {
+                    b.startStaticCall(constantOperand.type(), "constantOf");
+                    if (ElementUtils.typeEquals(constantOperand.type(), types.MaterializedLocalAccessor)) {
+                        // Materialized accessors also need the root index.
+                        b.startGroup();
+                        b.startParantheses().cast(bytecodeLocalImpl.asType()).string(argument.name()).end();
+                        b.string(".rootIndex");
+                        b.end();
+                    }
+                    b.string(argument.name());
                     b.end();
                 }
-                b.string(argument.name());
                 b.end();
+                b.end();
+                return constantPoolIndex;
+            } else {
+                return encodeInlinedConstant(constantOperand.kind(), argument.name());
             }
-            b.end();
         }
 
         private CodeExecutableElement createBeforeChild() {
-            enum BeforeChildKind {
-                TRANSPARENT,
-                SHORT_CIRCUIT,
-                UPDATE_REACHABLE,
-                EXCEPTION_HANDLER,
-                CUSTOM_VARIADIC,
-                DEFAULT,
-            }
-
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "beforeChild");
-            CodeTreeBuilder b = ex.createBuilder();
+            CodeTreeBuilder p = ex.createBuilder();
 
-            b.startIf().string("operationSp == 0").end().startBlock();
-            b.statement("return");
-            b.end();
-
-            b.statement("int childIndex = operationStack[operationSp - 1].childCount");
-            b.startSwitch().string("operationStack[operationSp - 1].operation").end().startBlock();
-
-            Map<BeforeChildKind, List<OperationModel>> groupedOperations = model.getOperations().stream().filter(OperationModel::hasChildren).collect(deterministicGroupingBy(op -> {
+            Map<EqualityCodeTree, List<OperationModel>> caseGrouping = EqualityCodeTree.group(p, model.getOperationsWithChildren(), (OperationModel op, CodeTreeBuilder b) -> {
                 if (op.isTransparent && (op.isVariadic || op.numDynamicOperands() > 1)) {
-                    return BeforeChildKind.TRANSPARENT;
-                } else if (op.kind == OperationKind.CUSTOM_SHORT_CIRCUIT) {
-                    return BeforeChildKind.SHORT_CIRCUIT;
-                } else if (op.kind == OperationKind.IF_THEN_ELSE ||
-                                op.kind == OperationKind.IF_THEN ||
-                                op.kind == OperationKind.CONDITIONAL ||
-                                op.kind == OperationKind.TRY_FINALLY) {
-                    return BeforeChildKind.UPDATE_REACHABLE;
-                } else if (op.kind == OperationKind.TRY_CATCH ||
-                                op.kind == OperationKind.TRY_CATCH_OTHERWISE) {
-                    return BeforeChildKind.EXCEPTION_HANDLER;
-                } else if (op.kind == OperationKind.CUSTOM && op.isVariadic) {
-                    return BeforeChildKind.CUSTOM_VARIADIC;
-                } else {
-                    return BeforeChildKind.DEFAULT;
-                }
-            }));
+                    b.startIf().string(operationStack.read(op, operationFields.producedValue)).end().startBlock();
 
-            // Pop any value produced by a transparent operation's child.
-            if (groupedOperations.containsKey(BeforeChildKind.TRANSPARENT)) {
-                List<OperationModel> models = groupedOperations.get(BeforeChildKind.TRANSPARENT);
-                for (List<OperationModel> grouped : groupByDataClass(models)) {
-                    for (OperationModel op : grouped) {
-                        b.startCase().tree(createOperationConstant(op)).end();
+                    String childBci = "-1";
+                    if (model.usesBoxingElimination()) {
+                        childBci = operationStack.read(op, operationFields.childBci);
                     }
-                    b.startBlock();
-                    emitCastOperationData(b, grouped.get(0), "operationSp - 1");
-                    b.startIf().string("operationData.producedValue").end().startBlock();
-                    buildEmitInstruction(b, model.popInstruction, emitPopArguments("operationData.childBci"));
+
+                    buildEmitInstruction(b, null, model.popInstruction, emitPopArguments(childBci));
                     b.end();
                     b.statement("break");
-                    b.end();
-                }
-            }
-
-            // Perform check after each child of a short-circuit operation.
-            if (groupedOperations.containsKey(BeforeChildKind.SHORT_CIRCUIT)) {
-                for (OperationModel op : groupedOperations.get(BeforeChildKind.SHORT_CIRCUIT)) {
-                    b.startCase().tree(createOperationConstant(op)).end().startBlock();
-
+                } else if (op.kind == OperationKind.CUSTOM_SHORT_CIRCUIT) {
                     ShortCircuitInstructionModel shortCircuitModel = op.instruction.shortCircuitModel;
 
-                    emitCastOperationData(b, op, "operationSp - 1");
                     // Only emit the boolean check between consecutive children.
                     b.startIf().string("childIndex != 0").end().startBlock();
 
                     // If this operation has a converter, convert the value.
                     if (shortCircuitModel.convertsOperands()) {
                         if (shortCircuitModel.duplicatesOperandOnStack()) {
-                            buildEmitInstruction(b, model.dupInstruction);
+                            buildEmitInstruction(b, null, model.dupInstruction);
                         }
                         buildEmitBooleanConverterInstruction(b, op.instruction);
                     }
 
-                    // Remember the short circuit instruction's bci so we can patch the branch bci.
-                    b.startIf().string("this.reachable").end().startBlock();
-                    b.statement("operationData.branchFixupBcis.add(bci + " + op.instruction.getImmediate("branch_target").offset() + ")");
-                    b.end();
-
-                    b.statement("operationData.shortCircuitBci = bci");
+                    if (model.usesBoxingElimination()) {
+                        b.tree(operationStack.write(op, operationFields.shortCircuitBci, "state.bci"));
+                    }
 
                     // Emit the boolean check.
-                    buildEmitInstruction(b, op.instruction, emitShortCircuitArguments(op.instruction));
+                    buildEmitInstruction(b, "shortCircuitBci", op.instruction, emitShortCircuitArguments(op.instruction));
+
+                    // Remember the short circuit instruction's bci so we can patch the branch bci.
+                    b.startIf().string("shortCircuitBci != -1").end().startBlock();
+
+                    b.declaration(type(int[].class), "branchFixupBcis", operationStack.read(op, operationFields.branchFixupBcis));
+                    b.declaration(type(int.class), "numBranchFixupBcis", operationStack.read(op, operationFields.numBranchFixupBcis));
+                    b.startIf().string("numBranchFixupBcis >= branchFixupBcis.length").end().startBlock();
+                    b.startAssign("branchFixupBcis").startStaticCall(type(Arrays.class), "copyOf").string("branchFixupBcis").string("branchFixupBcis.length * 2").end().end();
+                    b.tree(operationStack.write(op, operationFields.branchFixupBcis, "branchFixupBcis"));
+                    b.end();
+                    b.statement("branchFixupBcis[numBranchFixupBcis] = shortCircuitBci + " + op.instruction.getImmediate("branch_target").offset());
+                    b.tree(operationStack.write(op, operationFields.numBranchFixupBcis, "numBranchFixupBcis + 1"));
+
+                    b.end(); // reachable
 
                     b.end(); // childIndex != 0
 
                     b.statement("break");
+                } else if (op.kind == OperationKind.IF_THEN_ELSE ||
+                                op.kind == OperationKind.IF_THEN ||
+                                op.kind == OperationKind.CONDITIONAL ||
+                                op.kind == OperationKind.TRY_FINALLY) {
+
+                    b.startIf().string("childIndex >= 1").end().startBlock();
+                    b.statement("updateReachable()");
                     b.end();
-                }
-            }
-
-            // Update reachability for control-flow operations.
-            if (groupedOperations.containsKey(BeforeChildKind.UPDATE_REACHABLE)) {
-                for (OperationModel op : groupedOperations.get(BeforeChildKind.UPDATE_REACHABLE)) {
-                    b.startCase().tree(createOperationConstant(op)).end();
-                }
-                b.startCaseBlock();
-
-                b.startIf().string("childIndex >= 1").end().startBlock();
-                b.statement("updateReachable()");
-                b.end();
-
-                b.statement("break");
-                b.end();
-            }
-
-            List<OperationModel> exceptionHandlerOperations = groupedOperations.get(BeforeChildKind.EXCEPTION_HANDLER);
-            if (exceptionHandlerOperations == null || exceptionHandlerOperations.size() != 2) {
-                throw new AssertionError("Expected exactly 2 exception handler operations, but a different number was found.");
-            }
-            for (OperationModel op : exceptionHandlerOperations) {
-                b.startCase().tree(createOperationConstant(op)).end();
-
-                b.startBlock();
-                emitCastOperationData(b, op, "operationSp - 1");
-                b.startIf().string("childIndex == 1").end().startBlock();
-                b.statement("updateReachable()");
-                b.lineComment("The exception dispatch logic pushes the exception onto the stack.");
-                b.statement("currentStackHeight = currentStackHeight + 1");
-                b.statement("updateMaxStackHeight(currentStackHeight)");
-
-                b.end(); // if
-
-                b.statement("break");
-                b.end();
-            }
-
-            if (groupedOperations.containsKey(BeforeChildKind.CUSTOM_VARIADIC)) {
-                for (OperationModel op : groupedOperations.get(BeforeChildKind.CUSTOM_VARIADIC)) {
-                    b.startCase().tree(createOperationConstant(op)).end();
-                    b.startBlock();
-
-                    emitCastOperationData(b, op, "operationSp - 1");
-
+                    b.statement("break");
+                } else if (op.kind == OperationKind.TRY_CATCH ||
+                                op.kind == OperationKind.TRY_CATCH_OTHERWISE) {
+                    b.startIf().string("childIndex == 1").end().startBlock();
+                    b.statement("updateReachable()");
+                    b.lineComment("The exception dispatch logic pushes the exception onto the stack.");
+                    b.statement("state.currentStackHeight = state.currentStackHeight + 1");
+                    b.statement("state.updateMaxStackHeight(state.currentStackHeight)");
+                    b.end(); // if
+                    b.statement("break");
+                } else if (op.kind == OperationKind.CUSTOM && op.isVariadic) {
                     // Before emitting a variadic instruction, we need to emit instructions
                     // to merge all
                     // of the operands on the stack into one array.
@@ -6109,7 +6230,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.string("childIndex");
                         b.end().end();
                         b.startIf().string("patchIndex != -1").end().startBlock();
-                        b.statement("operationData.variadicCountPatchIndex = patchIndex");
+
+                        b.tree(operationStack.write(op, operationFields.variadicCountPatchIndex, "patchIndex"));
                         b.end();
                     } else {
                         b.startIf().string("childIndex >= " + (op.instruction.signature.dynamicOperandCount - 1)).end().startBlock();
@@ -6120,51 +6242,55 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.string("childIndex - " + (op.instruction.signature.dynamicOperandCount - 1));
                         b.end().end();
                         b.startIf().string("patchIndex != -1").end().startBlock();
-                        b.statement("operationData.variadicCountPatchIndex = patchIndex");
+                        b.tree(operationStack.write(op, operationFields.variadicCountPatchIndex, "patchIndex"));
                         b.end();
                         b.end();
                     }
 
                     b.statement("break");
-                    b.end();
+                } else {
+                    b.statement("break");
                 }
-            }
 
-            // Do nothing for every other operation.
-            if (groupedOperations.containsKey(BeforeChildKind.DEFAULT)) {
-                for (OperationModel op : groupedOperations.get(BeforeChildKind.DEFAULT)) {
+            });
+            CodeTreeBuilder b = p;
+            b.startIf().string("state.operationSp == 0").end().startBlock();
+            b.statement("return");
+            b.end();
+
+            b.declaration(operationStack.asType(), "operation", "state.peekOperation()");
+            b.statement("int childIndex = operation.childCount");
+
+            b.startSwitch().string("operation.operation").end().startBlock();
+            for (var group : caseGrouping.entrySet()) {
+                EqualityCodeTree key = group.getKey();
+                for (OperationModel op : group.getValue()) {
                     b.startCase().tree(createOperationConstant(op)).end();
                 }
-                b.startCaseBlock();
-                b.statement("break");
+                b.startBlock();
+                b.tree(key.getTree());
                 b.end();
             }
-
             b.caseDefault();
             b.startCaseBlock();
             emitThrowAssertionError(b, "\"beforeChild should not be called on an operation with no children.\"");
             b.end();
-
             b.end(); // switch
 
             return ex;
         }
 
-        private Collection<List<OperationModel>> groupByDataClass(List<OperationModel> models) {
-            return models.stream().collect(deterministicGroupingBy((m) -> getDataClassName(m))).values();
-        }
-
         private void buildEmitBooleanConverterInstruction(CodeTreeBuilder b, InstructionModel shortCircuitInstruction) {
             InstructionModel booleanConverter = shortCircuitInstruction.shortCircuitModel.booleanConverterInstruction();
 
-            List<InstructionImmediate> immediates = booleanConverter.getImmediates();
+            List<InstructionImmediate> immediates = booleanConverter.getExplicitImmediates();
             String[] args = new String[immediates.size()];
             for (int i = 0; i < args.length; i++) {
                 InstructionImmediate immediate = immediates.get(i);
                 args[i] = switch (immediate.kind()) {
                     case BYTECODE_INDEX -> {
                         if (shortCircuitInstruction.shortCircuitModel.producesBoolean()) {
-                            b.statement("int childBci = operationData.childBci");
+                            b.statement("int childBci = ", operationStack.read(shortCircuitInstruction.operation, operationFields.childBci));
                             b.startAssert();
                             b.string("childBci != " + UNINIT);
                             b.end();
@@ -6174,57 +6300,35 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         }
                         yield "childBci";
                     }
-                    case NODE_PROFILE -> "allocateNode()";
+                    case NODE_PROFILE -> "state.allocateNode()";
                     default -> throw new AssertionError(String.format("Boolean converter instruction had unexpected encoding: %s", immediates));
                 };
             }
-            buildEmitInstruction(b, booleanConverter, args);
+            buildEmitInstruction(b, null, booleanConverter, args);
         }
 
         private CodeExecutableElement createAfterChild() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "afterChild");
-            ex.addParameter(new CodeVariableElement(type(int.class), "operation"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "operationCode"));
             ex.addParameter(new CodeVariableElement(type(boolean.class), "producedValue"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "childBci"));
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startIf().string("operationSp == 0").end().startBlock();
-            b.statement("return");
-            b.end();
-
-            b.declaration(operationStackEntry.asType(), "parentOperationStack", "operationStack[operationSp - 1]");
-            b.statement("int childIndex = parentOperationStack.childCount");
-
-            b.startSwitch().string("parentOperationStack.operation").end().startBlock();
-
-            Map<Boolean, List<OperationModel>> operationsByTransparency = model.getOperations().stream() //
-                            .filter(OperationModel::hasChildren).collect(Collectors.partitioningBy(OperationModel::isTransparent));
-
-            for (List<OperationModel> operations : groupByDataClass(operationsByTransparency.get(true))) {
-                // First, do transparent operations (grouped).
-                for (OperationModel op : operations) {
-                    b.startCase().tree(createOperationConstant(op)).end();
-                }
-                b.startBlock();
-
-                emitCastOperationData(b, operations.get(0), "operationSp - 1");
-                b.statement("operationData.producedValue = producedValue");
-                b.statement("operationData.childBci = childBci");
-                b.statement("break");
-                b.end();
+            if (model.usesBoxingElimination()) {
+                ex.addParameter(new CodeVariableElement(type(int.class), "childBci"));
             }
+            CodeTreeBuilder p = ex.createBuilder();
 
-            // Then, do non-transparent operations (separately).
-            for (OperationModel op : operationsByTransparency.get(false)) {
-                b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                /**
-                 * Ensure the stack balances. If a value was expected, assert that the child
-                 * produced a value. If a value was not expected but the child produced one, pop it.
-                 */
+            Map<EqualityCodeTree, List<OperationModel>> caseGrouping = EqualityCodeTree.group(p, model.getOperationsWithChildren(), (OperationModel op, CodeTreeBuilder b) -> {
+                if (op.isTransparent()) {
+                    b.tree(operationStack.write(op, operationFields.producedValue, "producedValue"));
+                    if (model.usesBoxingElimination()) {
+                        b.tree(operationStack.write(op, operationFields.childBci, "childBci"));
+                    }
+                    b.statement("break");
+                    return;
+                }
+
                 if (op.requiresStackBalancing()) {
                     List<Integer> valueChildren = new ArrayList<>();
                     List<Integer> nonValueChildren = new ArrayList<>();
-
                     for (int i = 0; i < op.dynamicOperands.length; i++) {
                         if (!op.dynamicOperands[i].voidAllowed()) {
                             valueChildren.add(i);
@@ -6232,19 +6336,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             nonValueChildren.add(i);
                         }
                     }
-
                     if (nonValueChildren.isEmpty()) {
                         // Simplification: each child should be value producing.
                         b.startIf().string("!producedValue").end().startBlock();
                         b.startThrow().startCall("failState");
-                        b.string("\"Operation " + op.name + " expected a value-producing child at position \"",
-                                        " + childIndex + ",
-                                        "\", but a void one was provided.\"");
-                        b.end(3);
+                        b.doubleQuote("Operation %s expected a value-producing child at position %s, but a void one was provided.");
+                        b.startStaticCall(operationsElement.asType(), "getName").string("operation.operation").end();
+                        b.string("childIndex");
+                        b.end().end(); // throw, call
+                        b.end(); // if
                     } else if (valueChildren.isEmpty()) {
                         // Simplification: each child should not be value producing.
                         b.startIf().string("producedValue").end().startBlock();
-                        buildEmitInstruction(b, model.popInstruction, emitPopArguments("childBci"));
+                        buildEmitInstruction(b, null, model.popInstruction, emitPopArguments("childBci"));
                         b.end();
                     } else {
                         // Otherwise, partition by value/not value producing.
@@ -6259,11 +6363,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         }
                         b.string(") && !producedValue");
                         b.end().startBlock();
+
                         b.startThrow().startCall("failState");
-                        b.string("\"Operation " + op.name + " expected a value-producing child at position \"",
-                                        " + childIndex + ",
-                                        "\", but a void one was provided.\"");
-                        b.end(3);
+                        b.doubleQuote("Operation %s expected a value-producing child at position %s, but a void one was provided.");
+                        b.startStaticCall(operationsElement.asType(), "getName").string("operation.operation").end();
+                        b.string("childIndex");
+                        b.end().end(); // throw, call
+                        b.end(); // block
 
                         b.startElseIf();
                         b.string("(");
@@ -6271,112 +6377,118 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             if (i != 0) {
                                 b.string(" || ");
                             }
-                            String operator = (op.isVariadic && nonValueChildren.get(i) == op.dynamicOperands.length - 1) ? ">=" : "==";
+                            String operator;
+                            if (op.isVariadic && nonValueChildren.get(i) == op.dynamicOperands.length - 1) {
+                                operator = ">=";
+                            } else {
+                                operator = "==";
+                            }
                             b.string("childIndex " + operator + " " + nonValueChildren.get(i));
                         }
                         b.string(") && producedValue");
                         b.end().startBlock();
-                        buildEmitInstruction(b, model.popInstruction, emitPopArguments("childBci"));
+                        buildEmitInstruction(b, null, model.popInstruction, emitPopArguments("childBci"));
                         b.end();
                     }
                 }
 
                 switch (op.kind) {
-                    case ROOT:
-                        break;
                     case TAG:
-                        emitCastOperationData(b, op, "operationSp - 1");
-                        b.statement("operationData.producedValue = producedValue");
-                        b.statement("operationData.childBci = childBci");
+                        b.tree(operationStack.write(op, operationFields.producedValue, "producedValue"));
+                        if (model.usesBoxingElimination()) {
+                            b.tree(operationStack.write(op, operationFields.childBci, "childBci"));
+                        }
                         break;
                     case RETURN:
-                        emitCastOperationData(b, op, "operationSp - 1");
-                        b.statement("operationData.producedValue = producedValue");
-                        b.statement("operationData.childBci = childBci");
+                        b.tree(operationStack.write(op, operationFields.producedValue, "producedValue"));
+                        if (model.usesBoxingElimination()) {
+                            b.tree(operationStack.write(op, operationFields.childBci, "childBci"));
+                        }
                         break;
                     case IF_THEN:
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.falseBranchFixupBci = bci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset());
+
+                        buildEmitInstruction(b, "branchFalseBci", model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
+                        b.startIf().string("branchFalseBci != -1").end().startBlock();
+                        b.tree(operationStack.write(op, operationFields.falseBranchFixupBci,
+                                        "branchFalseBci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset()));
                         b.end();
-                        buildEmitInstruction(b, model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
+
                         b.end().startElseBlock();
-                        b.statement("int toUpdate = operationData.falseBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.falseBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
                         b.end();
                         break;
                     case IF_THEN_ELSE:
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.falseBranchFixupBci = bci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset());
+                        buildEmitInstruction(b, "branchFalseBci", model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
+                        b.startIf().string("branchFalseBci != -1").end().startBlock();
+                        b.tree(operationStack.write(op, operationFields.falseBranchFixupBci,
+                                        "branchFalseBci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset()));
                         b.end();
-                        buildEmitInstruction(b, model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
                         b.end().startElseIf().string("childIndex == 1").end().startBlock();
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.endBranchFixupBci = bci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset());
+                        buildEmitInstruction(b, "branchBci", model.branchInstruction, new String[]{UNINIT});
+                        b.startIf().string("branchBci != -1").end().startBlock();
+                        b.tree(operationStack.write(op, operationFields.endBranchFixupBci, "branchBci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset()));
                         b.end();
-                        buildEmitInstruction(b, model.branchInstruction, new String[]{UNINIT});
-                        b.statement("int toUpdate = operationData.falseBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.falseBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
                         b.end().startElseBlock();
-                        b.statement("int toUpdate = operationData.endBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.endBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
                         b.end();
                         break;
                     case CONDITIONAL:
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
                         if (model.usesBoxingElimination()) {
-                            buildEmitInstruction(b, model.dupInstruction);
+                            buildEmitInstruction(b, null, model.dupInstruction);
                         }
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.falseBranchFixupBci = bci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset());
+                        buildEmitInstruction(b, "branchFalseBci", model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
+                        b.startIf().string("branchFalseBci != -1").end().startBlock();
+                        b.tree(operationStack.write(op, operationFields.falseBranchFixupBci,
+                                        "branchFalseBci + " + model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target").offset()));
                         b.end();
-                        buildEmitInstruction(b, model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
 
                         b.end().startElseIf().string("childIndex == 1").end().startBlock();
                         if (model.usesBoxingElimination()) {
-                            b.statement("operationData.child0Bci = childBci");
+                            b.tree(operationStack.write(op, operationFields.getChildBci(0, false), "childBci"));
                         }
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.endBranchFixupBci = bci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset());
-                        buildEmitInstruction(b, model.branchInstruction, new String[]{UNINIT});
+                        b.startIf().string("state.reachable").end().startBlock();
+                        buildEmitInstruction(b, "branchBci", model.branchInstruction, new String[]{UNINIT});
+                        b.tree(operationStack.write(op, operationFields.endBranchFixupBci, "branchBci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset()));
                         // we have to adjust the stack for the third child
                         b.end();
-                        b.statement("currentStackHeight -= 1");
+                        b.statement("state.currentStackHeight -= 1");
 
-                        b.statement("int toUpdate = operationData.falseBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.falseBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
                         b.end().startElseBlock();
                         if (model.usesBoxingElimination()) {
-                            b.statement("operationData.child1Bci = childBci");
+                            b.tree(operationStack.write(op, operationFields.getChildBci(1, false), "childBci"));
                         }
-                        b.statement("int toUpdate = operationData.endBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.endBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
                         b.end();
                         break;
                     case WHILE:
                         InstructionImmediate branchTarget = model.branchFalseInstruction.findImmediate(ImmediateKind.BYTECODE_INDEX, "branch_target");
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
-                        b.startIf().string("reachable").end().startBlock();
-                        b.statement("operationData.endBranchFixupBci = bci + " + branchTarget.offset());
+                        buildEmitInstruction(b, "branchFalseBci", model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
+                        b.startIf().string("branchFalseBci != -1").end().startBlock();
+                        b.tree(operationStack.write(op, operationFields.endBranchFixupBci, "branchFalseBci + " + branchTarget.offset()));
                         b.end();
-                        buildEmitInstruction(b, model.branchFalseInstruction, emitBranchFalseArguments(model.branchFalseInstruction));
                         b.end().startElseBlock();
-                        b.statement("int toUpdate = operationData.endBranchFixupBci");
+                        b.statement("int toUpdate = ", operationStack.read(op, operationFields.endBranchFixupBci));
                         b.startIf().string("toUpdate != ", UNINIT).end().startBlock();
                         /**
                          * To emit a branch.backward, we need the branch profile from the
@@ -6393,105 +6505,98 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         if (ImmediateKind.BRANCH_PROFILE.width != ImmediateWidth.INT) {
                             throw new AssertionError("branch profile width changed");
                         }
-                        String readBranchProfile = readInt("bc", "toUpdate + " + offset + " /* loop branch profile */");
-                        buildEmitInstruction(b, model.branchBackwardInstruction, new String[]{"operationData.whileStartBci", readBranchProfile});
-                        b.statement(writeInt("bc", "toUpdate", "bci"));
+                        String readBranchProfile = readInt("state.bc", "toUpdate + " + offset + " /* loop branch profile */");
+                        buildEmitInstruction(b, null, model.branchBackwardInstruction, new String[]{operationStack.read(op, operationFields.whileStartBci), readBranchProfile});
+                        b.statement(writeInt("state.bc", "toUpdate", "state.bci"));
                         b.end();
 
                         b.end();
                         break;
                     case TRY_CATCH:
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
-                        b.startIf().string("operationData.operationReachable").end().startBlock();
-                        b.declaration(type(int.class), "tryEndBci", "bci");
+                        b.startIf().string(operationStack.read(op, operationFields.operationReachable)).end().startBlock();
+                        b.declaration(type(int.class), "tryEndBci", "state.bci");
 
-                        b.startIf().string("operationData.tryReachable").end().startBlock();
-                        b.statement("operationData.endBranchFixupBci = bci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset());
-                        buildEmitInstruction(b, model.branchInstruction, new String[]{UNINIT});
+                        b.startIf().string(operationStack.read(op, operationFields.tryReachable)).end().startBlock();
+                        buildEmitInstruction(b, "branchBci", model.branchInstruction, new String[]{UNINIT});
+                        b.tree(operationStack.write(op, operationFields.endBranchFixupBci, "branchBci + " + model.branchInstruction.getImmediate(ImmediateKind.BYTECODE_INDEX).offset()));
                         b.end(); // if tryReachable
 
-                        b.declaration(type(int.class), "handlerSp", "currentStackHeight + 1");
-                        b.startStatement().startCall("patchHandlerTable");
-                        b.string("operationData.extraTableEntriesStart");
-                        b.string("operationData.extraTableEntriesEnd");
-                        b.string("operationData.handlerId");
-                        b.string("bci");
+                        b.declaration(type(int.class), "handlerSp", "state.currentStackHeight + 1");
+                        b.startStatement().startCall("state.patchHandlerTable");
+                        b.string(operationStack.read(op, operationFields.extraTableEntriesStart));
+                        b.string(operationStack.read(op, operationFields.extraTableEntriesEnd));
+                        b.string(operationStack.read(op, operationFields.handlerId));
+                        b.string("state.bci");
                         b.string("handlerSp");
                         b.end(2);
-
-                        b.statement("doCreateExceptionHandler(operationData.tryStartBci, tryEndBci, HANDLER_CUSTOM, bci, handlerSp)");
+                        b.statement("state.doCreateExceptionHandler(", operationStack.read(op, operationFields.tryStartBci), ", tryEndBci, HANDLER_CUSTOM, state.bci, handlerSp)");
 
                         b.end(); // if operationReachable
                         b.end();
 
                         b.startElseIf().string("childIndex == 1").end().startBlock();
                         b.lineComment("pop the exception");
-                        buildEmitInstruction(b, model.popInstruction, emitPopArguments("-1"));
-                        emitFixFinallyBranchBci(b);
+                        buildEmitInstruction(b, null, model.popInstruction, emitPopArguments("-1"));
+                        emitFixFinallyBranchBci(b, op);
                         b.end();
                         break;
-                    case TRY_FINALLY:
-                        break;
                     case TRY_CATCH_OTHERWISE:
-                        emitCastOperationData(b, op, "operationSp - 1");
                         b.startIf().string("childIndex == 0").end().startBlock();
-                        emitFinallyHandlersAfterTry(b, op, "operationSp - 1");
+                        emitFinallyHandlersAfterTry(b, op);
                         b.end().startElseBlock();
                         b.lineComment("pop the exception");
-                        buildEmitInstruction(b, model.popInstruction, emitPopArguments("-1"));
-                        emitFixFinallyBranchBci(b);
+                        buildEmitInstruction(b, null, model.popInstruction, emitPopArguments("-1"));
+                        emitFixFinallyBranchBci(b, op);
                         b.end();
 
                         break;
                     case STORE_LOCAL:
                     case STORE_LOCAL_MATERIALIZED:
                         if (model.usesBoxingElimination()) {
-                            emitCastOperationData(b, op, "operationSp - 1");
-                            b.statement("operationData.childBci = childBci");
+                            b.tree(operationStack.write(op, operationFields.childBci, "childBci"));
                         } else {
                             // no operand to encode
                         }
                         break;
                     case CUSTOM:
+                    case CUSTOM_YIELD:
                     case CUSTOM_INSTRUMENTATION:
-
                         int immediateIndex = 0;
                         boolean elseIf = false;
-                        boolean operationDataEmitted = false;
                         for (int valueIndex = 0; valueIndex < op.instruction.signature.dynamicOperandCount; valueIndex++) {
-                            if (op.instruction.needsBoxingElimination(model, valueIndex)) {
-                                if (!operationDataEmitted) {
-                                    emitCastOperationData(b, op, "operationSp - 1");
-                                    operationDataEmitted = true;
-                                }
+                            if (op.instruction.needsChildBciForBoxingElimination(model, valueIndex)) {
                                 elseIf = b.startIf(elseIf);
                                 b.string("childIndex == " + valueIndex).end().startBlock();
-                                b.statement("operationData.childBcis[" + immediateIndex++ + "] = childBci");
+
+                                int index = immediateIndex++;
+                                b.tree(operationStack.write(op, operationFields.getChildBci(index, false), "childBci"));
                                 b.end();
                             }
                         }
 
                         if (op.isVariadic && model.hasVariadicReturn) {
-                            if (!operationDataEmitted) {
-                                emitCastOperationData(b, op, "operationSp - 1");
-                                operationDataEmitted = true;
-                            }
-
                             if (op.instruction.signature.dynamicOperandCount > 1) {
-                                b.startIf().string("childIndex > ").string(op.instruction.signature.dynamicOperandCount - 1).end().startBlock();
+                                b.startIf().string("childIndex > ").string(op.instruction.signature.dynamicOperandCount - 2).end().startBlock();
                             }
 
-                            b.startIf().string("isVariadicReturn(operation)").end().startBlock();
-                            b.startIf().string("operationData.variadicReturnIndices == null").end().startBlock();
-                            b.startStatement();
-                            b.string("operationData.variadicReturnIndices = ");
-                            b.startNew(generic(context.getDeclaredType(ArrayList.class), type(Integer.class)));
-                            b.string("4");
-                            b.end(); // new
-                            b.end(); // statement
-                            b.end(); // if null
-                            b.statement("operationData.variadicReturnIndices.add(childIndex)");
+                            b.startIf().string("isVariadicReturn(operationCode)").end().startBlock();
+
+                            b.declaration(type(int[].class), "variadicReturnIndices", operationStack.read(op, operationFields.variadicReturnIndices));
+                            b.declaration(type(int.class), "numVariadicReturnIndices", operationStack.read(op, operationFields.numVariadicReturnIndices));
+
+                            b.startIf().string("numVariadicReturnIndices >= variadicReturnIndices.length").end().startBlock();
+                            b.startAssign("variadicReturnIndices").startStaticCall(type(Arrays.class), "copyOf").string("variadicReturnIndices").string(
+                                            "variadicReturnIndices.length * 2").end().end();
+                            b.tree(operationStack.write(op, operationFields.variadicReturnIndices, "variadicReturnIndices"));
+                            b.end();
+                            if (op.instruction.signature.dynamicOperandCount > 1) {
+                                b.statement("variadicReturnIndices[numVariadicReturnIndices] = childIndex - " + (op.instruction.signature.dynamicOperandCount - 1));
+                            } else {
+                                b.statement("variadicReturnIndices[numVariadicReturnIndices] = childIndex");
+                            }
+                            b.tree(operationStack.write(op, operationFields.numVariadicReturnIndices, "numVariadicReturnIndices + 1"));
+
                             b.end(); // if isVariadicReturn
 
                             if (op.instruction.signature.dynamicOperandCount > 1) {
@@ -6501,18 +6606,34 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                         break;
                     case CUSTOM_SHORT_CIRCUIT:
-                        emitCastOperationData(b, op, "operationSp - 1");
-                        b.statement("operationData.childBci = childBci");
+                        if (model.usesBoxingElimination()) {
+                            b.tree(operationStack.write(op, operationFields.childBci, "childBci"));
+                        }
                         break;
                 }
-
                 b.statement("break");
-                b.end();
-            }
-
+            });
+            CodeTreeBuilder b = p;
+            b.startIf().string("state.operationSp == 0").end().startBlock();
+            b.statement("return");
             b.end();
 
-            b.statement("parentOperationStack.childCount = childIndex + 1");
+            b.declaration(operationStack.asType(), "operation", "state.peekOperation()");
+            b.statement("int childIndex = operation.childCount");
+
+            b.startSwitch().string("operation.operation").end().startBlock();
+            for (var group : caseGrouping.entrySet()) {
+                EqualityCodeTree key = group.getKey();
+                for (OperationModel op : group.getValue()) {
+                    b.startCase().tree(createOperationConstant(op)).end();
+                }
+                b.startBlock();
+                b.tree(key.getTree());
+                b.end();
+            }
+            b.end(); // switch
+
+            b.statement("operation.childCount = childIndex + 1");
 
             return ex;
         }
@@ -6524,7 +6645,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 InstructionImmediate immediate = immedates.get(index);
                 branchArguments[index] = switch (immediate.kind()) {
                     case BYTECODE_INDEX -> UNINIT;
-                    case BRANCH_PROFILE -> "allocateBranchProfile()";
+                    case BRANCH_PROFILE -> "state.allocateBranchProfile()";
                     default -> throw new AssertionError("Unexpected immediate: " + immediate);
                 };
             }
@@ -6538,7 +6659,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 InstructionImmediate immediate = immediates.get(index);
                 branchArguments[index] = switch (immediate.kind()) {
                     case BYTECODE_INDEX -> (index == 0) ? UNINIT : "childBci";
-                    case BRANCH_PROFILE -> "allocateBranchProfile()";
+                    case BRANCH_PROFILE -> "state.allocateBranchProfile()";
                     default -> throw new AssertionError("Unexpected immediate: " + immediate);
                 };
             }
@@ -6551,8 +6672,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             for (int index = 0; index < branchArguments.length; index++) {
                 InstructionImmediate immediate = immediates.get(index);
                 branchArguments[index] = switch (immediate.kind()) {
-                    case BYTECODE_INDEX -> (index == 0) ? "operationData.thenReachable ? operationData.child0Bci : -1"
-                                    : "operationData.elseReachable ? operationData.child1Bci : -1";
+                    case BYTECODE_INDEX -> {
+                        String readChildBci = operationStack.read(instr.operation, operationFields.getChildBci(index, false));
+                        if (index == 0) {
+                            yield operationStack.read(instr.operation, operationFields.thenReachable) + " ? " + readChildBci + " : -1";
+                        } else {
+                            yield operationStack.read(instr.operation, operationFields.elseReachable) + " ? " + readChildBci + " : -1";
+                        }
+                    }
                     default -> throw new AssertionError("Unexpected immediate: " + immediate);
                 };
             }
@@ -6570,154 +6697,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 };
             }
             return branchArguments;
-        }
-
-        private CodeExecutableElement createDoEmitLocal() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitLocal");
-            if (model.enableBlockScoping) {
-                ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
-                ex.addParameter(new CodeVariableElement(type(int.class), "frameIndex"));
-            }
-            ex.addParameter(new CodeVariableElement(type(Object.class), "name"));
-            ex.addParameter(new CodeVariableElement(type(Object.class), "info"));
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.declaration(type(int.class), "nameIndex", "-1");
-            b.startIf().string("name != null").end().startBlock();
-            b.statement("nameIndex = constantPool.addConstant(name)");
-            b.end();
-
-            b.declaration(type(int.class), "infoIndex", "-1");
-            b.startIf().string("info != null").end().startBlock();
-            b.statement("infoIndex = constantPool.addConstant(info)");
-            b.end();
-
-            b.startReturn().startCall("doEmitLocal");
-            if (model.enableBlockScoping) {
-                b.string("localIndex");
-                b.string("frameIndex");
-            }
-            b.string("nameIndex");
-            b.string("infoIndex");
-            b.end(2);
-            return ex;
-        }
-
-        private CodeExecutableElement createDoEmitLocalConstantIndices() {
-            if (model.enableBlockScoping) {
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_START_BCI")).createInitBuilder().string("0");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_END_BCI")).createInitBuilder().string("1");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_LOCAL_INDEX")).createInitBuilder().string("2");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_FRAME_INDEX")).createInitBuilder().string("3");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_NAME")).createInitBuilder().string("4");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_INFO")).createInitBuilder().string("5");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_LENGTH")).createInitBuilder().string("6");
-            } else {
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_NAME")).createInitBuilder().string("0");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_INFO")).createInitBuilder().string("1");
-                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_LENGTH")).createInitBuilder().string("2");
-            }
-
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitLocal");
-            if (model.enableBlockScoping) {
-                ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
-                ex.addParameter(new CodeVariableElement(type(int.class), "frameIndex"));
-            }
-            ex.addParameter(new CodeVariableElement(type(int.class), "nameIndex"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "infoIndex"));
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.declaration(type(int.class), "tableIndex", "allocateLocalsTableEntry()");
-
-            if (model.enableBlockScoping) {
-                b.statement("assert frameIndex - USER_LOCALS_START_INDEX >= 0");
-                b.statement("locals[tableIndex + LOCALS_OFFSET_START_BCI] = bci");
-                b.lineComment("will be patched later at the end of the block");
-                b.statement("locals[tableIndex + LOCALS_OFFSET_END_BCI] = -1");
-                b.statement("locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX] = localIndex");
-                b.statement("locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] = frameIndex");
-            }
-            b.statement("locals[tableIndex + LOCALS_OFFSET_NAME] = nameIndex");
-            b.statement("locals[tableIndex + LOCALS_OFFSET_INFO] = infoIndex");
-
-            b.statement("return tableIndex");
-            return ex;
-        }
-
-        private CodeExecutableElement createAllocateLocalsTableEntry() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateLocalsTableEntry");
-            CodeTreeBuilder b = ex.createBuilder();
-            b.statement("int result = localsTableIndex");
-            b.startIf().string("locals == null").end().startBlock();
-            b.startAssert().string("result == 0").end();
-            b.startAssign("locals").startNewArray(arrayOf(type(int.class)), CodeTreeBuilder.singleString("LOCALS_LENGTH * 8")).end().end();
-            b.end().startElseIf().string("result + LOCALS_LENGTH > locals.length").end().startBlock();
-            b.startAssign("locals").startStaticCall(type(Arrays.class), "copyOf");
-            b.string("locals");
-            b.string("Math.max(result + LOCALS_LENGTH, locals.length * 2)");
-            b.end(2); // assign, static call
-            b.end(); // if block
-            b.statement("localsTableIndex += LOCALS_LENGTH");
-            b.statement("return result");
-            return ex;
-        }
-
-        private CodeExecutableElement ensureDoEmitInstructionCreated(InstructionModel instruction) {
-            InstructionEncoding encoding = instruction.getInstructionEncoding();
-            return doEmitInstructionMethods.computeIfAbsent(encoding, (length) -> createDoEmitInstruction(instruction));
-        }
-
-        private CodeExecutableElement createDoEmitInstruction(InstructionModel representativeInstruction) {
-            // Give each method a unique name so that we don't accidentally use the wrong overload.
-            StringBuilder methodName = new StringBuilder("doEmitInstruction");
-            for (InstructionImmediate immediate : representativeInstruction.immediates) {
-                methodName.append(switch (immediate.kind().width) {
-                    case BYTE -> "B";
-                    case SHORT -> "S";
-                    case INT -> "I";
-                });
-            }
-
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(boolean.class), methodName.toString());
-            ex.addParameter(new CodeVariableElement(type(short.class), "instruction"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "stackEffect"));
-            for (int i = 0; i < representativeInstruction.immediates.size(); i++) {
-                ex.addParameter(new CodeVariableElement(representativeInstruction.immediates.get(i).kind().width.toType(context), "data" + i));
-            }
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startIf().string("stackEffect != 0").end().startBlock();
-            b.statement("currentStackHeight += stackEffect");
-            b.startAssert().string("currentStackHeight >= 0").end();
-            b.end();
-
-            b.startIf().string("stackEffect > 0").end().startBlock();
-            b.statement("updateMaxStackHeight(currentStackHeight)");
-            b.end();
-
-            b.startIf().string("!reachable").end().startBlock();
-            b.statement("return false");
-            b.end();
-
-            b.declaration(type(int.class), "newBci", "checkBci(bci + " + representativeInstruction.getInstructionLength() + ")");
-            b.startIf().string("newBci > bc.length").end().startBlock();
-            b.statement("ensureBytecodeCapacity(newBci)");
-            b.end();
-
-            b.end();
-
-            b.statement(writeInstruction("bc", "bci + 0", "instruction"));
-            for (int i = 0; i < representativeInstruction.immediates.size(); i++) {
-                InstructionImmediate immediate = representativeInstruction.immediates.get(i);
-                // Use a general immediate name instead of this particular immediate's name.
-                InstructionImmediate representativeImmediate = new InstructionImmediate(immediate.offset(), immediate.kind(), Integer.toString(i));
-                b.statement(writeImmediate("bc", "bci", "data" + i, representativeImmediate));
-            }
-
-            b.statement("bci = newBci");
-            b.statement("return true");
-
-            return ex;
         }
 
         private CodeExecutableElement createSafeCastShort() {
@@ -6768,32 +6747,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
-        private CodeExecutableElement createUpdateMaxStackHeight() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "updateMaxStackHeight");
-            ex.addParameter(new CodeVariableElement(type(int.class), "stackHeight"));
-            CodeTreeBuilder b = ex.createBuilder();
-            b.statement("maxStackHeight = Math.max(maxStackHeight, stackHeight)");
-
-            b.startIf().string("maxStackHeight > Short.MAX_VALUE").end().startBlock();
-            emitThrowEncodingException(b, "\"Maximum stack height exceeded.\"");
-            b.end();
-            b.end(2);
-            return ex;
-        }
-
-        private CodeExecutableElement createEnsureBytecodeCapacity() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "ensureBytecodeCapacity");
-            ex.addParameter(new CodeVariableElement(type(int.class), "size"));
-            CodeTreeBuilder b = ex.createBuilder();
-            b.startIf().string("size > bc.length").end().startBlock();
-            b.startAssign("bc").startStaticCall(type(Arrays.class), "copyOf");
-            b.string("bc");
-            b.string("Math.max(size, bc.length * 2)");
-            b.end(2); // assign, static call
-            b.end(); // if block
-            return ex;
-        }
-
         private CodeExecutableElement createDoEmitVariadicEnd() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitVariadicEnd");
             if (model.maximumVariadicOffset > 0) {
@@ -6801,7 +6754,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
             ex.addParameter(new CodeVariableElement(type(int.class), "count"));
             if (model.hasVariadicReturn) {
-                ex.addParameter(new CodeVariableElement(generic(List.class, type(Integer.class)), "dynamicArguments"));
+                ex.addParameter(new CodeVariableElement(type(int[].class), "dynamicArguments"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "dynamicArgumentsLength"));
             }
 
             CodeTreeBuilder b = ex.createBuilder();
@@ -6812,9 +6766,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             if (model.hasVariadicReturn) {
                 b.declaration(type(int.class), "mergeCount", "0");
-                b.startIf().string("dynamicArguments != null").end().startBlock();
-                b.startFor().string("int i = dynamicArguments.size() - 1; i >= 0; i--").end().startBlock();
-                b.startIf().string("mergeCount < count && dynamicArguments.get(i) == count - 1 - mergeCount").end().startBlock();
+                b.startIf().string("dynamicArgumentsLength > 0").end().startBlock();
+                b.startFor().string("int i = dynamicArgumentsLength - 1; i >= 0; i--").end().startBlock();
+                b.startIf().string("mergeCount < count && dynamicArguments[i] == count - 1 - mergeCount").end().startBlock();
                 b.statement("mergeCount++");
                 b.end().startElseBlock();
                 b.statement("break");
@@ -6825,9 +6779,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             b.startIf().string("offset == 0 && count == 0").end().startBlock();
             if (model.hasVariadicReturn) {
-                b.statement("assert dynamicArguments == null");
+                b.statement("assert dynamicArgumentsLength == 0");
             }
-            buildEmitInstruction(b, model.emptyVariadicInstruction);
+            buildEmitInstruction(b, null, model.emptyVariadicInstruction);
 
             b.end().startElseIf().string("count <= VARIADIC_STACK_LIMIT").end().startBlock();
 
@@ -6838,7 +6792,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            buildEmitInstructionStackEffect(b, model.createVariadicInstruction, "-count + 1", createCreateVariadicArguments("offset", "(short)count", "(short)mergeCount"));
+            buildEmitInstructionStackEffect(b, null, model.createVariadicInstruction, "-count + 1", createCreateVariadicArguments("offset", "(short)count", "(short)mergeCount"));
 
             b.end().startElseBlock();
 
@@ -6854,7 +6808,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            buildEmitInstructionStackEffect(b, model.loadVariadicInstruction, "-stackCount", createLoadVariadicArguments("offset + count - stackCount", "(short)(stackCount)", "(short)mergeCount"));
+            buildEmitInstructionStackEffect(b, null, model.loadVariadicInstruction, "-stackCount",
+                            createLoadVariadicArguments("offset + count - stackCount", "(short)(stackCount)", "(short)mergeCount"));
 
             if (model.hasVariadicReturn) {
                 b.end();
@@ -6863,11 +6818,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             if (model.hasVariadicReturn) {
-                b.startIf().string("dynamicArguments != null").end().startBlock();
+                b.startIf().string("dynamicArgumentsLength > 0").end().startBlock();
                 b.declaration(type(int.class), "prev", "-1");
                 b.declaration(type(int.class), "length", "0");
-                b.startFor().string("int i = dynamicArguments.size() - 1 - mergeCount; i >= 0; i--").end().startBlock();
-                b.declaration(type(int.class), "index", "dynamicArguments.get(i)");
+                b.startFor().string("int i = dynamicArgumentsLength - 1 - mergeCount; i >= 0; i--").end().startBlock();
+                b.declaration(type(int.class), "index", "dynamicArguments[i]");
 
                 b.startIf().string("prev == -1 ").end().startBlock();
                 b.lineComment("first element");
@@ -6877,7 +6832,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.statement("length++");
                 b.end().startElseBlock();
                 b.lineComment("range not continuous");
-                buildEmitInstructionStackEffect(b, model.splatVariadicInstruction, "0", "offset + prev", "length");
+                buildEmitInstructionStackEffect(b, null, model.splatVariadicInstruction, "0", "offset + prev", "length");
                 b.statement("length = 1");
                 b.end();
                 b.statement("prev = index");
@@ -6886,7 +6841,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startIf().string("length > 0").end().startBlock();
                 b.lineComment("emit last range");
                 b.statement("assert prev != -1");
-                buildEmitInstructionStackEffect(b, model.splatVariadicInstruction, "0", "offset + prev", "length");
+                buildEmitInstructionStackEffect(b, null, model.splatVariadicInstruction, "0", "offset + prev", "length");
                 b.end();
 
                 b.end(); // dynamicArguments != null
@@ -6915,9 +6870,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             b.startIf().string("count <= VARIADIC_STACK_LIMIT").end().startBlock();
-            b.declaration(type(int.class), "variadicSizePatchOffset", "bci + " + model.createVariadicInstruction.findImmediate(ImmediateKind.INTEGER, "count").offset());
-            buildEmitInstructionStackEffect(b, model.createVariadicInstruction, "-VARIADIC_STACK_LIMIT + 1", createCreateVariadicArguments("offset", "VARIADIC_STACK_LIMIT", "(short) 0"));
-            b.startReturn().string("variadicSizePatchOffset").end();
+            buildEmitInstructionStackEffect(b, "createVariadicOffset", model.createVariadicInstruction, "-VARIADIC_STACK_LIMIT + 1",
+                            createCreateVariadicArguments("offset", "VARIADIC_STACK_LIMIT", "(short) 0"));
+            b.startReturn().string("createVariadicOffset + " + model.createVariadicInstruction.findImmediate(ImmediateKind.INTEGER, "count").offset()).end();
             b.end().startElseBlock();
             String offset;
             if (model.maximumVariadicOffset > 0) {
@@ -6925,7 +6880,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             } else {
                 offset = "count - VARIADIC_STACK_LIMIT";
             }
-            buildEmitInstructionStackEffect(b, model.loadVariadicInstruction, "-VARIADIC_STACK_LIMIT", createLoadVariadicArguments(offset, "(short)VARIADIC_STACK_LIMIT", "(short) 0"));
+            buildEmitInstructionStackEffect(b, null, model.loadVariadicInstruction, "-VARIADIC_STACK_LIMIT", createLoadVariadicArguments(offset, "(short)VARIADIC_STACK_LIMIT", "(short) 0"));
             b.startReturn().string("-1").end();
             b.end();
 
@@ -6985,10 +6940,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return createArguments;
         }
 
-        private void buildEmitInstruction(CodeTreeBuilder b, InstructionModel instr, String... arguments) {
+        private void buildEmitInstruction(CodeTreeBuilder b, String localName, InstructionModel instr, String... arguments) {
             int stackEffect = switch (instr.kind) {
                 case BRANCH, BRANCH_BACKWARD, //
-                                TAG_ENTER, TAG_LEAVE, TAG_LEAVE_VOID, TAG_RESUME, TAG_YIELD, //
+                                TAG_ENTER, TAG_LEAVE, TAG_LEAVE_VOID, TAG_RESUME, TAG_YIELD, TAG_YIELD_NULL, //
                                 LOAD_LOCAL_MATERIALIZED, CLEAR_LOCAL, YIELD -> {
                     yield 0;
                 }
@@ -7006,7 +6961,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 case DUP, LOAD_ARGUMENT, LOAD_CONSTANT, LOAD_NULL, LOAD_LOCAL, LOAD_EXCEPTION -> 1;
                 case RETURN, THROW, BRANCH_FALSE, POP, STORE_LOCAL, MERGE_CONDITIONAL -> -1;
                 case STORE_LOCAL_MATERIALIZED -> -2;
-                case CUSTOM -> (instr.signature.isVoid ? 0 : 1) - instr.signature.dynamicOperandCount;
+                case CUSTOM -> getStackEffect(instr);
                 case CUSTOM_SHORT_CIRCUIT -> {
                     /*
                      * NB: This code is a little confusing, because the stack height actually
@@ -7029,18 +6984,24 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 default -> throw new UnsupportedOperationException();
             };
 
-            buildEmitInstructionStackEffect(b, instr, String.valueOf(stackEffect), arguments);
+            buildEmitInstructionStackEffect(b, localName, instr, String.valueOf(stackEffect), arguments);
         }
 
-        private void buildEmitInstructionStackEffect(CodeTreeBuilder b, InstructionModel instr, String stackEffect, String... arguments) throws AssertionError {
-            CodeExecutableElement doEmitInstruction = ensureDoEmitInstructionCreated(instr);
-            b.startStatement().startCall(doEmitInstruction.getSimpleName().toString());
+        private void buildEmitInstructionStackEffect(CodeTreeBuilder b, String localName, InstructionModel instr, String stackEffect, String... arguments) throws AssertionError {
+            CodeExecutableElement doEmitInstruction = rootStackElement.ensureDoEmitInstructionCreated(instr);
+            if (localName != null) {
+                b.startDeclaration(type(int.class), localName);
+            } else {
+                b.startStatement();
+            }
+            b.startCall("state", doEmitInstruction.getSimpleName().toString());
             b.tree(createInstructionConstant(instr));
             b.string(stackEffect);
             int argumentsLength = arguments != null ? arguments.length : 0;
-            if (argumentsLength != instr.immediates.size()) {
-                throw new AssertionError("Invalid number of immediates for instruction " + instr.name + ". Expected " + instr.immediates.size() + " but got " + argumentsLength + ". Immediates" +
-                                instr.getImmediates());
+            if (argumentsLength != instr.getExplicitImmediates().size()) {
+                throw new AssertionError(
+                                "Invalid number of immediates for instruction " + instr.name + ". Expected " + instr.getExplicitImmediates().size() + " but got " + argumentsLength + ". Immediates: " +
+                                                String.join(", ", arguments));
             }
 
             if (arguments != null) {
@@ -7051,171 +7012,26 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(2);
         }
 
-        private CodeExecutableElement createDoPatchSourceInfo() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doPatchSourceInfo");
-            ex.addParameter(new CodeVariableElement(type(int.class), "nodeId"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "sourceIndex"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "start"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "length"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.declaration(type(int[].class), "info");
-            b.startIf().string("nodeId >= 0").end().startBlock();
-            b.statement("info = builtNodes.get(nodeId).bytecode.sourceInfo");
-            b.end().startElseBlock();
-            b.statement("info = this.sourceInfo");
-            b.end();
-
-            b.declaration(type(int.class), "index", "sourceIndex");
-            b.startWhile().string("index >= 0").end().startBlock();
-
-            b.declaration(type(int.class), "oldStart", "info[index + SOURCE_INFO_OFFSET_START]");
-            b.declaration(type(int.class), "oldEnd", "info[index + SOURCE_INFO_OFFSET_LENGTH]");
-            b.statement("assert nodeId >= 0 ? oldEnd == PATCH_NODE_SOURCE : oldEnd == PATCH_CURRENT_SOURCE");
-            b.statement("info[index + SOURCE_INFO_OFFSET_START] = start");
-            b.statement("info[index + SOURCE_INFO_OFFSET_LENGTH] = length");
-            b.statement("index = oldStart");
-            b.end();
-
-            return ex;
-        }
-
-        private CodeExecutableElement createDoEmitSourceInfo() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitSourceInfo");
-            ex.addParameter(new CodeVariableElement(type(int.class), "sourceIndex"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "startBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "endBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "start"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "length"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startAssert().string("parseSources").end();
-
-            b.startIf().string("rootOperationSp == -1").end().startBlock();
-            b.statement("return -1");
-            b.end();
-
-            b.declaration(type(int.class), "index", "sourceInfoIndex");
-            b.declaration(type(int.class), "prevIndex", "index - SOURCE_INFO_LENGTH");
-
-            b.startIf();
-            b.string("prevIndex >= 0").newLine().startIndention();
-            b.string(" && start >= -1 && length >= -1");
-            b.string(" && (sourceInfo[prevIndex + SOURCE_INFO_OFFSET_SOURCE]) == sourceIndex").newLine();
-            b.string(" && (sourceInfo[prevIndex + SOURCE_INFO_OFFSET_START]) == start").newLine();
-            b.string(" && (sourceInfo[prevIndex + SOURCE_INFO_OFFSET_LENGTH]) == length");
-            b.end(2).startBlock();
-
-            b.startIf().string("(sourceInfo[prevIndex + SOURCE_INFO_OFFSET_START_BCI]) == startBci").newLine().startIndention();
-            b.string(" && (sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI]) == endBci");
-            b.end(2).startBlock();
-            b.lineComment("duplicate entry");
-            b.statement("return prevIndex");
-            b.end();
-
-            b.startElseIf().string("(sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI]) == startBci").end().startBlock();
-            b.lineComment("contiguous entry");
-            b.statement("sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI] = endBci");
-            b.statement("return prevIndex");
-            b.end();
-
-            b.end(); // if source, start, length match
-
-            b.startIf().string("index >= sourceInfo.length").end().startBlock();
-            b.statement("sourceInfo = Arrays.copyOf(sourceInfo, sourceInfo.length * 2)");
-            b.end();
-
-            b.statement("sourceInfo[index + SOURCE_INFO_OFFSET_START_BCI] = startBci");
-            b.statement("sourceInfo[index + SOURCE_INFO_OFFSET_END_BCI] = endBci");
-            b.statement("sourceInfo[index + SOURCE_INFO_OFFSET_SOURCE] = sourceIndex");
-            b.statement("sourceInfo[index + SOURCE_INFO_OFFSET_START] = start");
-            b.statement("sourceInfo[index + SOURCE_INFO_OFFSET_LENGTH] = length");
-
-            b.statement("sourceInfoIndex = index + SOURCE_INFO_LENGTH");
-
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_START_BCI")).createInitBuilder().string("0");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_END_BCI")).createInitBuilder().string("1");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_SOURCE")).createInitBuilder().string("2");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_START")).createInitBuilder().string("3");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_LENGTH")).createInitBuilder().string("4");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_LENGTH")).createInitBuilder().string("5");
-
-            b.statement("return index");
-
-            return ex;
-        }
-
         private CodeExecutableElement createDoEmitFinallyHandler() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitFinallyHandler");
-            ex.addParameter(new CodeVariableElement(dataClasses.get(model.tryFinallyOperation).asType(), "TryFinallyData"));
+            ex.addParameter(new CodeVariableElement(operationStack.asType(), "tryFinallyData"));
             ex.addParameter(new CodeVariableElement(type(int.class), "finallyOperationSp"));
 
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.startAssert().string("TryFinallyData.finallyHandlerSp == ", UNINIT).end();
+            b.startAssert();
+            b.string("state.operationStack[finallyOperationSp].operation", " == ").tree(createOperationConstant(model.tryFinallyOperation));
+            b.string(" || state.operationStack[finallyOperationSp].operation", " == ").tree(createOperationConstant(model.tryCatchOtherwiseOperation));
+            b.end();
+            b.startAssert().string(operationStack.read(model.tryFinallyOperation, "tryFinallyData", operationFields.finallyHandlerSp), " == ", UNINIT).end();
             b.startTryBlock();
-            b.statement("TryFinallyData.finallyHandlerSp = operationSp");
+            b.tree(operationStack.write(model.tryFinallyOperation, "tryFinallyData", operationFields.finallyHandlerSp, "state.operationSp"));
             buildBegin(b, model.finallyHandlerOperation, safeCastShort("finallyOperationSp"));
-            b.statement("TryFinallyData.finallyGenerator.run()");
+            b.statement(operationStack.read(model.tryFinallyOperation, "tryFinallyData", operationFields.finallyGenerator), ".run()");
             buildEnd(b, model.finallyHandlerOperation);
             b.end().startFinallyBlock();
-            b.statement("TryFinallyData.finallyHandlerSp = ", UNINIT);
+            b.tree(operationStack.write(model.tryFinallyOperation, "tryFinallyData", operationFields.finallyHandlerSp, UNINIT));
             b.end();
-
-            return ex;
-        }
-
-        private CodeExecutableElement createDoCreateExceptionHandler() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doCreateExceptionHandler");
-            ex.addParameter(new CodeVariableElement(type(int.class), "startBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "endBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerKind"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerSp"));
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startAssert().string("startBci <= endBci").end();
-
-            b.lineComment("Don't create empty handler ranges.");
-            b.startIf().string("startBci == endBci").end().startBlock();
-            b.startReturn().string(UNINIT).end();
-            b.end();
-
-            b.lineComment("If the previous entry is for the same handler and the ranges are contiguous, combine them.");
-            b.startIf().string("handlerTableSize > 0").end().startBlock();
-            b.declaration(type(int.class), "previousEntry", "handlerTableSize - EXCEPTION_HANDLER_LENGTH");
-            b.declaration(type(int.class), "previousEndBci", "handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_END_BCI]");
-            b.declaration(type(int.class), "previousKind", "handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_KIND]");
-            b.declaration(type(int.class), "previousHandlerBci", "handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
-            b.startIf().string("previousEndBci == startBci && previousKind == handlerKind && previousHandlerBci == handlerBci").end().startBlock();
-            b.statement("handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_END_BCI] = endBci");
-            b.startReturn().string(UNINIT).end();
-            b.end(); // if same handler and contiguous
-            b.end(); // if table non-empty
-
-            b.startIf().string("handlerTable.length <= handlerTableSize + EXCEPTION_HANDLER_LENGTH").end().startBlock();
-            b.statement("handlerTable = Arrays.copyOf(handlerTable, handlerTable.length * 2)");
-            b.end();
-
-            b.statement("int result = handlerTableSize");
-            b.statement("handlerTable[handlerTableSize + EXCEPTION_HANDLER_OFFSET_START_BCI] = startBci");
-            b.statement("handlerTable[handlerTableSize + EXCEPTION_HANDLER_OFFSET_END_BCI] = endBci");
-            b.statement("handlerTable[handlerTableSize + EXCEPTION_HANDLER_OFFSET_KIND] = handlerKind");
-            b.statement("handlerTable[handlerTableSize + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = handlerBci");
-            b.statement("handlerTable[handlerTableSize + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] = handlerSp");
-            b.statement("handlerTableSize += EXCEPTION_HANDLER_LENGTH");
-
-            b.statement("return result");
-
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_START_BCI")).createInitBuilder().string("0");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_END_BCI")).createInitBuilder().string("1");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_KIND")).createInitBuilder().string("2");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_HANDLER_BCI")).createInitBuilder().string("3");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_HANDLER_SP")).createInitBuilder().string("4");
-            BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_LENGTH")).createInitBuilder().string("5");
 
             return ex;
         }
@@ -7223,12 +7039,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private CodeExecutableElement createFailState() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(RuntimeException.class), "failState");
             ex.addParameter(new CodeVariableElement(type(String.class), "message"));
+            ex.addParameter(new CodeVariableElement(type(Object[].class), "args"));
+            ex.setVarArgs(true);
             CodeTreeBuilder b = ex.createBuilder();
 
             b.startThrow().startNew(type(IllegalStateException.class));
             b.startGroup();
             b.doubleQuote("Invalid builder usage: ");
-            b.string(" + ").string("message").string(" + ").doubleQuote(" Operation stack: ").string(" + dumpAt()");
+            b.string(" + ");
+            b.startStaticCall(type(String.class), "format");
+            b.string("message");
+            b.string("args");
+            b.end();
+            b.string(" + ").doubleQuote(" Operation stack: ").string(" + dumpAt()");
             b.end().end().end();
 
             return ex;
@@ -7253,18 +7076,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             CodeTreeBuilder b = ex.createBuilder();
 
             b.startTryBlock();
-            b.startDeclaration(type(StringBuilder.class), "b").startNew(type(StringBuilder.class)).end().end();
-            // for operation stacks
-            b.startFor().string("int i = 0; i < operationSp; i++").end().startBlock();
-            b.startStatement().startCall("b.append").doubleQuote("(").end().end();
-            b.startStatement().startCall("b.append").string("operationStack[i].toString(this)").end().end();
-            b.end(); // for
-
-            b.startFor().string("int i = 0; i < operationSp; i++").end().startBlock();
-            b.startStatement().startCall("b.append").doubleQuote(")").end().end();
-            b.end(); // for
-
-            b.statement("return b.toString()");
+            b.statement("return state.toString()");
             b.end().startCatchBlock(type(Exception.class), "e");
             b.startReturn().doubleQuote("<invalid-location>").end();
             b.end();
@@ -7281,20 +7093,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("b.append('.')");
             b.startStatement().startCall("b.append").startGroup().typeLiteral(this.asType()).string(".getSimpleName()").end().end().end();
             b.startStatement().startCall("b.append").doubleQuote("[").end().end();
-
-            b.startStatement().startCall("b.append").doubleQuote("at=").end().end();
-
-            // for operation stacks
-            b.startFor().string("int i = 0; i < operationSp; i++").end().startBlock();
-            b.startStatement().startCall("b.append").doubleQuote("(").end().end();
-            b.startStatement().startCall("b.append").string("operationStack[i].toString(this)").end().end();
-            b.end(); // for
-
-            b.startFor().string("int i = 0; i < operationSp; i++").end().startBlock();
-            b.startStatement().startCall("b.append").doubleQuote(")").end().end();
-            b.end(); // for
-
-            b.startStatement().startCall("b.append").doubleQuote(", mode=").end().end();
+            b.startStatement().startCall("b.append").doubleQuote("mode=").end().end();
 
             boolean elseIf = false;
             if (model.enableSerialization) {
@@ -7313,12 +7112,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startStatement().startCall("b.append").doubleQuote("default").end().end();
             b.end();
 
-            b.startStatement().startCall("b.append").doubleQuote(", bytecodeIndex=").end().startCall(".append").string("bci").end().end();
-            b.startStatement().startCall("b.append").doubleQuote(", stackPointer=").end().startCall(".append").string("currentStackHeight").end().end();
+            b.startStatement().startCall("b.append").doubleQuote(", bytecodeIndex=").end().startCall(".append").string("state.bci").end().end();
+            b.startStatement().startCall("b.append").doubleQuote(", stackPointer=").end().startCall(".append").string("state.currentStackHeight").end().end();
             b.startStatement().startCall("b.append").doubleQuote(", bytecodes=").end().startCall(".append").string("parseBytecodes").end().end();
             b.startStatement().startCall("b.append").doubleQuote(", sources=").end().startCall(".append").string("parseSources").end().end();
 
-            if (!model.instrumentations.isEmpty()) {
+            if (!model.getInstrumentations().isEmpty()) {
                 b.startStatement().startCall("b.append").doubleQuote(", instruments=[").end().end();
                 b.declaration(type(String.class), "sep", "\"\"");
                 for (CustomOperationModel customOp : model.getInstrumentations()) {
@@ -7346,6 +7145,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
             }
 
+            b.startStatement().startCall("b.append").doubleQuote(",").end().end();
+            b.startStatement().startCall("b.append").string("System.lineSeparator()").end().end();
+            b.startStatement().startCall("b.append").doubleQuote("  current=").end().end();
+            b.startStatement().startCall("b.append").string("state.toString()").end().end();
             b.startStatement().startCall("b.append").doubleQuote("]").end().end();
 
             b.statement("return b.toString()");
@@ -7367,38 +7170,44 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * Walk the entire operation stack (past any root operations) and find enclosing source
              * sections. The entire root node's bytecode range is covered by the source section.
              */
+            b.declaration(rootStackElement.asType(), "currentState", "state");
+            b.startWhile().string("currentState != null").end().startBlock();
             buildOperationStackWalk(b, "0", () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                b.startSwitch().string("operation.operation").end().startBlock();
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionPrefixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionPrefixOperation, "i");
-                b.startStatement().startCall("doEmitSourceInfo");
-                b.string("operationData.sourceIndex");
+                b.startStatement().startCall("state.doEmitSourceInfo");
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.sourceIndex));
                 b.string("0");
-                b.string("bci");
-                b.string("operationData.start");
-                b.string("operationData.length");
+                b.string("state.bci");
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.start));
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.length));
                 b.end(2);
                 b.statement("return");
                 b.end();
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionSuffixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionPrefixOperation, "i");
-                b.statement("operationData.nodeId = nodeId");
-                b.startAssign("operationData.start").startCall("doEmitSourceInfo");
-                b.string("operationData.sourceIndex");
+
+                b.tree(operationStack.write(model.sourceSectionSuffixOperation, operationFields.sourceNodeId, "nodeId"));
+
+                b.startAssign("int operationStart").startCall("state.doEmitSourceInfo");
+                b.string(operationStack.read(model.sourceSectionSuffixOperation, operationFields.sourceIndex));
                 b.string("0");
-                b.string("bci");
-                b.string("operationData.start");
+                b.string("state.bci");
+                b.string(operationStack.read(model.sourceSectionSuffixOperation, operationFields.start));
                 b.string("PATCH_NODE_SOURCE");
                 b.end(2);
+                b.tree(operationStack.write(model.sourceSectionSuffixOperation, operationFields.start, "operationStart"));
+
                 b.statement("return");
                 b.end();
 
                 b.end(); // switch
-            });
+            }, "currentState");
+            b.statement("currentState = currentState.parent");
+            b.end();
 
             return ex;
         }
@@ -7423,7 +7232,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private CodeExecutableElement createBeforeEmitReturn() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "beforeEmitReturn");
             ex.addParameter(new CodeVariableElement(type(int.class), "parentBci"));
-            emitStackWalksBeforeEarlyExit(ex, OperationKind.RETURN, "return", "rootOperationSp + 1");
+            emitStackWalksBeforeEarlyExit(ex, OperationKind.RETURN, "return", "state.rootOperationSp + 1");
             return ex;
         }
 
@@ -7431,12 +7240,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * Before emitting a yield, we may need to emit additional instructions for tag
          * instrumentation.
          */
-        private CodeExecutableElement createDoEmitTagYield() {
-            if (!model.enableTagInstrumentation || !model.enableYield) {
+        private CodeExecutableElement createDoEmitTagYield(InstructionModel instr) {
+            if (!model.enableTagInstrumentation || !model.hasYieldOperation()) {
                 throw new AssertionError("cannot produce method");
             }
 
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitTagYield");
+            String methodName = switch (instr.kind) {
+                case TAG_YIELD -> "doEmitTagYield";
+                case TAG_YIELD_NULL -> "doEmitTagYieldNull";
+                default -> throw new AssertionError("Unexpected tag yield instruction " + instr);
+            };
+
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), methodName);
 
             CodeTreeBuilder b = ex.createBuilder();
             b.startIf().string("tags == 0").end().startBlock();
@@ -7444,13 +7259,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             buildOperationStackWalk(b, () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                b.startSwitch().string("operation.operation").end().startBlock();
 
                 OperationModel op = model.findOperation(OperationKind.TAG);
                 b.startCase().tree(createOperationConstant(op)).end();
                 b.startBlock();
-                emitCastOperationData(b, op, "i");
-                buildEmitInstruction(b, model.tagYieldInstruction, "operationData.nodeId");
+                buildEmitInstruction(b, null, instr, operationStack.read(op, operationFields.nodeId));
                 b.statement("break");
                 b.end(); // case tag
 
@@ -7465,60 +7279,31 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * instrumentation.
          */
         private CodeExecutableElement createDoEmitTagResume() {
-            if (!model.enableTagInstrumentation || !model.enableYield) {
+            if (!model.enableTagInstrumentation || !model.hasYieldOperation()) {
                 throw new AssertionError("cannot produce method");
             }
 
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitTagResume");
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitTagResume");
             CodeTreeBuilder b = ex.createBuilder();
+            b.declaration(type(int.class), "tagResumeBci", "-1");
 
             b.startIf().string("tags == 0").end().startBlock();
-            b.returnDefault();
+            b.startReturn().string("tagResumeBci").end();
             b.end();
 
-            buildOperationStackWalkFromBottom(b, "rootOperationSp", () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
+            buildOperationStackWalkFromBottom(b, "state.rootOperationSp", () -> {
+                b.startSwitch().string("operation.operation").end().startBlock();
                 OperationModel op = model.findOperation(OperationKind.TAG);
                 b.startCase().tree(createOperationConstant(op)).end();
                 b.startBlock();
-                emitCastOperationData(b, op, "i");
-                buildEmitInstruction(b, model.tagResumeInstruction, "operationData.nodeId");
+                b.startAssign("tagResumeBci").string("state.bci").end();
+                buildEmitInstruction(b, null, model.tagResumeInstruction, operationStack.read(op, operationFields.nodeId));
                 b.statement("break");
                 b.end(); // case tag
 
                 b.end(); // switch
             });
-
-            return ex;
-        }
-
-        private CodeExecutableElement createPatchHandlerTable() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "patchHandlerTable");
-            ex.addParameter(new CodeVariableElement(type(int.class), "tableStart"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "tableEnd"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerId"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerBci"));
-            ex.addParameter(new CodeVariableElement(type(int.class), "handlerSp"));
-
-            addJavadoc(ex, """
-                            Iterates the handler table, searching for unresolved entries corresponding to the given handlerId.
-                            Patches them with the handlerBci and handlerSp now that those values are known.
-                            """);
-
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startFor().string("int i = tableStart; i < tableEnd; i += EXCEPTION_HANDLER_LENGTH").end().startBlock();
-
-            b.startIf().string("handlerTable[i + EXCEPTION_HANDLER_OFFSET_KIND] != HANDLER_CUSTOM").end().startBlock();
-            b.statement("continue");
-            b.end();
-            b.startIf().string("handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] != -handlerId").end().startBlock();
-            b.statement("continue");
-            b.end();
-
-            b.statement("handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = handlerBci");
-            b.statement("handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] = handlerSp");
-            b.end();
+            b.startReturn().string("tagResumeBci").end();
 
             return ex;
         }
@@ -7552,23 +7337,26 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             b.declaration(type(boolean.class), "needsRewind", "false");
             buildOperationStackWalk(b, lowestOperationIndex, () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                b.startSwitch().string("operation.operation").end().startBlock();
 
                 if (model.enableTagInstrumentation) {
                     b.startCase().tree(createOperationConstant(model.tagOperation)).end();
                     b.startBlock();
-                    emitCastOperationData(b, model.tagOperation, "i");
-                    b.startIf().string("reachable").end().startBlock();
+                    b.startIf().string("state.reachable").end().startBlock();
                     if (operationKind == OperationKind.RETURN) {
-                        buildEmitInstruction(b, model.tagLeaveValueInstruction, buildTagLeaveArguments(model.tagLeaveValueInstruction));
-                        b.statement("childBci = bci - " + model.tagLeaveValueInstruction.getInstructionLength());
+                        buildEmitInstruction(b, null, model.tagLeaveValueInstruction, buildTagLeaveArguments(model.tagLeaveValueInstruction));
+                        b.statement("childBci = state.bci - " + model.tagLeaveValueInstruction.getInstructionLength());
                     } else {
                         if (operationKind != OperationKind.BRANCH) {
                             throw new AssertionError("unexpected operation kind used for unwind code generation.");
                         }
-                        buildEmitInstruction(b, model.tagLeaveVoidInstruction, "operationData.nodeId");
+                        buildEmitInstruction(b, null, model.tagLeaveVoidInstruction, operationStack.read(model.tagOperation, operationFields.nodeId));
                     }
-                    b.statement("doCreateExceptionHandler(operationData.handlerStartBci, bci, HANDLER_TAG_EXCEPTIONAL, operationData.nodeId, operationData.startStackHeight)");
+                    b.statement("state.doCreateExceptionHandler(",
+                                    operationStack.read(model.tagOperation, operationFields.handlerStartBci),
+                                    ", state.bci, HANDLER_TAG_EXCEPTIONAL, ",
+                                    operationStack.read(model.tagOperation, operationFields.nodeId), ", ",
+                                    operationStack.read(model.tagOperation, operationFields.startStackHeight), ")");
                     b.statement("needsRewind = true");
                     b.end(); // reachable
                     b.statement("break");
@@ -7578,32 +7366,32 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 if (operationKind == OperationKind.RETURN && model.epilogReturn != null) {
                     b.startCase().tree(createOperationConstant(model.epilogReturn.operation)).end();
                     b.startBlock();
-                    buildEmitOperationInstruction(b, model.epilogReturn.operation, "childBci", "i", null);
-                    b.statement("childBci = bci - " + model.epilogReturn.operation.instruction.getInstructionLength());
+                    buildEmitOperationInstruction(b, model.epilogReturn.operation, "childBci", null);
+                    b.statement("childBci = state.bci - " + model.epilogReturn.operation.instruction.getInstructionLength());
                     b.statement("break");
                     b.end(); // case epilog
                 }
 
                 for (OperationKind finallyOpKind : List.of(OperationKind.TRY_FINALLY, OperationKind.TRY_CATCH_OTHERWISE)) {
-                    b.startCase().tree(createOperationConstant(model.findOperation(finallyOpKind))).end();
+                    OperationModel op = model.findOperation(finallyOpKind);
+                    b.startCase().tree(createOperationConstant(op)).end();
                     b.startBlock();
-                    emitCastOperationData(b, model.tryFinallyOperation, "i");
-                    b.startIf().string("operationStack[i].childCount == 0 /* still in try */").end().startBlock();
-                    b.startIf().string("reachable").end().startBlock();
-                    emitExtraExceptionTableEntry(b);
+                    b.startIf().string("operation.childCount == 0 /* still in try */").end().startBlock();
+                    b.startIf().string("state.reachable").end().startBlock();
+                    emitExtraExceptionTableEntry(b, op);
                     b.statement("needsRewind = true");
                     b.end(); // if reachable
-                    b.statement("doEmitFinallyHandler(operationData, i)");
+                    b.statement("doEmitFinallyHandler(operation, i)");
                     b.end(); // if in try
                     b.statement("break");
                     b.end(); // case finally
                 }
 
+                OperationModel tryCatch = model.findOperation(OperationKind.TRY_CATCH);
                 b.startCase().tree(createOperationConstant(model.findOperation(OperationKind.TRY_CATCH))).end();
                 b.startBlock();
-                emitCastOperationData(b, model.tryCatchOperation, "i");
-                b.startIf().string("operationStack[i].childCount == 0 /* still in try */ && reachable").end().startBlock();
-                emitExtraExceptionTableEntry(b);
+                b.startIf().string("operation.childCount == 0 /* still in try */ && state.reachable").end().startBlock();
+                emitExtraExceptionTableEntry(b, tryCatch);
                 b.statement("needsRewind = true");
                 b.end(); // if in try and reachable
                 b.statement("break");
@@ -7611,13 +7399,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionPrefixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionPrefixOperation, "i");
-                b.startStatement().startCall("doEmitSourceInfo");
-                b.string("operationData.sourceIndex");
-                b.string("operationData.startBci");
-                b.string("bci");
-                b.string("operationData.start");
-                b.string("operationData.length");
+                b.startStatement().startCall("state.doEmitSourceInfo");
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.sourceIndex));
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.startBci));
+                b.string("state.bci");
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.start));
+                b.string(operationStack.read(model.sourceSectionPrefixOperation, operationFields.length));
                 b.end(2);
                 b.statement("needsRewind = true");
                 b.statement("break");
@@ -7625,14 +7412,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionSuffixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionSuffixOperation, "i");
-                b.startAssign("operationData.start").startCall("doEmitSourceInfo");
-                b.string("operationData.sourceIndex");
-                b.string("operationData.startBci");
-                b.string("bci");
-                b.string("operationData.start");
+                b.startAssign("int operationStart").startCall("state.doEmitSourceInfo");
+                b.string(operationStack.read(model.sourceSectionSuffixOperation, operationFields.sourceIndex));
+                b.string(operationStack.read(model.sourceSectionSuffixOperation, operationFields.startBci));
+                b.string("state.bci");
+                b.string(operationStack.read(model.sourceSectionSuffixOperation, operationFields.start));
                 b.string("PATCH_CURRENT_SOURCE");
                 b.end(2);
+                b.tree(operationStack.write(model.sourceSectionSuffixOperation, operationFields.start, "operationStart"));
                 b.statement("needsRewind = true");
                 b.statement("break");
                 b.end();
@@ -7640,11 +7427,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 if (model.enableBlockScoping) {
                     b.startCase().tree(createOperationConstant(model.blockOperation)).end();
                     b.startBlock();
-                    emitCastOperationData(b, model.blockOperation, "i");
-                    b.startFor().string("int j = 0; j < operationData.numLocals; j++").end().startBlock();
-                    b.statement("locals[operationData.locals[j] + LOCALS_OFFSET_END_BCI] = bci");
+                    b.startFor().string("int j = 0; j < ", operationStack.read(model.blockOperation, operationFields.numLocals), "; j++").end().startBlock();
+
+                    b.statement("state.locals[", operationStack.read(model.blockOperation, operationFields.locals), "[j] + LOCALS_OFFSET_END_BCI] = state.bci");
                     if (operationKind == OperationKind.BRANCH) {
-                        buildEmitInstruction(b, model.clearLocalInstruction, safeCastShort("locals[operationData.locals[j] + LOCALS_OFFSET_FRAME_INDEX]"));
+                        buildEmitInstruction(b, null, model.clearLocalInstruction,
+                                        safeCastShort("state.locals[" + operationStack.read(model.blockOperation, operationFields.locals) + "[j] + LOCALS_OFFSET_FRAME_INDEX]"));
                     }
                     b.statement("needsRewind = true");
                     b.end(); // for
@@ -7656,15 +7444,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             });
         }
 
-        private void emitExtraExceptionTableEntry(CodeTreeBuilder b) {
+        private void emitExtraExceptionTableEntry(CodeTreeBuilder b, OperationModel op) {
             b.startDeclaration(type(int.class), "handlerTableIndex");
-            b.string("doCreateExceptionHandler(operationData.tryStartBci, bci, HANDLER_CUSTOM, -operationData.handlerId, ", UNINIT, " /* stack height */)");
+            b.string("state.doCreateExceptionHandler(", operationStack.read(op, operationFields.tryStartBci), ", state.bci, HANDLER_CUSTOM, -",
+                            operationStack.read(op, operationFields.handlerId), ", ", UNINIT, " /* stack height */)");
             b.end();
             b.startIf().string("handlerTableIndex != ", UNINIT).end().startBlock();
-            b.startIf().string("operationData.extraTableEntriesStart == ", UNINIT).end().startBlock();
-            b.statement("operationData.extraTableEntriesStart = handlerTableIndex");
+            b.startIf().string(operationStack.read(op, operationFields.extraTableEntriesStart), " == ", UNINIT).end().startBlock();
+            b.tree(operationStack.write(op, operationFields.extraTableEntriesStart, "handlerTableIndex"));
             b.end();
-            b.statement("operationData.extraTableEntriesEnd = handlerTableIndex + EXCEPTION_HANDLER_LENGTH");
+            b.tree(operationStack.write(op, operationFields.extraTableEntriesEnd, "handlerTableIndex + EXCEPTION_HANDLER_LENGTH"));
             b.end();
         }
 
@@ -7678,13 +7467,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startIf().string("needsRewind").end().startBlock();
 
             buildOperationStackWalkFromBottom(b, lowestOperationIndex, () -> {
-                b.startSwitch().string("operationStack[i].operation").end().startBlock();
+                b.startSwitch().string("operation.operation").end().startBlock();
 
                 if (model.enableTagInstrumentation) {
                     b.startCase().tree(createOperationConstant(model.tagOperation)).end();
                     b.startBlock();
-                    emitCastOperationData(b, model.tagOperation, "i");
-                    b.statement("operationData.handlerStartBci = bci");
+                    b.tree(operationStack.write(model.tagOperation, operationFields.handlerStartBci, "state.bci"));
                     b.statement("break");
                     b.end();
                 }
@@ -7692,42 +7480,37 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startCase().tree(createOperationConstant(model.findOperation(OperationKind.TRY_FINALLY))).end();
                 b.startCase().tree(createOperationConstant(model.findOperation(OperationKind.TRY_CATCH_OTHERWISE))).end();
                 b.startCaseBlock();
-                b.startIf().string("operationStack[i].childCount == 0 /* still in try */").end().startBlock();
-                emitCastOperationData(b, model.tryFinallyOperation, "i");
-                b.statement("operationData.tryStartBci = bci");
+                b.startIf().string("operation.childCount == 0 /* still in try */").end().startBlock();
+                b.tree(operationStack.write(model.findOperation(OperationKind.TRY_FINALLY), operationFields.tryStartBci, "state.bci"));
                 b.end(); // if
                 b.statement("break");
                 b.end(); // case finally
 
                 b.startCase().tree(createOperationConstant(model.findOperation(OperationKind.TRY_CATCH))).end();
                 b.startCaseBlock();
-                b.startIf().string("operationStack[i].childCount == 0 /* still in try */").end().startBlock();
-                emitCastOperationData(b, model.tryCatchOperation, "i");
-                b.statement("operationData.tryStartBci = bci");
+                b.startIf().string("operation.childCount == 0 /* still in try */").end().startBlock();
+                b.tree(operationStack.write(model.tryCatchOperation, operationFields.tryStartBci, "state.bci"));
                 b.end(); // if
                 b.statement("break");
                 b.end(); // case trycatch
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionPrefixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionPrefixOperation, "i");
-                b.statement("operationData.startBci = bci");
+                b.tree(operationStack.write(model.sourceSectionPrefixOperation, operationFields.startBci, "state.bci"));
                 b.statement("break");
                 b.end(); // case source section
 
                 b.startCase().tree(createOperationConstant(model.sourceSectionSuffixOperation)).end();
                 b.startBlock();
-                emitCastOperationData(b, model.sourceSectionSuffixOperation, "i");
-                b.statement("operationData.startBci = bci");
+                b.tree(operationStack.write(model.sourceSectionPrefixOperation, operationFields.startBci, "state.bci"));
                 b.statement("break");
                 b.end(); // case source section
 
                 if (model.enableBlockScoping) {
                     b.startCase().tree(createOperationConstant(model.blockOperation)).end();
                     b.startBlock();
-                    emitCastOperationData(b, model.blockOperation, "i");
-                    b.startFor().string("int j = 0; j < operationData.numLocals; j++").end().startBlock();
-                    b.declaration(type(int.class), "prevTableIndex", "operationData.locals[j]");
+                    b.startFor().string("int j = 0; j < ", operationStack.read(model.blockOperation, operationFields.numLocals), "; j++").end().startBlock();
+                    b.declaration(type(int.class), "prevTableIndex", operationStack.read(model.blockOperation, operationFields.locals) + "[j]");
 
                     /**
                      * We need to emit multiple local ranges if instructions were emitted after
@@ -7736,20 +7519,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                      * after a branch because we emit a clear.local instruction when unwinding.
                      */
                     if (operationKind != OperationKind.BRANCH) {
-                        b.declaration(type(int.class), "endBci", "locals[prevTableIndex + LOCALS_OFFSET_END_BCI]");
-                        b.startIf().string("endBci == bci").end().startBlock();
+                        b.declaration(type(int.class), "endBci", "state.locals[prevTableIndex + LOCALS_OFFSET_END_BCI]");
+                        b.startIf().string("endBci == state.bci").end().startBlock();
                         b.lineComment("No need to split. Reuse the existing entry.");
-                        b.statement("locals[prevTableIndex + LOCALS_OFFSET_END_BCI] = ", UNINIT);
+                        b.statement("state.locals[prevTableIndex + LOCALS_OFFSET_END_BCI] = ", UNINIT);
                         b.statement("continue");
                         b.end();
                     }
 
                     b.lineComment("Create a new table entry with a new bytecode range and the same metadata.");
-                    b.declaration(type(int.class), "localIndex", "locals[prevTableIndex + LOCALS_OFFSET_LOCAL_INDEX]");
-                    b.declaration(type(int.class), "frameIndex", "locals[prevTableIndex + LOCALS_OFFSET_FRAME_INDEX]");
-                    b.declaration(type(int.class), "nameIndex", "locals[prevTableIndex + LOCALS_OFFSET_NAME]");
-                    b.declaration(type(int.class), "infoIndex", "locals[prevTableIndex + LOCALS_OFFSET_INFO]");
-                    b.statement("operationData.locals[j] = doEmitLocal(localIndex, frameIndex, nameIndex, infoIndex)");
+                    b.declaration(type(int.class), "localIndex", "state.locals[prevTableIndex + LOCALS_OFFSET_LOCAL_INDEX]");
+                    b.declaration(type(int.class), "frameIndex", "state.locals[prevTableIndex + LOCALS_OFFSET_FRAME_INDEX]");
+                    b.declaration(type(int.class), "nameIndex", "state.locals[prevTableIndex + LOCALS_OFFSET_NAME]");
+                    b.declaration(type(int.class), "infoIndex", "state.locals[prevTableIndex + LOCALS_OFFSET_INFO]");
+                    b.statement(operationStack.read(model.blockOperation, operationFields.locals), "[j] = state.doEmitLocal(localIndex, frameIndex, nameIndex, infoIndex)");
                     b.end(); // for
                     b.end(); // case block
                 }
@@ -7763,596 +7546,334 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             InstructionImmediate operandIndex = instr.getImmediate(ImmediateKind.BYTECODE_INDEX);
             String[] args;
             if (operandIndex == null) {
-                args = new String[]{"operationData.nodeId"};
+                args = new String[]{operationStack.read(instr.operation, operationFields.nodeId)};
             } else {
-                args = new String[]{"operationData.nodeId", "childBci"};
+                args = new String[]{operationStack.read(instr.operation, operationFields.nodeId), "childBci"};
             }
             return args;
         }
 
-        private CodeExecutableElement createAllocateNode() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateNode");
-            CodeTreeBuilder b = ex.createBuilder();
-            b.startIf().string("!reachable").end().startBlock();
-            b.statement("return -1");
-            b.end();
+        final class RootStackElement extends CodeTypeElement {
 
-            b.startReturn().startCall("checkOverflowInt");
-            b.string("numNodes++");
-            b.doubleQuote("Node counter");
-            b.end(2);
+            final Map<InstructionEncoding, CodeExecutableElement> doEmitInstructionMethods = new TreeMap<>();
 
-            return ex;
-        }
+            RootStackElement() {
+                super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "RootStackElement");
 
-        private CodeExecutableElement createAllocateBytecodeLocal() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(short.class), "allocateBytecodeLocal");
-            CodeTreeBuilder b = ex.createBuilder();
+                TypeMirror referenceType = generic(SoftReference.class, this.asType());
+                TypeMirror deque = generic(type(ThreadLocal.class), referenceType);
+                this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), deque, "THREAD_LOCAL")).createInitBuilder().string("new ThreadLocal<>()");
 
-            b.startReturn().startCall("checkOverflowShort");
-            b.string("(short) numLocals++");
-            b.doubleQuote("Number of locals");
-            b.end(2);
-
-            return ex;
-        }
-
-        private CodeExecutableElement createAllocateBranchProfile() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateBranchProfile");
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startIf().string("!reachable").end().startBlock();
-            b.statement("return -1");
-            b.end();
-
-            b.startReturn().startCall("checkOverflowInt");
-            b.string("numConditionalBranches++");
-            b.doubleQuote("Number of branch profiles");
-            b.end(2);
-
-            return ex;
-        }
-
-        private CodeExecutableElement createAllocateContinuationConstant() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(short.class), "allocateContinuationConstant");
-            CodeTreeBuilder b = ex.createBuilder();
-
-            /**
-             * NB: We need to allocate constant pool slots for continuations regardless of
-             * reachability in order to keep the constant pool consistent. In rare scenarios,
-             * reparsing can make a previously unreachable yield reachable (e.g., reparsing with
-             * tags)
-             */
-            b.startReturn();
-            b.string("constantPool.allocateSlot()");
-            b.end();
-
-            return ex;
-        }
-
-        static final class SavedStateElement extends CodeTypeElement {
-
-            SavedStateElement() {
-                super(Set.of(PRIVATE, STATIC), ElementKind.CLASS, null, "SavedState");
+                this.add(createAcquire());
+                this.add(createRelease());
+                this.add(createGetNext());
+                this.add(createCleanup());
             }
 
-            void lazyInit(List<CodeVariableElement> builderState) {
-                this.addAll(builderState);
-                this.add(createConstructorUsingFields(Set.of(), this, null));
-            }
-        }
+            void lazyInit() {
+                this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), rootStackElement.asType(), "parent"));
+                CodeExecutableElement ctor = this.add(createConstructorUsingFields(Set.of(), this, null));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), rootStackElement.asType(), "next"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(boolean.class), "needsClean"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), generic(SoftReference.class, this.asType()), "reference")).createInitBuilder().startNew(
+                                generic(SoftReference.class, this.asType())).string("this").end();
 
-        class OperationDataClassesFactory {
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "operationSequenceNumber"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), new ArrayCodeTypeMirror(operationStack.asType()), "operationStack"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "operationSp"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "rootOperationSp"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(boolean.class), "reachable")).createInitBuilder().string("true");
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(byte[].class), "bc"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "bci"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numLocals"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numLabels"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numNodes"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numHandlers"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "numConditionalBranches"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "currentStackHeight"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "maxStackHeight"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int[].class), "sourceInfo"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "sourceInfoIndex"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int[].class), "handlerTable"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "handlerTableSize"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), arrayOf(type(int.class)), "locals"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "localsTableIndex"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), types.BytecodeSupport_ConstantsBuffer, "constants"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "instrumentations"));
 
-            private Collection<CodeTypeElement> create() {
-                List<CodeTypeElement> result = new ArrayList<>();
+                if (model.hasYieldOperation()) {
+                    /**
+                     * Invariant: Continuation locations are sorted by bci, which means we can
+                     * iterate over the bytecodes and continuation locations in lockstep (i.e., the
+                     * i-th yield instruction uses the i-th continuation location).
+                     */
+                    this.add(new CodeVariableElement(Set.of(PRIVATE), type(int[].class), "continuations"));
+                    this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "continuationsIndex"));
+                }
 
                 if (model.enableBlockScoping) {
-                    scopeDataType = new ScopeDataElement();
-                    result.add(scopeDataType);
+                    this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "maxLocals"));
                 }
 
-                Map<String, CodeTypeElement> dataClassNames = new LinkedHashMap<>();
-                for (OperationModel operation : model.getOperations()) {
-                    CodeTypeElement type = dataClasses.get(operation);
-                    if (type == null) {
-                        type = createDataClass(operation);
-                        if (type != null) {
-                            String name = type.getSimpleName().toString();
-                            CodeTypeElement typeSameName = dataClassNames.get(name);
-                            if (typeSameName == null) {
-                                dataClassNames.put(name, type);
-                            } else {
-                                type = typeSameName;
-                            }
-                        }
-                    }
-                    dataClasses.put(operation, type);
+                if (model.enableTagInstrumentation) {
+                    this.add(new CodeVariableElement(Set.of(PRIVATE), generic(type(List.class), tagNode.asType()), "tagRoots"));
+                    this.add(new CodeVariableElement(Set.of(PRIVATE), generic(type(List.class), tagNode.asType()), "tagNodes"));
                 }
-                result.addAll(dataClassNames.values());
-                return result;
+
+                CodeTreeBuilder b = ctor.createBuilder();
+
+                /*
+                 * We initialize the fields declared on builderState here when beginRoot is called.
+                 */
+                b.statement("this.parent = parent");
+                b.statement("this.operationSequenceNumber = 0");
+                b.statement("this.rootOperationSp = -1");
+                b.startAssign("this.operationStack").startNewArray(arrayOf(operationStack.asType()), CodeTreeBuilder.singleString("32")).end().end();
+                b.startFor().string("int i = 0; i < this.operationStack.length; i++").end().startBlock();
+                b.startAssign("this.operationStack[i]").startNew(operationStack.asType()).end().end();
+                b.end();
+
+                b.statement("this.reachable = true");
+                if (model.enableTagInstrumentation) {
+                    b.statement("this.tagRoots = null");
+                    b.statement("this.tagNodes = null");
+                }
+                b.statement("this.numLocals = 0");
+                if (model.enableBlockScoping) {
+                    b.statement("this.maxLocals = numLocals");
+                }
+                b.statement("this.numLabels = 0");
+                b.statement("this.numNodes = 0");
+                b.statement("this.numHandlers = 0");
+                b.statement("this.numConditionalBranches = 0");
+                b.startAssign("this.constants").startNew(types.BytecodeSupport_ConstantsBuffer).end().end();
+                b.statement("this.bc = new byte[512]");
+                b.statement("this.bci = 0");
+                b.statement("this.currentStackHeight = 0");
+                b.statement("this.maxStackHeight = 0");
+                b.statement("this.handlerTable = new int[8 * EXCEPTION_HANDLER_LENGTH]");
+                b.statement("this.handlerTableSize = 0");
+                b.statement("this.locals = null");
+                b.statement("this.localsTableIndex = 0");
+                if (model.hasYieldOperation()) {
+                    b.statement("this.continuations = new int[4 * CONTINUATION_LENGTH]");
+                    b.statement("this.continuationsIndex = 0");
+                }
+                b.statement("this.sourceInfo = new int[16 * SOURCE_INFO_LENGTH]");
+                b.statement("this.sourceInfoIndex = 0");
+                b.statement("this.instrumentations = 0");
+
+                this.add(createReset());
+                this.add(createPushOperation());
+                this.add(createPopOperation());
+                this.add(createPeekOperation());
+                this.add(createUpdateMaxStackHeight());
+                this.add(createEnsureBytecodeCapacity());
+                this.add(createAddConstant());
+                this.add(createAllocateConstantSlot());
+                this.add(createToConstants());
+                this.add(createAllocateNode());
+                this.add(createAllocateBytecodeLocal());
+                this.add(createAllocateBranchProfile());
+
+                if (model.hasYieldOperation()) {
+                    this.add(createAllocateContinuationConstant());
+                    this.add(createDoEmitContinuation());
+                }
+
+                this.add(createDoEmitLocal());
+                this.add(createDoEmitLocalConstantIndices());
+                this.add(createAllocateLocalsTableEntry());
+                this.add(createPatchHandlerTable());
+                this.add(createDoCreateExceptionHandler());
+                this.add(createDoPatchSourceInfo());
+                this.add(createDoEmitSourceInfo());
+                this.add(createRegisterUnresolvedLabel());
+                this.add(createResolveUnresolvedLabel());
+
+                if (model.enableInstructionTracing) {
+                    this.add(createDoEmitTraceInstruction());
+                }
             }
 
-            private CodeTypeElement createDataClass(OperationModel operation) {
-                String name = null; // default name
-                TypeMirror superType = null; // default type
-                List<CodeExecutableElement> methods = List.of();
-                List<DataClassField> fields;
-                switch (operation.kind) {
-                    case ROOT:
-                        name = "RootData";
-                        fields = new ArrayList<>(5);
-                        fields.addAll(List.of(//
-                                        field(type(short.class), "index").asFinal(),
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT),
-                                        field(type(boolean.class), "reachable").withInitializer("true")));
-                        if (model.prolog != null && model.prolog.operation.operationEndArguments.length != 0) {
-                            fields.add(field(type(int.class), "prologBci").withInitializer(UNINIT));
-                        }
-                        if (model.enableBlockScoping) {
-                            superType = scopeDataType.asType();
-                        }
-                        break;
-                    case BLOCK:
-                        name = "BlockData";
-                        fields = List.of(//
-                                        field(type(int.class), "startStackHeight").asFinal(),
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT));
-                        if (model.enableBlockScoping) {
-                            superType = scopeDataType.asType();
-                        }
-                        break;
-                    case TAG:
-                        name = "TagOperationData";
-                        fields = List.of(//
-                                        field(type(int.class), "nodeId").asFinal(),
-                                        field(type(boolean.class), "operationReachable").asFinal(),
-                                        field(type(int.class), "startStackHeight").asFinal(),
-                                        field(tagNode.asType(), "node").asFinal(),
-                                        field(type(int.class), "handlerStartBci").withInitializer("node.enterBci"),
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT),
-                                        field(generic(type(List.class), tagNode.asType()), "children").withInitializer("null"));
-
-                        break;
-                    case SOURCE_SECTION:
-                        name = "SourceSectionData";
-                        fields = List.of(//
-                                        field(type(int.class), "sourceIndex").asFinal(),
-                                        field(type(int.class), "startBci"),
-                                        field(type(int.class), "start"),
-                                        field(type(int.class), "length"),
-                                        field(type(int.class), "nodeId").withInitializer("-1"),
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT));
-                        break;
-                    case SOURCE:
-                        name = "SourceData";
-                        fields = List.of(//
-                                        field(type(int.class), "sourceIndex").asFinal(),
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT));
-                        break;
-                    case RETURN:
-                        name = "ReturnOperationData";
-                        fields = List.of(//
-                                        field(type(boolean.class), "producedValue").withInitializer("false"),
-                                        field(type(int.class), "childBci").withInitializer(UNINIT));
-                        break;
-                    case STORE_LOCAL:
-                    case STORE_LOCAL_MATERIALIZED:
-                        if (model.usesBoxingElimination()) {
-                            name = "StoreLocalData";
-                            fields = List.of(//
-                                            field(bytecodeLocalImpl.asType(), "local"),
-                                            field(type(int.class), "childBci").withInitializer(UNINIT));
-                        } else {
-                            name = null;
-                            fields = List.of();
-                        }
-                        break;
-                    case IF_THEN:
-                        name = "IfThenData";
-                        fields = List.of(//
-                                        field(type(boolean.class), "thenReachable"),
-                                        field(type(int.class), "falseBranchFixupBci").withInitializer(UNINIT));
-                        break;
-                    case IF_THEN_ELSE:
-                        name = "IfThenElseData";
-                        fields = List.of(//
-                                        field(type(boolean.class), "thenReachable"),
-                                        field(type(boolean.class), "elseReachable"),
-                                        field(type(int.class), "falseBranchFixupBci").withInitializer(UNINIT),
-                                        field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT));
-                        break;
-                    case CONDITIONAL:
-                        name = "ConditionalData";
-                        if (model.usesBoxingElimination()) {
-                            fields = List.of(//
-                                            field(type(boolean.class), "thenReachable"),
-                                            field(type(boolean.class), "elseReachable"),
-                                            field(type(int.class), "falseBranchFixupBci").withInitializer(UNINIT),
-                                            field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT),
-                                            field(type(int.class), "child0Bci").withInitializer(UNINIT),
-                                            field(type(int.class), "child1Bci").withInitializer(UNINIT));
-                        } else {
-                            fields = List.of(//
-                                            field(type(boolean.class), "thenReachable"),
-                                            field(type(boolean.class), "elseReachable"),
-                                            field(type(int.class), "falseBranchFixupBci").withInitializer(UNINIT),
-                                            field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT));
-                        }
-                        break;
-                    case WHILE:
-                        name = "WhileData";
-                        fields = List.of(//
-                                        field(type(int.class), "whileStartBci").asFinal(),
-                                        field(type(boolean.class), "bodyReachable"),
-                                        field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT));
-                        break;
-                    case TRY_CATCH:
-                        name = "TryCatchData";
-                        fields = List.of(//
-                                        field(type(int.class), "handlerId").asFinal(),
-                                        field(type(short.class), "stackHeight").asFinal(),
-                                        field(type(int.class), "tryStartBci"),
-                                        field(type(boolean.class), "operationReachable").asFinal(),
-                                        field(type(boolean.class), "tryReachable"),
-                                        field(type(boolean.class), "catchReachable"),
-                                        field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT),
-                                        field(type(int.class), "extraTableEntriesStart").withInitializer(UNINIT),
-                                        field(type(int.class), "extraTableEntriesEnd").withInitializer(UNINIT));
-                        break;
-                    case TRY_FINALLY, TRY_CATCH_OTHERWISE:
-                        name = "TryFinallyData";
-                        fields = List.of(//
-                                        field(type(int.class), "handlerId").asFinal(),
-                                        field(type(short.class), "stackHeight").asFinal(),
-                                        field(context.getDeclaredType(Runnable.class), "finallyGenerator").asFinal(),
-                                        field(type(int.class), "tryStartBci"),
-                                        field(type(boolean.class), "operationReachable").asFinal(),
-                                        field(type(boolean.class), "tryReachable"),
-                                        field(type(boolean.class), "catchReachable"),
-                                        field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT),
-                                        field(type(int.class), "extraTableEntriesStart").withInitializer(UNINIT),
-                                        field(type(int.class), "extraTableEntriesEnd").withInitializer(UNINIT),
-                                        field(type(int.class), "finallyHandlerSp").withInitializer(UNINIT).withDoc(
-                                                        """
-                                                                        The index of the finally handler operation on the operation stack.
-                                                                        This value is uninitialized unless a finally handler is being emitted, and allows us to
-                                                                        walk the operation stack from bottom to top.
-                                                                        """));
-                        break;
-                    case FINALLY_HANDLER:
-                        name = "FinallyHandlerData";
-                        fields = List.of(field(type(int.class), "finallyOperationSp").asFinal().withDoc(
-                                        """
-                                                        The index of the finally operation (TryFinally/TryCatchOtherwise) on the operation stack.
-                                                        This index should only be used to skip over the handler when walking the operation stack.
-                                                        It should *not* be used to access the finally operation data, because a FinallyHandler is
-                                                        sometimes emitted after the finally operation has already been popped.
-                                                        """));
-                        break;
-                    case CUSTOM, CUSTOM_INSTRUMENTATION:
-                        if (operation.isTransparent()) {
-                            name = "TransparentData";
-                            fields = List.of(//
-                                            field(type(boolean.class), "producedValue").withInitializer("false"),
-                                            field(type(int.class), "childBci").withInitializer(UNINIT));
-                        } else {
-                            name = "CustomOperationData";
-                            fields = new ArrayList<>();
-                            fields.add(field(arrayOf(type(int.class)), "childBcis").asFinal());
-                            fields.add(field(arrayOf(type(int.class)), "constants").asFinal());
-                            fields.add(field(arrayOf(context.getDeclaredType(Object.class)), "locals").asFinal().asVarArgs());
-
-                            if (model.hasCustomVariadic) {
-                                fields.add(field(type(int.class), "variadicCountPatchIndex").withInitializer("-1"));
-                                if (model.hasVariadicReturn) {
-                                    fields.add(field(generic(List.class, Integer.class), "variadicReturnIndices").withInitializer("null"));
-                                }
-                            }
-                        }
-
-                        break;
-                    case CUSTOM_SHORT_CIRCUIT:
-                        name = "CustomShortCircuitOperationData";
-                        fields = List.of(//
-                                        field(type(int.class), "childBci").withInitializer(UNINIT),
-                                        field(type(int.class), "shortCircuitBci").withInitializer(UNINIT),
-                                        field(generic(List.class, Integer.class), "branchFixupBcis").withInitializer("new ArrayList<>(4)"));
-                        break;
-                    default:
-                        if (operation.isTransparent()) {
-                            name = "TransparentData";
-                            fields = List.of(//
-                                            field(type(boolean.class), "producedValue"),
-                                            field(type(int.class), "childBci"));
-                        } else {
-                            name = null;
-                            fields = List.of();
-                        }
-                        break;
-                }
-                if (name == null) {
-                    return null;
-                } else {
-                    CodeTypeElement result = new CodeTypeElement(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, name);
-                    if (superType != null) {
-                        result.setSuperClass(superType);
-                    }
-
-                    result.getEnclosedElements().addAll(methods);
-
-                    Set<String> ignoreFields = new HashSet<>();
-                    boolean isVarArgs = false;
-                    for (DataClassField field : fields) {
-                        if (field.initializer != null) {
-                            ignoreFields.add(field.name);
-                        }
-                        isVarArgs = isVarArgs || field.isVarArgs;
-
-                        result.add(field.toCodeVariableElement());
-                    }
-                    CodeExecutableElement ctor = createConstructorUsingFields(Set.of(), result, null, ignoreFields);
-
-                    // Append custom initializers.
-                    CodeTreeBuilder b = ctor.appendBuilder();
-                    for (DataClassField field : fields) {
-                        if (field.initializer != null) {
-                            b.startAssign("this." + field.name);
-                            b.string(field.initializer);
-                            b.end();
-                        }
-                    }
-                    ctor.setVarArgs(isVarArgs);
-
-                    result.add(ctor);
-
-                    return result;
-                }
-
+            void lateInit() {
+                // we do this late to ensure that all instruction methods are known.
+                this.addAll(doEmitInstructionMethods.values());
+                this.add(createToString());
             }
 
-            private DataClassField field(TypeMirror type, String name) {
-                return new DataClassField(type, name);
+            private CodeExecutableElement createReset() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "reset");
+                CodeTreeBuilder doc = ex.createDocBuilder();
+                doc.startJavadoc();
+                doc.string("Resets all internal state to be usable for the next root.");
+                doc.newLine();
+                doc.end();
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.statement("this.rootOperationSp = -1");
+                b.statement("this.reachable = true");
+                if (model.enableTagInstrumentation) {
+                    b.statement("this.tagRoots = null");
+                    b.statement("this.tagNodes = null");
+                }
+                b.statement("this.numLocals = 0");
+                if (model.enableBlockScoping) {
+                    b.statement("this.maxLocals = 0");
+                }
+                b.statement("this.numLabels = 0");
+                b.statement("this.numNodes = 0");
+                b.statement("this.numHandlers = 0");
+                b.statement("this.numConditionalBranches = 0");
+                b.statement("this.bci = 0");
+                b.statement("this.currentStackHeight = 0");
+                b.statement("this.maxStackHeight = 0");
+                b.statement("this.handlerTableSize = 0");
+                b.statement("this.localsTableIndex = 0");
+                if (model.hasYieldOperation()) {
+                    b.statement("this.continuationsIndex = 0");
+                }
+                b.statement("this.sourceInfoIndex = 0");
+                b.statement("this.instrumentations = 0");
+                b.statement("this.needsClean = true");
+
+                return ex;
             }
 
-            private CodeExecutableElement createRegisterLocal() {
-                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PUBLIC), type(void.class), "registerLocal");
-                ex.addParameter(new CodeVariableElement(type(int.class), "tableIndex"));
+            private CodeExecutableElement createAcquire() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(STATIC), asType(), "acquire");
+                CodeTreeBuilder b = ex.createBuilder();
+                TypeMirror referenceType = generic(SoftReference.class, this.asType());
+                b.declaration(referenceType, "ref", "THREAD_LOCAL.get()");
+                b.startIf().string("ref != null").end().startBlock();
+                b.statement("THREAD_LOCAL.set(null)");
+                b.declaration(asType(), "obj", "ref.get()");
+                b.startIf().string("obj != null").end().startBlock();
+                b.statement("return obj");
+                b.end();
+                b.end();
+
+                b.startReturn().startNew(asType()).string("null").end().end();
+                return ex;
+            }
+
+            private CodeExecutableElement createRelease() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(STATIC), type(void.class), "release");
+                ex.addParameter(new CodeVariableElement(asType(), "obj"));
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("obj.cleanup()");
+                b.startStatement().startCall("THREAD_LOCAL.set").string("obj.reference");
+                b.end().end();
+                return ex;
+            }
+
+            private CodeExecutableElement createGetNext() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), asType(), "getNext");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("this.next == null").end().startBlock();
+                b.startStatement().string("this.next = ").startNew(asType()).string("this").end().end();
+                b.end();
+                b.statement("return this.next");
+                return ex;
+            }
+
+            private CodeExecutableElement createCleanup() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "cleanup");
+                CodeTreeBuilder doc = ex.createDocBuilder();
+                doc.startJavadoc();
+                doc.string("Cleans up all object references before releasing it to the shared cache.");
+                doc.newLine();
+                doc.end();
 
                 CodeTreeBuilder b = ex.createBuilder();
 
-                b.declaration(type(int.class), "localTableIndex", "numLocals++");
-                b.startIf().string("locals == null").end().startBlock();
-                b.startAssign("locals").startNewArray(arrayOf(type(int.class)), CodeTreeBuilder.singleString("8")).end().end();
+                b.startIf().string("!needsClean").end().startBlock();
+                b.statement("return");
                 b.end();
-                b.startElseIf().string("localTableIndex >= locals.length").end().startBlock();
-                b.startAssign("locals").startStaticCall(type(Arrays.class), "copyOf");
-                b.string("locals");
-                b.string("locals.length * 2");
+
+                b.lineComment("Only reset this for each set of root nodes.");
+                b.statement("this.operationSequenceNumber = 0");
+                b.lineComment("clear references to potentially expensive references");
+                b.statement("this.constants.clear()");
+
+                b.startIf().string("this.next != null").end().startBlock();
+                b.statement("this.next.cleanup()");
+                b.end();
+                b.statement("needsClean = false");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createPushOperation() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "pushOperation");
+                ex.addParameter(new CodeVariableElement(type(int.class), "operation"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int.class), "sp", "this.operationSp");
+                b.declaration(arrayOf(operationStack.asType()), "stack", "this.operationStack");
+                b.startIf().string("sp == stack.length").end().startBlock(); // {
+                b.startAssign("stack = this.operationStack").startStaticCall(type(Arrays.class), "copyOf");
+                b.string("stack");
+                b.string("stack.length * 2");
+                b.end(2);
+                b.startFor().string("int i = sp; i < stack.length; i++").end().startBlock();
+                b.startAssign("stack[i]").startNew(operationStack.asType()).end().end();
+                b.end();
+                b.end();
+
+                b.declaration(operationStack.asType(), "entry", "stack[sp]");
+                b.statement("entry.operation = operation");
+                b.statement("entry.sequenceNumber = this.operationSequenceNumber++");
+                b.statement("entry.childCount = 0");
+                b.statement("this.operationSp = sp + 1");
+
+                b.statement("return entry");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createPeekOperation() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "peekOperation");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("this.operationSp <= 0").end().startBlock();
+                b.statement("return null");
+                b.end();
+                b.statement("return this.operationStack[this.operationSp - 1]");
+                return ex;
+            }
+
+            private CodeExecutableElement createPopOperation() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), operationStack.asType(), "popOperation");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return this.operationStack[--this.operationSp]");
+                return ex;
+            }
+
+            private CodeExecutableElement createUpdateMaxStackHeight() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "updateMaxStackHeight");
+                ex.addParameter(new CodeVariableElement(type(int.class), "stackHeight"));
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("this.maxStackHeight = Math.max(this.maxStackHeight, stackHeight)");
+
+                b.startIf().string("this.maxStackHeight > Short.MAX_VALUE").end().startBlock();
+                emitThrowEncodingException(b, "\"Maximum stack height exceeded.\"");
+                b.end();
+                b.end(2);
+                return ex;
+            }
+
+            private CodeExecutableElement createEnsureBytecodeCapacity() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "ensureBytecodeCapacity");
+                ex.addParameter(new CodeVariableElement(type(int.class), "size"));
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("size > this.bc.length").end().startBlock();
+                b.startAssign("this.bc").startStaticCall(type(Arrays.class), "copyOf");
+                b.string("this.bc");
+                b.string("Math.max(size, this.bc.length * 2)");
                 b.end(2); // assign, static call
                 b.end(); // if block
-                b.statement("locals[localTableIndex] = tableIndex");
-
                 return ex;
-            }
-
-            final class ScopeDataElement extends CodeTypeElement {
-
-                ScopeDataElement() {
-                    super(Set.of(PRIVATE, STATIC, ABSTRACT), ElementKind.CLASS, null, "ScopeData");
-                    this.add(new CodeVariableElement(Set.of(), type(int.class), "frameOffset"));
-
-                    CodeVariableElement locals = new CodeVariableElement(Set.of(), type(int[].class), "locals");
-                    locals.createInitBuilder().string("null");
-                    addJavadoc(locals, "The indices of this scope's locals in the global locals table. Used to patch in the end bci at the end of the scope.");
-                    this.add(locals);
-
-                    CodeVariableElement numLocals = new CodeVariableElement(Set.of(), type(int.class), "numLocals");
-                    numLocals.createInitBuilder().string("0");
-                    addJavadoc(numLocals, "The number of locals allocated in the frame for this scope.");
-                    this.add(numLocals);
-
-                    this.add(new CodeVariableElement(Set.of(), type(boolean.class), "valid")).createInitBuilder().string("true");
-
-                    this.add(createRegisterLocal());
-                }
-            }
-
-            private static final class DataClassField {
-                final TypeMirror type;
-                final String name;
-                boolean isFinal;
-                boolean isVarArgs;
-                // If initializer is null, the field value is required as a constructor parameter
-                String initializer;
-                String doc;
-
-                DataClassField(TypeMirror type, String name) {
-                    this.type = type;
-                    this.name = name;
-                }
-
-                DataClassField asFinal() {
-                    this.isFinal = true;
-                    return this;
-                }
-
-                DataClassField asVarArgs() {
-                    this.isVarArgs = true;
-                    return this;
-                }
-
-                DataClassField withInitializer(String newInitializer) {
-                    this.initializer = newInitializer;
-                    return this;
-                }
-
-                DataClassField withDoc(String newDoc) {
-                    this.doc = newDoc;
-                    return this;
-                }
-
-                CodeVariableElement toCodeVariableElement() {
-                    Set<Modifier> mods = isFinal ? Set.of(FINAL) : Set.of();
-                    CodeVariableElement result = new CodeVariableElement(mods, type, name);
-                    if (doc != null) {
-                        addJavadoc(result, doc);
-                    }
-                    return result;
-                }
-            }
-        }
-
-        final class OperationStackEntryElement extends CodeTypeElement {
-
-            OperationStackEntryElement() {
-                super(Set.of(PRIVATE, STATIC), ElementKind.CLASS, null, "OperationStackEntry");
-            }
-
-            private void lazyInit() {
-                this.addAll(List.of(
-                                new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "operation"),
-                                new CodeVariableElement(Set.of(PRIVATE, FINAL), type(Object.class), "data"),
-                                new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "sequenceNumber")));
-
-                CodeVariableElement childCount = new CodeVariableElement(Set.of(PRIVATE), type(int.class), "childCount");
-                childCount.createInitBuilder().string("0").end();
-                CodeVariableElement declaredLabels = new CodeVariableElement(Set.of(PRIVATE), generic(context.getDeclaredType(ArrayList.class), types.BytecodeLabel), "declaredLabels");
-                declaredLabels.createInitBuilder().string("null").end();
-                this.add(childCount);
-                this.add(declaredLabels);
-
-                this.add(createConstructorUsingFields(Set.of(), this, null, Set.of("childCount", "declaredLabels")));
-                this.add(createAddDeclaredLabel());
-                this.add(createToString0());
-                this.add(createToString1());
-            }
-
-            private CodeExecutableElement createAddDeclaredLabel() {
-                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PUBLIC), type(void.class), "addDeclaredLabel");
-                ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
-
-                CodeTreeBuilder b = ex.createBuilder();
-
-                b.startIf().string("declaredLabels == null").end().startBlock();
-                b.statement("declaredLabels = new ArrayList<>(8)");
-                b.end();
-
-                b.statement("declaredLabels.add(label)");
-
-                return ex;
-            }
-
-            private CodeExecutableElement createToString0() {
-                CodeExecutableElement ex = GeneratorUtils.override(context.getDeclaredType(Object.class), "toString");
-                CodeTreeBuilder b = ex.createBuilder();
-                b.statement("return \"(\" + toString(null) + \")\"");
-                return ex;
-            }
-
-            private CodeExecutableElement createToString1() {
-                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(String.class), "toString");
-                ex.addParameter(new CodeVariableElement(bytecodeBuilderType, "builder"));
-                CodeTreeBuilder b = ex.createBuilder();
-
-                b.startDeclaration(type(StringBuilder.class), "b").startNew(type(StringBuilder.class)).end().end();
-                b.startStatement().startCall("b.append").string("OPERATION_NAMES[operation]").end().end();
-
-                b.startSwitch().string("operation").end().startBlock();
-                for (OperationModel op : model.getOperations()) {
-                    switch (op.kind) {
-                        case STORE_LOCAL:
-                        case STORE_LOCAL_MATERIALIZED:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            b.startStatement().startCall("b.append").doubleQuote(" ").end().end();
-
-                            b.declaration(getDataClassName(op), "operationData", "(" + getDataClassName(op) + ") data");
-                            if (model.usesBoxingElimination()) {
-                                b.startStatement().startCall("b.append").string("operationData.local.frameIndex").end().end();
-                            } else {
-                                b.startStatement().startCall("b.append").string("operationData.frameIndex").end().end();
-                            }
-                            b.end();
-                            b.statement("break");
-                            break;
-                        case SOURCE:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            b.startStatement().startCall("b.append").doubleQuote(" ").end().end();
-
-                            b.declaration(getDataClassName(op), "operationData", "(" + getDataClassName(op) + ") data");
-                            b.startStatement().startCall("b.append").string("operationData.sourceIndex").end().end();
-                            b.startIf().string("builder != null").end().startBlock();
-                            b.startStatement().startCall("b.append").doubleQuote(":").end().end();
-                            b.startStatement().startCall("b.append").string("builder.sources.get(operationData.sourceIndex).getName()").end().end();
-                            b.end();
-                            b.end(); // case block
-                            b.statement("break");
-                            break;
-                        case SOURCE_SECTION:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            b.startStatement().startCall("b.append").doubleQuote(" ").end().end();
-                            b.declaration(getDataClassName(op), "operationData", "(" + getDataClassName(op) + ") data");
-                            b.startStatement().startCall("b.append").string("operationData.start").end().end();
-                            b.startStatement().startCall("b.append").doubleQuote(":").end().end();
-                            b.startStatement().startCall("b.append").string("operationData.length").end().end();
-                            b.end();
-                            b.statement("break");
-                            break;
-                        case TAG:
-                            b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                            b.startStatement().startCall("b.append").doubleQuote(" ").end().end();
-                            b.declaration(getDataClassName(op), "operationData", "(" + getDataClassName(op) + ") data");
-                            b.startStatement().startCall("b.append").string("operationData.node").end().end();
-                            b.end();
-                            b.statement("break");
-                            break;
-                        case BLOCK:
-                        case ROOT:
-                            if (model.enableBlockScoping) {
-                                b.startCase().tree(createOperationConstant(op)).end().startBlock();
-                                b.declaration(getDataClassName(op), "operationData", "(" + getDataClassName(op) + ") data");
-
-                                b.startIf().string("operationData.numLocals > 0").end().startBlock();
-                                b.startStatement().startCall("b.append").doubleQuote(" locals=").end().end();
-                                b.startStatement().startCall("b.append").string("operationData.numLocals").end().end();
-                                b.end();
-                                b.end();
-                                b.statement("break");
-                            }
-                            break;
-                    }
-                }
-                b.end(); // switch
-
-                b.statement("return b.toString()");
-                return ex;
-            }
-        }
-
-        final class ConstantPoolElement extends CodeTypeElement {
-
-            ConstantPoolElement() {
-                super(Set.of(PRIVATE, STATIC), ElementKind.CLASS, null, "ConstantPool");
-                List<CodeVariableElement> fields = List.of(
-                                new CodeVariableElement(Set.of(PRIVATE, FINAL), generic(ArrayList.class, type(Object.class)), "constants"),
-                                new CodeVariableElement(Set.of(PRIVATE, FINAL), generic(HashMap.class, type(Object.class), context.getDeclaredType(Integer.class)), "map"));
-
-                this.addAll(fields);
-
-                CodeExecutableElement ctor = createConstructorUsingFields(Set.of(), this, null, Set.of("constants", "map"));
-                CodeTreeBuilder b = ctor.appendBuilder();
-                b.statement("constants = new ArrayList<>()");
-                b.statement("map = new HashMap<>()");
-                this.add(ctor);
-
-                this.add(createAddConstant());
-                this.add(createAllocateSlot());
-                this.add(createToArray());
             }
 
             private CodeExecutableElement createAddConstant() {
@@ -8361,22 +7882,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 ex.addParameter(new CodeVariableElement(type(Object.class), "constant"));
 
                 CodeTreeBuilder b = ex.createBuilder();
-
-                b.startIf().string("map.containsKey(constant)").end().startBlock();
-                b.startReturn().string("map.get(constant)").end();
-                b.end();
-
-                b.statement("int index = constants.size()");
-                b.statement("constants.add(constant)");
-                b.statement("map.put(constant, index)");
-                b.startReturn().string("index").end();
+                b.statement("return constants.add(constant)");
 
                 return ex;
             }
 
-            private CodeExecutableElement createAllocateSlot() {
+            private CodeExecutableElement createAllocateConstantSlot() {
                 CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(short.class),
-                                "allocateSlot");
+                                "allocateConstantSlot");
                 CodeTreeBuilder doc = ex.createDocBuilder();
                 doc.startJavadoc();
                 doc.string("Allocates a slot for a constant which will be manually added to the constant pool later.");
@@ -8384,21 +7897,1508 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 doc.end();
 
                 CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return safeCastShort(constants.addNull())");
+                return ex;
+            }
 
-                b.declaration(type(short.class), "index", safeCastShort("constants.size()"));
-                b.statement("constants.add(null)");
-                b.startReturn().string("index").end();
+            private CodeExecutableElement createToConstants() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), new ArrayCodeTypeMirror(type(Object.class)), "toConstants");
+
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return constants.materialize()");
 
                 return ex;
             }
 
-            private CodeExecutableElement createToArray() {
-                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), new ArrayCodeTypeMirror(type(Object.class)), "toArray");
-
+            private CodeExecutableElement createAllocateNode() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateNode");
                 CodeTreeBuilder b = ex.createBuilder();
-                b.startReturn().string("constants.toArray()").end();
+                b.startIf().string("!this.reachable").end().startBlock();
+                b.statement("return -1");
+                b.end();
+
+                b.startReturn().startCall("checkOverflowInt");
+                b.string("this.numNodes++");
+                b.doubleQuote("Node counter");
+                b.end(2);
 
                 return ex;
+            }
+
+            private CodeExecutableElement createAllocateBytecodeLocal() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(short.class), "allocateBytecodeLocal");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startReturn().startCall("checkOverflowShort");
+                b.string("(short) this.numLocals++");
+                b.doubleQuote("Number of locals");
+                b.end(2);
+
+                return ex;
+            }
+
+            private CodeExecutableElement createAllocateBranchProfile() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateBranchProfile");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startIf().string("!this.reachable").end().startBlock();
+                b.statement("return -1");
+                b.end();
+
+                b.startReturn().startCall("checkOverflowInt");
+                b.string("this.numConditionalBranches++");
+                b.doubleQuote("Number of branch profiles");
+                b.end(2);
+
+                return ex;
+            }
+
+            private CodeExecutableElement createAllocateContinuationConstant() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(short.class), "allocateContinuationConstant");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                /**
+                 * NB: We need to allocate constant pool slots for continuations regardless of
+                 * reachability in order to keep the constant pool consistent. In rare scenarios,
+                 * reparsing can make a previously unreachable yield reachable (e.g., reparsing with
+                 * tags)
+                 */
+                b.startReturn();
+                b.string("allocateConstantSlot()");
+                b.end();
+
+                return ex;
+            }
+
+            private CodeExecutableElement createDoEmitLocal() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitLocal");
+                if (model.enableBlockScoping) {
+                    ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
+                    ex.addParameter(new CodeVariableElement(type(int.class), "frameIndex"));
+                }
+                ex.addParameter(new CodeVariableElement(type(Object.class), "name"));
+                ex.addParameter(new CodeVariableElement(type(Object.class), "info"));
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int.class), "nameIndex", "-1");
+                b.startIf().string("name != null").end().startBlock();
+                b.statement("nameIndex = this.addConstant(name)");
+                b.end();
+
+                b.declaration(type(int.class), "infoIndex", "-1");
+                b.startIf().string("info != null").end().startBlock();
+                b.statement("infoIndex = this.addConstant(info)");
+                b.end();
+
+                b.startReturn().startCall("doEmitLocal");
+                if (model.enableBlockScoping) {
+                    b.string("localIndex");
+                    b.string("frameIndex");
+                }
+                b.string("nameIndex");
+                b.string("infoIndex");
+                b.end(2);
+                return ex;
+            }
+
+            private CodeExecutableElement createPatchHandlerTable() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "patchHandlerTable");
+                ex.addParameter(new CodeVariableElement(type(int.class), "tableStart"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "tableEnd"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerId"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerSp"));
+
+                addJavadoc(ex, """
+                                Iterates the handler table, searching for unresolved entries corresponding to the given handlerId.
+                                Patches them with the handlerBci and handlerSp now that those values are known.
+                                """);
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startFor().string("int i = tableStart; i < tableEnd; i += EXCEPTION_HANDLER_LENGTH").end().startBlock();
+
+                b.startIf().string("this.handlerTable[i + EXCEPTION_HANDLER_OFFSET_KIND] != HANDLER_CUSTOM").end().startBlock();
+                b.statement("continue");
+                b.end();
+                b.startIf().string("this.handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] != -handlerId").end().startBlock();
+                b.statement("continue");
+                b.end();
+
+                b.statement("this.handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = handlerBci");
+                b.statement("this.handlerTable[i + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] = handlerSp");
+                b.end();
+
+                return ex;
+            }
+
+            private CodeExecutableElement createDoEmitLocalConstantIndices() {
+                if (model.enableBlockScoping) {
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_START_BCI")).createInitBuilder().string("0");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_END_BCI")).createInitBuilder().string("1");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_LOCAL_INDEX")).createInitBuilder().string("2");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_FRAME_INDEX")).createInitBuilder().string("3");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_NAME")).createInitBuilder().string("4");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_INFO")).createInitBuilder().string("5");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_LENGTH")).createInitBuilder().string("6");
+                } else {
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_NAME")).createInitBuilder().string("0");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_OFFSET_INFO")).createInitBuilder().string("1");
+                    BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "LOCALS_LENGTH")).createInitBuilder().string("2");
+                }
+
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitLocal");
+                if (model.enableBlockScoping) {
+                    ex.addParameter(new CodeVariableElement(type(int.class), "localIndex"));
+                    ex.addParameter(new CodeVariableElement(type(int.class), "frameIndex"));
+                }
+                ex.addParameter(new CodeVariableElement(type(int.class), "nameIndex"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "infoIndex"));
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int.class), "tableIndex", "allocateLocalsTableEntry()");
+
+                if (model.enableBlockScoping) {
+                    b.statement("assert frameIndex - USER_LOCALS_START_INDEX >= 0");
+                    b.statement("this.locals[tableIndex + LOCALS_OFFSET_START_BCI] = this.bci");
+                    b.lineComment("will be patched later at the end of the block");
+                    b.statement("this.locals[tableIndex + LOCALS_OFFSET_END_BCI] = -1");
+                    b.statement("this.locals[tableIndex + LOCALS_OFFSET_LOCAL_INDEX] = localIndex");
+                    b.statement("this.locals[tableIndex + LOCALS_OFFSET_FRAME_INDEX] = frameIndex");
+                }
+                b.statement("this.locals[tableIndex + LOCALS_OFFSET_NAME] = nameIndex");
+                b.statement("this.locals[tableIndex + LOCALS_OFFSET_INFO] = infoIndex");
+
+                b.statement("return tableIndex");
+                return ex;
+            }
+
+            private CodeExecutableElement createAllocateLocalsTableEntry() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "allocateLocalsTableEntry");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("int result = this.localsTableIndex");
+                b.startIf().string("this.locals == null").end().startBlock();
+                b.startAssert().string("result == 0").end();
+                b.startAssign("this.locals").startNewArray(arrayOf(type(int.class)), CodeTreeBuilder.singleString("LOCALS_LENGTH * 8")).end().end();
+                b.end().startElseIf().string("result + LOCALS_LENGTH > this.locals.length").end().startBlock();
+                b.startAssign("this.locals").startStaticCall(type(Arrays.class), "copyOf");
+                b.string("this.locals");
+                b.string("Math.max(result + LOCALS_LENGTH, this.locals.length * 2)");
+                b.end(2); // assign, static call
+                b.end(); // if block
+                b.statement("this.localsTableIndex += LOCALS_LENGTH");
+                b.statement("return result");
+                return ex;
+            }
+
+            private CodeExecutableElement createDoPatchSourceInfo() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doPatchSourceInfo");
+                ex.addParameter(new CodeVariableElement(generic(ArrayList.class, BytecodeRootNodeElement.this.asType()), "nodes"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "nodeId"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "sourceIndex"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "start"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "length"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int[].class), "info");
+                b.startIf().string("nodeId >= 0").end().startBlock();
+                b.statement("info = nodes.get(nodeId).bytecode.sourceInfo");
+                b.end().startElseBlock();
+                b.statement("info = this.sourceInfo");
+                b.end();
+
+                b.declaration(type(int.class), "index", "sourceIndex");
+                b.startWhile().string("index >= 0").end().startBlock();
+
+                b.declaration(type(int.class), "oldStart", "info[index + SOURCE_INFO_OFFSET_START]");
+                b.declaration(type(int.class), "oldEnd", "info[index + SOURCE_INFO_OFFSET_LENGTH]");
+                b.statement("assert nodeId >= 0 ? oldEnd == PATCH_NODE_SOURCE : oldEnd == PATCH_CURRENT_SOURCE");
+                b.statement("info[index + SOURCE_INFO_OFFSET_START] = start");
+                b.statement("info[index + SOURCE_INFO_OFFSET_LENGTH] = length");
+                b.statement("index = oldStart");
+                b.end();
+
+                return ex;
+            }
+
+            private CodeExecutableElement createDoEmitSourceInfo() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doEmitSourceInfo");
+                ex.addParameter(new CodeVariableElement(type(int.class), "sourceIndex"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "startBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "endBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "start"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "length"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startIf().string("this.rootOperationSp == -1").end().startBlock();
+                b.statement("return -1");
+                b.end();
+
+                b.declaration(type(int.class), "index", "this.sourceInfoIndex");
+                b.declaration(type(int.class), "prevIndex", "index - SOURCE_INFO_LENGTH");
+
+                b.startIf();
+                b.string("prevIndex >= 0").newLine().startIndention();
+                b.string(" && start >= -1 && length >= -1");
+                b.string(" && (this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_SOURCE]) == sourceIndex").newLine();
+                b.string(" && (this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_START]) == start").newLine();
+                b.string(" && (this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_LENGTH]) == length");
+                b.end(2).startBlock();
+
+                b.startIf().string("(this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_START_BCI]) == startBci").newLine().startIndention();
+                b.string(" && (this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI]) == endBci");
+                b.end(2).startBlock();
+                b.lineComment("duplicate entry");
+                b.statement("return prevIndex");
+                b.end();
+
+                b.startElseIf().string("(this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI]) == startBci").end().startBlock();
+                b.lineComment("contiguous entry");
+                b.statement("this.sourceInfo[prevIndex + SOURCE_INFO_OFFSET_END_BCI] = endBci");
+                b.statement("return prevIndex");
+                b.end();
+
+                b.end(); // if source, start, length match
+
+                b.startIf().string("index >= this.sourceInfo.length").end().startBlock();
+                b.statement("this.sourceInfo = Arrays.copyOf(this.sourceInfo, this.sourceInfo.length * 2)");
+                b.end();
+
+                b.statement("this.sourceInfo[index + SOURCE_INFO_OFFSET_START_BCI] = startBci");
+                b.statement("this.sourceInfo[index + SOURCE_INFO_OFFSET_END_BCI] = endBci");
+                b.statement("this.sourceInfo[index + SOURCE_INFO_OFFSET_SOURCE] = sourceIndex");
+                b.statement("this.sourceInfo[index + SOURCE_INFO_OFFSET_START] = start");
+                b.statement("this.sourceInfo[index + SOURCE_INFO_OFFSET_LENGTH] = length");
+
+                b.statement("this.sourceInfoIndex = index + SOURCE_INFO_LENGTH");
+
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_START_BCI")).createInitBuilder().string("0");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_END_BCI")).createInitBuilder().string("1");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_SOURCE")).createInitBuilder().string("2");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_START")).createInitBuilder().string("3");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_OFFSET_LENGTH")).createInitBuilder().string("4");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "SOURCE_INFO_LENGTH")).createInitBuilder().string("5");
+
+                b.statement("return index");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createDoEmitContinuation() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitContinuation");
+                ex.addParameter(new CodeVariableElement(type(int.class), "cpi"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "continuationBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "sp"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int[].class), "table", "this.continuations");
+                b.declaration(type(int.class), "index", "this.continuationsIndex");
+                b.startIf().string("index + CONTINUATION_LENGTH >= table.length").end().startBlock();
+                b.statement("table = this.continuations = Arrays.copyOf(this.continuations, this.continuations.length * 2)");
+                b.end();
+
+                b.statement("table[index + CONTINUATION_OFFSET_CPI] = cpi");
+                b.statement("table[index + CONTINUATION_OFFSET_BCI] = continuationBci");
+                b.statement("table[index + CONTINUATION_OFFSET_SP] = sp");
+
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "CONTINUATION_OFFSET_CPI")).createInitBuilder().string("0");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "CONTINUATION_OFFSET_BCI")).createInitBuilder().string("1");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "CONTINUATION_OFFSET_SP")).createInitBuilder().string("2");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "CONTINUATION_LENGTH")).createInitBuilder().string("3");
+
+                b.statement("this.continuationsIndex += CONTINUATION_LENGTH");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createDoCreateExceptionHandler() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), "doCreateExceptionHandler");
+                ex.addParameter(new CodeVariableElement(type(int.class), "startBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "endBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerKind"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerBci"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "handlerSp"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startAssert().string("startBci <= endBci").end();
+
+                b.lineComment("Don't create empty handler ranges.");
+                b.startIf().string("startBci == endBci").end().startBlock();
+                b.startReturn().string(UNINIT).end();
+                b.end();
+
+                b.lineComment("If the previous entry is for the same handler and the ranges are contiguous, combine them.");
+                b.startIf().string("this.handlerTableSize > 0").end().startBlock();
+                b.declaration(type(int.class), "previousEntry", "this.handlerTableSize - EXCEPTION_HANDLER_LENGTH");
+                b.declaration(type(int.class), "previousEndBci", "this.handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_END_BCI]");
+                b.declaration(type(int.class), "previousKind", "this.handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_KIND]");
+                b.declaration(type(int.class), "previousHandlerBci", "this.handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
+                b.startIf().string("previousEndBci == startBci && previousKind == handlerKind && previousHandlerBci == handlerBci").end().startBlock();
+                b.statement("this.handlerTable[previousEntry + EXCEPTION_HANDLER_OFFSET_END_BCI] = endBci");
+                b.startReturn().string(UNINIT).end();
+                b.end(); // if same handler and contiguous
+                b.end(); // if table non-empty
+
+                b.startIf().string("this.handlerTable.length <= this.handlerTableSize + EXCEPTION_HANDLER_LENGTH").end().startBlock();
+                b.statement("this.handlerTable = Arrays.copyOf(this.handlerTable, this.handlerTable.length * 2)");
+                b.end();
+
+                b.statement("int result = this.handlerTableSize");
+                b.statement("this.handlerTable[result + EXCEPTION_HANDLER_OFFSET_START_BCI] = startBci");
+                b.statement("this.handlerTable[result + EXCEPTION_HANDLER_OFFSET_END_BCI] = endBci");
+                b.statement("this.handlerTable[result + EXCEPTION_HANDLER_OFFSET_KIND] = handlerKind");
+                b.statement("this.handlerTable[result + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI] = handlerBci");
+                b.statement("this.handlerTable[result + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] = handlerSp");
+                b.statement("this.handlerTableSize += EXCEPTION_HANDLER_LENGTH");
+
+                b.statement("return result");
+
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_START_BCI")).createInitBuilder().string("0");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_END_BCI")).createInitBuilder().string("1");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_KIND")).createInitBuilder().string("2");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_HANDLER_BCI")).createInitBuilder().string("3");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_OFFSET_HANDLER_SP")).createInitBuilder().string("4");
+                BytecodeRootNodeElement.this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(int.class), "EXCEPTION_HANDLER_LENGTH")).createInitBuilder().string("5");
+
+                return ex;
+            }
+
+            private CodeExecutableElement ensureDoEmitInstructionCreated(InstructionModel instruction) {
+                return doEmitInstructionMethods.computeIfAbsent(instruction.getInstructionEncoding(), (e) -> createDoEmitInstruction(e));
+            }
+
+            private CodeExecutableElement createDoEmitTraceInstruction() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "doEmitTraceInstruction");
+
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(int.class), "newBci", "checkBci(this.bci + 2)");
+                b.startIf().string("newBci > this.bc.length").end().startBlock();
+                b.statement("this.ensureBytecodeCapacity(newBci)");
+                b.end();
+
+                b.statement(writeInstruction("this.bc", "this.bci", createInstructionConstant(model.traceInstruction)));
+                b.statement("this.bci = newBci");
+
+                return ex;
+
+            }
+
+            private CodeExecutableElement createDoEmitInstruction(InstructionEncoding encoding) {
+                // Give each method a unique name so that we don't accidentally use the wrong
+                // overload.
+                StringBuilder methodName = new StringBuilder("doEmitInstruction");
+                for (InstructionImmediateEncoding immediate : encoding.immediates()) {
+                    methodName.append(immediate.width().toEncodedName());
+                }
+
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(int.class), methodName.toString());
+                ex.addParameter(new CodeVariableElement(type(short.class), "instruction"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "stackEffect"));
+
+                int explicitImmediateIndex = 0;
+                for (InstructionImmediateEncoding immediate : encoding.getExplicitImmediateEncodings()) {
+                    ex.addParameter(new CodeVariableElement(immediate.width().toType(context), "data" + explicitImmediateIndex++));
+                }
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startIf().string("stackEffect != 0").end().startBlock();
+                b.statement("this.currentStackHeight += stackEffect");
+                b.startAssert().string("this.currentStackHeight >= 0").end();
+                b.end();
+
+                b.startIf().string("stackEffect > 0").end().startBlock();
+                b.statement("this.updateMaxStackHeight(this.currentStackHeight)");
+                b.end();
+
+                b.startIf().string("!this.reachable").end().startBlock();
+                b.statement("return -1");
+                b.end();
+
+                if (model.enableInstructionTracing) {
+                    int mask = 1 << model.traceInstructionInstrumentationIndex;
+                    b.startIf().string("(this.instrumentations & ").string("0x", Integer.toHexString(mask)).string(") != 0").end().startBlock();
+                    b.statement("doEmitTraceInstruction()");
+                    b.end();
+                }
+
+                b.declaration(type(int.class), "instructionBci", "this.bci");
+                b.declaration(type(int.class), "newBci", "checkBci(instructionBci + " + encoding.length() + ")");
+                b.startIf().string("newBci > this.bc.length").end().startBlock();
+                b.statement("this.ensureBytecodeCapacity(newBci)");
+                b.end();
+
+                b.end();
+
+                b.statement(writeInstruction("this.bc", "this.bci + 0", "instruction"));
+
+                explicitImmediateIndex = 0;
+                for (InstructionImmediateEncoding immediateEncoding : encoding.immediates()) {
+                    String data;
+                    if (immediateEncoding.explicit()) {
+                        data = "data" + explicitImmediateIndex++;
+                    } else {
+                        data = ElementUtils.defaultValue(immediateEncoding.width().toType(context));
+                    }
+
+                    b.statement(writeImmediate("this.bc", "this.bci", data, immediateEncoding));
+                }
+
+                b.statement("this.bci = newBci");
+                b.statement("return instructionBci");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createRegisterUnresolvedLabel() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "registerUnresolvedLabel");
+                ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "immediateBci"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("BytecodeLabelImpl impl = (BytecodeLabelImpl) label");
+
+                b.startIf().string("impl.unresolved0 == -1").end().startBlock();
+                b.statement("impl.unresolved0 = immediateBci");
+                b.statement("return");
+                b.end();
+
+                b.startIf().string("impl.unresolved1 == -1").end().startBlock();
+                b.statement("impl.unresolved1 = immediateBci");
+                b.statement("return");
+                b.end();
+
+                b.declaration(type(int.class), "index", "impl.unresolvedCount++");
+                b.declaration(type(int[].class), "array", "impl.unresolvedArray");
+                b.startIf().string("array == null").end().startBlock();
+                b.statement("array = impl.unresolvedArray = new int[4]");
+                b.end().startElseIf().string("index >= array.length").end().startBlock();
+                b.statement("array = impl.unresolvedArray = Arrays.copyOf(array, array.length * 2)");
+                b.end();
+                b.statement("array[index] = immediateBci");
+                return ex;
+            }
+
+            private CodeExecutableElement createResolveUnresolvedLabel() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "resolveUnresolvedLabel");
+                ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
+                ex.addParameter(new CodeVariableElement(type(int.class), "stackHeight"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("BytecodeLabelImpl impl = (BytecodeLabelImpl) label");
+                b.statement("assert !impl.isDefined()");
+                b.statement("impl.bci = this.bci");
+
+                b.startIf().string("impl.unresolved0 != -1").end().startBlock();
+                b.statement(writeInt("this.bc", "impl.unresolved0", "this.bci"));
+                b.end();
+
+                b.startIf().string("impl.unresolved1 != -1").end().startBlock();
+                b.statement(writeInt("this.bc", "impl.unresolved1", "this.bci"));
+                b.end();
+
+                b.startFor().string("int i = 0; i < impl.unresolvedCount; i++").end().startBlock();
+                b.statement(writeInt("this.bc", "impl.unresolvedArray[i]", "this.bci"));
+                b.end();
+
+                return ex;
+            }
+
+            private CodeExecutableElement createToString() {
+                CodeExecutableElement ex = GeneratorUtils.override(declaredType(Object.class), "toString");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startDeclaration(type(StringBuilder.class), "b").startNew(type(StringBuilder.class)).end().end();
+                b.startStatement().startCall("b.append").startGroup().typeLiteral(this.asType()).string(".getSimpleName()").end().end().end();
+                b.startStatement().startCall("b.append").doubleQuote("[").end().end();
+                b.startStatement().startCall("b.append").doubleQuote("bytecodeIndex=").end().startCall(".append").string("this.bci").end().end();
+                b.startStatement().startCall("b.append").doubleQuote(", stackPointer=").end().startCall(".append").string("this.currentStackHeight").end().end();
+                b.startStatement().startCall("b.append").doubleQuote(", operations=").end().end();
+                b.startStatement().startCall("b.append").string("System.lineSeparator()").end().end();
+
+                // for operation stacks
+                b.startFor().string("int i = this.operationSp - 1; i >= 0; i--").end().startBlock();
+                b.startStatement().startCall("b.append").doubleQuote("    [").end().end();
+
+                b.startStatement().startCall("b.append").string("String.format(\"%03d\", i)").end().end();
+                b.startStatement().startCall("b.append").doubleQuote("] ").end().end();
+                b.startStatement().startCall("b.append").string("this.operationStack[i].toString()").end().end();
+                b.startStatement().startCall("b.append").string("System.lineSeparator()").end().end();
+                b.end(); // for
+
+                b.startStatement().startCall("b.append").doubleQuote("    instructions=").end().end();
+                b.startStatement().startCall("b.append").string("System.lineSeparator()").end().end();
+
+                b.declaration(type(Object[].class), "tempConstants", "constants.create()");
+                b.declaration(type(byte[].class), "tempBytecodes", "Arrays.copyOf(this.bc, this.bci)");
+                b.startFor().string("int currentBci = 0; currentBci < bci; ").end().startBlock();
+                b.declaration(type(int.class), "opcode", readInstruction("this.bc", "currentBci"));
+                b.startStatement().startCall("b.append").doubleQuote("       ").end().end();
+                b.startStatement().startCall("b.append").startNew(instructionImpl.asType()).string("null").string("currentBci").string("opcode").string("tempBytecodes").string(
+                                "tempConstants").end().end().end();
+                b.startStatement().startCall("b.append").string("System.lineSeparator()").end().end();
+                b.startAssign("currentBci").string("currentBci + ").tree(instructionsElement.call("getLength", "opcode")).end();
+
+                b.end(); // for
+
+                b.startIf().string("parent != null").end().startBlock();
+                b.startStatement().startCall("b.append").doubleQuote("  parent=").end().end();
+                b.startStatement().startCall("b.append").string("parent.toString()").end().end();
+
+                b.end();
+
+                b.statement("return b.toString()");
+                return ex;
+            }
+        }
+
+        final class OperationFields {
+
+            private final OperationField index = field(type(int.class), "index").asFinal();
+            private final OperationField producedValue = field(type(boolean.class), "producedValue").withInitializer("false");
+            private final OperationField childBci = field(type(int.class), "childBci").withInitializer(UNINIT);
+            private final OperationField shortCircuitBci = field(type(int.class), "shortCircuitBci").withInitializer(UNINIT);
+            private final OperationField reachable = field(type(boolean.class), "reachable").withInitializer("true");
+            private final OperationField prologBci = field(type(int.class), "prologBci").withInitializer(UNINIT);
+            private final OperationField nodeId = field(type(int.class), "nodeId").asFinal();
+            private final OperationField startStackHeight = field(type(int.class), "startStackHeight").asFinal();
+            private final OperationField operationReachable = field(type(boolean.class), "operationReachable").asFinal();
+            private final OperationField node = tagNode != null ? field(tagNode.asType(), "node").asFinal() : null;
+            private final OperationField handlerStartBci = field(type(int.class), "handlerStartBci").withInitializer("node.enterBci");
+            private final OperationField tagChildren = tagNode != null ? field(generic(type(List.class), tagNode.asType()), "children").withInitializer("null") : null;
+
+            private final OperationField sourceIndex = field(type(int.class), "sourceIndex").asFinal();
+            private final OperationField startBci = field(type(int.class), "startBci");
+            private final OperationField start = field(type(int.class), "start");
+            private final OperationField length = field(type(int.class), "length");
+            private final OperationField sourceNodeId = field(type(int.class), "sourceNodeId").withInitializer("-1");
+
+            private final OperationField local = field(bytecodeLocalImpl.asType(), "local");
+
+            private final OperationField thenReachable = field(type(boolean.class), "thenReachable");
+            private final OperationField elseReachable = field(type(boolean.class), "elseReachable");
+            private final OperationField falseBranchFixupBci = field(type(int.class), "falseBranchFixupBci").withInitializer(UNINIT);
+            private final OperationField endBranchFixupBci = field(type(int.class), "endBranchFixupBci").withInitializer(UNINIT);
+
+            private final OperationField whileStartBci = field(type(int.class), "whileStartBci").asFinal();
+            private final OperationField bodyReachable = field(type(boolean.class), "bodyReachable");
+
+            private final OperationField handlerId = field(type(int.class), "handlerId").asFinal();
+            private final OperationField stackHeight = field(type(int.class), "stackHeight").asFinal();
+            private final OperationField tryStartBci = field(type(int.class), "tryStartBci");
+            private final OperationField tryReachable = field(type(boolean.class), "tryReachable");
+            private final OperationField catchReachable = field(type(boolean.class), "catchReachable");
+
+            private final OperationField extraTableEntriesStart = field(type(int.class), "extraTableEntriesStart").withInitializer(UNINIT);
+            private final OperationField extraTableEntriesEnd = field(type(int.class), "extraTableEntriesEnd").withInitializer(UNINIT);
+
+            private final OperationField finallyGenerator = field(context.getDeclaredType(Runnable.class), "finallyGenerator").asFinal();
+            private final OperationField finallyHandlerSp = field(type(int.class), "finallyHandlerSp").withInitializer(UNINIT).withDoc(
+                            """
+                                            The index of the finally handler operation on the operation stack.
+                                            This value is uninitialized unless a finally handler is being emitted, and allows us to
+                                            walk the operation stack from bottom to top.
+                                            """);
+            private final OperationField finallyOperationSp = field(type(int.class), "finallyOperationSp").asFinal().withDoc(
+                            """
+                                            The index of the corresponding finally operation (TryFinally/TryCatchOtherwise) on the
+                                            operation stack. This index can be used to skip over the "try" body operations when walking
+                                            the operation stack from top to bottom.
+                                            """);
+
+            private final OperationField variadicCountPatchIndex = field(type(int.class), "variadicCountPatchIndex").withInitializer(UNINIT);
+            private final OperationField numVariadicReturnIndices = field(type(int.class), "numVariadicReturnIndices").withInitializer("0");
+            private final OperationField variadicReturnIndices = field(type(int[].class), "variadicReturnIndices") //
+                            .skipInitialization(true).dynamicType(false).withStaticInitializer("new int[16]").lengthField(numVariadicReturnIndices);
+            private final OperationField numBranchFixupBcis = field(type(int.class), "numBranchFixupBcis").withInitializer("0");
+            private final OperationField branchFixupBcis = field(type(int[].class), "branchFixupBcis").//
+                            skipInitialization(true).//
+                            dynamicType(false).//
+                            withStaticInitializer("new int[16]").//
+                            lengthField(numBranchFixupBcis);
+
+            private final OperationField frameOffset = field(type(int.class), "frameOffset").withInitializer("0");
+            private final OperationField numLocals = field(type(int.class), "numLocals").withInitializer("0");
+            private final OperationField locals = field(type(int[].class), "locals").//
+                            skipInitialization(true).//
+                            dynamicType(false).//
+                            withStaticInitializer("new int[16]").//
+                            lengthField(numLocals);
+            private final OperationField valid = field(type(boolean.class), "valid").withInitializer("true");
+            private final OperationField declaredLabels = field(generic(context.getDeclaredType(ArrayList.class), types.BytecodeLabel), "declaredLabels").withInitializer("null");
+
+            private final List<OperationField> childBcis = new ArrayList<>();
+            private final Map<ImmediateWidth, List<OperationField>> constants = new HashMap<>();
+
+            OperationFields() {
+            }
+
+            /**
+             * This is the core method where fields are assigned to operations. This method
+             * determines whether fields are needed at all, as all operations that are part of the
+             * model are visited. So if an operation is not in the model it won't get mapped and we
+             * won't allocate fields form them.
+             *
+             * See {@link OperationVariables} for how fields get mapped to instance fields in the
+             * operation stack element.
+             */
+            public List<OperationField> mapFieldsToOperation(OperationModel operation) {
+                List<OperationField> fields = new ArrayList<>(5);
+                switch (operation.kind) {
+                    case ROOT:
+                        fields.add(index); // init
+                        fields.add(producedValue);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        fields.add(reachable);
+                        if (model.prolog != null && model.prolog.operation.operationEndArguments.length != 0) {
+                            fields.add(prologBci);
+                        }
+
+                        // scope
+                        if (model.enableBlockScoping) {
+                            fields.add(frameOffset);
+                            fields.add(locals);
+                            fields.add(numLocals);
+                            fields.add(valid);
+                        }
+
+                        fields.add(declaredLabels);
+                        break;
+                    case BLOCK:
+                        fields.add(startStackHeight); // init
+                        fields.add(producedValue);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+
+                        // scope
+                        if (model.enableBlockScoping) {
+                            fields.add(frameOffset);
+                            fields.add(locals);
+                            fields.add(numLocals);
+                            fields.add(valid);
+                        }
+
+                        fields.add(declaredLabels);
+                        break;
+                    case TAG:
+                        fields.add(nodeId); // init
+                        fields.add(operationReachable); // init
+                        fields.add(startStackHeight); // init
+                        fields.add(node); // init
+                        fields.add(handlerStartBci);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        fields.add(producedValue);
+                        fields.add(tagChildren);
+                        break;
+                    case SOURCE_SECTION:
+                        fields.add(sourceIndex); // init
+                        fields.add(startBci); // init
+                        fields.add(start); // init
+                        fields.add(length); // init
+                        fields.add(sourceNodeId);
+                        fields.add(producedValue);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        break;
+                    case SOURCE:
+                        fields.add(sourceIndex); // init
+                        fields.add(producedValue);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        break;
+                    case RETURN:
+                        fields.add(producedValue);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        break;
+                    case STORE_LOCAL:
+                    case STORE_LOCAL_MATERIALIZED:
+                    case LOAD_LOCAL:
+                    case LOAD_LOCAL_MATERIALIZED:
+                        fields.add(local); // init
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                        }
+                        break;
+                    case IF_THEN:
+                        fields.add(thenReachable); // init
+                        fields.add(falseBranchFixupBci);
+                        break;
+                    case IF_THEN_ELSE:
+                        fields.add(thenReachable); // init
+                        fields.add(elseReachable); // init
+                        fields.add(falseBranchFixupBci);
+                        fields.add(endBranchFixupBci);
+                        break;
+                    case CONDITIONAL:
+                        fields.add(thenReachable); // init
+                        fields.add(elseReachable); // init
+                        fields.add(falseBranchFixupBci);
+                        fields.add(endBranchFixupBci);
+                        if (model.usesBoxingElimination()) {
+                            fields.add(getChildBci(0, true));
+                            fields.add(getChildBci(1, true));
+                        }
+                        break;
+                    case WHILE:
+                        fields.add(whileStartBci); // init
+                        fields.add(bodyReachable); // init
+                        fields.add(endBranchFixupBci);
+                        break;
+                    case TRY_CATCH:
+                        fields.add(handlerId); // init
+                        fields.add(stackHeight); // init
+                        fields.add(tryStartBci); // init
+                        fields.add(operationReachable); // init
+                        fields.add(tryReachable); // init
+                        fields.add(catchReachable); // init
+                        fields.add(endBranchFixupBci);
+                        fields.add(extraTableEntriesStart);
+                        fields.add(extraTableEntriesEnd);
+                        break;
+                    case TRY_FINALLY, TRY_CATCH_OTHERWISE:
+                        fields.add(handlerId); // init
+                        fields.add(stackHeight); // init
+                        fields.add(finallyGenerator); // init
+                        fields.add(tryStartBci); // init
+                        fields.add(operationReachable); // init
+                        fields.add(tryReachable); // init
+                        fields.add(catchReachable); // init
+                        fields.add(endBranchFixupBci);
+                        fields.add(extraTableEntriesStart);
+                        fields.add(extraTableEntriesEnd);
+                        fields.add(finallyHandlerSp);
+                        break;
+                    case FINALLY_HANDLER:
+                        fields.add(finallyOperationSp); // init
+                        break;
+                    case CUSTOM, CUSTOM_YIELD, CUSTOM_INSTRUMENTATION:
+                        if (operation.isTransparent()) {
+                            fields.add(producedValue);
+                            if (model.usesBoxingElimination()) {
+                                fields.add(childBci);
+                            }
+                        } else {
+                            fields.addAll(getConstants(operation.constantOperands.before(), true));
+                            int bciFields = operation.numDynamicOperands();
+                            if (model.usesBoxingElimination()) {
+                                for (int i = 0; i < bciFields; i++) {
+                                    fields.add(getChildBci(i, true));
+                                }
+                            }
+                            if (operation.isVariadic) {
+                                fields.add(variadicCountPatchIndex);
+                                if (model.hasVariadicReturn) {
+                                    fields.add(variadicReturnIndices);
+                                    fields.add(numVariadicReturnIndices);
+                                }
+                            }
+                        }
+                        break;
+                    case CUSTOM_SHORT_CIRCUIT:
+                        if (model.usesBoxingElimination()) {
+                            fields.add(childBci);
+                            fields.add(shortCircuitBci);
+                        }
+                        fields.add(branchFixupBcis);
+                        fields.add(numBranchFixupBcis);
+                        break;
+                    default:
+                        if (operation.isTransparent()) {
+                            fields.add(producedValue);
+                            if (model.usesBoxingElimination()) {
+                                fields.add(childBci);
+                            }
+                        }
+                        break;
+                }
+                return fields;
+            }
+
+            OperationField getChildBci(int childIndex, boolean create) {
+                // ensure child bcis created
+                if (create) {
+                    for (int i = childBcis.size(); i < childIndex + 1; i++) {
+                        childBcis.add(field(type(int.class), "child" + i + "Bci").withInitializer(UNINIT));
+                    }
+                }
+                return childBcis.get(childIndex);
+            }
+
+            List<OperationField> getConstants(List<ConstantOperandModel> operands, boolean create) {
+                List<OperationField> result = new ArrayList<>(operands.size());
+                // Allocate separate fields for each immediate width.
+                Map<ImmediateWidth, Integer> constantCountsByWidth = new HashMap<>();
+                for (ConstantOperandModel constantOperand : operands) {
+                    ImmediateWidth requestedWidth = constantOperand.kind().width;
+                    int fieldIndex = constantCountsByWidth.compute(requestedWidth, (k, v) -> (v == null) ? 0 : v + 1);
+                    if (create) {
+                        List<OperationField> fields = constants.computeIfAbsent(requestedWidth, e -> new ArrayList<>());
+                        for (int i = fields.size(); i < fieldIndex + 1; i++) {
+                            fields.add(field(requestedWidth.toType(context), "constant" + requestedWidth.toEncodedName() + i));
+                        }
+                    }
+                    result.add(constants.get(requestedWidth).get(fieldIndex));
+                }
+
+                return result;
+            }
+
+            private OperationField field(TypeMirror type, String name) {
+                return new OperationField(type, name);
+            }
+        }
+
+        final class OperationStackElement extends CodeTypeElement {
+
+            private OperationVariables variables;
+            private final Map<OperationField, GetterAndSetter> gettersSetters = new LinkedHashMap<>();
+
+            OperationStackElement() {
+                super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "OperationStackElement");
+
+            }
+
+            private void lazyInit(OperationFields fields) {
+                this.variables = new OperationVariables((m) -> fields.mapFieldsToOperation(m));
+
+                CodeExecutableElement constructor = createConstructorUsingFields(Set.of(), this, null);
+                CodeTreeBuilder b = constructor.appendBuilder();
+                Map<CodeVariableElement, String> staticInitializer = new LinkedHashMap<>();
+                for (OperationField field : variables.fieldToVariable.keySet()) {
+                    if (field.staticInitializer != null) {
+                        CodeVariableElement var = variables.fieldToVariable.get(field);
+                        String prev = staticInitializer.put(var, field.staticInitializer);
+                        if (prev != null && !prev.equals(field.staticInitializer)) {
+                            /*
+                             * This is not a hard limitation, but we want all buffers statically
+                             * allocated the same way otherwise we can't allocate them to the same
+                             * field.
+                             */
+                            throw new AssertionError("Buffer variables must have the same initializer. Expected " + field.initializer + " but got " + prev);
+                        }
+                    }
+                }
+                for (var entry : staticInitializer.entrySet()) {
+                    CodeVariableElement variable = entry.getKey();
+                    String initializer = entry.getValue();
+                    b.startStatement();
+                    b.string("this.", variable.getSimpleName().toString());
+                    b.string(" = ");
+                    b.string(initializer);
+                    b.end();
+                }
+
+                this.add(constructor);
+
+                this.add(new CodeVariableElement(Set.of(), type(int.class), "operation"));
+                this.add(new CodeVariableElement(Set.of(), type(int.class), "sequenceNumber"));
+                this.add(new CodeVariableElement(Set.of(), type(int.class), "childCount"));
+                this.addAll(this.variables.variables());
+
+                // we collect all operations for each variable per field
+                // we need it later to assert the operations when we create the getters and setters
+                for (var entry : variables.fieldToOperation.entrySet()) {
+                    OperationField field = entry.getKey();
+                    Collection<OperationModel> operations = entry.getValue();
+                    CodeVariableElement variable = variables.fieldToVariable.get(field);
+                    GetterAndSetter methods = new GetterAndSetter(
+                                    createGetField(operations, field, variable),
+                                    createSetField(operations, field, variable));
+                    this.add(methods.getter);
+                    this.add(methods.setter);
+                    gettersSetters.put(field, methods);
+                }
+
+                if (model.additionalAssertions) {
+                    this.add(createIsOperation());
+                }
+
+                this.add(createValidateDeclaredLabels());
+                this.add(createAddDeclaredLabel());
+
+                if (model.enableBlockScoping) {
+                    this.add(createRegisterLocal());
+                }
+                this.add(createToString());
+            }
+
+            CodeTree createInitialize(OperationModel operation, String local, Map<OperationField, String> originalValues) {
+                CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
+                boolean first = true;
+                Map<OperationField, String> values = new HashMap<>(originalValues);
+                for (OperationField field : variables.operationToField.get(operation)) {
+                    if (field.skipInitialization) {
+                        continue;
+                    }
+                    String value;
+                    if (field.initializer == null) {
+                        // needs init value
+                        value = values.remove(field);
+                        if (value == null) {
+                            throw new AssertionError("Operation init value not specified: " + field.name + " operation " + operation);
+                        }
+                    } else {
+                        value = field.initializer;
+                    }
+                    if (first) {
+                        b.lineComment("Initialize operation " + operation.name);
+                        first = false;
+                    }
+                    b.tree(write(operation, local, field, CodeTreeBuilder.singleString(value), true));
+                }
+
+                if (!values.isEmpty()) {
+                    throw new AssertionError("Too many operation init fields specified: " + values + " operation " + operation);
+                }
+
+                return b.build();
+            }
+
+            String read(OperationModel operation, String local, OperationField field) {
+                return read(List.of(operation), local, field);
+            }
+
+            String read(OperationModel operation, OperationField field) {
+                return read(operation, "operation", field);
+            }
+
+            String read(Collection<OperationModel> operation, OperationField field) {
+                return read(operation, "operation", field);
+            }
+
+            String read(Collection<OperationModel> operations, String local, OperationField field) {
+                validateField(operations, field);
+                ExecutableElement getter = this.gettersSetters.get(field).getter();
+                return local + "." + getter.getSimpleName() + "()";
+
+            }
+
+            CodeTree write(OperationModel operation, OperationField field, String value) {
+                return write(operation, "operation", field, CodeTreeBuilder.singleString(value), false);
+            }
+
+            CodeTree write(Collection<OperationModel> operation, OperationField field, String value) {
+                return write(operation, "operation", field, CodeTreeBuilder.singleString(value), false);
+            }
+
+            CodeTree write(OperationModel operation, String local, OperationField field, String value) {
+                return write(operation, local, field, CodeTreeBuilder.singleString(value), false);
+            }
+
+            CodeTree write(OperationModel operation, String local, OperationField field, CodeTree value, boolean init) {
+                return write(List.of(operation), local, field, value, init);
+            }
+
+            CodeTree write(Collection<OperationModel> operations, String local, OperationField field, CodeTree value, boolean init) {
+                validateField(operations, field);
+                if (!init && field.isFinal) {
+                    throw new AssertionError("Field " + field + " is final and cannot be written after init.");
+                }
+
+                ExecutableElement setter = this.gettersSetters.get(field).setter();
+                CodeTreeBuilder b = CodeTreeBuilder.createBuilder();
+                b.startStatement();
+                b.startCall(local, setter.getSimpleName().toString());
+                b.tree(value);
+                b.end();
+                b.end();
+                return b.build();
+            }
+
+            private void validateField(Collection<OperationModel> operations, OperationField field) throws AssertionError {
+                for (OperationModel operation : operations) {
+                    if (!variables.operationToField.get(operation).contains(field)) {
+                        throw new AssertionError("Invalid field " + field + " used for operation " + operation.name + ". Available fields: " + variables.operationToField.get(operation));
+                    }
+                }
+            }
+
+            private CodeExecutableElement createIsOperation() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(boolean.class), "isOperation");
+                ex.addParameter(new CodeVariableElement(type(int[].class), "ops"));
+                ex.setVarArgs(true);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration("int", "currentOp", "this.operation");
+                b.startFor().string("int op : ops").end().startBlock();
+                b.startIf().string("currentOp == op").end().startBlock();
+                b.returnTrue();
+                b.end();
+                b.end();
+                b.returnFalse();
+                return ex;
+            }
+
+            private CodeExecutableElement createSetField(Collection<OperationModel> operations, OperationField f, CodeVariableElement var) {
+                String name = "set" + ElementUtils.firstLetterUpperCase(f.name);
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(), type(void.class), name);
+                ex.addParameter(new CodeVariableElement(f.type, "value"));
+                if (f.doc != null) {
+                    addJavadoc(ex, f.doc);
+                }
+                CodeTreeBuilder b = ex.createBuilder();
+
+                if (model.additionalAssertions) {
+                    b.startAssert().startCall("isOperation");
+                    for (OperationModel operation : operations) {
+                        b.tree(createOperationConstant(operation));
+                    }
+                    b.end().end();
+                }
+
+                b.statement("this.", var.getName(), " = value");
+                return ex;
+            }
+
+            private CodeExecutableElement createGetField(Collection<OperationModel> operations, OperationField f, CodeVariableElement var) {
+                String name = "get" + ElementUtils.firstLetterUpperCase(f.name);
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(), f.type, name);
+                if (f.doc != null) {
+                    addJavadoc(ex, f.doc);
+                }
+                CodeTreeBuilder b = ex.createBuilder();
+
+                if (model.additionalAssertions) {
+                    b.startAssert().startCall("isOperation");
+                    for (OperationModel operation : operations) {
+                        b.tree(createOperationConstant(operation));
+                    }
+                    b.end().end();
+                }
+
+                b.startReturn();
+                if (f.dynamicType) {
+                    TypeElement element = ElementUtils.castTypeElement(f.type);
+                    if (element != null && !element.getTypeParameters().isEmpty()) {
+                        GeneratorUtils.mergeSuppressWarnings(ex, "unchecked");
+                    }
+                    b.cast(f.type);
+                }
+                b.string(var.getName());
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createValidateDeclaredLabels() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(FINAL), type(boolean.class), "validateDeclaredLabels");
+
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration("var", "labels", "getDeclaredLabels()");
+                b.startIf().string("labels != null").end().startBlock();
+                b.startFor().string("BytecodeLabel label : labels").end().startBlock();
+                b.statement("BytecodeLabelImpl impl = (BytecodeLabelImpl) label");
+                b.startIf().string("!impl.isDefined()").end().startBlock();
+                b.statement("return false");
+                b.end(3);
+                b.statement("return true");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createRegisterLocal() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(), type(void.class), "registerLocal");
+                ex.addParameter(new CodeVariableElement(type(int.class), "tableIndex"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration(type(int.class), "localTableIndex", "getNumLocals()");
+                b.statement("setNumLocals(localTableIndex + 1)");
+
+                b.declaration(type(int[].class), "localsTable", "getLocals()");
+
+                b.startIf().string("localsTable == null").end().startBlock();
+                b.startAssign("localsTable").startNewArray(arrayOf(type(int.class)), CodeTreeBuilder.singleString("8")).end().end();
+                b.statement("setLocals(localsTable)");
+                b.end();
+                b.startElseIf().string("localTableIndex >= localsTable.length").end().startBlock();
+                b.startAssign("localsTable").startStaticCall(type(Arrays.class), "copyOf");
+                b.string("localsTable");
+                b.string("localsTable.length * 2");
+                b.end(2); // assign, static call
+                b.statement("setLocals(localsTable)");
+                b.end(); // if block
+                b.statement("localsTable[localTableIndex] = tableIndex");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createAddDeclaredLabel() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(FINAL), type(void.class), "addDeclaredLabel");
+                ex.addParameter(new CodeVariableElement(types.BytecodeLabel, "label"));
+
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.declaration("var", "labels", "getDeclaredLabels()");
+
+                b.startIf().string("labels == null").end().startBlock();
+                b.statement("labels = new ArrayList<>(8)");
+                b.statement("setDeclaredLabels(labels)");
+                b.end();
+
+                b.statement("labels.add(label)");
+
+                return ex;
+            }
+
+            private CodeExecutableElement createToString() {
+                CodeExecutableElement ex = GeneratorUtils.override(declaredType(Object.class), "toString");
+
+                CodeTreeBuilder p = ex.createBuilder();
+
+                Map<EqualityCodeTree, List<OperationModel>> caseGrouping = EqualityCodeTree.group(p, model.getOperationsWithChildren(), (OperationModel op, CodeTreeBuilder b) -> {
+                    var iterator = this.variables.operationToField.get(op).stream().filter((f) -> !f.isLengthField).toList().iterator();
+                    while (iterator.hasNext()) {
+                        OperationField field = iterator.next();
+
+                        b.startStatement();
+                        b.startCall("b.append").doubleQuote(field.name + "(").end();
+                        b.startCall(".append");
+                        if (field.type.getKind() == TypeKind.ARRAY) {
+                            b.startStaticCall(type(Arrays.class), "toString");
+
+                            if (field.lengthField != null) {
+                                b.startStaticCall(type(Arrays.class), "copyOf");
+                                b.string(operationStack.read(op, "this", field));
+                                b.string(operationStack.read(op, "this", field.lengthField));
+                                b.end();
+                            } else {
+                                b.string(operationStack.read(op, "this", field));
+                            }
+
+                            b.end();
+                        } else {
+                            b.string(operationStack.read(op, "this", field));
+                        }
+
+                        b.end(); // append call
+                        b.startCall(".append").doubleQuote(")").end();
+                        if (iterator.hasNext()) {
+                            b.startCall(".append").doubleQuote(" ").end();
+                        }
+                        b.end();
+                    }
+                    b.statement("break");
+                });
+
+                CodeTreeBuilder b = p;
+
+                b.startDeclaration(type(StringBuilder.class), "b").startNew(type(StringBuilder.class)).end().end();
+
+                b.startStatement().startCall("b.append");
+                b.startStaticCall(type(String.class), "format");
+                b.doubleQuote("%-15s");
+                b.startStaticCall(operationsElement.asType(), "getName").string("operation").end();
+                b.end();
+                b.end().end();
+
+                b.startStatement().startCall("b.append").doubleQuote(" ").end().end();
+
+                b.startSwitch().string("operation").end().startBlock();
+                for (var group : caseGrouping.entrySet()) {
+                    EqualityCodeTree key = group.getKey();
+                    for (OperationModel op : group.getValue()) {
+                        b.startCase().tree(createOperationConstant(op)).end();
+                    }
+                    b.startCaseBlock();
+                    b.tree(key.getTree());
+                    b.end();
+                }
+                b.end(); // switch
+
+                b.statement("return b.toString()");
+                return ex;
+            }
+
+            record GetterAndSetter(ExecutableElement getter, ExecutableElement setter) {
+            }
+
+        }
+
+        /**
+         * Class that manages allocation of operation fields to variables / instance fields in the
+         * stack element class. The specification of concrete fields can be found in
+         * OperationFields.
+         */
+        final class OperationVariables {
+
+            final Map<OperationModel, LinkedHashSet<OperationField>> operationToField = new LinkedHashMap<>();
+            final Map<TypeMirror, List<CodeVariableElement>> typeToVariables = new LinkedHashMap<>();
+            final Map<OperationField, CodeVariableElement> fieldToVariable = new LinkedHashMap<>();
+            final Map<OperationField, LinkedHashSet<OperationModel>> fieldToOperation = new LinkedHashMap<>();
+
+            OperationVariables(Function<OperationModel, List<OperationField>> mapping) {
+                for (OperationModel operation : model.getOperations()) {
+                    List<OperationField> fields = mapping.apply(operation);
+                    this.operationToField.put(operation, new LinkedHashSet<>(fields));
+                    fields.addAll(fields);
+                    for (OperationField field : fields) {
+                        fieldToOperation.computeIfAbsent(field, (f) -> new LinkedHashSet<>()).add(operation);
+                    }
+                }
+
+                Map<String, Set<OperationField>> variableToFields = new LinkedHashMap<>();
+
+                /*
+                 * This mapping represents the allocation of operation fields to
+                 * OperationStackElement fields ("variables"). Each operation has allocation lists
+                 * for each variable type. We represent allocation with a boolean list where a
+                 * "true" value at index i means variable i has been allocated.
+                 */
+                final Map<OperationModel, Map<TypeMirror, List<Boolean>>> operationToFieldAllocation = new LinkedHashMap<>();
+                /*
+                 * In this allocation strategy we allocate fields with most usages first. This
+                 * ensures that the most contested fields are allocated early.
+                 */
+                for (var entry : fieldToOperation.entrySet().stream().sorted((e1, e2) -> Integer.compare(e2.getValue().size(), e1.getValue().size())).toList()) {
+                    OperationField field = entry.getKey();
+                    Collection<OperationModel> operations = entry.getValue();
+
+                    TypeMirror fieldType;
+                    if (field.dynamicType) {
+                        fieldType = ProcessorContext.getInstance().getType(Object.class);
+                    } else {
+                        fieldType = field.type;
+                    }
+
+                    // first try to allocate the field for all operations until an index is found
+                    // where it's the same for all operations
+                    int fieldIndex = 0;
+                    restart: while (true) {
+                        for (OperationModel operation : operations) {
+                            List<Boolean> availableList = operationToFieldAllocation.//
+                                            computeIfAbsent(operation, (k) -> new LinkedHashMap<>()).//
+                                            computeIfAbsent(fieldType, (k) -> new ArrayList<>());
+
+                            if (fieldIndex >= availableList.size()) {
+                                // fits
+                                continue;
+                            }
+                            if (!availableList.get(fieldIndex)) {
+                                // fits
+                                continue;
+                            }
+
+                            // we failed to allocate for this operation
+                            // now we find the next best possible index and restart
+                            // the entire allocation for this field until
+                            // we find an index that fits all operations.
+                            for (int i = fieldIndex; i < availableList.size(); i++) {
+                                if (!availableList.get(i)) {
+                                    // retry with unallocated index
+                                    fieldIndex = i;
+                                    continue restart;
+                                }
+                            }
+                            // all indices have been allocated. increase the number of variables and
+                            // retry
+                            fieldIndex = Math.max(fieldIndex, availableList.size());
+                            continue restart;
+                        }
+                        break;
+                    }
+
+                    // now we mark the field being used
+                    for (OperationModel operation : operations) {
+                        List<Boolean> availableList = operationToFieldAllocation.//
+                                        computeIfAbsent(operation, (k) -> new LinkedHashMap<>()).//
+                                        computeIfAbsent(fieldType, (k) -> new ArrayList<>());
+                        while (fieldIndex >= availableList.size()) {
+                            availableList.add(Boolean.FALSE);
+                        }
+                        // lets make sure we actually did properly allocate the index
+                        if (availableList.get(fieldIndex)) {
+                            throw new AssertionError("Field allocation invariant failed");
+                        }
+                        availableList.set(fieldIndex, Boolean.TRUE);
+                    }
+
+                    List<CodeVariableElement> variables = typeToVariables.computeIfAbsent(fieldType, (k) -> new ArrayList<>());
+                    CodeVariableElement var;
+                    if (fieldIndex < variables.size()) {
+                        var = variables.get(fieldIndex);
+                    } else if (fieldIndex == variables.size()) {
+                        String prefix = ElementUtils.firstLetterLowerCase(ElementUtils.getTypeSimpleId(fieldType));
+                        var = new CodeVariableElement(Set.of(PRIVATE), fieldType, prefix + fieldIndex);
+                        variables.add(var);
+                    } else {
+                        throw new AssertionError("fieldIndex %d exceeds variable size %d".formatted(fieldIndex, variables.size()));
+                    }
+
+                    this.fieldToVariable.put(field, var);
+                    variableToFields.computeIfAbsent(var.getName(), (k) -> new LinkedHashSet<>()).add(field);
+                }
+
+                // generate some useful javadoc comments with the field allocation
+                for (var entry : this.typeToVariables.values()) {
+                    for (CodeVariableElement variable : entry) {
+                        CodeTreeBuilder doc = variable.createDocBuilder();
+
+                        doc.startJavadoc();
+                        doc.string("Field mappings:");
+                        for (OperationField field : variableToFields.get(variable.getName())) {
+
+                            doc.newLine().string("    ").string(field.name).string(" : ").type(field.type);
+                            if (field.doc != null) {
+                                for (String line : field.doc.split("\n")) {
+                                    doc.newLine();
+                                    doc.string("      ");
+                                    if (line.isBlank()) {
+                                        doc.string(" ");
+                                    } else {
+                                        doc.string(line);
+                                    }
+                                }
+                            }
+
+                            int count = 0;
+                            for (OperationModel operation : fieldToOperation.get(field)) {
+                                if (count % 8 == 0) {
+                                    doc.newLine().string("        ");
+                                }
+                                doc.string(operation.getConstantName()).string(", ");
+                                count++;
+                            }
+                        }
+
+                        doc.newLine();
+                        doc.end();
+                    }
+                }
+            }
+
+            public List<CodeVariableElement> variables() {
+                List<CodeVariableElement> variables = new ArrayList<>();
+                /*
+                 * We sort variables by size. It is recommended to have bigger types first in a Java
+                 * class and smaller primitives last.
+                 *
+                 * Reference types are always sorted last, so they end up at the end of the class.
+                 */
+                for (TypeMirror type : typeToVariables.keySet().stream().sorted((e1, e2) -> {
+                    return Integer.compare(getFieldSize(e2), getFieldSize(e1));
+                }).toList()) {
+                    variables.addAll(typeToVariables.get(type));
+                }
+                return variables;
+            }
+
+            private int getFieldSize(TypeMirror e1) {
+                switch (e1.getKind()) {
+                    case BOOLEAN:
+                    case BYTE:
+                        return 1;
+                    case SHORT:
+                    case CHAR:
+                        return 2;
+                    case INT:
+                    case FLOAT:
+                        return 4;
+                    case LONG:
+                    case DOUBLE:
+                        return 8;
+                    default:
+                        // this makes reference fields always
+                        // be last, this is good for an
+                        // efficient field layout
+                        return -1;
+                }
+            }
+
+        }
+
+        static final class OperationField {
+            final TypeMirror type;
+            final String name;
+            boolean isFinal;
+            // If initializer is null, the field value is required as a constructor parameter
+            String initializer;
+            // Invoked when the operation stack element is instantiated
+            String staticInitializer;
+            String doc;
+
+            boolean skipInitialization;
+            boolean dynamicType;
+
+            OperationField lengthField;
+            boolean isLengthField;
+
+            OperationField(TypeMirror type, String name) {
+                this.type = type;
+                this.name = name;
+                this.dynamicType = !ElementUtils.isPrimitive(type);
+            }
+
+            public OperationField lengthField(OperationField field) {
+                this.lengthField = field;
+                field.isLengthField = true;
+                return this;
+            }
+
+            /**
+             * Field cannot be written after initialization.
+             */
+            OperationField asFinal() {
+                this.isFinal = true;
+                return this;
+            }
+
+            /**
+             * Initializer that is invoked when the operation is initialized with
+             * OperationStackElement#createInitialize.
+             */
+            OperationField withInitializer(String newInitializer) {
+                this.initializer = newInitializer;
+                return this;
+            }
+
+            /**
+             * Static initializer that is invoked on initialization of the operation data class
+             * object.
+             */
+            OperationField withStaticInitializer(String newInitializer) {
+                this.staticInitializer = newInitializer;
+                return this;
+            }
+
+            OperationField withDoc(String newDoc) {
+                this.doc = newDoc;
+                return this;
+            }
+
+            /**
+             * If set to true skips initialization of this field. This is useful for buffers that
+             * should not be reset every time an operation is allocated.
+             */
+            OperationField skipInitialization(boolean value) {
+                this.skipInitialization = value;
+                return this;
+            }
+
+            /**
+             * Dynamically typed fields use Object to represent their value. This makes the field
+             * better reusable. Setting dynamic type to <code>false</code> makes the type of the
+             * field used in the variable directly.
+             */
+            OperationField dynamicType(boolean value) {
+                this.dynamicType = value;
+                return this;
+            }
+
+            @Override
+            public String toString() {
+                return "DataClassField[" + name + "]";
             }
         }
 
@@ -8416,7 +9416,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(short.class), "rootIndex"));
 
                 if (model.enableBlockScoping) {
-                    this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), scopeDataType.asType(), "scope"));
+                    this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), operationStack.asType(), "scope"));
+                    this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "scopeSequenceNumber"));
                 }
 
                 CodeExecutableElement constructor = this.add(createConstructorUsingFields(Set.of(), this, null));
@@ -8427,6 +9428,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 this.add(createGetLocalOffset());
                 this.add(createGetLocalIndex());
+                this.add(createToString());
             }
 
             private CodeExecutableElement createGetLocalOffset() {
@@ -8440,6 +9442,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeLocal, "getLocalIndex");
                 CodeTreeBuilder b = ex.createBuilder();
                 b.startReturn().string("localIndex").end();
+                return ex;
+            }
+
+            private CodeExecutableElement createToString() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PUBLIC), type(String.class), "toString");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startReturn().doubleQuote("BytecodeLocal[localOffset=");
+                b.string(" + this.getLocalOffset() + ");
+                b.doubleQuote(", localIndex=");
+                b.string(" + this.getLocalIndex() + ");
+                b.doubleQuote(", rootIndex=");
+                b.string(" + rootIndex + ");
+                b.doubleQuote("]");
+                b.end();
                 return ex;
             }
         }
@@ -8458,6 +9475,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "declaringOp"));
 
                 CodeExecutableElement constructor = createConstructorUsingFields(Set.of(), this, null);
+                this.add(new CodeVariableElement(type(int.class), "unresolved0")).createInitBuilder().string("-1");
+                this.add(new CodeVariableElement(type(int.class), "unresolved1")).createInitBuilder().string("-1");
+                this.add(new CodeVariableElement(type(int.class), "unresolvedCount"));
+                this.add(new CodeVariableElement(type(int[].class), "unresolvedArray"));
+
                 CodeTree tree = constructor.getBodyTree();
                 CodeTreeBuilder b = constructor.createBuilder();
                 b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
@@ -8467,6 +9489,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(createIsDefined());
                 this.add(createEquals());
                 this.add(createHashCode());
+                this.add(createToString());
             }
 
             private CodeExecutableElement createIsDefined() {
@@ -8494,6 +9517,23 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 CodeTreeBuilder b = ex.createBuilder();
 
                 b.startReturn().string("this.id").end();
+                return ex;
+            }
+
+            private CodeExecutableElement createToString() {
+                CodeExecutableElement ex = new CodeExecutableElement(Set.of(PUBLIC), type(String.class), "toString");
+                CodeTreeBuilder b = ex.createBuilder();
+
+                b.startReturn().doubleQuote("BytecodeLabel[id=");
+                b.string(" + this.id + ");
+                b.string("(!isDefined() ? ");
+                b.doubleQuote(", undefined");
+                b.string(" : ");
+                b.doubleQuote(", bci=");
+                b.string(" + this.bci");
+                b.string(") + ");
+                b.doubleQuote("]");
+                b.end();
                 return ex;
             }
         }
@@ -8718,6 +9758,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 return method;
             }
 
+            void writeByte(CodeTreeBuilder b, String value) {
+                writeByte(b, CodeTreeBuilder.singleString(value));
+            }
+
+            void writeByte(CodeTreeBuilder b, CodeTree value) {
+                b.startStatement();
+                b.string("serialization.", buffer.getName(), ".").startCall("writeByte");
+                b.tree(value).end();
+                b.end();
+            }
+
             void writeShort(CodeTreeBuilder b, CodeVariableElement label) {
                 writeShort(b, b.create().staticReference(label).build());
             }
@@ -8740,6 +9791,17 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             void writeInt(CodeTreeBuilder b, CodeTree value) {
                 b.startStatement();
                 b.string("serialization.", buffer.getName(), ".").startCall("writeInt");
+                b.tree(value).end();
+                b.end();
+            }
+
+            void writeLong(CodeTreeBuilder b, String value) {
+                writeLong(b, CodeTreeBuilder.singleString(value));
+            }
+
+            void writeLong(CodeTreeBuilder b, CodeTree value) {
+                b.startStatement();
+                b.string("serialization.", buffer.getName(), ".").startCall("writeLong");
                 b.tree(value).end();
                 b.end();
             }
@@ -8846,6 +9908,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createGetLanguage());
             this.add(createIsParsed());
 
+            if (model.enableInstructionTracing) {
+                this.add(createAddInstructionTracer());
+                this.add(createRemoveInstructionTracer());
+                this.add(createFindInstructionTracerAccess());
+                this.add(createUpdateGlobalInstructionTracers());
+            }
+
             if (model.enableSerialization) {
                 this.add(createSerialize());
             }
@@ -8929,6 +9998,66 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end();
 
             return ctor;
+        }
+
+        private CodeExecutableElement createAddInstructionTracer() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeRootNodes, "addInstructionTracer", new String[]{"tracer"});
+            CodeTreeBuilder b = ex.createBuilder();
+            emitValidateInstructionTracer(b);
+
+            b.startDeclaration(configEncoder.asType(), "encoder").staticReference(configEncoder.asType(), "INSTANCE").end();
+            b.startStatement();
+            b.string("updateImpl(encoder, encoder.encodeInstrumentation(").typeLiteral(types.InstructionTracer).string("))");
+            b.end();
+
+            b.startFor().type(model.getTemplateType().asType()).string(" root : nodes").end().startBlock();
+            b.startDeclaration(BytecodeRootNodeElement.this.asType(), "castRoot").cast(BytecodeRootNodeElement.this.asType(), "root").end();
+            b.statement("findInstructionTracerAccess(castRoot).addLocalTracer(tracer)");
+            b.statement("castRoot.invalidate(\"Local instruction tracer added.\")");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createRemoveInstructionTracer() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeRootNodes, "removeInstructionTracer", new String[]{"tracer"});
+            CodeTreeBuilder b = ex.createBuilder();
+            emitValidateInstructionTracer(b);
+            b.startDeclaration(configEncoder.asType(), "encoder").staticReference(configEncoder.asType(), "INSTANCE").end();
+            b.startStatement();
+            b.string("updateImpl(encoder, encoder.encodeInstrumentation(").typeLiteral(types.InstructionTracer).string("))");
+            b.end();
+
+            b.startFor().type(model.getTemplateType().asType()).string(" root : nodes").end().startBlock();
+            b.startDeclaration(BytecodeRootNodeElement.this.asType(), "castRoot").cast(BytecodeRootNodeElement.this.asType(), "root").end();
+            b.statement("findInstructionTracerAccess(castRoot).removeLocalTracer(tracer)");
+            b.statement("castRoot.invalidate(\"Local instruction tracer removed.\")");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createUpdateGlobalInstructionTracers() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeRootNodes, "updateGlobalInstructionTracers", new String[]{"tracers"});
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startDeclaration(configEncoder.asType(), "encoder").staticReference(configEncoder.asType(), "INSTANCE").end();
+            b.startStatement();
+            b.string("updateImpl(encoder, encoder.encodeInstrumentation(").typeLiteral(types.InstructionTracer).string("))");
+            b.end();
+            b.startFor().type(model.getTemplateType().asType()).string(" root : nodes").end().startBlock();
+            b.startDeclaration(BytecodeRootNodeElement.this.asType(), "castRoot").cast(BytecodeRootNodeElement.this.asType(), "root").end();
+            b.statement("findInstructionTracerAccess(castRoot).updateGlobalTracers(tracers)");
+            b.statement("castRoot.invalidate(\"Global instruction tracers updated.\")");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createFindInstructionTracerAccess() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), instructionTracerAccessImplElement.asType(), "findInstructionTracerAccess");
+            ex.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "root"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn();
+            b.cast(instructionTracerAccessImplElement.asType()).string("root.getBytecodeNodeImpl().constants[Builder.INSTRUCTION_TRACER_CONSTANT_INDEX]");
+            b.end();
+            return ex;
         }
 
         private CodeExecutableElement createReparseImpl() {
@@ -9100,21 +10229,27 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(2);
             b.end();
 
-            b.startStatement();
-            b.startStaticCall(BytecodeRootNodeElement.this.asType(), "doSerialize");
-            b.string("buffer");
-            b.string("callback");
-
-            // Create a new Builder with this BytecodeRootNodes instance.
+            b.startDeclaration(bytecodeBuilderType, "builder");
             b.startNew("Builder");
             b.string("getLanguage()");
             b.string("this");
+            b.startCall("BytecodeConfigEncoderImpl.decode");
             b.staticReference(types.BytecodeConfig, "COMPLETE");
             b.end();
+            b.end();
+            b.end();
 
+            b.startTryBlock();
+
+            b.startStatement().startCall("builder", "serialize");
+            b.string("buffer");
+            b.string("callback");
             b.string("existingNodes");
+            b.end().end();
 
-            b.end(2);
+            b.end().startCatchBlock(type(IOError.class), "e");
+            b.startThrow().cast(type(IOException.class), "e.getCause()").end();
+            b.end();
 
             return ex;
         }
@@ -9170,20 +10305,974 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
     }
 
-    // Generates an Instructions class with constants for each instruction.
-    final class InstructionConstantsElement extends CodeTypeElement {
-        InstructionConstantsElement() {
-            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "Instructions");
+    final class InstructionDescriptorListElement extends CodeTypeElement {
+
+        InstructionDescriptorListElement() {
+            super(Set.of(PRIVATE, STATIC, FINAL),
+                            ElementKind.CLASS, null, "InstructionDescriptorList");
+            this.setSuperClass(generic(type(AbstractList.class), types.InstructionDescriptor));
+            this.add(new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), this.asType(), "INSTANCE")).createInitBuilder().startNew(asType()).end();
+            this.add(createGet());
+            this.add(createSize());
+        }
+
+        private CodeExecutableElement createGet() {
+            CodeExecutableElement ex = GeneratorUtils.override(declaredType(List.class), "get", new String[]{"index"}, new TypeMirror[]{type(int.class)});
+            ex.setReturnType(types.InstructionDescriptor);
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startIf().string("index < 0 || index >= size()").end().startBlock();
+            b.startThrow().startNew(type(IndexOutOfBoundsException.class)).string("String.valueOf(index)").end().end();
+            b.end();
+            b.startReturn();
+            b.staticReference(instructionDescriptorImpl.asType(), "DESCRIPTORS[").string("index + " + model.getInstructionStartIndex()).string("]");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createSize() {
+            CodeExecutableElement ex = GeneratorUtils.override(declaredType(List.class), "size");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().string(model.getInstructions().size()).end();
+            return ex;
+        }
+
+    }
+
+    final class BytecodeDescriptorElement extends CodeTypeElement {
+        BytecodeDescriptorElement() {
+            super(Set.of(PUBLIC, STATIC, FINAL), ElementKind.CLASS, null, "Bytecode");
         }
 
         void lazyInit() {
+            TypeMirror superType = BytecodeDSLCodeGenerator.findBytecodeVariantType(abstractBuilderType);
+            if (superType == null) {
+                // regular case
+                superType = generic(types.BytecodeDescriptor, model.getTemplateType().asType(), model.languageClass, builder.asType());
+            }
+            setSuperClass(superType);
+
+            CodeExecutableElement c = this.add(new CodeExecutableElement(Set.of(PRIVATE), null, this.getSimpleName().toString()));
+            CodeTreeBuilder b = c.createBuilder();
+            b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+
+            this.add(createGetRootNodeClass());
+            this.add(createGetGeneratedClass());
+            this.add(createCast());
+            this.add(createGetLanguageClass());
+            this.add(createGetInstructionDescriptors());
+            this.add(createGetInstructionDescriptor());
+            this.add(createCreate());
+            this.add(createNewConfigBuilder());
+
+            this.add(createPrepareForCall());
+
+            this.add(createAddInstructionTracer());
+            this.add(createRemoveInstructionTracer());
+
+            if (model.enableSerialization) {
+                this.add(createSerialize());
+                this.add(createDeserialize());
+            }
+        }
+
+        private CodeExecutableElement createPrepareForCall() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "prepareForCall");
+            ex.addParameter(new CodeVariableElement(model.languageClass, "language"));
+            ex.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "rootNode"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.statement("onPrepareForLoad(language, rootNode)");
+            return ex;
+        }
+
+        private CodeExecutableElement createGetRootNodeClass() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "getSpecificationClass");
+            ex.setReturnType(generic(type(Class.class), model.getTemplateType().asType()));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().typeLiteral(model.getTemplateType().asType()).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetGeneratedClass() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "getGeneratedClass");
+            ex.setReturnType(generic(type(Class.class), new CodeTypeMirror.WildcardTypeMirror(model.getTemplateType().asType(), null)));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().typeLiteral(BytecodeRootNodeElement.this.asType()).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createCast() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "cast", new String[]{"root"}, new TypeMirror[]{types.RootNode});
+            ex.setReturnType(model.getTemplateType().asType());
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startIf().string("root.getClass() == ").typeLiteral(BytecodeRootNodeElement.this.asType()).end().startBlock();
+            b.startReturn().cast(BytecodeRootNodeElement.this.asType(), "root").end();
+            b.end();
+            if (model.enableYield) {
+                b.startElseIf().string("root instanceof ").type(continuationRootNodeImpl.asType()).string(" c").end().startBlock();
+                b.statement("return c.root");
+                b.end();
+            }
+            b.startElseBlock();
+            b.statement("return null");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetLanguageClass() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "getLanguageClass");
+            ex.setReturnType(generic(type(Class.class), model.languageClass));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().typeLiteral(model.languageClass).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createAddInstructionTracer() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "addInstructionTracer", new String[]{"language", "tracer"});
+            ex.changeTypes(model.languageClass, types.InstructionTracer);
+            CodeTreeBuilder b = ex.createBuilder();
+
+            if (model.enableInstructionTracing) {
+                emitValidateInstructionTracer(b);
+                b.statement("super.addInstructionTracer(language, tracer)");
+            } else {
+                b.startThrow().startNew(type(UnsupportedOperationException.class));
+                b.doubleQuote("Instruction tracing is not enabled for this bytecode root node. Enable with @GenerateBytecode(enableInstructionTracing=true) to use instruction tracing.");
+                b.end().end();
+            }
+
+            return ex;
+        }
+
+        private CodeExecutableElement createRemoveInstructionTracer() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "removeInstructionTracer", new String[]{"language", "tracer"});
+            ex.changeTypes(model.languageClass, types.InstructionTracer);
+            CodeTreeBuilder b = ex.createBuilder();
+            if (model.enableInstructionTracing) {
+                emitValidateInstructionTracer(b);
+                b.statement("super.removeInstructionTracer(language, tracer)");
+            } else {
+                b.startThrow().startNew(type(UnsupportedOperationException.class));
+                b.doubleQuote("Instruction tracing is not enabled for this bytecode root node. Enable with @GenerateBytecode(enableInstructionTracing=true) to use instruction tracing.");
+                b.end().end();
+            }
+            return ex;
+        }
+
+        private CodeExecutableElement createGetInstructionDescriptors() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "getInstructionDescriptors");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().staticReference(instructionDescriptorList.asType(), "INSTANCE").end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetInstructionDescriptor() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "getInstructionDescriptor", new String[]{"operationCode"});
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startIf().string("operationCode < 1 || operationCode >= ").staticReference(instructionDescriptorImpl.asType(), "DESCRIPTORS.length").end().startBlock();
+            b.returnNull();
+            b.end();
+            b.startReturn().staticReference(instructionDescriptorImpl.asType(), "DESCRIPTORS").string("[operationCode]").end();
+            return ex;
+        }
+
+        private CodeExecutableElement createCreate() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "create", new String[]{"language", "config", "parser"});
+            ex.setReturnType(generic(types.BytecodeRootNodes, model.templateType.asType()));
+            ex.changeTypes(model.languageClass, types.BytecodeConfig, parserType);
+            CodeTreeBuilder b = ex.getBuilder();
+
+            b.declaration("BytecodeRootNodesImpl", "nodes", "new BytecodeRootNodesImpl(parser, config)");
+            b.startAssign("Builder builder").startNew(builder.getSimpleName().toString());
+            b.string("language");
+            b.string("nodes");
+            b.string("withGlobalConfig(language, BytecodeConfigEncoderImpl.decode(config))");
+            b.end(2);
+
+            b.startStatement().startCall("parser", "parse");
+            b.string("builder");
+            b.end(2);
+
+            b.startStatement().startCall("builder", "finish").end(2);
+
+            b.startReturn().string("nodes").end();
+
+            return ex;
+        }
+
+        private CodeExecutableElement createNewConfigBuilder() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "newConfigBuilder");
+            CodeTreeBuilder b = ex.getBuilder();
+            b.startReturn();
+            b.startStaticCall(BytecodeRootNodeElement.this.asType(), "newConfigBuilder").end();
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createSerialize() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "serialize", new String[]{"buffer", "callback", "parser"});
+            ex.changeTypes(type(DataOutput.class), types.BytecodeSerializer, parserType);
+
+            CodeTreeBuilder b = ex.createBuilder();
+
+            b.startDeclaration(bytecodeRootNodesImpl.asType(), "rootNodes");
+            b.startNew(bytecodeRootNodesImpl.asType());
+            b.string("parser");
+            b.staticReference(types.BytecodeConfig, "COMPLETE");
+            b.end(); // new
+            b.end(); // declaration
+
+            b.startDeclaration(bytecodeBuilderType, "builder");
+            b.startNew("Builder");
+            b.string("null"); // language not needed for serialization
+            b.string("rootNodes"); // language not needed for serialization
+            b.string("rootNodes.encoding"); // language not needed for serialization
+            b.end(); // new
+            b.end(); // declaration
+
+            b.startTryBlock();
+
+            b.startStatement().startCall("builder", "serialize");
+            b.string("buffer");
+            b.string("callback");
+            b.string("null"); // existingNodes
+            b.end().end();
+
+            b.end().startCatchBlock(type(IOError.class), "e");
+            b.startThrow().cast(type(IOException.class), "e.getCause()").end();
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createDeserialize() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeDescriptor, "deserialize", new String[]{"language", "config", "input", "callback"});
+            ex.setReturnType(generic(types.BytecodeRootNodes, model.getTemplateType().asType()));
+            ex.changeTypes(model.languageClass, types.BytecodeConfig, generic(Supplier.class, DataInput.class), types.BytecodeDeserializer);
+            CodeTreeBuilder b = ex.createBuilder();
+
+            b.startTryBlock();
+
+            if (ElementUtils.typeEquals(abstractBuilderType, types.BytecodeBuilder)) {
+                b.statement("return create(language, config, (b) -> b.deserialize(input, callback, null))");
+            } else {
+                b.statement("return create(language, config, (b) -> ((Builder) b).deserialize(input, callback, null))");
+            }
+
+            b.end().startCatchBlock(type(IOError.class), "e");
+            b.startThrow().cast(type(IOException.class), "e.getCause()").end();
+            b.end();
+
+            return ex;
+        }
+
+    }
+
+    final class InstructionsElement extends CodeTypeElement {
+        InstructionsElement() {
+            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "Instructions");
+        }
+
+        private ArgumentDescriptorElement argumentDescriptorImpl;
+        private CodeTypeElement abstractArgument;
+
+        void lazyInit() {
+
             for (InstructionModel instruction : BytecodeRootNodeElement.this.model.getInstructions()) {
                 CodeVariableElement fld = new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), type(short.class), instruction.getConstantName());
                 fld.createInitBuilder().string(instruction.getId()).end();
                 fld.createDocBuilder().startDoc().lines(instruction.pp()).end(2);
                 this.add(fld);
             }
+
+            argumentDescriptorImpl = this.add(new ArgumentDescriptorElement());
+            abstractArgument = this.add(new AbstractArgumentElement());
+
+            Set<String> generated = new HashSet<>();
+            for (ImmediateKind kind : ImmediateKind.values()) {
+                if (kind == ImmediateKind.LOCAL_INDEX && !model.localAccessesNeedLocalIndex() && !model.materializedLocalAccessesNeedLocalIndex()) {
+                    // Only generate immediate class for LocalIndex when needed.
+                    continue;
+                }
+
+                String className = getImmediateClassName(kind);
+                if (generated.contains(className)) {
+                    continue;
+                }
+                if (kind == ImmediateKind.TAG_NODE && !model.enableTagInstrumentation) {
+                    continue;
+                }
+                CodeTypeElement implType = this.add(new ArgumentElement(kind));
+                abstractArgument.getPermittedSubclasses().add(implType.asType());
+                generated.add(className);
+            }
+
+            this.add(createGetInstructionLength());
+            this.add(createGetName());
+            this.add(createIsInstrumentation());
+            this.add(createGetArguments());
+            this.add(createGetArgumentDescriptors());
         }
+
+        public CodeTree call(String methodName, String argumentName) {
+            CodeTreeBuilder b = new CodeTreeBuilder(null);
+            b.startStaticCall(instructionsElement.asType(), methodName).string(argumentName).end();
+            return b.build();
+        }
+
+        private CodeExecutableElement createGetInstructionLength() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(int.class), "getLength");
+            ex.addParameter(new CodeVariableElement(type(int.class), "opcode"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startSwitch().string("opcode").end().startBlock();
+            for (var instructions : groupInstructionsByLength(model.getInstructions())) {
+                for (InstructionModel instruction : instructions) {
+                    b.startCase().tree(createInstructionConstant(instruction)).end();
+                }
+                InstructionModel instruction = instructions.get(0);
+                b.startCaseBlock();
+                b.startReturn().string(instruction.getInstructionLength()).end();
+                b.end();
+            }
+            b.end();
+            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
+            return ex;
+        }
+
+        private CodeExecutableElement createGetName() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(String.class), "getName");
+            ex.addParameter(new CodeVariableElement(type(int.class), "opcode"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startSwitch().string("opcode").end().startBlock();
+            for (InstructionModel instruction : model.getInstructions()) {
+                b.startCase().tree(createInstructionConstant(instruction)).end();
+                b.startCaseBlock();
+                b.startReturn().doubleQuote(instruction.name).end();
+                b.end();
+            }
+            b.end();
+            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
+            return ex;
+        }
+
+        private CodeExecutableElement createIsInstrumentation() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(boolean.class), "isInstrumentation");
+            ex.addParameter(new CodeVariableElement(type(int.class), "opcode"));
+            CodeTreeBuilder b = ex.createBuilder();
+
+            Map<Boolean, List<InstructionModel>> grouped = model.getInstructions().stream().collect(deterministicGroupingBy(InstructionModel::isInstrumentation));
+
+            if (!grouped.containsKey(true)) {
+                // Simplification: no instruction is an instrumentation instruction.
+                b.startReturn().string("false").end();
+                return ex;
+            }
+
+            b.startSwitch().string("opcode").end().startBlock();
+            for (InstructionModel instrumentationInstruction : grouped.get(true)) {
+                b.startCase().tree(createInstructionConstant(instrumentationInstruction)).end();
+            }
+            b.startCaseBlock();
+            b.startReturn().string("true").end();
+            b.end();
+
+            b.caseDefault();
+            b.startCaseBlock();
+            b.startReturn().string("false").end();
+            b.end();
+
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetArgumentDescriptors() {
+            TypeMirror returnType = generic(List.class, types.InstructionDescriptor_ArgumentDescriptor);
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), returnType, "getArgumentDescriptors");
+            ex.addParameter(new CodeVariableElement(type(int.class), "opcode"));
+
+            CodeTreeBuilder b = ex.createBuilder();
+
+            Map<EqualityCodeTree, List<InstructionModel>> caseGrouping = EqualityCodeTree.group(b, model.getInstructions(), (InstructionModel instruction, CodeTreeBuilder group) -> {
+                group.startCaseBlock();
+                group.startReturn().startStaticCall(type(List.class), "of");
+
+                for (InstructionImmediate immediate : resolveImmediates(instruction)) {
+                    group.tree(this.argumentDescriptorImpl.readArgumentConstant(immediate));
+                }
+
+                group.end().end(); // return
+                group.end(); // case block
+            });
+
+            b.startSwitch().string("opcode").end().startBlock();
+            for (var group : caseGrouping.entrySet()) {
+                EqualityCodeTree key = group.getKey();
+                for (InstructionModel instruction : group.getValue()) {
+                    b.startCase().tree(createInstructionConstant(instruction)).end();
+                }
+                b.startCaseBlock();
+                b.tree(key.getTree());
+                b.end();
+            }
+            b.end(); // switch
+            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
+            return ex;
+        }
+
+        private List<InstructionImmediate> resolveImmediates(InstructionModel instruction) {
+
+            if (instruction.nodeData != null && instruction.canUseNodeSingleton()) {
+                List<InstructionImmediate> immediates = new ArrayList<>(instruction.immediates);
+                immediates.add(new InstructionImmediate(ImmediateKind.NODE_PROFILE, "node", InstructionImmediateEncoding.NONE));
+                return immediates;
+            } else {
+                return instruction.immediates;
+            }
+        }
+
+        private CodeExecutableElement createGetArguments() {
+            TypeMirror returnType = generic(List.class, types.Instruction_Argument);
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), returnType, "getArguments");
+            ex.addParameter(new CodeVariableElement(type(int.class), "opcode"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "bci"));
+            ex.addParameter(new CodeVariableElement(abstractBytecodeNode.asType(), "bytecode"));
+            ex.addParameter(new CodeVariableElement(type(byte[].class), "bytecodes"));
+            ex.addParameter(new CodeVariableElement(type(Object[].class), "constants"));
+
+            CodeTreeBuilder b = ex.createBuilder();
+
+            Map<EqualityCodeTree, List<InstructionModel>> caseGrouping = EqualityCodeTree.group(b, model.getInstructions(), (InstructionModel instruction, CodeTreeBuilder group) -> {
+                group.startCaseBlock();
+                group.startReturn().startStaticCall(type(List.class), "of");
+                for (InstructionImmediate immediate : resolveImmediates(instruction)) {
+                    emitCreateArgument(group, instruction, immediate);
+                }
+                group.end().end(); // return
+                group.end(); // case block
+            });
+
+            b.startSwitch().string("opcode").end().startBlock();
+            for (var group : caseGrouping.entrySet()) {
+                EqualityCodeTree key = group.getKey();
+                for (InstructionModel instruction : group.getValue()) {
+                    b.startCase().tree(createInstructionConstant(instruction)).end();
+                }
+                b.startCaseBlock();
+                b.tree(key.getTree());
+                b.end();
+            }
+            b.end(); // switch
+            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
+            return ex;
+        }
+
+        private void emitCreateArgument(CodeTreeBuilder b, InstructionModel instruction, InstructionImmediate immediate) {
+            b.startGroup();
+            b.newLine();
+            b.startIndention();
+            b.startNew(getImmediateClassName(immediate.kind()));
+            b.tree(argumentDescriptorImpl.readArgumentConstant(immediate));
+            b.string("bci + " + immediate.offset());
+
+            for (CodeVariableElement var : createImmediateArguments(immediate.kind())) {
+                String name = var.getName();
+                switch (name) {
+                    case "bytecodeIndex":
+                        b.string("bci");
+                        break;
+                    case "singleton":
+                        if (instruction.canUseNodeSingleton()) {
+                            b.staticReference(getCachedDataClassType(instruction), "SINGLETON");
+                        } else {
+                            b.string("null");
+                        }
+                        break;
+                    default:
+                        b.string(var.getName());
+                        break;
+                }
+            }
+
+            b.end(); // indention
+            b.end(); // line
+            b.end(); // group
+        }
+
+        private static String getArgumentDescriptorKind(ImmediateKind kind) {
+            return switch (kind) {
+                case BRANCH_PROFILE -> "BRANCH_PROFILE";
+                case BYTECODE_INDEX -> "BYTECODE_INDEX";
+                case CONSTANT, CONSTANT_LONG, CONSTANT_DOUBLE, CONSTANT_INT, CONSTANT_FLOAT, CONSTANT_SHORT, CONSTANT_CHAR, CONSTANT_BYTE, CONSTANT_BOOL -> "CONSTANT";
+                case FRAME_INDEX -> "LOCAL_OFFSET";
+                case LOCAL_INDEX -> "LOCAL_INDEX";
+                case SHORT, INTEGER, LOCAL_ROOT, STACK_POINTER, STATE_PROFILE -> "INTEGER";
+                case NODE_PROFILE -> "NODE_PROFILE";
+                case TAG_NODE -> "TAG_NODE";
+            };
+        }
+
+        private static String getImmediateClassName(ImmediateKind kind) {
+            switch (kind) {
+                case BRANCH_PROFILE:
+                    return "BranchProfileArgument";
+                case BYTECODE_INDEX:
+                    return "BytecodeIndexArgument";
+                case CONSTANT:
+                    return "ConstantArgument";
+                case CONSTANT_LONG:
+                    return "InlinedConstantLongArgument";
+                case CONSTANT_DOUBLE:
+                    return "InlinedConstantDoubleArgument";
+                case CONSTANT_INT:
+                    return "InlinedConstantIntArgument";
+                case CONSTANT_FLOAT:
+                    return "InlinedConstantFloatArgument";
+                case CONSTANT_SHORT:
+                    return "InlinedConstantShortArgument";
+                case CONSTANT_CHAR:
+                    return "InlinedConstantCharArgument";
+                case CONSTANT_BYTE:
+                    return "InlinedConstantByteArgument";
+                case CONSTANT_BOOL:
+                    return "InlinedConstantBooleanArgument";
+                case FRAME_INDEX:
+                    return "LocalOffsetArgument";
+                case LOCAL_INDEX:
+                    return "LocalIndexArgument";
+                case SHORT:
+                case INTEGER:
+                case LOCAL_ROOT:
+                case STACK_POINTER:
+                case STATE_PROFILE:
+                    return "IntegerArgument";
+                case NODE_PROFILE:
+                    return "NodeProfileArgument";
+                case TAG_NODE:
+                    return "TagNodeArgument";
+            }
+            throw new AssertionError("invalid kind");
+        }
+
+        private List<CodeVariableElement> createImmediateArguments(ImmediateKind immediateKind) {
+            List<CodeVariableElement> args = new ArrayList<>();
+            switch (immediateKind) {
+                case CONSTANT:
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(Object[].class), "constants"));
+                    break;
+                case CONSTANT_INT:
+                case CONSTANT_FLOAT:
+                case CONSTANT_SHORT:
+                case CONSTANT_CHAR:
+                case CONSTANT_BYTE:
+                case CONSTANT_BOOL:
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    break;
+                case SHORT:
+                case LOCAL_ROOT:
+                case STACK_POINTER:
+                case INTEGER:
+                case STATE_PROFILE:
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    break;
+                case BYTECODE_INDEX:
+                case FRAME_INDEX:
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    break;
+                case NODE_PROFILE:
+                    args.add(new CodeVariableElement(Set.of(FINAL), abstractBytecodeNode.asType(), "bytecode"));
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    args.add(new CodeVariableElement(Set.of(FINAL), types.Node, "singleton"));
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "bytecodeIndex"));
+                    break;
+                default:
+                    args.add(new CodeVariableElement(Set.of(FINAL), abstractBytecodeNode.asType(), "bytecode"));
+                    args.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+                    break;
+            }
+            return args;
+        }
+
+        final class ArgumentDescriptorElement extends CodeTypeElement {
+
+            private final Map<DescriptorData, CodeVariableElement> descriptors = new HashMap<>();
+
+            ArgumentDescriptorElement() {
+                super(Set.of(PRIVATE, STATIC, FINAL),
+                                ElementKind.CLASS, null, "ArgumentDescriptorImpl");
+                this.setSuperClass(types.InstructionDescriptor_ArgumentDescriptor);
+                this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(String.class), "name"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), types.Instruction_Argument_Kind, "kind"));
+                this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "length"));
+                CodeExecutableElement constructor = this.add(createConstructorUsingFields(Set.of(), this, null));
+                CodeTree tree = constructor.getBodyTree();
+                CodeTreeBuilder b = constructor.createBuilder();
+                b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+                b.tree(tree);
+
+                this.add(createGetName());
+                this.add(createGetLength());
+                this.add(createGetKind());
+            }
+
+            record DescriptorData(String name, String descriptorKind, ImmediateWidth width) {
+                DescriptorData(InstructionImmediate immediate) {
+                    this(getIntrospectionArgumentName(immediate), getArgumentDescriptorKind(immediate.kind()), immediate.encoding().width());
+                }
+
+                int byteSize() {
+                    return width == null ? 0 : width.byteSize;
+                }
+
+                String constantName() {
+                    return ElementUtils.createConstantName(name) + "_" + descriptorKind + "_" + byteSize();
+                }
+            }
+
+            private static String getIntrospectionArgumentName(InstructionImmediate immediate) {
+                if (immediate.kind() == ImmediateKind.FRAME_INDEX) {
+                    // We expose the frame_index as a local offset, so don't use the immediate name.
+                    return "local_offset";
+                }
+                return immediate.name();
+            }
+
+            private CodeTree readArgumentConstant(InstructionImmediate immediate) {
+                CodeVariableElement constant = descriptors.computeIfAbsent(new DescriptorData(immediate), (d) -> {
+                    return createArgumentConstant(d);
+                });
+                return CodeTreeBuilder.createBuilder().staticReference(asType(), constant.getName()).build();
+            }
+
+            private CodeVariableElement createArgumentConstant(DescriptorData data) {
+                CodeVariableElement constant = new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), asType(), data.constantName());
+                constant.createInitBuilder().startNew(asType()).doubleQuote(data.name).staticReference(types.Instruction_Argument_Kind, data.descriptorKind).string(data.byteSize()).end();
+                this.add(constant);
+                return constant;
+            }
+
+            private CodeExecutableElement createGetName() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor_ArgumentDescriptor, "getName");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return this.name");
+                return ex;
+            }
+
+            private CodeExecutableElement createGetLength() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor_ArgumentDescriptor, "getLength");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return this.length");
+                return ex;
+            }
+
+            private CodeExecutableElement createGetKind() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor_ArgumentDescriptor, "getKind");
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return this.kind");
+                return ex;
+            }
+
+        }
+
+        final class AbstractArgumentElement extends CodeTypeElement {
+
+            AbstractArgumentElement() {
+                super(Set.of(PRIVATE, SEALED, STATIC, ABSTRACT),
+                                ElementKind.CLASS, null, "AbstractArgument");
+                this.setSuperClass(types.Instruction_Argument);
+                this.add(new CodeVariableElement(Set.of(FINAL), argumentDescriptorImpl.asType(), "descriptor"));
+                this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "bci"));
+                CodeExecutableElement constructor = this.add(createConstructorUsingFields(Set.of(), this, null));
+                CodeTree tree = constructor.getBodyTree();
+                CodeTreeBuilder b = constructor.createBuilder();
+                b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+                b.tree(tree);
+
+                this.add(new CodeVariableElement(Set.of(PROTECTED, STATIC, FINAL), types.BytecodeDSLAccess, "SAFE_ACCESS")) //
+                                .createInitBuilder().tree(createFastAccessFieldInitializer(false));
+                this.add(new CodeVariableElement(Set.of(PROTECTED, STATIC, FINAL), types.ByteArraySupport, "SAFE_BYTES")) //
+                                .createInitBuilder().startCall("SAFE_ACCESS.getByteArraySupport").end();
+                this.add(createGetDescriptor());
+            }
+
+            private CodeExecutableElement createGetDescriptor() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "getDescriptor");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.statement("return this.descriptor");
+                return ex;
+            }
+
+        }
+
+        final class ArgumentElement extends CodeTypeElement {
+
+            ArgumentElement(ImmediateKind immediateKind) {
+                super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, getImmediateClassName(immediateKind));
+                this.setSuperClass(abstractArgument.asType());
+                this.addAll(createImmediateArguments(immediateKind));
+                this.add(createConstructorUsingFields(Set.of(), this));
+
+                switch (immediateKind) {
+                    case BYTECODE_INDEX:
+                        this.add(createAsBytecodeIndex());
+                        break;
+                    case SHORT:
+                    case LOCAL_ROOT:
+                    case STACK_POINTER:
+                        this.add(createAsInteger());
+                        break;
+                    case FRAME_INDEX:
+                        this.add(createAsLocalOffset());
+                        break;
+                    case LOCAL_INDEX:
+                        this.add(createAsLocalIndex());
+                        break;
+                    case CONSTANT:
+                        this.add(createAsConstant());
+                        break;
+                    case CONSTANT_LONG:
+                    case CONSTANT_DOUBLE:
+                    case CONSTANT_INT:
+                    case CONSTANT_FLOAT:
+                    case CONSTANT_SHORT:
+                    case CONSTANT_CHAR:
+                    case CONSTANT_BYTE:
+                    case CONSTANT_BOOL:
+                        this.add(createAsConstantInlined(immediateKind));
+                        break;
+                    case NODE_PROFILE:
+                        this.add(createAsCachedNode());
+                        this.add(createGetSpecializationInfoInternal());
+                        break;
+                    case BRANCH_PROFILE:
+                        this.add(createAsBranchProfile());
+                        break;
+                    case TAG_NODE:
+                        this.add(createAsTagNode());
+                        break;
+                    default:
+                        throw new AssertionError("Unexpected kind");
+                }
+            }
+
+            private static String readByteSafe(String array, String index) {
+                return String.format("SAFE_BYTES.getByte(%s, %s)", array, index);
+            }
+
+            private static String readShortSafe(String array, String index) {
+                return String.format("SAFE_BYTES.getShort(%s, %s)", array, index);
+            }
+
+            private static String readIntSafe(String array, String index) {
+                return String.format("SAFE_BYTES.getInt(%s, %s)", array, index);
+            }
+
+            private static String readLongSafe(String array, String index) {
+                return String.format("SAFE_BYTES.getLong(%s, %s)", array, index);
+            }
+
+            private static String readConstSafe(String index) {
+                return String.format("SAFE_ACCESS.readObject(constants, %s)", index);
+            }
+
+            private CodeExecutableElement createAsBytecodeIndex() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asBytecodeIndex");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+
+                b.string(readIntSafe("bc", "bci"));
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsInteger() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asInteger");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(int.class), "width", "this.getDescriptor().getLength()");
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startSwitch().string("width").end().startBlock();
+                b.startCase().string("1").end();
+                b.startCaseBlock().startReturn().string(readByteSafe("bc", "bci")).end(2);
+                b.startCase().string("2").end();
+                b.startCaseBlock().startReturn().string(readShortSafe("bc", "bci")).end(2);
+                b.startCase().string("4").end();
+                b.startCaseBlock().startReturn().string(readIntSafe("bc", "bci")).end(2);
+                b.caseDefault().startCaseBlock();
+                emitThrowAssertionError(b, "\"Unexpected integer width \" + width");
+                b.end();
+                b.end(); // switch
+                return ex;
+            }
+
+            private CodeExecutableElement createAsLocalOffset() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asLocalOffset");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+                if (ImmediateKind.FRAME_INDEX.width != ImmediateWidth.SHORT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.string(readShortSafe("bc", "bci")).string(" - USER_LOCALS_START_INDEX");
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsLocalIndex() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asLocalIndex");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+                if (ImmediateKind.LOCAL_INDEX.width != ImmediateWidth.SHORT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.string(readShortSafe("bc", "bci"));
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsConstant() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asConstant");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+                if (ImmediateKind.CONSTANT.width != ImmediateWidth.INT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.string(readConstSafe(readIntSafe("bc", "bci")));
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createGetSpecializationInfoInternal() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "getSpecializationInfoInternal");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+
+                if (model.enableSpecializationIntrospection) {
+                    b.declaration(types.Node, "node", "asCachedNode()");
+                    b.startIf().startStaticCall(types.Introspection, "isIntrospectable").string("node").end().end().startBlock();
+                    b.startReturn();
+                    b.startStaticCall(types.Introspection, "getSpecializations").string("this.bytecode").string("this.bytecodeIndex").string("node").end();
+                    b.end(); // return
+                    b.end();
+                }
+                b.returnNull();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsConstantInlined(ImmediateKind kind) {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asConstant");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+                CodeTree read = CodeTreeBuilder.singleString(switch (kind.width) {
+                    case BYTE -> readByteSafe("bc", "bci");
+                    case SHORT -> readShortSafe("bc", "bci");
+                    case INT -> readIntSafe("bc", "bci");
+                    case LONG -> readLongSafe("bc", "bci");
+                });
+                b.tree(decodeInlinedConstant(kind, read));
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsCachedNode() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asCachedNode");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("this.bytecode == null").end().startBlock();
+                b.returnNull();
+                b.end();
+
+                // we need to check this explicitly as we do not want to return the singleton node
+                // for uncached
+                b.startIf().string("this.bytecode.getTier() != ").staticReference(types.BytecodeTier, "CACHED").end().startBlock();
+                b.returnNull();
+                b.end();
+
+                b.startIf().string("this.singleton != null").end().startBlock();
+                b.startReturn().string("this.singleton").end();
+                b.end();
+
+                b.declaration(arrayOf(types.Node), "cachedNodes", "this.bytecode.getCachedNodes()");
+                b.startIf().string("cachedNodes == null").end().startBlock();
+                b.statement("return null");
+                b.end();
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.startReturn();
+                if (ImmediateKind.NODE_PROFILE.width != ImmediateWidth.INT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.string("cachedNodes[", readIntSafe("bc", "bci"), "]");
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsTagNode() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asTagNode");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("this.bytecode == null").end().startBlock();
+                b.returnNull();
+                b.end();
+
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                b.declaration(tagRootNode.asType(), "tagRoot", "this.bytecode.tagRoot");
+                b.startIf().string("tagRoot == null").end().startBlock();
+                b.statement("return null");
+                b.end();
+                b.startReturn();
+                if (ImmediateKind.TAG_NODE.width != ImmediateWidth.INT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.tree(readTagNodeSafe(CodeTreeBuilder.singleString(readIntSafe("bc", "bci"))));
+                b.end();
+                return ex;
+            }
+
+            private CodeExecutableElement createAsBranchProfile() {
+                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asBranchProfile");
+                ex.getModifiers().add(Modifier.FINAL);
+                CodeTreeBuilder b = ex.createBuilder();
+                b.startIf().string("this.bytecode == null").end().startBlock();
+                b.returnNull();
+                b.end();
+
+                b.declaration(type(byte[].class), "bc", "this.bytecodes");
+                if (ImmediateKind.BRANCH_PROFILE.width != ImmediateWidth.INT) {
+                    throw new AssertionError("encoding changed");
+                }
+                b.declaration(type(int.class), "index", readIntSafe("bc", "bci"));
+                b.declaration(type(int[].class), "profiles", "this.bytecode.getBranchProfiles()");
+                b.startIf().string("profiles == null").end().startBlock();
+
+                b.startReturn();
+                b.startNew(types.Instruction_Argument_BranchProfile);
+                b.string("index");
+                b.string("0");
+                b.string("0");
+                b.end(); // new
+                b.end(); // return
+
+                b.end(); // block
+                b.startReturn();
+                b.startNew(types.Instruction_Argument_BranchProfile);
+                b.string("index");
+                b.string("profiles[index * 2]");
+                b.string("profiles[index * 2 + 1]");
+                b.end();
+                b.end();
+                return ex;
+            }
+
+        }
+
     }
 
     final class OperationConstantsElement extends CodeTypeElement {
@@ -9198,6 +11287,23 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 fld.createInitBuilder().string(operation.id).end();
                 this.add(fld);
             }
+            this.add(createGetName());
+        }
+
+        private CodeExecutableElement createGetName() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(STATIC), type(String.class), "getName");
+            ex.addParameter(new CodeVariableElement(type(int.class), "operation"));
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startSwitch().string("operation").end().startBlock();
+            for (OperationModel operation : model.getOperations()) {
+                b.startCase().string(operation.getConstantName()).end();
+                b.startCaseBlock();
+                b.startReturn().doubleQuote(operation.name).end();
+                b.end();
+            }
+            b.end();
+            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid operation"));
+            return ex;
         }
     }
 
@@ -9699,54 +11805,297 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
     }
 
-    final class InstructionImplElement extends CodeTypeElement {
+    final class InstructionTracerAccessImplElement extends CodeTypeElement {
 
-        private CodeTypeElement abstractArgument;
-
-        InstructionImplElement() {
-            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "InstructionImpl");
-            this.setSuperClass(types.Instruction);
+        InstructionTracerAccessImplElement() {
+            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "InstructionTracerAccessImpl");
+            this.setSuperClass(types.InstructionTracer_InstructionAccess);
         }
 
         void lazyInit() {
-            this.add(new CodeVariableElement(Set.of(FINAL), abstractBytecodeNode.asType(), "bytecode"));
-            this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "bci"));
-            this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "opcode"));
+            // private static final InstructionTracer[] EMPTY = new InstructionTracer[0];
+            CodeVariableElement emptyArr = new CodeVariableElement(Set.of(PRIVATE, STATIC, FINAL), arrayOf(types.InstructionTracer), "EMPTY");
+            emptyArr.createInitBuilder().startNewArray(arrayOf(types.InstructionTracer), CodeTreeBuilder.singleString("0")).end();
+            this.add(emptyArr);
 
-            CodeExecutableElement constructor = this.add(createConstructorUsingFields(Set.of(), this, null));
-            CodeTree tree = constructor.getBodyTree();
-            CodeTreeBuilder b = constructor.createBuilder();
+            CodeExecutableElement c = this.add(createConstructorUsingFields(Set.of(), this, null));
+            c.addParameter(new CodeVariableElement(model.languageClass, "language"));
+            CodeTree tree = c.getBodyTree();
+            CodeTreeBuilder b = c.createBuilder();
             b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
             b.tree(tree);
 
-            abstractArgument = this.add(new AbstractArgumentElement());
-            this.add(createGetBytecodeIndex());
-            this.add(createGetBytecodeNode());
-            this.add(createGetOperationCode());
+            CodeVariableElement localTracers = this.add(new CodeVariableElement(Set.of(VOLATILE), arrayOf(types.InstructionTracer), "localTracers"));
+            CodeVariableElement globalTracers = this.add(new CodeVariableElement(Set.of(VOLATILE), arrayOf(types.InstructionTracer), "globalTracers"));
+
+            GeneratorUtils.addCompilationFinal(localTracers, 1);
+            GeneratorUtils.addCompilationFinal(globalTracers, 1);
+
+            localTracers.createInitBuilder().string("EMPTY");
+            globalTracers.createInitBuilder().string("EMPTY");
+
+            this.add(createOnInstructionEnter());
+
+            this.add(createAddLocalTracer());
+            this.add(createRemoveLocalTracer());
+
+            this.add(createUpdateGlobalTracers());
+
+            this.add(createGetTracedInstruction());
+            this.add(createGetTracedOperationCode());
+        }
+
+        private CodeExecutableElement createOnInstructionEnter() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(), type(void.class), "onInstructionEnter",
+                            new CodeVariableElement(types.BytecodeNode, "bytecode"),
+                            new CodeVariableElement(type(int.class), "bytecodeIndex"),
+                            new CodeVariableElement(types.Frame, "frame"));
+            ex.getAnnotationMirrors().add(new CodeAnnotationMirror(types.HostCompilerDirectives_InliningCutoff));
+            ex.getAnnotationMirrors().add(new CodeAnnotationMirror(types.ExplodeLoop));
+
+            CodeTreeBuilder b = ex.createBuilder();
+
+            b.startFor().type(types.InstructionTracer).string(" t : localTracers").end().startBlock();
+            b.statement("t.onInstructionEnter(this, bytecode, bytecodeIndex, frame)");
+            b.end();
+
+            b.startFor().type(types.InstructionTracer).string(" t : globalTracers").end().startBlock();
+            b.statement("t.onInstructionEnter(this, bytecode, bytecodeIndex, frame)");
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createUpdateGlobalTracers() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(), type(void.class), "updateGlobalTracers",
+                            new CodeVariableElement(arrayOf(types.InstructionTracer), "tracers"));
+
+            CodeTreeBuilder b = ex.createBuilder();
+            b.statement("this.globalTracers = tracers");
+            return ex;
+        }
+
+        private CodeExecutableElement createAddLocalTracer() {
+            CodeExecutableElement ex = new CodeExecutableElement(
+                            Set.of(Modifier.SYNCHRONIZED),
+                            type(void.class),
+                            "addLocalTracer",
+                            new CodeVariableElement(types.InstructionTracer, "tracer"));
+            CodeTreeBuilder b = ex.createBuilder();
+
+            b.startStatement().startStaticCall(type(Objects.class), "requireNonNull").string("tracer").end().end();
+
+            b.startDeclaration(arrayOf(types.InstructionTracer), "newTracers");
+            b.startStaticCall(type(Arrays.class), "copyOf");
+            b.string("localTracers").string("localTracers.length + 1");
+            b.end();
+            b.end(); // declaration
+
+            b.startFor().type(types.InstructionTracer).string(" search : newTracers").end().startBlock();
+            b.startIf().string("tracer == search").end().startBlock();
+            b.statement("return");
+            b.end(); // block
+            b.end();
+
+            b.statement("newTracers[newTracers.length - 1] = tracer");
+            b.statement("this.localTracers = newTracers");
+            return ex;
+        }
+
+        private CodeExecutableElement createRemoveLocalTracer() {
+            CodeExecutableElement ex = new CodeExecutableElement(
+                            Set.of(Modifier.SYNCHRONIZED),
+                            type(void.class),
+                            "removeLocalTracer",
+                            new CodeVariableElement(types.InstructionTracer, "tracer"));
+            CodeTreeBuilder b = ex.createBuilder();
+
+            b.startStatement().startStaticCall(type(Objects.class), "requireNonNull").string("tracer").end().end();
+            b.declaration(arrayOf(types.InstructionTracer), "tracers", "this.localTracers");
+            b.declaration(type(boolean.class), "found", "false");
+
+            b.startFor().type(types.InstructionTracer).string(" t : tracers").end().startBlock();
+            b.startIf().string("t == tracer").end().startBlock();
+            b.statement("found = true");
+            b.statement("break");
+            b.end(); // if
+            b.end(); // for
+
+            b.startIf().string("found").end().startBlock();
+
+            b.startDeclaration(arrayOf(types.InstructionTracer), "newTracers");
+            b.startNewArray(arrayOf(types.InstructionTracer), CodeTreeBuilder.singleString("tracers.length - 1"));
+            b.end();
+            b.end(); // declaration
+
+            b.statement("int index = 0");
+            b.startFor().string("int i = 0; i < tracers.length; i++").end().startBlock();
+            b.declaration(types.InstructionTracer, "t", "tracers[i]");
+            b.startIf().string("t != tracer").end().startBlock();
+            b.statement("newTracers[index++] = t");
+            b.end(); // if
+            b.end(); // for
+
+            b.statement("this.localTracers = newTracers");
+
+            b.end(); // if (found)
+
+            return ex;
+        }
+
+        private CodeExecutableElement createGetTracedInstruction() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionTracer_InstructionAccess, "getTracedInstruction", new String[]{"bytecode", "bytecodeIndex"});
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startDeclaration(abstractBytecodeNode.asType(), "castBytecode").cast(abstractBytecodeNode.asType()).string("bytecode").end();
+            int length = model.traceInstruction.getInstructionEncoding().length();
+            b.declaration("int", "nextBytecodeIndex", "bytecodeIndex + " + length);
+            b.startReturn();
+            emitParseInstruction(b, "castBytecode", "nextBytecodeIndex", CodeTreeBuilder.singleString("castBytecode.readValidBytecode(castBytecode.bytecodes, nextBytecodeIndex)"));
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetTracedOperationCode() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionTracer_InstructionAccess, "getTracedOperationCode", new String[]{"bytecode", "bytecodeIndex"});
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startDeclaration(abstractBytecodeNode.asType(), "castBytecode").cast(abstractBytecodeNode.asType()).string("bytecode").end();
+            int length = model.traceInstruction.getInstructionEncoding().length();
+            b.declaration("int", "nextBytecodeIndex", "bytecodeIndex + " + length);
+            b.startReturn();
+            b.string("castBytecode.readValidBytecode(castBytecode.bytecodes, ", "bytecodeIndex + " + length, ")");
+            b.end();
+            return ex;
+        }
+
+    }
+
+    final class InstructionDescriptorImplElement extends CodeTypeElement {
+
+        InstructionDescriptorImplElement() {
+            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "InstructionDescriptorImpl");
+            this.setSuperClass(types.InstructionDescriptor);
+        }
+
+        void lazyInit() {
+            this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "opcode"));
+
+            CodeExecutableElement c = this.add(createConstructorUsingFields(Set.of(), this, null));
+            CodeTree tree = c.getBodyTree();
+            CodeTreeBuilder b = c.createBuilder();
+            b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+            b.tree(tree);
+
             this.add(createGetLength());
-            this.add(createGetArguments());
             this.add(createGetName());
             this.add(createIsInstrumentation());
+            this.add(createGetOperationCode());
+            this.add(createGetArgumentDescriptors());
+
+            CodeVariableElement descriptors = this.add(new CodeVariableElement(Set.of(STATIC, FINAL), arrayOf(asType()), "DESCRIPTORS"));
+            descriptors.createInitBuilder().string("createDescriptors()");
+            GeneratorUtils.addCompilationFinal(descriptors, 1);
+            this.add(createCreateDescriptors());
+        }
+
+        private CodeExecutableElement createCreateDescriptors() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), arrayOf(asType()), "createDescriptors");
+            CodeTreeBuilder b = ex.createBuilder();
+            int endIndex = model.getInstructionStartIndex() + model.getInstructions().size();
+            b.startDeclaration(arrayOf(asType()), "array").startNewArray(arrayOf(asType()), CodeTreeBuilder.singleString(String.valueOf(endIndex))).end().end();
+            b.startFor().string("int opcode = " + model.getInstructionStartIndex() + "; opcode < array.length; opcode++").end().startBlock();
+            b.startStatement();
+            b.string("array[opcode] = ").startNew(asType()).string("opcode").end();
+            b.end();
+            b.end();
+
+            b.statement("return array");
+            return ex;
+        }
+
+        private CodeExecutableElement createGetName() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor, "getName");
+            ex.getModifiers().add(FINAL);
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().tree(instructionsElement.call("getName", "opcode")).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createIsInstrumentation() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor, "isInstrumentation");
+            ex.getModifiers().add(FINAL);
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().tree(instructionsElement.call("isInstrumentation", "opcode")).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetLength() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor, "getLength");
+            ex.getModifiers().add(FINAL);
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().tree(instructionsElement.call("getLength", "opcode")).end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetOperationCode() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor, "getOperationCode");
+            ex.getModifiers().add(FINAL);
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().string("opcode").end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetArgumentDescriptors() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.InstructionDescriptor, "getArgumentDescriptors");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn();
+            b.startStaticCall(instructionsElement.asType(), "getArgumentDescriptors").string("opcode").end();
+            b.end();
+            return ex;
+        }
+    }
+
+    final class InstructionImplElement extends CodeTypeElement {
+
+        InstructionImplElement() {
+            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "InstructionImpl");
+        }
+
+        void lazyInit() {
+            this.setSuperClass(types.Instruction);
+
+            this.add(new CodeVariableElement(Set.of(FINAL), abstractBytecodeNode.asType(), "bytecode"));
+            this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "bci"));
+            this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "opcode"));
+            this.add(new CodeVariableElement(Set.of(FINAL), type(byte[].class), "bytecodes"));
+            this.add(new CodeVariableElement(Set.of(FINAL), type(Object[].class), "constants"));
+
+            CodeExecutableElement constructor1 = this.add(createConstructorUsingFields(Set.of(), this, null));
+            CodeTree tree = constructor1.getBodyTree();
+            CodeTreeBuilder b = constructor1.createBuilder();
+            b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+            b.tree(tree);
+
+            CodeExecutableElement constructor2 = this.add(createConstructorUsingFields(Set.of(), this, null, Set.of("bytecodes", "constants")));
+            tree = constructor2.getBodyTree();
+            b = constructor2.createBuilder();
+            b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
+            b.tree(tree);
+            b.statement("this.bytecodes = bytecode.bytecodes");
+            b.statement("this.constants = bytecode.constants");
+
+            this.add(createGetBytecodeIndex());
+            this.add(createGetBytecodeNode());
+            this.add(createGetArguments());
+            this.add(createGetDescriptor());
             this.add(createNext());
+        }
 
-            Set<String> generated = new HashSet<>();
-            for (ImmediateKind kind : ImmediateKind.values()) {
-                if (kind == ImmediateKind.LOCAL_INDEX && !model.localAccessesNeedLocalIndex() && !model.materializedLocalAccessesNeedLocalIndex()) {
-                    // Only generate immediate class for LocalIndex when needed.
-                    continue;
-                }
-
-                String className = getImmediateClassName(kind);
-                if (generated.contains(className)) {
-                    continue;
-                }
-                if (kind == ImmediateKind.TAG_NODE && !model.enableTagInstrumentation) {
-                    continue;
-                }
-                CodeTypeElement implType = this.add(new ArgumentElement(kind));
-                abstractArgument.getPermittedSubclasses().add(implType.asType());
-                generated.add(className);
-            }
+        private CodeExecutableElement createGetDescriptor() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "getDescriptor");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn();
+            b.staticReference(instructionDescriptorImpl.asType(), "DESCRIPTORS[opcode]");
+            b.end();
+            return ex;
         }
 
         private CodeExecutableElement createGetBytecodeIndex() {
@@ -9774,420 +12123,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
-        private CodeExecutableElement createGetName() {
-            CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "getName");
-            CodeTreeBuilder b = ex.createBuilder();
-            b.startSwitch().string("opcode").end().startBlock();
-            // Pop any value produced by a transparent operation's child.
-            for (InstructionModel instruction : model.getInstructions()) {
-                b.startCase().tree(createInstructionConstant(instruction)).end();
-                b.startCaseBlock();
-                b.startReturn().doubleQuote(instruction.name).end();
-                b.end();
-            }
-            b.end();
-            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
-            return ex;
-        }
-
-        private CodeExecutableElement createIsInstrumentation() {
-            CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "isInstrumentation");
-            CodeTreeBuilder b = ex.createBuilder();
-
-            Map<Boolean, List<InstructionModel>> grouped = groupInstructionsByInstrumentation(model.getInstructions());
-
-            if (!grouped.containsKey(true)) {
-                // Simplification: no instruction is an instrumentation instruction.
-                b.startReturn().string("false").end();
-                return ex;
-            }
-
-            b.startSwitch().string("opcode").end().startBlock();
-            for (var entry : grouped.entrySet()) {
-                for (InstructionModel instruction : entry.getValue()) {
-                    b.startCase().tree(createInstructionConstant(instruction)).end();
-                }
-                b.startCaseBlock();
-                b.startReturn().string(Boolean.toString(entry.getKey())).end();
-                b.end();
-            }
-
-            b.end();
-            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
-            return ex;
-        }
-
-        private CodeExecutableElement createGetLength() {
-            CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "getLength");
-            CodeTreeBuilder b = ex.createBuilder();
-            b.startSwitch().string("opcode").end().startBlock();
-            // Pop any value produced by a transparent operation's child.
-            for (var instructions : groupInstructionsByLength(model.getInstructions())) {
-                for (InstructionModel instruction : instructions) {
-                    b.startCase().tree(createInstructionConstant(instruction)).end();
-                }
-                InstructionModel instruction = instructions.get(0);
-                b.startCaseBlock();
-                b.startReturn().string(instruction.getInstructionLength()).end();
-                b.end();
-            }
-            b.end();
-            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
-            return ex;
-        }
-
         private CodeExecutableElement createGetArguments() {
             CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "getArguments");
             CodeTreeBuilder b = ex.createBuilder();
-            b.startSwitch().string("opcode").end().startBlock();
-            // Pop any value produced by a transparent operation's child.
-            for (var instructions : groupInstructionsByImmediates(model.getInstructions())) {
-                for (InstructionModel instruction : instructions) {
-                    b.startCase().tree(createInstructionConstant(instruction)).end();
-                }
-                InstructionModel instruction = instructions.get(0);
-
-                b.startCaseBlock();
-                b.startReturn().startStaticCall(type(List.class), "of");
-                for (InstructionImmediate immediate : instruction.getImmediates()) {
-                    b.startGroup();
-                    b.newLine();
-                    b.startIndention();
-                    b.startNew(getImmediateClassName(immediate.kind()));
-                    b.string("bytecode");
-                    b.doubleQuote(getIntrospectionArgumentName(immediate));
-                    b.string("bci + " + immediate.offset());
-                    for (String arg : getImmediateArgumentArgs(immediate.kind())) {
-                        b.string(arg);
-                    }
-                    b.end();
-                    b.end();
-                    b.end();
-                }
-                b.end().end(); // return
-
-                b.end(); // case block
-            }
+            b.startReturn();
+            b.startStaticCall(instructionsElement.asType(), "getArguments").string("opcode").string("bci").string("bytecode").string("this.bytecodes").string("this.constants").end();
             b.end();
-            b.tree(GeneratorUtils.createShouldNotReachHere("Invalid opcode"));
             return ex;
-        }
-
-        private String getIntrospectionArgumentName(InstructionImmediate immediate) {
-            if (immediate.kind() == ImmediateKind.FRAME_INDEX) {
-                // We expose the frame_index as a local offset, so don't use the immediate name.
-                return "local_offset";
-            }
-            return immediate.name();
-        }
-
-        private Map<Boolean, List<InstructionModel>> groupInstructionsByInstrumentation(Collection<InstructionModel> models) {
-            return models.stream().collect(deterministicGroupingBy(InstructionModel::isInstrumentation));
-        }
-
-        private Collection<List<InstructionModel>> groupInstructionsByImmediates(Collection<InstructionModel> models) {
-            return models.stream().collect(deterministicGroupingBy((m) -> m.getImmediates())).values().stream().sorted(Comparator.comparingInt((i) -> i.get(0).getId())).toList();
-        }
-
-        private CodeExecutableElement createGetOperationCode() {
-            CodeExecutableElement ex = GeneratorUtils.override(types.Instruction, "getOperationCode");
-            CodeTreeBuilder b = ex.createBuilder();
-            b.startReturn().string("opcode").end();
-            return ex;
-        }
-
-        private static String getImmediateClassName(ImmediateKind kind) {
-            switch (kind) {
-                case BRANCH_PROFILE:
-                    return "BranchProfileArgument";
-                case BYTECODE_INDEX:
-                    return "BytecodeIndexArgument";
-                case CONSTANT:
-                    return "ConstantArgument";
-                case FRAME_INDEX:
-                    return "LocalOffsetArgument";
-                case LOCAL_INDEX:
-                    return "LocalIndexArgument";
-                case SHORT:
-                case INTEGER:
-                case LOCAL_ROOT:
-                case STACK_POINTER:
-                    return "IntegerArgument";
-                case NODE_PROFILE:
-                    return "NodeProfileArgument";
-                case TAG_NODE:
-                    return "TagNodeArgument";
-            }
-            throw new AssertionError("invalid kind");
-        }
-
-        private List<Element> getArgumentFields(ImmediateKind kind) {
-            return switch (kind) {
-                case SHORT, LOCAL_ROOT, STACK_POINTER -> List.of(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "width"));
-                default -> List.of();
-            };
-        }
-
-        private static List<String> getImmediateArgumentArgs(ImmediateKind kind) {
-            return switch (kind) {
-                case SHORT, INTEGER, LOCAL_ROOT, STACK_POINTER -> List.of(Integer.toString(kind.width.byteSize));
-                default -> List.of();
-            };
-        }
-
-        final class AbstractArgumentElement extends CodeTypeElement {
-
-            AbstractArgumentElement() {
-                super(Set.of(PRIVATE, SEALED, STATIC, ABSTRACT),
-                                ElementKind.CLASS, null, "AbstractArgument");
-                this.setSuperClass(types.Instruction_Argument);
-                this.add(new CodeVariableElement(Set.of(FINAL), abstractBytecodeNode.asType(), "bytecode"));
-                this.add(new CodeVariableElement(Set.of(FINAL), type(String.class), "name"));
-                this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "bci"));
-                CodeExecutableElement constructor = this.add(createConstructorUsingFields(Set.of(), this, null));
-                CodeTree tree = constructor.getBodyTree();
-                CodeTreeBuilder b = constructor.createBuilder();
-                b.startStatement().startSuperCall().staticReference(bytecodeRootNodesImpl.asType(), "VISIBLE_TOKEN").end().end();
-                b.tree(tree);
-
-                this.add(new CodeVariableElement(Set.of(PROTECTED, STATIC, FINAL), types.BytecodeDSLAccess, "SAFE_ACCESS")) //
-                                .createInitBuilder().tree(createFastAccessFieldInitializer(false));
-                this.add(new CodeVariableElement(Set.of(PROTECTED, STATIC, FINAL), types.ByteArraySupport, "SAFE_BYTES")) //
-                                .createInitBuilder().startCall("SAFE_ACCESS.getByteArraySupport").end();
-                this.add(createGetName());
-            }
-
-            private CodeExecutableElement createGetName() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "getName");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.statement("return name");
-                return ex;
-            }
-
-        }
-
-        final class ArgumentElement extends CodeTypeElement {
-
-            private ImmediateKind immediateKind;
-
-            ArgumentElement(ImmediateKind immediateKind) {
-                super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, getImmediateClassName(immediateKind));
-                this.immediateKind = immediateKind;
-                this.setSuperClass(abstractArgument.asType());
-                this.addAll(getArgumentFields(immediateKind));
-                this.add(createConstructorUsingFields(Set.of(), this));
-                this.add(createGetKind());
-
-                switch (immediateKind) {
-                    case BYTECODE_INDEX:
-                        this.add(createAsBytecodeIndex());
-                        break;
-                    case SHORT:
-                    case LOCAL_ROOT:
-                    case STACK_POINTER:
-                        this.add(createAsInteger());
-                        break;
-                    case FRAME_INDEX:
-                        this.add(createAsLocalOffset());
-                        break;
-                    case LOCAL_INDEX:
-                        this.add(createAsLocalIndex());
-                        break;
-                    case CONSTANT:
-                        this.add(createAsConstant());
-                        break;
-                    case NODE_PROFILE:
-                        this.add(createAsCachedNode());
-                        break;
-                    case BRANCH_PROFILE:
-                        this.add(createAsBranchProfile());
-                        break;
-                    case TAG_NODE:
-                        this.add(createAsTagNode());
-                        break;
-                    default:
-                        throw new AssertionError("Unexpected kind");
-                }
-            }
-
-            private static String readByteSafe(String array, String index) {
-                return String.format("SAFE_BYTES.getByte(%s, %s)", array, index);
-            }
-
-            private static String readShortSafe(String array, String index) {
-                return String.format("SAFE_BYTES.getShort(%s, %s)", array, index);
-            }
-
-            private static String readIntSafe(String array, String index) {
-                return String.format("SAFE_BYTES.getInt(%s, %s)", array, index);
-            }
-
-            private static String readConstSafe(String index) {
-                return String.format("SAFE_ACCESS.readObject(constants, %s)", index);
-            }
-
-            private CodeExecutableElement createAsBytecodeIndex() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asBytecodeIndex");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.startReturn();
-
-                b.string(readIntSafe("bc", "bci"));
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsInteger() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asInteger");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.startSwitch().string("width").end().startBlock();
-                b.startCase().string("1").end();
-                b.startCaseBlock().startReturn().string(readByteSafe("bc", "bci")).end(2);
-                b.startCase().string("2").end();
-                b.startCaseBlock().startReturn().string(readShortSafe("bc", "bci")).end(2);
-                b.startCase().string("4").end();
-                b.startCaseBlock().startReturn().string(readIntSafe("bc", "bci")).end(2);
-                b.caseDefault().startCaseBlock();
-                emitThrowAssertionError(b, "\"Unexpected integer width \" + width");
-                b.end();
-                b.end(); // switch
-                return ex;
-            }
-
-            private CodeExecutableElement createAsLocalOffset() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asLocalOffset");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.startReturn();
-                if (ImmediateKind.FRAME_INDEX.width != ImmediateWidth.SHORT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.string(readShortSafe("bc", "bci")).string(" - USER_LOCALS_START_INDEX");
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsLocalIndex() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asLocalIndex");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.startReturn();
-                if (ImmediateKind.LOCAL_INDEX.width != ImmediateWidth.SHORT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.string(readShortSafe("bc", "bci"));
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsConstant() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asConstant");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.declaration(type(Object[].class), "constants", "this.bytecode.constants");
-                b.startReturn();
-                if (ImmediateKind.CONSTANT.width != ImmediateWidth.INT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.string(readConstSafe(readIntSafe("bc", "bci")));
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsCachedNode() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asCachedNode");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(arrayOf(types.Node), "cachedNodes", "this.bytecode.getCachedNodes()");
-                b.startIf().string("cachedNodes == null").end().startBlock();
-                b.statement("return null");
-                b.end();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.startReturn();
-                if (ImmediateKind.NODE_PROFILE.width != ImmediateWidth.INT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.string("cachedNodes[", readIntSafe("bc", "bci"), "]");
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsTagNode() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asTagNode");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                b.declaration(tagRootNode.asType(), "tagRoot", "this.bytecode.tagRoot");
-                b.startIf().string("tagRoot == null").end().startBlock();
-                b.statement("return null");
-                b.end();
-                b.startReturn();
-                if (ImmediateKind.TAG_NODE.width != ImmediateWidth.INT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.tree(readTagNodeSafe(CodeTreeBuilder.singleString(readIntSafe("bc", "bci"))));
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createAsBranchProfile() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "asBranchProfile");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.declaration(type(byte[].class), "bc", "this.bytecode.bytecodes");
-                if (ImmediateKind.BRANCH_PROFILE.width != ImmediateWidth.INT) {
-                    throw new AssertionError("encoding changed");
-                }
-                b.declaration(type(int.class), "index", readIntSafe("bc", "bci"));
-                b.declaration(type(int[].class), "profiles", "this.bytecode.getBranchProfiles()");
-                b.startIf().string("profiles == null").end().startBlock();
-
-                b.startReturn();
-                b.startNew(types.Instruction_Argument_BranchProfile);
-                b.string("index");
-                b.string("0");
-                b.string("0");
-                b.end(); // new
-                b.end(); // return
-
-                b.end(); // block
-                b.startReturn();
-                b.startNew(types.Instruction_Argument_BranchProfile);
-                b.string("index");
-                b.string("profiles[index * 2]");
-                b.string("profiles[index * 2 + 1]");
-                b.end();
-                b.end();
-                return ex;
-            }
-
-            private CodeExecutableElement createGetKind() {
-                CodeExecutableElement ex = GeneratorUtils.override(types.Instruction_Argument, "getKind");
-                ex.getModifiers().add(Modifier.FINAL);
-                CodeTreeBuilder b = ex.createBuilder();
-                b.startReturn();
-                String name = switch (immediateKind) {
-                    case BRANCH_PROFILE -> "BRANCH_PROFILE";
-                    case BYTECODE_INDEX -> "BYTECODE_INDEX";
-                    case CONSTANT -> "CONSTANT";
-                    case FRAME_INDEX -> "LOCAL_OFFSET";
-                    case LOCAL_INDEX -> "LOCAL_INDEX";
-                    case SHORT, INTEGER, LOCAL_ROOT, STACK_POINTER -> "INTEGER";
-                    case NODE_PROFILE -> "NODE_PROFILE";
-                    case TAG_NODE -> "TAG_NODE";
-                };
-                b.staticReference(types.Instruction_Argument_Kind, name);
-                b.end();
-                return ex;
-            }
-
         }
 
     }
@@ -10232,6 +12174,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createFindBytecodeNode());
             this.addOptional(createDispatch());
             this.add(createGetLanguage());
+            this.add(createGetLanguageId());
 
             // TagTree
             this.add(createGetTreeChildren());
@@ -10321,8 +12264,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             ex.getModifiers().add(Modifier.FINAL);
             ex.setReturnType(generic(type(Class.class), model.languageClass));
             ex.getAnnotationMirrors().clear();
+            GeneratorUtils.mergeSuppressWarnings(ex, "deprecation");
             CodeTreeBuilder b = ex.createBuilder();
             b.startReturn().typeLiteral(model.languageClass).end();
+            b.end();
+            return ex;
+        }
+
+        private CodeExecutableElement createGetLanguageId() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.TagTreeNode, "getLanguageId");
+            ex.getModifiers().remove(Modifier.ABSTRACT);
+            ex.getModifiers().add(Modifier.FINAL);
+            ex.getAnnotationMirrors().clear();
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().doubleQuote(model.languageId).end();
             b.end();
             return ex;
         }
@@ -10514,7 +12469,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             continueAt = add(new CodeExecutableElement(Set.of(ABSTRACT), type(long.class), "continueAt"));
             continueAt.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "$root"));
             continueAt.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 continueAt.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
             continueAt.addParameter(new CodeVariableElement(type(long.class), "startState"));
@@ -10542,9 +12497,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             if (model.isBytecodeUpdatable()) {
                 this.add(createInvalidate());
-                if (model.enableYield) {
-                    this.add(createUpdateContinuationRootNodes());
-                }
             }
 
             this.add(createValidateBytecodes());
@@ -10561,7 +12513,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                  */
                 getCachedLocalTagInternal = this.add(createGetCachedLocalTagInternal());
                 setCachedLocalTagInternal = this.add(createSetCachedLocalTagInternal());
-                if (model.enableYield) {
+                if (model.hasYieldOperation()) {
                     checkStableTagsAssumption = this.add(createCheckStableTagsAssumption());
                 } else {
                     checkStableTagsAssumption = null;
@@ -10614,19 +12566,40 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createGetLocalInfo());
             this.add(createGetLocals());
 
+            this.add(createResolveFrameImplFrameInstance());
+            if (model.captureFramesForTrace) {
+                this.add(createResolveFrameImplTruffleStackTraceElement());
+                this.add(createResolveNonVirtualFrameImpl());
+            }
+
             if (model.enableTagInstrumentation) {
                 this.add(createGetTagNodes());
             }
 
             this.add(createTranslateBytecodeIndex());
+            if (model.isBytecodeUpdatable() || model.hasYieldOperation()) {
+                this.add(createTransition());
+            }
+            if (model.hasYieldOperation() && model.enableInstructionTracing) {
+                this.add(createIsInstructionTracingEnabled());
+            }
+
             if (model.isBytecodeUpdatable()) {
-                this.add(createTransitionState());
                 this.add(createToStableBytecodeIndex());
                 this.add(createFromStableBytecodeIndex());
                 this.add(createTransitionInstrumentationIndex());
                 this.add(createComputeNewBci());
             }
             this.add(createAdoptNodesAfterUpdate());
+        }
+
+        private CodeExecutableElement createIsInstructionTracingEnabled() {
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, FINAL), type(boolean.class), "isInstructionTracingEnabled");
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn();
+            b.string("readValidBytecode(this.bytecodes, 0) == ").tree(createInstructionConstant(model.traceInstruction));
+            b.end();
+            return ex;
         }
 
         private CodeExecutableElement createGetLocalCount() {
@@ -11010,10 +12983,68 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
+        private CodeExecutableElement createResolveFrameImplFrameInstance() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeNode, "resolveFrameImpl", new String[]{"frameInstance", "access"});
+            CodeTreeBuilder b = ex.createBuilder();
+
+            if (model.hasYieldOperation()) {
+                b.startIf().string("frameInstance.getCallTarget() instanceof ").type(types.RootCallTarget).string(" root && root.getRootNode() instanceof ").type(
+                                continuationRootNodeImpl.asType()).string(" continuation").end().startBlock();
+                b.lineComment("Continuations use materialized frames, which support all access modes.");
+                b.startReturn().startCall("continuation.findFrame").startCall("frameInstance.getFrame");
+                b.staticReference(types.FrameInstance_FrameAccess, "READ_ONLY");
+                b.end(3);
+                b.end(); // if
+            }
+            b.startReturn().string("frameInstance.getFrame(access)").end();
+            return ex;
+        }
+
+        private CodeExecutableElement createResolveFrameImplTruffleStackTraceElement() {
+            if (!model.captureFramesForTrace) {
+                throw new AssertionError("should not generate resolveFrameImpl(TruffleStackTraceElement) if frames are not captured.");
+            }
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeNode, "resolveFrameImpl", new String[]{"element"});
+            CodeTreeBuilder b = ex.createBuilder();
+
+            if (model.hasYieldOperation()) {
+                b.declaration(types.Frame, "frame", "element.getFrame()");
+                b.startIf().string("frame != null && element.getTarget().getRootNode() instanceof ").type(continuationRootNodeImpl.asType()).string(
+                                " continuation").end().startBlock();
+                b.statement("frame = continuation.findFrame(frame)");
+                b.end();
+                b.startReturn().string("frame").end();
+            } else {
+                b.startReturn().string("element.getFrame()").end();
+            }
+            return ex;
+        }
+
+        private CodeExecutableElement createResolveNonVirtualFrameImpl() {
+            if (!model.captureFramesForTrace) {
+                throw new AssertionError("should not generate resolveNonVirtualFrameImpl(TruffleStackTraceElement) if frames are not captured.");
+            }
+            CodeExecutableElement ex = GeneratorUtils.override(types.BytecodeNode, "resolveNonVirtualFrameImpl", new String[]{"element"});
+            CodeTreeBuilder b = ex.createBuilder();
+
+            if (model.hasYieldOperation()) {
+                b.declaration(types.Frame, "frame", "element.getFrame()");
+                b.startIf().string("frame != null && element.getTarget().getRootNode() instanceof ").type(continuationRootNodeImpl.asType()).string(
+                                " continuation").end().startBlock();
+                b.lineComment("Continuation frames are always materialized.");
+                b.startReturn().string("continuation.findFrame(frame)").end();
+                b.end();
+            }
+            b.lineComment("Frames obtained in stack walks are always read-only.");
+            b.startReturn().string("null").end();
+            return ex;
+        }
+
         record InstructionValidationGroup(List<InstructionImmediate> immediates, int instructionLength, boolean allowNegativeChildBci, boolean localVar, boolean localVarMat) {
 
             InstructionValidationGroup(BytecodeDSLModel model, InstructionModel instruction) {
-                this(instruction.getImmediates(), instruction.getInstructionLength(), acceptsInvalidChildBci(model, instruction),
+                this(instruction.getImmediates(), instruction.getInstructionLength(),
+                                acceptsInvalidChildBci(model, instruction),
                                 instruction.kind.isLocalVariableAccess(),
                                 instruction.kind.isLocalVariableMaterializedAccess());
             }
@@ -11084,6 +13115,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             break;
                         case SHORT:
                         case INTEGER:
+                        case CONSTANT_LONG:
+                        case CONSTANT_DOUBLE:
+                        case CONSTANT_INT:
+                        case CONSTANT_FLOAT:
+                        case CONSTANT_SHORT:
+                        case CONSTANT_CHAR:
+                        case CONSTANT_BYTE:
+                        case CONSTANT_BOOL:
                             break;
                         case STACK_POINTER:
                             b.tree(declareImmediate);
@@ -11162,8 +13201,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.end();
                             b.end();
                             break;
+                        case STATE_PROFILE:
+                            // indirectly validated by node profile
+                            break;
                         default:
-                            throw new AssertionError("Unexpected kind");
+                            throw new AssertionError("Unexpected kind " + immediate.kind());
                     }
                 }
 
@@ -11448,13 +13490,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (model.isBytecodeUpdatable()) {
 
                 CodeTreeBuilder tb = CodeTreeBuilder.createBuilder();
-                tb.startCall("transitionState");
+                tb.startCall("transition");
                 tb.startGroup();
                 tb.cast(this.asType());
                 tb.string("newNode");
                 tb.end();
                 tb.string(encodeState("bytecodeIndex", null));
-                if (model.enableYield) {
+                if (model.hasYieldOperation()) {
                     tb.string("null");
                 }
                 tb.end();
@@ -11468,21 +13510,23 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
-        private CodeExecutableElement createTransitionState() {
-            CodeExecutableElement transitionState = new CodeExecutableElement(Set.of(FINAL), type(long.class), "transitionState");
-            transitionState.addParameter(new CodeVariableElement(this.asType(), "newBytecode"));
-            transitionState.addParameter(new CodeVariableElement(type(long.class), "state"));
-            if (model.enableYield) {
-                transitionState.addParameter(new CodeVariableElement(continuationRootNodeImpl.asType(), "continuationRootNode"));
+        private CodeExecutableElement createTransition() {
+            // Returns updated state long, if updatable.
+            TypeMirror returnType = model.isBytecodeUpdatable() ? type(long.class) : type(void.class);
+
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(FINAL), returnType, "transition");
+            ex.addParameter(new CodeVariableElement(this.asType(), "newBytecode"));
+            if (model.isBytecodeUpdatable()) {
+                ex.addParameter(new CodeVariableElement(type(long.class), "state"));
+            }
+            if (model.hasYieldOperation()) {
+                ex.addParameter(new CodeVariableElement(continuationRootNodeImpl.asType(), "continuationRootNode"));
             }
 
-            CodeTreeBuilder b = transitionState.createBuilder();
+            CodeTreeBuilder b = ex.createBuilder();
 
-            b.declaration(arrayOf(type(byte.class)), "oldBc", "this.oldBytecodes");
-            b.declaration(arrayOf(type(byte.class)), "newBc", "newBytecode.bytecodes");
-
-            if (model.enableYield) {
-                /**
+            if (model.hasYieldOperation()) {
+                /*
                  * We can be here for one of two reasons:
                  *
                  * 1. We transitioned from uncached/uninitialized to cached. In this case, we update
@@ -11493,7 +13537,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                  * patches all ContinuationRootNodes with the new bytecode, we don't have to update
                  * anything.
                  */
-                b.startIf().string("continuationRootNode != null && oldBc == null").end().startBlock();
+                b.startIf().string("continuationRootNode != null && this.getTier() == ").staticReference(types.BytecodeTier, "UNCACHED").end().startBlock();
                 b.lineComment("Transition continuationRootNode to cached.");
 
                 b.startDeclaration(types.BytecodeLocation, "newContinuationLocation");
@@ -11511,34 +13555,38 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            b.startIf().string("oldBc == null || this == newBytecode || this.bytecodes == newBc").end().startBlock();
-            b.lineComment("No change in bytecodes.");
-            b.startReturn().string("state").end();
-            b.end();
+            if (model.isBytecodeUpdatable()) {
+                b.declaration(arrayOf(type(byte.class)), "oldBc", "this.oldBytecodes");
+                b.declaration(arrayOf(type(byte.class)), "newBc", "newBytecode.bytecodes");
+                b.startIf().string("oldBc == null || this == newBytecode || this.bytecodes == newBc").end().startBlock();
+                b.lineComment("No change in bytecodes.");
+                b.startReturn().string("state").end();
+                b.end();
 
-            b.declaration(type(int.class), "oldBci", decodeBci("state"));
+                b.declaration(type(int.class), "oldBci", decodeBci("state"));
 
-            b.startDeclaration(type(int.class), "newBci");
-            b.startCall("computeNewBci").string("oldBci").string("oldBc").string("newBc");
-            if (model.enableTagInstrumentation) {
-                b.string("this.getTagNodes()");
-                b.string("newBytecode.getTagNodes()");
+                b.startDeclaration(type(int.class), "newBci");
+                b.startCall("computeNewBci").string("oldBci").string("oldBc").string("newBc");
+                if (model.enableTagInstrumentation) {
+                    b.string("this.getTagNodes()");
+                    b.string("newBytecode.getTagNodes()");
+                }
+                b.end(); // call
+
+                b.end();
+
+                if (model.overridesBytecodeDebugListenerMethod("onBytecodeStackTransition")) {
+                    b.startStatement();
+                    b.startCall("getRoot().onBytecodeStackTransition");
+                    emitParseInstruction(b, "this", "oldBci", readInstruction("oldBc", "oldBci"));
+                    emitParseInstruction(b, "newBytecode", "newBci", readInstruction("newBc", "newBci"));
+                    b.end().end();
+                }
+
+                b.startReturn().string(encodeNewBci("newBci", "state")).end();
             }
-            b.end(); // call
 
-            b.end();
-
-            if (model.overridesBytecodeDebugListenerMethod("onBytecodeStackTransition")) {
-                b.startStatement();
-                b.startCall("getRoot().onBytecodeStackTransition");
-                emitParseInstruction(b, "this", "oldBci", readInstruction("oldBc", "oldBci"));
-                emitParseInstruction(b, "newBytecode", "newBci", readInstruction("newBc", "newBci"));
-                b.end().end();
-            }
-
-            b.startReturn().string(encodeNewBci("newBci", "state")).end();
-
-            return transitionState;
+            return ex;
         }
 
         private CodeExecutableElement createTransitionInstrumentationIndex() {
@@ -11576,19 +13624,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
             }
 
-            CodeExecutableElement invalidate = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(int.class), "transitionInstrumentationIndex");
-            invalidate.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "oldBc"));
-            invalidate.addParameter(new CodeVariableElement(type(int.class), "oldBciBase"));
-            invalidate.addParameter(new CodeVariableElement(type(int.class), "oldBciTarget"));
-            invalidate.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "newBc"));
-            invalidate.addParameter(new CodeVariableElement(type(int.class), "newBciBase"));
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC), type(int.class), "transitionInstrumentationIndex");
+            ex.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "oldBc"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "oldBciBase"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "oldBciTarget"));
+            ex.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "newBc"));
+            ex.addParameter(new CodeVariableElement(type(int.class), "newBciBase"));
             if (model.enableTagInstrumentation) {
-                invalidate.addParameter(new CodeVariableElement(arrayOf(tagNode.asType()), "oldTagNodes"));
-                invalidate.addParameter(new CodeVariableElement(arrayOf(tagNode.asType()), "newTagNodes"));
+                ex.addParameter(new CodeVariableElement(arrayOf(tagNode.asType()), "oldTagNodes"));
+                ex.addParameter(new CodeVariableElement(arrayOf(tagNode.asType()), "newTagNodes"));
             }
-            CodeTreeBuilder b = invalidate.createBuilder();
+            CodeTreeBuilder b = ex.createBuilder();
             b.declaration(type(int.class), "oldBci", "oldBciBase");
             b.declaration(type(int.class), "newBci", "newBciBase");
+            b.lineComment("Find the last instrumentation instruction executed before oldBciTarget.");
+            b.lineComment("The new bci should point directly after this reference instruction in the new bytecode.");
             b.declaration(type(short.class), "searchOp", "-1");
             if (model.enableTagInstrumentation) {
                 b.declaration(type(int.class), "searchTags", "-1");
@@ -11601,7 +13651,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             for (var groupEntry : groupInstructionsSortedBy(InstructionGroup::new)) {
                 InstructionGroup group = groupEntry.getKey();
                 if (!group.instrumentation) {
-                    // seeing an instrumentation here is a failure
+                    // only instrumentation instructions should be reached
                     continue;
                 }
                 List<InstructionModel> instructions = groupEntry.getValue();
@@ -11631,7 +13681,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(); // while block
 
             b.startAssert().string("searchOp != -1").end();
-
+            b.lineComment("The instruction may occur multiple times between oldBci and oldTargetBci.");
+            b.lineComment("Count the number of occurrences so that we identify the correct reference instruction.");
             b.startAssign("oldBci").string("oldBciBase").end();
             b.declaration(type(int.class), "opCounter", "0");
 
@@ -11641,7 +13692,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             for (var groupEntry : groupInstructionsSortedBy(InstructionGroup::new)) {
                 InstructionGroup group = groupEntry.getKey();
                 if (!group.instrumentation) {
-                    // seeing an instrumentation here is a failure
+                    // only instrumentation instructions should be reached
                     continue;
                 }
                 List<InstructionModel> instructions = groupEntry.getValue();
@@ -11675,14 +13726,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(); // while block
 
             b.startAssert().string("opCounter > 0").end();
-
+            b.lineComment("Walk the new bytecode to find the location directly after the reference instruction.");
             b.startWhile().string("opCounter > 0").end().startBlock();
             b.declaration(type(short.class), "op", readInstruction("newBc", "newBci"));
             b.startSwitch().string("op").end().startBlock();
             for (var groupEntry : groupInstructionsSortedBy(InstructionGroup::new)) {
                 InstructionGroup group = groupEntry.getKey();
                 if (!group.instrumentation) {
-                    // seeing an instrumentation here is a failure
+                    // only instrumentation instructions should be reached
                     continue;
                 }
                 List<InstructionModel> instructions = groupEntry.getValue();
@@ -11717,7 +13768,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             b.startReturn().string("newBci").end();
 
-            return invalidate;
+            return ex;
         }
 
         private CodeExecutableElement createComputeNewBci() {
@@ -11864,7 +13915,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             b.declaration(arrayOf(type(byte.class)), "bc", "this.bytecodes");
             b.declaration(type(int.class), "bci", "0");
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.declaration(type(int.class), "continuationIndex", "0");
             }
 
@@ -11896,46 +13947,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("reportReplace(this, newNode, reason)");
 
             return invalidate;
-        }
-
-        private CodeExecutableElement createUpdateContinuationRootNodes() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(FINAL), type(void.class), "updateContinuationRootNodes");
-            ex.addParameter(new CodeVariableElement(this.asType(), "newNode"));
-            ex.addParameter(new CodeVariableElement(type(CharSequence.class), "reason"));
-            ex.addParameter(new CodeVariableElement(generic(ArrayList.class, continuationLocation.asType()), "continuationLocations"));
-            ex.addParameter(new CodeVariableElement(type(boolean.class), "bytecodeReparsed"));
-            CodeTreeBuilder b = ex.createBuilder();
-
-            b.startFor().type(continuationLocation.asType()).string(" continuationLocation : continuationLocations").end().startBlock();
-
-            b.startDeclaration(continuationRootNodeImpl.asType(), "continuationRootNode");
-            b.cast(continuationRootNodeImpl.asType());
-            b.string("constants[continuationLocation.constantPoolIndex]");
-            b.end();
-
-            b.declaration(types.BytecodeLocation, "newLocation");
-            b.startIf().string("continuationLocation.bci == -1").end().startBlock();
-            b.statement("newLocation = null");
-            b.end().startElseBlock();
-            b.startAssign("newLocation").string("newNode.getBytecodeLocation(continuationLocation.bci)").end();
-            b.end(); // block
-
-            b.startIf().string("bytecodeReparsed").end().startBlock();
-            b.startStatement().startCall("continuationRootNode", "updateBytecodeLocation");
-            b.string("newLocation");
-            b.string("this");
-            b.string("newNode");
-            b.string("reason");
-            b.end(2);
-            b.end().startElseBlock();
-            b.startStatement().startCall("continuationRootNode", "updateBytecodeLocationWithoutInvalidate");
-            b.string("newLocation");
-            b.end(2);
-            b.end();
-
-            b.end(); // for
-
-            return ex;
         }
 
         private CodeExecutableElement createAdoptNodesAfterUpdate() {
@@ -12161,7 +14172,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 this.add(new CodeVariableElement(Set.of(PRIVATE), type(int.class), "uncachedExecuteCount_"));
             } else if (tier.isCached()) {
                 this.add(createCachedConstructor());
-                this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE), arrayOf(types.Node), "cachedNodes_")));
+                this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE, FINAL), arrayOf(types.Node), "cachedNodes_")));
                 this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE, FINAL), arrayOf(type(boolean.class)), "exceptionProfiles_")));
                 if (model.epilogExceptional != null) {
                     this.add(child(new CodeVariableElement(Set.of(PRIVATE), getCachedDataClassType(model.epilogExceptional.operation.instruction), "epilogExceptionalNode_")));
@@ -12169,11 +14180,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 if (model.usesBoxingElimination()) {
                     this.add(compFinal(1, new CodeVariableElement(Set.of(PRIVATE, FINAL), arrayOf(type(byte.class)), "localTags_")));
-                    if (model.enableYield) {
+                    if (model.hasYieldOperation()) {
                         this.add(compFinal(new CodeVariableElement(Set.of(PRIVATE, VOLATILE), types.Assumption, "stableTagsAssumption_")));
                     }
                 }
-
                 this.add(createLoadConstantCompiled());
                 this.add(createAdoptNodesAfterUpdate());
                 this.addAll(createBranchProfileMembers());
@@ -12233,7 +14243,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
                 this.add(createGetCachedLocalTagInternal());
                 this.add(createSetCachedLocalTagInternal());
-                if (model.enableYield) {
+                if (model.hasYieldOperation()) {
                     this.add(createCheckStableTagsAssumption());
                 }
             } else {
@@ -12261,7 +14271,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             new TypeMirror[]{types.VirtualFrame, type(long.class), type(Object.class)});
             CodeTreeBuilder b = ex.getBuilder();
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.declaration(types.VirtualFrame, "localFrame");
                 b.startIf().string(decodeUseContinuationFrame("target")).string(" /* use continuation frame */").end().startBlock();
                 b.startAssign("localFrame");
@@ -12276,7 +14286,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startReturn().startCall("continueAt");
             b.string("getRoot()");
             b.string("frame");
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.string("localFrame");
                 b.string(clearUseContinuationFrame("target"));
             } else {
@@ -12339,19 +14349,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return List.of(storeParentFrameInArguments, restoreParentFrameFromArguments);
         }
 
-        final class InterpreterStateElement extends CodeTypeElement {
-            InterpreterStateElement() {
-                super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "InterpreterState");
-                if (!model.enableYield) {
-                    // Without continuations, this state class is unnecessary. Just pass the sp.
-                    throw new AssertionError("A InterpreterState class should only be generated when continuations are enabled.");
-                }
-                this.add(new CodeVariableElement(Set.of(FINAL), type(boolean.class), "isContinuation"));
-                this.add(new CodeVariableElement(Set.of(FINAL), type(int.class), "sp"));
-                this.add(createConstructorUsingFields(Set.of(), this));
-            }
-        }
-
         private boolean useOperationNodeForBytecodeIndex() {
             return !model.storeBciInFrame && tier == InterpreterTier.CACHED;
         }
@@ -12389,7 +14386,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 if (model.enableBlockScoping) {
                     b.declaration(type(int.class), "localIndex", "localOffsetToLocalIndex(bci, localOffset)");
-                    b.startAssign("tag").string("getCachedLocalTagInternal(this.localTags_, localIndex)").end();
+                    b.startAssign("tag").startCall("getCachedLocalTagInternal");
+                    b.tree(readLocalTagsFastPath());
+                    b.string("localIndex");
+                    b.end().end();
                 } else {
                     b.startAssign("tag").string("getCachedLocalTag(localOffset)").end();
                 }
@@ -12430,6 +14430,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 b.end(); // switch block
                 b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startReturn().string("ex.getResult()").end();
                 b.end(); // catch
             } else {
@@ -12607,7 +14608,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startStatement().startCall("setCachedLocalTagInternal");
-                b.string("this.localTags_");
+                b.tree(readLocalTagsFastPath());
                 b.string("localIndex");
                 b.string("newTag");
                 b.end(2);
@@ -12685,6 +14686,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                     b.end(); // switch block
                     b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                    b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                     b.startReturn().string("ex.getResult()").end();
                     b.end(); // catch
                 } else {
@@ -12718,7 +14720,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             ex.addParameter(new CodeVariableElement(type(byte.class), "tag"));
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.declaration(arrayOf(type(byte.class)), "localTags", "this.localTags_");
+            b.declaration(arrayOf(type(byte.class)), "localTags", readLocalTagsFastPath());
             b.startIf().string("localIndex < 0 || localIndex >= localTags.length").end().startBlock();
             emitThrowIllegalArgumentException(b, "Invalid local offset");
             b.end();
@@ -12741,7 +14743,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = ex.createBuilder();
 
-            b.declaration(arrayOf(type(byte.class)), "localTags", "this.localTags_");
+            b.declaration(arrayOf(type(byte.class)), "localTags", readLocalTagsFastPath());
             b.startIf().string("localIndex < 0 || localIndex >= localTags.length").end().startBlock();
             emitThrowIllegalArgumentException(b, "Invalid local offset");
             b.end();
@@ -12768,7 +14770,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startStatement().startCall("reportReplace");
                 b.string("this").string("this").doubleQuote("local tags updated");
                 b.end(2);
-                if (model.usesBoxingElimination() && model.enableYield) {
+                if (model.usesBoxingElimination() && model.hasYieldOperation()) {
                     // Invalidate continuation call targets.
                     b.declaration(types.Assumption, "oldStableTagsAssumption", "this.stableTagsAssumption_");
                     b.startIf().string("oldStableTagsAssumption != null").end().startBlock();
@@ -12803,7 +14805,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         }
 
         private CodeExecutableElement createCheckStableTagsAssumption() {
-            if (!model.usesBoxingElimination() || !model.enableYield) {
+            if (!model.usesBoxingElimination() || !model.hasYieldOperation()) {
                 throw new AssertionError("Not supported.");
             }
 
@@ -12859,7 +14861,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                                 .startCall("frameInstance", "getFrame") //
                                 .staticReference(types.FrameInstance_FrameAccess, "READ_ONLY") //
                                 .end().build();
-                if (model.enableYield) {
+                if (model.hasYieldOperation()) {
                     /**
                      * If the frame is from a continuation, the bci will be in the locals frame,
                      * which is stored in slot COROUTINE_FRAME_INDEX.
@@ -13313,7 +15315,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                                     cachedDataClassName(instr),
                                     // We need to allocate a stable tag assumption if the node has
                                     // continuations.
-                                    m.usesBoxingElimination() && instr.kind == InstructionKind.YIELD);
+                                    m.usesBoxingElimination() && (instr.kind == InstructionKind.YIELD || instr.operation != null && instr.operation.kind == OperationKind.CUSTOM_YIELD));
                 }
 
                 @Override
@@ -13360,7 +15362,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("byte[] bc = bytecodes");
             b.statement("int bci = 0");
             b.statement("int numConditionalBranches = 0");
-            if (model.usesBoxingElimination() && model.enableYield) {
+            if (model.usesBoxingElimination() && model.hasYieldOperation()) {
                 b.statement("boolean hasContinuations = false");
             }
 
@@ -13399,7 +15401,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
 
                 if (key.separateYield) {
-                    if (!model.usesBoxingElimination() || !model.enableYield) {
+                    if (!model.usesBoxingElimination() || !model.hasYieldOperation()) {
                         throw new AssertionError();
                     }
                     b.statement("hasContinuations = true");
@@ -13429,7 +15431,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (model.usesBoxingElimination()) {
                 b.statement("this.localTags_ = cachedTags");
 
-                if (model.enableYield) {
+                if (model.hasYieldOperation()) {
                     b.startAssign("this.stableTagsAssumption_");
                     b.string("hasContinuations ? ");
                     b.startStaticCall(types.Assumption, "create").doubleQuote("Stable local tags").end();
@@ -13471,7 +15473,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             ex.addAnnotationMirror(new CodeAnnotationMirror(types.HostCompilerDirectives_BytecodeInterpreterSwitch));
             ex.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "$root"));
             ex.addParameter(new CodeVariableElement(types.VirtualFrame, "frame_"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 ex.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame_"));
             }
             ex.addParameter(new CodeVariableElement(type(long.class), "startState"));
@@ -13487,7 +15489,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             b.startDeclaration(types.VirtualFrame, "frame").startCall("ACCESS.uncheckedCast").string("frame_").string("FRAME_TYPE").end().end();
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.startDeclaration(types.VirtualFrame, "localFrame").startCall("ACCESS.uncheckedCast").string("localFrame_").string("FRAME_TYPE").end().end();
             }
 
@@ -13506,27 +15508,32 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
             }
 
-            b.declaration(arrayOf(type(byte.class)), "bc", "this.bytecodes");
-            b.declaration(arrayOf(type(Object.class)), "consts", "this.constants");
-
+            b.declaration(arrayOf(type(byte.class)), "bc", uncheckedCast(type(byte[].class), "this.bytecodes"));
             if (tier.isCached()) {
-                b.declaration(arrayOf(types.Node), "cachedNodes", "this.cachedNodes_");
-                b.declaration(arrayOf(type(int.class)), "branchProfiles", "this.branchProfiles_");
                 ex.addAnnotationMirror(createExplodeLoopAnnotation("MERGE_EXPLODE"));
+                b.declaration(type(int.class), "counter", "0");
+                b.declaration(loopCounter.asType(), "loopCounter", "null");
+            }
 
-                if (model.usesBoxingElimination()) {
-                    b.declaration(arrayOf(type(byte.class)), "localTags", "this.localTags_");
-                }
+            b.startIf().startStaticCall(types.HostCompilerDirectives, "inInterpreterFastPath").end().end().startBlock();
+            b.lineComment("Force constants and cached nodes being read outside of the loop with fences.");
+            b.startStatement().startStaticCall(type(Reference.class), "reachabilityFence").tree(uncheckedCast(arrayOf(type(Object.class)), "this.constants")).end().end();
+            if (tier.isCached()) {
+                b.startStatement().startStaticCall(type(Reference.class), "reachabilityFence").tree(uncheckedCast(arrayOf(types.Node), "this.cachedNodes_")).end().end();
+            }
+            if (tier.isCached()) {
+                b.end().startElseIf().startStaticCall(types.CompilerDirectives, "hasNextTier").end().end().startBlock();
+                b.lineComment("Using a class for the loop counter is a workaround to prevent PE from merging it at the end of the loop.");
+                b.lineComment("We need to use a class with PE, in the interpreter we can use a regular counter.");
+                b.startAssign("loopCounter").startNew(loopCounter.asType()).end().end();
+                b.end();
+            } else {
+                b.end();
             }
 
             b.statement("int bci = ", decodeBci("startState"));
             b.statement("int sp = ", decodeSp("startState"));
-            b.statement("int op");
-            b.statement("long temp");
 
-            if (tier.isCached()) {
-                b.declaration(loopCounter.asType(), "loopCounter", CodeTreeBuilder.createBuilder().startNew(loopCounter.asType()).end());
-            }
             if (model.needsBciSlot() && !model.storeBciInFrame && !tier.isUncached()) {
                 // If a bci slot is allocated but not used for non-uncached interpreters, set it to
                 // an invalid value just in case it gets read during a stack walk.
@@ -13543,18 +15550,34 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             toList();
 
             List<List<InstructionModel>> instructionPartitions = partitionInstructions(instructions);
-            b.startAssign("op").tree(readInstruction("bc", "bci")).end();
 
-            b.startStatement().startStaticCall(types.CompilerAsserts, "partialEvaluationConstant").string("op").end().end();
+            CodeTree op;
+            if (model.bytecodeDebugListener || instructionPartitions.size() > 1) {
+                b.declaration(type(int.class), "op", readInstruction("bc", "bci"));
+                op = CodeTreeBuilder.singleString("op");
+            } else {
+                op = readInstruction("bc", "bci");
+            }
+
             if (model.overridesBytecodeDebugListenerMethod("beforeInstructionExecute")) {
                 b.startStatement();
                 b.startCall("$root.beforeInstructionExecute");
-                emitParseInstruction(b, "this", "bci", CodeTreeBuilder.singleString("op"));
+                emitParseInstruction(b, "this", "bci", op);
                 b.end().end();
             }
 
             b.startTryBlock();
-            b.startSwitch().string("op").end().startBlock();
+            b.startSwitch();
+
+            if (model.enableThreadedSwitch) {
+                b.startStaticCall(types.HostCompilerDirectives, "markThreadedSwitch");
+            }
+            b.tree(op);
+            if (model.enableThreadedSwitch) {
+                b.end();
+            }
+
+            b.end().startBlock();
 
             List<InstructionModel> topLevelInstructions = instructionPartitions.get(0);
             Map<Boolean, List<InstructionModel>> groupedInstructions = topLevelInstructions.stream().collect(deterministicGroupingBy((i) -> isForceCached(tier, i)));
@@ -13627,19 +15650,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (model.overridesBytecodeDebugListenerMethod("afterInstructionExecute")) {
                 b.startStatement();
                 b.startCall("$root.afterInstructionExecute");
-                emitParseInstruction(b, "this", "bci", CodeTreeBuilder.singleString("op"));
+                emitParseInstruction(b, "this", "bci", op);
                 b.string("null");
                 b.end().end();
             }
             b.end(); // try
 
             b.startCatchBlock(type(Throwable.class), "throwable");
-            storeBciInFrameIfNecessary(b);
+            if (BytecodeRootNodeElement.isStoreBciEnabled(model, tier)) {
+                storeBciInFrame(b);
+            }
 
             if (model.overridesBytecodeDebugListenerMethod("afterInstructionExecute")) {
                 b.startStatement();
                 b.startCall("$root.afterInstructionExecute");
-                emitParseInstruction(b, "this", "bci", CodeTreeBuilder.singleString("op"));
+                emitParseInstruction(b, "this", "bci", readInstruction("bc", "bci"));
                 b.string("throwable");
                 b.end().end();
             }
@@ -13652,17 +15677,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * AbstractTruffleException. An intercept method can produce a new exception that can be
              * intercepted by a subsequent intercept method.
              */
+            b.declaration(type(int.class), "targetSp", "sp");
             if (model.interceptControlFlowException != null) {
                 b.startIf().string("throwable instanceof ").type(types.ControlFlowException).end().startBlock();
                 b.startTryBlock();
-                b.startAssign("temp");
+                b.startDeclaration(type(long.class), "target");
                 b.startCall("resolveControlFlowException");
                 b.string("$root").string(localFrame()).string("bci").startGroup().cast(types.ControlFlowException).string("throwable").end();
                 b.end().end(); // call, return
 
                 emitBeforeReturnProfiling(b);
 
-                b.statement("return temp");
+                b.statement("return target");
 
                 b.end().startCatchBlock(types.ControlFlowException, "rethrownCfe");
                 b.startThrow().string("rethrownCfe").end();
@@ -13678,14 +15704,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startAssign("throwable").string("resolveThrowable($root, " + localFrame() + ", bci, throwable)").end();
             }
 
-            b.startAssign("op").string("-EXCEPTION_HANDLER_LENGTH").end();
-            b.startWhile().string("(op = resolveHandler(bci, op + EXCEPTION_HANDLER_LENGTH, this.handlers)) != -1").end().startBlock();
+            b.startDeclaration(type(int.class), "handler").string("-EXCEPTION_HANDLER_LENGTH").end();
+            b.startWhile().string("(handler = resolveHandler(bci, handler + EXCEPTION_HANDLER_LENGTH, this.handlers)) != -1").end().startBlock();
 
             boolean hasSpecialHandler = model.enableTagInstrumentation || model.epilogExceptional != null;
 
             if (hasSpecialHandler) {
                 b.startTryBlock();
-                b.startSwitch().string("this.handlers[op + EXCEPTION_HANDLER_OFFSET_KIND]").end().startBlock();
+                b.startSwitch().string("this.handlers[handler + EXCEPTION_HANDLER_OFFSET_KIND]").end().startBlock();
                 if (model.epilogExceptional != null) {
                     b.startCase().string("HANDLER_EPILOG_EXCEPTIONAL").end().startCaseBlock();
                     b.startIf().string("throwable instanceof ").type(type(ThreadDeath.class)).end().startBlock();
@@ -13693,28 +15719,27 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end();
                     b.startStatement().startCall("doEpilogExceptional");
                     b.string("$root").string("frame");
-                    if (model.enableYield) {
+                    if (model.hasYieldOperation()) {
                         b.string("localFrame");
                     }
                     b.string("bc").string("bci").string("sp");
                     b.startGroup().cast(types.AbstractTruffleException);
                     b.string("throwable");
                     b.end();
-                    b.string("this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
+                    b.string("this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
                     b.end().end();
                     b.statement("throw sneakyThrow(throwable)");
                     b.end();
                 }
                 if (model.enableTagInstrumentation) {
                     b.startCase().string("HANDLER_TAG_EXCEPTIONAL").end().startCaseBlock();
-                    b.declaration(tagNode.asType(), "node", "this.tagRoot.tagNodes[this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]]");
-                    b.statement("Object result = doTagExceptional(frame, node, this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI], bc, bci, throwable)");
+                    b.declaration(tagNode.asType(), "node", "this.tagRoot.tagNodes[this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]]");
+                    b.statement("Object result = doTagExceptional(frame, node, this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI], bc, bci, throwable)");
 
                     b.startIf().string("result == null").end().startBlock();
                     b.startThrow().string("throwable").end();
                     b.end();
-                    b.statement("temp = this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] + $root.maxLocals");
-
+                    b.statement("targetSp = this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] + $root.maxLocals");
                     b.startIf().string("result == ").staticReference(types.ProbeNode, "UNWIND_ACTION_REENTER").end().startBlock();
                     b.lineComment("Reenter by jumping to the begin bci.");
                     b.statement("bci = node.enterBci");
@@ -13746,7 +15771,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         }
 
                         b.startStatement();
-                        startSetFrame(b, targetType).string("frame").string("(int)temp");
+                        startSetFrame(b, targetType).string("frame").string("targetSp");
                         if (expectMethod == null) {
                             b.string("result");
                         } else {
@@ -13759,13 +15784,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                         if (!ElementUtils.isObject(targetType)) {
                             b.end().startCatchBlock(types.UnexpectedResultException, "e");
+                            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                             b.startStatement();
-                            startSetFrame(b, type(Object.class)).string("frame").string("(int)temp").string("e.getResult()").end();
+                            startSetFrame(b, type(Object.class)).string("frame").string("targetSp").string("e.getResult()").end();
                             b.end(); // statement
                             b.end(); // catch
                         }
 
-                        b.statement("temp = temp + 1");
+                        b.statement("targetSp = targetSp + 1");
                         b.statement("bci = node.returnBci + " + length);
 
                         b.statement("break");
@@ -13795,9 +15821,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.statement("continue");
             b.end();
             b.startAssert().string("throwable instanceof ").type(types.AbstractTruffleException).end();
-            b.statement("bci = this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
-            b.statement("temp = this.handlers[op + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] + $root.maxLocals");
-            b.statement(setFrameObject("((int) temp) - 1", "throwable"));
+            b.statement("bci = this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_BCI]");
+            b.statement("targetSp = this.handlers[handler + EXCEPTION_HANDLER_OFFSET_HANDLER_SP] + $root.maxLocals");
+            b.statement(setFrameObject("targetSp - 1", "throwable"));
 
             if (hasSpecialHandler) {
                 b.statement("break");
@@ -13816,13 +15842,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * handlerSp - 1 is the sp before pushing the exception. The current sp should be at or
              * above this height.
              */
-            b.statement("assert sp >= temp - 1");
-            b.startWhile().string("sp > temp").end().startBlock();
+            b.statement("assert sp >= targetSp - 1");
+            b.startWhile().string("sp > targetSp").end().startBlock();
             b.statement(clearFrame("frame", "--sp"));
             b.end();
-            b.statement("sp = (int) temp");
+            b.statement("sp = targetSp");
             b.statement("continue loop");
-
             b.end(); // while
 
             /**
@@ -13865,14 +15890,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             continueAtMethod.getAnnotationMirrors().add(new CodeAnnotationMirror(types.HostCompilerDirectives_BytecodeInterpreterSwitch));
 
             continueAtMethod.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 continueAtMethod.getParameters().add(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
 
-            List<CodeVariableElement> extraParams = createExtraParameters(instructionGroup.stream().anyMatch(i -> i.hasImmediate(ImmediateKind.CONSTANT)));
-            if (tier.isCached()) {
-                continueAtMethod.getParameters().add(new CodeVariableElement(new ArrayCodeTypeMirror(types.Node), "cachedNodes"));
-            }
+            List<CodeVariableElement> extraParams = createExtraParameters();
             continueAtMethod.getParameters().addAll(extraParams);
             continueAtMethod.addParameter(new CodeVariableElement(type(int.class), "op"));
 
@@ -13920,12 +15942,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             buildInstructionCases(b, instr);
             b.startBlock();
 
+            // instru.kind == CUSTOM is handled in buildCustomInstructionExecute
+            if (instr.kind != InstructionKind.CUSTOM && isStoreBciBeforeExecute(model, tier, instr)) {
+                storeBciInFrame(b);
+            }
+
             switch (instr.kind) {
                 case BRANCH:
                     b.statement("bci = " + readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BYTECODE_INDEX)));
                     b.statement("break");
                     break;
                 case BRANCH_BACKWARD:
+                    b.startStatement().startStaticCall(types.TruffleSafepoint, "poll").string("this").end().end();
+
                     if (tier.isUncached()) {
                         b.statement("bci = " + readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BYTECODE_INDEX)));
 
@@ -13943,20 +15972,57 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.statement("uncachedExecuteCount_--");
                         b.end();
                     } else {
-                        emitReportLoopCount(b, CodeTreeBuilder.createBuilder().string("++loopCounter.value >= ").staticReference(loopCounter.asType(), "REPORT_LOOP_STRIDE").build(), true);
+                        b.startIf().startStaticCall(types.CompilerDirectives, "hasNextTier").end().end().startBlock();
+                        b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                        b.statement("counter = ++loopCounter.value");
+                        b.end().startElseBlock();
+                        b.statement("counter++");
+                        b.end();
 
-                        b.startAssign("temp");
-                        b.startCall(lookupBranchBackward(instr).getSimpleName().toString());
+                        b.startIf();
+                        b.startStaticCall(types.CompilerDirectives, "injectBranchProbability");
+                        b.staticReference(loopCounter.asType(), "REPORT_LOOP_PROBABILITY");
+                        b.startGroup();
+                        b.string("counter >= ").staticReference(loopCounter.asType(), "REPORT_LOOP_STRIDE");
+                        b.end();
+                        b.end(); // static call
+                        b.end().startBlock();
+
+                        b.startDeclaration(type(Object.class), "osrResult");
+                        b.startCall(lookupReportLoopCount(instr).getSimpleName().toString());
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
+                        b.string("counter");
                         b.end();
                         b.end();
 
-                        b.startIf().string("temp != -1").end().startBlock();
-                        b.statement("return temp");
+                        b.startIf().string("osrResult != null").end().startBlock();
+                        /**
+                         * executeOSR invokes BytecodeNode#continueAt, which returns a long encoding
+                         * the sp and bci when it returns/when the bytecode is rewritten. Returning
+                         * this value is correct in either case: If it's a return, we'll read the
+                         * result out of the frame (the OSR code copies the OSR frame contents back
+                         * into our frame first); if it's a rewrite, we'll transition and continue
+                         * executing.
+                         */
+                        b.startReturn().cast(type(long.class)).string("osrResult").end();
+                        b.end(); // osrResult != null
+
+                        b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                        b.statement("loopCounter.value = 0");
+                        b.end().startElseBlock();
+                        b.statement("counter = 0");
+                        b.end();
+
+                        b.end(); // if counter >= REPORT_LOOP_STRIDE
+
+                        b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                        b.statement("counter = 0");
+                        b.end();
+
                         b.end();
                         b.statement("bci = " + readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BYTECODE_INDEX)));
                     }
@@ -13967,9 +16033,9 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.startIf();
                     if (tier.isUncached()) {
                         b.string(booleanValue);
+                        // no need to clear in uncached
                     } else {
                         b.startCall("profileBranch");
-                        b.string("branchProfiles");
                         b.tree(readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BRANCH_PROFILE)));
                         if (model.isBoxingEliminated(type(boolean.class))) {
                             if (instr.isQuickening()) {
@@ -13984,7 +16050,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                                 if (model.bytecodeDebugListener) {
                                     b.string("this");
                                 }
-                                b.string("frame").string("bc").string("bci").string("sp");
+                                b.string("bc").string("bci").string("sp");
+
+                                b.startGroup().string("(boolean) ");
+                                startRequireFrame(b, type(Object.class));
+                                b.string("frame").string("sp - 1");
+                                b.end(); // require frame
+                                b.end(); // group
+
                                 b.end();
                             }
                         } else {
@@ -13995,14 +16068,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end(); // if
 
                     b.startBlock();
-                    b.statement("sp -= 1");
                     b.statement("bci += " + instr.getInstructionLength());
-                    b.statement("break");
                     b.end().startElseBlock();
-                    b.statement("sp -= 1");
                     b.statement("bci = " + readImmediate("bc", "bci", instr.getImmediate("branch_target")));
-                    b.statement("break");
                     b.end();
+                    b.statement("sp -= 1");
+                    b.statement("break");
                     break;
                 case CUSTOM_SHORT_CIRCUIT:
                     ShortCircuitInstructionModel shortCircuitInstruction = instr.shortCircuitModel;
@@ -14011,7 +16082,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                     if (tier.isCached()) {
                         b.startCall("profileBranch");
-                        b.string("branchProfiles");
                         b.tree(readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BRANCH_PROFILE)));
                         b.startGroup();
                     }
@@ -14075,6 +16145,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end();
                     break;
                 case TAG_YIELD:
+                case TAG_YIELD_NULL:
                     b.startStatement();
                     b.startCall(lookupTagYield(instr).getSimpleName().toString());
                     b.string("frame");
@@ -14119,7 +16190,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.startStatement();
                         b.startCall(lookupLoadArgument(instr).getSimpleName().toString());
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
@@ -14144,14 +16215,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     if (tier.isUncached() || (model.usesBoxingElimination() && !ElementUtils.isObject(returnType))) {
                         b.startStatement();
                         startSetFrame(b, returnType).string("frame").string("sp");
-                        b.tree(readConstFastPath(readImmediate("bc", "bci", constIndex), returnType));
+                        b.tree(readConstFastPath(readImmediate("bc", "bci", constIndex), "this.constants", returnType));
                         b.end();
                         b.end();
                     } else {
                         b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end(2).startBlock();
-                        b.statement("loadConstantCompiled(frame, bc, bci, sp, consts)");
+                        b.statement("loadConstantCompiled(frame, bc, bci, sp)");
                         b.end().startElseBlock();
-                        b.statement(setFrameObject("sp", readConstFastPath(readImmediate("bc", "bci", constIndex)).toString()));
+                        b.statement(setFrameObject("sp", readConstFastPath(readImmediate("bc", "bci", constIndex), "this.constants").toString()));
                         b.end();
                     }
                     b.statement("sp += 1");
@@ -14203,7 +16274,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement("sp += 1");
                     break;
                 case RETURN:
-                    storeBciInFrameIfNecessary(b);
                     emitBeforeReturnProfiling(b);
                     if (model.overridesBytecodeDebugListenerMethod("afterRootExecute")) {
                         b.startStatement();
@@ -14225,13 +16295,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.string("this");
                         }
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
-                        if (localAccessNeedsLocalTags(instr)) {
-                            b.string("localTags");
-                        }
                         b.end();
                         b.end();
                     } else {
@@ -14242,13 +16309,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             b.string("this");
                         }
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
-                        if (localAccessNeedsLocalTags(instr)) {
-                            b.string("localTags");
-                        }
                         b.end();
                         b.end();
                     }
@@ -14282,32 +16346,24 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.startStatement();
                         b.startCall(lookupDoStoreLocal(instr).getSimpleName().toString());
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
-                        if (localAccessNeedsLocalTags(instr)) {
-                            b.string("localTags");
-                        }
                         b.end();
                         b.end();
                     } else {
-                        b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                         b.startStatement();
                         b.startCall(lookupDoSpecializeStoreLocal(instr).getSimpleName().toString());
                         b.string("frame");
-                        if (model.enableYield) {
+                        if (model.hasYieldOperation()) {
                             b.string("localFrame");
                         }
                         b.string("bc").string("bci").string("sp");
                         startRequireFrame(b, type(Object.class)).string("frame").string("sp - 1").end();
-                        if (localAccessNeedsLocalTags(instr)) {
-                            b.string("localTags");
-                        }
                         b.end();
                         b.end();
                     }
-                    b.statement(clearFrame("frame", "sp - 1"));
                     b.statement("sp -= 1");
                     break;
                 case STORE_LOCAL_MATERIALIZED:
@@ -14345,7 +16401,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         b.end();
                         b.end();
                     } else {
-                        b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                         b.startStatement();
                         b.startCall(lookupDoSpecializeMergeConditional(instr).getSimpleName().toString());
                         if (model.bytecodeDebugListener) {
@@ -14362,7 +16417,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.statement("throw sneakyThrow((Throwable) " + uncheckedGetFrameObject("frame", "sp - 1") + ")");
                     break;
                 case YIELD:
-                    storeBciInFrameIfNecessary(b);
                     emitBeforeReturnProfiling(b);
 
                     if (model.overridesBytecodeDebugListenerMethod("afterRootExecute")) {
@@ -14381,7 +16435,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     if (model.enableYield) {
                         b.string("localFrame");
                     }
-                    b.string("bc").string("bci").string("sp").string("$root").string("consts");
+                    b.string("bc").string("bci").string("sp").string("$root");
                     b.end();
                     b.end();
 
@@ -14397,33 +16451,31 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     break;
                 case CREATE_VARIADIC:
 
-                    b.startStatement();
-                    b.string("temp = ");
+                    b.startDeclaration(type(int.class), "temp");
                     b.tree(readImmediate("bc", "bci", instr.findImmediate(ImmediateKind.INTEGER, "count")));
                     b.end();
 
                     b.startStatement();
                     b.startCall(lookupCreateVariadic(instr).getSimpleName().toString());
-                    b.string("frame").string("bc").string("bci").string("sp").string("(int)temp");
+                    b.string("frame").string("bc").string("bci").string("sp").string("temp");
                     b.end();
                     b.end();
 
-                    b.statement("sp -= Math.min(((int)temp - 1), VARIADIC_STACK_LIMIT - 1)");
+                    b.statement("sp -= Math.min(temp - 1, VARIADIC_STACK_LIMIT - 1)");
                     break;
                 case LOAD_VARIADIC:
 
-                    b.startStatement();
-                    b.string("temp = ");
+                    b.startDeclaration(type(int.class), "temp");
                     b.tree(readImmediate("bc", "bci", instr.findImmediate(ImmediateKind.SHORT, "count")));
                     b.end();
 
                     b.startStatement();
                     b.startCall(lookupLoadVariadic(instr).getSimpleName().toString());
-                    b.string("frame").string("bc").string("bci").string("sp").string("(int)temp");
+                    b.string("frame").string("bc").string("bci").string("sp").string("temp");
                     b.end();
                     b.end();
 
-                    b.statement("sp -= ((int)temp)");
+                    b.statement("sp -= temp");
                     break;
                 case EMPTY_VARIADIC:
                     b.startStatement();
@@ -14452,9 +16504,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     if (tier.isUncached() && instr.operation.customModel.forcesCached()) {
                         throw new AssertionError("forceCached instructions should be emitted separately");
                     }
-                    buildCustomInstructionExecute(b, instr);
-                    emitCustomStackEffect(b, getStackEffect(instr));
+                    if (instr.operation.kind == OperationKind.CUSTOM_YIELD) {
+                        buildYieldInstructionExecute(b, instr);
+                    } else {
+                        buildCustomInstructionExecute(b, instr);
+                        emitCustomStackEffect(b, getStackEffect(instr));
+                    }
                     break;
+                case TRACE_INSTRUCTION:
+                    b.startStatement();
+                    b.startCall(lookupTraceInstruction(instr).getSimpleName().toString());
+                    b.string("frame").string("bci");
+                    b.end();
+                    b.end();
+                    break;
+
                 case SUPERINSTRUCTION:
                     // not implemented yet
                     break;
@@ -14469,6 +16533,39 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.statement("break");
             }
             b.end();
+        }
+
+        private void buildYieldInstructionExecute(CodeTreeBuilder b, InstructionModel instr) {
+            emitBeforeReturnProfiling(b);
+
+            if (instr.kind == InstructionKind.YIELD) {
+                b.startStatement();
+                b.startCall(lookupYield(instr).getSimpleName().toString());
+                b.string("frame");
+                if (model.hasYieldOperation()) {
+                    b.string("localFrame");
+                }
+                b.string("bc").string("bci").string("sp").string("$root");
+                b.end(2);
+            } else if (instr.operation.kind == OperationKind.CUSTOM_YIELD) {
+                buildCustomInstructionExecute(b, instr);
+                emitCustomStackEffect(b, getStackEffect(instr));
+            } else {
+                throw new AssertionError("Unexpected yield instruction " + instr);
+            }
+
+            if (model.overridesBytecodeDebugListenerMethod("afterRootExecute")) {
+                b.startStatement();
+                b.startCall("$root.afterRootExecute");
+                emitParseInstruction(b, "this", "bci", CodeTreeBuilder.singleString("op"));
+                startGetFrameUnsafe(b, "frame", type(Object.class)).string("(sp - 1)");
+                b.end();
+                b.string("null");
+                b.end();
+                b.end();
+            }
+
+            emitReturnTopOfStack(b);
         }
 
         record InstructionGroup(int stackEffect, int instructionLength) {
@@ -14489,7 +16586,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 List<InstructionModel> topLevelInstructions = new ArrayList<>();
                 List<InstructionModel> partitionableInstructions = new ArrayList<>();
                 for (InstructionModel instruction : originalInstructions) {
-                    if (instruction.kind != InstructionKind.CUSTOM || isForceCached(tier, instruction)) {
+                    if (instruction.kind != InstructionKind.CUSTOM || isForceCached(tier, instruction) || instruction.operation.kind == OperationKind.CUSTOM_YIELD) {
                         topLevelInstructions.add(instruction);
                     } else {
                         partitionableInstructions.add(instruction);
@@ -14598,10 +16695,13 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.startElseBlock();
                 b.startTryBlock();
                 b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+                b.startThrow().startCall("sneakyThrow");
                 if (model.interceptInternalException != null) {
-                    b.startAssign("throwable").startCall("$root", model.interceptInternalException).string("throwable").string("frame").string("this").string("bci").end(2);
+                    b.startCall("$root", model.interceptInternalException).string("throwable").string("frame").string("this").string("bci").end();
+                } else {
+                    b.string("throwable");
                 }
-                b.startThrow().startCall("sneakyThrow").string("throwable").end(2);
+                b.end(2);
                 b.end().startCatchBlock(types.AbstractTruffleException, "ate");
                 if (model.interceptTruffleException == null) {
                     b.startReturn().string("ate").end();
@@ -14682,7 +16782,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             method.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "$root"));
             method.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 method.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
             method.addParameter(new CodeVariableElement(type(byte[].class), "bc"));
@@ -14697,7 +16797,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.declaration(cachedType, "node", "this.epilogExceptionalNode_");
             }
 
-            List<CodeVariableElement> extraParams = createExtraParameters(false);
+            List<CodeVariableElement> extraParams = createExtraParameters();
             buildCallExecute(b, model.epilogExceptional.operation.instruction, "exception", extraParams);
             return method;
         }
@@ -14800,6 +16900,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
             b.string(uncheckedGetFrameObject("sp - stackPopCount + i"));
             b.end();
+            b.statement(clearFrame("frame", "sp - stackPopCount + i"));
 
             b.end();
 
@@ -14814,6 +16915,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.typeLiteral(type(Object[].class));
                 b.end();
                 b.end();
+                b.statement(clearFrame("frame", "sp - mergeCount + i"));
 
                 b.declaration(type(int.class), "dynamicLength", "dynamicArray.length");
                 b.startStatement().startStaticCall(type(System.class), "arraycopy");
@@ -14964,6 +17066,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startStatement();
             b.string("result[offset + i] = ").string(uncheckedGetFrameObject("sp - count + i"));
             b.end();
+            b.statement(clearFrame("frame", "sp - count + i"));
             b.end(); // for
 
             if (model.hasVariadicReturn) {
@@ -14977,6 +17080,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.typeLiteral(type(Object[].class));
                 b.end();
                 b.end();
+                b.statement(clearFrame("frame", "sp - mergeCount + i"));
 
                 b.declaration(type(int.class), "dynamicLength", "dynamicArray.length");
                 b.startStatement().startStaticCall(type(System.class), "arraycopy");
@@ -15037,46 +17141,61 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = method.createBuilder();
 
-            b.startDeclaration(type(Object.class), "returnValue");
-            startRequireFrame(b, type(Object.class));
-            b.string("frame");
-            b.string("sp - 1");
-            b.end();
-            b.end(); // declaration
+            if (instr.kind == InstructionKind.TAG_YIELD) {
+                b.startDeclaration(type(Object.class), "returnValue");
+                startRequireFrame(b, type(Object.class));
+                b.string("frame");
+                b.string("sp - 1");
+                b.end();
+                b.end(); // declaration
+            }
 
             InstructionImmediate imm = instr.getImmediate(ImmediateKind.TAG_NODE);
             b.startDeclaration(tagNode.asType(), "tagNode");
             b.tree(readTagNode(tagNode.asType(), readImmediate("bc", "bci", imm)));
             b.end();
-            b.statement("tagNode.findProbe().onYield(frame, returnValue)");
+
+            b.startStatement().startCall("tagNode.findProbe().onYield");
+            b.string("frame");
+            switch (instr.kind) {
+                case TAG_YIELD -> b.string("returnValue");
+                case TAG_YIELD_NULL -> b.string("null");
+                default -> throw new AssertionError("unexpected tag yield instruction " + instr);
+            }
+            b.end(2);
 
             doInstructionMethods.put(instr, method);
             return method;
 
         }
 
-        private CodeExecutableElement lookupBranchBackward(InstructionModel instr) {
+        private CodeExecutableElement lookupReportLoopCount(InstructionModel instr) {
             CodeExecutableElement method = doInstructionMethods.get(instr);
             if (method != null) {
                 return method;
             }
             method = new CodeExecutableElement(
                             Set.of(PRIVATE),
-                            type(long.class), instructionMethodName(instr));
+                            type(Object.class), "reportLoopCount");
 
             method.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 method.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
             method.addParameter(new CodeVariableElement(type(byte[].class), "bc"));
             method.addParameter(new CodeVariableElement(type(int.class), "bci"));
             method.addParameter(new CodeVariableElement(type(int.class), "sp"));
+            method.addParameter(new CodeVariableElement(type(int.class), "counter"));
 
             CodeTreeBuilder b = method.createBuilder();
 
-            b.startIf().startStaticCall(types.CompilerDirectives, "inInterpreter").end(1).string(" && ") //
-                            .startStaticCall(types.BytecodeOSRNode, "pollOSRBackEdge").string("this").end(2).startBlock();
+            b.startStatement().startStaticCall(types.LoopNode, "reportLoopCount");
+            b.string("this");
+            b.string("counter");
+            b.end().end(); // statement
 
+            b.startIf().startStaticCall(types.CompilerDirectives, "inInterpreter").end().string("&&").startStaticCall(types.BytecodeOSRNode, "pollOSRBackEdge").string("this").string(
+                            "counter").end().end().startBlock();
             /**
              * When a while loop is compiled by OSR, its "false" branch profile may be zero, in
              * which case the compiler will stop at loop exits. To coerce the compiler to compile
@@ -15085,32 +17204,22 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              */
             InstructionImmediate branchProfile = model.branchBackwardInstruction.findImmediate(ImmediateKind.BRANCH_PROFILE, "loop_header_branch_profile");
             b.declaration(type(int.class), "branchProfileIndex", readImmediate("bc", "bci", branchProfile));
-            b.startStatement().startCall("ensureFalseProfile").string("branchProfiles_").string("branchProfileIndex").end(2);
+            b.startStatement().startCall("ensureFalseProfile").tree(uncheckedCast(arrayOf(type(int.class)), "this.branchProfiles_")).string("branchProfileIndex").end(2);
 
-            b.startAssign("Object osrResult");
+            b.startReturn();
             b.startStaticCall(types.BytecodeOSRNode, "tryOSR");
             b.string("this");
             String bci = readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.BYTECODE_INDEX)).toString();
-            b.string(encodeState(bci, "sp", model.enableYield ? "frame != " + localFrame() : null));
+            b.string(encodeState(bci, "sp", model.hasYieldOperation() ? "frame != " + localFrame() : null));
             b.string("null"); // interpreterState
             b.string("null"); // beforeTransfer
             b.string("frame"); // parentFrame
-            b.end(2);
+            b.end(); // static call
+            b.end(); // return
 
-            b.startIf().string("osrResult != null").end().startBlock();
-            /**
-             * executeOSR invokes BytecodeNode#continueAt, which returns a long encoding the sp and
-             * bci when it returns/when the bytecode is rewritten. Returning this value is correct
-             * in either case: If it's a return, we'll read the result out of the frame (the OSR
-             * code copies the OSR frame contents back into our frame first); if it's a rewrite,
-             * we'll transition and continue executing.
-             */
-            b.startReturn().cast(type(long.class)).string("osrResult").end();
-            b.end();
+            b.end(); // if pollOSRBackEdge
 
-            b.end();
-
-            b.statement("return -1");
+            b.statement("return null");
 
             doInstructionMethods.put(instr, method);
             return method;
@@ -15127,7 +17236,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             type(void.class), instructionMethodName(instr));
 
             method.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 method.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
             method.addParameter(new CodeVariableElement(type(byte[].class), "bc"));
@@ -15175,23 +17284,21 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                             type(void.class), instructionMethodName(instr));
 
             method.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 method.addParameter(new CodeVariableElement(types.VirtualFrame, "localFrame"));
             }
             method.addParameter(new CodeVariableElement(type(byte[].class), "bc"));
             method.addParameter(new CodeVariableElement(type(int.class), "bci"));
             method.addParameter(new CodeVariableElement(type(int.class), "sp"));
             method.addParameter(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "$root"));
-            method.addParameter(new CodeVariableElement(arrayOf(type(Object.class)), "consts"));
 
             CodeTreeBuilder b = method.createBuilder();
 
             InstructionImmediate continuationIndex = instr.getImmediate(ImmediateKind.CONSTANT);
-            b.statement("int maxLocals = $root.maxLocals");
-            b.statement(copyFrameTo("frame", "maxLocals", "localFrame", "maxLocals", "(sp - 1 - maxLocals)"));
+            emitCopyStackToLocalFrameBeforeYield(b, instr);
 
             b.startDeclaration(continuationRootNodeImpl.asType(), "continuationRootNode");
-            b.tree(readConstFastPath(readImmediate("bc", "bci", continuationIndex), continuationRootNodeImpl.asType()));
+            b.tree(readConstFastPath(readImmediate("bc", "bci", continuationIndex), "this.constants", continuationRootNodeImpl.asType()));
             b.end();
 
             b.startDeclaration(types.ContinuationResult, "continuationResult");
@@ -15205,6 +17312,20 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             doInstructionMethods.put(instr, method);
             return method;
 
+        }
+
+        private void emitCopyStackToLocalFrameBeforeYield(CodeTreeBuilder b, InstructionModel instr) {
+            b.statement("int maxLocals = $root.maxLocals");
+            /*
+             * The yield result will be stored at sp + stackEffect - 1 = sp + (1 - n) - 1 = sp - n
+             * (for n dynamic operands). We need to copy operands lower on the stack for resumption.
+             */
+            String yieldResultIndex = (instr.signature.dynamicOperandCount == 0) ? "sp" : "sp - " + instr.signature.dynamicOperandCount;
+            b.lineCommentf("The yield result will be stored at %s. The operands below it need to be preserved for resumption.", yieldResultIndex);
+            b.lineCommentf("These operands belong to the interval [maxLocals, %s).", yieldResultIndex);
+            b.startIf().string("maxLocals < " + yieldResultIndex).end().startBlock();
+            b.statement(copyFrameTo("frame", "maxLocals", "localFrame", "maxLocals", yieldResultIndex + " - maxLocals"));
+            b.end();
         }
 
         private CodeExecutableElement lookupTagEnter(InstructionModel instr) {
@@ -15280,7 +17401,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             CodeTreeBuilder b = method.createBuilder();
-            TypeMirror inputType = instr.specializedType == null ? instr.signature.getSpecializedType(0) : instr.specializedType;
+            TypeMirror inputType = instr.specializedType == null ? instr.signature.getDynamicOperandType(0) : instr.specializedType;
             TypeMirror returnType = instr.signature.returnType;
 
             boolean isSpecialized = instr.specializedType != null;
@@ -15302,7 +17423,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             if (isSpecialized) {
                 b.end().startCatchBlock(types.UnexpectedResultException, "ex");
-
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startReturn().startCall(lookupSpecializeTagLeave(instr.getQuickeningRoot()).getSimpleName().toString());
                 if (model.bytecodeDebugListener) {
                     b.string("$this");
@@ -15422,20 +17543,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             CodeTreeBuilder b = method.createBuilder();
-            TypeMirror inputType = instr.signature.getSpecializedType(0);
+            TypeMirror inputType = instr.signature.getDynamicOperandType(0);
 
             boolean isGeneric = ElementUtils.isObject(inputType);
 
-            if (!isGeneric) {
-                b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
-                b.lineComment("Always clear in compiled code for liveness analysis");
+            if (isGeneric) {
                 b.statement(clearFrame("frame", "sp - 1"));
-                b.returnDefault();
-                b.end();
-
+            } else {
                 b.startIf().string("frame.getTag(sp - 1) != ").staticReference(frameTagsElement.get(inputType)).end().startBlock();
                 b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
-                b.startStatement().startCall(lookupDoSpecializeBranch(instr.getQuickeningRoot()).getSimpleName().toString());
+                b.startStatement().startCall(lookupDoSpecializePop(instr.getQuickeningRoot()).getSimpleName().toString());
                 if (model.bytecodeDebugListener) {
                     b.string("$this");
                 }
@@ -15443,12 +17560,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end().end();
                 b.returnDefault();
                 b.end();
-            }
 
-            if (isGeneric) {
+                b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                b.lineComment("Always clear in compiled code for liveness analysis");
                 b.statement(clearFrame("frame", "sp - 1"));
-            } else {
-                b.lineComment("No need to clear for primitives in the interpreter");
+                b.end();
             }
 
             doInstructionMethods.put(instr, method);
@@ -15552,25 +17668,34 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             CodeTreeBuilder b = method.createBuilder();
-            TypeMirror inputType = instr.signature.getSpecializedType(0);
+            TypeMirror inputType = instr.signature.getDynamicOperandType(0);
 
             b.startTryBlock();
-            b.startReturn();
+            b.startDeclaration(type(boolean.class), "result");
+
             if (ElementUtils.isObject(inputType)) {
                 b.string("(boolean) ");
             }
             startExpectFrameUnsafe(b, "frame", inputType);
             b.string("sp - 1");
             b.end();
-            b.end(); // statement
+            b.end(); // declaration
+
+            b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+            b.statement(clearFrame("frame", "sp - 1"));
+            b.end();
+
+            b.startReturn().string("result").end();
 
             b.end().startCatchBlock(types.UnexpectedResultException, "ex");
-
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
             b.startReturn().startCall(lookupDoSpecializeBranch(instr.getQuickeningRoot()).getSimpleName().toString());
             if (model.bytecodeDebugListener) {
                 b.string("$this");
             }
-            b.string("frame").string("bc").string("bci").string("sp");
+            b.string("bc").string("bci").string("sp");
+            b.string("(boolean) ex.getResult()");
+
             b.end().end();
 
             b.end();
@@ -15589,10 +17714,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             method = new CodeExecutableElement(
                             Set.of(PRIVATE, STATIC),
                             type(boolean.class), instructionMethodName(instr),
-                            new CodeVariableElement(types.Frame, "frame"),
                             new CodeVariableElement(type(byte[].class), "bc"),
                             new CodeVariableElement(type(int.class), "bci"),
-                            new CodeVariableElement(type(int.class), "sp"));
+                            new CodeVariableElement(type(int.class), "sp"),
+                            new CodeVariableElement(type(boolean.class), "value"));
 
             if (model.bytecodeDebugListener) {
                 method.getParameters().add(0, new CodeVariableElement(abstractBytecodeNode.asType(), "$this"));
@@ -15607,7 +17732,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             InstructionModel boxedInstruction = null;
             InstructionModel unboxedInstruction = null;
             for (InstructionModel quickening : instr.getFlattenedQuickenedInstructions()) {
-                if (ElementUtils.isObject(quickening.signature.getSpecializedType(0))) {
+                if (ElementUtils.isObject(quickening.signature.getDynamicOperandType(0))) {
                     boxedInstruction = quickening;
                 } else {
                     unboxedInstruction = quickening;
@@ -15620,12 +17745,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeTreeBuilder b = method.createBuilder();
             b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
-
-            b.startStatement().string("boolean value = (boolean)");
-            startRequireFrame(b, type(Object.class));
-            b.string("frame").string("sp - 1");
-            b.end();
-            b.end(); // statement
 
             b.declaration(type(short.class), "newInstruction");
             b.declaration(type(short.class), "newOperand");
@@ -15644,6 +17763,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             emitQuickeningOperand(b, "$this", "bc", "bci", null, 0, "operandIndex", "operand", "newOperand");
             emitQuickening(b, "$this", "bc", "bci", null, "newInstruction");
 
+            b.lineComment("no need clear boolean locals in slow-path");
+
             b.startReturn().string("value").end();
 
             doInstructionMethods.put(instr, method);
@@ -15654,7 +17775,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (!instr.kind.isLocalVariableAccess() && !instr.kind.isLocalVariableMaterializedAccess()) {
                 throw new AssertionError();
             }
-            return instr.kind.isLocalVariableMaterializedAccess() || model.enableYield;
+            return instr.kind.isLocalVariableMaterializedAccess() || model.hasYieldOperation();
         }
 
         private boolean localAccessNeedsLocalTags(InstructionModel instr) {
@@ -15681,11 +17802,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             boolean needsStackFrame = localAccessNeedsStackFrame(instr);
             if (needsStackFrame) {
                 method.getParameters().add(0, new CodeVariableElement(types.Frame, "stackFrame"));
-            }
-
-            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
-            if (needsLocalTags) {
-                method.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
             }
 
             if (model.bytecodeDebugListener) {
@@ -15735,6 +17851,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 }
 
                 b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startStatement().startCall(lookupDoSpecializeLoadLocal(instr.getQuickeningRoot()).getSimpleName().toString());
                 if (model.bytecodeDebugListener) {
                     b.string("$this");
@@ -15743,9 +17860,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.string("stackFrame");
                 }
                 b.string("frame").string("bc").string("bci").string("sp");
-                if (needsLocalTags) {
-                    b.string("localTags");
-                }
                 b.end().end();
                 b.end();
             }
@@ -15753,6 +17867,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             doInstructionMethods.put(instr, method);
             return method;
 
+        }
+
+        private CodeTree readLocalTagsFastPath() {
+            return uncheckedCast(type(byte[].class), "this.localTags_");
         }
 
         private CodeExecutableElement lookupDoSpecializeLoadLocal(InstructionModel instr) {
@@ -15775,16 +17893,16 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 method.getParameters().add(0, new CodeVariableElement(types.Frame, "stackFrame"));
             }
 
-            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
-            if (needsLocalTags) {
-                method.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
-            }
-
             if (model.bytecodeDebugListener) {
                 method.getParameters().add(0, new CodeVariableElement(abstractBytecodeNode.asType(), "$this"));
             }
 
             CodeTreeBuilder b = method.createBuilder();
+
+            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
+            if (needsLocalTags) {
+                b.declaration(type(byte[].class), "localTags", readLocalTagsFastPath());
+            }
 
             String stackFrame = needsStackFrame ? "stackFrame" : "frame";
             b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX)));
@@ -15858,6 +17976,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(); // switch
 
             b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
 
             // If a FrameSlotException occurs, specialize to the generic version.
             b.startStatement().string("newInstruction = ").tree(createInstructionConstant(genericInstruction)).end();
@@ -15900,7 +18019,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 method.getParameters().add(0, new CodeVariableElement(abstractBytecodeNode.asType(), "$this"));
             }
 
-            final TypeMirror inputType = instr.signature.getSpecializedType(1);
+            final TypeMirror inputType = instr.signature.getDynamicOperandType(1);
             final TypeMirror returnType = instr.signature.returnType;
 
             CodeTreeBuilder b = method.createBuilder();
@@ -15913,6 +18032,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 startExpectFrameUnsafe(b, "frame", inputType).string("sp - 1").end();
                 b.end();
                 b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startStatement().startCall(lookupDoSpecializeMergeConditional(instr.getQuickeningRoot()).getSimpleName().toString());
                 if (model.bytecodeDebugListener) {
                     b.string("$this");
@@ -15932,9 +18052,37 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             startSetFrame(b, returnType).string("frame").string("sp - 2").string("value").end();
             b.end();
 
-            if (!ElementUtils.isPrimitive(inputType)) {
+            if (ElementUtils.isPrimitive(inputType)) {
+                // we only need to clear in compiled code for liveness if primitive
+                b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                b.statement(clearFrame("frame", "sp - 1"));
+                b.end();
+            } else {
+                // always clear for references for gc behavior.
                 b.statement(clearFrame("frame", "sp - 1"));
             }
+
+            doInstructionMethods.put(instr, method);
+            return method;
+
+        }
+
+        private CodeExecutableElement lookupTraceInstruction(InstructionModel instr) {
+            CodeExecutableElement method = doInstructionMethods.get(instr);
+            if (method != null) {
+                return method;
+            }
+            method = new CodeExecutableElement(
+                            Set.of(PRIVATE),
+                            type(void.class), instructionMethodName(instr),
+                            new CodeVariableElement(types.Frame, "frame"),
+                            new CodeVariableElement(type(int.class), "bci"));
+
+            CodeTreeBuilder b = method.createBuilder();
+            b.startStatement();
+            b.tree(readConstFastPath(CodeTreeBuilder.singleString("Builder.INSTRUCTION_TRACER_CONSTANT_INDEX"), "this.constants", instructionTracerAccessImplElement.asType()));
+            b.startCall(".onInstructionEnter").string("this").string("bci").string("frame").end();
+            b.end(); // statement
 
             doInstructionMethods.put(instr, method);
             return method;
@@ -15960,6 +18108,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
 
             CodeTreeBuilder b = method.createBuilder();
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
 
             InstructionImmediate operand0 = instr.getImmediates(ImmediateKind.BYTECODE_INDEX).get(0);
             InstructionImmediate operand1 = instr.getImmediates(ImmediateKind.BYTECODE_INDEX).get(1);
@@ -16068,15 +18217,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 method.getParameters().add(0, new CodeVariableElement(types.Frame, "stackFrame"));
             }
 
-            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
-            if (needsLocalTags) {
-                method.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
-            }
-
-            final TypeMirror inputType = instr.signature.getSpecializedType(0);
+            final TypeMirror inputType = instr.signature.getDynamicOperandType(0);
             final TypeMirror slotType = instr.specializedType != null ? instr.specializedType : type(Object.class);
 
             CodeTreeBuilder b = method.createBuilder();
+
+            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
+            if (needsLocalTags) {
+                b.declaration(type(byte[].class), "localTags", readLocalTagsFastPath());
+            }
 
             String stackFrame = needsStackFrame ? "stackFrame" : "frame";
             if (tier.isCached() && model.usesBoxingElimination()) {
@@ -16087,14 +18236,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end();
 
                 b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                 b.startStatement().startCall(lookupDoSpecializeStoreLocal(instr.getQuickeningRoot()).getSimpleName().toString());
                 if (needsStackFrame) {
                     b.string("stackFrame");
                 }
                 b.string("frame").string("bc").string("bci").string("sp").string("ex.getResult()");
-                if (needsLocalTags) {
-                    b.string("localTags");
-                }
                 b.end().end();
 
                 b.returnDefault();
@@ -16221,6 +18368,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
                 if (needsCast) {
                     b.end().startCatchBlock(types.UnexpectedResultException, "ex");
+                    b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
                     b.statement("local = ex.getResult()");
                     b.lineComment("fall through to slow-path");
                     b.end();  // catch block
@@ -16233,9 +18381,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.string("stackFrame");
                 }
                 b.string("frame").string("bc").string("bci").string("sp").string("local");
-                if (needsLocalTags) {
-                    b.string("localTags");
-                }
 
                 b.end().end();
             }
@@ -16265,14 +18410,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 method.getParameters().add(0, new CodeVariableElement(types.Frame, "stackFrame"));
             }
 
-            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
-            if (needsLocalTags) {
-                method.addParameter(new CodeVariableElement(arrayOf(type(byte.class)), "localTags"));
-            }
-
             String stackFrame = needsStackFrame ? "stackFrame" : "frame";
 
             CodeTreeBuilder b = method.createBuilder();
+            b.tree(GeneratorUtils.createTransferToInterpreterAndInvalidate());
+
+            boolean needsLocalTags = localAccessNeedsLocalTags(instr);
+            if (needsLocalTags) {
+                b.declaration(type(byte[].class), "localTags", readLocalTagsFastPath());
+            }
 
             b.declaration(type(short.class), "newInstruction");
             b.declaration(type(int.class), "slot", readImmediate("bc", "bci", instr.getImmediate(ImmediateKind.FRAME_INDEX)));
@@ -16468,16 +18614,15 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * operation with which the compiler can match and eliminate subsequent "unbox" operations.
          */
         private CodeExecutableElement createLoadConstantCompiled() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE, STATIC, FINAL), type(void.class), "loadConstantCompiled");
+            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "loadConstantCompiled");
             ex.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
             ex.addParameter(new CodeVariableElement(type(byte[].class), "bc"));
             ex.addParameter(new CodeVariableElement(type(int.class), "bci"));
             ex.addParameter(new CodeVariableElement(type(int.class), "sp"));
-            ex.addParameter(new CodeVariableElement(arrayOf(context.getDeclaredType(Object.class)), "consts"));
 
             CodeTreeBuilder b = ex.createBuilder();
             InstructionImmediate constant = model.loadConstantInstruction.getImmediate(ImmediateKind.CONSTANT);
-            b.declaration(context.getDeclaredType(Object.class), "constant", readConstFastPath(readImmediate("bc", "bci", constant)));
+            b.declaration(context.getDeclaredType(Object.class), "constant", readConstFastPath(readImmediate("bc", "bci", constant), "this.constants"));
             Class<?>[] boxedTypes = new Class<?>[]{Boolean.class, Byte.class, Character.class, Float.class, Integer.class, Long.class, Short.class, Double.class};
             String[] getterMethods = new String[]{"booleanValue", "byteValue", "charValue", "floatValue", "intValue", "longValue", "shortValue", "doubleValue"};
             for (int i = 0; i < boxedTypes.length; i++) {
@@ -16527,18 +18672,18 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
          * This code implements the same logic as the CountingConditionProfile.
          */
         private CodeExecutableElement createProfileBranch(TypeMirror branchProfilesType) {
-            CodeExecutableElement allocateBranchProfiles = new CodeExecutableElement(Set.of(PRIVATE, STATIC, FINAL), type(boolean.class), "profileBranch",
-                            new CodeVariableElement(branchProfilesType, "branchProfiles"),
+            CodeExecutableElement allocateBranchProfiles = new CodeExecutableElement(Set.of(PRIVATE), type(boolean.class), "profileBranch",
                             new CodeVariableElement(type(int.class), "profileIndex"),
                             new CodeVariableElement(type(boolean.class), "condition"));
 
-            emitNewBranchProfile(allocateBranchProfiles);
+            emitNewBranchProfile(allocateBranchProfiles, branchProfilesType);
 
             return allocateBranchProfiles;
         }
 
-        private void emitNewBranchProfile(CodeExecutableElement allocateBranchProfiles) {
+        private void emitNewBranchProfile(CodeExecutableElement allocateBranchProfiles, TypeMirror branchProfilesType) {
             CodeTreeBuilder b = allocateBranchProfiles.createBuilder();
+            b.declaration(branchProfilesType, "branchProfiles", uncheckedCast(branchProfilesType, "this.branchProfiles_"));
             b.declaration("int", "t", (CodeTree) null);
             b.declaration("int", "f", (CodeTree) null);
 
@@ -16619,19 +18764,6 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ensureFalseProfile;
         }
 
-        private void emitReportLoopCount(CodeTreeBuilder b, CodeTree condition, boolean clear) {
-            b.startIf().startStaticCall(types.CompilerDirectives, "hasNextTier").end() //
-                            .string(" && ").tree(condition).end().startBlock();
-            b.startStatement().startStaticCall(types.LoopNode, "reportLoopCount");
-            b.string("this");
-            b.string("loopCounter.value");
-            b.end(2);
-            if (clear) {
-                b.statement("loopCounter.value = 0");
-            }
-            b.end();
-        }
-
         // Generate a helper method that implements the custom instruction. Also emits a call to the
         // helper inside continueAt.
         private void buildCustomInstructionExecute(CodeTreeBuilder continueAtBuilder, InstructionModel instr) {
@@ -16642,10 +18774,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             if (prev != null) {
                 throw new AssertionError("Custom instruction already emitted.");
             }
+            boolean isCustomYield = instr.operation.kind == OperationKind.CUSTOM_YIELD;
 
             helper.addParameter(new CodeVariableElement(types.VirtualFrame, "frame"));
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 helper.getParameters().add(new CodeVariableElement(types.VirtualFrame, "localFrame"));
+            }
+            if (isCustomYield) {
+                helper.getParameters().add(new CodeVariableElement(BytecodeRootNodeElement.this.asType(), "$root"));
             }
 
             /**
@@ -16653,11 +18789,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
              * {@link BytecodeDSLNodeGeneratorPlugs#additionalArguments()} (excluding the frames,
              * which are handled specially). They should be kept in sync.
              */
-            List<CodeVariableElement> extraParams = createExtraParameters(instr.hasImmediate(ImmediateKind.CONSTANT));
-
-            if (tier.isCached()) {
-                helper.getParameters().add(new CodeVariableElement(new ArrayCodeTypeMirror(types.Node), "cachedNodes"));
-            }
+            List<CodeVariableElement> extraParams = createExtraParameters();
             helper.getParameters().addAll(extraParams);
 
             CodeTreeBuilder b = helper.createBuilder();
@@ -16665,8 +18797,8 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             // Since an instruction produces at most one value, stackEffect is at most 1.
             int stackEffect = getStackEffect(instr);
 
-            if (customInstructionMayReadBci(instr)) {
-                storeBciInFrameIfNecessary(b);
+            if (isStoreBciBeforeExecute(model, tier, instr)) {
+                storeBciInFrame(b);
             }
 
             TypeMirror cachedType = getCachedDataClassType(instr);
@@ -16680,6 +18812,10 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     CodeTree readNode = CodeTreeBuilder.createBuilder().tree(readNodeProfile(cachedType, nodeIndex)).build();
                     b.declaration(cachedType, "node", readNode);
                 }
+            }
+
+            if (isCustomYield) {
+                emitCopyStackToLocalFrameBeforeYield(b, instr);
             }
 
             boolean unexpectedValue = hasUnexpectedExecuteValue(instr);
@@ -16743,15 +18879,40 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.end(); // catch
             }
 
+            // When stackEffect is negative, values should be cleared from the top of the
+            // stack.
+            InstructionModel quickeningRoot = instr.getQuickeningRoot();
+            int operandIndex = 0;
             for (int i = stackEffect; i < 0; i++) {
-                // When stackEffect is negative, values should be cleared from the top of the stack.
-                b.statement(clearFrame("frame", "sp - " + -i));
+                TypeMirror genericType = quickeningRoot.signature.operandTypes.get(operandIndex);
+                if (ElementUtils.isPrimitive(genericType)) {
+                    /*
+                     * If the generic type is primitive we can omit clearing in the interpreter, as
+                     * the clear is only needed for liveness in the compiler. Currently, we can't do
+                     * that for specialized quickenings as we might miss quickeninging reference
+                     * types on the stack if executeAndSpecialize is called. In the future when we
+                     * keep all stack effects in this method we be able to do better and avoid
+                     * clearing also for quickenings.
+                     */
+                    b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                    b.statement(clearFrame("frame", "sp - " + -i));
+                    b.end();
+                } else {
+                    b.statement(clearFrame("frame", "sp - " + -i));
+                }
+                operandIndex++;
             }
 
             // In continueAt, call the helper and adjust sp.
             continueAtBuilder.startStatement().startCall(methodName);
             continueAtBuilder.variables(helper.getParameters());
             continueAtBuilder.end(2);
+        }
+
+        private void storeBciInFrame(CodeTreeBuilder b) {
+            if (isStoreBciEnabled(model, tier)) {
+                BytecodeRootNodeElement.storeBciInFrame(b, localFrame(), "bci");
+            }
         }
 
         private boolean isBoxingOverloadReturnTypeQuickening(InstructionModel instr) {
@@ -16773,24 +18934,11 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             }
         }
 
-        private static int getStackEffect(InstructionModel instr) {
-            return (instr.signature.isVoid ? 0 : 1) - instr.signature.dynamicOperandCount;
-        }
-
-        private GeneratedTypeMirror getCachedDataClassType(InstructionModel instr) {
-            return new GeneratedTypeMirror("", cachedDataClassName(instr));
-        }
-
-        private List<CodeVariableElement> createExtraParameters(boolean withConsts) {
-            List<CodeVariableElement> extraParams = new ArrayList<>();
-            extraParams.addAll(List.of(
+        private List<CodeVariableElement> createExtraParameters() {
+            return List.of(
                             new CodeVariableElement(type(byte[].class), "bc"),
                             new CodeVariableElement(type(int.class), "bci"),
-                            new CodeVariableElement(type(int.class), "sp")));
-            if (withConsts) {
-                extraParams.add(new CodeVariableElement(new ArrayCodeTypeMirror(type(Object.class)), "consts"));
-            }
-            return extraParams;
+                            new CodeVariableElement(type(int.class), "sp"));
         }
 
         private void buildCallExecute(CodeTreeBuilder b, InstructionModel instr, String evaluatedArg, List<CodeVariableElement> extraParams) {
@@ -16816,16 +18964,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                 b.string(evaluatedArg);
             } else if (tier.isUncached()) {
                 // The uncached version takes all of its parameters. Other versions compute them.
-                List<InstructionImmediate> constants = instr.getImmediates(ImmediateKind.CONSTANT);
-                for (int i = 0; i < instr.signature.constantOperandsBeforeCount; i++) {
-                    TypeMirror constantOperandType = instr.operation.constantOperands.before().get(i).type();
-                    b.startGroup();
-                    b.tree(readConstFastPath(readImmediate("bc", "bci", constants.get(i)), constantOperandType));
-                    b.end();
+                for (ConstantOperandModel constantOperand : instr.operation.constantOperands.before()) {
+                    b.tree(readConstantImmediate("bc", "bci", "this", instr.constantOperandImmediates.get(constantOperand), constantOperand.type()));
                 }
 
                 for (int i = 0; i < instr.signature.dynamicOperandCount; i++) {
-                    TypeMirror targetType = instr.signature.getGenericType(i);
+                    TypeMirror targetType = instr.signature.getDynamicOperandType(i);
                     b.startGroup();
                     if (!ElementUtils.isObject(targetType)) {
                         b.cast(targetType);
@@ -16834,15 +18978,12 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                     b.end();
                 }
 
-                for (int i = 0; i < instr.signature.constantOperandsAfterCount; i++) {
-                    TypeMirror constantOperandType = instr.operation.constantOperands.after().get(i).type();
-                    b.startGroup();
-                    b.tree(readConstFastPath(readImmediate("bc", "bci", constants.get(i + instr.signature.constantOperandsBeforeCount)), constantOperandType));
-                    b.end();
+                for (ConstantOperandModel constantOperand : instr.operation.constantOperands.after()) {
+                    b.tree(readConstantImmediate("bc", "bci", "this", instr.constantOperandImmediates.get(constantOperand), constantOperand.type()));
                 }
             }
 
-            if (model.enableYield) {
+            if (model.hasYieldOperation()) {
                 b.string("frame"); // passed for $stackFrame
             }
             b.string("this");
@@ -16851,42 +18992,26 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.end(); // statement
         }
 
-        /**
-         * When in the uncached interpreter or an interpreter with storeBciInFrame set to true, we
-         * need to store the bci in the frame before escaping operations (e.g., returning, yielding,
-         * throwing) or potentially-escaping operations (e.g., a custom operation that could invoke
-         * another root node).
-         */
-        private void storeBciInFrameIfNecessary(CodeTreeBuilder b) {
-            if (tier.isUncached() || model.storeBciInFrame) {
-                b.statement("FRAMES.setInt(" + localFrame() + ", " + BCI_INDEX + ", bci)");
-            }
-        }
-
         private static void emitReturnTopOfStack(CodeTreeBuilder b) {
             b.startReturn().string(encodeReturnState("(sp - 1)")).end();
         }
 
         private void emitBeforeReturnProfiling(CodeTreeBuilder b) {
             if (tier.isCached()) {
-                emitReportLoopCount(b, CodeTreeBuilder.singleString("loopCounter.value > 0"), false);
-            }
-        }
+                b.startIf().startStaticCall(types.CompilerDirectives, "hasNextTier").end().end().startBlock();
+                b.startIf().startStaticCall(types.CompilerDirectives, "inCompiledCode").end().end().startBlock();
+                b.statement("counter = loopCounter.value");
+                b.end();
 
-        /**
-         * To avoid storing the bci in cases when the operation is simple, we use the heuristic that
-         * a node will not escape/read its own bci unless it has a cached value.
-         *
-         * Note: the caches list includes bind values, so @Bind("$rootNode") is included in the
-         * check.
-         */
-        private boolean customInstructionMayReadBci(InstructionModel instr) {
-            for (SpecializationData spec : instr.nodeData.getSpecializations()) {
-                if (!spec.getCaches().isEmpty()) {
-                    return true;
-                }
+                b.startIf().string("counter > 0").end().startBlock();
+                b.startStatement().startStaticCall(types.LoopNode, "reportLoopCount");
+                b.string("this");
+                b.string("counter");
+                b.end().end();  // statement
+                b.end();  // if counter > 0
+
+                b.end(); // if hasNextTier
             }
-            return false;
         }
 
         private String instructionMethodName(InstructionModel instr) {
@@ -16922,17 +19047,14 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             this.add(createGetLocation());
             this.add(createFindFrame());
             this.add(createUpdateBytecodeLocation());
-            this.add(createUpdateBytecodeLocationWithoutInvalidate());
             this.add(createCreateContinuation());
             this.add(createToString());
 
             // RootNode overrides.
             this.add(createIsCloningAllowed());
             this.add(createIsCloneUninitializedSupported());
+            this.add(createFindBytecodeIndex());
             this.addOptional(createPrepareForCompilation());
-            // Should appear last. Uses current method set to determine which methods need to be
-            // implemented.
-            this.addAll(createRootNodeProxyMethods());
         }
 
         private CodeExecutableElement createExecute() {
@@ -16966,16 +19088,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             emitThrowIllegalArgumentException(b, "Unsupported frame type. Only default frames are supported for continuations.");
             b.end();
 
-            b.lineComment("Copy any existing stack values (from numLocals to sp - 1) to the current frame, which will be used for stack accesses.");
-            b.statement(copyFrameTo("parentFrame", "root.maxLocals", "frame", "root.maxLocals", "sp - 1"));
+            b.startIf().string("root.maxLocals < sp - 1").end().startBlock();
+            b.lineComment("Restore any stack operands below the resume value.");
+            b.lineComment("These operands belong to the interval [maxLocals, sp - 1).");
+            b.statement(copyFrameTo("parentFrame", "root.maxLocals", "frame", "root.maxLocals", "sp - 1 - root.maxLocals"));
+            b.end();
             b.statement(setFrameObject(COROUTINE_FRAME_INDEX, "parentFrame"));
-            b.statement(setFrameObject("root.maxLocals + sp - 1", "inputValue"));
+            b.statement(setFrameObject("sp - 1", "inputValue"));
 
             b.startReturn();
             b.startCall("root.continueAt");
             b.string("bytecodeNode");
-            b.string("bytecodeLocation.getBytecodeIndex()"); // bci
-            b.string("sp + root.maxLocals"); // sp
+            b.string("bytecodeLocation.getBytecodeIndex()");
+            b.string("sp");
             b.string("frame");
             b.string("parentFrame");
             b.string("this");
@@ -17011,34 +19136,23 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
         private CodeExecutableElement createUpdateBytecodeLocation() {
             CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "updateBytecodeLocation");
             ex.addParameter(new CodeVariableElement(types.BytecodeLocation, "newLocation"));
-            ex.addParameter(new CodeVariableElement(types.BytecodeNode, "oldBytecode"));
-            ex.addParameter(new CodeVariableElement(types.BytecodeNode, "newBytecode"));
+            ex.addParameter(new CodeVariableElement(abstractBytecodeNode.asType(), "oldBytecode"));
+            ex.addParameter(new CodeVariableElement(abstractBytecodeNode.asType(), "newBytecode"));
             ex.addParameter(new CodeVariableElement(context.getDeclaredType(CharSequence.class), "replaceReason"));
 
             CodeTreeBuilder b = ex.createBuilder();
             b.tree(createNeverPartOfCompilation());
             b.statement("location = newLocation");
+
+            b.lineComment("We avoid reporting replacement when an update does not change the bytecode (e.g., a source reparse).");
+            b.startIf().string("oldBytecode.bytecodes != newBytecode.bytecodes").end().startBlock();
             b.startStatement().startCall("reportReplace");
             b.string("oldBytecode");
             b.string("newBytecode");
             b.string("replaceReason");
             b.end(2);
-            return ex;
-        }
+            b.end();
 
-        private CodeExecutableElement createUpdateBytecodeLocationWithoutInvalidate() {
-            CodeExecutableElement ex = new CodeExecutableElement(Set.of(PRIVATE), type(void.class), "updateBytecodeLocationWithoutInvalidate");
-            ex.addParameter(new CodeVariableElement(types.BytecodeLocation, "newLocation"));
-            addJavadoc(ex, String.format("""
-                            Updates the location without reporting replacement (i.e., without invalidating compiled code).
-                            <p>
-                            We avoid reporting replacement when an update does not change the bytecode (e.g., a source reparse).
-                            Any code path that depends on observing an up-to-date BytecodeNode (e.g., location computations) should
-                            not be compiled (it must be guarded by a {@link %s}).
-                            """, ElementUtils.getSimpleName(types.CompilerDirectives_TruffleBoundary)));
-            CodeTreeBuilder b = ex.createBuilder();
-            b.tree(createNeverPartOfCompilation());
-            b.statement("location = newLocation");
             return ex;
         }
 
@@ -17064,7 +19178,7 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             b.startStaticCall(type(String.class), "format");
             b.doubleQuote("%s(resume_bci=%s)");
             b.string("root");
-            b.string("location.getBytecodeIndex()");
+            b.string("location == null ? \"unreachable\" : location.getBytecodeIndex()");
             b.end(2);
             return ex;
         }
@@ -17089,6 +19203,19 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
             return ex;
         }
 
+        private CodeExecutableElement createFindBytecodeIndex() {
+            CodeExecutableElement ex = GeneratorUtils.override(types.RootNode, "findBytecodeIndex", new String[]{"node", "frame"});
+            CodeTreeBuilder b = ex.createBuilder();
+            b.startReturn().startCall("root", "findBytecodeIndex");
+            b.string("node");
+            // unwrap the frame from the continuation frame
+            b.startGroup().string("frame == null ? null : ");
+            b.startCall("findFrame").string("frame").end();
+            b.end();
+            b.end(2);
+            return ex;
+        }
+
         private CodeExecutableElement createPrepareForCompilation() {
             if (!model.enableUncachedInterpreter) {
                 return null;
@@ -17096,18 +19223,29 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
 
             CodeExecutableElement ex = overrideImplementRootNodeMethod(model, "prepareForCompilation", new String[]{"rootCompilation", "compilationTier", "lastTier"});
             CodeTreeBuilder b = ex.createBuilder();
-            b.startReturn().startCall("root.prepareForCompilation").string("rootCompilation").string("compilationTier").string("lastTier").end(2);
+            b.startReturn();
+            b.startCall("root.prepareForCompilation").string("rootCompilation").string("compilationTier").string("lastTier").end();
+            b.string(" && ");
+            // Even if the root is ready, the continuation location may not have updated yet.
+            b.string("location.getBytecodeNode().getTier() != ").staticReference(types.BytecodeTier, "UNCACHED");
+            b.end();
             return ex;
         }
 
-        private List<CodeExecutableElement> createRootNodeProxyMethods() {
-            List<CodeExecutableElement> result = new ArrayList<>();
-
-            List<ExecutableElement> existing = ElementFilter.methodsIn(continuationRootNodeImpl.getEnclosedElements());
+        private void addRootNodeDelegateMethods() {
+            List<ExecutableElement> existing = ElementFilter.methodsIn(this.getEnclosedElements());
 
             List<ExecutableElement> excludes = List.of(
+                            // Not supported (see isCloningAllowed, isCloneUninitializedSupported).
                             ElementUtils.findMethod(types.RootNode, "copy"),
-                            ElementUtils.findMethod(types.RootNode, "cloneUninitialized"));
+                            ElementUtils.findMethod(types.RootNode, "cloneUninitialized"),
+                            // User code can only obtain a continuation root by executing a yield.
+                            // Parsing is done at this point, so the root is already prepared.
+                            ElementUtils.findMethod(types.RootNode, "prepareForCall"),
+                            // The instrumenter should already know about/have instrumented the root
+                            // node by the time we try to instrument a continuation root.
+                            ElementUtils.findMethod(types.RootNode, "isInstrumentable"),
+                            ElementUtils.findMethod(types.RootNode, "prepareForInstrumentation"));
 
             outer: for (ExecutableElement rootNodeMethod : ElementUtils.getOverridableMethods((TypeElement) types.RootNode.asElement())) {
                 // Exclude methods we have already implemented.
@@ -17122,46 +19260,32 @@ final class BytecodeRootNodeElement extends CodeTypeElement {
                         continue outer;
                     }
                 }
-                // Only proxy methods overridden by the template class.
-                ExecutableElement templateMethod = ElementUtils.findOverride(model.templateType, rootNodeMethod);
+                // Only delegate to methods overridden by the generated class or its parents.
+                ExecutableElement templateMethod = ElementUtils.findOverride(rootNodeMethod, BytecodeRootNodeElement.this);
                 if (templateMethod == null) {
                     continue outer;
                 }
 
-                CodeExecutableElement proxyMethod = GeneratorUtils.override(templateMethod);
-                CodeTreeBuilder b = proxyMethod.createBuilder();
+                CodeExecutableElement delegateMethod = GeneratorUtils.override(templateMethod);
+                CodeTreeBuilder b = delegateMethod.createBuilder();
 
-                boolean isVoid = ElementUtils.isVoid(proxyMethod.getReturnType());
+                boolean isVoid = ElementUtils.isVoid(delegateMethod.getReturnType());
                 if (isVoid) {
                     b.startStatement();
                 } else {
                     b.startReturn();
                 }
 
-                b.startCall("root", rootNodeMethod.getSimpleName().toString());
-                for (VariableElement param : rootNodeMethod.getParameters()) {
+                b.startCall("root", templateMethod.getSimpleName().toString());
+                for (VariableElement param : templateMethod.getParameters()) {
                     b.variable(param);
                 }
                 b.end(); // call
                 b.end(); // statement / return
 
-                result.add(proxyMethod);
+                this.add(delegateMethod);
             }
-
-            return result;
         }
-    }
-
-    final class ContinuationLocationElement extends CodeTypeElement {
-
-        ContinuationLocationElement() {
-            super(Set.of(PRIVATE, STATIC, FINAL), ElementKind.CLASS, null, "ContinuationLocation");
-            this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "constantPoolIndex"));
-            this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "bci"));
-            this.add(new CodeVariableElement(Set.of(PRIVATE, FINAL), type(int.class), "sp"));
-            this.add(GeneratorUtils.createConstructorUsingFields(Set.of(), this));
-        }
-
     }
 
 }

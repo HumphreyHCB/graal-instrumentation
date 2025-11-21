@@ -32,18 +32,18 @@ import java.util.function.Consumer;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
-import com.oracle.svm.webimage.object.ConstantIdentityMapping;
-import com.oracle.svm.webimage.object.ObjectInspector;
-import com.oracle.svm.webimage.type.TypeControl;
 import com.oracle.svm.core.meta.MethodPointer;
-import com.oracle.svm.hosted.webimage.codegen.WebImageJSProviders;
-import com.oracle.svm.hosted.webimage.codegen.WebImageTypeControl;
 import com.oracle.svm.hosted.config.DynamicHubLayout;
 import com.oracle.svm.hosted.config.HybridLayout;
 import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
-import com.oracle.svm.hosted.meta.RelocatableConstant;
+import com.oracle.svm.hosted.meta.PatchedWordConstant;
+import com.oracle.svm.hosted.webimage.codegen.WebImageJSProviders;
+import com.oracle.svm.hosted.webimage.codegen.WebImageTypeControl;
+import com.oracle.svm.webimage.object.ConstantIdentityMapping;
+import com.oracle.svm.webimage.object.ObjectInspector;
+import com.oracle.svm.webimage.type.TypeControl;
 
 import jdk.graal.compiler.debug.GraalError;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
@@ -208,7 +208,7 @@ public class WebImageObjectInspector extends ObjectInspector {
         HostedUniverse hUniverse = ((WebImageTypeControl) typeControl).getHUniverse();
         for (HostedField f : fields.fields) {
             if (f.getJavaKind().isObject() && f.getType().getStorageKind().isObject()) {
-                if (!f.isValueAvailable()) {
+                if (!f.isValueAvailable(c)) {
                     // Use NULL for computed fields such as StringInternSupport.imageInternedStrings
                     // WebImageTypeControl.postProcess will patch the right value
                     members.add(NULL);
@@ -219,7 +219,7 @@ public class WebImageObjectInspector extends ObjectInspector {
                 members.add(inspectObject(fieldValue, out, identityMapping));
             } else if (f.getType().isPrimitive() || (f.getJavaKind().isObject() && f.getType().getStorageKind().isPrimitive())) {
                 JavaConstant fieldValue = constantReflection.readFieldValue(f, c);
-                if (fieldValue instanceof RelocatableConstant rc && rc.getPointer() instanceof MethodPointer pointer) {
+                if (fieldValue instanceof PatchedWordConstant pwc && pwc.getWord() instanceof MethodPointer pointer) {
                     AnalysisMethod method = (AnalysisMethod) pointer.getMethod();
                     ResolvedJavaMethod hostedMethod = hUniverse.lookup(method);
 
@@ -228,7 +228,7 @@ public class WebImageObjectInspector extends ObjectInspector {
                     typeControl.requestTypeName(hostedMethod.getDeclaringClass());
 
                     int index = identityMapping.addMethodPointer(hostedMethod);
-                    members.add(new MethodPointerType(rc, hostedMethod, index, f));
+                    members.add(new MethodPointerType(pwc, hostedMethod, index, f));
                 } else if (fieldValue instanceof PrimitiveConstant primitiveConstant) {
                     members.add(inspectObject(primitiveConstant, out, identityMapping));
                 } else {

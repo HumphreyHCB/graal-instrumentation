@@ -31,10 +31,15 @@ import org.graalvm.word.Pointer;
 
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.heap.AbstractPinnedObjectSupport;
+import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
+import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InitialLayerOnly;
+import com.oracle.svm.core.traits.SingletonTraits;
 
 import jdk.graal.compiler.nodes.NamedLocationIdentity;
 
 /** Support for pinning objects to a memory address with {@link PinnedObject}. */
+@SingletonTraits(access = AllAccess.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = InitialLayerOnly.class)
 public final class PinnedObjectSupportImpl extends AbstractPinnedObjectSupport {
     @Platforms(Platform.HOSTED_ONLY.class)
     public PinnedObjectSupportImpl() {
@@ -60,6 +65,6 @@ public final class PinnedObjectSupportImpl extends AbstractPinnedObjectSupport {
             oldValue = pinnedObjectCount.readInt(0);
         } while (!pinnedObjectCount.logicCompareAndSwapInt(0, oldValue, oldValue + delta, NamedLocationIdentity.OFF_HEAP_LOCATION));
 
-        assert oldValue < Integer.MAX_VALUE;
+        assert oldValue >= 0 && oldValue < Integer.MAX_VALUE && oldValue + delta >= 0;
     }
 }

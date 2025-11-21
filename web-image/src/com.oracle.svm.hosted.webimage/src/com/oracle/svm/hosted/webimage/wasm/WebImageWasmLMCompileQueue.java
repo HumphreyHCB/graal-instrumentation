@@ -28,8 +28,8 @@ package com.oracle.svm.hosted.webimage.wasm;
 import com.oracle.svm.core.graal.code.SubstrateBackend;
 import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 import com.oracle.svm.hosted.FeatureHandler;
-import com.oracle.svm.hosted.webimage.code.WebImageCompileQueue;
 import com.oracle.svm.hosted.meta.HostedUniverse;
+import com.oracle.svm.hosted.webimage.code.WebImageCompileQueue;
 
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.phases.common.AddressLoweringPhase;
@@ -47,7 +47,7 @@ public class WebImageWasmLMCompileQueue extends WebImageCompileQueue {
 
         suites.getLowTier().replacePlaceholder(AddressLoweringPhase.class, backend.newAddressLoweringPhase(backend.getCodeCache()));
 
-        featureHandler.forEachGraalFeature(feature -> feature.registerGraalPhases(backend.getProviders(), suites, true));
+        featureHandler.forEachGraalFeature(feature -> feature.registerGraalPhases(backend.getProviders(), suites, true, false));
         return suites;
     }
 }

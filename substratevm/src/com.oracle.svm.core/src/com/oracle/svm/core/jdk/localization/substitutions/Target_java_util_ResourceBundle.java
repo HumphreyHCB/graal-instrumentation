@@ -27,24 +27,24 @@ package com.oracle.svm.core.jdk.localization.substitutions;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.ResourceBundle.Control;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import org.graalvm.nativeimage.ImageSingletons;
 
+import com.oracle.svm.core.MissingRegistrationUtils;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
-import com.oracle.svm.core.jdk.JDK21OrEarlier;
 import com.oracle.svm.core.jdk.localization.LocalizationSupport;
 import com.oracle.svm.core.jdk.localization.substitutions.modes.OptimizedLocaleMode;
 import com.oracle.svm.core.jdk.resources.MissingResourceRegistrationUtils;
-import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.internal.loader.BootLoader;
-import sun.security.util.SecurityConstants;
 
 @TargetClass(java.util.ResourceBundle.class)
 @SuppressWarnings({"unused"})
@@ -117,9 +117,14 @@ final class Target_java_util_ResourceBundle {
         // get resource bundles for a named module only if loader is the module's class loader
         if (callerModule.isNamed() && loader == getLoader(callerModule)) {
             if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
-                MissingResourceRegistrationUtils.missingResourceBundle(baseName);
+                MissingResourceRegistrationUtils.reportResourceBundleAccess(callerModule, baseName);
             }
-            return getBundleImpl(callerModule, callerModule, baseName, locale, control);
+            return MissingRegistrationUtils.runIgnoringMissingRegistrations(new Supplier<ResourceBundle>() {
+                @Override
+                public ResourceBundle get() {
+                    return getBundleImpl(callerModule, callerModule, baseName, locale, control);
+                }
+            });
         }
 
         // find resource bundles from unnamed module of given class loader
@@ -131,32 +136,32 @@ final class Target_java_util_ResourceBundle {
                         : BootLoader.getUnnamedModule();
 
         if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
-            MissingResourceRegistrationUtils.missingResourceBundle(baseName);
+            MissingResourceRegistrationUtils.reportResourceBundleAccess(unnamedModule, baseName);
         }
-        return getBundleImpl(callerModule, unnamedModule, baseName, locale, control);
+        return MissingRegistrationUtils.runIgnoringMissingRegistrations(new Supplier<ResourceBundle>() {
+            @Override
+            public ResourceBundle get() {
+                return getBundleImpl(callerModule, unnamedModule, baseName, locale, control);
+            }
+        });
     }
 
     @Substitute
-    @SuppressWarnings({"removal", "deprecation"})
-    @TargetElement(onlyWith = JDK21OrEarlier.class)
     private static ResourceBundle getBundleFromModule(Class<?> caller,
                     Module module,
                     String baseName,
                     Locale locale,
-                    ResourceBundle.Control control) {
+                    Control control) {
         Objects.requireNonNull(module);
         Module callerModule = getCallerModule(caller);
-        if (callerModule != module) {
-            SecurityManager sm = System.getSecurityManager();
-            if (sm != null) {
-                RuntimePermission getClassLoaderPermission = ReflectionUtil.readField(SecurityConstants.class, "GET_CLASSLOADER_PERMISSION", null);
-                sm.checkPermission(getClassLoaderPermission);
-            }
-        }
+        /*
+         * TODO GR-67556 - Implement proper module-aware LocalizationSupport bundle registration to
+         * ensure we show MissingResourceRegistrationError in all relevant situations.
+         */
         if (!ImageSingletons.lookup(LocalizationSupport.class).isRegisteredBundleLookup(baseName, locale, control)) {
-            MissingResourceRegistrationUtils.missingResourceBundle(baseName);
+            MissingResourceRegistrationUtils.reportResourceBundleAccess(module, baseName);
         }
-        return getBundleImpl(callerModule, module, baseName, locale, control);
+        return MissingRegistrationUtils.runIgnoringMissingRegistrations(() -> getBundleImpl(callerModule, module, baseName, locale, control));
     }
 
     @Alias
@@ -166,5 +171,20 @@ final class Target_java_util_ResourceBundle {
     private static native ClassLoader getLoader(Module module);
 
     @Alias
-    private static native ResourceBundle getBundleImpl(Module callerModule, Module module, String baseName, Locale locale, ResourceBundle.Control control);
+    static native ResourceBundle getBundleImpl(Module callerModule, Module module, String baseName, Locale locale, ResourceBundle.Control control);
+
+    @Alias
+    static native Control getDefaultControl(Module targetModule, String baseName);
+}
+
+@TargetClass(className = "java.util.ResourceBundle$1")
+final class Target_java_util_ResourceBundle_1 {
+    @Substitute
+    @SuppressWarnings("static-method")
+    public ResourceBundle getBundle(String baseName, Locale locale, Module module) {
+        // use the given module as the caller to bypass the access check
+        return MissingRegistrationUtils.runIgnoringMissingRegistrations(() -> Target_java_util_ResourceBundle.getBundleImpl(module, module,
+                        baseName, locale,
+                        Target_java_util_ResourceBundle.getDefaultControl(module, baseName)));
+    }
 }

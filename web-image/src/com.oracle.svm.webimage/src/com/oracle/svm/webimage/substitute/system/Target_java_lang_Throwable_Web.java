@@ -32,11 +32,6 @@ import java.io.PrintWriter;
 
 import org.graalvm.nativeimage.Platforms;
 
-import com.oracle.svm.webimage.JSExceptionSupport;
-import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
-import com.oracle.svm.webimage.platform.WebImageJSPlatform;
-import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
-import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.KeepOriginal;
@@ -44,6 +39,11 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
+import com.oracle.svm.webimage.JSExceptionSupport;
+import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
+import com.oracle.svm.webimage.platform.WebImageJSPlatform;
+import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
+import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
 
 @TargetClass(Throwable.class)
 @SuppressWarnings({"static-method", "unused"})
@@ -115,15 +115,6 @@ public final class Target_java_lang_Throwable_Web {
     }
 
     @Substitute
-    private StackTraceElement[] getOurStackTrace() {
-        if (stackTrace != null) {
-            return stackTrace;
-        } else {
-            return new StackTraceElement[0];
-        }
-    }
-
-    @Substitute
     public void printStackTrace(PrintStream s) {
         JSExceptionSupport.printStackTrace(this, s::println);
     }
@@ -131,5 +122,14 @@ public final class Target_java_lang_Throwable_Web {
     @Substitute
     public void printStackTrace(PrintWriter w) {
         JSExceptionSupport.printStackTrace(this, w::println);
+    }
+}
+
+@TargetClass(java.lang.StackTraceElement.class)
+@SuppressWarnings({"static-method", "unused"})
+final class Target_java_lang_StackTraceElement_Web {
+    @Substitute
+    static StackTraceElement[] of(Object x, int depth) {
+        return new StackTraceElement[]{SyntheticStackSupport.MAIN_STACK_TRACE_ELEMENT};
     }
 }

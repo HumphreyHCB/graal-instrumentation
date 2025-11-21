@@ -28,15 +28,15 @@ import java.util.EnumMap;
 import java.util.Locale;
 
 import org.graalvm.webimage.api.JSResource;
-import org.graalvm.nativeimage.AnnotationAccess;
 
 import com.oracle.graal.pointsto.infrastructure.GraphProvider;
 import com.oracle.graal.pointsto.meta.HostedProviders;
-import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
-import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
+import com.oracle.svm.hosted.phases.HostedGraphKit;
 import com.oracle.svm.hosted.webimage.js.JSBody;
 import com.oracle.svm.hosted.webimage.js.JSBodyWithExceptionNode;
-import com.oracle.svm.hosted.phases.HostedGraphKit;
+import com.oracle.svm.util.AnnotationUtil;
+import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
+import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
 
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -79,7 +79,7 @@ public class WebImageHostedGraphKit extends HostedGraphKit {
     public JSBody createJSBody(JSBody.JSCode jsCode, ResolvedJavaMethod method, ValueNode[] argNodes, Stamp returnStamp, FrameStateBuilder state, int bci,
                     ResolvedJavaMethod exceptionHandler) {
         ExceptionObjectNode exceptionObject = createExceptionObjectNode(state, bci);
-        boolean declaresResource = AnnotationAccess.isAnnotationPresent(method.getDeclaringClass(), JSResource.class);
+        boolean declaresResource = AnnotationUtil.isAnnotationPresent(method.getDeclaringClass(), JSResource.class);
         JSBodyWithExceptionNode jsBody = append(new JSBodyWithExceptionNode(jsCode, method, argNodes, returnStamp, exceptionObject, declaresResource));
         startWithException(jsBody, exceptionObject, state, bci);
         exceptionPart();

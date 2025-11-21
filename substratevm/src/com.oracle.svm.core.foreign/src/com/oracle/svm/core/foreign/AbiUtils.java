@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import java.lang.foreign.Linker;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +41,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -49,24 +51,29 @@ import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
 
+import com.oracle.svm.core.BuildPhaseProvider.AfterAnalysis;
+import com.oracle.svm.core.SubstrateControlFlowIntegrity;
 import com.oracle.svm.core.SubstrateTargetDescription;
 import com.oracle.svm.core.aarch64.SubstrateAArch64MacroAssembler;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.foreign.AbiUtils.Adapter.Adaptation;
 import com.oracle.svm.core.graal.code.AssignedLocation;
+import com.oracle.svm.core.graal.code.SubstrateBackendWithAssembler;
 import com.oracle.svm.core.headers.LibC;
 import com.oracle.svm.core.headers.WindowsAPIs;
+import com.oracle.svm.core.heap.UnknownPrimitiveField;
 import com.oracle.svm.core.util.BasedOnJDKClass;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.asm.Label;
 import jdk.graal.compiler.asm.aarch64.AArch64Address;
 import jdk.graal.compiler.asm.aarch64.AArch64MacroAssembler;
 import jdk.graal.compiler.asm.amd64.AMD64Address;
-import jdk.graal.compiler.asm.amd64.AMD64Assembler;
 import jdk.graal.compiler.asm.amd64.AMD64BaseAssembler;
+import jdk.graal.compiler.asm.amd64.AMD64MacroAssembler;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.calc.AddNode;
@@ -83,7 +90,6 @@ import jdk.internal.foreign.abi.SharedUtils;
 import jdk.internal.foreign.abi.VMStorage;
 import jdk.internal.foreign.abi.aarch64.AArch64Architecture;
 import jdk.internal.foreign.abi.x64.X86_64Architecture;
-import jdk.internal.foreign.abi.x64.sysv.CallArranger;
 import jdk.vm.ci.aarch64.AArch64;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.Register;
@@ -115,7 +121,9 @@ public abstract class AbiUtils {
             CaptureBufferAddress
         }
 
+        @Platforms(Platform.HOSTED_ONLY.class)
         public static class Result {
+            @Platforms(Platform.HOSTED_ONLY.class)
             public record FullNativeAdaptation(
                             Map<Extracted, ValueNode> extractedArguments,
                             List<ValueNode> arguments,
@@ -128,15 +136,17 @@ public abstract class AbiUtils {
                 }
             }
 
+            @Platforms(Platform.HOSTED_ONLY.class)
             public record TypeAdaptation(List<AssignedLocation> parametersAssignment, MethodType callType) {
             }
         }
 
+        @Platforms(Platform.HOSTED_ONLY.class)
         public static Result.FullNativeAdaptation adaptToNative(AbiUtils self, List<Adaptation> adaptations, List<ValueNode> originalArguments, NativeEntryPointInfo nep) {
-            originalArguments = Collections.unmodifiableList(originalArguments);
+            List<ValueNode> originalUnmodifiableArguments = Collections.unmodifiableList(originalArguments);
 
             AssignedLocation[] originalAssignment = self.toMemoryAssignment(nep.parametersAssignment(), false);
-            VMError.guarantee(allEqual(adaptations.size(), originalArguments.size(), nep.methodType().parameterCount(), originalAssignment.length));
+            VMError.guarantee(allEqual(adaptations.size(), originalUnmodifiableArguments.size(), nep.methodType().parameterCount(), originalAssignment.length));
 
             Map<Extracted, ValueNode> extractedArguments = new EnumMap<>(Extracted.class);
             List<ValueNode> arguments = new ArrayList<>();
@@ -151,7 +161,7 @@ public abstract class AbiUtils {
                     adaptation = NOOP;
                 }
 
-                arguments.addAll(adaptation.apply(originalArguments.get(i), extractedArguments, originalArguments, i, nodesToAppendToGraph::add));
+                arguments.addAll(adaptation.apply(originalUnmodifiableArguments.get(i), extractedArguments, originalUnmodifiableArguments, i, nodesToAppendToGraph::add));
                 assignment.addAll(adaptation.apply(originalAssignment[i]));
                 argumentTypes.addAll(adaptation.apply(nep.methodType().parameterType(i)));
 
@@ -172,6 +182,7 @@ public abstract class AbiUtils {
                             MethodType.methodType(nep.methodType().returnType(), argumentTypes), nodesToAppendToGraph);
         }
 
+        @Platforms(Platform.HOSTED_ONLY.class)
         public static Result.TypeAdaptation adaptFromNative(AbiUtils self, List<Adaptation> adaptations, JavaEntryPointInfo jep) {
             AssignedLocation[] originalAssignment = self.toMemoryAssignment(jep.parametersAssignment(), false);
 
@@ -243,7 +254,7 @@ public abstract class AbiUtils {
             return new ExtractSingle(as, type);
         }
 
-        public static Adaptation extractSegmentPair(Extracted as, Class<?> type) {
+        public static Adaptation extractSegmentPair(Extracted as) {
             return new ExtractSegmentPair(as);
         }
 
@@ -321,9 +332,9 @@ public abstract class AbiUtils {
          * (segments allocated using an Arena), and these have a method `unsafeGetOffset` which
          * straightforwardly returns the raw pointer. <br>
          * However, when `allowHeapAccess` is true (the argument to Linker.Option.critical), one may
-         * pass a {@link HeapMemorySegmentImpl} as well. For reasons detailed in its documentation,
-         * heap segments are represented as an Object + offset pair, where the raw pointer should be
-         * derived from their sum. <br>
+         * pass a {@link jdk.internal.foreign.HeapMemorySegmentImpl} as well. For reasons detailed
+         * in its documentation, heap segments are represented as an Object + offset pair, where the
+         * raw pointer should be derived from their sum. <br>
          * Hence, when `allowHeapAccess` is true,
          * {@link CallArranger.UnboxBindingCalculator#getBindings(Class, MemoryLayout)} passes two
          * arguments for every AddressLayout, the result of `unsafeGetBase` (of type Object) and
@@ -337,6 +348,7 @@ public abstract class AbiUtils {
          * {@code null} is when Linker.Option.critical(true) is passed. See
          * {@link CallArranger.UnboxBindingCalculator#getBindings(Class, MemoryLayout)}.
          */
+        @SuppressWarnings("javadoc")
         private static final class ComputeAddressFromSegmentPair extends Adaptation {
             private static final ComputeAddressFromSegmentPair SINGLETON = new ComputeAddressFromSegmentPair();
 
@@ -491,6 +503,21 @@ public abstract class AbiUtils {
         return ImageSingletons.lookup(AbiUtils.class);
     }
 
+    /**
+     * Specifies if a method handle invoked by an upcall stub needs to drop its return value in case
+     * of an in-memory return type. See also: {@link java.lang.invoke.MethodHandles#dropReturn} and
+     * {@code jdk.internal.foreign.abi.SharedUtils#adaptUpcallForIMR}
+     */
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public abstract boolean dropReturn();
+
+    /**
+     * Calls method {@code isInMemoryReturn} of the appropriate {@code CallArranger}. This method
+     * determines, if a given return type requires an in-memory return on the current platform.
+     */
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public abstract boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout);
+
     protected abstract CallingSequence makeCallingSequence(MethodType type, FunctionDescriptor desc, boolean forUpcall, LinkerOptions options);
 
     /**
@@ -499,7 +526,7 @@ public abstract class AbiUtils {
      */
     @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/java.base/share/classes/jdk/internal/foreign/abi/AbstractLinker.java#L99")
     @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/java.base/share/classes/jdk/internal/foreign/abi/DowncallLinker.java#L71-L85")
-    public NativeEntryPointInfo makeNativeEntrypoint(FunctionDescriptor desc, LinkerOptions linkerOptions) {
+    public final NativeEntryPointInfo makeNativeEntrypoint(FunctionDescriptor desc, LinkerOptions linkerOptions) {
         // From Linker.downcallHandle implemented in AbstractLinker.downcallHandle:
         // From AbstractLinker.downcallHandle0
         MethodType type = desc.toMethodType();
@@ -519,9 +546,9 @@ public abstract class AbiUtils {
                         linkerOptions.allowsHeapAccess());
     }
 
-    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/java.base/share/classes/jdk/internal/foreign/abi/AbstractLinker.java#L124")
+    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+13/src/java.base/share/classes/jdk/internal/foreign/abi/AbstractLinker.java#L126")
     @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/java.base/share/classes/jdk/internal/foreign/abi/UpcallLinker.java#L62-L110")
-    public JavaEntryPointInfo makeJavaEntryPoint(FunctionDescriptor desc, LinkerOptions linkerOptions) {
+    public final JavaEntryPointInfo makeJavaEntryPoint(FunctionDescriptor desc, LinkerOptions linkerOptions) {
         // Linker.upcallStub implemented in AbstractLinker.upcallStub
         MethodType type = desc.toMethodType();
 
@@ -583,7 +610,7 @@ public abstract class AbiUtils {
             if (nep.allowHeapAccess()) {
                 VMError.guarantee(storages[current] != null && storages[current + 1] == null);
                 // consumes two parameters (i.e. object + offset pair)
-                handleCriticalWithHeapAccess(nep, current + 1, adaptations, Adapter.extractSegmentPair(Adapter.Extracted.CaptureBufferAddress, long.class));
+                handleCriticalWithHeapAccess(nep, current + 1, adaptations, Adapter.extractSegmentPair(Adapter.Extracted.CaptureBufferAddress));
                 current += 2;
             } else {
                 adaptations.set(current, Adapter.extract(Adapter.Extracted.CaptureBufferAddress, long.class));
@@ -602,6 +629,7 @@ public abstract class AbiUtils {
     }
 
     @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-24+27/src/java.base/share/classes/jdk/internal/foreign/abi/x64/sysv/CallArranger.java#L280-L290")
+    @Platforms(Platform.HOSTED_ONLY.class)
     private static void handleCriticalWithHeapAccess(NativeEntryPointInfo nep, int i, List<Adaptation> adaptations, Adaptation adaptation) {
         VMError.guarantee(nep.allowHeapAccess(), "A storage may only be null when the Linker.Option.critical(true) option is passed.");
         VMError.guarantee(
@@ -645,11 +673,40 @@ public abstract class AbiUtils {
 
     public abstract int trampolineSize();
 
-    record TrampolineTemplate(byte[] assemblyTemplate, int isolateOffset, int methodHandleOffset, int stubOffset) {
+    public static class TrampolineTemplate {
+
+        private final byte[] assemblyTemplate;
+
+        /*
+         * These fields will only be filled after the analysis, when an assembler is available.
+         * Prevent optimizations that constant-fold these fields already during analysis.
+         */
+
+        @UnknownPrimitiveField(availability = AfterAnalysis.class) //
+        private int isolateOffset;
+        @UnknownPrimitiveField(availability = AfterAnalysis.class) //
+        private int methodHandleOffset;
+        @UnknownPrimitiveField(availability = AfterAnalysis.class) //
+        private int stubOffset;
+
+        public TrampolineTemplate(byte[] assemblyTemplate) {
+            this.assemblyTemplate = assemblyTemplate;
+        }
+
+        @Platforms(Platform.HOSTED_ONLY.class)
+        public void setTemplate(byte[] code, int isolateOff, int methodHandleOff, int stubOff) {
+            assert code.length == this.assemblyTemplate.length;
+            System.arraycopy(code, 0, this.assemblyTemplate, 0, this.assemblyTemplate.length);
+            this.isolateOffset = isolateOff;
+            this.methodHandleOffset = methodHandleOff;
+            this.stubOffset = stubOff;
+        }
+
         public Pointer write(Pointer at, Isolate isolate, Word methodHandle, Word stubPointer) {
             for (int i = 0; i < assemblyTemplate.length; ++i) {
                 at.writeByte(i, assemblyTemplate[i]);
             }
+
             at.writeWord(isolateOffset, isolate);
             at.writeWord(methodHandleOffset, methodHandle);
             at.writeWord(stubOffset, stubPointer);
@@ -659,7 +716,7 @@ public abstract class AbiUtils {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public abstract TrampolineTemplate generateTrampolineTemplate();
+    abstract void generateTrampolineTemplate(SubstrateBackendWithAssembler<?> backend, TrampolineTemplate template);
 }
 
 class ABIs {
@@ -689,6 +746,7 @@ class ABIs {
         }
 
         @Override
+        @Platforms(Platform.HOSTED_ONLY.class)
         protected List<Adapter.Adaptation> generateAdaptations(NativeEntryPointInfo nep) {
             return fail();
         }
@@ -713,8 +771,18 @@ class ABIs {
         }
 
         @Override
-        public TrampolineTemplate generateTrampolineTemplate() {
-            return null;
+        public void generateTrampolineTemplate(SubstrateBackendWithAssembler<?> backend, TrampolineTemplate template) {
+            fail();
+        }
+
+        @Override
+        public boolean dropReturn() {
+            return fail();
+        }
+
+        @Override
+        public boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout) {
+            return fail();
         }
     }
 
@@ -722,6 +790,10 @@ class ABIs {
     @BasedOnJDKClass(jdk.internal.foreign.abi.DowncallLinker.class)
     @BasedOnJDKClass(jdk.internal.foreign.abi.UpcallLinker.class)
     abstract static class ARM64 extends AbiUtils {
+
+        @Platforms(Platform.HOSTED_ONLY.class) //
+        private static final Method IS_IN_MEMORY_RETURN = ReflectionUtil.lookupMethod(jdk.internal.foreign.abi.aarch64.CallArranger.class, "isInMemoryReturn", Optional.class);
+
         @Override
         public Registers upcallSpecialArgumentsRegisters() {
             return new Registers(SubstrateAArch64MacroAssembler.scratch1, SubstrateAArch64MacroAssembler.scratch2);
@@ -771,8 +843,8 @@ class ABIs {
 
         @Platforms(Platform.HOSTED_ONLY.class)
         @Override
-        public TrampolineTemplate generateTrampolineTemplate() {
-            AArch64MacroAssembler masm = new SubstrateAArch64MacroAssembler(ConfigurationValues.getTarget());
+        public void generateTrampolineTemplate(SubstrateBackendWithAssembler<?> backend, TrampolineTemplate template) {
+            AArch64MacroAssembler masm = (AArch64MacroAssembler) backend.createAssemblerNoOptions();
 
             Register mhRegister = upcallSpecialArgumentsRegisters().methodHandle();
             Register isolateRegister = upcallSpecialArgumentsRegisters().isolate();
@@ -808,12 +880,22 @@ class ABIs {
             masm.jmp(scratch);
 
             assert trampolineSize() >= masm.position();
-            masm.align(trampolineSize());
 
-            byte[] assembly = masm.close(true);
+            byte[] assembly = masm.closeAligned(true, trampolineSize());
             assert assembly.length == trampolineSize();
 
-            return new TrampolineTemplate(assembly, posIsolate, posMHArray, posCallTarget);
+            template.setTemplate(assembly, posIsolate, posMHArray, posCallTarget);
+        }
+
+        @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+13/src/java.base/share/classes/jdk/internal/foreign/abi/aarch64/CallArranger.java#L195")
+        @Override
+        public boolean dropReturn() {
+            return true;
+        }
+
+        @Override
+        public boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout) {
+            return ReflectionUtil.invokeMethod(IS_IN_MEMORY_RETURN, null, returnLayout);
         }
     }
 
@@ -854,6 +936,7 @@ class ABIs {
     @BasedOnJDKClass(jdk.internal.foreign.abi.UpcallLinker.class)
     abstract static class X86_64 extends AbiUtils {
 
+        @Override
         protected abstract CallingSequence makeCallingSequence(MethodType type, FunctionDescriptor desc, boolean forUpcall, LinkerOptions options);
 
         @Override
@@ -885,7 +968,7 @@ class ABIs {
                 storages[i++] = switch (move.type()) {
                     case X86_64Architecture.StorageType.PLACEHOLDER -> AssignedLocation.placeholder();
                     case X86_64Architecture.StorageType.INTEGER -> {
-                        Register reg = AMD64.cpuRegisters[move.indexOrOffset()];
+                        Register reg = AMD64.cpuRegisters.get(move.indexOrOffset());
                         assert reg.name.equals(move.debugName());
                         assert reg.getRegisterCategory().equals(AMD64.CPU);
                         yield AssignedLocation.forRegister(reg, JavaKind.Long);
@@ -895,7 +978,7 @@ class ABIs {
                          * Only the first four xmm registers should ever be used; in particular,
                          * this means we never need to index in xmmRegistersAVX512
                          */
-                        Register reg = AMD64.xmmRegistersSSE[move.indexOrOffset()];
+                        Register reg = AMD64.xmmRegistersSSE.get(move.indexOrOffset());
                         assert reg.name.equals(move.debugName());
                         assert reg.getRegisterCategory().equals(AMD64.XMM);
                         yield AssignedLocation.forRegister(reg, JavaKind.Double);
@@ -921,9 +1004,9 @@ class ABIs {
 
         @Platforms(Platform.HOSTED_ONLY.class)
         @Override
-        public TrampolineTemplate generateTrampolineTemplate() {
+        public void generateTrampolineTemplate(SubstrateBackendWithAssembler<?> backend, TrampolineTemplate template) {
             // Generate the trampoline
-            AMD64Assembler asm = new AMD64Assembler(ConfigurationValues.getTarget());
+            AMD64MacroAssembler asm = (AMD64MacroAssembler) backend.createAssemblerNoOptions();
             var odas = new ArrayList<AMD64BaseAssembler.OperandDataAnnotation>(3);
             // Collect the positions of the address in the movq instructions.
             asm.setCodePatchingAnnotationConsumer(ca -> {
@@ -935,6 +1018,7 @@ class ABIs {
             Register mhRegister = upcallSpecialArgumentsRegisters().methodHandle();
             Register isolateRegister = upcallSpecialArgumentsRegisters().isolate();
 
+            asm.maybeEmitIndirectTargetMarker();
             /* Store isolate in the assigned register */
             asm.movq(isolateRegister, 0L, true);
             /* r10 points in the mh array */
@@ -944,29 +1028,38 @@ class ABIs {
             /* rax contains the stub address */
             asm.movq(rax, 0L, true);
             /* executes the stub */
-            asm.jmp(new AMD64Address(rax, 0));
+            if (SubstrateControlFlowIntegrity.useSoftwareCFI()) {
+                asm.movq(rax, new AMD64Address(rax, 0));
+                asm.jmp(rax);
+            } else {
+                asm.jmp(new AMD64Address(rax, 0));
+            }
 
             assert trampolineSize() - asm.position() >= 0;
-            asm.nop(trampolineSize() - asm.position());
 
-            byte[] assembly = asm.close(true);
+            byte[] assembly = asm.closeAligned(true, trampolineSize());
             assert assembly.length == trampolineSize();
             assert odas.size() == 3;
             assert odas.stream().allMatch(oda -> oda.operandSize == 8);
 
-            return new TrampolineTemplate(assembly, odas.get(0).operandPosition, odas.get(1).operandPosition, odas.get(2).operandPosition);
+            template.setTemplate(assembly, odas.get(0).operandPosition, odas.get(1).operandPosition, odas.get(2).operandPosition);
         }
     }
 
     @BasedOnJDKClass(jdk.internal.foreign.abi.x64.sysv.SysVx64Linker.class)
     @BasedOnJDKClass(jdk.internal.foreign.abi.x64.sysv.CallArranger.class)
     static final class SysV extends X86_64 {
+
+        @Platforms(Platform.HOSTED_ONLY.class) //
+        private static final Method IS_IN_MEMORY_RETURN = ReflectionUtil.lookupMethod(jdk.internal.foreign.abi.x64.sysv.CallArranger.class, "isInMemoryReturn", Optional.class);
+
         @Override
         protected CallingSequence makeCallingSequence(MethodType type, FunctionDescriptor desc, boolean forUpcall, LinkerOptions options) {
             return jdk.internal.foreign.abi.x64.sysv.CallArranger.getBindings(type, desc, forUpcall, options).callingSequence();
         }
 
         @Override
+        @Platforms(Platform.HOSTED_ONLY.class)
         protected List<Adapter.Adaptation> generateAdaptations(NativeEntryPointInfo nep) {
             var adaptations = super.generateAdaptations(nep);
             var assignments = nep.parametersAssignment();
@@ -1002,11 +1095,26 @@ class ABIs {
         public Map<String, MemoryLayout> canonicalLayouts() {
             return SharedUtils.canonicalLayouts(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT);
         }
+
+        @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+13/src/java.base/share/classes/jdk/internal/foreign/abi/x64/sysv/CallArranger.java#L147")
+        @Override
+        public boolean dropReturn() {
+            return true;
+        }
+
+        @Override
+        public boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout) {
+            return ReflectionUtil.invokeMethod(IS_IN_MEMORY_RETURN, null, returnLayout);
+        }
     }
 
     @BasedOnJDKClass(jdk.internal.foreign.abi.x64.windows.Windowsx64Linker.class)
     @BasedOnJDKClass(jdk.internal.foreign.abi.x64.windows.CallArranger.class)
     static final class Win64 extends X86_64 {
+
+        @Platforms(Platform.HOSTED_ONLY.class) //
+        private static final Method IS_IN_MEMORY_RETURN = ReflectionUtil.lookupMethod(jdk.internal.foreign.abi.x64.windows.CallArranger.class, "isInMemoryReturn", Optional.class);
+
         @Override
         protected CallingSequence makeCallingSequence(MethodType type, FunctionDescriptor desc, boolean forUpcall, LinkerOptions options) {
             return jdk.internal.foreign.abi.x64.windows.CallArranger.getBindings(type, desc, forUpcall, options).callingSequence();
@@ -1023,6 +1131,7 @@ class ABIs {
          * assignments of float/double parameters to a cpu register.
          */
         @Override
+        @Platforms(Platform.HOSTED_ONLY.class)
         protected List<Adapter.Adaptation> generateAdaptations(NativeEntryPointInfo nep) {
             List<Adapter.Adaptation> adaptations = super.generateAdaptations(nep);
 
@@ -1057,6 +1166,17 @@ class ABIs {
         @Override
         public Map<String, MemoryLayout> canonicalLayouts() {
             return SharedUtils.canonicalLayouts(ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_CHAR);
+        }
+
+        @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+13/src/java.base/share/classes/jdk/internal/foreign/abi/x64/windows/CallArranger.java#L139")
+        @Override
+        public boolean dropReturn() {
+            return false;
+        }
+
+        @Override
+        public boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout) {
+            return ReflectionUtil.invokeMethod(IS_IN_MEMORY_RETURN, null, returnLayout);
         }
     }
 

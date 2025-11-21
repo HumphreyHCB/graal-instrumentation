@@ -24,6 +24,8 @@
  */
 package com.oracle.svm.hosted.imagelayer;
 
+import static com.oracle.graal.pointsto.ObjectScanner.OtherReason;
+import static com.oracle.graal.pointsto.ObjectScanner.ScanReason;
 import static com.oracle.svm.hosted.methodhandles.InjectedInvokerRenamingSubstitutionProcessor.isInjectedInvokerType;
 import static com.oracle.svm.hosted.methodhandles.MethodHandleInvokerRenamingSubstitutionProcessor.isMethodHandleType;
 import static com.oracle.svm.hosted.reflect.proxy.ProxyRenamingSubstitutionProcessor.isProxyType;
@@ -36,18 +38,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageSingletons;
 
-import com.oracle.graal.pointsto.ObjectScanner;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapInstance;
 import com.oracle.graal.pointsto.heap.ImageHeapObjectArray;
 import com.oracle.graal.pointsto.heap.ImageHeapPrimitiveArray;
-import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
+import com.oracle.svm.util.OriginalMethodProvider;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -57,7 +59,9 @@ import com.oracle.graal.pointsto.meta.PointsToAnalysisField;
 import com.oracle.graal.pointsto.meta.PointsToAnalysisMethod;
 import com.oracle.graal.pointsto.meta.PointsToAnalysisType;
 import com.oracle.graal.pointsto.util.AnalysisError;
+import com.oracle.svm.core.c.CGlobalDataImpl;
 import com.oracle.svm.core.c.struct.CInterfaceLocationIdentity;
+import com.oracle.svm.core.graal.code.CGlobalDataInfo;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.DynamicHubCompanion;
 import com.oracle.svm.core.option.HostedOptionValues;
@@ -67,6 +71,9 @@ import com.oracle.svm.core.threadlocal.VMThreadLocalInfo;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ImageClassLoader;
 import com.oracle.svm.hosted.VMFeature;
+import com.oracle.svm.hosted.c.AppLayerCGlobalTracking;
+import com.oracle.svm.hosted.c.CGlobalDataFeature;
+import com.oracle.svm.hosted.c.InitialLayerCGlobalTracking;
 import com.oracle.svm.hosted.code.FactoryMethod;
 import com.oracle.svm.hosted.code.IncompatibleClassChangeFallbackMethod;
 import com.oracle.svm.hosted.meta.HostedArrayClass;
@@ -83,7 +90,7 @@ import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.debug.CounterKey;
 import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.graal.compiler.nodes.FieldLocationIdentity;
-import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
+import jdk.graal.compiler.nodes.NodeClassMap;
 import jdk.graal.compiler.util.ObjectCopier;
 import jdk.graal.compiler.util.ObjectCopierInputStream;
 import jdk.graal.compiler.util.ObjectCopierOutputStream;
@@ -91,19 +98,18 @@ import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 
 public class SVMImageLayerSnapshotUtil {
-    public static final String FILE_NAME_PREFIX = "layer-snapshot-";
-    public static final String FILE_EXTENSION = ".lsb";
-    public static final String GRAPHS_FILE_NAME_PREFIX = "layer-snapshot-graphs-";
-    public static final String GRAPHS_FILE_EXTENSION = ".big";
 
     public static final String CONSTRUCTOR_NAME = "<init>";
     public static final String CLASS_INIT_NAME = "<clinit>";
 
-    public static final String PERSISTED = "persisted";
+    public static final String PERSISTED = "Persisted in a previous layer.";
     public static final String TRACKED_REASON = "reachable from a graph";
+    public static final ScanReason PERSISTED_CONSTANT = new OtherReason("Constant persisted in a previous layer.");
 
     public static final int UNDEFINED_CONSTANT_ID = -1;
     public static final int UNDEFINED_FIELD_INDEX = -1;
+    public static final int UNDEFINED_KEY_STORE_ID = -1;
+    public static final int UNDEFINED_SINGLETON_OBJ_ID = -1;
 
     public static final String GENERATED_SERIALIZATION = "jdk.internal.reflect.GeneratedSerializationConstructorAccessor";
 
@@ -121,8 +127,7 @@ public class SVMImageLayerSnapshotUtil {
     protected static final Set<Field> dynamicHubCompanionRelinkedFields = Set.of(classInitializationInfo, superHub, arrayHub);
 
     private static final Class<?> sourceRoots = ReflectionUtil.lookupClass("com.oracle.svm.hosted.image.sources.SourceCache$SourceRoots");
-    private static final Class<?> completableFuture = JavaVersionUtil.JAVA_SPEC <= 21 ? ReflectionUtil.lookupClass("com.oracle.svm.core.jdk.CompletableFutureJDK21FieldHolder")
-                    : ReflectionUtil.lookupClass("com.oracle.svm.core.jdk.CompletableFutureFieldHolder");
+    private static final Class<?> completableFuture = ReflectionUtil.lookupClass("com.oracle.svm.core.jdk.CompletableFutureFieldHolder");
 
     /**
      * This map stores the field indexes that should be relinked using the hosted value of a
@@ -210,7 +215,7 @@ public class SVMImageLayerSnapshotUtil {
      * the given type.
      */
     public Set<Integer> getRelinkedFields(AnalysisType type, AnalysisMetaAccess metaAccess) {
-        Set<Integer> result = fieldsToRelink.computeIfAbsent(type, key -> {
+        Set<Integer> result = fieldsToRelink.computeIfAbsent(type, _ -> {
             Class<?> clazz = type.getJavaClass();
             if (clazz == Class.class) {
                 return getRelinkedFields(type, dynamicHubRelinkedFields, metaAccess);
@@ -230,16 +235,19 @@ public class SVMImageLayerSnapshotUtil {
         return typeRelinkedFieldsSet.stream().map(metaAccess::lookupJavaField).map(AnalysisField::getPosition).collect(Collectors.toSet());
     }
 
-    public SVMGraphEncoder getGraphEncoder() {
-        return new SVMGraphEncoder(externalValues);
+    public SVMGraphEncoder getGraphEncoder(NodeClassMap nodeClassMap) {
+        return new SVMGraphEncoder(externalValues, nodeClassMap);
     }
 
-    public AbstractSVMGraphDecoder getGraphHostedToAnalysisElementsDecoder(SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider) {
-        return new SVMGraphHostedToAnalysisElementsDecoder(EncodedGraph.class.getClassLoader(), imageLayerLoader, analysisMethod, snippetReflectionProvider);
+    public AbstractSVMGraphDecoder getGraphHostedToAnalysisElementsDecoder(SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider,
+                    NodeClassMap nodeClassMap) {
+
+        return new SVMGraphHostedToAnalysisElementsDecoder(EncodedGraph.class.getClassLoader(), imageLayerLoader, analysisMethod, snippetReflectionProvider, nodeClassMap);
     }
 
-    public AbstractSVMGraphDecoder getGraphDecoder(SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider) {
-        return new SVMGraphDecoder(EncodedGraph.class.getClassLoader(), imageLayerLoader, analysisMethod, snippetReflectionProvider);
+    public AbstractSVMGraphDecoder getGraphDecoder(SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod,
+                    SnippetReflectionProvider snippetReflectionProvider, NodeClassMap nodeClassMap) {
+        return new SVMGraphDecoder(EncodedGraph.class.getClassLoader(), imageLayerLoader, analysisMethod, snippetReflectionProvider, nodeClassMap);
     }
 
     /**
@@ -252,14 +260,6 @@ public class SVMImageLayerSnapshotUtil {
     public void initializeExternalValues() {
         assert externalValues == null : "The external values should be computed only once.";
         externalValues = ObjectCopier.Encoder.gatherExternalValues(externalValueFields);
-    }
-
-    public static String snapshotFileName(String imageName) {
-        return FILE_NAME_PREFIX + imageName + FILE_EXTENSION;
-    }
-
-    public static String snapshotGraphsFileName(String imageName) {
-        return GRAPHS_FILE_NAME_PREFIX + imageName + GRAPHS_FILE_EXTENSION;
     }
 
     public String getTypeDescriptor(AnalysisType type) {
@@ -303,7 +303,13 @@ public class SVMImageLayerSnapshotUtil {
         if (originalMethod != null) {
             return addModuleName(originalMethod.toString(), moduleName);
         }
-        return addModuleName(getQualifiedName(method), moduleName);
+        /*
+         * The wrapped qualified method is needed here as the AnalysisMethod replaces unresolved
+         * parameter or return types with java.lang.Object, potentially causing method descriptor
+         * duplication. The wrapped method signature preserves the original type information,
+         * preventing this issue.
+         */
+        return addModuleName(getWrappedQualifiedName(method), moduleName);
     }
 
     /*
@@ -313,7 +319,7 @@ public class SVMImageLayerSnapshotUtil {
      */
     private static String getGeneratedSerializationName(AnalysisType type) {
         Class<?> constructorAccessor = type.getJavaClass();
-        SerializationSupport serializationRegistry = SerializationSupport.singleton();
+        SerializationSupport serializationRegistry = SerializationSupport.currentLayer();
         SerializationSupport.SerializationLookupKey serializationLookupKey = serializationRegistry.getKeyFromConstructorAccessorClass(constructorAccessor);
         return generatedSerializationClassName(serializationLookupKey);
     }
@@ -330,9 +336,13 @@ public class SVMImageLayerSnapshotUtil {
         return method.getSignature().getReturnType().toJavaName(true) + " " + method.getQualifiedName();
     }
 
+    private static String getWrappedQualifiedName(AnalysisMethod method) {
+        return method.wrapped.format("%R %H.%n(%P)");
+    }
+
     public static void forcePersistConstant(ImageHeapConstant imageHeapConstant) {
         AnalysisUniverse universe = imageHeapConstant.getType().getUniverse();
-        universe.getHeapScanner().markReachable(imageHeapConstant, ObjectScanner.OtherReason.PERSISTED);
+        universe.getHeapScanner().markReachable(imageHeapConstant, PERSISTED_CONSTANT);
 
         imageHeapConstant.getType().registerAsTrackedAcrossLayers(imageHeapConstant);
         /* If this is a Class constant persist the corresponding type. */
@@ -345,7 +355,7 @@ public class SVMImageLayerSnapshotUtil {
 
     public static class SVMGraphEncoder extends ObjectCopier.Encoder {
         @SuppressWarnings("this-escape")
-        public SVMGraphEncoder(Map<Object, Field> externalValues) {
+        public SVMGraphEncoder(Map<Object, Field> externalValues, NodeClassMap nodeClassMap) {
             super(externalValues);
             addBuiltin(new ImageHeapConstantBuiltIn(null));
             addBuiltin(new AnalysisTypeBuiltIn(null));
@@ -359,6 +369,12 @@ public class SVMImageLayerSnapshotUtil {
             addBuiltin(new CInterfaceLocationIdentityBuiltIn());
             addBuiltin(new FastThreadLocalLocationIdentityBuiltIn());
             addBuiltin(new VMThreadLocalInfoBuiltIn());
+            LayeredCGlobalTracking cGlobalTracking = new LayeredCGlobalTracking(CGlobalDataFeature.singleton().getInitialLayerCGlobalTracking(), null);
+            addBuiltin(new CGlobalDataImplBuiltIn(cGlobalTracking));
+            addBuiltin(new CGlobalDataInfoBuiltIn(cGlobalTracking));
+            if (nodeClassMap != null) {
+                addBuiltin(new NodeClassMapBuiltin(nodeClassMap));
+            }
         }
 
         @Override
@@ -377,7 +393,8 @@ public class SVMImageLayerSnapshotUtil {
         private final HostedImageLayerBuildingSupport imageLayerBuildingSupport;
 
         @SuppressWarnings("this-escape")
-        public AbstractSVMGraphDecoder(ClassLoader classLoader, SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider) {
+        public AbstractSVMGraphDecoder(ClassLoader classLoader, SVMImageLayerLoader imageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider,
+                        NodeClassMap nodeClassMap) {
             super(classLoader);
             this.imageLayerBuildingSupport = imageLayerLoader.getImageLayerBuildingSupport();
             addBuiltin(new ImageHeapConstantBuiltIn(imageLayerLoader));
@@ -390,6 +407,12 @@ public class SVMImageLayerSnapshotUtil {
             addBuiltin(new CInterfaceLocationIdentityBuiltIn());
             addBuiltin(new FastThreadLocalLocationIdentityBuiltIn());
             addBuiltin(new VMThreadLocalInfoBuiltIn());
+            LayeredCGlobalTracking cGlobalTracking = new LayeredCGlobalTracking(null, CGlobalDataFeature.singleton().getAppLayerCGlobalTracking());
+            addBuiltin(new CGlobalDataImplBuiltIn(cGlobalTracking));
+            addBuiltin(new CGlobalDataInfoBuiltIn(cGlobalTracking));
+            if (nodeClassMap != null) {
+                addBuiltin(new NodeClassMapBuiltin(nodeClassMap));
+            }
         }
 
         @Override
@@ -401,8 +424,8 @@ public class SVMImageLayerSnapshotUtil {
     public static class SVMGraphHostedToAnalysisElementsDecoder extends AbstractSVMGraphDecoder {
         @SuppressWarnings("this-escape")
         public SVMGraphHostedToAnalysisElementsDecoder(ClassLoader classLoader, SVMImageLayerLoader svmImageLayerLoader, AnalysisMethod analysisMethod,
-                        SnippetReflectionProvider snippetReflectionProvider) {
-            super(classLoader, svmImageLayerLoader, analysisMethod, snippetReflectionProvider);
+                        SnippetReflectionProvider snippetReflectionProvider, NodeClassMap nodeClassMap) {
+            super(classLoader, svmImageLayerLoader, analysisMethod, snippetReflectionProvider, nodeClassMap);
             addBuiltin(new HostedToAnalysisTypeDecoderBuiltIn(svmImageLayerLoader));
             addBuiltin(new HostedToAnalysisMethodDecoderBuiltIn(svmImageLayerLoader));
         }
@@ -410,10 +433,37 @@ public class SVMImageLayerSnapshotUtil {
 
     public static class SVMGraphDecoder extends AbstractSVMGraphDecoder {
         @SuppressWarnings("this-escape")
-        public SVMGraphDecoder(ClassLoader classLoader, SVMImageLayerLoader svmImageLayerLoader, AnalysisMethod analysisMethod, SnippetReflectionProvider snippetReflectionProvider) {
-            super(classLoader, svmImageLayerLoader, analysisMethod, snippetReflectionProvider);
+        public SVMGraphDecoder(ClassLoader classLoader, SVMImageLayerLoader svmImageLayerLoader, AnalysisMethod analysisMethod,
+                        SnippetReflectionProvider snippetReflectionProvider, NodeClassMap nodeClassMap) {
+            super(classLoader, svmImageLayerLoader, analysisMethod, snippetReflectionProvider, nodeClassMap);
             addBuiltin(new HostedTypeBuiltIn(svmImageLayerLoader));
             addBuiltin(new HostedMethodBuiltIn(svmImageLayerLoader));
+        }
+    }
+
+    /**
+     * Builtin to replace a {@link NodeClassMap} during encoding with a placeholder so that a single
+     * map will be shared by all {@link EncodedGraph}s processed by a
+     * {@link jdk.graal.compiler.util.ObjectCopier.Encoder}.
+     */
+    public static class NodeClassMapBuiltin extends ObjectCopier.Builtin {
+        private final NodeClassMap nodeClassMap;
+
+        protected NodeClassMapBuiltin(NodeClassMap nodeClassMap) {
+            super(NodeClassMap.class);
+            this.nodeClassMap = Objects.requireNonNull(nodeClassMap);
+        }
+
+        @Override
+        public void encode(ObjectCopier.Encoder encoder, ObjectCopierOutputStream stream, Object obj) throws IOException {
+            if (nodeClassMap != obj) {
+                throw AnalysisError.shouldNotReachHere("Unexpected NodeClassMap instance encountered");
+            }
+        }
+
+        @Override
+        protected Object decode(ObjectCopier.Decoder decoder, Class<?> concreteType, ObjectCopierInputStream stream) throws IOException {
+            return nodeClassMap;
         }
     }
 
@@ -738,6 +788,70 @@ public class SVMImageLayerSnapshotUtil {
         protected Object decode(ObjectCopier.Decoder decoder, Class<?> concreteType, ObjectCopierInputStream stream) throws IOException {
             FastThreadLocal fastThreadLocal = readStaticFieldAndGetObject(decoder, stream);
             return ImageSingletons.lookup(VMThreadLocalCollector.class).forFastThreadLocal(fastThreadLocal);
+        }
+    }
+
+    static final class LayeredCGlobalTracking {
+        private final InitialLayerCGlobalTracking initialLayerTracking;
+        private final AppLayerCGlobalTracking appLayerTracking;
+
+        private LayeredCGlobalTracking(InitialLayerCGlobalTracking initialLayerTracking, AppLayerCGlobalTracking appLayerTracking) {
+            this.initialLayerTracking = initialLayerTracking;
+            this.appLayerTracking = appLayerTracking;
+        }
+
+        int getEncodedIndex(CGlobalDataImpl<?> data) {
+            return initialLayerTracking.getEncodedIndex(data);
+        }
+
+        CGlobalDataImpl<?> getCGlobalDataImpl(int index) {
+            return appLayerTracking.registerOrGetCGlobalDataImplByPersistedIndex(index);
+        }
+
+        CGlobalDataInfo getCGlobalDataInfo(int index) {
+            return appLayerTracking.registerOrGetCGlobalDataInfoByPersistedIndex(index);
+        }
+    }
+
+    private static class CGlobalDataImplBuiltIn extends ObjectCopier.Builtin {
+        private final LayeredCGlobalTracking cGlobalTracking;
+
+        CGlobalDataImplBuiltIn(LayeredCGlobalTracking cGlobalTracking) {
+            super(CGlobalDataImpl.class);
+            this.cGlobalTracking = cGlobalTracking;
+        }
+
+        @Override
+        protected void encode(ObjectCopier.Encoder encoder, ObjectCopierOutputStream stream, Object obj) throws IOException {
+            int id = cGlobalTracking.getEncodedIndex((CGlobalDataImpl<?>) obj);
+            stream.writePackedUnsignedInt(id);
+        }
+
+        @Override
+        protected Object decode(ObjectCopier.Decoder decoder, Class<?> concreteType, ObjectCopierInputStream stream) throws IOException {
+            int id = stream.readPackedUnsignedInt();
+            return cGlobalTracking.getCGlobalDataImpl(id);
+        }
+    }
+
+    private static class CGlobalDataInfoBuiltIn extends ObjectCopier.Builtin {
+        private final LayeredCGlobalTracking cGlobalTracking;
+
+        CGlobalDataInfoBuiltIn(LayeredCGlobalTracking cGlobalTracking) {
+            super(CGlobalDataInfo.class);
+            this.cGlobalTracking = cGlobalTracking;
+        }
+
+        @Override
+        protected void encode(ObjectCopier.Encoder encoder, ObjectCopierOutputStream stream, Object obj) throws IOException {
+            int id = cGlobalTracking.getEncodedIndex(((CGlobalDataInfo) obj).getData());
+            stream.writePackedUnsignedInt(id);
+        }
+
+        @Override
+        protected Object decode(ObjectCopier.Decoder decoder, Class<?> concreteType, ObjectCopierInputStream stream) throws IOException {
+            int id = stream.readPackedUnsignedInt();
+            return cGlobalTracking.getCGlobalDataInfo(id);
         }
     }
 

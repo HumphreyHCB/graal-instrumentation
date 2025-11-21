@@ -25,8 +25,8 @@
 
 package com.oracle.svm.webimage;
 
-import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
 import com.oracle.svm.core.jdk.SystemPropertiesSupport;
+import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
 
 public class WebImageSystemPropertiesSupport extends SystemPropertiesSupport {
 
@@ -57,12 +57,12 @@ public class WebImageSystemPropertiesSupport extends SystemPropertiesSupport {
 
     @Override
     protected String osNameValue() {
-        return "Unknown";
+        return "Web Image";
     }
 
     @Override
     protected String osVersionValue() {
-        return "Unknown";
+        return "0.0";
     }
 
 }

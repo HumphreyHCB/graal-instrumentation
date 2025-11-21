@@ -24,14 +24,14 @@
  */
 package com.oracle.svm.configure;
 
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.Collection;
 
-import org.graalvm.nativeimage.ImageInfo;
+import com.oracle.svm.util.StringUtil;
 
-import com.oracle.svm.util.LogUtils;
-
+import jdk.graal.compiler.java.LambdaUtils;
 import jdk.graal.compiler.util.json.JsonPrintable;
-import jdk.vm.ci.meta.MetaUtil;
 
 /**
  * Provides a representation of a Java type based on String type names. This is used to parse types
@@ -43,21 +43,26 @@ import jdk.vm.ci.meta.MetaUtil;
  * </ul>
  */
 public interface ConfigurationTypeDescriptor extends Comparable<ConfigurationTypeDescriptor>, JsonPrintable {
-    static String canonicalizeTypeName(String typeName) {
-        if (typeName == null) {
-            return null;
-        }
-        String name = typeName;
-        if (name.indexOf('[') != -1) {
-            /* accept "int[][]", "java.lang.String[]" */
-            name = MetaUtil.internalNameToJava(MetaUtil.toInternalName(name), true, true);
-        }
-        return name;
-    }
-
     enum Kind {
         NAMED,
-        PROXY
+        PROXY,
+        LAMBDA
+    }
+
+    static ConfigurationTypeDescriptor fromClass(Class<?> clazz) {
+        Class<?>[] interfaces = clazz.getInterfaces();
+        String[] interfaceNames = new String[interfaces.length];
+        for (int i = 0; i < interfaces.length; i++) {
+            interfaceNames[i] = interfaces[i].getTypeName();
+        }
+        if (Proxy.isProxyClass(clazz)) {
+            return ProxyConfigurationTypeDescriptor.fromInterfaceReflectionNames(Arrays.asList(interfaceNames));
+        } else if (LambdaUtils.isLambdaClass(clazz)) {
+            String declaringClass = StringUtil.split(clazz.getTypeName(), LambdaUtils.LAMBDA_CLASS_NAME_SUBSTRING)[0];
+            return LambdaConfigurationTypeDescriptor.fromReflectionNames(declaringClass, Arrays.asList(interfaceNames));
+        } else {
+            return NamedConfigurationTypeDescriptor.fromReflectionName(clazz.getTypeName());
+        }
     }
 
     Kind getDescriptorType();
@@ -71,11 +76,4 @@ public interface ConfigurationTypeDescriptor extends Comparable<ConfigurationTyp
      * type. This is used to filter configurations based on a String-based class filter.
      */
     Collection<String> getAllQualifiedJavaNames();
-
-    static String checkQualifiedJavaName(String javaName) {
-        if (ImageInfo.inImageBuildtimeCode() && !(javaName.indexOf('/') == -1 || javaName.indexOf('/') > javaName.lastIndexOf('.'))) {
-            LogUtils.warning("Type descriptor requires qualified Java name, not internal representation: %s", javaName);
-        }
-        return canonicalizeTypeName(javaName);
-    }
 }

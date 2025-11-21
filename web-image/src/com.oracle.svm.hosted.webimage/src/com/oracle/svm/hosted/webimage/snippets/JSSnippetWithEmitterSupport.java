@@ -27,10 +27,10 @@ package com.oracle.svm.hosted.webimage.snippets;
 
 import java.util.List;
 
-import jdk.graal.compiler.debug.GraalError;
+import com.oracle.svm.webimage.hightiercodegen.CodeGenTool;
+import com.oracle.svm.webimage.hightiercodegen.Emitter;
 
-import jdk.graal.compiler.hightiercodegen.CodeGenTool;
-import jdk.graal.compiler.hightiercodegen.Emitter;
+import jdk.graal.compiler.debug.GraalError;
 
 /**
  * A JSSnippet that is more powerful that {@link JSSnippet} because it allows the usage of

@@ -31,13 +31,14 @@ import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CodePointer;
 import org.graalvm.word.Pointer;
 
-import com.oracle.svm.webimage.wasm.code.WasmSimpleCodeInfoQueryResult;
+import com.oracle.svm.core.FrameAccess;
 import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
 import com.oracle.svm.hosted.webimage.wasm.gc.WasmHeapVerifier.ObjectReferenceVerifier;
 import com.oracle.svm.hosted.webimage.wasm.stack.WebImageWasmStackFrameVisitor;
 import com.oracle.svm.hosted.webimage.wasm.stack.WebImageWasmStackWalker;
+import com.oracle.svm.webimage.wasm.code.WasmSimpleCodeInfoQueryResult;
 
 /**
  * Verifies that all references on the stack are valid.
@@ -79,7 +80,7 @@ public class WasmStackVerifier {
             WebImageWasmStackWalker.getCodeInfo(currentIP, queryResult);
 
             for (int offset : queryResult.getOffsets()) {
-                verifyFrameReferencesVisitor.visitObjectReference(currentSP.add(offset), false, null);
+                verifyFrameReferencesVisitor.visitObjectReferences(currentSP.add(offset), false, FrameAccess.uncompressedReferenceSize(), null, 1);
             }
 
             return true;

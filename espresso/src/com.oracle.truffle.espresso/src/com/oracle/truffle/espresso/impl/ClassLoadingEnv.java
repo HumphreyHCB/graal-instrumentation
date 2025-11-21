@@ -32,13 +32,14 @@ import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.EspressoOptions;
 import com.oracle.truffle.espresso.classfile.JavaVersion;
 import com.oracle.truffle.espresso.classfile.ParsingContext;
-import com.oracle.truffle.espresso.classfile.constantpool.Utf8Constant;
 import com.oracle.truffle.espresso.classfile.descriptors.ByteSequence;
+import com.oracle.truffle.espresso.classfile.descriptors.ModifiedUTF8;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.classfile.descriptors.TypeSymbols;
 import com.oracle.truffle.espresso.classfile.perf.TimerCollection;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols;
 import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -94,14 +95,36 @@ public class ClassLoadingEnv implements LanguageAccess {
                         (loaderIsBootOrPlatform(loader) || loaderIsAppLoader(loader));
     }
 
+    public boolean isReflectPackage(Symbol<Name> pkg) {
+        /*
+         * Note: This class is created too early in the init process to make this variable a final
+         * field.
+         */
+        Symbol<Name> reflectPackage = getLanguage().getJavaVersion().java8OrEarlier()
+                        ? EspressoSymbols.Names.sun_reflect
+                        : EspressoSymbols.Names.jdk_internal_reflect;
+        return pkg == reflectPackage;
+    }
+
+    @SuppressWarnings("static-method")
+    public boolean loaderIsBoot(StaticObject loader) {
+        return StaticObject.isNull(loader);
+    }
+
     public boolean loaderIsBootOrPlatform(StaticObject loader) {
-        return StaticObject.isNull(loader) ||
+        return loaderIsBoot(loader) ||
                         (language.getJavaVersion().java9OrLater() && meta.jdk_internal_loader_ClassLoaders$PlatformClassLoader.isAssignableFrom(loader.getKlass()));
     }
 
     public boolean loaderIsAppLoader(StaticObject loader) {
-        return !StaticObject.isNull(loader) &&
+        return !loaderIsBoot(loader) &&
                         (meta.jdk_internal_loader_ClassLoaders$AppClassLoader.isAssignableFrom(loader.getKlass()));
+    }
+
+    public boolean loaderIsReflection(StaticObject loader) {
+        return meta.sun_reflect_DelegatingClassLoader != null &&
+                        !loaderIsBoot(loader) &&
+                        meta.sun_reflect_DelegatingClassLoader.isAssignableFrom(loader.getKlass());
     }
 
     public long getNewKlassId() {
@@ -176,8 +199,8 @@ public class ClassLoadingEnv implements LanguageAccess {
             }
 
             @Override
-            public Utf8Constant getOrCreateUtf8Constant(ByteSequence byteSequence) {
-                return env.getLanguage().getUtf8ConstantTable().getOrCreate(byteSequence, ensureStrongReferences);
+            public Symbol<? extends ModifiedUTF8> getOrCreateUtf8(ByteSequence byteSequence) {
+                return env.getLanguage().getUtf8Symbols().getOrCreateValidUtf8(byteSequence, ensureStrongReferences);
             }
         };
     }

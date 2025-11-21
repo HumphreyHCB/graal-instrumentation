@@ -54,7 +54,6 @@ import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.UnsignedUtils;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.core.util.coder.NativeCoder;
 
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
@@ -113,7 +112,7 @@ public final class SubstrateObjectCloneSnippets extends SubstrateTemplates imple
         if (isArrayLike) {
             if (BranchProbabilityNode.probability(FAST_PATH_PROBABILITY, LayoutEncoding.isArray(layoutEncoding))) {
                 int length = ArrayLengthNode.arrayLength(original);
-                Object newArray = java.lang.reflect.Array.newInstance(DynamicHub.toClass(hub.getComponentHub()), length);
+                Object newArray = KnownIntrinsics.unvalidatedNewArray(DynamicHub.toClass(hub.getComponentHub()), length);
                 if (LayoutEncoding.isObjectArray(layoutEncoding)) {
                     JavaMemoryUtil.copyObjectArrayForward(original, 0, newArray, 0, length, layoutEncoding);
                 } else {
@@ -149,7 +148,7 @@ public final class SubstrateObjectCloneSnippets extends SubstrateTemplates imple
             int objectOffset = refMapPos.readInt(0);
             refMapPos = refMapPos.add(4);
 
-            long count = NativeCoder.readU4(refMapPos);
+            long count = refMapPos.readInt(0);
             refMapPos = refMapPos.add(4);
 
             /* Copy non-object data. */
@@ -249,7 +248,7 @@ public final class SubstrateObjectCloneSnippets extends SubstrateTemplates imple
                 return;
             }
 
-            Arguments args = new Arguments(doClone, node.graph().getGuardsStage(), tool.getLoweringStage());
+            Arguments args = new Arguments(doClone, node.graph(), tool.getLoweringStage());
             args.add("thisObj", node.getObject());
 
             template(tool, node, args).instantiate(tool.getMetaAccess(), node, SnippetTemplate.DEFAULT_REPLACER, args);

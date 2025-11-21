@@ -31,6 +31,7 @@ import org.graalvm.word.UnsignedWord;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.heap.GCCause;
+import com.oracle.svm.core.heap.OutOfMemoryUtil;
 import com.oracle.svm.core.heap.PhysicalMemory;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.util.ReflectionUtil;
@@ -80,6 +81,8 @@ public interface CollectionPolicy {
                 return BasicCollectionPolicies.OnlyIncrementally.class;
             case "NeverCollect":
                 return BasicCollectionPolicies.NeverCollect.class;
+            case "Dynamic":
+                return DynamicCollectionPolicy.class;
         }
         throw UserError.abort("Policy %s does not exist.", name);
     }
@@ -135,8 +138,10 @@ public interface CollectionPolicy {
      * @param followingIncrementalCollection whether an incremental collection has just finished in
      *            the same safepoint. Implementations would typically decide whether to follow up
      *            with a full collection based on whether enough memory was reclaimed.
+     * @param forcedCompleteCollection whether a complete collection will eventually be forced. The
+     *            policy can still return {@code false} to do an incremental collection first.
      */
-    boolean shouldCollectCompletely(boolean followingIncrementalCollection);
+    boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection);
 
     /**
      * The current limit for the size of the entire heap, which is less than or equal to
@@ -192,8 +197,8 @@ public interface CollectionPolicy {
     UnsignedWord getMaximumOldSize();
 
     /**
-     * The maximum number of bytes that should be kept readily available for allocation or copying
-     * during collections.
+     * The maximum number of bytes that should be kept readily available for allocations after a
+     * collection. This may consider memory needed during a future collection as well.
      */
     UnsignedWord getMaximumFreeAlignedChunksSize();
 
@@ -206,8 +211,21 @@ public interface CollectionPolicy {
     int getTenuringAge();
 
     /** Called at the beginning of a collection, in the safepoint operation. */
-    void onCollectionBegin(boolean completeCollection, long requestingNanoTime);
+    void onCollectionBegin(boolean completeCollection, long beginNanoTime);
 
     /** Called before the end of a collection, in the safepoint operation. */
     void onCollectionEnd(boolean completeCollection, GCCause cause);
+
+    /** Can be overridden to recover from OOM. */
+    default boolean isOutOfMemory(UnsignedWord usedBytes) {
+        return usedBytes.aboveThan(getMaximumHeapSize());
+    }
+
+    /**
+     * Invoked after a garbage collection when the maximum heap size has been exceeded. Can be
+     * overridden to recover from OOM.
+     */
+    default void onMaximumHeapSizeExceeded() {
+        throw OutOfMemoryUtil.heapSizeExceeded();
+    }
 }

@@ -31,10 +31,6 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 
-import com.oracle.svm.webimage.platform.WebImageJSPlatform;
-import com.oracle.svm.webimage.platform.WebImagePlatform;
-import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
-import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.HostedOptionValues;
@@ -42,6 +38,10 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.hosted.ImageClassLoader;
 import com.oracle.svm.hosted.webimage.codegen.ClosureCompilerSupport;
 import com.oracle.svm.hosted.webimage.name.WebImageNamingConvention;
+import com.oracle.svm.webimage.platform.WebImageJSPlatform;
+import com.oracle.svm.webimage.platform.WebImagePlatform;
+import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
+import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.debug.GraalError;
@@ -126,12 +126,23 @@ public class WebImageOptions {
         public static final HostedOptionKey<Boolean> RuntimeDebugChecks = new HostedOptionKey<>(false);
 
         @Option(help = "Enable verification phases.")//
-        public static final OptionKey<Boolean> VerificationPhases = new OptionKey<>(false);
+        public static final HostedOptionKey<Boolean> VerificationPhases = new HostedOptionKey<>(false);
 
         @Option(help = "Dump type control graph, a graph of dependencies between types, methods, and inspected objects.")//
         public static final OptionKey<Boolean> DumpTypeControlGraph = new OptionKey<>(false);
 
+        @Option(help = "Dump the expected value of the ProvidedHostedOptions property.")//
+        public static final HostedOptionKey<Boolean> DumpProvidedHostedOptionsAndExit = new HostedOptionKey<>(false);
     }
+
+    /**
+     * Web Image only.
+     * <p>
+     * Do not read this value directly. Instead, look it up based on the selected {@link Platform}
+     * using {@link #getBackend}.
+     */
+    @Option(help = "The Web Image Backend to use.") //
+    public static final EnumOptionKey<CompilerBackend> Backend = new EnumOptionKey<>(CompilerBackend.JS);
 
     @Option(help = "Report the code sizes of different parts of the generated JavaScript image. If the closure compiler is applied, this instruments the generated javascript code by injecting labels.")//
     public static final HostedOptionKey<Boolean> ReportImageSizeBreakdown = new HostedOptionKey<>(false);

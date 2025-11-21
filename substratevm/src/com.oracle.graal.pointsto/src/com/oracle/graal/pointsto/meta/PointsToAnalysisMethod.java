@@ -43,6 +43,7 @@ import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.ConcurrentLightHashMap;
 import com.oracle.svm.common.meta.MultiMethod;
 
+import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -53,7 +54,6 @@ public final class PointsToAnalysisMethod extends AnalysisMethod {
     /** The parsing context in which given method was parsed, preserved after analysis. */
     private Object parsingReason;
 
-    private Set<InvokeTypeFlow> invokedBy;
     private Set<InvokeTypeFlow> implementationInvokedBy;
     /**
      * Unique, per method, per multi-method key, context insensitive invoke. The context insensitive
@@ -86,9 +86,6 @@ public final class PointsToAnalysisMethod extends AnalysisMethod {
 
     @Override
     public void startTrackInvocations() {
-        if (invokedBy == null) {
-            invokedBy = ConcurrentHashMap.newKeySet();
-        }
         if (implementationInvokedBy == null) {
             implementationInvokedBy = ConcurrentHashMap.newKeySet();
         }
@@ -101,9 +98,6 @@ public final class PointsToAnalysisMethod extends AnalysisMethod {
     @Override
     public boolean registerAsInvoked(Object reason) {
         assert reason instanceof InvokeTypeFlow || reason instanceof String : reason;
-        if (invokedBy != null && reason instanceof InvokeTypeFlow) {
-            invokedBy.add((InvokeTypeFlow) reason);
-        }
         return super.registerAsInvoked(unwrapInvokeReason(reason));
     }
 
@@ -130,6 +124,11 @@ public final class PointsToAnalysisMethod extends AnalysisMethod {
             return source != null ? source : "root method";
         }
         return reason;
+    }
+
+    @Override
+    public Iterable<EncodedGraph.EncodedNodeReference> getEncodedNodeReferences() {
+        return typeFlow.getMethodFlowsGraph().getNodeFlows().getKeys();
     }
 
     @Override
@@ -257,7 +256,6 @@ public final class PointsToAnalysisMethod extends AnalysisMethod {
         contextInsensitiveVirtualInvoke = null;
         contextInsensitiveSpecialInvoke = null;
         typeFlow = null;
-        invokedBy = null;
         implementationInvokedBy = null;
     }
 

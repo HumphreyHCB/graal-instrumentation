@@ -22,18 +22,24 @@
  */
 package com.oracle.truffle.espresso.jvmci.meta;
 
+import static com.oracle.truffle.espresso.jvmci.EspressoJVMCIRuntime.runtime;
 import static java.util.Objects.requireNonNull;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
+import java.util.List;
 
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.vm.ci.meta.UnresolvedJavaType;
+import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 public final class EspressoResolvedPrimitiveType extends EspressoResolvedJavaType {
     private static final EspressoResolvedPrimitiveType[] primitives;
@@ -182,6 +188,16 @@ public final class EspressoResolvedPrimitiveType extends EspressoResolvedJavaTyp
     }
 
     @Override
+    public boolean isHidden() {
+        return false;
+    }
+
+    @Override
+    public List<JavaType> getPermittedSubclasses() {
+        return null;
+    }
+
+    @Override
     public JavaKind getJavaKind() {
         return kind;
     }
@@ -239,13 +255,33 @@ public final class EspressoResolvedPrimitiveType extends EspressoResolvedJavaTyp
     }
 
     @Override
+    public ResolvedJavaType[] getDeclaredTypes() {
+        return new ResolvedJavaType[0];
+    }
+
+    @Override
     public ResolvedJavaType getEnclosingType() {
+        return null;
+    }
+
+    @Override
+    public ResolvedJavaMethod getEnclosingMethod() {
         return null;
     }
 
     @Override
     public ResolvedJavaMethod[] getDeclaredMethods(boolean forceLink) {
         return NO_METHODS;
+    }
+
+    @Override
+    public ResolvedJavaMethod[] getDeclaredConstructors(boolean forceLink) {
+        return NO_METHODS;
+    }
+
+    @Override
+    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
+        return Collections.emptyList();
     }
 
     @Override
@@ -259,18 +295,18 @@ public final class EspressoResolvedPrimitiveType extends EspressoResolvedJavaTyp
     }
 
     @Override
-    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+    public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
+        return lookupType(unresolvedJavaType, runtime().getJavaLangObject(), resolve);
+    }
+
+    @Override
+    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
         return null;
     }
 
     @Override
-    public Annotation[] getAnnotations() {
-        return NO_ANNOTATIONS;
-    }
-
-    @Override
-    public Annotation[] getDeclaredAnnotations() {
-        return NO_ANNOTATIONS;
+    public AnnotationsInfo getTypeAnnotationInfo() {
+        return null;
     }
 
     @Override
@@ -284,11 +320,20 @@ public final class EspressoResolvedPrimitiveType extends EspressoResolvedJavaTyp
     }
 
     @Override
+    public boolean isRecord() {
+        return false;
+    }
+
+    @Override
+    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
+        return null;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof EspressoResolvedPrimitiveType)) {
+        if (!(obj instanceof EspressoResolvedPrimitiveType that)) {
             return false;
         }
-        EspressoResolvedPrimitiveType that = (EspressoResolvedPrimitiveType) obj;
         return that.kind == kind;
     }
 

@@ -34,6 +34,7 @@ import com.oracle.truffle.espresso.classfile.ClassfileParser;
 import com.oracle.truffle.espresso.classfile.Constants;
 import com.oracle.truffle.espresso.classfile.JavaKind;
 import com.oracle.truffle.espresso.classfile.attributes.Attribute;
+import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
 import com.oracle.truffle.espresso.classfile.attributes.ConstantValueAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.SignatureAttribute;
 import com.oracle.truffle.espresso.classfile.descriptors.ModifiedUTF8;
@@ -81,7 +82,7 @@ import com.oracle.truffle.espresso.shared.meta.FieldAccess;
  * value (this could be either an Original Field or a Redefine Added Field) a Delegation field is
  * assigned the underlying field as a Compatible Field.
  */
-public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, Method, Field> {
+public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, Method, Field>, AttributedElement {
 
     public static final Field[] EMPTY_ARRAY = new Field[0];
 
@@ -121,17 +122,19 @@ public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, 
         return !holder.getAssumption().isValid();
     }
 
+    @Override
     public final Attribute[] getAttributes() {
         return linkedField.getParserField().getAttributes();
     }
 
+    @SuppressWarnings("unchecked")
     public final Symbol<ModifiedUTF8> getGenericSignature() {
         if (genericSignature == null) {
-            SignatureAttribute attr = (SignatureAttribute) linkedField.getAttribute(SignatureAttribute.NAME);
+            SignatureAttribute attr = getAttribute(SignatureAttribute.NAME, SignatureAttribute.class);
             if (attr == null) {
                 genericSignature = ModifiedUTF8.fromSymbol(getType());
             } else {
-                genericSignature = pool.symbolAtUnsafe(attr.getSignatureIndex());
+                genericSignature = (Symbol<ModifiedUTF8>) pool.utf8At(attr.getSignatureIndex(), "generic signature");
             }
         }
         return genericSignature;
@@ -200,10 +203,6 @@ public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, 
                 typeKlassCache = tk;
             }
         }
-    }
-
-    public final Attribute getAttribute(Symbol<Name> attrName) {
-        return linkedField.getAttribute(attrName);
     }
 
     public static Field getReflectiveFieldRoot(StaticObject seed, Meta meta) {
@@ -504,6 +503,22 @@ public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, 
     public final void setHiddenObject(StaticObject obj, Object value, boolean forceVolatile) {
         assert isHidden() : this + " is not hidden, use setObject";
         setObjectHelper(obj, value, forceVolatile);
+    }
+
+    public final void setMaybeHiddenObject(StaticObject obj, StaticObject value) {
+        setMaybeHiddenObject(obj, value, false);
+    }
+
+    public final void setMaybeHiddenObject(StaticObject obj, StaticObject value, boolean forceVolatile) {
+        setObjectHelper(obj, value, forceVolatile);
+    }
+
+    public final StaticObject getMaybeHiddenObject(StaticObject obj) {
+        return getMaybeHiddenObject(obj, false);
+    }
+
+    public final StaticObject getMaybeHiddenObject(StaticObject obj, boolean forceVolatile) {
+        return (StaticObject) getObjectHelper(obj, forceVolatile);
     }
 
     public Object compareAndExchangeHiddenObject(StaticObject obj, Object before, Object after) {
@@ -1019,7 +1034,7 @@ public class Field extends Member<Type> implements FieldRef, FieldAccess<Klass, 
     }
 
     public int getConstantValueIndex() {
-        ConstantValueAttribute a = (ConstantValueAttribute) getAttribute(Names.ConstantValue);
+        ConstantValueAttribute a = getAttribute(ConstantValueAttribute.NAME, ConstantValueAttribute.class);
         if (a == null) {
             return 0;
         }

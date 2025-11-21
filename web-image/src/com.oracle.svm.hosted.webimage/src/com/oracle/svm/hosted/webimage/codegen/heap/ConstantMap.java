@@ -24,25 +24,25 @@
  */
 package com.oracle.svm.hosted.webimage.codegen.heap;
 
-import com.oracle.graal.pointsto.ObjectScanner;
+import com.oracle.graal.pointsto.heap.ImageHeapScanner;
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
-import com.oracle.svm.webimage.JSKeyword;
-import com.oracle.svm.webimage.Labeler;
+import com.oracle.svm.core.jdk.StringInternSupport;
+import com.oracle.svm.hosted.meta.HostedField;
+import com.oracle.svm.hosted.meta.HostedMetaAccess;
+import com.oracle.svm.hosted.webimage.Labeler;
+import com.oracle.svm.hosted.webimage.WebImageHostedConfiguration;
+import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
+import com.oracle.svm.hosted.webimage.codegen.WebImageJSProviders;
+import com.oracle.svm.hosted.webimage.js.JSKeyword;
+import com.oracle.svm.hosted.webimage.metrickeys.ImageBreakdownMetricKeys;
+import com.oracle.svm.hosted.webimage.util.metrics.CodeSizeCollector;
 import com.oracle.svm.webimage.functionintrinsics.JSGenericFunctionDefinition;
+import com.oracle.svm.webimage.hightiercodegen.CodeBuffer;
 import com.oracle.svm.webimage.object.ConstantIdentityMapping;
 import com.oracle.svm.webimage.object.ConstantIdentityMapping.IdentityNode;
 import com.oracle.svm.webimage.object.ObjectInspector;
 import com.oracle.svm.webimage.object.ObjectInspector.ObjectType;
-import com.oracle.svm.core.jdk.StringInternSupport;
-import com.oracle.svm.hosted.webimage.WebImageHostedConfiguration;
-import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
-import com.oracle.svm.hosted.webimage.codegen.WebImageJSProviders;
-import com.oracle.svm.hosted.webimage.metrickeys.ImageBreakdownMetricKeys;
-import com.oracle.svm.hosted.webimage.util.metrics.CodeSizeCollector;
-import com.oracle.svm.hosted.meta.HostedField;
-import com.oracle.svm.hosted.meta.HostedMetaAccess;
 
-import jdk.graal.compiler.hightiercodegen.CodeBuffer;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.spi.IdentityHashCodeProvider;
 import jdk.vm.ci.meta.JavaConstant;
@@ -184,7 +184,7 @@ public class ConstantMap {
                         imageInternedStringsFieldIndex)).isNull() : "The ImageInternedStrings singleton must have the 'imageInternedStrings' field set to null";
 
         /* Manually snapshot the interned strings array. */
-        ((AnalysisMetaAccess) metaAccess.getWrapped()).getUniverse().getHeapScanner().rescanObject(internedStrings, ObjectScanner.OtherReason.LATE_SCAN);
+        ((AnalysisMetaAccess) metaAccess.getWrapped()).getUniverse().getHeapScanner().rescanObject(internedStrings, ImageHeapScanner.LATE_SCAN);
 
         JavaConstant internedStringsConstant = providers.getSnippetReflection().forObject(internedStrings);
         ObjectInspector.ArrayType<?> internedStringsNew = (ObjectInspector.ArrayType<?>) saveConstantObject(internedStringsConstant);

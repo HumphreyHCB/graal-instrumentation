@@ -31,12 +31,14 @@ import zipfile
 import re
 from glob import glob
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import mx
 import mx_benchmark
 import mx_sdk_benchmark
-from mx_sdk_benchmark import SUCCESSFUL_STAGE_PATTERNS
+from mx_benchmark import bm_exec_context, SingleBenchmarkManager
+from mx_sdk_benchmark import SUCCESSFUL_STAGE_PATTERNS, parse_prefixed_args
+from mx_util import StageName, Layer
 
 _suite = mx.suite("substratevm")
 
@@ -193,15 +195,21 @@ class RenaissanceNativeImageBenchmarkSuite(mx_sdk_benchmark.RenaissanceBenchmark
 
     def extra_run_arg(self, benchmark, args, image_run_args):
         run_args = super(RenaissanceNativeImageBenchmarkSuite, self).extra_run_arg(benchmark, args, image_run_args)
-        if benchmark == "dotty" and self.version() not in ["0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0"]:
-            # Before Renaissance 0.14.0, mx was manually placing all dependencies on the same classpath at build time
-            # and at run time. As of Renaissance 0.14.0, we use the standalone mode which uses the classpath defined
-            # in the manifest file at build time only. Dotty is a special benchmark since it also needs to know
-            # this classpath at runtime to be able to perform compilations. The location of the fatjar must then be
-            # explicitly passed also to the final image.
-            return ["-Djava.class.path={}".format(self.standalone_jar_path(self.benchmarkName()))] + run_args
-        else:
-            return run_args
+        return self._extra_native_run_args(benchmark) + run_args
+
+    def _extra_native_run_args(self, benchmark):
+        if benchmark == "dotty":
+            # Dotty uses -H:+AllowJRTFileSystem which requires setting java.home at run time.
+            dotty_extra_run_args = ['-Djava.home=' + mx.get_jdk().home]
+            if self.version() not in ["0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0"]:
+                # Before Renaissance 0.14.0, mx was manually placing all dependencies on the same classpath at build time
+                # and at run time. As of Renaissance 0.14.0, we use the standalone mode which uses the classpath defined
+                # in the manifest file at build time only. Dotty is a special benchmark since it also needs to know
+                # this classpath at runtime to be able to perform compilations. The location of the fatjar must then be
+                # explicitly passed also to the final image.
+                dotty_extra_run_args += ["-Djava.class.path={}".format(self.standalone_jar_path(self.benchmarkName()))]
+            return dotty_extra_run_args
+        return []
 
     def renaissance_additional_lib(self, lib):
         return mx.library(lib).get_path(True)
@@ -209,25 +217,16 @@ class RenaissanceNativeImageBenchmarkSuite(mx_sdk_benchmark.RenaissanceBenchmark
     def extra_agent_run_arg(self, benchmark, args, image_run_args):
         user_args = super(RenaissanceNativeImageBenchmarkSuite, self).extra_agent_run_arg(benchmark, args, image_run_args)
         # remove -r X argument from image run args
-        return ['-r', '1'] + mx_sdk_benchmark.strip_args_with_number('-r', user_args)
+        return mx_sdk_benchmark.adjust_arg_with_number('-r', 1, user_args)
 
     def extra_profile_run_arg(self, benchmark, args, image_run_args, should_strip_run_args):
         user_args = super(RenaissanceNativeImageBenchmarkSuite, self).extra_profile_run_arg(benchmark, args, image_run_args, should_strip_run_args)
         # remove -r X argument from image run args
         if should_strip_run_args:
-            extra_profile_run_args = ['-r', '1'] + mx_sdk_benchmark.strip_args_with_number('-r', user_args)
+            extra_profile_run_args = mx_sdk_benchmark.adjust_arg_with_number('-r', 1, user_args)
         else:
             extra_profile_run_args = user_args
-
-        if benchmark == "dotty" and self.version() not in ["0.9.0", "0.10.0", "0.11.0", "0.12.0", "0.13.0"]:
-            # Before Renaissance 0.14.0, mx was manually placing all dependencies on the same classpath at build time
-            # and at run time. As of Renaissance 0.14.0, we use the standalone mode which uses the classpath defined
-            # in the manifest file at build time only. Dotty is a special benchmark since it also needs to know
-            # this classpath at runtime to be able to perform compilations. The location of the fatjar must then be
-            # explicitly passed also to the final image.
-            return ["-Djava.class.path={}".format(self.standalone_jar_path(self.benchmarkName()))] + extra_profile_run_args
-        else:
-            return extra_profile_run_args
+        return self._extra_native_run_args(benchmark) + extra_profile_run_args
 
     def skip_agent_assertions(self, benchmark, args):
         user_args = super(RenaissanceNativeImageBenchmarkSuite, self).skip_agent_assertions(benchmark, args)
@@ -262,7 +261,7 @@ class RenaissanceNativeImageBenchmarkSuite(mx_sdk_benchmark.RenaissanceBenchmark
 mx_benchmark.add_bm_suite(RenaissanceNativeImageBenchmarkSuite())
 
 
-class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, mx_sdk_benchmark.NativeImageBenchmarkMixin, mx_sdk_benchmark.NativeImageBundleBasedBenchmarkMixin):
+class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, mx_sdk_benchmark.NativeImageBenchmarkMixin, mx_sdk_benchmark.LayeredNativeImageBundleBasedBenchmarkMixin):
     """Native Image variant of the Barista benchmark suite implementation. A collection of microservice workloads running in native execution mode on the Barista harness.
 
     The run arguments are passed to the Barista harness.
@@ -284,9 +283,6 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
     def benchSuiteName(self, bmSuiteArgs=None):
         return "barista"
 
-    def benchmarkName(self):
-        return self.context.benchmark
-
     def benchmarkList(self, bmSuiteArgs):
         exclude = []
         if mx.get_jdk().javaCompliance == "21":
@@ -294,16 +290,24 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             exclude.append("ktor-hello-world")
         return [b for b in self.completeBenchmarkList(bmSuiteArgs) if b not in exclude]
 
-    def stages(self, bm_suite_args: List[str]) -> List[mx_sdk_benchmark.Stage]:
-        stages = super().stages(bm_suite_args)
-        if self.context.benchmark == "micronaut-pegasus" and mx_sdk_benchmark.Stage.AGENT in stages:
+    def default_stages(self) -> List[str]:
+        if self.benchmarkName() == "micronaut-pegasus":
+            if bm_exec_context().has("vm") and bm_exec_context().get("vm").config_name().endswith("-ce"):
+                # fails on CE due to --enable-sbom EE only option injected from upstream pom (GR-66891)
+                return []
             # The 'agent' stage is not supported, as currently we cannot run micronaut-pegasus on the JVM (GR-59793)
-            stages.remove(mx_sdk_benchmark.Stage.AGENT)
-            mx.warn(f"Skipping the 'agent' stage as it is not supported for the 'micronaut-pegasus' benchmark. The stages that will be executed are: {[stage.value for stage in stages]}")
-        return stages
+            return ["instrument-image", "instrument-run", "image", "run"]
+        return super().default_stages()
 
-    def application_nib(self):
-        if self.benchmarkName() not in self._application_nibs:
+    def layers(self, bm_suite_args: List[str]) -> List[Layer]:
+        layered_benchmarks = ["micronaut-pegasus", "micronaut-shopcart"]
+        if self.benchmarkName() in layered_benchmarks:
+            return [Layer(0, True), Layer(1, False)]
+        # Support for other benchmarks, or even suites? (GR-64772)
+        mx.abort(f"The '{self.benchmarkName()}' benchmark does not support layered native images!")
+
+    def get_bundle_path_for_benchmark_standalone(self, benchmark) -> str:
+        if benchmark not in self._application_nibs:
             # Run subprocess retrieving the application nib from the Barista 'build' script
             out = mx.OutputCapture()
             mx.run([self.baristaBuilderPath(), "--get-nib", self.baristaHarnessBenchmarkName()], out=out)
@@ -313,21 +317,38 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             if not nib_match:
                 raise ValueError(f"Could not extract the nib file path from the command output! Expected to match pattern {repr(nib_pattern)}.")
             # Cache for future access
-            self._application_nibs[self.benchmarkName()] = nib_match.group(1)
+            self._application_nibs[benchmark] = nib_match.group(1)
             # Try to capture the fixed image name from the Barista 'build' script output
             fixed_image_name_pattern = r"fixed image name is: ([^\n]+)\n"
             fixed_image_name_match = re.search(fixed_image_name_pattern, out.data)
             # Cache fixed image name, if present
             if fixed_image_name_match:
-                self._application_fixed_image_names[self.benchmarkName()] = fixed_image_name_match.group(1)
-        return self._application_nibs[self.benchmarkName()]
+                self._application_fixed_image_names[benchmark] = fixed_image_name_match.group(1)
+        return self._application_nibs[benchmark]
+
+    def get_bundle_path_for_benchmark_layer(self, benchmark, layer_info) -> str:
+        app_dir = self.baristaApplicationDirectoryPath(benchmark)
+        nib_candidates = list(app_dir.glob(f"**/layer{layer_info.index}-*.nib"))
+        if len(nib_candidates) == 0:
+            mx.abort(f"Expected to find exactly one 'layer{layer_info.index}-*.nib' file somewhere in the '{app_dir}' directory subtree, instead found none!")
+        if len(nib_candidates) > 1:
+            mx.abort(f"Expected to find exactly one 'layer{layer_info.index}-*.nib' file somewhere in the '{app_dir}' directory subtree, instead found "
+                     + "multiple: [" + ", ".join(str(path) for path in nib_candidates) + "]")
+        return str(nib_candidates[0])
+
+    def get_latest_layer(self) -> Optional[Layer]:
+        latest_image_stage = self.stages_info.get_latest_image_stage()
+        if latest_image_stage is None or not latest_image_stage.is_layered():
+            return None
+        return latest_image_stage.layer_info
 
     def application_fixed_image_name(self):
-        self.application_nib()
-        return self._application_fixed_image_names.get(self.benchmarkName(), None)
+        benchmark = self.benchmarkName()
+        self.get_bundle_path_for_benchmark_standalone(benchmark)
+        return self._application_fixed_image_names.get(benchmark, None)
 
     def applicationDist(self):
-        return Path(self.application_nib()).parent
+        return Path(self.get_bundle_path_for_benchmark_standalone(self.benchmarkName())).parent
 
     def uses_bundles(self):
         return True
@@ -353,23 +374,34 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
         return []
 
     def extra_image_build_argument(self, benchmark, args):
-        return [
-            "--install-exit-handlers"
-        ] + super().extra_image_build_argument(benchmark, args)
+        extra_image_build_args = []
+        if benchmark == "quarkus-tika":
+            # Band-aid solution for class initizalization deadlock due to org.openxmlformats.schemas.drawingml.x2006 (GR-59899)
+            extra_image_build_args += ["-H:NumberOfThreads=1"]
+        return extra_image_build_args + super().extra_image_build_argument(benchmark, args)
+
+    def build_assertions(self, benchmark: str, is_gate: bool) -> List[str]:
+        # We cannot enable assertions along with emitting a build report for layered images, due to GR-65751
+        if self.stages_info.current_stage.is_layered():
+            return []
+        # Disable assertions due to transient AssertionError when building spring-hello-world image (GR-59889)
+        if benchmark == "spring-hello-world":
+            return []
+        return super().build_assertions(benchmark, is_gate)
 
     def run(self, benchmarks, bmSuiteArgs) -> mx_benchmark.DataPoints:
-        self.context = mx_sdk_benchmark.BaristaBenchmarkSuite.RuntimeContext(self, None, benchmarks[0], bmSuiteArgs)
-        return self.intercept_run(super(), benchmarks, bmSuiteArgs)
+        with SingleBenchmarkManager(self):
+            return self.intercept_run(super(), benchmarks, bmSuiteArgs)
 
     def ensure_image_is_at_desired_location(self, bmSuiteArgs):
-        if self.stages_info.requested_stage.is_image() and self.application_fixed_image_name() is not None:
+        if self.stages_info.current_stage.is_image() and self.application_fixed_image_name() is not None:
             # Because of an issue in handling image build args in the intended order [GR-58214]
             # we need to move the image from the path that is set inside the nib to the path expected by our vm.
             # This code has no effect if the image is already at the desired location.
             vm = self.get_vm_registry().get_vm_from_suite_args(bmSuiteArgs)
-            if vm.stages_info.should_produce_datapoints(mx_sdk_benchmark.Stage.INSTRUMENT_IMAGE):
+            if self.stages_info.should_produce_datapoints(StageName.INSTRUMENT_IMAGE):
                 desired_image_path = vm.config.instrumented_image_path
-            elif vm.stages_info.should_produce_datapoints(mx_sdk_benchmark.Stage.IMAGE):
+            elif self.stages_info.should_produce_datapoints(StageName.IMAGE):
                 desired_image_path = vm.config.image_path
             else:
                 return
@@ -394,8 +426,10 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
                 "--startup-iteration-count", "1",
                 "--warmup-iteration-count", "1",
                 "--warmup-duration", "5",
-                "--throughput-iteration-count", "0",
-                "--latency-iteration-count", "0",
+                "--throughput-iteration-count", "1",
+                "--throughput-duration", "5",
+                "--latency-iteration-count", "1",
+                "--latency-duration", "5",
             ]
 
         def _get_built_app_image(self, suite, stage):
@@ -404,8 +438,8 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             In the case of `instrument-run`, retrieves the image built during `instrument-image`.
             In the case of `run`, retrieves the image built during `image`.
             """
-            vm = suite.context.vm
-            if stage == mx_sdk_benchmark.Stage.INSTRUMENT_RUN:
+            vm = bm_exec_context().get("vm")
+            if stage.stage_name == StageName.INSTRUMENT_RUN:
                 return vm.config.instrumented_image_path
             else:
                 return vm.config.image_path
@@ -432,15 +466,17 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             if not isinstance(suite, BaristaNativeImageBenchmarkSuite):
                 raise TypeError(f"Expected an instance of {BaristaNativeImageBenchmarkSuite.__name__}, instead got an instance of {suite.__class__.__name__}")
 
-            stage = suite.stages_info.requested_stage
-            if stage == mx_sdk_benchmark.Stage.AGENT:
+            stage = suite.stages_info.current_stage
+            bm_suite_args = bm_exec_context().get("bm_suite_args")
+            if stage.is_agent():
                 # BaristaCommand works for agent stage, since it's a JVM stage
                 cmd = self.produce_JVM_harness_command(cmd, suite)
                 # Make agent run short
                 cmd += self._short_load_testing_phases()
                 # Add explicit agent stage args
-                cmd += mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-jvm-arg=", suite.context.bmSuiteArgs)
-                cmd += mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-agent-run-arg=", suite.context.bmSuiteArgs)
+                cmd += self._energyTrackerExtraOptions(suite)
+                cmd += parse_prefixed_args("-Dnative-image.benchmark.extra-jvm-arg=", bm_suite_args)
+                cmd += parse_prefixed_args("-Dnative-image.benchmark.extra-agent-run-arg=", bm_suite_args)
                 return cmd
 
             # Extract app image options and command prefix from the NativeImageVM command
@@ -448,7 +484,7 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             try:
                 index_of_app_image = cmd.index(app_image)
             except:
-                mx.log_error(f"Could not find app image '{app_image}' in {cmd}")
+                mx.log_error(f"Cannot produce harness command because app image '{app_image}' was not found in {cmd}")
                 raise
             nivm_cmd_prefix = cmd[:index_of_app_image]
             nivm_app_options = cmd[index_of_app_image + 1:]
@@ -461,18 +497,18 @@ class BaristaNativeImageBenchmarkSuite(mx_sdk_benchmark.BaristaBenchmarkSuite, m
             ni_barista_cmd = [suite.baristaHarnessPath(), "--mode", "native", "--app-executable", app_image]
             if barista_workload is not None:
                 ni_barista_cmd.append(f"--config={barista_workload}")
-            ni_barista_cmd += suite.runArgs(suite.context.bmSuiteArgs)
-            ni_barista_cmd += mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-jvm-arg=", suite.context.bmSuiteArgs)
-            if stage == mx_sdk_benchmark.Stage.INSTRUMENT_RUN:
+            ni_barista_cmd += suite.runArgs(bm_suite_args) + self._energyTrackerExtraOptions(suite)
+            ni_barista_cmd += parse_prefixed_args("-Dnative-image.benchmark.extra-jvm-arg=", bm_suite_args)
+            if stage.is_instrument():
                 # Make instrument run short
                 ni_barista_cmd += self._short_load_testing_phases()
-                if suite.context.benchmark == "play-scala-hello-world":
+                if bm_exec_context().get("benchmark") == "play-scala-hello-world":
                     self._updateCommandOption(ni_barista_cmd, "--vm-options", "-v", "-Dpidfile.path=/dev/null")
                 # Add explicit instrument stage args
-                ni_barista_cmd += mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-profile-run-arg=", suite.context.bmSuiteArgs) or mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-run-arg=", suite.context.bmSuiteArgs)
+                ni_barista_cmd += parse_prefixed_args("-Dnative-image.benchmark.extra-profile-run-arg=", bm_suite_args) or parse_prefixed_args("-Dnative-image.benchmark.extra-run-arg=", bm_suite_args)
             else:
                 # Add explicit run stage args
-                ni_barista_cmd += mx_sdk_benchmark.parse_prefixed_args("-Dnative-image.benchmark.extra-run-arg=", suite.context.bmSuiteArgs)
+                ni_barista_cmd += parse_prefixed_args("-Dnative-image.benchmark.extra-run-arg=", bm_suite_args)
             if nivm_cmd_prefix:
                 self._updateCommandOption(ni_barista_cmd, "--cmd-app-prefix", "-p", " ".join(nivm_cmd_prefix))
             if nivm_app_options:
@@ -572,13 +608,11 @@ _DACAPO_EXTRA_IMAGE_BUILD_ARGS = {
     # 2. Native-image picks a different service provider than the JVM for javax.xml.transform.TransformerFactory.
     #    We can simply remove the jar containing that provider as it is not required for the benchmark to run.
     'fop':      [f"-Djava.util.logging.config.file={_empty_file()}",
-                 '--initialize-at-run-time=org.apache.fop.render.rtf.rtflib.rtfdoc.RtfList',
-                 '-H:+ForeignAPISupport'],
+                 '--initialize-at-run-time=org.apache.fop.render.rtf.rtflib.rtfdoc.RtfList'],
     'batik':    []
 }
 
 _DACAPO_EXTRA_IMAGE_RUN_ARGS = {
-    'pmd':         ['--no-validation'],
     # JDK21 ForeignAPISupport is broken --- disable `enableMemorySegments` for now
     'lusearch':    ['-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false', '--no-validation'],
     'luindex':     ['-Dorg.apache.lucene.store.MMapDirectory.enableMemorySegments=false', '--no-validation'],
@@ -644,12 +678,6 @@ class DaCapoNativeImageBenchmarkSuite(mx_sdk_benchmark.DaCapoBenchmarkSuite, Bas
     def benchSuiteName(self, bmSuiteArgs=None):
         return 'dacapo'
 
-    def daCapoPath(self):
-        lib = mx.library(self.daCapoLibraryName(), False)
-        if lib:
-            return lib.get_path(True)
-        return None
-
     def availableSuiteVersions(self):
         # The version 9.12-MR1-git+2baec49 also ships a custom harness class to allow native image to find the entry point in the nested jar
         return ["9.12-MR1-git+2baec49", "23.11-MR2-chopin"]
@@ -670,7 +698,7 @@ class DaCapoNativeImageBenchmarkSuite(mx_sdk_benchmark.DaCapoBenchmarkSuite, Bas
     def extra_agent_run_arg(self, benchmark, args, image_run_args):
         user_args = super(DaCapoNativeImageBenchmarkSuite, self).extra_agent_run_arg(benchmark, args, image_run_args)
         # remove -n X argument from image run args
-        return ['-n', '1'] + mx_sdk_benchmark.strip_args_with_number('-n', user_args)
+        return mx_sdk_benchmark.adjust_arg_with_number('-n', 1, user_args)
 
     def extra_profile_run_arg(self, benchmark, args, image_run_args, should_strip_run_args):
         self.fixDataLocation()
@@ -682,7 +710,7 @@ class DaCapoNativeImageBenchmarkSuite(mx_sdk_benchmark.DaCapoBenchmarkSuite, Bas
 
         # remove -n X argument from image run args
         if should_strip_run_args:
-            return ['-n', '1'] + mx_sdk_benchmark.strip_args_with_number('-n', user_args)
+            return mx_sdk_benchmark.adjust_arg_with_number('-n', 1, user_args)
         else:
             return user_args
 
@@ -827,13 +855,13 @@ class ScalaDaCapoNativeImageBenchmarkSuite(mx_sdk_benchmark.ScalaDaCapoBenchmark
     def extra_agent_run_arg(self, benchmark, args, image_run_args):
         user_args = super(ScalaDaCapoNativeImageBenchmarkSuite, self).extra_agent_run_arg(benchmark, args, image_run_args)
         # remove -n X argument from image run args
-        return mx_sdk_benchmark.strip_args_with_number('-n', user_args) + ['-n', '1']
+        return mx_sdk_benchmark.adjust_arg_with_number('-n', 1, user_args)
 
     def extra_profile_run_arg(self, benchmark, args, image_run_args, should_strip_run_args):
         user_args = super(ScalaDaCapoNativeImageBenchmarkSuite, self).extra_profile_run_arg(benchmark, args, image_run_args, should_strip_run_args)
         # remove -n X argument from image run args if the flag is true.
         if should_strip_run_args:
-            return mx_sdk_benchmark.strip_args_with_number('-n', user_args) + ['-n', '1']
+            return mx_sdk_benchmark.adjust_arg_with_number('-n', 1, user_args)
         else:
             return user_args
 

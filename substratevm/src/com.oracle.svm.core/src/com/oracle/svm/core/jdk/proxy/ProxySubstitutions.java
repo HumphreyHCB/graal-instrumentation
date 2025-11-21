@@ -34,8 +34,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.jdk.JDK21OrEarlier;
-import com.oracle.svm.core.jdk.JDKLatest;
+import com.oracle.svm.core.util.VMError;
 
 @TargetClass(java.lang.reflect.Proxy.class)
 final class Target_java_lang_reflect_Proxy {
@@ -45,21 +44,6 @@ final class Target_java_lang_reflect_Proxy {
     private static Target_jdk_internal_loader_ClassLoaderValue proxyCache;
 
     @Substitute
-    @SuppressWarnings("unused")
-    @TargetElement(name = "getProxyConstructor", onlyWith = JDK21OrEarlier.class)
-    private static Constructor<?> getProxyConstructorJDK21(Class<?> caller, ClassLoader loader, Class<?>... interfaces) {
-        final Class<?> cl = ImageSingletons.lookup(DynamicProxyRegistry.class).getProxyClass(loader, interfaces);
-        try {
-            final Constructor<?> cons = cl.getConstructor(InvocationHandler.class);
-            cons.setAccessible(true);
-            return cons;
-        } catch (NoSuchMethodException e) {
-            throw new InternalError(e.toString(), e);
-        }
-    }
-
-    @Substitute
-    @TargetElement(onlyWith = JDKLatest.class)
     private static Constructor<?> getProxyConstructor(ClassLoader loader, Class<?>... interfaces) {
         final Class<?> cl = ImageSingletons.lookup(DynamicProxyRegistry.class).getProxyClass(loader, interfaces);
         try {
@@ -86,7 +70,12 @@ final class Target_java_lang_reflect_Proxy {
 
     @Substitute
     public static boolean isProxyClass(Class<?> cl) {
-        return DynamicHub.fromClass(cl).isProxyClass();
+        DynamicHub dynamicHub = DynamicHub.fromClass(cl);
+        if (dynamicHub.isRuntimeLoaded()) {
+            // GR-63186
+            throw VMError.unimplemented("isProxyClass for dynamically loaded classes");
+        }
+        return dynamicHub.isProxyClass();
     }
 }
 

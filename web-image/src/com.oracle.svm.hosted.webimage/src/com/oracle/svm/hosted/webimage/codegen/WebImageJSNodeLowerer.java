@@ -25,10 +25,6 @@
 
 package com.oracle.svm.hosted.webimage.codegen;
 
-import static com.oracle.svm.hosted.webimage.codegen.Runtime.BoxIfNeeded;
-import static com.oracle.svm.hosted.webimage.codegen.Runtime.JavaScriptToJava;
-import static com.oracle.svm.hosted.webimage.codegen.Runtime.JavaToJavaScript;
-import static com.oracle.svm.hosted.webimage.codegen.Runtime.UnboxIfNeeded;
 import static jdk.graal.compiler.core.common.calc.CanonicalCondition.BT;
 
 import java.lang.reflect.Method;
@@ -36,22 +32,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.oracle.svm.webimage.JSKeyword;
-import com.oracle.svm.webimage.api.JSObjectAccess;
-import com.oracle.svm.webimage.functionintrinsics.ImplicitExceptions;
-import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
-import com.oracle.svm.webimage.functionintrinsics.JSConversion;
-import com.oracle.svm.webimage.functionintrinsics.JSFunctionDefinition;
-import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
-import com.oracle.svm.webimage.type.TypeControl;
 import com.oracle.svm.core.StaticFieldsSupport;
 import com.oracle.svm.core.classinitialization.EnsureClassInitializedNode;
 import com.oracle.svm.core.genscavenge.graal.nodes.FormatArrayNode;
 import com.oracle.svm.core.genscavenge.graal.nodes.FormatObjectNode;
+import com.oracle.svm.core.graal.nodes.FloatingWordCastNode;
 import com.oracle.svm.core.graal.nodes.LoweredDeadEndNode;
 import com.oracle.svm.core.graal.nodes.ReadCallerStackPointerNode;
 import com.oracle.svm.core.graal.nodes.ReadReturnAddressNode;
@@ -64,6 +52,11 @@ import com.oracle.svm.core.nodes.CFunctionEpilogueNode;
 import com.oracle.svm.core.nodes.CFunctionPrologueNode;
 import com.oracle.svm.core.snippets.SnippetRuntime;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.meta.HostedArrayClass;
+import com.oracle.svm.hosted.meta.HostedField;
+import com.oracle.svm.hosted.meta.HostedMetaAccess;
+import com.oracle.svm.hosted.meta.HostedMethod;
+import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.webimage.JSCodeBuffer;
 import com.oracle.svm.hosted.webimage.codegen.arithm.BinaryFloatOperationLowerer;
 import com.oracle.svm.hosted.webimage.codegen.arithm.BinaryIntOperationLowerer;
@@ -71,6 +64,7 @@ import com.oracle.svm.hosted.webimage.codegen.heap.ConstantMap;
 import com.oracle.svm.hosted.webimage.codegen.heap.JSBootImageHeapLowerer;
 import com.oracle.svm.hosted.webimage.codegen.heap.WebImageObjectInspector;
 import com.oracle.svm.hosted.webimage.codegen.long64.Long64Lowerer;
+import com.oracle.svm.hosted.webimage.codegen.lowerer.PhiResolveLowerer;
 import com.oracle.svm.hosted.webimage.codegen.node.CompoundConditionNode;
 import com.oracle.svm.hosted.webimage.codegen.node.ReadIdentityHashCodeNode;
 import com.oracle.svm.hosted.webimage.codegen.node.WriteIdentityHashCodeNode;
@@ -80,15 +74,21 @@ import com.oracle.svm.hosted.webimage.codegen.type.InvokeLoweringUtil;
 import com.oracle.svm.hosted.webimage.codegen.value.ResolvedVarLowerer;
 import com.oracle.svm.hosted.webimage.codegen.wrappers.JSEmitter;
 import com.oracle.svm.hosted.webimage.js.JSBody;
-import com.oracle.svm.hosted.webimage.js.JSStaticMethodDefinition;
+import com.oracle.svm.hosted.webimage.js.JSKeyword;
 import com.oracle.svm.hosted.webimage.snippets.JSSnippets;
-import com.oracle.svm.hosted.meta.HostedArrayClass;
-import com.oracle.svm.hosted.meta.HostedField;
-import com.oracle.svm.hosted.meta.HostedMetaAccess;
-import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.hosted.meta.HostedType;
+import com.oracle.svm.webimage.functionintrinsics.ImplicitExceptions;
+import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
+import com.oracle.svm.webimage.functionintrinsics.JSFunctionDefinition;
+import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
+import com.oracle.svm.webimage.hightiercodegen.CodeBuffer;
+import com.oracle.svm.webimage.hightiercodegen.Emitter;
+import com.oracle.svm.webimage.hightiercodegen.IEmitter;
+import com.oracle.svm.webimage.hightiercodegen.NodeLowerer;
+import com.oracle.svm.webimage.hightiercodegen.variables.ResolvedVar;
+import com.oracle.svm.webimage.type.TypeControl;
 
 import jdk.graal.compiler.core.amd64.AMD64AddressNode;
+import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.core.common.type.IntegerStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
@@ -97,12 +97,6 @@ import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.iterators.NodeIterable;
 import jdk.graal.compiler.graph.iterators.NodePredicates;
-import jdk.graal.compiler.hightiercodegen.CodeBuffer;
-import jdk.graal.compiler.hightiercodegen.Emitter;
-import jdk.graal.compiler.hightiercodegen.IEmitter;
-import jdk.graal.compiler.hightiercodegen.NodeLowerer;
-import jdk.graal.compiler.hightiercodegen.lowerer.PhiResolveLowerer;
-import jdk.graal.compiler.hightiercodegen.variables.ResolvedVar;
 import jdk.graal.compiler.nodes.BeginNode;
 import jdk.graal.compiler.nodes.CallTargetNode;
 import jdk.graal.compiler.nodes.ConstantNode;
@@ -142,6 +136,8 @@ import jdk.graal.compiler.nodes.calc.IntegerDivRemNode;
 import jdk.graal.compiler.nodes.calc.IntegerTestNode;
 import jdk.graal.compiler.nodes.calc.IsNullNode;
 import jdk.graal.compiler.nodes.calc.LeftShiftNode;
+import jdk.graal.compiler.nodes.calc.MinMaxNode;
+import jdk.graal.compiler.nodes.calc.MinNode;
 import jdk.graal.compiler.nodes.calc.MulNode;
 import jdk.graal.compiler.nodes.calc.NarrowNode;
 import jdk.graal.compiler.nodes.calc.NegateNode;
@@ -160,6 +156,7 @@ import jdk.graal.compiler.nodes.calc.SignumNode;
 import jdk.graal.compiler.nodes.calc.SqrtNode;
 import jdk.graal.compiler.nodes.calc.SubNode;
 import jdk.graal.compiler.nodes.calc.UnsignedDivNode;
+import jdk.graal.compiler.nodes.calc.UnsignedMinNode;
 import jdk.graal.compiler.nodes.calc.UnsignedRemNode;
 import jdk.graal.compiler.nodes.calc.UnsignedRightShiftNode;
 import jdk.graal.compiler.nodes.calc.XorNode;
@@ -244,22 +241,12 @@ public class WebImageJSNodeLowerer extends NodeLowerer {
     public WebImageJSNodeLowerer(JSCodeGenTool codeGenTool) {
         super(codeGenTool);
         this.codeGenTool = codeGenTool;
-        ResolvedJavaMethod coerceJavaScriptToJava = null;
-        try {
-            Method coerceMethod = JSConversion.class.getDeclaredMethod("coerceJavaScriptToJava", Object.class, Class.class);
-            coerceJavaScriptToJava = codeGenTool.getProviders().getMetaAccess().lookupJavaMethod(coerceMethod);
-        } catch (NoSuchMethodException ex) {
-            VMError.shouldNotReachHere(ex);
-        }
-        this.coerceJavaScriptToJavaMethodDef = new JSStaticMethodDefinition(coerceJavaScriptToJava);
     }
 
     // ============================================================================
     // region [Common definitions]
 
     public static final boolean INT_PALADIN = true;
-
-    private final JSStaticMethodDefinition coerceJavaScriptToJavaMethodDef;
 
     /** Denotes nodes that do not need to be lowered. */
     public static final Set<Class<?>> IGNORED_NODE_TYPES = new HashSet<>(Arrays.asList(
@@ -334,6 +321,8 @@ public class WebImageJSNodeLowerer extends NodeLowerer {
             lower(readIdentityHashCodeNode);
         } else if (node instanceof WriteIdentityHashCodeNode writeIdentityHashCodeNode) {
             lower(writeIdentityHashCodeNode);
+        } else if (node instanceof FloatingWordCastNode floatingWordCastNode) {
+            lower(floatingWordCastNode);
         } else {
             super.dispatch(node);
         }
@@ -968,6 +957,10 @@ public class WebImageJSNodeLowerer extends NodeLowerer {
         lowerValue(node.getInput());
     }
 
+    protected void lower(FloatingWordCastNode node) {
+        lowerValue(node.getInput());
+    }
+
     @Override
     protected void lower(InstanceOfNode node) {
         CodeBuffer masm = codeGenTool.getCodeBuffer();
@@ -1248,19 +1241,37 @@ public class WebImageJSNodeLowerer extends NodeLowerer {
 
     @Override
     protected void lower(BinaryArithmeticNode<?> node) {
-        switch (node.getStackKind()) {
-            case Int:
+        JavaKind stackKind = node.getStackKind();
+
+        /*
+         * MinMaxNode cannot be represented using an operator and needs special handling. For longs
+         * this is not necessary as Long64Lowerer can deal with min/max as well.
+         */
+        if (node instanceof MinMaxNode<?> minMaxNode && stackKind != JavaKind.Long) {
+            if (minMaxNode.signedness() == NumUtil.Signedness.SIGNED) {
+                /*
+                 * For the signed min/max operation, we can simply use the built-in
+                 * Math.min/Math.max, even for 32-bit integers since those can be fully represented
+                 * in a JS number.
+                 */
+                boolean isMin = minMaxNode instanceof MinNode;
+                BinaryFloatOperationLowerer.minMax(codeGenTool, isMin, node.getX(), node.getY());
+            } else {
+                assert stackKind == JavaKind.Int;
+                assert minMaxNode.signedness() == NumUtil.Signedness.UNSIGNED;
+                boolean isMin = minMaxNode instanceof UnsignedMinNode;
+                BinaryIntOperationLowerer.unsignedMinMax(codeGenTool, isMin, node.getX(), node.getY());
+            }
+            return;
+        }
+
+        switch (stackKind) {
+            case Int ->
                 BinaryIntOperationLowerer.binaryOp(node, node.getX(), node.getY(), codeGenTool, getSymbolForBinaryArithmeticOp(node), true);
-                break;
-            case Long:
-                Long64Lowerer.genBinaryArithmeticOperation(node, node.getX(), node.getY(), codeGenTool);
-                break;
-            case Float:
-            case Double:
+            case Long -> Long64Lowerer.genBinaryArithmeticOperation(node, node.getX(), node.getY(), codeGenTool);
+            case Float, Double ->
                 BinaryFloatOperationLowerer.doop(codeGenTool, getSymbolForBinaryArithmeticOp(node), node);
-                break;
-            default:
-                throw GraalError.shouldNotReachHereUnexpectedValue(node.getStackKind());
+            default -> throw GraalError.shouldNotReachHereUnexpectedValue(stackKind);
         }
     }
 
@@ -1503,72 +1514,7 @@ public class WebImageJSNodeLowerer extends NodeLowerer {
             SnippetRuntime.SubstrateForeignCallDescriptor substrateDescriptor = (SnippetRuntime.SubstrateForeignCallDescriptor) descriptor;
             ResolvedJavaMethod method = substrateDescriptor.findMethod(codeGenTool.getProviders().getMetaAccess());
 
-            if (substrateDescriptor.getDeclaringClass() == JSObjectAccess.class) {
-                assert node.getArguments().size() == 2 || node.getArguments().size() == 3 : "Only expect 2 or 3 arguments, found = " + node.getArguments().size();
-                assert node.getArguments().get(1) instanceof ConstantNode : "Field name should be a constant";
-
-                ValueNode receiverNode = node.getArguments().get(0);
-                JavaConstant fieldConst = (JavaConstant) ((ConstantNode) node.getArguments().get(1)).getValue();
-                String field = Objects.requireNonNull(codeGenTool.getProviders().getSnippetReflection().asObject(String.class, fieldConst));
-                IEmitter receiverJS = tool -> JavaToJavaScript.emitCall(tool, Emitter.of(receiverNode));
-                IEmitter receiverSelect = tool -> tool.genPropertyAccess(receiverJS, Emitter.of(field));
-
-                /*
-                 * Intrinsify JSObjectAccess calls for performance & simplify the job of Closure
-                 * compiler.
-                 *
-                 * Otherwise, we will have to generate extern files to prevent Closure compiler from
-                 * renaming fields of imported classes. Those fields are accessed via field names in
-                 * JSObjectAccess in the form of `o['f']`.
-                 *
-                 * This also ensures that the user can use Closure compiler to compress the
-                 * generated JS file in their own workflow without worrying about extern files and
-                 * renaming.
-                 */
-                if (node.getArguments().size() == 2) {
-                    // javaScriptToJava(javaToJavaScript(arg0).arg1)
-                    IEmitter javaValueBeforeCoerce = tool -> JavaScriptToJava.emitCall(tool, receiverSelect);
-
-                    // coerce result
-                    ResolvedJavaMethod target = substrateDescriptor.findMethod(codeGenTool.getProviders().getMetaAccess());
-                    JavaKind returnKind = target.getSignature().getReturnKind();
-                    Class<?> clazz = switch (returnKind) {
-                        case Boolean -> Boolean.class;
-                        case Byte -> Byte.class;
-                        case Short -> Short.class;
-                        case Char -> Character.class;
-                        case Int -> Integer.class;
-                        case Float -> Float.class;
-                        case Long -> Long.class;
-                        case Double -> Double.class;
-                        case Object -> Object.class;
-                        default -> throw VMError.shouldNotReachHere("Unexpected return type void");
-                    };
-
-                    TypeControl typeControl = codeGenTool.getJSProviders().typeControl();
-                    String hubName = typeControl.requestHubName(codeGenTool.getProviders().getMetaAccess().lookupJavaType(clazz));
-                    IEmitter coercedJavaValue = tool -> coerceJavaScriptToJavaMethodDef.emitCall(tool, javaValueBeforeCoerce, Emitter.of(hubName));
-
-                    /*
-                     * Unbox return value.
-                     *
-                     * Note that coercion and unboxing are two different steps: The former addresses
-                     * the problem of interoperability between Java and JavaScript, while the latter
-                     * adapts boxed and primitive types needed for Java semantics.
-                     */
-                    UnboxIfNeeded.emitCall(codeGenTool, coercedJavaValue, Emitter.of(returnKind.ordinal()));
-                } else if (node.getArguments().size() == 3) {
-                    ValueNode rhsNode = node.getArguments().last();
-
-                    // Box of the 3rd argument if necessary
-                    IEmitter rhs = tool -> BoxIfNeeded.emitCall(tool, Emitter.of(rhsNode), Emitter.of(rhsNode.getStackKind().ordinal()));
-
-                    // javaToJavaScript(arg0).arg1 = javaToJavaScript(arg2)
-                    receiverSelect.lower(codeGenTool);
-                    codeGenTool.genAssignment();
-                    JavaToJavaScript.emitCall(codeGenTool, rhs);
-                }
-            } else if (method.isStatic()) {
+            if (method.isStatic()) {
                 codeGenTool.genStaticCall(method, Emitter.of(node.getArguments()));
             } else {
                 throw GraalError.unimplemented("ForeignCallNode for non-static methods not implemented: " + node);

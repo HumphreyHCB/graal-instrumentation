@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,6 @@ import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.option.SubstrateOptionsParser;
 import com.oracle.svm.core.util.VMError;
 
@@ -46,7 +45,7 @@ import com.oracle.svm.core.util.VMError;
 final class ForeignDisabled implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
-        return !SubstrateOptions.ForeignAPISupport.getValue();
+        return !SubstrateOptions.isForeignAPIEnabled();
     }
 }
 
@@ -54,14 +53,6 @@ final class ForeignDisabled implements BooleanSupplier {
 final class Target_jdk_internal_foreign_MemorySessionImpl {
     @Substitute
     @SuppressWarnings("static-method")
-    @TargetElement(name = "asArena", onlyWith = JDK21OrEarlier.class)
-    Target_java_lang_foreign_Arena asArenaJDK21() {
-        throw ForeignDisabledSubstitutions.fail();
-    }
-
-    @Substitute
-    @SuppressWarnings("static-method")
-    @TargetElement(onlyWith = JDKLatest.class)
     Target_jdk_internal_foreign_ArenaImpl asArena() {
         throw ForeignDisabledSubstitutions.fail();
     }
@@ -71,7 +62,7 @@ final class Target_jdk_internal_foreign_MemorySessionImpl {
 final class Target_java_lang_foreign_Arena {
 }
 
-@TargetClass(className = "jdk.internal.foreign.ArenaImpl", onlyWith = {ForeignDisabled.class, JDKLatest.class})
+@TargetClass(className = "jdk.internal.foreign.ArenaImpl", onlyWith = {ForeignDisabled.class})
 final class Target_jdk_internal_foreign_ArenaImpl {
 }
 
@@ -129,7 +120,7 @@ final class Target_jdk_internal_foreign_FunctionDescriptorImpl {
 final class Target_java_lang_foreign_FunctionDescriptor {
 }
 
-@TargetClass(className = "jdk.internal.foreign.SegmentFactories", onlyWith = {ForeignDisabled.class, JDKLatest.class})
+@TargetClass(className = "jdk.internal.foreign.SegmentFactories", onlyWith = {ForeignDisabled.class})
 final class Target_jdk_internal_foreign_SegmentFactories {
     @Substitute
     @AlwaysInline("Make remaining code in callers unreachable.")
@@ -155,7 +146,7 @@ final class Target_jdk_internal_foreign_LayoutPath {
 final class Target_java_lang_foreign_MemoryLayout_PathElement {
 }
 
-@TargetClass(className = "jdk.internal.foreign.layout.AbstractLayout", onlyWith = {ForeignDisabled.class, JDKLatest.class})
+@TargetClass(className = "jdk.internal.foreign.layout.AbstractLayout", onlyWith = {ForeignDisabled.class})
 final class Target_jdk_internal_foreign_layout_AbstractLayout {
     @Substitute
     @AlwaysInline("Make remaining code in callers unreachable.")
@@ -165,7 +156,6 @@ final class Target_jdk_internal_foreign_layout_AbstractLayout {
     }
 
     @Substitute
-    @TargetElement(onlyWith = JDKLatest.class)
     @SuppressWarnings({"unused", "static-method"})
     VarHandle varHandleInternal(Target_java_lang_foreign_MemoryLayout_PathElement... elements) {
         throw ForeignDisabledSubstitutions.fail();
@@ -183,7 +173,7 @@ final class ForeignDisabledSubstitutions {
     private static final String OPTION_NAME = SubstrateOptionsParser.commandArgument(SubstrateOptions.ForeignAPISupport, "+");
 
     static RuntimeException fail() {
-        assert !SubstrateOptions.ForeignAPISupport.getValue();
+        assert !SubstrateOptions.isForeignAPIEnabled();
         throw VMError.unsupportedFeature("Support for the Java Foreign Function and Memory API is not active: enable with " + OPTION_NAME);
     }
 }

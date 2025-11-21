@@ -33,10 +33,6 @@ import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.interpreter.InterpreterFrameSourceInfo;
-import com.oracle.svm.core.interpreter.InterpreterSupport;
-import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.c.function.CodePointer;
 import org.graalvm.word.Pointer;
@@ -44,7 +40,6 @@ import org.graalvm.word.UnsignedWord;
 
 import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.SubstrateOptions;
-import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.code.CodeInfo;
 import com.oracle.svm.core.code.CodeInfoQueryResult;
@@ -56,7 +51,9 @@ import com.oracle.svm.core.deopt.DeoptimizedFrame;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.heap.ReferenceAccess;
 import com.oracle.svm.core.heap.VMOperationInfos;
-import com.oracle.svm.core.snippets.KnownIntrinsics;
+import com.oracle.svm.core.hub.DynamicHub;
+import com.oracle.svm.core.interpreter.InterpreterFrameSourceInfo;
+import com.oracle.svm.core.interpreter.InterpreterSupport;
 import com.oracle.svm.core.stack.JavaStackFrameVisitor;
 import com.oracle.svm.core.stack.JavaStackWalker;
 import com.oracle.svm.core.stack.StackFrameVisitor;
@@ -65,6 +62,7 @@ import com.oracle.svm.core.thread.JavaVMOperation;
 import com.oracle.svm.core.thread.Target_jdk_internal_vm_Continuation;
 import com.oracle.svm.core.thread.VMOperation;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.word.Word;
@@ -232,11 +230,11 @@ public class StackTraceUtils {
         }
 
         ResolvedJavaType clazz = method.getDeclaringClass();
-        if (AnnotationAccess.isAnnotationPresent(clazz, InternalVMMethod.class)) {
+        if (AnnotationUtil.isAnnotationPresent(clazz, InternalVMMethod.class)) {
             return false;
         }
 
-        if (!showLambdaFrames && AnnotationAccess.isAnnotationPresent(clazz, LambdaFormHiddenMethod.class)) {
+        if (!showLambdaFrames && AnnotationUtil.isAnnotationPresent(clazz, LambdaFormHiddenMethod.class)) {
             return false;
         }
 
@@ -301,7 +299,7 @@ public class StackTraceUtils {
  * instruction pointer.
  *
  * <h2>Uncompressed References</h2>
- * 
+ *
  * <pre>
  *                      backtrace content      |   Number of Java frames
  *                    ---------------------------------------------------
@@ -317,7 +315,7 @@ public class StackTraceUtils {
  * </pre>
  *
  * <h2>Compressed References</h2>
- * 
+ *
  * <pre>
  *                      backtrace content                                   |   Number of Java frames
  *                    --------------------------------------------------------------------------------
@@ -522,7 +520,7 @@ final class BacktraceVisitor extends JavaStackFrameVisitor {
     /**
      * Return the source line number of a source reference entry created by
      * {@link #writeSourceReference}.
-     * 
+     *
      * @param backtrace the backtrace array
      * @param pos the start position of the source reference entry
      * @return the source line number
@@ -803,27 +801,5 @@ class StackAccessControlContextVisitor extends JavaStackFrameVisitor {
         }
 
         return !isPrivileged;
-    }
-
-    @NeverInline("Starting a stack walk in the caller frame")
-    @SuppressWarnings({"deprecation"}) // deprecated starting JDK 17
-    public static AccessControlContext getFromStack() {
-        StackAccessControlContextVisitor visitor = new StackAccessControlContextVisitor();
-        JavaStackWalker.walkCurrentThread(KnownIntrinsics.readCallerStackPointer(), visitor);
-        Target_java_security_AccessControlContext wrapper;
-
-        if (visitor.localArray.isEmpty()) {
-            if (visitor.isPrivileged && visitor.privilegedContext == null) {
-                return null;
-            }
-            wrapper = new Target_java_security_AccessControlContext(null, visitor.privilegedContext);
-        } else {
-            ProtectionDomain[] context = visitor.localArray.toArray(new ProtectionDomain[visitor.localArray.size()]);
-            wrapper = new Target_java_security_AccessControlContext(context, visitor.privilegedContext);
-        }
-
-        wrapper.isPrivileged = visitor.isPrivileged;
-        wrapper.isAuthorized = true;
-        return SubstrateUtil.cast(wrapper, AccessControlContext.class);
     }
 }

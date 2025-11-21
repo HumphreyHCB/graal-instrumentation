@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,7 @@ import jdk.graal.compiler.lir.LabelRef;
 import jdk.graal.compiler.lir.Variable;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
+import jdk.graal.compiler.replacements.nodes.StringCodepointIndexToByteIndexNode;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterConfig;
 import jdk.vm.ci.code.StackSlot;
@@ -233,7 +234,7 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     }
 
     @SuppressWarnings("unused")
-    default void emitArrayFill(JavaKind commonElementKind, EnumSet<?> runtimeCheckedCPUFeatures, Value array, Value arrayBaseOffset, Value length, Value value) {
+    default void emitArrayFill(JavaKind commonElementKind, Value array, Value arrayBaseOffset, Value length, Value value) {
         throw GraalError.unimplemented("Arrays.fill substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
     }
 
@@ -270,13 +271,24 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     @SuppressWarnings("unused")
     default void emitArrayCopyWithConversion(Stride strideSrc, Stride strideDst, EnumSet<?> runtimeCheckedCPUFeatures,
                     Value arraySrc, Value offsetSrc, Value arrayDst, Value offsetDst, Value length) {
-        throw GraalError.unimplemented("Array.copy with variable stride substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
+        throw GraalError.unimplemented("Array.copy with conversion substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
     }
 
     @SuppressWarnings("unused")
     default void emitArrayCopyWithConversion(EnumSet<?> runtimeCheckedCPUFeatures,
                     Value arraySrc, Value offsetSrc, Value arrayDst, Value offsetDst, Value length, Value dynamicStrides) {
         throw GraalError.unimplemented("Array.copy with variable stride substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
+    }
+
+    /**
+     * Variant of
+     * {@link #emitArrayCopyWithConversion(Stride, Stride, EnumSet, Value, Value, Value, Value, Value)}
+     * that also reverses the byte order of values in the destination region.
+     */
+    @SuppressWarnings("unused")
+    default void emitArrayCopyWithReverseBytes(Stride stride, EnumSet<?> runtimeCheckedCPUFeatures,
+                    Value arraySrc, Value offsetSrc, Value arrayDst, Value offsetDst, Value length) {
+        throw GraalError.unimplemented("Array.copy with byte swap substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
     }
 
     /**
@@ -314,11 +326,13 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
          * characters.
          */
         UTF_16(Stride.S2),
+        UTF_16_FOREIGN_ENDIAN(Stride.S2),
         /**
          * Calculate the code range of a UTF-32 string. The result can be any of the following:
          * CR_7BIT, CR_8BIT, CR_16BIT, CR_VALID_FIXED_WIDTH, CR_BROKEN_FIXED_WIDTH.
          */
-        UTF_32(Stride.S4);
+        UTF_32(Stride.S4),
+        UTF_32_FOREIGN_ENDIAN(Stride.S4);
 
         /**
          * Stride to use when reading array elements.
@@ -327,6 +341,14 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
 
         CalcStringAttributesEncoding(Stride stride) {
             this.stride = stride;
+        }
+
+        public boolean isUTF16() {
+            return this == UTF_16 || this == UTF_16_FOREIGN_ENDIAN;
+        }
+
+        public boolean isUTF32() {
+            return this == UTF_32 || this == UTF_32_FOREIGN_ENDIAN;
         }
 
         /*
@@ -447,6 +469,10 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
          */
         MatchRange,
         /**
+         * Variant of {@link #MatchRange} for arrays in non-native endian.
+         */
+        MatchRangeForeignEndian,
+        /**
          * Find index {@code i} where {@code (array[i] | searchValues[1]) == searchValues[0]}.
          */
         WithMask,
@@ -485,7 +511,23 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
          * Note that this variant expects {@code searchValue[0]} to be a <b>direct pointer</b> into
          * a 32-byte memory region.
          */
-        Table
+        Table,
+        /**
+         * Variant of {@link #Table} for arrays in non-native endian.
+         */
+        TableForeignEndian;
+
+        public boolean isMatchRange() {
+            return this == MatchRange || this == MatchRangeForeignEndian;
+        }
+
+        public boolean isTable() {
+            return this == Table || this == TableForeignEndian;
+        }
+
+        public boolean isForeignEndian() {
+            return this == MatchRangeForeignEndian || this == TableForeignEndian;
+        }
     }
 
     @SuppressWarnings("unused")
@@ -512,6 +554,12 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     @SuppressWarnings("unused")
     default Variable emitStringUTF16Compress(EnumSet<?> runtimeCheckedCPUFeatures, Value src, Value dst, Value len) {
         throw GraalError.unimplemented("StringUTF16.compress substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
+    }
+
+    @SuppressWarnings("unused")
+    default Variable emitCodepointIndexToByteIndex(StringCodepointIndexToByteIndexNode.InputEncoding inputEncoding, EnumSet<?> runtimeCheckedCPUFeatures, Value array, Value offset, Value length,
+                    Value index) {
+        throw GraalError.unimplemented("CodepointIndexToByteIndex substitution is not implemented on this architecture"); // ExcludeFromJacocoGeneratedReport
     }
 
     enum CharsetName {
@@ -710,4 +758,10 @@ public interface LIRGeneratorTool extends CoreProviders, DiagnosticLIRGeneratorT
     default VectorSize getMaxVectorSize(EnumSet<?> runtimeCheckedCPUFeatures) {
         throw GraalError.unimplemented("Max vector size is not specified on this architecture"); // ExcludeFromJacocoGeneratedReport
     }
+
+    /**
+     * Determines whether the given register is a reserved register, such as the register holding
+     * the heap base address for compressed pointers.
+     */
+    boolean isReservedRegister(Register r);
 }

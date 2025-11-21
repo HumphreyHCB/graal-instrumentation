@@ -44,9 +44,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.svm.core.CPUFeatureAccess;
@@ -58,13 +58,15 @@ import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.amd64.AMD64CPUFeatureAccess;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.cpufeature.Stubs;
+import com.oracle.svm.core.deopt.DeoptimizationRuntime;
+import com.oracle.svm.core.deopt.DeoptimizationSupport;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.graal.RuntimeCompilation;
 import com.oracle.svm.core.graal.code.AssignedLocation;
 import com.oracle.svm.core.graal.code.PatchConsumerFactory;
 import com.oracle.svm.core.graal.code.SharedCompilationResult;
 import com.oracle.svm.core.graal.code.StubCallingConvention;
-import com.oracle.svm.core.graal.code.SubstrateBackend;
+import com.oracle.svm.core.graal.code.SubstrateBackendWithAssembler;
 import com.oracle.svm.core.graal.code.SubstrateCallingConvention;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionKind;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionType;
@@ -119,6 +121,7 @@ import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.core.common.Stride;
 import jdk.graal.compiler.core.common.alloc.RegisterAllocationConfig;
+import jdk.graal.compiler.core.common.calc.Condition;
 import jdk.graal.compiler.core.common.memory.MemoryExtendKind;
 import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
@@ -188,6 +191,11 @@ import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.common.AddressLoweringByNodePhase;
 import jdk.graal.compiler.phases.util.Providers;
 import jdk.graal.compiler.replacements.amd64.AMD64IntrinsicStubs;
+import jdk.graal.compiler.vector.lir.amd64.AMD64SimdLIRKindTool;
+import jdk.graal.compiler.vector.lir.amd64.AMD64VectorArithmeticLIRGenerator;
+import jdk.graal.compiler.vector.lir.amd64.AMD64VectorMoveFactory;
+import jdk.graal.compiler.vector.lir.amd64.AMD64VectorNodeMatchRules;
+import jdk.graal.compiler.vector.nodes.simd.SimdConstant;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.amd64.AMD64.CPUFeature;
 import jdk.vm.ci.amd64.AMD64Kind;
@@ -197,7 +205,6 @@ import jdk.vm.ci.code.CodeUtil;
 import jdk.vm.ci.code.CompilationRequest;
 import jdk.vm.ci.code.CompiledCode;
 import jdk.vm.ci.code.Register;
-import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterAttributes;
 import jdk.vm.ci.code.RegisterConfig;
 import jdk.vm.ci.code.RegisterValue;
@@ -210,10 +217,11 @@ import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.PlatformKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Value;
 
-public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenerationProvider {
+public class SubstrateAMD64Backend extends SubstrateBackendWithAssembler<AMD64MacroAssembler> implements LIRGenerationProvider {
 
     protected static CompressEncoding getCompressEncoding() {
         return ImageSingletons.lookup(CompressEncoding.class);
@@ -555,27 +563,19 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
             super(compilationId, lir, frameMapBuilder, registerAllocationConfig, callingConvention);
             this.method = method;
 
-            /*
-             * Besides for methods with callee saved registers, we reserve additional stack space
-             * for lazyDeoptStub too. This is necessary because the lazy deopt stub might read
-             * callee-saved register values in the callee of the function to be deoptimized, thus
-             * that stack space must not be overwritten by the lazy deopt stub.
-             */
-            if (method.hasCalleeSavedRegisters() || method.getDeoptStubType() == Deoptimizer.StubType.LazyEntryStub) {
+            if (method.hasCalleeSavedRegisters()) {
                 AMD64CalleeSavedRegisters calleeSavedRegisters = AMD64CalleeSavedRegisters.singleton();
                 FrameMap frameMap = ((FrameMapBuilderTool) frameMapBuilder).getFrameMap();
                 int registerSaveAreaSizeInBytes = calleeSavedRegisters.getSaveAreaSize();
                 StackSlot calleeSaveArea = frameMap.allocateStackMemory(registerSaveAreaSizeInBytes, frameMap.getTarget().wordSize);
 
-                if (method.hasCalleeSavedRegisters()) {
-                    /*
-                     * The offset of the callee save area must be fixed early during image
-                     * generation. It is accessed when compiling methods that have a call with
-                     * callee-saved calling convention. Here we verify that offset computed earlier
-                     * is the same as the offset actually reserved.
-                     */
-                    calleeSavedRegisters.verifySaveAreaOffsetInFrame(calleeSaveArea.getRawOffset());
-                }
+                /*
+                 * The offset of the callee save area must be fixed early during image generation.
+                 * It is accessed when compiling methods that have a call with callee-saved calling
+                 * convention. Here we verify that offset computed earlier is the same as the offset
+                 * actually reserved.
+                 */
+                calleeSavedRegisters.verifySaveAreaOffsetInFrame(calleeSaveArea.getRawOffset());
             }
 
             if (method.canDeoptimize() || method.isDeoptTarget()) {
@@ -686,15 +686,22 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
             SubstrateForeignCallLinkage callTarget = (SubstrateForeignCallLinkage) linkage;
             SharedMethod targetMethod = (SharedMethod) callTarget.getMethod();
             if (SubstrateUtil.HOSTED && targetMethod.forceIndirectCall()) {
-                /*
-                 * Load the address for the start of the text section and then add in the offset for
-                 * this specific method.
-                 */
-                var methodLocation = DynamicImageLayerInfo.singleton().getPriorLayerMethodLocation(targetMethod);
-                AllocatableValue basePointerAddress = newVariable(getLIRKindTool().getWordKind());
-                append(new AMD64CGlobalDataLoadAddressOp(methodLocation.base(), basePointerAddress));
-                Value codeOffsetInSection = emitConstant(getLIRKindTool().getWordKind(), JavaConstant.forLong(methodLocation.offset()));
-                return getArithmetic().emitAdd(basePointerAddress, codeOffsetInSection, false);
+                DynamicImageLayerInfo dynamicImageLayerInfo = DynamicImageLayerInfo.singleton();
+                if (dynamicImageLayerInfo.isMethodCompilationDelayed(targetMethod)) {
+                    AllocatableValue methodAddress = newVariable(getLIRKindTool().getWordKind());
+                    append(new AMD64CGlobalDataLoadAddressOp(dynamicImageLayerInfo.getSymbolForDelayedMethod(targetMethod), methodAddress));
+                    return methodAddress;
+                } else {
+                    /*
+                     * Load the address for the start of the text section and then add in the offset
+                     * for this specific method.
+                     */
+                    var methodLocation = dynamicImageLayerInfo.getPriorLayerMethodLocation(targetMethod);
+                    AllocatableValue basePointerAddress = newVariable(getLIRKindTool().getWordKind());
+                    append(new AMD64CGlobalDataLoadAddressOp(methodLocation.base(), basePointerAddress));
+                    Value codeOffsetInSection = emitConstant(getLIRKindTool().getWordKind(), JavaConstant.forLong(methodLocation.offset()));
+                    return getArithmetic().emitAdd(basePointerAddress, codeOffsetInSection, false);
+                }
             }
             if (!shouldEmitOnlyIndirectCalls()) {
                 return null;
@@ -746,7 +753,13 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
 
         @Override
         public void emitDeoptimize(Value actionAndReason, Value failedSpeculation, LIRFrameState state) {
-            throw shouldNotReachHere("Substrate VM does not use deoptimization");
+            if (!SubstrateUtil.HOSTED && DeoptimizationSupport.enabled()) {
+                ForeignCallLinkage linkage = getForeignCalls().lookupForeignCall(DeoptimizationRuntime.DEOPTIMIZE);
+                emitForeignCall(linkage, state, actionAndReason, failedSpeculation);
+                append(new DeadEndOp());
+            } else {
+                throw shouldNotReachHere("Substrate VM does not use deoptimization");
+            }
         }
 
         @Override
@@ -835,13 +848,14 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         }
 
         @Override
-        public Register getHeapBaseRegister() {
-            return ReservedRegisters.singleton().getHeapBaseRegister();
+        public boolean isReservedRegister(Register r) {
+            return ReservedRegisters.singleton().isReservedRegister(r);
         }
 
         @Override
-        protected void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key) {
-            super.emitRangeTableSwitch(lowKey, defaultTarget, targets, remainingStrategy, remainingTargets, key);
+        protected void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key,
+                        boolean inputMayBeOutOfRange, boolean mayEmitThreadedCode) {
+            super.emitRangeTableSwitch(lowKey, defaultTarget, targets, remainingStrategy, remainingTargets, key, inputMayBeOutOfRange, mayEmitThreadedCode);
             markIndirectBranchTargets(targets);
         }
 
@@ -1065,7 +1079,7 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
             }
 
             /* Register allocator cannot handle variables at call sites, need a fixed register. */
-            Register frameAnchorRegister = AMD64.r13;
+            Register frameAnchorRegister = AMD64.rbx;
             AllocatableValue frameAnchor = frameAnchorRegister.asValue(FrameAccess.getWordStamp().getLIRKind(getLIRGeneratorTool().getLIRKindTool()));
             gen.emitMove(frameAnchor, operand(getJavaFrameAnchor(callTarget)));
             return frameAnchor;
@@ -1144,12 +1158,9 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
      * If a method doesn't need a frame pointer, we use the following forms:
      *
      * <pre>
-     *          |        needsFramePointer        |
+     *          |    needsFramePointer = false    |
      *          +---------------------------------+
-     *          |              false              |
-     *          +---------------------------------+
-     *          |      preserveFramePointer       |
-     *          +----------------+----------------+
+     *          |   preserveFramePointer = ...    |
      *          |     false      |      true      |
      *  --------+----------------+----------------+
      *          |  ; prologue    |  ; prologue    |
@@ -1180,12 +1191,9 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
      * If a method does need a frame pointer, we use the following forms:
      *
      * <pre>
-     *          |                 needsFramePointer                 |
+     *          |             needsFramePointer = true              |
      *          +---------------------------------------------------+
-     *          |                       true                        |
-     *          +---------------------------------------------------+
-     *          |               preserveFramePointer                |
-     *          +-------------------------+-------------------------+
+     *          |            preserveFramePointer = ...             |
      *          |          false          |          true           |
      *  --------+-------------------------+-------------------------+
      *          |  ; prologue             |  ; prologue             |
@@ -1335,8 +1343,8 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
     }
 
     /**
-     * Generates the prolog of a
-     * {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EagerEntryStub} method.
+     * Generates the prologue of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EntryStub}
+     * method.
      */
     protected static class DeoptEntryStubContext extends SubstrateAMD64FrameContext {
         protected DeoptEntryStubContext(SharedMethod method, CallingConvention callingConvention) {
@@ -1347,35 +1355,48 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         public void enter(CompilationResultBuilder tasm) {
             AMD64MacroAssembler asm = (AMD64MacroAssembler) tasm.asm;
             RegisterConfig registerConfig = tasm.frameMap.getRegisterConfig();
+            Register frameRegister = registerConfig.getFrameRegister();
             Register gpReturnReg = registerConfig.getReturnRegister(JavaKind.Long);
             Register fpReturnReg = registerConfig.getReturnRegister(JavaKind.Double);
+            Register firstArgument = ValueUtil.asRegister(callingConvention.getArgument(0));
+            assert !firstArgument.equals(gpReturnReg) : "overwriting return register";
 
-            /* Move the DeoptimizedFrame into the first calling convention register. */
-            Register deoptimizedFrame = ValueUtil.asRegister(callingConvention.getArgument(0));
-            assert !deoptimizedFrame.equals(gpReturnReg) : "overwriting return reg";
             /*
              * Since this is the target for all deoptimizations we must mark the start of this
              * routine as an indirect target.
              */
             asm.maybeEmitIndirectTargetMarker();
-            asm.movq(deoptimizedFrame, registerConfig.getFrameRegister());
+
+            /*
+             * Keep the return address slot. The correct return address is written in the stub
+             * itself (read more there). The original return address is stored in the deopt slot.
+             *
+             * Keeping this slot also ensures that the stack pointer is aligned properly.
+             */
+            asm.subq(registerConfig.getFrameRegister(), FrameAccess.returnAddressSize());
+
+            super.enter(tasm);
+
+            /*
+             * Synthesize the parameters for the deopt stub. This needs to be done after enter() to
+             * avoid overwriting register values that it might save to the stack.
+             */
+
+            /* Pass the address of the frame to deoptimize as first argument. */
+            asm.leaq(firstArgument, new AMD64Address(frameRegister, tasm.frameMap.totalFrameSize()));
 
             /* Copy the original return registers values into the argument registers. */
             asm.movq(ValueUtil.asRegister(callingConvention.getArgument(1)), gpReturnReg);
             asm.movdq(ValueUtil.asRegister(callingConvention.getArgument(2)), fpReturnReg);
-
-            /* Add a dummy return address to the stack so that RSP is properly aligned. */
-            asm.subq(registerConfig.getFrameRegister(), FrameAccess.returnAddressSize());
-            super.enter(tasm);
         }
     }
 
     /**
-     * Generates the epilog of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#ExitStub}
+     * Generates the epilogue of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#ExitStub}
      * method.
      *
      * Note no special handling is necessary for CFI as this will be a direct call from the
-     * {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EagerEntryStub}.
+     * {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EntryStub}.
      */
     protected static class DeoptExitStubContext extends SubstrateAMD64FrameContext {
         protected DeoptExitStubContext(SharedMethod method, CallingConvention callingConvention) {
@@ -1483,13 +1504,18 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         public AMD64LIRInstruction createLoadMethodPointerConstant(AllocatableValue dst, SubstrateMethodPointerConstant constant) {
             if (ImageLayerBuildingSupport.buildingExtensionLayer()) {
                 if (constant.pointer().getMethod() instanceof SharedMethod sharedMethod && sharedMethod.forceIndirectCall()) {
-                    /*
-                     * AMD64LoadMethodPointerConstantOp retrieves the address via a PC-relative
-                     * load. This is not possible to do in extension layers when referring to
-                     * methods defined in prior layers.
-                     */
-                    var methodLocation = DynamicImageLayerInfo.singleton().getPriorLayerMethodLocation(sharedMethod);
-                    return new AMD64CGlobalDataLoadAddressOp(methodLocation.base(), dst, methodLocation.offset());
+                    DynamicImageLayerInfo dynamicImageLayerInfo = DynamicImageLayerInfo.singleton();
+                    if (dynamicImageLayerInfo.isMethodCompilationDelayed(sharedMethod)) {
+                        return new AMD64CGlobalDataLoadAddressOp(dynamicImageLayerInfo.getSymbolForDelayedMethod(sharedMethod), dst);
+                    } else {
+                        /*
+                         * AMD64LoadMethodPointerConstantOp retrieves the address via a PC-relative
+                         * load. This is not possible to do in extension layers when referring to
+                         * methods defined in prior layers.
+                         */
+                        var methodLocation = dynamicImageLayerInfo.getPriorLayerMethodLocation(sharedMethod);
+                        return new AMD64CGlobalDataLoadAddressOp(methodLocation.base(), dst, methodLocation.offset());
+                    }
                 }
             }
 
@@ -1518,6 +1544,11 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
                 return createLoadMethodPointerConstant(dst, constant);
             }
             return super.createStackLoad(dst, src);
+        }
+
+        @Override
+        public Register getPreferredGeneralPurposeScratchRegister() {
+            return ReservedRegisters.singleton().getCodeBaseRegister();
         }
 
         protected AMD64LIRInstruction loadObjectConstant(AllocatableValue dst, CompressibleConstant constant) {
@@ -1660,7 +1691,7 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         private boolean needsFramePointer;
 
         /** The offset at which the frame pointer save area is located. */
-        private int framePointerSaveAreaOffset;
+        private int framePointerSaveAreaOffset = -1;
 
         SubstrateAMD64FrameMap(CodeCacheProvider codeCache, SubstrateAMD64RegisterConfig registerConfig, ReferenceMapBuilderFactory referenceMapFactory, SharedMethod method) {
             super(codeCache, registerConfig, referenceMapFactory, registerConfig.shouldUseBasePointer());
@@ -1689,6 +1720,7 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
          * return address.
          */
         private void allocateFramePointerSaveArea() {
+            assert framePointerSaveAreaOffset == -1;
             int framePointerSaveAreaSize = getTarget().wordSize;
             if (preserveFramePointer()) {
                 framePointerSaveAreaSize += returnAddressSize();
@@ -1709,12 +1741,13 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
 
         int getFramePointerSaveAreaOffset() {
             assert needsFramePointer() : "no frame pointer save area";
+            assert framePointerSaveAreaOffset != -1;
             return framePointerSaveAreaOffset;
         }
     }
 
     private static boolean isCalleeSaved(Register register, RegisterConfig config, SharedMethod method) {
-        RegisterAttributes registerAttributes = config.getAttributesMap()[register.number];
+        RegisterAttributes registerAttributes = config.getAttributesMap().get(register.number);
         return registerAttributes.isCalleeSave() || registerAttributes.isAllocatable() && method.hasCalleeSavedRegisters();
     }
 
@@ -1741,16 +1774,28 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         return lirGenerationResult;
     }
 
+    protected static boolean isVectorizationTarget() {
+        return ((AMD64) ConfigurationValues.getTarget().arch).getFeatures().contains(AMD64.CPUFeature.AVX);
+    }
+
     protected AMD64ArithmeticLIRGenerator createArithmeticLIRGen(RegisterValue nullRegisterValue) {
-        return new AMD64ArithmeticLIRGenerator(nullRegisterValue);
+        if (isVectorizationTarget()) {
+            return AMD64VectorArithmeticLIRGenerator.create(nullRegisterValue, ConfigurationValues.getTarget().arch);
+        } else {
+            return new AMD64ArithmeticLIRGenerator(nullRegisterValue);
+        }
     }
 
     protected AMD64MoveFactoryBase createMoveFactory(LIRGenerationResult lirGenRes, BackupSlotProvider backupSlotProvider) {
         SharedMethod method = ((SubstrateLIRGenerationResult) lirGenRes).getMethod();
-        return new SubstrateAMD64MoveFactory(backupSlotProvider, method, createLirKindTool());
+        AMD64MoveFactoryBase factory = new SubstrateAMD64MoveFactory(backupSlotProvider, method, createLirKindTool());
+        if (isVectorizationTarget()) {
+            factory = new AMD64VectorMoveFactory(factory, backupSlotProvider, AMD64Assembler.AMD64SIMDInstructionEncoding.forFeatures(((AMD64) ConfigurationValues.getTarget().arch).getFeatures()));
+        }
+        return factory;
     }
 
-    protected static class SubstrateAMD64LIRKindTool extends AMD64LIRKindTool {
+    protected static class SubstrateAMD64LIRKindTool extends AMD64LIRKindTool implements AMD64SimdLIRKindTool {
         @Override
         public LIRKind getNarrowOopKind() {
             return LIRKind.compressedReference(AMD64Kind.QWORD);
@@ -1766,17 +1811,76 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         return new SubstrateAMD64LIRKindTool();
     }
 
+    protected class SubstrateAMD64VectorLIRGenerator extends SubstrateAMD64LIRGenerator {
+        public SubstrateAMD64VectorLIRGenerator(LIRKindTool lirKindTool, AMD64ArithmeticLIRGenerator arithmeticLIRGen, MoveFactory moveFactory, Providers providers,
+                        LIRGenerationResult lirGenRes) {
+            super(lirKindTool, arithmeticLIRGen, moveFactory, providers, lirGenRes);
+        }
+
+        @Override
+        public Variable emitIntegerTestMove(Value left, Value right, Value trueValue, Value falseValue) {
+            if (arithmeticLIRGen instanceof AMD64VectorArithmeticLIRGenerator vectorGen) {
+                Variable vectorResult = vectorGen.emitVectorIntegerTestMove(left, right, trueValue, falseValue);
+                if (vectorResult != null) {
+                    return vectorResult;
+                }
+            }
+            return super.emitIntegerTestMove(left, right, trueValue, falseValue);
+        }
+
+        @Override
+        public Variable emitConditionalMove(PlatformKind cmpKind, Value left, Value right, Condition cond, boolean unorderedIsTrue, Value trueValue, Value falseValue) {
+            if (arithmeticLIRGen instanceof AMD64VectorArithmeticLIRGenerator vectorGen) {
+                Variable vectorResult = vectorGen.emitVectorConditionalMove(cmpKind, left, right, cond, unorderedIsTrue, trueValue, falseValue);
+                if (vectorResult != null) {
+                    return vectorResult;
+                }
+            }
+            return super.emitConditionalMove(cmpKind, left, right, cond, unorderedIsTrue, trueValue, falseValue);
+        }
+
+        @Override
+        public Value emitConstant(LIRKind kind, Constant constant) {
+            int length = kind.getPlatformKind().getVectorLength();
+            if (length == 1) {
+                return super.emitConstant(kind, constant);
+            } else if (constant instanceof SimdConstant) {
+                assert ((SimdConstant) constant).getVectorLength() == length;
+                return super.emitConstant(kind, constant);
+            } else {
+                return super.emitConstant(kind, SimdConstant.broadcast(constant, length));
+            }
+        }
+
+        @Override
+        public Variable emitReverseBytes(Value input) {
+            AMD64Kind kind = (AMD64Kind) input.getPlatformKind();
+            if (kind.getVectorLength() == 1) {
+                return super.emitReverseBytes(input);
+            }
+            return ((AMD64VectorArithmeticLIRGenerator) getArithmetic()).emitReverseBytes(input);
+        }
+    }
+
     @Override
     public LIRGeneratorTool newLIRGenerator(LIRGenerationResult lirGenRes) {
         RegisterValue nullRegisterValue = useLinearPointerCompression() ? ReservedRegisters.singleton().getHeapBaseRegister().asValue() : null;
         AMD64ArithmeticLIRGenerator arithmeticLIRGen = createArithmeticLIRGen(nullRegisterValue);
         BackupSlotProvider backupSlotProvider = new BackupSlotProvider(lirGenRes.getFrameMapBuilder());
         AMD64MoveFactoryBase moveFactory = createMoveFactory(lirGenRes, backupSlotProvider);
-        return new SubstrateAMD64LIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
+        if (isVectorizationTarget()) {
+            return new SubstrateAMD64VectorLIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
+        } else {
+            return new SubstrateAMD64LIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
+        }
     }
 
     protected AMD64NodeMatchRules createMatchRules(LIRGeneratorTool lirGen) {
-        return new AMD64NodeMatchRules(lirGen);
+        if (isVectorizationTarget()) {
+            return new AMD64VectorNodeMatchRules(lirGen);
+        } else {
+            return new AMD64NodeMatchRules(lirGen);
+        }
     }
 
     @Override
@@ -1814,18 +1918,22 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         var sharedCompilationResult = (SharedCompilationResult) compilationResult;
         var substrateAMD64FrameMap = (SubstrateAMD64FrameMap) frameMap;
         sharedCompilationResult.setFrameSize(substrateAMD64FrameMap.frameSize());
+        if (SubstrateUtil.HOSTED) {
+            sharedCompilationResult.setCodeAlignment(SubstrateOptions.buildTimeCodeAlignment(options));
+        }
         if (substrateAMD64FrameMap.needsFramePointer()) {
             sharedCompilationResult.setFramePointerSaveAreaOffset(substrateAMD64FrameMap.getFramePointerSaveAreaOffset());
         }
         return crb;
     }
 
+    @Override
     protected AMD64MacroAssembler createAssembler(OptionValues options) {
         return new AMD64MacroAssembler(getTarget(), options, true);
     }
 
     protected FrameContext createFrameContext(SharedMethod method, Deoptimizer.StubType stubType, CallingConvention callingConvention) {
-        if (stubType == Deoptimizer.StubType.EagerEntryStub || stubType == Deoptimizer.StubType.LazyEntryStub) {
+        if (stubType == Deoptimizer.StubType.EntryStub) {
             return new DeoptEntryStubContext(method, callingConvention);
         } else if (stubType == Deoptimizer.StubType.ExitStub) {
             return new DeoptExitStubContext(method, callingConvention);
@@ -1857,11 +1965,6 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         if (GraalOptions.OptimizeLongJumps.getValue(crb.getOptions())) {
             optimizeLongJumps(crb);
         }
-    }
-
-    public AMD64Assembler createAssemblerNoOptions() {
-        OptionValues o = new OptionValues(EconomicMap.create());
-        return createAssembler(o);
     }
 
     protected void resetForEmittingCode(CompilationResultBuilder crb) {
@@ -1943,12 +2046,12 @@ public class SubstrateAMD64Backend extends SubstrateBackend implements LIRGenera
         private boolean initialized;
 
         @Override
-        protected RegisterArray initAllocatable(RegisterArray registers) {
+        protected List<Register> initAllocatable(List<Register> registers) {
             initialized = true;
             if (preserveFramePointer) {
-                var allocatableRegisters = new ArrayList<>(registers.asList());
+                var allocatableRegisters = new ArrayList<>(registers);
                 allocatableRegisters.remove(rbp);
-                return super.initAllocatable(new RegisterArray(allocatableRegisters));
+                return super.initAllocatable(List.copyOf(allocatableRegisters));
             }
             return super.initAllocatable(registers);
         }

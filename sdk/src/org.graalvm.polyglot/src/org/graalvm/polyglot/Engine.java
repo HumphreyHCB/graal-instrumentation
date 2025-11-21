@@ -80,6 +80,7 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -90,6 +91,7 @@ import java.util.logging.Level;
 import org.graalvm.home.HomeFinder;
 import org.graalvm.home.Version;
 import org.graalvm.nativeimage.ImageInfo;
+import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.options.OptionDescriptor;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.polyglot.HostAccess.MutableTargetMapping;
@@ -112,7 +114,6 @@ import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.polyglot.io.MessageTransport;
 import org.graalvm.polyglot.io.ProcessHandler;
-import org.graalvm.polyglot.proxy.Proxy;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyDate;
 import org.graalvm.polyglot.proxy.ProxyDuration;
@@ -314,6 +315,76 @@ public final class Engine implements AutoCloseable {
     @Override
     public void close() {
         close(false);
+    }
+
+    /**
+     * Stores the auxiliary engine cache to the targetFile without cancellation.
+     *
+     * @see #storeCache(Path, WordPointer)
+     * @throws UnsupportedOperationException if this engine or the host virtual machine does not
+     *             support storing the cache.
+     * @since 25.0
+     */
+    public boolean storeCache(Path targetFile) throws UnsupportedOperationException {
+        return dispatch.storeCache(receiver, targetFile, 0L);
+    }
+
+    /**
+     * Stores the auxiliary engine cache to the {@code targetFile}. If it already exists, the file
+     * will be overwritten. The option <code>engine.CacheStoreEnabled</code> must be set to
+     * <code>true</code> to use this feature. Stored caches may be loaded by specifying the path
+     * using the <code>engine.CacheLoad</code> option.
+     * <p>
+     * Note that this feature is experimental and only supported on native-image hosts with
+     * Truffle's enterprise extensions.
+     * </p>
+     *
+     * <h3>Basic Usage:</h3>
+     *
+     * <pre>
+     * // Store the engine cache into a file
+     * Path store = Files.createTempFile("cache", "engine");
+     * try (Engine e = Engine.newBuilder().allowExperimentalOptions(true).option("engine.CacheStoreEnabled", "true").build()) {
+     *     try (Context c = Context.newBuilder().engine(e).build()) {
+     *         // Evaluate sources, run application
+     *     }
+     *     e.storeCache(store);
+     * }
+     *
+     * // Load the engine cache from a file
+     * try (Engine e = Engine.newBuilder().allowExperimentalOptions(true).option("engine.CacheLoad", store.toAbsolutePath().toString()).build()) {
+     *     try (Context c = Context.newBuilder().engine(e).build()) {
+     *         // The context should be able to use
+     *         // the existing code cache.
+     *     }
+     * }
+     * </pre>
+     *
+     * <p>
+     * See the <a href=
+     * "https://github.com/oracle/graal/blob/master/truffle/docs/AuxiliaryEngineCachingEnterprise.md">
+     * documentation</a> on auxiliary engine caching for further details.
+     * </p>
+     *
+     * @param targetFile the file to which the cache is stored
+     * @param cancelledWord a native pointer; if set to a non-zero value, the operation is
+     *            cancelled. Allows cancellation of the cache store operation through a
+     *            <code>cancelled</code> control word. The memory {@code address} pointing to the
+     *            control word is polled periodically during storage without guaranteed frequency
+     *            and may be delayed by safepoints such as garbage collection. A control word value
+     *            of zero must be maintained for the duration of the operation. If a non-zero value
+     *            is detected, the operation will be cancelled. A non-null provided pointer must
+     *            remain accessible during the entire operation. Providing an invalid or
+     *            inaccessible pointer may result in a VM crash.
+     * @return <code>true</code> if the file was written; otherwise, <code>false</code>
+     * @throws CancellationException if the storeCache operation was cancelled via the
+     *             <code>cancelled</code> pointer
+     * @throws UnsupportedOperationException if this engine or host virtual machine does not support
+     *             cache storage
+     * @since 25.0
+     */
+    public boolean storeCache(Path targetFile, WordPointer cancelledWord) throws CancellationException, UnsupportedOperationException {
+        return dispatch.storeCache(receiver, targetFile, cancelledWord.rawValue());
     }
 
     /**
@@ -781,7 +852,7 @@ public final class Engine implements AutoCloseable {
                 for (Object systemKey : properties.keySet()) {
                     String key = (String) systemKey;
                     if ("polyglot.engine.AllowExperimentalOptions".equals(key) || key.equals("polyglot.engine.resourcePath") || key.startsWith("polyglot.engine.resourcePath.") ||
-                                    key.equals("polyglot.engine.userResourceCache")) {
+                                    key.equals("polyglot.engine.userResourceCache") || key.equals("polyglot.engine.allowUnsupportedPlatform")) {
                         continue;
                     }
                     if (key.startsWith(systemPropertyPrefix)) {
@@ -870,21 +941,6 @@ public final class Engine implements AutoCloseable {
     static class APIAccessImpl extends AbstractPolyglotImpl.APIAccess {
 
         private static final APIAccessImpl INSTANCE = new APIAccessImpl();
-
-        private static final ProxyArray EMPTY = new ProxyArray() {
-
-            public void set(long index, Value value) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
-
-            public long getSize() {
-                return 0;
-            }
-
-            public Object get(long index) {
-                throw new ArrayIndexOutOfBoundsException();
-            }
-        };
 
         APIAccessImpl() {
         }
@@ -1316,146 +1372,6 @@ public final class Engine implements AutoCloseable {
         }
 
         @Override
-        public boolean isProxyArray(Object proxy) {
-            return proxy instanceof ProxyArray;
-        }
-
-        @Override
-        public boolean isProxyDate(Object proxy) {
-            return proxy instanceof ProxyDate;
-        }
-
-        @Override
-        public boolean isProxyDuration(Object proxy) {
-            return proxy instanceof ProxyDuration;
-        }
-
-        @Override
-        public boolean isProxyExecutable(Object proxy) {
-            return proxy instanceof ProxyExecutable;
-        }
-
-        @Override
-        public boolean isProxyHashMap(Object proxy) {
-            return proxy instanceof ProxyHashMap;
-        }
-
-        @Override
-        public boolean isProxyInstant(Object proxy) {
-            return proxy instanceof ProxyInstant;
-        }
-
-        @Override
-        public boolean isProxyInstantiable(Object proxy) {
-            return proxy instanceof ProxyInstantiable;
-        }
-
-        @Override
-        public boolean isProxyIterable(Object proxy) {
-            return proxy instanceof ProxyIterable;
-        }
-
-        @Override
-        public boolean isProxyIterator(Object proxy) {
-            return proxy instanceof ProxyIterator;
-        }
-
-        @Override
-        public boolean isProxyNativeObject(Object proxy) {
-            return proxy instanceof ProxyNativeObject;
-        }
-
-        @Override
-        public boolean isProxyObject(Object proxy) {
-            return proxy instanceof ProxyObject;
-        }
-
-        @Override
-        public boolean isProxyTime(Object proxy) {
-            return proxy instanceof ProxyTime;
-        }
-
-        @Override
-        public boolean isProxyTimeZone(Object proxy) {
-            return proxy instanceof ProxyTimeZone;
-        }
-
-        @Override
-        public boolean isProxy(Object proxy) {
-            return proxy instanceof Proxy;
-        }
-
-        @Override
-        public Class<?> getProxyArrayClass() {
-            return ProxyArray.class;
-        }
-
-        @Override
-        public Class<?> getProxyDateClass() {
-            return ProxyDate.class;
-        }
-
-        @Override
-        public Class<?> getProxyDurationClass() {
-            return ProxyDuration.class;
-        }
-
-        @Override
-        public Class<?> getProxyExecutableClass() {
-            return ProxyExecutable.class;
-        }
-
-        @Override
-        public Class<?> getProxyHashMapClass() {
-            return ProxyHashMap.class;
-        }
-
-        @Override
-        public Class<?> getProxyInstantClass() {
-            return ProxyInstant.class;
-        }
-
-        @Override
-        public Class<?> getProxyInstantiableClass() {
-            return ProxyInstantiable.class;
-        }
-
-        @Override
-        public Class<?> getProxyIterableClass() {
-            return ProxyIterable.class;
-        }
-
-        @Override
-        public Class<?> getProxyIteratorClass() {
-            return ProxyIterator.class;
-        }
-
-        @Override
-        public Class<?> getProxyNativeObjectClass() {
-            return ProxyNativeObject.class;
-        }
-
-        @Override
-        public Class<?> getProxyObjectClass() {
-            return ProxyObject.class;
-        }
-
-        @Override
-        public Class<?> getProxyTimeClass() {
-            return ProxyTime.class;
-        }
-
-        @Override
-        public Class<?> getProxyTimeZoneClass() {
-            return ProxyTimeZone.class;
-        }
-
-        @Override
-        public Class<?> getProxyClass() {
-            return Proxy.class;
-        }
-
-        @Override
         public Object callProxyExecutableExecute(Object proxy, Object[] objects) {
             return ((ProxyExecutable) proxy).execute((Value[]) objects);
         }
@@ -1490,11 +1406,26 @@ public final class Engine implements AutoCloseable {
             return ((ProxyArray) proxy).getSize();
         }
 
+        private static final ProxyArray EMPTY_PROXY_ARRAY = new ProxyArray() {
+
+            public void set(long index, Value value) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+
+            public long getSize() {
+                return 0;
+            }
+
+            public Object get(long index) {
+                throw new ArrayIndexOutOfBoundsException();
+            }
+        };
+
         @Override
         public Object callProxyObjectMemberKeys(Object proxy) {
             Object result = ((ProxyObject) proxy).getMemberKeys();
             if (result == null) {
-                result = EMPTY;
+                result = EMPTY_PROXY_ARRAY;
             }
             return result;
         }
@@ -1758,15 +1689,14 @@ public final class Engine implements AutoCloseable {
             }
             impls.add(found);
         }
-        Collections.sort(impls, Comparator.comparing(AbstractPolyglotImpl::getPriority));
-        Version polyglotVersion = Boolean.getBoolean("polyglotimpl.DisableVersionChecks") ? null : getPolyglotVersion();
-        AbstractPolyglotImpl prev = null;
-        for (AbstractPolyglotImpl impl : impls) {
-            if (impl.getPriority() == Integer.MIN_VALUE) {
-                // disabled
-                continue;
-            }
-            if (polyglotVersion != null) {
+        /*
+         * Verifies the Polyglot and Truffle API versions before sorting polyglot implementations.
+         * This is necessary because AbstractPolyglotImpl#getPriority, which is used during sorting,
+         * may already depend on compatible API versions and could trigger incompatibility issues.
+         */
+        if (!Boolean.getBoolean("polyglotimpl.DisableVersionChecks")) {
+            Version polyglotVersion = getPolyglotVersion();
+            for (AbstractPolyglotImpl impl : impls) {
                 String truffleVersionString = impl.getTruffleVersion();
                 Version truffleVersion = truffleVersionString != null ? Version.parse(truffleVersionString) : Version.create(23, 1, 1);
                 if (!polyglotVersion.equals(truffleVersion)) {
@@ -1793,6 +1723,14 @@ public final class Engine implements AutoCloseable {
                                     """);
                     throw new IllegalStateException(errorMessage.toString());
                 }
+            }
+        }
+        Collections.sort(impls, Comparator.comparing(AbstractPolyglotImpl::getPriority));
+        AbstractPolyglotImpl prev = null;
+        for (AbstractPolyglotImpl impl : impls) {
+            if (impl.getPriority() == Integer.MIN_VALUE) {
+                // disabled
+                continue;
             }
             impl.setNext(prev);
             try {

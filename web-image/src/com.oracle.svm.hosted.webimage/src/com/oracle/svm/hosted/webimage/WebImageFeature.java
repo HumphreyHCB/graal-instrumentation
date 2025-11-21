@@ -33,8 +33,18 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.graalvm.nativeimage.ImageSingletons;
+import org.graalvm.nativeimage.Platforms;
+import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.hosted.Feature;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
+import org.graalvm.nativeimage.impl.RuntimeJNIAccessSupport;
+import org.graalvm.nativeimage.impl.RuntimeSystemPropertiesSupport;
 import org.graalvm.webimage.api.JS;
 import org.graalvm.webimage.api.JSBigInt;
 import org.graalvm.webimage.api.JSBoolean;
@@ -42,19 +52,52 @@ import org.graalvm.webimage.api.JSNumber;
 import org.graalvm.webimage.api.JSObject;
 import org.graalvm.webimage.api.JSString;
 import org.graalvm.webimage.api.JSSymbol;
-import org.graalvm.nativeimage.AnnotationAccess;
-import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.hosted.Feature;
-import org.graalvm.nativeimage.hosted.RuntimeReflection;
-import org.graalvm.nativeimage.impl.ConfigurationCondition;
-import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
-import org.graalvm.nativeimage.impl.RuntimeJNIAccessSupport;
-import org.graalvm.nativeimage.impl.RuntimeSystemPropertiesSupport;
 
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
-import com.oracle.svm.webimage.WebImageJSLog;
+import com.oracle.svm.configure.ConfigurationFile;
+import com.oracle.svm.configure.ReflectionConfigurationParser;
+import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
+import com.oracle.svm.core.c.ProjectHeaderFile;
+import com.oracle.svm.core.c.ProjectHeaderFileHeaderResolversRegistryFeature;
+import com.oracle.svm.core.code.ImageCodeInfo;
+import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
+import com.oracle.svm.core.feature.InternalFeature;
+import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
+import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
+import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
+import com.oracle.svm.core.heap.RestrictHeapAccessCallees;
+import com.oracle.svm.core.hub.DynamicHub;
+import com.oracle.svm.core.hub.DynamicHubCompanion;
+import com.oracle.svm.core.jdk.PlatformNativeLibrarySupport;
+import com.oracle.svm.core.jdk.SystemInOutErrSupport;
+import com.oracle.svm.core.jdk.SystemPropertiesSupport;
+import com.oracle.svm.core.jdk.buildtimeinit.FileSystemProviderBuildTimeInitSupport;
+import com.oracle.svm.core.log.Log;
+import com.oracle.svm.core.log.Loggers;
+import com.oracle.svm.core.log.NoopLog;
+import com.oracle.svm.core.option.HostedOptionValues;
+import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
+import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
+import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Disallowed;
+import com.oracle.svm.core.traits.SingletonTraits;
+import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.FeatureImpl;
+import com.oracle.svm.hosted.HostedConfiguration;
+import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
+import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
+import com.oracle.svm.hosted.config.ConfigurationParserUtils;
+import com.oracle.svm.hosted.image.NativeImageCodeCacheFactory;
+import com.oracle.svm.hosted.jni.JNIAccessFeature;
+import com.oracle.svm.hosted.reflect.NativeImageConditionResolver;
+import com.oracle.svm.hosted.webimage.codegen.LowerableResources;
+import com.oracle.svm.hosted.webimage.codegen.WebImageProviders;
+import com.oracle.svm.hosted.webimage.name.WebImageNamingConvention;
+import com.oracle.svm.hosted.webimage.options.WebImageOptions;
+import com.oracle.svm.hosted.webimage.snippets.WebImageNonSnippetLowerings;
+import com.oracle.svm.hosted.webimage.wasm.WasmLogHandler;
+import com.oracle.svm.util.AnnotationUtil;
+import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.webimage.WebImageSystemPropertiesSupport;
 import com.oracle.svm.webimage.api.Nothing;
 import com.oracle.svm.webimage.fs.FileSystemInitializer;
@@ -70,42 +113,14 @@ import com.oracle.svm.webimage.substitute.system.WebImageFileSystem;
 import com.oracle.svm.webimage.substitute.system.WebImageTempFileHelper;
 import com.oracle.svm.webimage.substitute.system.WebImageTempFileHelperSupport;
 import com.oracle.svm.webimage.substitute.system.WebImageTempFileHelperSupportWithoutSecureRandom;
-import com.oracle.svm.configure.ReflectionConfigurationParser;
-import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
-import com.oracle.svm.core.c.ProjectHeaderFile;
-import com.oracle.svm.core.c.ProjectHeaderFileHeaderResolversRegistryFeature;
-import com.oracle.svm.core.code.ImageCodeInfo;
-import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
-import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
-import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.hub.DynamicHubCompanion;
-import com.oracle.svm.core.jdk.FileSystemProviderSupport;
-import com.oracle.svm.core.jdk.PlatformNativeLibrarySupport;
-import com.oracle.svm.core.jdk.SystemInOutErrSupport;
-import com.oracle.svm.core.jdk.SystemPropertiesSupport;
-import com.oracle.svm.core.log.Log;
-import com.oracle.svm.core.option.HostedOptionValues;
-import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.FeatureImpl;
-import com.oracle.svm.hosted.HostedConfiguration;
-import com.oracle.svm.hosted.webimage.codegen.LowerableResources;
-import com.oracle.svm.hosted.webimage.codegen.WebImageProviders;
-import com.oracle.svm.hosted.webimage.name.WebImageNamingConvention;
-import com.oracle.svm.hosted.webimage.options.WebImageOptions;
-import com.oracle.svm.hosted.webimage.wasm.WasmLogHandler;
-import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
-import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
-import com.oracle.svm.hosted.config.ConfigurationParserUtils;
-import com.oracle.svm.hosted.image.NativeImageCodeCacheFactory;
-import com.oracle.svm.hosted.jni.JNIAccessFeature;
-import com.oracle.svm.hosted.reflect.NativeImageConditionResolver;
-import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.debug.DebugContext;
+import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
+import jdk.graal.compiler.phases.util.Providers;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 
+@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Disallowed.class)
 @AutomaticallyRegisteredFeature
 @Platforms(WebImagePlatform.class)
 public class WebImageFeature implements InternalFeature {
@@ -121,6 +136,16 @@ public class WebImageFeature implements InternalFeature {
     @Override
     public void registerForeignCalls(SubstrateForeignCallsProvider foreignCalls) {
         ImplicitExceptions.registerForeignCalls(foreignCalls);
+    }
+
+    @Override
+    public void registerLowerings(RuntimeConfiguration runtimeConfig, OptionValues options, Providers providers, Map<Class<? extends Node>, NodeLoweringProvider<?>> lowerings, boolean hosted) {
+        Predicate<ResolvedJavaMethod> mustNotAllocatePredicate = null;
+        if (hosted) {
+            mustNotAllocatePredicate = method -> ImageSingletons.lookup(RestrictHeapAccessCallees.class).mustNotAllocate(method);
+        }
+
+        WebImageNonSnippetLowerings.registerLowerings(runtimeConfig, mustNotAllocatePredicate, options, providers, lowerings, hosted);
     }
 
     @Override
@@ -153,7 +178,7 @@ public class WebImageFeature implements InternalFeature {
         }
 
         // SystemJimfsFileSystemProvider uses reflection to look up and call this method
-        RuntimeReflection.register(ReflectionUtil.lookupMethod(ReflectionUtil.lookupClass("com.google.common.jimfs.JimfsFileSystem"), "toPath", URI.class));
+        RuntimeReflection.register(ReflectionUtil.lookupMethod(ReflectionUtil.lookupClass("org.graalvm.shadowed.com.google.common.jimfs.JimfsFileSystem"), "toPath", URI.class));
 
         /*
          * The constructors of these classes are package-private to prevent user code from creating
@@ -172,45 +197,33 @@ public class WebImageFeature implements InternalFeature {
          * the cost of having to recreate the Locale and BaseLocale objects once when they're
          * requested.
          *
-         * On JDK21, ReferencedKeySet and ReferencedKeyMap don't exist, so we can't reference them
-         * directly and have to go through reflection.
+         * On JDK21, ReferencedKeySet and ReferencedKeyMap don't exist. We have to go through
+         * reflection to access them because analysis tools like spotbugs still run on JDK21
          */
-        if (JavaVersionUtil.JAVA_SPEC > 21) {
-            Field baseLocaleCacheField = accessImpl.findField("sun.util.locale.BaseLocale$1InterningCache", "CACHE");
-            Field localeCacheField = accessImpl.findField("java.util.Locale$LocaleCache", "LOCALE_CACHE");
+        Field baseLocaleCacheField = accessImpl.findField("sun.util.locale.BaseLocale$1InterningCache", "CACHE");
+        Field localeCacheField = accessImpl.findField("java.util.Locale$LocaleCache", "LOCALE_CACHE");
 
-            access.registerFieldValueTransformer(baseLocaleCacheField, (receiver, originalValue) -> {
-                /*
-                 * Executes `ReferencedKeySet.create(true,
-                 * ReferencedKeySet.concurrentHashMapSupplier())` with reflection.
-                 */
-                Class<?> referencedKeySetClazz = ReflectionUtil.lookupClass("jdk.internal.util.ReferencedKeySet");
-                Method createMethod = ReflectionUtil.lookupMethod(referencedKeySetClazz, "create", boolean.class, Supplier.class);
-                Method concurrentHashMapSupplierMethod = ReflectionUtil.lookupMethod(referencedKeySetClazz, "concurrentHashMapSupplier");
-                return ReflectionUtil.invokeMethod(createMethod, null, true, ReflectionUtil.invokeMethod(concurrentHashMapSupplierMethod, null));
-            });
-
-            access.registerFieldValueTransformer(localeCacheField, (receiver, originalValue) -> {
-                /*
-                 * Executes `ReferencedKeyMap.create(true,
-                 * ReferencedKeyMap.concurrentHashMapSupplier())` with reflection.
-                 */
-                Class<?> referencedKeyMapClazz = ReflectionUtil.lookupClass("jdk.internal.util.ReferencedKeyMap");
-                Method createMethod = ReflectionUtil.lookupMethod(referencedKeyMapClazz, "create", boolean.class, Supplier.class);
-                Method concurrentHashMapSupplierMethod = ReflectionUtil.lookupMethod(referencedKeyMapClazz, "concurrentHashMapSupplier");
-                return ReflectionUtil.invokeMethod(createMethod, null, true, ReflectionUtil.invokeMethod(concurrentHashMapSupplierMethod, null));
-            });
-        } else {
+        access.registerFieldValueTransformer(baseLocaleCacheField, (receiver, originalValue) -> {
             /*
-             * These fields contain an instance of the declaring class (Cache). It has a default
-             * constructor that we can invoke to create an empty cache.
+             * Executes `ReferencedKeySet.create(true,
+             * ReferencedKeySet.concurrentHashMapSupplier())` with reflection.
              */
-            Field baseLocaleCacheField = accessImpl.findField("sun.util.locale.BaseLocale$Cache", "CACHE");
-            Field localeCacheField = accessImpl.findField("java.util.Locale$Cache", "LOCALECACHE");
+            Class<?> referencedKeySetClazz = ReflectionUtil.lookupClass("jdk.internal.util.ReferencedKeySet");
+            Method createMethod = ReflectionUtil.lookupMethod(referencedKeySetClazz, "create", boolean.class, Supplier.class);
+            Method concurrentHashMapSupplierMethod = ReflectionUtil.lookupMethod(referencedKeySetClazz, "concurrentHashMapSupplier");
+            return ReflectionUtil.invokeMethod(createMethod, null, true, ReflectionUtil.invokeMethod(concurrentHashMapSupplierMethod, null));
+        });
 
-            access.registerFieldValueTransformer(baseLocaleCacheField, (receiver, originalValue) -> ReflectionUtil.newInstance(originalValue.getClass()));
-            access.registerFieldValueTransformer(localeCacheField, (receiver, originalValue) -> ReflectionUtil.newInstance(originalValue.getClass()));
-        }
+        access.registerFieldValueTransformer(localeCacheField, (receiver, originalValue) -> {
+            /*
+             * Executes `ReferencedKeyMap.create(true,
+             * ReferencedKeyMap.concurrentHashMapSupplier())` with reflection.
+             */
+            Class<?> referencedKeyMapClazz = ReflectionUtil.lookupClass("jdk.internal.util.ReferencedKeyMap");
+            Method createMethod = ReflectionUtil.lookupMethod(referencedKeyMapClazz, "create", boolean.class, Supplier.class);
+            Method concurrentHashMapSupplierMethod = ReflectionUtil.lookupMethod(referencedKeyMapClazz, "concurrentHashMapSupplier");
+            return ReflectionUtil.invokeMethod(createMethod, null, true, ReflectionUtil.invokeMethod(concurrentHashMapSupplierMethod, null));
+        });
     }
 
     @Override
@@ -219,10 +232,10 @@ public class WebImageFeature implements InternalFeature {
 
         String entryPointConfig = WebImageOptions.EntryPointsConfig.getValue(ImageSingletons.lookup(HostedOptionValues.class));
         if (entryPointConfig != null) {
-            ConfigurationConditionResolver<ConfigurationCondition> conditionResolver = new NativeImageConditionResolver(access.getImageClassLoader(),
+            AccessConditionResolver<AccessCondition> conditionResolver = new NativeImageConditionResolver(access.getImageClassLoader(),
                             ClassInitializationSupport.singleton());
-            ReflectionConfigurationParser<ConfigurationCondition, Class<?>> parser = ConfigurationParserUtils.create(null, false, conditionResolver, entryPointsData, null, null,
-                            access.getImageClassLoader());
+            ReflectionConfigurationParser<AccessCondition, Class<?>> parser = ConfigurationParserUtils.create(ConfigurationFile.REFLECTION, false, conditionResolver, entryPointsData, null,
+                            null, null, access.getImageClassLoader());
             try {
                 parser.parseAndRegister(Path.of(entryPointConfig).toUri());
             } catch (IOException ex) {
@@ -274,22 +287,23 @@ public class WebImageFeature implements InternalFeature {
 
         // This class gets initialized, causing the "unintentionally initialized at build time"
         // error. The initializer is simple and does not depend on other classes, so just allow it.
-        rci.initializeAtBuildTime("com.google.common.jimfs.SystemJimfsFileSystemProvider", "service provider");
-        rci.initializeAtBuildTime("com.google.common.collect.MapMakerInternalMap", "service provider");
-        rci.initializeAtBuildTime("com.google.common.collect.MapMakerInternalMap$1", "service provider");
-        rci.initializeAtBuildTime("com.google.common.collect.MapMakerInternalMap$EntrySet", "service provider");
-        rci.initializeAtBuildTime("com.google.common.collect.MapMakerInternalMap$StrongKeyWeakValueSegment", "service provider");
-        rci.initializeAtBuildTime("com.google.common.collect.MapMakerInternalMap$StrongKeyWeakValueEntry$Helper", "service provider");
-        rci.initializeAtBuildTime("com.google.common.base.Equivalence$Equals", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.jimfs.SystemJimfsFileSystemProvider", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.collect.MapMakerInternalMap", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.collect.MapMakerInternalMap$1", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.collect.MapMakerInternalMap$EntrySet", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.collect.MapMakerInternalMap$StrongKeyWeakValueSegment", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.collect.MapMakerInternalMap$StrongKeyWeakValueEntry$Helper", "service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.base.Equivalence$Equals", "service provider");
 
         // Initializing this class at build-time helps in determining the type of its static field
         // "systemProvider", which is necessary to compile some reflective accesses to the object.
-        rci.initializeAtBuildTime("com.google.common.jimfs.Jimfs", "looks for service provider");
+        rci.initializeAtBuildTime("org.graalvm.shadowed.com.google.common.jimfs.Jimfs", "looks for service provider");
 
         rci.initializeAtRunTime(WebImageTempFileHelper.class, "instances of Random are not allowed in the image heap");
         rci.initializeAtRunTime(WebImageFileSystem.class, "Static fields need to read system properties at runtime");
         rci.initializeAtRunTime(FileSystemInitializer.class, "Static fields need to read system properties at runtime");
         rci.initializeAtRunTime("java.nio.file.FileSystems$DefaultFileSystemHolder", "Parts of static initializer is substituted to inject custom FileSystemProvider");
+        rci.initializeAtRunTime("java.util.zip.ZipFile$Source", "avoid initializing wrong file system");
 
         for (Class<? extends JSObject> jsObjectSubclass : accessImpl.findSubclasses(JSObject.class)) {
             rci.initializeAtRunTime(jsObjectSubclass,
@@ -298,7 +312,7 @@ public class WebImageFeature implements InternalFeature {
         ImageSingletons.add(PlatformNativeLibrarySupport.class, new WebImageNativeLibrarySupport());
 
         switch (WebImageOptions.getBackend()) {
-            case JS, WASMGC -> Log.setLog(new WebImageJSLog());
+            case JS, WASMGC -> Loggers.setRealLog(new NoopLog());
             case WASM -> Log.finalizeDefaultLogHandler(new WasmLogHandler());
         }
 
@@ -316,7 +330,7 @@ public class WebImageFeature implements InternalFeature {
          * Registers our own file system provider, which replaces the default provider for the
          * 'file' scheme.
          */
-        FileSystemProviderSupport.register(WebImageNIOFileSystemProvider.INSTANCE);
+        FileSystemProviderBuildTimeInitSupport.register(WebImageNIOFileSystemProvider.INSTANCE);
     }
 
     @Override
@@ -332,6 +346,6 @@ public class WebImageFeature implements InternalFeature {
         /*
          * Methods annotated with @JS are never trivial.
          */
-        return AnnotationAccess.isAnnotationPresent(callee, JS.class);
+        return AnnotationUtil.isAnnotationPresent(callee, JS.class);
     }
 }

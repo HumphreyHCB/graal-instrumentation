@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.core.heap;
 
+import static com.oracle.svm.core.NeverInline.CALLER_CATCHES_IMPLICIT_EXCEPTIONS;
 import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.EXTREMELY_FAST_PATH_PROBABILITY;
 import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.probability;
 
@@ -161,7 +162,7 @@ public final class ReferenceInternals {
     }
 
     public static boolean hasQueue(Reference<?> instance) {
-        return cast(instance).queue != Target_java_lang_ref_ReferenceQueue.NULL;
+        return cast(instance).queue != Target_java_lang_ref_ReferenceQueue.NULL_QUEUE;
     }
 
     /*
@@ -179,12 +180,12 @@ public final class ReferenceInternals {
         MonitorSupport.singleton().ensureInitialized(processPendingLock);
     }
 
-    @NeverInline("Ensure that every exception can be caught, including implicit exceptions.")
+    @NeverInline(CALLER_CATCHES_IMPLICIT_EXCEPTIONS)
     public static void waitForPendingReferences() throws InterruptedException {
         Heap.getHeap().waitForReferencePendingList();
     }
 
-    @NeverInline("Ensure that every exception can be caught, including implicit exceptions.")
+    @NeverInline(CALLER_CATCHES_IMPLICIT_EXCEPTIONS)
     @SuppressFBWarnings(value = "NN_NAKED_NOTIFY", justification = "Notifies on progress, not a specific state change.")
     public static void processPendingReferences() {
         /*
@@ -229,7 +230,7 @@ public final class ReferenceInternals {
                 } else {
                     @SuppressWarnings("unchecked")
                     Target_java_lang_ref_ReferenceQueue<? super Object> queue = SubstrateUtil.cast(ref.queue, Target_java_lang_ref_ReferenceQueue.class);
-                    if (queue != Target_java_lang_ref_ReferenceQueue.NULL) {
+                    if (queue != Target_java_lang_ref_ReferenceQueue.NULL_QUEUE) {
                         // Enqueues, avoiding the potentially overridden Reference.enqueue().
                         queue.enqueue(ref);
                     }

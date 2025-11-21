@@ -26,35 +26,40 @@ package com.oracle.svm.hosted.webimage.codegen.oop;
 
 import static com.oracle.svm.hosted.webimage.codegen.RuntimeConstants.RUNTIME_SYMBOL;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.graalvm.webimage.api.JS;
-import org.graalvm.webimage.api.JSObject;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
+import org.graalvm.webimage.api.JS;
+import org.graalvm.webimage.api.JSObject;
 
-import com.oracle.svm.webimage.JSKeyword;
-import com.oracle.svm.webimage.Labeler;
-import com.oracle.svm.hosted.webimage.JSCodeBuffer;
-import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
-import com.oracle.svm.hosted.webimage.codegen.WebImageTypeControl;
-import com.oracle.svm.hosted.webimage.options.WebImageOptions;
-import com.oracle.svm.hosted.webimage.snippets.JSSnippet;
-import com.oracle.svm.hosted.webimage.snippets.JSSnippets;
-import com.oracle.svm.hosted.webimage.util.metrics.MethodMetricsCollector;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 import com.oracle.svm.hosted.meta.HostedClass;
 import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedType;
+import com.oracle.svm.hosted.webimage.JSCodeBuffer;
+import com.oracle.svm.hosted.webimage.Labeler;
+import com.oracle.svm.hosted.webimage.codegen.JSCodeGenTool;
+import com.oracle.svm.hosted.webimage.codegen.WebImageTypeControl;
+import com.oracle.svm.hosted.webimage.js.JSKeyword;
+import com.oracle.svm.hosted.webimage.options.WebImageOptions;
+import com.oracle.svm.hosted.webimage.snippets.JSSnippet;
+import com.oracle.svm.hosted.webimage.snippets.JSSnippets;
+import com.oracle.svm.hosted.webimage.util.metrics.MethodMetricsCollector;
+import com.oracle.svm.util.AnnotationUtil;
+import com.oracle.svm.util.OriginalClassProvider;
+import com.oracle.svm.webimage.hightiercodegen.CodeBuffer;
 
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.GraalError;
-import jdk.graal.compiler.hightiercodegen.CodeBuffer;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.options.OptionValues;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Signature;
 
@@ -182,11 +187,22 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
     public ClassWithMirrorLowerer(OptionValues options, DebugContext debug, JSCodeGenTool jsLTools, Map<HostedMethod, StructuredGraph> methodGraphs, Labeler labeler,
                     MethodMetricsCollector methodMetricsCollector, Consumer<Integer> compiledMethodBytesCounter, HostedType type) {
         super(options, debug, jsLTools, methodGraphs, labeler, methodMetricsCollector, compiledMethodBytesCounter, type);
-        this.isImportedClass = type.isAnnotationPresent(JS.Import.class);
-        this.isSourceIncluded = type.isAnnotationPresent(JS.Code.Include.class) || type.isAnnotationPresent(JS.Code.class);
-        this.isDirectSubclassOfImport = type.getSuperclass().isAnnotationPresent(JS.Import.class);
+        this.isImportedClass = AnnotationUtil.isAnnotationPresent(type, JS.Import.class);
+        this.isSourceIncluded = AnnotationUtil.isAnnotationPresent(type, JS.Code.Include.class) || AnnotationUtil.isAnnotationPresent(type, JS.Code.class);
+        this.isDirectSubclassOfImport = AnnotationUtil.isAnnotationPresent(type.getSuperclass(), JS.Import.class);
         this.isSubclassOfImport = isSubclassOfImport(type);
         this.externClassDescriptor = null;
+    }
+
+    /**
+     * Public and protected fields in {@link JSObject} subclasses are represented in the JavaScript
+     * mirror.
+     * <p>
+     * Accesses to those fields must be intercepted. The fields also do not appear in the Java
+     * object.
+     */
+    public static boolean isFieldRepresentedInJavaScript(ResolvedJavaField field) {
+        return !field.isStatic() && isJSObjectSubtype(OriginalClassProvider.getJavaClass(field.getDeclaringClass()));
     }
 
     /**
@@ -198,11 +214,23 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
     }
 
     private static boolean isSubclassOfImport(HostedType type) {
-        return type != null && (type.isAnnotationPresent(JS.Import.class) || isSubclassOfImport(type.getSuperclass()));
+        return type != null && (AnnotationUtil.isAnnotationPresent(type, JS.Import.class) || isSubclassOfImport(type.getSuperclass()));
     }
 
     public static boolean isJSObjectSubtype(Class<?> cls) {
         return JSObject.class.isAssignableFrom(cls);
+    }
+
+    public static List<HostedField> getOwnFieldOnJSSide(HostedType type) {
+        List<HostedField> fields = new ArrayList<>();
+
+        for (HostedField instanceField : type.getInstanceFields(false)) {
+            if (isFieldRepresentedInJavaScript(instanceField)) {
+                fields.add(instanceField);
+            }
+        }
+
+        return fields;
     }
 
     @Override
@@ -228,7 +256,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
 
             if (needExternDeclaration()) {
                 // We need to mark the fields in the externs file.
-                for (HostedField field : type.getInstanceFields(false)) {
+                for (HostedField field : getOwnFieldOnJSSide(type)) {
                     externClassDescriptor.addProperty(field.getName());
                 }
             }
@@ -259,7 +287,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
         buffer.emitNewLine();
         buffer.emitNewLine();
 
-        if (type.getAnnotation(JS.Export.class) != null) {
+        if (AnnotationUtil.getAnnotation(type, JS.Export.class) != null) {
             genJavaScriptExportMirrorClassDefinition();
         }
     }
@@ -302,7 +330,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
         }
 
         // Initialize properties.
-        for (HostedField field : type.getInstanceFields(false)) {
+        for (HostedField field : getOwnFieldOnJSSide(type)) {
             tool.genResolvedVarDeclThisPrefix(field.getName());
             genDefaultValue(tool, buffer, field);
             tool.genResolvedVarDeclPostfix(null);
@@ -424,7 +452,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
     }
 
     private static String importedName(HostedType type) {
-        String importedName = type.getAnnotation(JS.Import.class).value();
+        String importedName = AnnotationUtil.getAnnotation(type, JS.Import.class).value();
         return importedName.equals(UNSPECIFIED_IMPORTED_NAME_VALUE) ? computeImportedName(type) : importedName;
     }
 
