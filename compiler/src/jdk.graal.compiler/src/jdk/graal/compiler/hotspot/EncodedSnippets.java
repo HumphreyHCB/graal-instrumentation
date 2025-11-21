@@ -211,15 +211,17 @@ public class EncodedSnippets {
 
     public ResolvedJavaType lookupSnippetType(Class<?> clazz) {
         SnippetResolvedJavaType type = snippetTypes.get(clazz);
-        if (type == null && isGraalClass(clazz)) {
-            /*
-             * During snippet encoding, references to Graal classes from snippets are tracked. If a
-             * class isn't found in this path at runtime it means something was missed. However,
-             * Truffle on jargraal can look up Graal classes that are not snippet types.
-             */
+        if (type == null && isGraalClass(clazz) && !compilerDebug(clazz)) {
+            // During image building, references to Graal classes from snippets are tracked.
+            // If a class isn't found in this path at runtime it means something was missed.
             throw new GraalError("Missing Graal class " + clazz.getName());
         }
         return type;
+    }
+
+    private boolean compilerDebug(Class<?> clazz){
+        return clazz.getName().startsWith("jdk.graal.compiler.debug.Markers") ||
+                clazz.getName().contains("lir") ||  clazz.getName().contains("phase") || clazz.getName().contains("Phase");
     }
 
     /**

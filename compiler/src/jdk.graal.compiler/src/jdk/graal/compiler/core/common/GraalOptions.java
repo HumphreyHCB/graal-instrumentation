@@ -359,4 +359,7 @@ public final class GraalOptions {
 
     @Option(help = "Enables tracing of threaded switch optimization decisions.", type = OptionType.Debug)
     public static final OptionKey<Boolean> TraceThreadedSwitchOptimization = new OptionKey<>(false);
+    @Option(help = "The Compiler will generate addation Debug Information for IR that is gernetedted by the compiler ( Glue Code ) This" +
+    " may increase memory ussage and compile time", type = OptionType.Debug)
+    public static final OptionKey<Boolean> AdditionalCompilerDebugInformation = new OptionKey<>(false);
 }
