@@ -22,7 +22,6 @@
  */
 package com.oracle.truffle.espresso.impl;
 
-import com.oracle.truffle.espresso.cds.ArchivedRegistryData;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.classfile.descriptors.TypeSymbols;
@@ -63,8 +62,8 @@ public final class GuestClassRegistry extends ClassRegistry {
     private final Method loadClass;
     private final Method addClass;
 
-    public GuestClassRegistry(ClassLoadingEnv env, @JavaType(ClassLoader.class) StaticObject classLoader, ArchivedRegistryData archivedRegistryData) {
-        super(env.getNewLoaderId(), archivedRegistryData);
+    public GuestClassRegistry(ClassLoadingEnv env, @JavaType(ClassLoader.class) StaticObject classLoader) {
+        super(env.getNewLoaderId());
         assert StaticObject.notNull(classLoader) : "cannot be the BCL";
         this.classLoader = classLoader;
         this.loadClass = classLoader.getKlass().lookupMethod(Names.loadClass, Signatures.Class_String);
@@ -72,7 +71,7 @@ public final class GuestClassRegistry extends ClassRegistry {
         if (env.getJavaVersion().modulesEnabled()) {
             StaticObject unnamedModule = env.getMeta().java_lang_ClassLoader_unnamedModule.getObject(classLoader);
             assert StaticObject.notNull(unnamedModule);
-            initUnnamedModule(unnamedModule, archivedRegistryData);
+            initUnnamedModule(unnamedModule);
             env.getMeta().HIDDEN_MODULE_ENTRY.setHiddenObject(unnamedModule, getUnnamedModule());
         }
     }

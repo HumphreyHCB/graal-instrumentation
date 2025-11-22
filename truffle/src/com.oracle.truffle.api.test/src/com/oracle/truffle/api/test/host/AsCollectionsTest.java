@@ -63,6 +63,7 @@ import org.junit.Test;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -393,13 +394,13 @@ public class AsCollectionsTest {
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage
@@ -468,13 +469,13 @@ public class AsCollectionsTest {
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage
@@ -537,13 +538,13 @@ public class AsCollectionsTest {
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage

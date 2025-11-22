@@ -40,6 +40,7 @@
  */
 package org.graalvm.wasm;
 
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -63,13 +64,13 @@ public class WasmConstant implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
-    String getLanguageId() {
-        return WasmLanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return WasmLanguage.class;
     }
 
     @ExportMessage

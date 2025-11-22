@@ -72,6 +72,10 @@ public class IntervalWalker {
         return true;
     }
 
+    void walk() {
+        walkTo(Integer.MAX_VALUE);
+    }
+
     /**
      * Creates a new interval walker.
      *
@@ -174,7 +178,7 @@ public class IntervalWalker {
      * @return The next interval or null if there is no {@linkplain #unhandledLists unhandled}
      *         interval at position {@code toOpId}.
      */
-    private Interval nextInterval() {
+    private Interval nextInterval(int toOpId) {
         RegisterBinding binding;
         Interval any = unhandledLists.any;
         Interval fixed = unhandledLists.fixed;
@@ -184,12 +188,19 @@ public class IntervalWalker {
             binding = !fixed.isEndMarker() && fixed.from() <= any.from() ? RegisterBinding.Fixed : RegisterBinding.Any;
 
             assert binding == RegisterBinding.Fixed && fixed.from() <= any.from() || binding == RegisterBinding.Any && any.from() <= fixed.from() : "wrong interval!!!";
+            assert any.isEndMarker() || fixed.isEndMarker() || any.from() != fixed.from() ||
+                            binding == RegisterBinding.Fixed : "if fixed and any-Interval start at same position, fixed must be processed first";
+
         } else if (!fixed.isEndMarker()) {
             binding = RegisterBinding.Fixed;
         } else {
             return null;
         }
         Interval currentInterval = unhandledLists.get(binding);
+
+        if (toOpId < currentInterval.from()) {
+            return null;
+        }
 
         currentBinding = binding;
         unhandledLists.set(binding, currentInterval.next);
@@ -206,8 +217,9 @@ public class IntervalWalker {
      *                date.
      */
     @SuppressWarnings("try")
-    void walk() {
-        for (Interval currentInterval = nextInterval(); currentInterval != null; currentInterval = nextInterval()) {
+    protected void walkTo(int toOpId) {
+        assert currentPosition <= toOpId : "can not walk backwards";
+        for (Interval currentInterval = nextInterval(toOpId); currentInterval != null; currentInterval = nextInterval(toOpId)) {
             int opId = currentInterval.from();
 
             // set currentPosition prior to call of walkTo
@@ -230,7 +242,16 @@ public class IntervalWalker {
             }
         }
         // set currentPosition prior to call of walkTo
-        currentPosition = Integer.MAX_VALUE;
+        currentPosition = toOpId;
+
+        if (currentPosition <= allocator.maxOpId()) {
+            // update unhandled stack intervals
+            updateUnhandledStackIntervals(toOpId);
+
+            // call walkTo if still in range
+            walkTo(State.Active, toOpId);
+            walkTo(State.Inactive, toOpId);
+        }
     }
 
     private void intervalMoved(Interval interval, State from, State to) {
@@ -247,7 +268,7 @@ public class IntervalWalker {
      * #activeLists active}.
      *
      * Note that for {@linkplain RegisterBinding#Fixed fixed} and {@linkplain RegisterBinding#Any
-     * any} intervals this is done in {@link #nextInterval()}.
+     * any} intervals this is done in {@link #nextInterval(int)}.
      */
     private void updateUnhandledStackIntervals(int opId) {
         Interval currentInterval = unhandledLists.get(RegisterBinding.Stack);

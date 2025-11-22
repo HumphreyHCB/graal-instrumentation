@@ -62,7 +62,6 @@ import jdk.graal.compiler.hotspot.HotSpotLIRGenerationResult;
 import jdk.graal.compiler.hotspot.HotSpotLIRGenerator;
 import jdk.graal.compiler.hotspot.HotSpotLockStack;
 import jdk.graal.compiler.hotspot.aarch64.g1.AArch64HotSpotG1BarrierSetLIRTool;
-import jdk.graal.compiler.hotspot.aarch64.shenandoah.AArch64HotSpotShenandoahBarrierSetLIRGenerator;
 import jdk.graal.compiler.hotspot.aarch64.z.AArch64HotSpotZBarrierSetLIRGenerator;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotProviders;
@@ -120,9 +119,6 @@ public class AArch64HotSpotLIRGenerator extends AArch64LIRGenerator implements H
         if (config.gc == HotSpotGraalRuntime.HotSpotGC.Z) {
             return new AArch64HotSpotZBarrierSetLIRGenerator(config, providers);
         }
-        if (config.gc == HotSpotGraalRuntime.HotSpotGC.Shenandoah) {
-            return new AArch64HotSpotShenandoahBarrierSetLIRGenerator(config, providers);
-        }
         return null;
     }
 
@@ -171,7 +167,7 @@ public class AArch64HotSpotLIRGenerator extends AArch64LIRGenerator implements H
     @Override
     protected void emitForeignCallOp(ForeignCallLinkage linkage, Value targetAddress, Value result, Value[] arguments, Value[] temps, LIRFrameState info) {
         currentRuntimeCallInfo = info;
-        if (AArch64Call.isNearCall(linkage, getCodeCache())) {
+        if (AArch64Call.isNearCall(linkage)) {
             append(new AArch64Call.DirectNearForeignCallOp(linkage, result, arguments, temps, info, label));
         } else {
             append(new AArch64Call.DirectFarForeignCallOp(linkage, result, arguments, temps, info, label));
@@ -347,7 +343,7 @@ public class AArch64HotSpotLIRGenerator extends AArch64LIRGenerator implements H
         AArch64SaveRegistersOp save = null;
         Stub stub = getStub();
         if (destroysRegisters && stub != null && stub.getLinkage().getEffect() == HotSpotForeignCallLinkage.RegisterEffect.COMPUTES_REGISTERS_KILLED) {
-            Register[] savedRegisters = getRegisterConfig().getAllocatableRegisters().toArray(Register[]::new);
+            Register[] savedRegisters = getRegisterConfig().getAllocatableRegisters().toArray();
             save = emitSaveAllRegisters(savedRegisters);
         }
 
@@ -501,12 +497,12 @@ public class AArch64HotSpotLIRGenerator extends AArch64LIRGenerator implements H
 
     @Override
     public int getArrayLengthOffset() {
-        return config.arrayLengthOffsetInBytes;
+        return config.arrayOopDescLengthOffset();
     }
 
     @Override
-    public boolean isReservedRegister(Register r) {
-        return getProviders().getRegisters().isReservedRegister(r);
+    public Register getHeapBaseRegister() {
+        return getProviders().getRegisters().getHeapBaseRegister();
     }
 
     @Override

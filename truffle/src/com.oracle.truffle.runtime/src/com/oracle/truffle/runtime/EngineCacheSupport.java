@@ -40,7 +40,6 @@
  */
 package com.oracle.truffle.runtime;
 
-import java.nio.file.Path;
 import java.util.function.Function;
 
 import org.graalvm.options.OptionDescriptors;
@@ -55,11 +54,6 @@ public interface EngineCacheSupport extends OptimizedRuntimeServiceProvider {
     void onEnginePatch(EngineData e);
 
     boolean onEngineClosing(EngineData e);
-
-    @SuppressWarnings("unused")
-    default boolean onStoreCache(EngineData e, Path path, long cancelledWord) {
-        throw new UnsupportedOperationException("Engine persist ist not yet supported on this JDK. Please update to resolve this problem.");
-    }
 
     void onEngineClosed(EngineData e);
 

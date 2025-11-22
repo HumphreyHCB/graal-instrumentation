@@ -4,7 +4,7 @@
 
   Gate:: {
     timelimit : "30:00",
-    targets: [ "tier2" ],
+    targets: [ "gate" ],
     run: [
       ["cd", "./visualizer"],
       ["mx", "pylint" ],
@@ -18,16 +18,14 @@
 
   Integration:: {
     timelimit : "30:00",
-    targets: [ "tier2" ],
-    # reset catch files to avoid capturing (non-existent) dump files, which can take very long
-    catch_files: [],
+    targets: [ "gate" ],
     downloads+: {
       "TOOLS_JAVA_HOME": common.jdks_data["oraclejdk21"]
     },
     run: [
       ["cd", "./compiler"],
       ["mx", "build" ],
-      ["mx", "benchmark", "dacapo:fop", "--", "-Djdk.graal.Dump=:1", "-Djdk.graal.PrintGraph=File", "-Djdk.graal.DumpPath=../IGV_Dumps", "-Djdk.graal.ShowDumpFiles=false"],
+      ["mx", "benchmark", "dacapo:fop", "--", "-Djdk.graal.Dump=:1", "-Djdk.graal.PrintGraph=File", "-Djdk.graal.DumpPath=../IGV_Dumps"],
       ["cd", "../visualizer"],
       ["mx", "--java-home=$TOOLS_JAVA_HOME", "build" ],
       ["mx", "--java-home=$TOOLS_JAVA_HOME", "igv", "-J-Digv.openfile.onstartup.and.close=../compiler/IGV_Dumps", "--nosplash"],
@@ -36,12 +34,12 @@
 
   linux_maven: {
     packages+: {
-      maven: '==3.9.10',
+      maven: '>=3.3.9',
     },
   },
 
   local _builds = [
-    common.linux_amd64 + self.linux_maven + common.oraclejdk21 + self.Gate + { name: "gate-visualizer-linux-amd64-oraclejdk-21" },
+    common.linux_amd64 + self.linux_maven + common.oraclejdk17 + self.Gate + { name: "gate-visualizer-linux-amd64-oraclejdk-17" },
     common.linux_amd64 + self.linux_maven + common.labsjdkLatestCE + self.Integration + { name: "gate-visualizer-integration-linux-amd64-labsjdk-latest" },
   ],
 

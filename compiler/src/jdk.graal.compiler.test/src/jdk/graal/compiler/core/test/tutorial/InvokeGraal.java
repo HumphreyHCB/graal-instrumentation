@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -83,12 +83,13 @@ public class InvokeGraal {
     /**
      * The simplest way to compile a method, using the default behavior for everything.
      */
+    @SuppressWarnings("try")
     protected InstalledCode compileAndInstallMethod(ResolvedJavaMethod method) {
         /* Create a unique compilation identifier, visible in IGV. */
         CompilationIdentifier compilationId = backend.getCompilationIdentifier(method);
         OptionValues options = getInitialOptions();
         DebugContext debug = new Builder(options).build();
-        try (DebugContext.Scope _ = debug.scope("compileAndInstallMethod", new DebugDumpScope(String.valueOf(compilationId), true))) {
+        try (DebugContext.Scope s = debug.scope("compileAndInstallMethod", new DebugDumpScope(String.valueOf(compilationId), true))) {
 
             /*
              * The graph that is compiled. We leave it empty (no nodes added yet). This means that
@@ -145,7 +146,7 @@ public class InvokeGraal {
              * Install the compilation result into the VM, i.e., copy the byte[] array that contains
              * the machine code into an actual executable memory location.
              */
-            return backend.createInstalledCode(debug, method, asCompilationRequest(compilationId), compilationResult, null, false, true, null);
+            return backend.addInstalledCode(debug, method, asCompilationRequest(compilationId), compilationResult);
         } catch (Throwable ex) {
             throw debug.handle(ex);
         }

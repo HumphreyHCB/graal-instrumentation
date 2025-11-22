@@ -72,7 +72,6 @@ public final class Target_java_lang_reflect_ReflectAccess {
         Target_java_lang_reflect_Constructor copy = constructor.copy();
         copyExecutable(SubstrateUtil.cast(copy, Target_java_lang_reflect_Executable.class),
                         SubstrateUtil.cast(constructor, Target_java_lang_reflect_Executable.class));
-        copy.constructorAccessorFromMetadata = constructor.constructorAccessorFromMetadata;
         return copy;
     }
 }
@@ -86,6 +85,6 @@ class Util_java_lang_reflect_ReflectAccess {
 
     static void copyAccessibleObject(Target_java_lang_reflect_AccessibleObject copy, Target_java_lang_reflect_AccessibleObject accessibleObject) {
         copy.typeAnnotations = accessibleObject.typeAnnotations;
-        copy.dynamicAccessMetadata = accessibleObject.dynamicAccessMetadata;
+        copy.conditions = accessibleObject.conditions;
     }
 }

@@ -189,7 +189,7 @@ public final class EspressoMethodTableBuilder {
             // Poison pill handling is done in Miranda translation.
             if (m.isSelectionFailure()) {
                 assert entry.isProxy();
-                entry = entry.forFailing();
+                entry.setPoisonPill();
             }
             vtable[vtableIndex] = entry.getMethodVersion();
             vtableIndex++;
@@ -220,7 +220,7 @@ public final class EspressoMethodTableBuilder {
         for (PartialMethod<Klass, Method, Field> m : table) {
             Method entry = m.asMethodAccess();
             if (m.isSelectionFailure()) {
-                entry = entry.forFailing();
+                entry = new Method(entry).setPoisonPill();
             }
             itable[itableIndex] = entry.getMethodVersion();
             itableIndex++;

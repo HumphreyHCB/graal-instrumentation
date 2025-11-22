@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.nodes.interop;
 
-import static com.oracle.truffle.espresso.threads.ThreadState.IN_ESPRESSO;
-
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -43,15 +41,15 @@ import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.nodes.EspressoNode;
 import com.oracle.truffle.espresso.nodes.bytecodes.InitCheck;
 import com.oracle.truffle.espresso.runtime.EspressoException;
+import com.oracle.truffle.espresso.runtime.EspressoThreadLocalState;
 import com.oracle.truffle.espresso.runtime.InteropUtils;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
-import com.oracle.truffle.espresso.threads.Transition;
 
 @GenerateUncached
 public abstract class InvokeEspressoNode extends EspressoNode {
     static final int LIMIT = 4;
 
-    public final Object execute(Method method, Object receiver, Object[] arguments, boolean argsConverted, InteropUnwrapNode unwrapNode) throws ArityException, UnsupportedTypeException {
+    public final Object execute(Method method, Object receiver, Object[] arguments, boolean argsConverted) throws ArityException, UnsupportedTypeException {
         Method.MethodVersion resolutionSeed = method.getMethodVersion();
         if (!resolutionSeed.getRedefineAssumption().isValid()) {
             // OK, we know it's a removed method then
@@ -61,26 +59,27 @@ public abstract class InvokeEspressoNode extends EspressoNode {
         }
         EspressoLanguage language = getLanguage();
         Meta meta = getMeta();
-        Transition transition = Transition.transition(IN_ESPRESSO, this);
+        EspressoThreadLocalState tls = language.getThreadLocalState();
+        tls.blockContinuationSuspension();
         try {
             Object result = executeMethod(resolutionSeed, receiver, arguments, argsConverted);
             /*
              * Invariant: Foreign objects are always wrapped when coming into Espresso and unwrapped
              * when going out.
              */
-            return unwrapNode.execute(result);
+            return InteropUtils.unwrap(language, result, meta);
         } catch (EspressoException e) {
             /*
              * Invariant: Foreign exceptions are always unwrapped when going out of Espresso.
              */
             throw InteropUtils.unwrapExceptionBoundary(language, e, meta);
         } finally {
-            transition.restore(this);
+            tls.unblockContinuationSuspension();
         }
     }
 
-    public final Object execute(Method method, Object receiver, Object[] arguments, InteropUnwrapNode unwrapNode) throws ArityException, UnsupportedTypeException {
-        return execute(method, receiver, arguments, false, unwrapNode);
+    public final Object execute(Method method, Object receiver, Object[] arguments) throws ArityException, UnsupportedTypeException {
+        return execute(method, receiver, arguments, false);
     }
 
     static DirectCallNode createDirectCallNode(CallTarget callTarget) {
@@ -171,7 +170,7 @@ public abstract class InvokeEspressoNode extends EspressoNode {
     }
 
     private static void checkValidInvoke(Method method, Object receiver) {
-        EspressoError.guarantee(!method.isDeclaredSignaturePolymorphic(), "Espresso interop does not support signature polymorphic methods.");
+        EspressoError.guarantee(!method.isSignaturePolymorphicDeclared(), "Espresso interop does not support signature polymorphic methods.");
         EspressoError.guarantee(((method.isStatic() && receiver == null) ||
                         (!method.isStatic() && method.isPublic() && receiver != null)),
                         "Espresso interop only supports static methods and public instance method");

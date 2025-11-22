@@ -51,9 +51,6 @@ import com.oracle.truffle.api.instrumentation.Tag;
  * information (source sections, instrumentation instructions, etc.) should be materialized during
  * parsing. The interpreter memory footprint can be improved by omitting this information by default
  * and lazily re-parsing it when it is needed.
- * <p>
- * Instances of this class should be stored as static final constants. It is important for them to
- * be constant so partial evaluation can detect when reparsing is unnecessary.
  *
  * @since 24.2
  */
@@ -108,7 +105,7 @@ public final class BytecodeConfig {
      *
      * @since 24.2
      */
-    public static final class Builder {
+    public static class Builder {
         private final BytecodeConfigEncoder encoder;
         private long encoding;
 
@@ -150,23 +147,8 @@ public final class BytecodeConfig {
         public Builder addInstrumentation(Class<?> instrumentation) {
             CompilerAsserts.neverPartOfCompilation();
             Objects.requireNonNull(instrumentation);
-            if (instrumentation == InstructionTracer.class) {
-                throw new IllegalArgumentException(
-                                "Enabling the instruction tracer with addInstrumentation is not supported. Add an instruction tracer instead using BytecodeRootNodes.addInstructionTracer(...).");
-            }
             long encodedTag = encoder.encodeInstrumentation(instrumentation);
             assert encodedTag != SOURCE_ENCODING && Long.bitCount(encodedTag) == 1 : "generated code invariant violated";
-            this.encoding |= encodedTag;
-            return this;
-        }
-
-        /**
-         * Internal way to attach instruction tracer instrumentation. Encoding the instrumentation
-         * tag does nothing if tracing is enabled for this interpreter.
-         */
-        Builder addInstructionTracing() {
-            CompilerAsserts.neverPartOfCompilation();
-            long encodedTag = encoder.encodeInstrumentation(InstructionTracer.class);
             this.encoding |= encodedTag;
             return this;
         }

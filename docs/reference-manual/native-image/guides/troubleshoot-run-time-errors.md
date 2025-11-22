@@ -21,19 +21,15 @@ In some cases, you need to provide the analysis with configuration to make all d
 Failing to do so will result in an image that terminates at run-time with hard-to-diagnose errors once the dynamic feature is used in the application.
 This can be avoided by eagerly checking for missing metadata.
 
-1. Pass the `--exact-reachability-metadata` option to the `native-image` tool and rebuild the application. If you want to do this only for a specific package, specify a package prefix `--exact-reachability-metadata=[package prefix]`.
+1. Pass the `--exact-reachablity-metadata` option to the `native-image` tool and rebuild the application. If you want to do this only for a specific package, specify a package prefix `--exact-reachablity-metadata=[package prefix]`.
     
-    > This option was introduced in GraalVM for JDK 23 for debugging purposes. In GraalVM versions prior to JDK 23, use the `-H:ThrowMissingRegistrationErrors=` build option instead.
+    > This option was introduced in GraalVM for JDK 23 and will become the default in the next feature release. It is equivalent to the `-H:ThrowMissingRegistrationErrors=` host option.
 
-2. Run the generated native executable passing the `-XX:MissingRegistrationReportingMode=Warn` option to find all places in your code where missing registrations occur.
-
-    > `-XX:MissingRegistrationReportingMode=` was promoted to a run-time option in GraalVM for JDK 23. In GraalVM versions prior to JDK 23, use the `-H:MissingRegistrationReportingMode=Warn` build option instead.
+2. Next run that native executable passing the `-XX:MissingRegistrationReportingMode=Warn` option to find all places in your code where missing registrations occur.
 
 3. If there is some missing metadata reported, make sure to add it to the _reachability-metadata.json_ file. See how to do it in the [Reachability Metadata documentation](https://www.graalvm.org/latest/reference-manual/native-image/metadata/#specifying-metadata-with-json).
 
-    > It is not always necessary to add all reported elements to _reachability-metadata.json_. The one causing the program failure is usually among the last listed.
-
-    > In GraalVM versions prior to JDK 23, errors may be reported for elements already present in _reachability-metadata.json_. These can be safely ignored, as they result from the experimental nature of the `-H:ThrowMissingRegistrationErrors=` option.
+4. Then restart the native executable with `-XX:MissingRegistrationReportingMode=Exit` to detect places where the application accidentally ignores a missing registration error (with `catch (Throwable t)` blocks). The application will then unconditionally print the error message with the stack trace and exit immediately. This behavior is ideal for running application tests to guarantee all metadata is included.
 
 #### Shared Libraries
 
@@ -51,19 +47,23 @@ Otherwise, the `System.getProperty("java.home")` call will return a `null` value
 Try enabling all URL protocols on-demand at build time: `--enable-url-protocols=<protocols>`.
 To enable the HTTPS support only, pass `--enable-https`. 
 
-### 4. Include All Charsets and Locales
+### 4. Enable Signal Handling
+
+If your application is using signal handling or the `java.lang.Terminator` exit handlers, provide the option `--install-exit-handlers` option at build time.
+
+### 5. Include All Charsets and Locales
 
 Other handy options are `-H:+AddAllCharsets` to add charsets support, and `-H:+IncludeAllLocales` to pre-initialize support for locale-sensitive behavior in the `java.util` and `java.text` packages. 
 Pass those options at build time.
 This might increase the size of the resulting binary.
 
-### 5. Add Missing Security Providers
+### 6. Add Missing Security Providers
 
 If your application is using Security Providers, try to pre-initialize security providers by passing the option `-H:AdditionalSecurityProviders=<list-of-providers>` at build time. 
 Here is a list of all JDK security providers to choose from:
 `sun.security.provider.Sun,sun.security.rsa.SunRsaSign,sun.security.ec.SunEC,sun.security.ssl.SunJSSE,com.sun.crypto.provider.SunJCE,sun.security.jgss.SunProvider,com.sun.security.sasl.Provider,org.jcp.xml.dsig.internal.dom.XMLDSigRI,sun.security.smartcardio.SunPCSC,sun.security.provider.certpath.ldap.JdkLDAP,com.sun.security.sasl.gsskerb.JdkSASL`.
 
-### 6. File a Native Image Run-Time Issue
+### 7. File a Native Image Run-Time Issue
 
 Only if you tried all the above suggestions, file a [Native Image Run-Time Issue Report](https://github.com/oracle/graal/issues/new?assignees=&labels=native-image%2Cbug%2Crun-time&projects=&template=1_1_native_image_run_time_bug_report.yml&title=%5BNative+Image%5D+) at GitHub, filling out the necessary information. 
 

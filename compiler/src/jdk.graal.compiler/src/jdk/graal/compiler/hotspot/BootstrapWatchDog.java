@@ -25,6 +25,7 @@
 package jdk.graal.compiler.hotspot;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +38,6 @@ import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionType;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-import jdk.graal.compiler.util.EconomicHashMap;
 import jdk.vm.ci.code.CompilationRequest;
 
 /**
@@ -162,7 +162,7 @@ final class BootstrapWatchDog extends Thread {
                 if (elapsedNS > TimeUnit.SECONDS.toNanos(timeout)) {
                     if (requestsAtTimeout == null) {
                         requestsAtTimeout = snapshotRequests();
-                        stacksAtTimeout = new EconomicHashMap<>();
+                        stacksAtTimeout = new HashMap<>();
                         for (Thread t : requestsAtTimeout.keySet()) {
                             stacksAtTimeout.put(t, t.getStackTrace());
                         }
@@ -208,7 +208,7 @@ final class BootstrapWatchDog extends Thread {
 
     private Map<Thread, Watch> snapshotRequests() {
         synchronized (requests) {
-            return new EconomicHashMap<>(requests);
+            return new HashMap<>(requests);
         }
     }
 
@@ -223,7 +223,7 @@ final class BootstrapWatchDog extends Thread {
         return hitCriticalRateOrTimeout;
     }
 
-    private final Map<Thread, Watch> requests = new EconomicHashMap<>();
+    private final Map<Thread, Watch> requests = new HashMap<>();
     private final ThreadLocal<Watch> requestForThread = new ThreadLocal<>();
 
     /**

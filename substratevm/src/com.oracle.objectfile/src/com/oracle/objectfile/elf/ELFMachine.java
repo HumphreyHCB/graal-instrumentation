@@ -25,13 +25,11 @@
 
 package com.oracle.objectfile.elf;
 
-import java.util.Locale;
-
 import com.oracle.objectfile.ObjectFile.RelocationKind;
 import com.oracle.objectfile.ObjectFile.RelocationMethod;
 import com.oracle.objectfile.elf.ELFRelocationSection.ELFRelocationMethod;
 
-import jdk.graal.compiler.serviceprovider.GraalServices;
+import java.util.Locale;
 
 /**
  * ELF machine type (incomplete). Each machine type also defines its set of relocation types.
@@ -211,7 +209,7 @@ public enum ELFMachine/* implements Integral */ {
     }
 
     public static ELFMachine getSystemNativeValue() {
-        String arch = GraalServices.getSavedProperty("os.arch");
+        String arch = System.getProperty("os.arch");
         return switch (arch) {
             case "aarch64", "arm64" -> AArch64;
             case "amd64", "x86_64" -> X86_64;

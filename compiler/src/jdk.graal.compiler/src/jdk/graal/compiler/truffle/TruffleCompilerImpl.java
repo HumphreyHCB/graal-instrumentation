@@ -64,7 +64,6 @@ import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.RetryableBailoutException;
 import jdk.graal.compiler.core.common.util.CompilationAlarm;
-import jdk.graal.compiler.core.common.util.Util;
 import jdk.graal.compiler.core.target.Backend;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugCloseable;
@@ -257,7 +256,7 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
             OptionValues graalOptions = getGraalOptions();
             Map<String, String> options = compilable.getCompilerOptions();
             EconomicMap<OptionKey<?>, Object> map = parseOptions(options);
-            graalOptions = TruffleCompilerOptions.updateValues(graalOptions, map);
+            graalOptions = TruffleCompilerOptions.updateValues(graalOptions);
             map.putAll(graalOptions.getMap());
             return new OptionValues(map);
         });
@@ -323,7 +322,7 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
 
     // Hook for SVM
     protected TruffleTier newTruffleTier(OptionValues options) {
-        return new TruffleTier(options,
+        return new TruffleTier(options, partialEvaluator,
                         new InstrumentationSuite(partialEvaluator.instrumentationCfg, partialEvaluator.getInstrumentation()),
                         new PostPartialEvaluationSuite(options, TruffleCompilerOptions.IterativePartialEscape.getValue(options)));
     }
@@ -505,17 +504,17 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
         TruffleCompilable compilable = wrapper.compilable;
 
         final CompilationPrinter printer = CompilationPrinter.begin(debug.getOptions(), wrapper.compilationId, new TruffleDebugJavaMethod(task, compilable), INVOCATION_ENTRY_BCI);
+        StructuredGraph graph = null;
 
         try (CompilationAlarm alarm = CompilationAlarm.trackCompilationPeriod(debug.getOptions());
-                        DebugCloseable b = GraalServices.GCTimerScope.create(debug);
                         TruffleInliningScope inlining = TruffleInliningScope.open(debug)) {
-            StructuredGraph graph = truffleTier(wrapper, debug);
+            graph = truffleTier(wrapper, debug);
 
             graph.checkCancellation();
             // The Truffle compiler owns the last 2 characters of the compilation name, and uses
             // them to encode the compilation tier, so escaping the target name is not
             // necessary.
-            String compilationName = asInstalledCodeName(compilable.toString() + (task.isFirstTier() ? FIRST_TIER_COMPILATION_SUFFIX : SECOND_TIER_COMPILATION_SUFFIX));
+            String compilationName = wrapper.compilable.toString() + (task.isFirstTier() ? FIRST_TIER_COMPILATION_SUFFIX : SECOND_TIER_COMPILATION_SUFFIX);
             PhaseSuite<HighTierContext> graphBuilderSuite = createGraphBuilderSuite(task.isFirstTier() ? config.firstTier() : config.lastTier());
             InstalledCode[] installedCode = {null};
             CompilationResult compilationResult = compilePEGraph(graph,
@@ -549,30 +548,6 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
             }
             throw t;
         }
-    }
-
-    /**
-     * Copy of {@code InstalledCode.MAX_NAME_LENGTH} initialized by reflection that can be removed
-     * once JDK 21 support is removed.
-     */
-    public static final int MAX_NAME_LENGTH;
-    static {
-        int len = 2048;
-        try {
-            len = InstalledCode.class.getDeclaredField("MAX_NAME_LENGTH").getInt(null);
-        } catch (Exception e) {
-            // ignore
-        }
-        MAX_NAME_LENGTH = len;
-    }
-
-    /**
-     * Transforms {@code name} to be usable as an {@linkplain InstalledCode#getName() installed code
-     * name}. The value is {@linkplain Util#truncateString(String, int) truncated} if its length is
-     * greater than {@link #MAX_NAME_LENGTH}.
-     */
-    public static String asInstalledCodeName(String name) {
-        return Util.truncateString(name, MAX_NAME_LENGTH);
     }
 
     @SuppressWarnings("try")
@@ -642,7 +617,7 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
             throw debug.handle(e);
         }
         if (debug.isDumpEnabled(DebugContext.BASIC_LEVEL)) {
-            debug.dump(DebugContext.BASIC_LEVEL, TruffleDebugAST.create(partialEvaluator, task, compilable, inlining != null ? inlining.getCallTree() : null), "After TruffleTier");
+            debug.dump(DebugContext.BASIC_LEVEL, TruffleAST.create(partialEvaluator, task, compilable, inlining != null ? inlining.getCallTree() : null), "After TruffleTier");
         }
 
         CompilationResult result = null;
@@ -679,7 +654,7 @@ public abstract class TruffleCompilerImpl implements TruffleCompiler, Compilatio
         try (DebugCloseable a = CodeInstallationTime.start(debug); DebugCloseable c = CodeInstallationMemUse.start(debug)) {
             InstalledCode installedCode = createInstalledCode(compilable);
             assert graph.getSpeculationLog() == result.getSpeculationLog() : Assertions.errorMessage(graph, graph.getSpeculationLog(), result, result.getSpeculationLog());
-            tier.backend().createInstalledCode(debug, graph.method(), compilationRequest, result, installedCode, false, false, null);
+            tier.backend().createInstalledCode(debug, graph.method(), compilationRequest, result, installedCode, false);
             if (outInstalledCode != null) {
                 outInstalledCode[0] = installedCode;
             }

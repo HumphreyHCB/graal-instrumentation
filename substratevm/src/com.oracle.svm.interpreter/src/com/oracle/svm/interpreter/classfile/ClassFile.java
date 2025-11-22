@@ -47,31 +47,25 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.oracle.svm.interpreter.metadata.ReferenceConstant;
+import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
-import com.oracle.svm.core.hub.registry.SymbolsSupport;
+import com.oracle.svm.interpreter.metadata.InterpreterUniverse;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.espresso.classfile.ParserConstantPool;
-import com.oracle.svm.espresso.classfile.descriptors.ByteSequence;
-import com.oracle.svm.espresso.classfile.descriptors.ModifiedUTF8;
-import com.oracle.svm.espresso.classfile.descriptors.Name;
-import com.oracle.svm.espresso.classfile.descriptors.Symbol;
-import com.oracle.svm.espresso.classfile.descriptors.Type;
-import com.oracle.svm.espresso.classfile.descriptors.TypeSymbols;
-import com.oracle.svm.espresso.classfile.descriptors.Validation;
 import com.oracle.svm.interpreter.metadata.BytecodeStream;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaMethod;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaType;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedObjectType;
-import com.oracle.svm.interpreter.metadata.InterpreterUniverse;
-import com.oracle.svm.interpreter.metadata.ReferenceConstant;
+import com.oracle.svm.interpreter.metadata.MetadataUtil;
 
 import jdk.vm.ci.meta.ConstantPool;
 import jdk.vm.ci.meta.ExceptionHandler;
@@ -87,6 +81,7 @@ import jdk.vm.ci.meta.PrimitiveConstant;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.vm.ci.meta.Signature;
 
 /**
  * Utility to re-create a .class file representation from a {@link ResolvedJavaType}.
@@ -112,40 +107,121 @@ public final class ClassFile {
     public static final int MAJOR_VERSION = 55;
     public static final int MINOR_VERSION = 0;
 
-    private final OutStream classFile = new OutStream();
+    public static final byte CONSTANT_Utf8 = 1;
+    public static final byte CONSTANT_Integer = 3;
+    public static final byte CONSTANT_Float = 4;
+    public static final byte CONSTANT_Long = 5;
+    public static final byte CONSTANT_Double = 6;
+    public static final byte CONSTANT_Class = 7;
+    public static final byte CONSTANT_String = 8;
+    public static final byte CONSTANT_Fieldref = 9;
+    public static final byte CONSTANT_Methodref = 10;
+    public static final byte CONSTANT_InterfaceMethodref = 11;
+    public static final byte CONSTANT_NameAndType = 12;
+    public static final byte CONSTANT_MethodHandle = 15;
+    public static final byte CONSTANT_MethodType = 16;
+    @SuppressWarnings("unused") public static final byte CONSTANT_Dynamic = 17;
+    @SuppressWarnings("unused") public static final byte CONSTANT_InvokeDynamic = 18;
+    public static final byte CONSTANT_Module = 19;
+    public static final byte CONSTANT_Package = 20;
 
-    private final ConstantPoolBuilder poolBuilder;
+    private final OutStream classFile = new OutStream();
+    private final OutStream constantPool = new OutStream();
+
+    private int constantPoolEntryCount;
+
+    private final Map<String, Integer> fieldRefCache = new HashMap<>();
+    private final Map<Pair<String, String>, Integer> nameAndTypeCache = new HashMap<>();
+    private final Map<String, Integer> utf8Cache = new HashMap<>();
+
+    private final Map<Integer, Integer> intCache = new HashMap<>();
+    private final Map<Long, Integer> longCache = new HashMap<>();
+
+    // Map on the float bit pattern to account for NaNs.
+    private final Map<Integer, Integer> floatCache = new HashMap<>();
+
+    // Map on the double bit pattern to account for NaNs.
+    private final Map<Long, Integer> doubleCache = new HashMap<>();
+
+    private final Map<String, Integer> stringCache = new HashMap<>();
+    private final Map<String, Integer> classCache = new HashMap<>();
+    private final Map<String, Integer> methodRefCache = new HashMap<>();
+    private final Map<String, Integer> interfaceMethodRefCache = new HashMap<>();
+
+    private final Map<String, Integer> methodTypeCache = new HashMap<>();
+    private final Map<Pair<Byte, Object /* JavaMethod | JavaField */>, Integer> methodHandleCache = new HashMap<>();
+
+    private final Map<String, Integer> moduleCache = new HashMap<>();
+    private final Map<String, Integer> packageCache = new HashMap<>();
 
     public ClassFile(InterpreterUniverse universe, Function<Object, Object> extractConstantValue) {
         this.universe = universe;
         this.extractConstantValue = extractConstantValue;
-        this.poolBuilder = new ConstantPoolBuilder(null, MAJOR_VERSION, MINOR_VERSION);
-        int invalidEntry = this.poolBuilder.appendInvalid(); // #0
-        assert invalidEntry == 0;
     }
 
     private int utf8(String str) {
-        return poolBuilder.appendSymbolicUTF8(utf8Symbol(str));
+        return utf8Cache.computeIfAbsent(str,
+                        key -> {
+                            constantPool.writeU1(CONSTANT_Utf8);
+                            constantPool.writeUTF(str); // writeUTF prepends the length
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int longConstant(long value) {
-        return poolBuilder.appendSymbolicLong(value);
+        return longCache.computeIfAbsent(value,
+                        key -> {
+                            constantPool.writeU1(CONSTANT_Long);
+                            constantPool.writeLong(value);
+                            // All 8-byte constants take up two entries in the constant_pool table
+                            // of the class file.In retrospect, making 8-byte constants take two
+                            // constant pool entries was a poor choice.
+                            int entry = ++constantPoolEntryCount;
+                            ++constantPoolEntryCount;
+                            return entry;
+                        });
     }
 
     private int doubleConstant(double value) {
-        return poolBuilder.appendSymbolicDouble(value);
+        return doubleCache.computeIfAbsent(Double.doubleToRawLongBits(value),
+                        key -> {
+                            constantPool.writeU1(CONSTANT_Double);
+                            constantPool.writeDouble(value);
+                            // All 8-byte constants take up two entries in the constant_pool table
+                            // of the class file.In retrospect, making 8-byte constants take two
+                            // constant pool entries was a poor choice.
+                            int entry = ++constantPoolEntryCount;
+                            ++constantPoolEntryCount;
+                            return entry;
+                        });
     }
 
     private int intConstant(int value) {
-        return poolBuilder.appendSymbolicInteger(value);
+        return intCache.computeIfAbsent(value,
+                        key -> {
+                            constantPool.writeU1(CONSTANT_Integer);
+                            constantPool.writeInt(value);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int floatConstant(float value) {
-        return poolBuilder.appendSymbolicFloat(value);
+        return floatCache.computeIfAbsent(Float.floatToRawIntBits(value),
+                        key -> {
+                            constantPool.writeU1(CONSTANT_Float);
+                            constantPool.writeFloat(value);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int string(String str) {
-        return poolBuilder.appendSymbolicString(utf8Symbol(str));
+        return stringCache.computeIfAbsent(str,
+                        key -> {
+                            int stringIndex = utf8(str);
+                            constantPool.writeU1(CONSTANT_String);
+                            constantPool.writeU2(stringIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int ldcConstant(Object javaConstantOrType) {
@@ -178,91 +254,106 @@ public final class ClassFile {
         }
     }
 
+    private int nameAndTypeImpl(String name, String descriptor) {
+        return nameAndTypeCache.computeIfAbsent(Pair.create(name, descriptor),
+                        key -> {
+                            int nameIndex = utf8(name);
+                            int descriptorIndex = utf8(descriptor);
+                            constantPool.writeU1(CONSTANT_NameAndType);
+                            constantPool.writeU2(nameIndex);
+                            constantPool.writeU2(descriptorIndex);
+                            return ++constantPoolEntryCount;
+                        });
+    }
+
+    private int nameAndType(String name, JavaType fieldDescriptor) {
+        String descriptor = fieldDescriptor.getName();
+        return nameAndTypeImpl(name, descriptor);
+    }
+
+    private int nameAndType(String name, Signature methodDescriptor) {
+        String descriptor = methodDescriptor.toMethodDescriptor();
+        return nameAndTypeImpl(name, descriptor);
+    }
+
     private int fieldRef(JavaField field) {
-        JavaType holderType = field.getDeclaringClass();
-        String fieldName = field.getName();
-        JavaType fieldType = field.getType();
-        return poolBuilder.appendSymbolicField(classNameEntrySymbol(holderType), nameSymbol(fieldName), typeSymbol(fieldType));
+        return fieldRefCache.computeIfAbsent(MetadataUtil.toUniqueString(field),
+                        key -> {
+                            int classIndex = classConstant(field.getDeclaringClass());
+                            int nameAndTypeIndex = nameAndType(field.getName(), field.getType());
+                            constantPool.writeU1(CONSTANT_Fieldref);
+                            constantPool.writeU2(classIndex);
+                            constantPool.writeU2(nameAndTypeIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int classConstant(JavaType type) {
-        return poolBuilder.appendSymbolicClass(classNameEntrySymbol(type));
-    }
-
-    private static Symbol<Type> typeSymbol(String string) {
-        Symbol<Type> symbol = SymbolsSupport.getTypes().getOrCreateValidType(string);
-        return Objects.requireNonNull(symbol);
-    }
-
-    private static Symbol<Type> typeSymbol(JavaType javaType) {
-        return typeSymbol(javaType.getName());
-    }
-
-    private static Symbol<Name> classNameEntrySymbol(String internalTypeName) {
-        assert Validation.validClassNameEntry(ByteSequence.create(internalTypeName));
-        Symbol<Name> classNameEntry = TypeSymbols.toClassNameEntry(typeSymbol(internalTypeName), byteSequence -> SymbolsSupport.getNames().getOrCreate(byteSequence));
-        return classNameEntry;
-    }
-
-    private static Symbol<Name> classNameEntrySymbol(JavaType javaType) {
-        if (javaType.isArray()) {
-            // Keep [Ljava/lang/Object;
-            return SymbolsSupport.getNames().getOrCreate(ByteSequence.create(javaType.getName()));
-        }
-        // Allows for hidden classes e.g. Ljava/lang/invoke/LambdaForm$MH.se8db2150; to be "named".
-        ByteSequence byteSequence = ByteSequence.create(javaType.toJavaName().replace('.', '/'));
-        return SymbolsSupport.getNames().getOrCreate(byteSequence);
-    }
-
-    @SuppressWarnings("unused")
-    private static Symbol<Name> classNameEntrySymbol(Symbol<Type> typeSymbol) {
-        Symbol<Name> classNameEntry = TypeSymbols.toClassNameEntry(typeSymbol, byteSequence -> SymbolsSupport.getNames().getOrCreate(byteSequence));
-        assert Validation.validClassNameEntry(classNameEntry);
-        return classNameEntry;
-    }
-
-    private static Symbol<Name> nameSymbol(String string) {
-        Symbol<Name> symbol = SymbolsSupport.getNames().getOrCreate(string);
-        return Objects.requireNonNull(symbol);
-    }
-
-    private static Symbol<com.oracle.svm.espresso.classfile.descriptors.Signature> signatureSymbol(String string) {
-        Symbol<com.oracle.svm.espresso.classfile.descriptors.Signature> symbol = SymbolsSupport.getSignatures().getOrCreateValidSignature(string);
-        return Objects.requireNonNull(symbol);
-    }
-
-    private static Symbol<? extends ModifiedUTF8> utf8Symbol(String string) {
-        Symbol<? extends ModifiedUTF8> symbol = SymbolsSupport.getUtf8().getOrCreateValidUtf8(string);
-        return Objects.requireNonNull(symbol);
+        return classCache.computeIfAbsent(MetadataUtil.toUniqueString(type),
+                        key -> {
+                            int nameIndex = utf8(toConstantPoolName(type));
+                            constantPool.writeU1(CONSTANT_Class);
+                            constantPool.writeU2(nameIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int methodRef(JavaMethod method) {
-        JavaType holderType = method.getDeclaringClass();
-        String methodName = method.getName();
-        String methodSignature = method.getSignature().toMethodDescriptor();
-        return poolBuilder.appendSymbolicMethod(false, classNameEntrySymbol(holderType), nameSymbol(methodName), signatureSymbol(methodSignature));
+        return methodRefCache.computeIfAbsent(MetadataUtil.toUniqueString(method),
+                        key -> {
+                            int classIndex = classConstant(method.getDeclaringClass());
+                            int nameAndTypeIndex = nameAndType(method.getName(), method.getSignature());
+                            constantPool.writeU1(CONSTANT_Methodref);
+                            constantPool.writeU2(classIndex);
+                            constantPool.writeU2(nameAndTypeIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int interfaceMethodRef(JavaMethod method) {
-        JavaType holderType = method.getDeclaringClass();
-        String methodName = method.getName();
-        String methodSignature = method.getSignature().toMethodDescriptor();
-        return poolBuilder.appendSymbolicMethod(true, classNameEntrySymbol(holderType), nameSymbol(methodName), signatureSymbol(methodSignature));
+        return interfaceMethodRefCache.computeIfAbsent(MetadataUtil.toUniqueString(method),
+                        key -> {
+                            assert !(method instanceof ResolvedJavaMethod) || ((ResolvedJavaMethod) method).getDeclaringClass().isInterface() : method;
+                            int classIndex = classConstant(method.getDeclaringClass());
+                            int nameAndTypeIndex = nameAndType(method.getName(), method.getSignature());
+                            constantPool.writeU1(CONSTANT_InterfaceMethodref);
+                            constantPool.writeU2(classIndex);
+                            constantPool.writeU2(nameAndTypeIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     @SuppressWarnings("unused")
     private int module(String moduleName) {
-        return poolBuilder.appendSymbolicModule(nameSymbol(moduleName));
+        return moduleCache.computeIfAbsent(moduleName,
+                        key -> {
+                            int nameIndex = utf8(moduleName);
+                            constantPool.writeU1(CONSTANT_Module); // u1 tag
+                            constantPool.writeU2(nameIndex);      // u2 name_index;
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     @SuppressWarnings("unused")
     private int packageConstant(String packageName) {
-        return poolBuilder.appendSymbolicPackage(nameSymbol(packageName));
+        return packageCache.computeIfAbsent(packageName,
+                        key -> {
+                            int nameIndex = utf8(packageName);
+                            constantPool.writeU1(CONSTANT_Package);
+                            constantPool.writeU2(nameIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private int methodType(MethodType methodType) {
         String descriptor = methodType.descriptorString();
-        return poolBuilder.appendSymbolicMethodType(signatureSymbol(descriptor));
+        return methodTypeCache.computeIfAbsent(descriptor,
+                        key -> {
+                            int descriptorIndex = utf8(descriptor);
+                            constantPool.writeU1(CONSTANT_MethodType);
+                            constantPool.writeU2(descriptorIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     @SuppressWarnings("unused") public static final byte REF_NONE = 0; // null value
@@ -281,30 +372,49 @@ public final class ClassFile {
     @SuppressWarnings("unused")
     private int methodHandle(byte referenceKind, JavaField referenceField) {
         VMError.guarantee(referenceKind == REF_getField || referenceKind == REF_getStatic || referenceKind == REF_putField || referenceKind == REF_putStatic);
-        return poolBuilder.appendSymbolicMethodHandle(referenceKind,
-                        classNameEntrySymbol(referenceField.getDeclaringClass().getName()),
-                        nameSymbol(referenceField.getName()),
-                        typeSymbol(referenceField.getType().getName()));
+        return methodHandleCache.computeIfAbsent(Pair.create(referenceKind, referenceField),
+                        key -> {
+                            int referenceIndex = fieldRef(referenceField);
+                            constantPool.writeU1(CONSTANT_MethodHandle);
+                            constantPool.writeU1(referenceKind);
+                            constantPool.writeU2(referenceIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     @SuppressWarnings("unused")
     private int methodHandle(byte referenceKind, ResolvedJavaMethod referenceMethod) {
         VMError.guarantee(referenceKind == REF_invokeVirtual || referenceKind == REF_invokeStatic || referenceKind == REF_invokeSpecial || referenceKind == REF_newInvokeSpecial ||
                         referenceKind == REF_invokeInterface);
-        boolean interfaceMethod = switch (referenceKind) {
-            case REF_invokeVirtual, REF_newInvokeSpecial -> false;
-            case REF_invokeStatic, REF_invokeSpecial ->
-                // GR-55048: Java version check, interfaceMethodRef
-                // allowed after >= 52
-                referenceMethod.getDeclaringClass().isInterface();
-            case REF_invokeInterface -> true;
-            default ->
-                throw VMError.shouldNotReachHere("invalid methodHandle ref kind");
-        };
-        return poolBuilder.appendSymbolicMethodHandle(referenceKind, interfaceMethod,
-                        classNameEntrySymbol(referenceMethod.getName()),
-                        nameSymbol(referenceMethod.getName()),
-                        signatureSymbol(referenceMethod.getSignature().toMethodDescriptor()));
+        return methodHandleCache.computeIfAbsent(Pair.create(referenceKind, referenceMethod),
+                        key -> {
+                            int referenceIndex;
+                            switch (referenceKind) {
+                                case REF_invokeVirtual: // fall-through
+                                case REF_newInvokeSpecial:
+                                    referenceIndex = methodRef(referenceMethod);
+                                    break;
+                                case REF_invokeStatic: // fall-through
+                                case REF_invokeSpecial:
+                                    // GR-55048: Java version check, interfaceMethodRef
+                                    // allowed after >= 52
+                                    if (referenceMethod.getDeclaringClass().isInterface()) {
+                                        referenceIndex = interfaceMethodRef(referenceMethod);
+                                    } else {
+                                        referenceIndex = methodRef(referenceMethod);
+                                    }
+                                    break;
+                                case REF_invokeInterface:
+                                    referenceIndex = interfaceMethodRef(referenceMethod);
+                                    break;
+                                default:
+                                    throw VMError.shouldNotReachHere("invalid methodHandle ref kind");
+                            }
+                            constantPool.writeU1(CONSTANT_MethodHandle);
+                            constantPool.writeU1(referenceKind);
+                            constantPool.writeU2(referenceIndex);
+                            return ++constantPoolEntryCount;
+                        });
     }
 
     private final InterpreterUniverse universe;
@@ -424,13 +534,11 @@ public final class ClassFile {
         ensemble.writeInt(MAGIC);
         ensemble.writeU2(MINOR_VERSION);
         ensemble.writeU2(MAJOR_VERSION);
-
+        // Constant pool
         // The value of the constant_pool_count item is equal to the number of entries in the
         // constant_pool table plus one.
-        ParserConstantPool parserConstantPool = cf.poolBuilder.buildParserConstantPool();
-        ensemble.writeU2(parserConstantPool.length());
-        ensemble.writeBytes(parserConstantPool.toRawBytes());
-
+        ensemble.writeU2(cf.constantPoolEntryCount + 1);
+        ensemble.writeBytes(cf.constantPool.toArray());
         // Tail
         ensemble.writeBytes(cf.classFile.toArray());
 
@@ -463,7 +571,7 @@ public final class ClassFile {
         // u2 constant_pool_count;
         // cp_info constant_pool[constant_pool_count-1];
 
-        // Constant pool is computed separately during dumping, dumping starts here.
+        // Constant pool is computed separately during dumping, dumping starts here:
 
         // u2 access_flags;
         // u2 this_class;
@@ -628,6 +736,7 @@ public final class ClassFile {
                 }
             }
         }
+
         /*
          * Class, String and MethodType constants are pointers to UTF8 entries. LDC doesn't refer to
          * UTF8 entries directly, but these UTF8 entries may needlessly occupy slots of the 255
@@ -635,15 +744,13 @@ public final class ClassFile {
          * dependencies are written always before in the constant pool, but in this case UTF8
          * entries must be added after to ensure the constant indices remain addressable by LDC.
          */
-        int oldPosition = poolBuilder.getPosition();
-        poolBuilder.setPosition(oldPosition + pending.size());
-
+        List<String> newEntries = new ArrayList<>();
         for (ConstantWrapper wrapper : pending) {
             Object constant = wrapper.constant;
             Object value = extractConstantValue(constant);
             String utf8Entry = null;
-            if (value instanceof JavaType javaType) {
-                utf8Entry = TypeSymbols.toClassNameEntry(typeSymbol(javaType)).toString();
+            if (value instanceof JavaType) {
+                utf8Entry = toConstantPoolName((JavaType) value);
             } else if (value instanceof String) {
                 utf8Entry = (String) value;
             } else if (value instanceof MethodType) {
@@ -654,17 +761,27 @@ public final class ClassFile {
                 throw VMError.unimplemented("LDC methodHandle constant");
             }
             VMError.guarantee(utf8Entry != null);
-            poolBuilder.appendSymbolicUTF8(utf8Symbol(utf8Entry));
+            if (!utf8Cache.containsKey(utf8Entry)) {
+                newEntries.add(utf8Entry);
+                utf8Cache.put(utf8Entry, constantPoolEntryCount + pending.size() + newEntries.size());
+            }
         }
-        int finalPosition = poolBuilder.getPosition();
 
-        poolBuilder.setPosition(oldPosition);
+        int start = constantPoolEntryCount;
         for (ConstantWrapper wrapper : pending) {
-            int cpi = ldcConstant(wrapper.constant);
-            assert cpi < 256;
+            ldcConstant(wrapper.constant);
         }
-        assert poolBuilder.getPosition() == oldPosition + pending.size();
-        poolBuilder.setPosition(finalPosition);
+        int end = constantPoolEntryCount;
+        VMError.guarantee(end - start == pending.size());
+        for (String entry : newEntries) {
+            constantPool.writeU1(CONSTANT_Utf8);
+            constantPool.writeUTF(entry);
+            ++constantPoolEntryCount;
+        }
+    }
+
+    private static String toConstantPoolName(JavaType type) {
+        return type.toJavaName().replace('.', '/');
     }
 
     private void dumpFieldInfo(ResolvedJavaField field) {
@@ -976,20 +1093,7 @@ public final class ClassFile {
                     int originalCPI = BytecodeStream.readCPI(code, bci);
                     int newCPI = 0;
                     if (originalCPI != 0) {
-                        JavaMethod originalMethod = originalConstantPool.lookupMethod(originalCPI, bytecode);
-                        boolean interfaceMethod = switch (bytecode) {
-                            case INVOKEVIRTUAL, INVOKESPECIAL -> false;
-                            case INVOKESTATIC -> {
-                                // GR-55048: Java version check, interfaceMethodRef allowed after >= 52
-                                // TODO(peterssen): Need to know if this is an interface method or not.
-                                JavaType declaringClass = originalMethod.getDeclaringClass();
-                                yield declaringClass instanceof ResolvedJavaType resolvedJavaType && resolvedJavaType.isInterface();
-                            }
-                            case INVOKEINTERFACE -> true;
-                            default ->
-                                    throw VMError.shouldNotReachHere("invalid INVOKE opcode");
-                        };
-                        newCPI = interfaceMethod ? interfaceMethodRef(originalMethod) : methodRef(originalMethod);
+                        newCPI = methodRef(originalConstantPool.lookupMethod(originalCPI, bytecode));
                     }
                     BytecodeStream.patchCPI(code, bci, newCPI);
                     break;
@@ -1000,7 +1104,7 @@ public final class ClassFile {
                     // The VM already provides the resolved bootstrap method and appendix.
                     // Investigate how to persist the appendix (arbitrary object) on the constant pool.
                     BytecodeStream.patchCPI(code, bci, 0);
-                    BytecodeStream.patchIndyExtraCPI(code, bci, 0);
+                    BytecodeStream.patchAppendixCPI(code, bci, 0);
                     break;
             }
             // @formatter:on

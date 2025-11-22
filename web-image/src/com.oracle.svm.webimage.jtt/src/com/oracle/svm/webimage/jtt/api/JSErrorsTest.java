@@ -26,7 +26,7 @@
 package com.oracle.svm.webimage.jtt.api;
 
 import org.graalvm.webimage.api.JS;
-import org.graalvm.webimage.api.ThrownFromJavaScript;
+import org.graalvm.webimage.api.JSError;
 
 public class JSErrorsTest {
     /**
@@ -43,7 +43,7 @@ public class JSErrorsTest {
     public static void main(String[] args) {
         try {
             typeError();
-        } catch (ThrownFromJavaScript e) {
+        } catch (JSError e) {
             System.out.println(e.getMessage());
         }
 

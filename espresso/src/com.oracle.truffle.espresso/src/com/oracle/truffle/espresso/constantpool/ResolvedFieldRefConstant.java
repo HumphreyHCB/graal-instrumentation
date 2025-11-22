@@ -24,10 +24,11 @@ package com.oracle.truffle.espresso.constantpool;
 
 import java.util.Objects;
 
-import com.oracle.truffle.espresso.classfile.ConstantPool.Tag;
+import com.oracle.truffle.espresso.classfile.constantpool.FieldRefConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.Resolvable;
 import com.oracle.truffle.espresso.impl.Field;
 
-public final class ResolvedFieldRefConstant implements ResolvedConstant {
+public final class ResolvedFieldRefConstant implements FieldRefConstant, Resolvable.ResolvedConstant {
     private final Field resolved;
 
     ResolvedFieldRefConstant(Field resolvedField) {
@@ -38,10 +39,5 @@ public final class ResolvedFieldRefConstant implements ResolvedConstant {
     @Override
     public Field value() {
         return resolved;
-    }
-
-    @Override
-    public Tag tag() {
-        return Tag.FIELD_REF;
     }
 }

@@ -27,7 +27,6 @@
 package com.oracle.svm.test.jfr.oldobject;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -37,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jdk.graal.compiler.word.Word;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,7 +48,6 @@ import com.oracle.svm.core.jfr.SubstrateJVM;
 import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.test.jfr.JfrRecordingTest;
 
-import jdk.graal.compiler.word.Word;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedFrame;
@@ -95,7 +94,7 @@ public abstract class JfrOldObjectTest extends JfrRecordingTest {
     }
 
     protected List<RecordedEvent> validateEvents(List<RecordedEvent> events, Class<?> expectedSampledType, int expectedArrayLength) {
-        assertFalse(events.isEmpty());
+        assertTrue(events.size() > 0);
 
         ArrayList<RecordedEvent> matchingEvents = new ArrayList<>();
         String expectedTypeName = expectedSampledType.getName();
@@ -113,10 +112,8 @@ public abstract class JfrOldObjectTest extends JfrRecordingTest {
                 assertNotNull("No event thread", eventThread);
 
                 List<RecordedFrame> frames = event.getStackTrace().getFrames();
-                assertFalse(frames.isEmpty());
+                assertTrue(frames.size() > 0);
                 assertTrue(frames.stream().anyMatch(e -> testName.getMethodName().equals(e.getMethod().getName())));
-
-                checkTopStackFrame(event, "testSampling");
 
                 long allocationTime = event.getLong("allocationTime");
                 assertTrue(allocationTime > 0);
@@ -134,7 +131,7 @@ public abstract class JfrOldObjectTest extends JfrRecordingTest {
             }
         }
 
-        assertFalse(matchingEvents.isEmpty());
+        assertTrue(matchingEvents.size() > 0);
         return matchingEvents;
     }
 }

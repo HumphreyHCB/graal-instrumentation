@@ -41,8 +41,6 @@
 package com.oracle.truffle.dsl.processor.bytecode.model;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
@@ -84,17 +82,16 @@ public class OperationModel implements PrettyPrintable {
 
         CUSTOM,
         CUSTOM_SHORT_CIRCUIT,
-        CUSTOM_YIELD,
         CUSTOM_INSTRUMENTATION,
     }
 
     /**
      * Models an argument to a begin/emit/end method.
      */
-    public record OperationArgument(TypeMirror builderType, Encoding kind, String name, String doc, Optional<ConstantOperandModel> constantOperand) {
+    public record OperationArgument(TypeMirror builderType, TypeMirror constantType, Encoding kind, String name, String doc) {
 
         OperationArgument(TypeMirror builderType, Encoding kind, String name, String doc) {
-            this(builderType, kind, name, doc, Optional.empty());
+            this(builderType, builderType, kind, name, doc);
         }
 
         public CodeVariableElement toVariableElement() {
@@ -110,9 +107,10 @@ public class OperationModel implements PrettyPrintable {
          * Encoding used for serialization.
          */
         public enum Encoding {
+            LANGUAGE,
             SHORT,
             INTEGER,
-            CONSTANT,
+            OBJECT,
             LOCAL,
             LOCAL_ARRAY,
             TAGS,
@@ -132,11 +130,7 @@ public class OperationModel implements PrettyPrintable {
         public static final ConstantOperandsModel NONE = new ConstantOperandsModel(List.of(), List.of());
 
         public boolean hasConstantOperands() {
-            return !this.equals(NONE);
-        }
-
-        public List<ConstantOperandModel> all() {
-            return Stream.concat(before.stream(), after.stream()).toList();
+            return this != NONE;
         }
     }
 
@@ -173,7 +167,7 @@ public class OperationModel implements PrettyPrintable {
     public CustomOperationModel customModel;
 
     // The constant operands parsed from {@code @ConstantOperand} annotations.
-    public ConstantOperandsModel constantOperands = ConstantOperandsModel.NONE;
+    public ConstantOperandsModel constantOperands = null;
 
     // Dynamic operand data supplied by builtin specs / parsed from operation specializations.
     public DynamicOperandModel[] dynamicOperands = new DynamicOperandModel[0];
@@ -198,12 +192,22 @@ public class OperationModel implements PrettyPrintable {
         this.javadoc = javadoc;
     }
 
-    public boolean hasConstantOperands() {
-        return constantOperands.hasConstantOperands();
+    public int numConstantOperandsBefore() {
+        if (constantOperands == null) {
+            return 0;
+        }
+        return constantOperands.before.size();
     }
 
     public int numDynamicOperands() {
         return dynamicOperands.length;
+    }
+
+    public int numConstantOperandsAfter() {
+        if (constantOperands == null) {
+            return 0;
+        }
+        return constantOperands.after.size();
     }
 
     public boolean hasChildren() {
@@ -274,18 +278,16 @@ public class OperationModel implements PrettyPrintable {
     }
 
     public OperationModel setOperationBeginArguments(OperationArgument... operationBeginArguments) {
-        if (this.operationBeginArguments != EMPTY_ARGUMENTS && this.operationBeginArguments.length != operationBeginArguments.length) {
-            throw new AssertionError("Number of begin arguments for %s should not change (was %d, attempted to set to %d).".formatted(name, this.operationBeginArguments.length,
-                            operationBeginArguments.length));
+        if (this.operationBeginArguments != null) {
+            assert this.operationBeginArguments.length == operationBeginArguments.length;
         }
         this.operationBeginArguments = operationBeginArguments;
         return this;
     }
 
     public OperationModel setOperationEndArguments(OperationArgument... operationEndArguments) {
-        if (this.operationEndArguments != EMPTY_ARGUMENTS && this.operationEndArguments.length != operationEndArguments.length) {
-            throw new AssertionError(
-                            "Number of end arguments for %s should not change (was %d, attempted to set to %d).".formatted(name, this.operationEndArguments.length, operationEndArguments.length));
+        if (this.operationEndArguments != null) {
+            assert this.operationEndArguments.length == operationEndArguments.length;
         }
         this.operationEndArguments = operationEndArguments;
         return this;
@@ -315,7 +317,7 @@ public class OperationModel implements PrettyPrintable {
     }
 
     public boolean isCustom() {
-        return kind == OperationKind.CUSTOM || kind == OperationKind.CUSTOM_YIELD || kind == OperationKind.CUSTOM_SHORT_CIRCUIT || kind == OperationKind.CUSTOM_INSTRUMENTATION;
+        return kind == OperationKind.CUSTOM || kind == OperationKind.CUSTOM_SHORT_CIRCUIT || kind == OperationKind.CUSTOM_INSTRUMENTATION;
     }
 
     public boolean requiresRootOperation() {

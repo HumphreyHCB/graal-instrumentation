@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,13 +37,8 @@ import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.jdk.resources.NativeImageResourceFileSystem;
 import com.oracle.svm.core.jni.access.JNIAccessibleClass;
 import com.oracle.svm.core.jni.access.JNIReflectionDictionary;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.FeatureImpl.AfterCompilationAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeImageWriteAccessImpl;
 import com.oracle.svm.hosted.ProgressReporter.DirectPrinter;
@@ -52,12 +47,11 @@ import com.oracle.svm.hosted.util.CPUTypeAArch64;
 import com.oracle.svm.hosted.util.CPUTypeAMD64;
 import com.oracle.svm.hosted.util.CPUTypeRISCV64;
 import com.oracle.svm.util.LogUtils;
+import com.oracle.svm.util.ReflectionUtil;
 
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 @AutomaticallyRegisteredFeature
 public class ProgressReporterFeature implements InternalFeature {
     protected final ProgressReporter reporter = ProgressReporter.singleton();
-    private boolean resourcesAreReachable;
 
     @Override
     public void duringSetup(DuringSetupAccess access) {
@@ -72,6 +66,19 @@ public class ProgressReporterFeature implements InternalFeature {
     }
 
     @Override
+    public void afterAnalysis(AfterAnalysisAccess access) {
+        var vectorSpeciesClass = ReflectionUtil.lookupClass(true, "jdk.incubator.vector.VectorSpecies");
+        if (vectorSpeciesClass != null && access.isReachable(vectorSpeciesClass)) {
+            warnAboutVectorAPI();
+        }
+    }
+
+    protected void warnAboutVectorAPI() {
+        LogUtils.warning(
+                        "This application uses a preview of the Vector API, which is functional but slow on Native Image because it is not yet optimized by the Graal compiler. Please keep this in mind when evaluating performance.");
+    }
+
+    @Override
     public void afterCompilation(AfterCompilationAccess access) {
         if (SubstrateOptions.BuildOutputBreakdowns.getValue()) {
             ImageSingletons.add(CodeBreakdownProvider.class, new CodeBreakdownProvider(((AfterCompilationAccessImpl) access).getCompilationTasks()));
@@ -79,14 +86,9 @@ public class ProgressReporterFeature implements InternalFeature {
     }
 
     @Override
-    public void afterAnalysis(AfterAnalysisAccess access) {
-        resourcesAreReachable = access.isReachable(NativeImageResourceFileSystem.class);
-    }
-
-    @Override
     public void beforeImageWrite(BeforeImageWriteAccess access) {
         if (SubstrateOptions.BuildOutputBreakdowns.getValue()) {
-            HeapBreakdownProvider.singleton().calculate(((BeforeImageWriteAccessImpl) access), resourcesAreReachable);
+            HeapBreakdownProvider.singleton().calculate(((BeforeImageWriteAccessImpl) access));
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2020, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -28,10 +28,10 @@ package com.oracle.svm.hosted.image.sources;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import org.graalvm.collections.EconomicMap;
+import java.util.HashMap;
 
 import jdk.graal.compiler.debug.DebugContext;
+
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 /**
@@ -54,10 +54,7 @@ public class SourceManager {
      */
     public Path findAndCacheSource(ResolvedJavaType resolvedType, Class<?> clazz, DebugContext debugContext) {
         /* short circuit if we have already seen this type */
-        Path path;
-        synchronized (verifiedPaths) {
-            path = verifiedPaths.get(resolvedType);
-        }
+        Path path = verifiedPaths.get(resolvedType);
         if (path != null) {
             return (path != INVALID_PATH ? path : null);
         }
@@ -75,10 +72,10 @@ public class SourceManager {
                 path = locateSource(fileName, packageName, clazz);
                 if (path == null) {
                     // as a last ditch effort derive path from the Java class name
-                    if (debugContext.isLogEnabled()) {
+                    if (debugContext.areScopesEnabled()) {
                         debugContext.log(DebugContext.INFO_LEVEL, "Failed to find source file for class %s%n", resolvedType.toJavaName());
                     }
-                    if (!packageName.isEmpty()) {
+                    if (packageName.length() > 0) {
                         path = Paths.get("", packageName.split("\\."));
                         path = path.resolve(fileName);
                     }
@@ -86,9 +83,7 @@ public class SourceManager {
             }
         }
         /* memoize the lookup */
-        synchronized (verifiedPaths) {
-            verifiedPaths.put(resolvedType, (path != null ? path : INVALID_PATH));
-        }
+        verifiedPaths.put(resolvedType, (path != null ? path : INVALID_PATH));
 
         return path;
     }
@@ -98,7 +93,7 @@ public class SourceManager {
      * the source name embedded in the class file or the class name itself.
      *
      * @param resolvedType the resolved java type whose source file name is required
-     * @return the file name or null if the class cannot be associated with a source file
+     * @return the file name or null if it the class cannot be associated with a source file
      */
     private static String computeBaseName(ResolvedJavaType resolvedType) {
         if (resolvedType.isPrimitive()) {
@@ -151,10 +146,10 @@ public class SourceManager {
      *
      * @param fileName the base file name for the source file
      * @param packageName the name of the package for the associated Java class
-     * @return a prototype name for the source file
+     * @return a protoype name for the source file
      */
     private static Path computePrototypeName(String fileName, String packageName) {
-        if (packageName.isEmpty()) {
+        if (packageName.length() == 0) {
             return Paths.get("", fileName);
         } else {
             return Paths.get("", packageName.split("\\.")).resolve(fileName);
@@ -165,7 +160,7 @@ public class SourceManager {
      * A map from a Java type to an associated source paths which is known to have an up to date
      * entry in the relevant source file cache. This is used to memoize previous lookups.
      */
-    private final EconomicMap<ResolvedJavaType, Path> verifiedPaths = EconomicMap.create();
+    private static HashMap<ResolvedJavaType, Path> verifiedPaths = new HashMap<>();
 
     /**
      * An invalid path used as a marker to track failed lookups so we don't waste time looking up

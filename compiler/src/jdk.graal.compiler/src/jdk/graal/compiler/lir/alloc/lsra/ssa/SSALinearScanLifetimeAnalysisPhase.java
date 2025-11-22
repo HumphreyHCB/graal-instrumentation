@@ -24,6 +24,7 @@
  */
 package jdk.graal.compiler.lir.alloc.lsra.ssa;
 
+import java.util.BitSet;
 import java.util.EnumSet;
 
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
@@ -38,8 +39,8 @@ import jdk.graal.compiler.lir.alloc.lsra.Interval;
 import jdk.graal.compiler.lir.alloc.lsra.Interval.RegisterPriority;
 import jdk.graal.compiler.lir.alloc.lsra.LinearScan;
 import jdk.graal.compiler.lir.alloc.lsra.LinearScanLifetimeAnalysisPhase;
-import jdk.graal.compiler.lir.alloc.lsra.SparseBitSet;
 import jdk.graal.compiler.lir.ssa.SSAUtil;
+
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.Value;
 
@@ -69,7 +70,7 @@ public class SSALinearScanLifetimeAnalysisPhase extends LinearScanLifetimeAnalys
             int idx = SSAUtil.indexOfValue(label, targetValue);
             assert idx >= 0 : String.format("Value %s not in label %s", targetValue, label);
 
-            SparseBitSet blockLiveIn = allocator.getBlockData(block).liveIn;
+            BitSet blockLiveIn = allocator.getBlockData(block).liveIn;
 
             BasicBlock<?> selectedPredecessor = null;
             AllocatableValue selectedSource = null;

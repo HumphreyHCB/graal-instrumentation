@@ -48,11 +48,9 @@ import java.util.Set;
 import org.graalvm.collections.EconomicSet;
 
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.regex.UnsupportedRegexException;
 import com.oracle.truffle.regex.tregex.buffer.LongArrayBuffer;
 import com.oracle.truffle.regex.tregex.nfa.ASTStepVisitor;
 import com.oracle.truffle.regex.tregex.nfa.TransitionGuard;
-import com.oracle.truffle.regex.tregex.parser.RegexFlavor;
 import com.oracle.truffle.regex.tregex.parser.Token.Quantifier;
 import com.oracle.truffle.regex.tregex.parser.ast.CharacterClass;
 import com.oracle.truffle.regex.tregex.parser.ast.Group;
@@ -66,6 +64,7 @@ import com.oracle.truffle.regex.tregex.parser.ast.RegexAST;
 import com.oracle.truffle.regex.tregex.parser.ast.RegexASTNode;
 import com.oracle.truffle.regex.tregex.parser.ast.Sequence;
 import com.oracle.truffle.regex.tregex.parser.ast.Term;
+import com.oracle.truffle.regex.tregex.parser.flavors.RegexFlavor;
 import com.oracle.truffle.regex.util.TBitSet;
 
 /**
@@ -322,9 +321,6 @@ public abstract class NFATraversalRegexASTVisitor {
             while (!done && !foundNextTarget) {
                 // advance until we reach the next node to visit
                 foundNextTarget = doAdvance();
-                if (isBuildingDFA() && cur.isOptionalQuantifier()) {
-                    foundNextTarget = advanceTerm(cur.asGroup());
-                }
                 if (foundNextTarget) {
                     foundNextTarget = deduplicatePath(false);
                 }
@@ -401,27 +397,6 @@ public abstract class NFATraversalRegexASTVisitor {
         return transitionGuardsResult;
     }
 
-    /**
-     * Returns whether we should add a {@link TransitionGuard maintain} guard to this transition.
-     * Ideally should be done as part of {@link #getTransitionGuardsOnPath()}
-     * 
-     * @return the quantifier index or -1 if no guards are needed.
-     */
-    protected int needsMaintainGuard() {
-        assert cur instanceof Term;
-        Group parentQuant = root.getQuantifiedParentGroup();
-        Group otherParent = ((Term) cur).getQuantifiedParentGroup();
-        if (parentQuant != null && parentQuant.equals(otherParent)) {
-            for (long guard : transitionGuardsCanonicalized) {
-                if (TransitionGuard.isQuantifierOp(guard)) {
-                    return -1;
-                }
-            }
-            return parentQuant.getQuantifier().getIndex();
-        }
-        return -1;
-    }
-
     protected void calcTransitionGuardsResult() {
         if (transitionGuardsResult == null) {
             transitionGuardsResult = getTransitionGuards().isEmpty() ? TransitionGuard.NO_GUARDS : getTransitionGuards().toArray();
@@ -454,6 +429,9 @@ public abstract class NFATraversalRegexASTVisitor {
                 } else {
                     pushGroupExit(parent);
                 }
+                if (shouldRetreat) {
+                    return retreat();
+                }
                 return advanceTerm(parent);
             } else {
                 cur = forward ? sequence.getFirstTerm() : sequence.getLastTerm();
@@ -462,6 +440,9 @@ public abstract class NFATraversalRegexASTVisitor {
         } else if (cur.isGroup()) {
             final Group group = (Group) cur;
             pushGroupEnter(group, 1);
+            if (shouldRetreat) {
+                return retreat();
+            }
             if (group.hasEmptyGuard()) {
                 insideEmptyGuardGroup.set(group.getGroupsWithGuardsIndex());
             }
@@ -595,10 +576,7 @@ public abstract class NFATraversalRegexASTVisitor {
                                 (!ast.getOptions().isBooleanMatch() || ast.getProperties().hasBackReferences() || caretsOnPath() || isReverse() && dollarsOnPath())) {
                     // the existence of a mandatory copy of the quantifier loop implies a minimum
                     // greater than zero
-                    assert quantifier.getMin() > 0;
-                    if (isBuildingDFA()) {
-                        throw new UnsupportedRegexException("Cannot compile regex with empty state to DFA/NFA");
-                    }
+                    assert !curGroup.isMandatoryQuantifier() || quantifier.getMin() > 0;
                     popGroupExit();
                     cur = curTerm;
                     // Set the current group node as the path's target to indicate we want to
@@ -607,18 +585,6 @@ public abstract class NFATraversalRegexASTVisitor {
                     curPath.add(PathElement.create(cur));
                     return true;
                 }
-                if (isBuildingDFA() && curGroup.isMandatoryQuantifier() && !lookAroundsOnPath.isEmpty()) {
-                    for (int i = curPath.length() - 1; i >= 0; i--) {
-                        long element = curPath.get(i);
-                        RegexASTNode node = pathGetNode(element);
-                        if (PathElement.isGroupEnter(element) && node == curGroup) {
-                            break;
-                        }
-                        if (node.isLookAheadAssertion()) {
-                            throw new UnsupportedRegexException("empty path with look-ahead assertion in expression with bounded quantifier");
-                        }
-                    }
-                }
                 // otherwise, retreat.
                 return retreat();
             }
@@ -626,6 +592,9 @@ public abstract class NFATraversalRegexASTVisitor {
             if (curTerm == (forward ? parentSeq.getLastTerm() : parentSeq.getFirstTerm())) {
                 final Group parentGroup = parentSeq.getParent();
                 pushGroupExit(parentGroup);
+                if (shouldRetreat) {
+                    return retreat();
+                }
                 if (parentGroup.isLoop()) {
                     cur = parentGroup;
                     return false;
@@ -657,6 +626,9 @@ public abstract class NFATraversalRegexASTVisitor {
                 if (PathElement.isGroupEnter(lastElement) || PathElement.isGroupPassThrough(lastElement)) {
                     if (pathGroupHasNext(lastElement)) {
                         switchNextGroupAlternative(group);
+                        if (shouldRetreat) {
+                            return retreat();
+                        }
                         cur = pathGroupGetNext(lastElement);
                         return deduplicatePath(true);
                     } else {
@@ -685,6 +657,9 @@ public abstract class NFATraversalRegexASTVisitor {
                     // In ECMAScript, we use the same mechanism to fast-forward mandatory quantifier
                     // parts when we find a zero-width match for the quantified expression.
                     switchExitToEscape(group);
+                    if (shouldRetreat) {
+                        return retreat();
+                    }
                     // When we expand quantifiers, we wrap them in a group. This lets us escape past
                     // the expansion of the quantifier even in cases when we are in the mandatory
                     // prefix (e.g. empty-check fails in the first A in (AA((A)((A)|)|))).
@@ -1033,7 +1008,7 @@ public abstract class NFATraversalRegexASTVisitor {
                         Quantifier quantifier = group.getQuantifier();
                         if (quantifier.hasIndex()) {
                             if (bqExited.get(group.getGroupsWithGuardsIndex()) && !bqBypassed.get(group.getGroupsWithGuardsIndex())) {
-                                if (!isBuildingDFA() && group.isMandatoryQuantifier()) {
+                                if (group.isMandatoryQuantifier()) {
                                     pushTransitionGuard(TransitionGuard.createCountLtMin(quantifier));
                                 } else if (!quantifier.isInfiniteLoop()) {
                                     pushTransitionGuard(TransitionGuard.createCountLtMax(quantifier));
@@ -1110,10 +1085,10 @@ public abstract class NFATraversalRegexASTVisitor {
                             }
                             bqBypassed.set(quantifierGroup.getGroupsWithGuardsIndex());
                             if (quantifierGroup.isMandatoryQuantifier() || quantifier.getMin() > 0 && !quantifierGroup.isOptionalQuantifier()) {
-                                if (root.isGroup() || !bqExited.get(quantifierGroup.getGroupsWithGuardsIndex())) {
+                                if (!bqExited.get(quantifierGroup.getGroupsWithGuardsIndex())) {
                                     setShouldRetreat();
                                 }
-                                if (quantifier.getMin() > 1) {
+                                if (quantifier.getMin() > 0) {
                                     pushTransitionGuard(TransitionGuard.createCountGeMin(quantifier));
                                 }
                             }
@@ -1132,7 +1107,7 @@ public abstract class NFATraversalRegexASTVisitor {
 
     private boolean shouldKeepGuard(long guard, int guardPosition) {
         switch (TransitionGuard.getKind(guard)) {
-            case countSet1, countInc, countSetMinInc -> {
+            case countSet1, countInc, countSetMin -> {
                 return getFlavor().emptyChecksMonitorCaptureGroups() || guardPosition >= bqLastCounterReset[TransitionGuard.getQuantifierIndex(guard)];
             }
             case enterZeroWidth -> {
@@ -1238,7 +1213,7 @@ public abstract class NFATraversalRegexASTVisitor {
         // First, we check whether the guard can be resolved statically. If it is trivially true,
         // we ignore it (normalization). If it is impossible to satisfy, we backtrack.
         switch (TransitionGuard.getKind(guard)) {
-            case countSet1, countSetMinInc -> {
+            case countSet1, countSetMin -> {
                 bqLastCounterReset[TransitionGuard.getQuantifierIndex(guard)] = transitionGuards.length();
             }
             case countLtMin, countGeMin, countLtMax -> {

@@ -41,6 +41,7 @@
 package com.oracle.truffle.nfi.backend.panama;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -119,14 +120,14 @@ final class PanamaLibrary implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    String getLanguageId() {
-        return PanamaNFILanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return PanamaNFILanguage.class;
     }
 
     @ExportMessage

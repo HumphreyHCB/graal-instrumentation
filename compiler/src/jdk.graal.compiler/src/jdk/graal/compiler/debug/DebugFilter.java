@@ -30,16 +30,19 @@ import java.util.regex.Pattern;
 import jdk.graal.compiler.debug.DebugContext.Scope;
 
 /**
- * Implements the filter specified by options such as {@link DebugOptions#Dump} and
- * {@link DebugOptions#Log}.
+ * Implements the filter specified by options such as {@link DebugOptions#Dump},
+ * {@link DebugOptions#Log}, {@link DebugOptions#Count} and {@link DebugOptions#Time}.
  *
- * See help of {@link DebugOptions#Dump} for a description of the filter syntax.
+ * See <a href="DumpHelp.txt">here</a> for a description of the filter syntax.
  *
  * <p>
  * These options enable the associated debug facility if their filter matches the
  * {@linkplain Scope#getQualifiedName() name} of the current scope. For the
- * {@link DebugOptions#Dump} and {@link DebugOptions#Log} options, the log or dump level is set.
+ * {@link DebugOptions#Dump} and {@link DebugOptions#Log} options, the log or dump level is set. The
+ * {@link DebugOptions#Count} and {@link DebugOptions#Time} options don't have a level, for them
+ * {@code level = 0} means disabled and a {@code level > 0} means enabled.
  * <p>
+ * The syntax for a filter is explained <a href="file:doc-files/DumpHelp.txt">here</a>.
  */
 final class DebugFilter {
 

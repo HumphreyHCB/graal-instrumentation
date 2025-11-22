@@ -32,7 +32,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -72,12 +71,12 @@ public final class Target_java_lang_invoke_LambdaMetafactory {
                         @Bind("getMeta()") Meta meta,
                         @Cached("create(meta.java_lang_invoke_LambdaMetafactory_altMetafactory.getCallTargetNoSubstitution())") DirectCallNode altMetafactory,
                         @Cached("create(meta.java_lang_invoke_LambdaMetafactory_metafactory.getCallTargetNoSubstitution())") DirectCallNode original,
-                        @Bind("getLanguage()") EspressoLanguage lang) {
-            if (lang.isContinuumEnabled()) {
+                        @Bind("getContext()") EspressoContext context) {
+            if (context.getEspressoEnv().Continuum) {
                 // altMetafactory has a curious calling convention, apparently designed for
                 // extensibility.
-                StaticObject extraArgsRef = lang.getAllocator().createNewReferenceArray(meta.java_lang_Object, 4);
-                StaticObject[] extraArgs = extraArgsRef.unwrap(lang);
+                StaticObject extraArgsRef = context.getAllocator().createNewReferenceArray(meta.java_lang_Object, 4);
+                StaticObject[] extraArgs = extraArgsRef.unwrap(context.getLanguage());
                 extraArgs[0] = interfaceMethodType;
                 extraArgs[1] = implementation;
                 extraArgs[2] = dynamicMethodType;
@@ -107,7 +106,7 @@ public final class Target_java_lang_invoke_LambdaMetafactory {
                         @Bind("getMeta()") Meta meta,
                         @Cached("create(meta.java_lang_invoke_LambdaMetafactory_altMetafactory.getCallTargetNoSubstitution())") DirectCallNode original,
                         @Bind("getContext()") EspressoContext context) {
-            if (context.getLanguage().isContinuumEnabled()) {
+            if (context.getEspressoEnv().Continuum) {
                 StaticObject[] extraArgs = args.unwrap(context.getLanguage());
                 extraArgs[3] = meta.boxInteger(meta.unboxInteger(extraArgs[3]) | LambdaMetafactory.FLAG_SERIALIZABLE);
                 return (StaticObject) original.call(caller, interfaceMethodName, factoryType, StaticObject.wrap(extraArgs, meta));

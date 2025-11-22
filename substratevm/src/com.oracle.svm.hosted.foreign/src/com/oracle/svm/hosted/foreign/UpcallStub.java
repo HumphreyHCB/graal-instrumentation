@@ -25,7 +25,6 @@
 package com.oracle.svm.hosted.foreign;
 
 import static com.oracle.graal.pointsto.infrastructure.ResolvedSignature.fromMethodType;
-import static com.oracle.svm.util.AnnotationUtil.newAnnotationValue;
 import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.VERY_FAST_PATH_PROBABILITY;
 
 import java.lang.invoke.MethodHandle;
@@ -34,6 +33,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.word.LocationIdentity;
 
@@ -63,10 +63,11 @@ import com.oracle.svm.core.graal.nodes.LoweredDeadEndNode;
 import com.oracle.svm.core.graal.stackvalue.StackValueNode;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.annotation.AnnotationValue;
+import com.oracle.svm.hosted.annotation.SubstrateAnnotationExtractor;
 import com.oracle.svm.hosted.code.NonBytecodeMethod;
 import com.oracle.svm.util.ReflectionUtil;
 
-import jdk.graal.compiler.annotation.AnnotationValue;
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -89,13 +90,13 @@ import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.replacements.nodes.CStringConstant;
 import jdk.graal.compiler.replacements.nodes.WriteRegisterNode;
 import jdk.vm.ci.code.BytecodeFrame;
-import jdk.vm.ci.code.Register;
+import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
-@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+21/src/hotspot/share/prims/upcallLinker.cpp")
+@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+7/src/hotspot/share/prims/upcallLinker.cpp")
 @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+17/src/hotspot/cpu/x86/upcallLinker_x86_64.cpp")
 @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+17/src/hotspot/cpu/aarch64/upcallLinker_aarch64.cpp")
 public abstract class UpcallStub extends NonBytecodeMethod {
@@ -121,13 +122,13 @@ public abstract class UpcallStub extends NonBytecodeMethod {
  * customized calling convention.
  * <p>
  * The method type is of the form (<>: argument; []: optional argument)
- *
+ * 
  * <pre>
  * {@code
  *      <actual arg 1> <actual arg 2> ...
  * }
  * </pre>
- *
+ * 
  * with the following arguments being passed using special registers:
  * <ul>
  * <li>The {@link MethodHandle} to call in {@link AbiUtils#upcallSpecialArgumentsRegisters()}</li>
@@ -137,7 +138,7 @@ public abstract class UpcallStub extends NonBytecodeMethod {
  */
 final class LowLevelUpcallStub extends UpcallStub implements CustomCallingConventionMethod {
     private final ResolvedJavaMethod highLevelStub;
-    private final List<Register> savedRegisters;
+    private final RegisterArray savedRegisters;
     private final AssignedLocation[] parametersAssignment;
 
     static LowLevelUpcallStub make(JavaEntryPointInfo jep, AnalysisUniverse universe, MetaAccessProvider metaAccess) {
@@ -173,7 +174,7 @@ final class LowLevelUpcallStub extends UpcallStub implements CustomCallingConven
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
         assert ExplicitCallingConvention.Util.getCallingConventionKind(method, false) == SubstrateCallingConventionKind.Custom;
         assert Uninterruptible.Utils.isUninterruptible(method);
-        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method);
+        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method, purpose);
 
         /*
          * Read all relevant values, i.e. the MH to call, the current Isolate, the
@@ -193,8 +194,8 @@ final class LowLevelUpcallStub extends UpcallStub implements CustomCallingConven
          * Saving the callee-save registers is necessary because the invocation of the high-level
          * stub uses the Java calling convention which may interfere with those registers.
          */
-        assert !savedRegisters.contains(registers.methodHandle());
-        assert !savedRegisters.contains(registers.isolate());
+        assert !savedRegisters.asList().contains(registers.methodHandle());
+        assert !savedRegisters.asList().contains(registers.isolate());
         ValueNode enterResult = kit.append(CEntryPointEnterNode.attachThread(isolate, false, true));
 
         kit.startIf(IntegerEqualsNode.create(enterResult, ConstantNode.forInt(CEntryPointErrors.NO_ERROR, kit.getGraph()), NodeView.DEFAULT),
@@ -217,15 +218,9 @@ final class LowLevelUpcallStub extends UpcallStub implements CustomCallingConven
             arguments.addFirst(returnBuffer);
         }
 
-        /*
-         * Transfers to the Java-side stub; note that exceptions should be handled there. We
-         * explicitly disable inline for this call to prevent that operations floating to a point
-         * where the base registers are not initialized yet.
-         */
+        /* Transfers to the Java-side stub; note that exceptions should be handled there. */
         arguments.addFirst(mh);
         InvokeWithExceptionNode returnValue = kit.createJavaCallWithException(CallTargetNode.InvokeKind.Static, highLevelStub, arguments.toArray(ValueNode.EMPTY_ARRAY));
-        returnValue.setUseForInlining(false);
-
         kit.exceptionPart();
         kit.append(new DeadEndNode());
         kit.endInvokeWithException();
@@ -258,15 +253,19 @@ final class LowLevelUpcallStub extends UpcallStub implements CustomCallingConven
         return kit.finalizeGraph();
     }
 
-    private static final List<AnnotationValue> INJECTED_ANNOTATIONS = List.of(
-                    newAnnotationValue(ExplicitCallingConvention.class,
-                                    "value", SubstrateCallingConventionKind.Custom),
-                    newAnnotationValue(Uninterruptible.class,
-                                    "calleeMustBe", false,
-                                    "reason", "Directly accesses registers and IsolateThread might not be correctly set up"));
+    @Uninterruptible(reason = "Directly accesses registers and IsolateThread might not be correctly set up", calleeMustBe = false)
+    @ExplicitCallingConvention(SubstrateCallingConventionKind.Custom)
+    private static void annotationsHolder() {
+    }
+
+    private static final Method ANNOTATIONS_HOLDER = ReflectionUtil.lookupMethod(LowLevelUpcallStub.class, "annotationsHolder");
+
+    private static final AnnotationValue[] INJECTED_ANNOTATIONS = SubstrateAnnotationExtractor.prepareInjectedAnnotations(
+                    AnnotationAccess.getAnnotation(ANNOTATIONS_HOLDER, ExplicitCallingConvention.class),
+                    Uninterruptible.Utils.getAnnotation(ANNOTATIONS_HOLDER));
 
     @Override
-    public List<AnnotationValue> getInjectedAnnotations() {
+    public AnnotationValue[] getInjectedAnnotations() {
         return INJECTED_ANNOTATIONS;
     }
 
@@ -287,8 +286,7 @@ class HighLevelUpcallStub extends UpcallStub {
                     "invokeWithArguments",
                     Object[].class);
 
-    private static MethodType computeType(JavaEntryPointInfo jep, MethodType lowTypeParam) {
-        MethodType lowType = lowTypeParam;
+    private static MethodType computeType(JavaEntryPointInfo jep, MethodType lowType) {
         /* Inject return buffer */
         if (jep.buffersReturn()) {
             lowType = lowType.insertParameterTypes(0, long.class);
@@ -303,7 +301,7 @@ class HighLevelUpcallStub extends UpcallStub {
 
     @Override
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
-        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method);
+        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method, purpose);
         MetaAccessProvider metaAccess = kit.getMetaAccess();
         FrameStateBuilder frame = kit.getFrameState();
 
@@ -338,8 +336,7 @@ class HighLevelUpcallStub extends UpcallStub {
  */
 class HighLevelDirectUpcallStub extends UpcallStub {
 
-    private static MethodType computeType(JavaEntryPointInfo jep, MethodType lowTypeParam) {
-        MethodType lowType = lowTypeParam;
+    private static MethodType computeType(JavaEntryPointInfo jep, MethodType lowType) {
         /* Inject return buffer */
         if (jep.buffersReturn()) {
             lowType = lowType.insertParameterTypes(0, long.class);
@@ -358,7 +355,7 @@ class HighLevelDirectUpcallStub extends UpcallStub {
 
     @Override
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
-        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method);
+        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method, purpose);
         FrameStateBuilder frame = kit.getFrameState();
 
         List<ValueNode> allArguments = new ArrayList<>(kit.getInitialArguments());
@@ -374,7 +371,7 @@ class HighLevelDirectUpcallStub extends UpcallStub {
          * has a specialized signature (i.e. no longer takes 'Object[]') and so we omit boxing.
          * Further, this method is annotated with 'LambdaForm.Compiled' and recognized by
          * InlineBeforeAnalysis as method handle intrinsification root.
-         *
+         * 
          * If resolving does not work, a call to a generic invocation method will be emitted (same
          * as in 'UpcallStub'). We will still use the constant method handle as receiver to enable
          * some optimizations but the method handle will most certainly still be interpreted.

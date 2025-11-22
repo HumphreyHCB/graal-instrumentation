@@ -104,7 +104,6 @@ public class InlinedMethodNode extends InvokeQuickNode implements InlinedFrameAc
     }
 
     // Data needed to revert to the generic case.
-    protected final CallKind callKind;
     protected final int opcode;
     protected final int statementIndex;
 
@@ -125,15 +124,14 @@ public class InlinedMethodNode extends InvokeQuickNode implements InlinedFrameAc
             // Try to inline trivial substitutions.
             JavaSubstitution.Factory factory = Substitutions.lookupSubstitution(resolutionSeed);
             if (factory != null && factory.inlineInBytecode()) {
-                return InlinedSubstitutionBodyNode.create(resolvedCall, top, opcode, curBCI, statementIndex, factory);
+                return InlinedSubstitutionBodyNode.create(resolutionSeed, top, opcode, curBCI, statementIndex, factory);
             }
         }
         return null;
     }
 
-    public InlinedMethodNode(ResolvedCall<Klass, Method, Field> inlinedCall, int top, int opcode, int callerBCI, int statementIndex, BodyNode body) {
-        super(inlinedCall.getResolvedMethod(), top, callerBCI);
-        this.callKind = inlinedCall.getCallKind();
+    public InlinedMethodNode(Method.MethodVersion inlinedMethod, int top, int opcode, int callerBCI, int statementIndex, BodyNode body) {
+        super(inlinedMethod, top, callerBCI);
         this.opcode = opcode;
         this.statementIndex = statementIndex;
         this.body = body;
@@ -190,11 +188,7 @@ public class InlinedMethodNode extends InvokeQuickNode implements InlinedFrameAc
     }
 
     public final BaseQuickNode revertToGeneric(BytecodeNode parent) {
-        return parent.generifyInlinedMethodNode(top, opcode, getCallerBCI(), statementIndex, getResolvedCall());
-    }
-
-    protected ResolvedCall<Klass, Method, Field> getResolvedCall() {
-        return new ResolvedCall<>(callKind, inlinedMethod().getMethod());
+        return parent.generifyInlinedMethodNode(top, opcode, getCallerBCI(), statementIndex);
     }
 
     public static boolean isInlineCandidate(ResolvedCall<Klass, Method, Field> resolvedCall) {

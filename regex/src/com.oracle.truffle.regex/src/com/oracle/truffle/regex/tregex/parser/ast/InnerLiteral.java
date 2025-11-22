@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,7 @@
 package com.oracle.truffle.regex.tregex.parser.ast;
 
 import com.oracle.truffle.api.strings.TruffleString;
-import com.oracle.truffle.regex.tregex.string.AbstractStringBuffer;
+import com.oracle.truffle.regex.tregex.string.AbstractString;
 
 /**
  * Represents a literal string inside the regular expression that can be searched for before
@@ -49,27 +49,41 @@ import com.oracle.truffle.regex.tregex.string.AbstractStringBuffer;
  */
 public class InnerLiteral {
 
-    private final TruffleString literal;
-    private final TruffleString.WithMask mask;
+    private final AbstractString literal;
+    private final AbstractString mask;
     private final int maxPrefixSize;
-    private final int encodedLength;
 
-    public InnerLiteral(AbstractStringBuffer literal, AbstractStringBuffer mask, int maxPrefixSize) {
+    private final TruffleString literalTString;
+    private final TruffleString.WithMask maskTString;
+
+    public InnerLiteral(AbstractString literal, AbstractString mask, int maxPrefixSize) {
+        this.literal = literal;
+        this.mask = mask;
         this.maxPrefixSize = maxPrefixSize;
-        this.encodedLength = literal.length();
-        this.literal = literal.asTString();
-        this.mask = mask == null ? null : mask.asTStringMask(this.literal);
+        this.literalTString = literal.asTString();
+        this.maskTString = mask == null ? null : mask.asTStringMask(literalTString);
     }
 
-    public TruffleString getLiteral() {
+    /**
+     * The literal string.
+     */
+    public AbstractString getLiteral() {
         return literal;
+    }
+
+    public TruffleString getLiteralContent() {
+        return literalTString;
     }
 
     /**
      * An optional mask for matching the string in ignore-case mode.
      */
-    public TruffleString.WithMask getMask() {
+    public AbstractString getMask() {
         return mask;
+    }
+
+    public TruffleString.WithMask getMaskContent() {
+        return hasMask() ? maskTString : null;
     }
 
     public boolean hasMask() {
@@ -83,9 +97,5 @@ public class InnerLiteral {
      */
     public int getMaxPrefixSize() {
         return maxPrefixSize;
-    }
-
-    public int getEncodedLength() {
-        return encodedLength;
     }
 }

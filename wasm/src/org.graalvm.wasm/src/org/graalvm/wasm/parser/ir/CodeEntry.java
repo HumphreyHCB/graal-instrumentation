@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,16 +49,14 @@ import java.util.List;
 public final class CodeEntry {
     private final int functionIndex;
     private final int maxStackSize;
-    private final int[] localTypes;
-    private final int[] resultTypes;
+    private final byte[] localTypes;
+    private final byte[] resultTypes;
     private final List<CallNode> callNodes;
     private final int bytecodeStartOffset;
     private final int bytecodeEndOffset;
     private final boolean usesMemoryZero;
-    private final int exceptionTableOffset;
 
-    public CodeEntry(int functionIndex, int maxStackSize, int[] localTypes, int[] resultTypes, List<CallNode> callNodes, int startOffset, int endOffset, boolean usesMemoryZero,
-                    int exceptionTableOffset) {
+    public CodeEntry(int functionIndex, int maxStackSize, byte[] localTypes, byte[] resultTypes, List<CallNode> callNodes, int startOffset, int endOffset, boolean usesMemoryZero) {
         this.functionIndex = functionIndex;
         this.maxStackSize = maxStackSize;
         this.localTypes = localTypes;
@@ -67,7 +65,6 @@ public final class CodeEntry {
         this.bytecodeStartOffset = startOffset;
         this.bytecodeEndOffset = endOffset;
         this.usesMemoryZero = usesMemoryZero;
-        this.exceptionTableOffset = exceptionTableOffset;
     }
 
     public int maxStackSize() {
@@ -78,11 +75,11 @@ public final class CodeEntry {
         return functionIndex;
     }
 
-    public int[] localTypes() {
+    public byte[] localTypes() {
         return localTypes;
     }
 
-    public int[] resultTypes() {
+    public byte[] resultTypes() {
         return resultTypes;
     }
 
@@ -100,9 +97,5 @@ public final class CodeEntry {
 
     public boolean usesMemoryZero() {
         return usesMemoryZero;
-    }
-
-    public int exceptionTableOffset() {
-        return exceptionTableOffset;
     }
 }

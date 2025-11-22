@@ -41,6 +41,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
 import jdk.graal.compiler.replacements.nodes.MacroInvokable;
 import jdk.graal.compiler.replacements.nodes.MacroNode;
 import jdk.graal.compiler.replacements.nodes.MethodHandleNode;
+import jdk.graal.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MethodHandleAccessProvider;
 import jdk.vm.ci.meta.MethodHandleAccessProvider.IntrinsicMethod;
@@ -101,7 +102,7 @@ public class MethodHandlePlugin implements NodePlugin {
                     b.addPush(invokeReturnStamp.getTrustedStamp().getStackKind(), methodHandleNode.asNode());
                 }
             } else {
-                CallTargetNode callTarget = invoke.callTarget();
+                ResolvedMethodHandleCallTargetNode callTarget = (ResolvedMethodHandleCallTargetNode) invoke.callTarget();
                 NodeInputList<ValueNode> argumentsList = callTarget.arguments();
                 for (int i = 0; i < argumentsList.size(); ++i) {
                     argumentsList.initialize(i, b.append(argumentsList.get(i)));
@@ -129,8 +130,13 @@ public class MethodHandlePlugin implements NodePlugin {
                 Invokable newInvokable = b.handleReplacedInvoke(invoke.getInvokeKind(), targetMethod, argumentsList.toArray(new ValueNode[argumentsList.size()]), inlineEverything);
                 if (newInvokable != null) {
                     if (newInvokable instanceof Invoke newInvoke && !newInvoke.callTarget().equals(callTarget) && newInvoke.asFixedNode().isAlive()) {
+                        // In the case where the invoke is not inlined, replace its call target with
+                        // the special ResolvedMethodHandleCallTargetNode.
+                        newInvoke.callTarget().replaceAndDelete(b.append(callTarget));
                         return true;
-                    } else if (!(newInvokable instanceof MacroInvokable)) {
+                    } else if (newInvokable instanceof MacroInvokable macroInvokable) {
+                        macroInvokable.addMethodHandleInfo(callTarget);
+                    } else {
                         throw GraalError.shouldNotReachHere("unexpected Invokable: " + newInvokable);
                     }
                 }

@@ -25,7 +25,6 @@
  */
 package com.oracle.svm.core.jdk;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 import static com.oracle.svm.core.annotate.RecomputeFieldValue.Kind.Reset;
 import static com.oracle.svm.core.snippets.KnownIntrinsics.readHub;
 
@@ -33,6 +32,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.URL;
+import java.security.Permission;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Properties;
@@ -46,7 +46,6 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.FieldValueTransformer;
 import org.graalvm.nativeimage.impl.InternalPlatform;
 
-import com.oracle.svm.core.AnalyzeJavaHomeAccessEnabled;
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.NeverInlineTrivial;
@@ -67,12 +66,10 @@ import com.oracle.svm.core.container.OperatingSystem;
 import com.oracle.svm.core.fieldvaluetransformer.FieldValueTransformerWithAvailability;
 import com.oracle.svm.core.hub.ClassForNameSupport;
 import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.hub.registry.ClassRegistries;
 import com.oracle.svm.core.monitor.MonitorSupport;
 import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.thread.JavaThreads;
 import com.oracle.svm.core.thread.VMOperation;
-import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -194,6 +191,10 @@ final class Target_java_lang_String {
 
     @Alias @RecomputeFieldValue(kind = Kind.None, isFinal = true) //
     public byte[] value;
+
+    @Alias //
+    int hash;
+
 }
 
 @TargetClass(className = "java.lang.StringLatin1")
@@ -218,6 +219,7 @@ final class Target_java_lang_StringUTF16 {
 final class Target_java_lang_Throwable {
 
     @Alias //
+    @TargetElement(onlyWith = JDKLatest.class) //
     @RecomputeFieldValue(kind = Kind.FromAlias, isFinal = true) //
     static boolean jfrTracing = false;
 
@@ -314,22 +316,6 @@ final class ThrowableStackTraceFieldValueTransformer implements FieldValueTransf
 @TargetClass(java.lang.StackTraceElement.class)
 @Platforms(InternalPlatform.NATIVE_ONLY.class)
 final class Target_java_lang_StackTraceElement {
-    @AnnotateOriginal
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public native String getMethodName();
-
-    @AnnotateOriginal
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public native String getClassName();
-
-    @AnnotateOriginal
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public native String getFileName();
-
-    @AnnotateOriginal
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public native int getLineNumber();
-
     /**
      * Constructs the {@link StackTraceElement} array from a backtrace.
      *
@@ -373,14 +359,6 @@ final class Target_java_lang_System {
     @Alias private static PrintStream err;
     @Alias private static InputStream in;
 
-    /**
-     * Pulls in a native library unnecessarily. All natives are already substituted.
-     */
-    @Substitute
-    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+20/src/java.base/share/native/libjava/System.c#L39-L53")
-    private static void registerNatives() {
-    }
-
     @Substitute
     private static void setIn(InputStream is) {
         in = is;
@@ -422,7 +400,7 @@ final class Target_java_lang_System {
     }
 
     @Substitute
-    @NeverInlineTrivial(reason = "Used in 'java.home' access analysis: AnalyzeJavaHomeAccessPhase", onlyWith = AnalyzeJavaHomeAccessEnabled.class)
+    @NeverInlineTrivial("Used in 'java.home' access analysis: AnalyzeJavaHomeAccessPhase")
     private static String getProperty(String key) {
         checkKey(key);
         return SystemPropertiesSupport.singleton().getCurrentProperty(key);
@@ -435,7 +413,7 @@ final class Target_java_lang_System {
     }
 
     @Substitute
-    @NeverInlineTrivial(reason = "Used in 'java.home' access analysis: AnalyzeJavaHomeAccessPhase", onlyWith = AnalyzeJavaHomeAccessEnabled.class)
+    @NeverInlineTrivial("Used in 'java.home' access analysis: AnalyzeJavaHomeAccessPhase")
     private static String getProperty(String key, String def) {
         checkKey(key);
         return SystemPropertiesSupport.singleton().getCurrentProperty(key, def);
@@ -443,6 +421,37 @@ final class Target_java_lang_System {
 
     @Alias
     private static native void checkKey(String key);
+
+    /**
+     * Force System.Never in case it was set at build time via the `-Djava.security.manager=allow`
+     * passed to the image builder.
+     */
+    @Alias @RecomputeFieldValue(kind = Kind.FromAlias, isFinal = true) //
+    @TargetElement(onlyWith = JDK21OrEarlier.class) private static int allowSecurityManager = 1;
+
+    /**
+     * We do not support the {@link SecurityManager} so this method must throw a
+     * {@link SecurityException} when 'java.security.manager' is set to anything but
+     * <code>disallow</code>.
+     * 
+     * @see System#setSecurityManager(SecurityManager)
+     * @see SecurityManager
+     */
+    @Substitute
+    @SuppressWarnings({"removal", "javadoc"})
+    @TargetElement(onlyWith = JDK21OrEarlier.class)
+    private static void setSecurityManager(SecurityManager sm) {
+        if (sm != null) {
+            /* Read the property collected at isolate creation as that is what happens on the JVM */
+            String smp = SystemPropertiesSupport.singleton().getInitialProperty("java.security.manager");
+            if (smp != null && !smp.equals("disallow")) {
+                throw new SecurityException("Setting the SecurityManager is not supported by Native Image");
+            } else {
+                throw new UnsupportedOperationException(
+                                "The Security Manager is deprecated and will be removed in a future release");
+            }
+        }
+    }
 }
 
 final class NotAArch64 implements BooleanSupplier {
@@ -645,7 +654,6 @@ final class Target_jdk_internal_loader_BootLoader {
     }
 
     @Substitute
-    @TargetElement(onlyWith = ClassForNameSupport.IgnoresClassLoader.class)
     public static Stream<Package> packages() {
         Target_jdk_internal_loader_BuiltinClassLoader bootClassLoader = Target_jdk_internal_loader_ClassLoaders.bootLoader();
         Target_java_lang_ClassLoader systemClassLoader = SubstrateUtil.cast(bootClassLoader, Target_java_lang_ClassLoader.class);
@@ -653,27 +661,15 @@ final class Target_jdk_internal_loader_BootLoader {
     }
 
     @Delete("only used by #packages()")
-    @TargetElement(name = "getSystemPackageNames", onlyWith = ClassForNameSupport.IgnoresClassLoader.class)
-    private static native String[] getSystemPackageNamesDeleted();
+    private static native String[] getSystemPackageNames();
 
     @Substitute
-    @TargetElement(onlyWith = ClassForNameSupport.RespectsClassLoader.class)
-    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+16/src/java.base/share/native/libjava/BootLoader.c#L37-L41")
-    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+16/src/hotspot/share/prims/jvm.cpp#L3003-L3007")
-    @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+16/src/hotspot/share/classfile/classLoader.cpp#L907-L924")
-    private static String[] getSystemPackageNames() {
-        return ClassRegistries.getSystemPackageNames();
-    }
-
-    @Substitute
-    @TargetElement(onlyWith = ClassForNameSupport.IgnoresClassLoader.class)
     private static Class<?> loadClassOrNull(String name) {
         return ClassForNameSupport.forNameOrNull(name, null);
     }
 
     @SuppressWarnings("unused")
     @Substitute
-    @TargetElement(onlyWith = ClassForNameSupport.IgnoresClassLoader.class)
     private static Class<?> loadClass(Module module, String name) {
         /* The module system is not supported for now, therefore the module parameter is ignored. */
         return ClassForNameSupport.forNameOrNull(name, null);
@@ -707,6 +703,15 @@ final class Target_jdk_internal_loader_BootLoader {
     // Checkstyle: stop
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = ClassLoaderValueMapFieldValueTransformer.class, isFinal = true)//
     static ConcurrentHashMap<?, ?> CLASS_LOADER_VALUE_MAP;
+    // Checkstyle: resume
+}
+
+@TargetClass(value = jdk.internal.logger.LoggerFinderLoader.class)
+final class Target_jdk_internal_logger_LoggerFinderLoader {
+    // Checkstyle: stop
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset, isFinal = true)//
+    @TargetElement(onlyWith = JDK21OrEarlier.class)//
+    static Permission READ_PERMISSION;
     // Checkstyle: resume
 }
 

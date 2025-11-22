@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.jdwp.api;
 
-import com.oracle.truffle.api.nodes.Node;
-
 public interface VMListener {
 
     void vmStarted(boolean suspend);
@@ -59,7 +57,7 @@ public interface VMListener {
      * @param value the new field value
      * @return true if a breakpoint should be hit due to the modification
      */
-    boolean onFieldModification(FieldRef field, Node node, Object receiver, Object value);
+    boolean onFieldModification(FieldRef field, Object receiver, Object value);
 
     /**
      * This method will be called when a field is about to be accessed. The method will determine if
@@ -69,7 +67,7 @@ public interface VMListener {
      * @param receiver owner of the field
      * @return true if a breakpoint should be hit due to the modification
      */
-    boolean onFieldAccess(FieldRef field, Node node, Object receiver);
+    boolean onFieldAccess(FieldRef field, Object receiver);
 
     /**
      * This method will be called when a method is entered iff there is an active
@@ -81,7 +79,7 @@ public interface VMListener {
      *            local variables in scope
      * @return true a breakpoint should be hit on method entry
      */
-    boolean onMethodEntry(MethodRef method, Node node, Object scope);
+    boolean onMethodEntry(MethodRef method, Object scope);
 
     /**
      * This method will be called when a method is about to return iff there is an active
@@ -92,7 +90,7 @@ public interface VMListener {
      * @param returnValue the return value
      * @return true if a breakpoint should be hit on method exit
      */
-    boolean onMethodReturn(MethodRef method, Node node, Object returnValue);
+    boolean onMethodReturn(MethodRef method, Object returnValue);
 
     /**
      * This method should be called when when the monitor wait(timeout) method is invoked in the

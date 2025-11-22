@@ -29,8 +29,10 @@ import java.lang.reflect.Modifier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.staticobject.StaticShape;
 import com.oracle.truffle.espresso.EspressoLanguage;
-import com.oracle.truffle.espresso.classfile.ParserConstantPool;
+import com.oracle.truffle.espresso.classfile.ImmutableConstantPool;
 import com.oracle.truffle.espresso.classfile.ParserKlass;
+import com.oracle.truffle.espresso.classfile.ParserMethod;
+import com.oracle.truffle.espresso.classfile.attributes.Attribute;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
@@ -50,6 +52,9 @@ public final class LinkedKlass {
 
     @CompilationFinal(dimensions = 1) //
     private final LinkedKlass[] interfaces;
+
+    @CompilationFinal(dimensions = 1) //
+    private final LinkedMethod[] methods;
 
     private final boolean hasFinalizer;
 
@@ -84,6 +89,17 @@ public final class LinkedKlass {
         // resolved to Object.finalize, making the finalizer not observable.
         this.hasFinalizer = ((parserKlass.getFlags() & ACC_FINALIZER) != 0) || (superKlass != null && (superKlass.getFlags() & ACC_FINALIZER) != 0);
         assert !this.hasFinalizer || !Types.java_lang_Object.equals(parserKlass.getType()) : "java.lang.Object cannot be marked as finalizable";
+
+        final int methodCount = parserKlass.getMethods().length;
+        LinkedMethod[] linkedMethods = new LinkedMethod[methodCount];
+
+        for (int i = 0; i < methodCount; ++i) {
+            ParserMethod parserMethod = parserKlass.getMethods()[i];
+            // TODO(peterssen): Methods with custom constant pool should spawned here, but not
+            // supported.
+            linkedMethods[i] = new LinkedMethod(parserMethod);
+        }
+        this.methods = linkedMethods;
     }
 
     public static LinkedKlass create(EspressoLanguage language, ParserKlass parserKlass, LinkedKlass superKlass, LinkedKlass[] interfaces) {
@@ -125,8 +141,12 @@ public final class LinkedKlass {
         return flags;
     }
 
-    ParserConstantPool getConstantPool() {
+    ImmutableConstantPool getConstantPool() {
         return parserKlass.getConstantPool();
+    }
+
+    Attribute getAttribute(Symbol<Name> name) {
+        return parserKlass.getAttribute(name);
     }
 
     Symbol<Type> getType() {
@@ -155,6 +175,10 @@ public final class LinkedKlass {
 
     int getMinorVersion() {
         return getConstantPool().getMinorVersion();
+    }
+
+    LinkedMethod[] getLinkedMethods() {
+        return methods;
     }
 
     LinkedField[] getInstanceFields() {

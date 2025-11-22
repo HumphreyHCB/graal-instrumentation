@@ -25,6 +25,10 @@
 
 package com.oracle.svm.hosted.webimage.wasm.codegen;
 
+import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_CALLOC;
+import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_FREE;
+import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_MALLOC;
+import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_REALLOC;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Binary;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Call;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Const;
@@ -37,16 +41,16 @@ import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Nop;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Store;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Throw;
 import static com.oracle.svm.hosted.webimage.wasm.ast.Instruction.Unreachable;
-import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_CALLOC;
-import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_FREE;
-import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_MALLOC;
-import static com.oracle.svm.webimage.functionintrinsics.JSCallNode.MEM_REALLOC;
-import static com.oracle.svm.webimage.wasm.types.WasmPrimitiveType.i64;
 
 import java.util.Set;
 
 import org.graalvm.nativeimage.ImageSingletons;
 
+import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
+import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
+import com.oracle.svm.webimage.wasm.types.WasmLMUtil;
+import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
+import com.oracle.svm.webimage.wasm.types.WasmValType;
 import com.oracle.svm.core.graal.code.CGlobalDataReference;
 import com.oracle.svm.core.graal.nodes.CGlobalDataLoadAddressNode;
 import com.oracle.svm.core.graal.nodes.FloatingWordCastNode;
@@ -57,7 +61,6 @@ import com.oracle.svm.core.graal.nodes.ReadReservedRegisterFixedNode;
 import com.oracle.svm.core.graal.nodes.ReadReservedRegisterFloatingNode;
 import com.oracle.svm.core.graal.nodes.WriteStackPointerNode;
 import com.oracle.svm.core.graal.stackvalue.LoweredStackValueNode;
-import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.webimage.js.JSBody;
 import com.oracle.svm.hosted.webimage.wasm.WasmImports;
 import com.oracle.svm.hosted.webimage.wasm.WebImageWasmReservedRegisters;
@@ -79,16 +82,12 @@ import com.oracle.svm.hosted.webimage.wasm.nodes.WasmPrintNode;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmTrapNode;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WebImageWasmVMThreadLocalSTHolderNode;
 import com.oracle.svm.hosted.webimage.wasm.snippets.WasmImportForeignCallDescriptor;
-import com.oracle.svm.webimage.functionintrinsics.JSCallNode;
-import com.oracle.svm.webimage.functionintrinsics.JSSystemFunction;
-import com.oracle.svm.webimage.hightiercodegen.variables.ResolvedVar;
-import com.oracle.svm.webimage.wasm.types.WasmLMUtil;
-import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
-import com.oracle.svm.webimage.wasm.types.WasmValType;
+import com.oracle.svm.hosted.meta.HostedMethod;
 
 import jdk.graal.compiler.core.common.memory.MemoryExtendKind;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.graph.Node;
+import jdk.graal.compiler.hightiercodegen.variables.ResolvedVar;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.nodes.CompressionNode;
 import jdk.graal.compiler.nodes.ConstantNode;
@@ -395,17 +394,10 @@ public class WebImageWasmLMNodeLowerer extends WebImageWasmNodeLowerer {
         callTarget.arguments().forEach(param -> params.add(lowerExpression(param)));
 
         if (callTarget instanceof IndirectCallTargetNode indirectCallTarget) {
-            WasmPrimitiveType addressType = util.typeForNode(indirectCallTarget.computedAddress()).asPrimitive();
-            Instruction index = lowerExpression(indirectCallTarget.computedAddress());
             /*
-             * The computed address can have different kind of stamps that are represented as either
-             * i32 or i64 in wasm. For example the stamp could be an i64 integer stamp (represented
-             * as i64) or a method pointer stamp (represented as i32). If the computed address is
-             * represented as an i64, it has to first be truncated to i32.
+             * TODO GR-42105 stop using wrap
              */
-            if (addressType == i64) {
-                index = Unary.Op.I32Wrap64.create(index);
-            }
+            Instruction index = Unary.Op.I32Wrap64.create(lowerExpression(indirectCallTarget.computedAddress()));
             TypeUse typeUse;
 
             if (targetMethod == null) {
@@ -435,6 +427,40 @@ public class WebImageWasmLMNodeLowerer extends WebImageWasmNodeLowerer {
         } else {
             throw GraalError.unimplemented("Cannot read register: " + register); // ExcludeFromJacocoGeneratedReport
         }
+    }
+
+    private Instruction lowerWordCast(WordCastNode n) {
+        ValueNode input = n.getInput();
+        Instruction value = lowerExpression(input);
+
+        int inputBits = util.typeForNode(input).asPrimitive().getBitCount();
+        int outputBits = util.typeForNode(n).asPrimitive().getBitCount();
+
+        /*
+         * TODO GR-42105 word types are 64-bit while objects are 32-bits. Add 32-bit architecture,
+         * then we can probably save both the wrap and extend operations.
+         */
+        if (inputBits == outputBits) {
+            return value;
+        } else if (inputBits == 32 && outputBits == 64) {
+            return Unary.Op.I64ExtendI32U.create(value);
+        } else if (inputBits == 64 && outputBits == 32) {
+            return Unary.Op.I32Wrap64.create(value);
+        } else {
+            throw GraalError.unimplemented(n + ", inputBits=" + inputBits + ", outputBits=" + outputBits); // ExcludeFromJacocoGeneratedReport
+        }
+    }
+
+    private Instruction lowerFloatingWordCast(FloatingWordCastNode n) {
+        ValueNode input = n.getInput();
+
+        Instruction value = lowerExpression(input);
+        /*
+         * TODO GR-42105 the input is a 64-bit word type, add architecture to ensure word type is 32
+         * bit and we don't need to i32.wrap64 instruction.
+         */
+        assert input.getStackKind().getBitCount() == 64 : input.getStackKind();
+        return Unary.Op.I32Wrap64.create(value);
     }
 
     private Instruction lowerWasmAddressBase(WasmAddressNode n) {

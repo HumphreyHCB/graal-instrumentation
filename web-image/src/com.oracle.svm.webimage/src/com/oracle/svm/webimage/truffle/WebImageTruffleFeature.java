@@ -22,6 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 package com.oracle.svm.webimage.truffle;
 
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class WebImageTruffleFeature implements InternalFeature {
 
     @Override
     public void registerInvocationPlugins(Providers providers, GraphBuilderConfiguration.Plugins plugins, ParsingReason reason) {
-        WebImageTruffleGraphBuilderPlugins.register(plugins.getInvocationPlugins());
+        WebImageTruffleGraphBuilderPlugins.register(plugins.getInvocationPlugins(), providers.getReplacements());
     }
 
     @Override

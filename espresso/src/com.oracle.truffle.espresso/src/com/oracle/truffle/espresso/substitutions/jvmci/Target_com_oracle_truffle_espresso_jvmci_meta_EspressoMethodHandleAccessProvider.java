@@ -29,8 +29,8 @@ import static com.oracle.truffle.espresso.substitutions.jvmci.Target_com_oracle_
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
+import com.oracle.truffle.espresso.runtime.MethodHandleIntrinsics;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
-import com.oracle.truffle.espresso.shared.meta.SignaturePolymorphicIntrinsic;
 import com.oracle.truffle.espresso.substitutions.EspressoSubstitutions;
 import com.oracle.truffle.espresso.substitutions.Inject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
@@ -54,12 +54,8 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoMethodHandleAc
             meta.throwNullPointerExceptionBoundary();
         }
         Method method = (Method) meta.jvmci.HIDDEN_METHOD_MIRROR.getHiddenObject(jvmciMethod);
-        SignaturePolymorphicIntrinsic iid = SignaturePolymorphicIntrinsic.getId(method);
-        if (iid == null) {
-            return StaticObject.NULL;
-        }
-        return switch (iid) {
-            case InvokeGeneric -> StaticObject.NULL;
+        return switch (MethodHandleIntrinsics.getId(method)) {
+            case None, InvokeGeneric -> StaticObject.NULL;
             case InvokeBasic -> meta.jvmci.IntrinsicMethod_INVOKE_BASIC;
             case LinkToVirtual -> meta.jvmci.IntrinsicMethod_LINK_TO_VIRTUAL;
             case LinkToStatic -> meta.jvmci.IntrinsicMethod_LINK_TO_STATIC;
@@ -80,7 +76,7 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoMethodHandleAc
         }
         StaticObject methodHandle = (StaticObject) meta.jvmci.HIDDEN_OBJECT_CONSTANT.getHiddenObject(methodHandleMirror);
         if (!InterpreterToVM.instanceOf(methodHandle, meta.java_lang_invoke_MethodHandle)) {
-            LOGGER.fine(() -> "EMHAP.resolveInvokeBasicTarget0 not a MethodHandle");
+            LOGGER.info(() -> "EMHAP.resolveInvokeBasicTarget0 not a MethodHandle");
             return StaticObject.NULL;
         }
         StaticObject form = meta.java_lang_invoke_MethodHandle_form.getObject(methodHandle);

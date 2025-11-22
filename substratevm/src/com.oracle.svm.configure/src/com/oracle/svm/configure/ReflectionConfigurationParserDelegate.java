@@ -30,9 +30,7 @@ import com.oracle.svm.util.TypeResult;
 
 public interface ReflectionConfigurationParserDelegate<C, T> {
 
-    TypeResult<T> resolveType(C condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives, boolean jniAccessible);
-
-    TypeResult<List<T>> resolveTypes(C condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives, boolean jniAccessible);
+    TypeResult<T> resolveType(C condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives);
 
     void registerType(C condition, T type);
 
@@ -48,33 +46,31 @@ public interface ReflectionConfigurationParserDelegate<C, T> {
 
     void registerSigners(C condition, T type);
 
-    void registerPublicFields(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerPublicFields(C condition, boolean queriedOnly, T type);
 
-    void registerDeclaredFields(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerDeclaredFields(C condition, boolean queriedOnly, T type);
 
-    void registerPublicMethods(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerPublicMethods(C condition, boolean queriedOnly, T type);
 
-    void registerDeclaredMethods(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerDeclaredMethods(C condition, boolean queriedOnly, T type);
 
-    void registerPublicConstructors(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerPublicConstructors(C condition, boolean queriedOnly, T type);
 
-    void registerDeclaredConstructors(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    void registerDeclaredConstructors(C condition, boolean queriedOnly, T type);
 
-    void registerField(C condition, T type, String fieldName, boolean allowWrite, boolean jniAccessible) throws NoSuchFieldException;
+    void registerField(C condition, T type, String fieldName, boolean allowWrite) throws NoSuchFieldException;
 
-    boolean registerAllMethodsWithName(C condition, boolean queriedOnly, boolean jniAccessible, T type, String methodName);
+    boolean registerAllMethodsWithName(C condition, boolean queriedOnly, T type, String methodName);
 
-    void registerMethod(C condition, boolean queriedOnly, T type, String methodName, List<T> methodParameterTypes, boolean jniAccessible) throws NoSuchMethodException;
+    void registerMethod(C condition, boolean queriedOnly, T type, String methodName, List<T> methodParameterTypes) throws NoSuchMethodException;
 
-    void registerConstructor(C condition, boolean queriedOnly, T type, List<T> methodParameterTypes, boolean jniAccessible) throws NoSuchMethodException;
+    void registerConstructor(C condition, boolean queriedOnly, T type, List<T> methodParameterTypes) throws NoSuchMethodException;
 
-    boolean registerAllConstructors(C condition, boolean queriedOnly, boolean jniAccessible, T type);
+    boolean registerAllConstructors(C condition, boolean queriedOnly, T type);
 
     void registerUnsafeAllocated(C condition, T clazz);
 
     void registerAsSerializable(C condition, T clazz);
-
-    void registerAsJniAccessed(C condition, T clazz);
 
     String getTypeName(T type);
 

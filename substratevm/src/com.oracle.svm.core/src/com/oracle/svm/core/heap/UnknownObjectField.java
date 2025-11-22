@@ -33,6 +33,8 @@ import java.util.function.BooleanSupplier;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
+import com.oracle.svm.core.BuildPhaseProvider.AfterAnalysis;
+
 /**
  * For fields with this annotation no static analysis is done.
  *
@@ -63,5 +65,5 @@ public @interface UnknownObjectField {
      */
     boolean canBeNull() default false;
 
-    Class<? extends BooleanSupplier> availability();
+    Class<? extends BooleanSupplier> availability() default AfterAnalysis.class;
 }

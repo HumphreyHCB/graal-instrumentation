@@ -31,6 +31,7 @@ import java.util.Set;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -110,14 +111,14 @@ public final class EspressoScope {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        String getLanguageId() {
-            return EspressoLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return EspressoLanguage.class;
         }
 
         @ExportMessage

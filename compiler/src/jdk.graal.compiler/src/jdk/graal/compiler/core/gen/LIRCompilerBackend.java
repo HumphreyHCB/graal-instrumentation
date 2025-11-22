@@ -24,7 +24,6 @@
  */
 package jdk.graal.compiler.core.gen;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -115,12 +114,12 @@ public class LIRCompilerBackend {
         try {
             return emitLIR0(backend, graph, stub, registerConfig, lirSuites, allocationRestrictedTo, entryPointDecorator);
         } catch (OutOfRegistersException e) {
-            if (allocationRestrictedTo != null && !GraalOptions.BailoutOnRegisterPressureFailure.getValue(graph.getOptions())) {
+            if (allocationRestrictedTo != null) {
                 allocationRestrictedTo = null;
                 return emitLIR0(backend, graph, stub, registerConfig, lirSuites, allocationRestrictedTo, entryPointDecorator);
             }
             /* If the re-execution fails we convert the exception into a "hard" failure */
-            throw new GraalError(e, "out of registers%s", allocationRestrictedTo == null ? "" : ": " + Arrays.toString(allocationRestrictedTo));
+            throw new GraalError(e);
         } finally {
             graph.checkCancellation();
         }
@@ -172,7 +171,7 @@ public class LIRCompilerBackend {
                  * LIRGeneration may have changed the CFG, so in case a schedule is needed afterward
                  * we make sure it will be recomputed.
                  */
-                graph.clearLastCFG();
+                graph.clearLastSchedule();
                 return result;
             } catch (Throwable e) {
                 throw debug.handle(e);
@@ -219,7 +218,7 @@ public class LIRCompilerBackend {
                     CompilationResultBuilderFactory factory,
                     EntryPointDecorator entryPointDecorator) {
         DebugContext debug = lirGenRes.getLIR().getDebug();
-        try (DebugCloseable a = EmitCode.start(debug); DebugContext.CompilerPhaseScope cps = debug.enterCompilerPhase("Emit code", null)) {
+        try (DebugCloseable a = EmitCode.start(debug); DebugContext.CompilerPhaseScope cps = debug.enterCompilerPhase("Emit code");) {
             LIRGenerationProvider lirBackend = (LIRGenerationProvider) backend;
 
             FrameMap frameMap = lirGenRes.getFrameMap();
@@ -236,7 +235,7 @@ public class LIRCompilerBackend {
                 compilationResult.setSpeculationLog(speculationLog);
             }
             crb.finish();
-            if (debug.areCountersEnabled()) {
+            if (debug.isCountEnabled()) {
                 List<DataPatch> ldp = compilationResult.getDataPatches();
                 JavaKind[] kindValues = JavaKind.values();
                 CounterKey[] dms = new CounterKey[kindValues.length];

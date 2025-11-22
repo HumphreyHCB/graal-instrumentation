@@ -31,18 +31,12 @@ import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.jdk.DeferredCommonPool;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
+import com.oracle.svm.core.layeredimagesingleton.FeatureSingleton;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.imagelayer.CrossLayerConstantRegistry;
 
-import jdk.vm.ci.meta.JavaConstant;
-
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
-class ForkJoinPoolFeature implements InternalFeature {
+class ForkJoinPoolFeature implements InternalFeature, FeatureSingleton {
 
     private static final String KEY_NAME = "ForkJoinPool#commonPool";
 
@@ -50,7 +44,7 @@ class ForkJoinPoolFeature implements InternalFeature {
     public void duringSetup(DuringSetupAccess access) {
         CrossLayerConstantRegistry registry = CrossLayerConstantRegistry.singletonOrNull();
         if (ImageLayerBuildingSupport.buildingExtensionLayer() && registry.constantExists(KEY_NAME)) {
-            ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectToConstantReplacer(obj -> (ImageHeapConstant) replaceCommonPoolWithLayerConstant(registry, obj));
+            ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectToConstantReplacer(obj -> replaceCommonPoolWithLayerConstant(registry, obj));
         } else {
             var commonPool = new DeferredCommonPool();
             access.registerObjectReplacer(obj -> replaceCommonPoolWithRuntimeObject(obj, commonPool));
@@ -68,7 +62,7 @@ class ForkJoinPoolFeature implements InternalFeature {
         return original;
     }
 
-    private static JavaConstant replaceCommonPoolWithLayerConstant(CrossLayerConstantRegistry registry, Object original) {
+    private static ImageHeapConstant replaceCommonPoolWithLayerConstant(CrossLayerConstantRegistry registry, Object original) {
         if (original == ForkJoinPool.commonPool()) {
             return registry.getConstant(KEY_NAME);
         }

@@ -29,7 +29,6 @@ import java.util.Optional;
 
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-import com.oracle.graal.pointsto.ObjectScanner.OtherReason;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.option.HostedOptionKey;
@@ -38,10 +37,7 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
-import com.oracle.svm.util.HostModuleUtil;
 import com.oracle.svm.util.ReflectionUtil;
-import com.oracle.svm.util.ResolvedJavaModule;
-import com.oracle.svm.util.ResolvedJavaModuleLayer;
 
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
@@ -49,8 +45,8 @@ import jdk.graal.compiler.options.OptionType;
 @AutomaticallyRegisteredFeature
 public class LoggingFeature implements InternalFeature {
 
-    private static Optional<ResolvedJavaModule> requiredModule() {
-        return ResolvedJavaModuleLayer.boot().findModule("java.logging");
+    private static Optional<Module> requiredModule() {
+        return ModuleLayer.boot().findModule("java.logging");
     }
 
     public static class Options {
@@ -77,7 +73,7 @@ public class LoggingFeature implements InternalFeature {
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
-        HostModuleUtil.addReads(LoggingFeature.class, requiredModule().get());
+        LoggingFeature.class.getModule().addReads(requiredModule().get());
     }
 
     @Override
@@ -103,7 +99,7 @@ public class LoggingFeature implements InternalFeature {
     public void duringAnalysis(DuringAnalysisAccess a) {
         DuringAnalysisAccessImpl access = (DuringAnalysisAccessImpl) a;
 
-        access.rescanRoot(loggersField, new OtherReason("Manual rescan triggered during analysis from " + LoggingFeature.class));
+        access.rescanRoot(loggersField);
     }
 
     private void registerForReflection(Class<?> clazz) {

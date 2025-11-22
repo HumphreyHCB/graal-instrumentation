@@ -24,10 +24,13 @@
  */
 package com.oracle.svm.common.option;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.hotspot.CompilerConfigurationFactory;
 import jdk.graal.compiler.options.OptionKey;
-import org.graalvm.collections.EconomicSet;
 
 /**
  * Native image uses its own mechanisms to handle certain options, resulting in some Graal options
@@ -37,10 +40,11 @@ import org.graalvm.collections.EconomicSet;
  */
 public final class IntentionallyUnsupportedOptions {
 
-    private static final EconomicSet<OptionKey<?>> unsupportedOptions = EconomicSet.create();
+    private static final Set<OptionKey<?>> unsupportedOptions = new HashSet<>();
 
     static {
         unsupportedOptions.add(CompilerConfigurationFactory.Options.CompilerConfiguration);
+        unsupportedOptions.add(GraalOptions.EagerSnippets);
         unsupportedOptions.add(CompilationAlarm.Options.CompilationNoProgressPeriod);
     }
 

@@ -29,7 +29,6 @@ import static jdk.graal.compiler.word.Word.zero;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.type.WordPointer;
 import org.graalvm.word.UnsignedWord;
 
@@ -52,16 +51,15 @@ public class OSCommittedMemoryProvider extends ChunkBasedCommittedMemoryProvider
 
     @Override
     @Uninterruptible(reason = "Still being initialized.")
-    public int initialize(WordPointer heapBaseOut, IsolateArguments arguments) {
+    public int initialize(WordPointer heapBasePointer, IsolateArguments arguments) {
         if (!SubstrateOptions.SpawnIsolates.getValue()) {
             int result = protectSingleIsolateImageHeap();
             if (result == CEntryPointErrors.NO_ERROR) {
-                heapBaseOut.write(Isolates.IMAGE_HEAP_BEGIN.get());
+                heapBasePointer.write(Isolates.IMAGE_HEAP_BEGIN.get());
             }
             return result;
         }
-        WordPointer imageHeapEndOut = StackValue.get(WordPointer.class);
-        return ImageHeapProvider.get().initialize(nullPointer(), zero(), heapBaseOut, imageHeapEndOut);
+        return ImageHeapProvider.get().initialize(nullPointer(), zero(), heapBasePointer, nullPointer());
     }
 
     @Override
@@ -71,12 +69,6 @@ public class OSCommittedMemoryProvider extends ChunkBasedCommittedMemoryProvider
             return CEntryPointErrors.NO_ERROR;
         }
         return ImageHeapProvider.get().freeImageHeap(KnownIntrinsics.heapBase());
-    }
-
-    @Override
-    public UnsignedWord getCollectedHeapAddressSpaceSize() {
-        assert getReservedAddressSpaceSize().aboveOrEqual(ImageHeapProvider.get().getImageHeapEndOffsetInAddressSpace());
-        return getReservedAddressSpaceSize().subtract(ImageHeapProvider.get().getImageHeapEndOffsetInAddressSpace());
     }
 
     @Override

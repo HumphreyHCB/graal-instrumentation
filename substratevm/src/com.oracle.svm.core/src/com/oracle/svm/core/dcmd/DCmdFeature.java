@@ -33,7 +33,6 @@ import com.oracle.svm.core.VMInspectionOptions;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.graal.RuntimeCompilation;
-import com.oracle.svm.core.jfr.JfrFeature;
 
 /** Registers the infrastructure for diagnostic commands. */
 @AutomaticallyRegisteredFeature
@@ -54,7 +53,7 @@ public class DCmdFeature implements InternalFeature {
 
         dcmdSupport.registerCommand(new GCRunDCmd());
 
-        if (JfrFeature.isInConfiguration(false)) {
+        if (VMInspectionOptions.hasJfrSupport()) {
             dcmdSupport.registerCommand(new JfrStartDCmd());
             dcmdSupport.registerCommand(new JfrStopDCmd());
             dcmdSupport.registerCommand(new JfrCheckDCmd());

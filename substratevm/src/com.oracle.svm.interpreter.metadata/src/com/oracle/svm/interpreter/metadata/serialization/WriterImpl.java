@@ -63,9 +63,6 @@ final class WriterImpl extends SerializationContextImpl implements Serialization
         if (value == null) {
             return NULL_REFERENCE_INDEX;
         }
-        if (value instanceof String str) {
-            return stringToIndex.getOrDefault(str, UNKNOWN_REFERENCE_INDEX);
-        }
         return referenceToIndex.getOrDefault(value, UNKNOWN_REFERENCE_INDEX);
     }
 

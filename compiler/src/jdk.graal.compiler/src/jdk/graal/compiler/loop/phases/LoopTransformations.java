@@ -73,7 +73,6 @@ import jdk.graal.compiler.nodes.VirtualState.NodePositionClosure;
 import jdk.graal.compiler.nodes.calc.AddNode;
 import jdk.graal.compiler.nodes.calc.CompareNode;
 import jdk.graal.compiler.nodes.calc.ConditionalNode;
-import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
 import jdk.graal.compiler.nodes.extended.OpaqueNode;
 import jdk.graal.compiler.nodes.extended.SwitchNode;
 import jdk.graal.compiler.nodes.loop.CountedLoopInfo;
@@ -371,6 +370,8 @@ public abstract class LoopTransformations {
         AbstractMergeNode postMergeNode = postEndNode.merge();
         graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "After post loop duplication");
 
+        preLoopBegin.incrementSplits();
+        preLoopBegin.incrementSplits();
         preLoopBegin.setPreLoop();
         mainLoopBegin.setMainLoop();
         postLoopBegin.setPostLoop();
@@ -453,18 +454,8 @@ public abstract class LoopTransformations {
         assert mainLoopExitNode.predecessor() instanceof IfNode : Assertions.errorMessage(mainLoopExitNode);
         assert postLoopExitNode.predecessor() instanceof IfNode : Assertions.errorMessage(postLoopExitNode);
 
-        /*
-         * The bodies of pre and post loops are assumed to be executed just once. As the local loop
-         * frequency is calculated from the loop exit probabilities, it has to be taken into account
-         * how often the exit check is performed. If the loop is inverted, i.e., tail-counted, the
-         * exit will be taken at the end of the first body execution. Thus, the frequency of the
-         * exit check is 1. If the loop is head-counted, the exit check will be performed twice,
-         * which is reflected by a frequency of 2. This results in the correct relative frequency
-         * being propagated into the loop body.
-         */
-        final int prePostFrequency = loop.counted().isInverted() ? 1 : 2;
-        adaptCountedLoopExitProbability(preLoopExitNode, prePostFrequency);
-        adaptCountedLoopExitProbability(postLoopExitNode, prePostFrequency);
+        setSingleVisitedLoopFrequencySplitProbability(preLoopExitNode);
+        setSingleVisitedLoopFrequencySplitProbability(postLoopExitNode);
 
         if (graph.isAfterStage(StageFlag.VALUE_PROXY_REMOVAL)) {
             // The pre and post loops don't require safepoints at all
@@ -482,8 +473,7 @@ public abstract class LoopTransformations {
 
     /**
      * Inject a split probability for the (counted) loop check that will result in a loop frequency
-     * of 1 (in case this is the only loop exit). This implies that the loop body is expected to be
-     * never entered.
+     * of 1 (in case this is the only loop exit).
      */
     private static void setSingleVisitedLoopFrequencySplitProbability(AbstractBeginNode lex) {
         IfNode ifNode = ((IfNode) lex.predecessor());
@@ -492,13 +482,11 @@ public abstract class LoopTransformations {
     }
 
     /**
-     * Inject a new branch probability for the condition dominating the given loop exit path. This
-     * probability is based on the local frequency of the exit check. This calculation will act as
-     * if the given loop exit is the only exit of the loop.
+     * Inject a new frequency for the condition dominating the given loop exit path. This
+     * calculation will act as if the given loop exit is the only exit of the loop.
      */
-    public static void adaptCountedLoopExitProbability(AbstractBeginNode lex, double newExitCheckFrequency) {
-        invalidateCFGFrequencies(lex.graph().getLastCFG());
-        double probability = 1.0D - 1.0D / newExitCheckFrequency;
+    public static void adaptCountedLoopExitProbability(AbstractBeginNode lex, double newFrequency) {
+        double probability = 1.0D - 1.0D / newFrequency;
         if (probability <= 0D) {
             setSingleVisitedLoopFrequencySplitProbability(lex);
             return;
@@ -506,12 +494,6 @@ public abstract class LoopTransformations {
         IfNode ifNode = ((IfNode) lex.predecessor());
         boolean trueSucc = ifNode.trueSuccessor() == lex;
         ifNode.setTrueSuccessorProbability(BranchProbabilityData.injected(probability, trueSucc));
-    }
-
-    private static void invalidateCFGFrequencies(ControlFlowGraph cfg) {
-        if (cfg != null) {
-            cfg.invalidateFrequencies();
-        }
     }
 
     public static class PreMainPostResult {

@@ -58,7 +58,7 @@ public class ArrayUtilsRegionEqualsWithMaskConstantTest extends GraalCompilerTes
 
     @Override
     protected void registerInvocationPlugins(InvocationPlugins invocationPlugins) {
-        TruffleInvocationPlugins.register(getBackend().getTarget().arch, invocationPlugins);
+        TruffleInvocationPlugins.register(getBackend().getTarget().arch, invocationPlugins, getReplacements());
         super.registerInvocationPlugins(invocationPlugins);
     }
 

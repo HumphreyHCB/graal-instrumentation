@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.Registration;
+import jdk.graal.compiler.nodes.spi.Replacements;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.replacements.TargetGraphBuilderPlugins;
 import jdk.graal.compiler.replacements.nodes.BinaryMathIntrinsicNode;
@@ -45,27 +46,28 @@ import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperati
 
 import com.oracle.svm.core.graal.llvm.replacements.LLVMIntrinsicNode.LLVMIntrinsicOperation;
 
+import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public class LLVMGraphBuilderPlugins implements TargetGraphBuilderPlugins {
 
     @Override
-    public void registerPlugins(Plugins plugins, OptionValues options) {
+    public void register(Plugins plugins, Replacements replacements, Architecture arch, boolean registerMathPlugins, OptionValues options) {
         InvocationPlugins invocationPlugins = plugins.getInvocationPlugins();
         invocationPlugins.defer(new Runnable() {
             @Override
             public void run() {
-                registerIntegerLongPlugins(invocationPlugins, JavaKind.Int);
-                registerIntegerLongPlugins(invocationPlugins, JavaKind.Long);
-                registerMathPlugins(invocationPlugins);
+                registerIntegerLongPlugins(invocationPlugins, JavaKind.Int, replacements);
+                registerIntegerLongPlugins(invocationPlugins, JavaKind.Long, replacements);
+                registerMathPlugins(invocationPlugins, replacements);
             }
         });
     }
 
-    private static void registerIntegerLongPlugins(InvocationPlugins plugins, JavaKind kind) {
+    private static void registerIntegerLongPlugins(InvocationPlugins plugins, JavaKind kind, Replacements replacements) {
         Class<?> declaringClass = kind.toBoxedJavaClass();
-        Registration r = new Registration(plugins, declaringClass).setAllowOverwrite(true);
+        Registration r = new Registration(plugins, declaringClass, replacements).setAllowOverwrite(true);
         registerUnaryLLVMIntrinsic(r, "numberOfLeadingZeros", LLVMIntrinsicOperation.CTLZ, JavaKind.Int, kind.toJavaClass());
         registerUnaryLLVMIntrinsic(r, "numberOfTrailingZeros", LLVMIntrinsicOperation.CTTZ, JavaKind.Int, kind.toJavaClass());
         r.register(new InvocationPlugin("bitCount", kind.toJavaClass()) {
@@ -77,8 +79,8 @@ public class LLVMGraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerMathPlugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, Math.class);
+    private static void registerMathPlugins(InvocationPlugins plugins, Replacements replacements) {
+        Registration r = new Registration(plugins, Math.class, replacements);
         registerUnaryMath(r, "log", UnaryOperation.LOG);
         registerUnaryMath(r, "log10", UnaryOperation.LOG10);
         registerUnaryMath(r, "exp", UnaryOperation.EXP);

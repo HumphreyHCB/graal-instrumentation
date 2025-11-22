@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlotKind;
@@ -146,14 +147,14 @@ public class NodeLibraryCompilerTest extends PartialEvaluationTest {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage

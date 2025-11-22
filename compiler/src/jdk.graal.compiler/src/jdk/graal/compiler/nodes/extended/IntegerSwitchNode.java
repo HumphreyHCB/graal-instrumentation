@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,7 @@ package jdk.graal.compiler.nodes.extended;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,6 @@ import jdk.graal.compiler.nodes.spi.Simplifiable;
 import jdk.graal.compiler.nodes.spi.SimplifierTool;
 import jdk.graal.compiler.nodes.spi.SwitchFoldable;
 import jdk.graal.compiler.nodes.util.GraphUtil;
-import jdk.graal.compiler.util.EconomicHashMap;
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaConstant;
@@ -89,9 +89,7 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
      */
     protected final boolean areKeysContiguous;
 
-    protected boolean mayEmitThreadedCode;
-
-    public IntegerSwitchNode(ValueNode value, AbstractBeginNode[] successors, int[] keys, int[] keySuccessors, SwitchProbabilityData profileData, boolean mayEmitThreadedCode) {
+    public IntegerSwitchNode(ValueNode value, AbstractBeginNode[] successors, int[] keys, int[] keySuccessors, SwitchProbabilityData profileData) {
         super(TYPE, value, successors, keySuccessors, profileData);
         assert keySuccessors.length == keys.length + 1 : "Must have etry key for default " + Assertions.errorMessageContext("keySucc", keySuccessors, "keys", keys);
         assert keySuccessors.length == profileData.getKeyProbabilities().length : Assertions.errorMessageContext("keySucc", keySuccessors, "profiles", profileData.getKeyProbabilities());
@@ -100,11 +98,6 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
         assert value.stamp(NodeView.DEFAULT) instanceof PrimitiveStamp && value.stamp(NodeView.DEFAULT).getStackKind().isNumericInteger() : Assertions.errorMessageContext("value", value);
         assert assertSorted();
         assert assertNoUntargettedSuccessor();
-        this.mayEmitThreadedCode = mayEmitThreadedCode;
-    }
-
-    public IntegerSwitchNode(ValueNode value, int successorCount, int[] keys, int[] keySuccessors, SwitchProbabilityData profileData, boolean mayEmitThreadedCode) {
-        this(value, new AbstractBeginNode[successorCount], keys, keySuccessors, profileData, mayEmitThreadedCode);
     }
 
     private boolean assertSorted() {
@@ -124,6 +117,10 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
             assert b;
         }
         return true;
+    }
+
+    public IntegerSwitchNode(ValueNode value, int successorCount, int[] keys, int[] keySuccessors, SwitchProbabilityData profileData) {
+        this(value, new AbstractBeginNode[successorCount], keys, keySuccessors, profileData);
     }
 
     @Override
@@ -186,10 +183,6 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
 
     @Override
     public void simplify(SimplifierTool tool) {
-        super.simplify(tool);
-        if (this.isDeleted()) {
-            return;
-        }
         if (shouldInjectBranchProbabilities()) {
             injectBranchProbabilities();
         }
@@ -201,7 +194,7 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
             killOtherSuccessors(tool, successorIndexAtKey(value().asJavaConstant().asInt()));
         } else if (tryOptimizeEnumSwitch(tool)) {
             return;
-        } else if (tryRemoveUnreachableKeys(tool, value().stamp(view), null)) {
+        } else if (tryRemoveUnreachableKeys(tool, value().stamp(view))) {
             return;
         } else if (switchTransformationOptimization(tool)) {
             return;
@@ -254,14 +247,6 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
     @Override
     public ProfileSource profileSource() {
         return profileData.getProfileSource();
-    }
-
-    public boolean mayEmitThreadedCode() {
-        return this.mayEmitThreadedCode;
-    }
-
-    public void markThreadedCode() {
-        this.mayEmitThreadedCode = true;
     }
 
     private static final class MergeCoalesceBuilder {
@@ -502,7 +487,7 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
      * Remove unreachable keys from the switch based on the stamp of the value, i.e., based on the
      * known range of the switch value.
      */
-    public boolean tryRemoveUnreachableKeys(SimplifierTool tool, Stamp valueStamp, EconomicMap<AbstractBeginNode, Stamp> successorStampCache) {
+    public boolean tryRemoveUnreachableKeys(SimplifierTool tool, Stamp valueStamp) {
         if (!(valueStamp instanceof IntegerStamp)) {
             return false;
         }
@@ -524,15 +509,6 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
             return false;
 
         } else if (newKeyDatas.size() == 0) {
-            if (successorStampCache != null) {
-                // Clear all successors from cache, this switch will be removed
-                for (Node successor : successors) {
-                    if (successor != defaultSuccessor()) {
-                        successorStampCache.removeKey((AbstractBeginNode) successor);
-                    }
-                }
-            }
-
             if (tool != null) {
                 tool.addToWorkList(defaultSuccessor());
             }
@@ -540,15 +516,6 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
             return true;
 
         } else {
-            if (successorStampCache != null) {
-                // Clear all successors from cache, we have new successors and we need to recompute
-                // their stamps
-                for (Node successor : successors) {
-                    if (successor != defaultSuccessor()) {
-                        successorStampCache.removeKey((AbstractBeginNode) successor);
-                    }
-                }
-            }
             int newDefaultSuccessor = addNewSuccessor(defaultSuccessor(), newSuccessors);
             double newDefaultProbability = getKeyProbabilities()[getKeyProbabilities().length - 1];
             doReplace(value(), newKeyDatas, newSuccessors, newDefaultSuccessor, newDefaultProbability);
@@ -599,7 +566,7 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
         }
         int arrayLength = optionalArrayLength;
 
-        Map<Integer, List<Integer>> reverseArrayMapping = new EconomicHashMap<>();
+        Map<Integer, List<Integer>> reverseArrayMapping = new HashMap<>();
         for (int i = 0; i < arrayLength; i++) {
             JavaConstant elementConstant = tool.getConstantReflection().readArrayElement(arrayConstant, i);
             if (elementConstant == null || elementConstant.getJavaKind() != JavaKind.Int) {
@@ -722,7 +689,7 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
          * while removing successors).
          */
         AbstractBeginNode[] successorsArray = newSuccessors.toArray(new AbstractBeginNode[newSuccessors.size()]);
-        IntegerSwitchNode newSwitch = graph().add(new IntegerSwitchNode(newValue, successorsArray, newKeys, newKeySuccessors, profileData.copy(newKeyProbabilities), mayEmitThreadedCode));
+        SwitchNode newSwitch = graph().add(new IntegerSwitchNode(newValue, successorsArray, newKeys, newKeySuccessors, profileData.copy(newKeyProbabilities)));
 
         /* Replace ourselves with the new switch */
         ((FixedWithNextNode) predecessor()).setNext(newSwitch);
@@ -732,23 +699,19 @@ public final class IntegerSwitchNode extends SwitchNode implements LIRLowerable,
     }
 
     @Override
-    protected Stamp stampAtKeySuccessor(int i) {
-        return StampFactory.forConstant(keyAt(i));
-    }
-
-    @Override
-    public Stamp genericSuccessorStamp() {
-        return value.stamp(NodeView.DEFAULT);
-    }
-
-    /**
-     * @return true if {@link #keys} do not fully cover the input stamp.
-     */
-    public boolean inputMayBeOutOfRange() {
-        assert assertSorted() : "Keys must be sorted";
-        if (value().stamp(NodeView.DEFAULT) instanceof IntegerStamp inputStamp) {
-            return inputStamp.lowerBound() < keys[0] || inputStamp.upperBound() > keys[keys.length - 1];
+    public Stamp getValueStampForSuccessor(AbstractBeginNode beginNode) {
+        Stamp result = null;
+        if (beginNode != this.defaultSuccessor()) {
+            for (int i = 0; i < keyCount(); i++) {
+                if (keySuccessor(i) == beginNode) {
+                    if (result == null) {
+                        result = StampFactory.forConstant(keyAt(i));
+                    } else {
+                        result = result.meet(StampFactory.forConstant(keyAt(i)));
+                    }
+                }
+            }
         }
-        return true;
+        return result;
     }
 }

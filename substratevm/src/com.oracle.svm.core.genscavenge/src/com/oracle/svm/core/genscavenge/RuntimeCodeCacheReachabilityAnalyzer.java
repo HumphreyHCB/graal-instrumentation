@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.core.genscavenge;
 
-import java.io.Serial;
-
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
@@ -38,34 +36,31 @@ import com.oracle.svm.core.util.DuplicatedInNativeCode;
 
 import jdk.graal.compiler.word.Word;
 
-/**
- * Analyzes if run-time compiled code has any references to otherwise unreachable objects. Throws an
- * {@link UnreachableObjectsException} if a reference to an otherwise unreachable object is
- * detected.
- */
 @DuplicatedInNativeCode
 final class RuntimeCodeCacheReachabilityAnalyzer implements ObjectReferenceVisitor {
-    private static final UnreachableObjectsException UNREACHABLE_OBJECTS_EXCEPTION = new UnreachableObjectsException();
+    private boolean unreachableObjects;
 
     @Platforms(Platform.HOSTED_ONLY.class)
     RuntimeCodeCacheReachabilityAnalyzer() {
     }
 
-    @Override
-    public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
-        Pointer pos = firstObjRef;
-        Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
-        while (pos.belowThan(end)) {
-            visitObjectReference(pos, compressed);
-            pos = pos.add(referenceSize);
-        }
+    public void initialize() {
+        this.unreachableObjects = false;
     }
 
-    private static void visitObjectReference(Pointer ptrPtrToObject, boolean compressed) {
+    public boolean hasUnreachableObjects() {
+        return unreachableObjects;
+    }
+
+    @Override
+    public boolean visitObjectReference(Pointer ptrPtrToObject, boolean compressed, Object holderObject) {
+        assert !unreachableObjects;
         Pointer ptrToObj = ReferenceAccess.singleton().readObjectAsUntrackedPointer(ptrPtrToObject, compressed);
         if (ptrToObj.isNonNull() && !isReachable(ptrToObj)) {
-            throw UNREACHABLE_OBJECTS_EXCEPTION;
+            unreachableObjects = true;
+            return false;
         }
+        return true;
     }
 
     public static boolean isReachable(Pointer ptrToObj) {
@@ -95,22 +90,11 @@ final class RuntimeCodeCacheReachabilityAnalyzer implements ObjectReferenceVisit
 
     private static boolean isAssumedReachable(Class<?> clazz) {
         Class<?>[] classesAssumedReachable = RuntimeCodeCacheCleaner.CLASSES_ASSUMED_REACHABLE;
-        for (Class<?> aClass : classesAssumedReachable) {
-            if (aClass.isAssignableFrom(clazz)) {
+        for (int i = 0; i < classesAssumedReachable.length; i++) {
+            if (classesAssumedReachable[i].isAssignableFrom(clazz)) {
                 return true;
             }
         }
         return false;
-    }
-
-    static final class UnreachableObjectsException extends RuntimeException {
-        @Serial private static final long serialVersionUID = 1L;
-
-        @Override
-        @SuppressWarnings("sync-override")
-        public Throwable fillInStackTrace() {
-            /* No stacktrace needed. */
-            return this;
-        }
     }
 }

@@ -271,13 +271,9 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
     }
 
     /**
-     * Set if compilation failed or was ignored. Reset by TruffleFeature after image generation.
+     * Set if compilation failed or was ignored. Reset by TruffleBaseFeature after image generation.
      */
     private volatile boolean compilationFailed;
-    /**
-     * Unset if compilation failed. Reset by TruffleFeature to true after image generation.
-     */
-    private volatile boolean canBeInlined = true;
     /**
      * Whether the call profile was preinitialized with a fixed set of type classes. In such a case
      * the arguments will be cast using unsafe and the arguments array for calls is not checked
@@ -287,7 +283,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
 
     /**
      * Timestamp when the call target was initialized e.g. used the first time. Reset by
-     * TruffleFeature after image generation.
+     * TruffleBaseFeature after image generation.
      */
     private volatile long initializedTimestamp;
 
@@ -373,14 +369,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
     protected OptimizedCallTarget(OptimizedCallTarget sourceCallTarget, RootNode rootNode) {
         assert sourceCallTarget == null || sourceCallTarget.sourceCallTarget == null : "Cannot create a clone of a cloned CallTarget";
         this.sourceCallTarget = sourceCallTarget;
-        /*
-         * Don't share the source's speculation log. Different splits of the same call target can be
-         * very different. Moreover, the signatures used for speculations of the deopt cycle
-         * detection algorithm don't include call target ids, so two same compilations of two
-         * different splits of the same call target would produce a false positive if the
-         * speculation log was shared.
-         */
-        this.speculationLog = null;
+        this.speculationLog = sourceCallTarget != null ? sourceCallTarget.getSpeculationLog() : null;
         this.rootNode = rootNode;
         this.engine = OptimizedTVMCI.getEngineData(rootNode);
         this.resetCompilationProfile();
@@ -807,9 +796,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
             }
             if (callerCallTarget.frameDescriptorEquals(parentFrameDescriptor)) {
                 callerCallNode.forceInlining();
-                int oldLoopCallCount = callerCallTarget.callAndLoopCount;
-                int newLoopCallCount = oldLoopCallCount + this.callAndLoopCount;
-                callerCallTarget.callAndLoopCount = newLoopCallCount >= oldLoopCallCount ? newLoopCallCount : Integer.MAX_VALUE;
+                callerCallTarget.callAndLoopCount += this.callAndLoopCount;
                 return;
             }
             currentSingleCallNode = callerCallTarget.singleCallNode;
@@ -884,7 +871,11 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
             assert !validate || OptimizedRuntimeAccessor.NODES.getCallTargetWithoutInitialization(rootNode) == this : "Call target out of sync.";
 
             OptimizedRuntimeAccessor.INSTRUMENT.onFirstExecution(getRootNode(), validate);
-            this.initializedTimestamp = System.nanoTime();
+            if (engine.callTargetStatistics) {
+                this.initializedTimestamp = System.nanoTime();
+            } else {
+                this.initializedTimestamp = 0L;
+            }
             initialized = true;
         }
     }
@@ -909,10 +900,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
 
     final boolean isCompilationFailed() {
         return compilationFailed;
-    }
-
-    public boolean canBeInlined() {
-        return canBeInlined;
     }
 
     private CompilationActivityMode getCompilationActivityMode() {
@@ -957,7 +944,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
                                     "Increase the code cache size using '-XX:ReservedCodeCacheSize=' and/or run with '-XX:+UseCodeCacheFlushing -XX:+MethodFlushing'.");
                 }
                 // Flush the compilation queue and mark all methods as not compilable.
-                for (OptimizedCallTarget target : runtime().getCompileQueue().getAllTargets(null)) {
+                for (OptimizedCallTarget target : runtime().getCompileQueue().getQueuedTargets(null)) {
                     target.cancelCompilation("Compilation permanently disabled due to full code cache.");
                     target.compilationFailed = true;
                 }
@@ -1023,16 +1010,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
                             handleCompilationFailure(() -> failureReason, false, true, true);
                             return false;
                         }
-
-                        if (engine.isClosed()) {
-                            /*
-                             * This should not happen in practice, but for testing when call targets
-                             * escape the boundary of an engine this can in theory happen. So we
-                             * check for this defensively.
-                             */
-                            return false;
-                        }
-
                         this.compilationTask = task = runtime().submitForCompilation(this, lastTier);
                     } catch (RejectedExecutionException e) {
                         return false;
@@ -1157,10 +1134,9 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
             /* no cancellation necessary if the call target was initialized */
             return false;
         }
-
         CompilationTask task = this.compilationTask;
         if (task != null && cancelAndResetCompilationTask()) {
-            runtime().getListener().onCompilationDequeued(this, null, reason, task.tier());
+            runtime().getListener().onCompilationDequeued(this, null, reason, task != null ? task.tier() : 0);
             return true;
         }
         return false;
@@ -1197,11 +1173,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
     }
 
     @Override
-    public int getSuccessfulCompilationCount() {
-        return successfulCompilationsCount;
-    }
-
-    @Override
     public final boolean onInvalidate(Object source, CharSequence reason, boolean wasActive) {
         cachedNonTrivialNodeCount = -1;
         if (wasActive) {
@@ -1234,7 +1205,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
             action = ExceptionAction.Silent;
         } else {
             compilationFailed = true;
-            canBeInlined = false;
             action = silent ? ExceptionAction.Silent : engine.compilationFailureAction;
         }
 
@@ -1287,8 +1257,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
     }
 
     /**
-     * Intrinsifiable compiler directive to tighten the type information for {@code args}. This
-     * intrinsic only applies during runtime compilation.
+     * Intrinsifiable compiler directive to tighten the type information for {@code args}.
      *
      * @param length the length of {@code args} that is guaranteed to be final at compile time
      */
@@ -1297,8 +1266,7 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
     }
 
     /**
-     * Intrinsifiable compiler directive to tighten the type information for {@code value}. This
-     * intrinsic only applies during runtime compilation.
+     * Intrinsifiable compiler directive to tighten the type information for {@code value}.
      *
      * @param type the type the compiler should assume for {@code value}
      * @param condition the condition that guards the assumptions expressed by this directive
@@ -1360,12 +1328,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
 
     public final long getInitializedTimestamp() {
         return initializedTimestamp;
-    }
-
-    final void setInitializedTimestamp(long timestamp) {
-        if (initialized) {
-            initializedTimestamp = timestamp;
-        }
     }
 
     public final Map<String, Object> getDebugProperties() {
@@ -1732,14 +1694,6 @@ public abstract class OptimizedCallTarget implements TruffleCompilable, RootCall
         }
         CompilerDirectives.transferToInterpreterAndInvalidate();
         specializeException(value);
-        /*
-         * If the target throws an exception, we can't leave the return profile uninitialized,
-         * because it is needed for direct calls on SVM. If the return profile stays null, it causes
-         * a deopt of the caller for direct C2C and C2I calls to the target with the uninitialized
-         * return profile. If the callee keeps throwing an exception, the deopt can be repeated
-         * unlimited number of times thus causing a deopt cycle for the caller.
-         */
-        getInitializedReturnProfile();
         return value;
     }
 

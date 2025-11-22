@@ -1030,13 +1030,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
             }
 
             @ExportMessage
-            boolean hasLanguageId() {
+            boolean hasLanguage() {
                 return true;
             }
 
             @ExportMessage
-            String getLanguageId() {
-                return InstrumentationTestLanguage.ID;
+            Class<? extends TruffleLanguage<?>> getLanguage() {
+                return InstrumentationTestLanguage.class;
             }
 
             @ExportMessage
@@ -1149,14 +1149,14 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
 
             @ExportMessage
             @SuppressWarnings("static-method")
-            boolean hasLanguageId() {
+            boolean hasLanguage() {
                 return true;
             }
 
             @ExportMessage
             @SuppressWarnings("static-method")
-            String getLanguageId() {
-                return InstrumentationTestLanguage.ID;
+            Class<? extends TruffleLanguage<?>> getLanguage() {
+                return InstrumentationTestLanguage.class;
             }
 
             @ExportMessage
@@ -1600,13 +1600,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
             }
 
             @ExportMessage
-            boolean hasLanguageId() {
+            boolean hasLanguage() {
                 return true;
             }
 
             @ExportMessage
-            String getLanguageId() {
-                return InstrumentationTestLanguage.ID;
+            Class<? extends TruffleLanguage<?>> getLanguage() {
+                return InstrumentationTestLanguage.class;
             }
 
             @ExportMessage
@@ -2385,13 +2385,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3154,18 +3154,18 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
             this.loop = Truffle.getRuntime().createLoopNode(new LoopConditionNode(loopCount, infinite, cond, children));
         }
 
-        Integer getLoopIndex(VirtualFrame frame) {
+        Integer getLoopIndex() {
             if (loopIndexSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                loopIndexSlot = frame.getFrameDescriptor().findOrAddAuxiliarySlot("loopIndex" + getLoopDepth());
+                loopIndexSlot = getRootNode().getFrameDescriptor().findOrAddAuxiliarySlot("loopIndex" + getLoopDepth());
             }
             return loopIndexSlot;
         }
 
-        Integer getResult(VirtualFrame frame) {
+        Integer getResult() {
             if (loopResultSlot == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                loopResultSlot = frame.getFrameDescriptor().findOrAddAuxiliarySlot("loopResult" + getLoopDepth());
+                loopResultSlot = getRootNode().getFrameDescriptor().findOrAddAuxiliarySlot("loopResult" + getLoopDepth());
             }
             return loopResultSlot;
         }
@@ -3184,8 +3184,8 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
 
         @Override
         public Object execute(VirtualFrame frame) {
-            frame.setAuxiliarySlot(getResult(frame), Null.INSTANCE);
-            frame.setAuxiliarySlot(getLoopIndex(frame), 0);
+            frame.setAuxiliarySlot(getResult(), Null.INSTANCE);
+            frame.setAuxiliarySlot(getLoopIndex(), 0);
             loop.execute(frame);
             try {
                 return frame.getAuxiliarySlot(loopResultSlot);
@@ -3468,13 +3468,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3520,13 +3520,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3589,13 +3589,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3642,13 +3642,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3677,13 +3677,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage
@@ -3725,13 +3725,13 @@ public class InstrumentationTestLanguage extends TruffleLanguage<InstrumentConte
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return InstrumentationTestLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return InstrumentationTestLanguage.class;
         }
 
         @ExportMessage

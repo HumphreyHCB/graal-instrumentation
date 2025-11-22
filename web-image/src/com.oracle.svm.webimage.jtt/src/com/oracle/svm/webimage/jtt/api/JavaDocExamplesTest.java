@@ -189,7 +189,7 @@ class Rectangle extends JSObject {
 
 @JS.Export
 class Randomizer extends JSObject {
-    protected Random rng = new Random(719513L);
+    private Random rng = new Random(719513L);
 
     public byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];

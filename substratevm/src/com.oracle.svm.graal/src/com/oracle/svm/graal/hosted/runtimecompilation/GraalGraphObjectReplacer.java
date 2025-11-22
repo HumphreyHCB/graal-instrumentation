@@ -34,6 +34,9 @@ import org.graalvm.nativeimage.hosted.Feature.BeforeHeapLayoutAccess;
 
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalFieldProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -42,7 +45,6 @@ import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.svm.common.meta.MultiMethod;
 import com.oracle.svm.core.code.CodeInfoTable;
 import com.oracle.svm.core.code.ImageCodeInfo;
-import com.oracle.svm.core.debug.SubstrateDebugInfoInstaller;
 import com.oracle.svm.core.graal.meta.SharedRuntimeMethod;
 import com.oracle.svm.core.graal.nodes.SubstrateFieldLocationIdentity;
 import com.oracle.svm.core.hub.DynamicHub;
@@ -68,10 +70,6 @@ import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
-import com.oracle.svm.util.LogUtils;
-import com.oracle.svm.util.OriginalClassProvider;
-import com.oracle.svm.util.OriginalFieldProvider;
-import com.oracle.svm.util.OriginalMethodProvider;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
@@ -91,8 +89,6 @@ import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaType;
-import jdk.vm.ci.meta.Local;
-import jdk.vm.ci.meta.LocalVariableTable;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -269,36 +265,21 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
                  * be the target of an invokeinterface, which doesn't necessarily correspond to an
                  * actual declared method, so normal resolution will not work.
                  */
-                beforeAnalysisAccess.registerSubtypeReachabilityHandler((_, reachableSubtype) -> {
+                beforeAnalysisAccess.registerSubtypeReachabilityHandler((a, reachableSubtype) -> {
                     AnalysisType subtype = beforeAnalysisAccess.getMetaAccess().lookupJavaType(reachableSubtype);
                     if (!subtype.equals(baseType)) {
                         AnalysisMethod resolvedOverride = subtype.resolveConcreteMethod(baseMethod, null);
                         if (resolvedOverride != null) {
-                            resolvedOverride.registerImplementationInvokedCallback(_ -> createMethod(resolvedOverride));
+                            resolvedOverride.registerImplementationInvokedCallback((analysisAccess) -> createMethod(resolvedOverride));
                         }
                     }
                 }, baseType.getJavaClass());
 
                 /*
-                 * With run-time debug info support enabled, ensure LocalVariableTables are
-                 * available in SubstrateMethods if possible.
-                 */
-                LocalVariableTable localVariableTable;
-                if (SubstrateDebugInfoInstaller.Options.hasRuntimeDebugInfoFormatSupport(SubstrateDebugInfoInstaller.DEBUG_INFO_OBJFILE_NAME)) {
-                    try {
-                        localVariableTable = createLocalVariableTable(aMethod.getLocalVariableTable());
-                    } catch (IllegalStateException e) {
-                        LogUtils.warning("Omit invalid local variable table from method %s", sMethod.getName());
-                        localVariableTable = null;
-                    }
-                } else {
-                    localVariableTable = null;
-                }
-                /*
                  * The links to other meta objects must be set after adding to the methods to avoid
                  * infinite recursion.
                  */
-                sMethod.setLinks(createSignature(aMethod.getSignature()), createType(aMethod.getDeclaringClass()), localVariableTable);
+                sMethod.setLinks(createSignature(aMethod.getSignature()), createType(aMethod.getDeclaringClass()));
             }
         }
         return sMethod;
@@ -367,7 +348,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
             VMError.guarantee(!(forbidNewTypes || (original instanceof HostedType)), "Too late to create a new type: %s", aType);
             aType.registerAsReachable("type reachable from Graal graphs");
             DynamicHub hub = ((SVMHost) aUniverse.hostVM()).dynamicHub(aType);
-            SubstrateType newType = universeFactory.createType(aType, hub);
+            SubstrateType newType = new SubstrateType(aType.getJavaKind(), hub);
             sType = types.putIfAbsent(aType, newType);
             if (sType == null) {
                 sType = newType;
@@ -427,31 +408,6 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
         return sSignature;
     }
 
-    private synchronized LocalVariableTable createLocalVariableTable(LocalVariableTable original) {
-        if (original == null) {
-            return null;
-        }
-        try {
-            Local[] origLocals = original.getLocals();
-            Local[] newLocals = new Local[origLocals.length];
-            for (int i = 0; i < newLocals.length; ++i) {
-                Local origLocal = origLocals[i];
-                /*
-                 * Check if the local variable table is malformed. This throws an
-                 * IllegalStateException if the bci ranges of variables overlap and the malformed
-                 * local variable table is omitted from the image.
-                 */
-                original.getLocal(origLocal.getSlot(), origLocal.getStartBCI());
-                JavaType origType = origLocal.getType();
-                SubstrateType newType = createType(origType);
-                newLocals[i] = new Local(origLocal.getName(), newType, origLocal.getStartBCI(), origLocal.getEndBCI(), origLocal.getSlot());
-            }
-            return new LocalVariableTable(newLocals);
-        } catch (UnsupportedFeatureException e) {
-            return null;
-        }
-    }
-
     /**
      * Collect {@link SubstrateMethod} implementations.
      */
@@ -476,6 +432,7 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
      * Therefore all substrate VM related data has to be updated after building the substrate
      * universe.
      */
+    @SuppressWarnings("try")
     public void updateSubstrateDataAfterCompilation(HostedUniverse hUniverse, Providers providers) {
 
         if (Options.GuaranteeSubstrateTypesLinked.getValue()) {
@@ -519,19 +476,8 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
                             ? providers.getConstantReflection().readFieldValue(hField, null)
                             : null;
             constantValue = SubstrateGraalUtils.hostedToRuntime(constantValue, providers.getConstantReflection());
-            sField.setSubstrateDataAfterCompilation(hField.getLocation(), hField.isAccessed(), hField.isWritten(), constantValue);
+            sField.setSubstrateData(hField.getLocation(), hField.isAccessed(), hField.isWritten() || !hField.isValueAvailable(), constantValue);
         }
-
-        methods.forEach((aMethod, sMethod) -> {
-            HostedMethod hMethod = hUniverse.lookup(aMethod);
-            SubstrateMethod indirectCallTarget = sMethod;
-            if (!hMethod.getIndirectCallTarget().equals(hMethod)) {
-                indirectCallTarget = methods.get(hMethod.getIndirectCallTarget().getWrapped());
-            }
-            int vTableIndex = (hMethod.hasVTableIndex() ? hMethod.getVTableIndex() : HostedMethod.MISSING_VTABLE_IDX);
-            sMethod.setSubstrateDataAfterCompilation(indirectCallTarget, vTableIndex);
-        });
-
     }
 
     public void updateSubstrateDataAfterHeapLayout(HostedUniverse hUniverse) {
@@ -539,13 +485,14 @@ public class GraalGraphObjectReplacer implements Function<Object, Object> {
             AnalysisMethod aMethod = entry.getKey();
             SubstrateMethod sMethod = entry.getValue();
             HostedMethod hMethod = hUniverse.lookup(aMethod);
+            int vTableIndex = (hMethod.hasVTableIndex() ? hMethod.getVTableIndex() : -1);
 
             /*
              * We access the offset of methods in the image code section here. Therefore, this code
              * can only run after the heap and code cache layout was done.
              */
             int imageCodeOffset = hMethod.isCodeAddressOffsetValid() ? hMethod.getCodeAddressOffset() : 0;
-            sMethod.setSubstrateDataAfterHeapLayout(imageCodeOffset, hMethod.getImageCodeDeoptOffset());
+            sMethod.setSubstrateData(vTableIndex, imageCodeOffset, hMethod.getImageCodeDeoptOffset());
         }
     }
 

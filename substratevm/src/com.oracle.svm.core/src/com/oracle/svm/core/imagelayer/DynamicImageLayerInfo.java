@@ -50,10 +50,6 @@ public abstract class DynamicImageLayerInfo {
         return ImageSingletons.lookup(DynamicImageLayerInfo.class);
     }
 
-    public abstract boolean isMethodCompilationDelayed(SharedMethod method);
-
-    public abstract CGlobalDataInfo getSymbolForDelayedMethod(SharedMethod targetMethod);
-
     public record PriorLayerMethodLocation(CGlobalDataInfo base, int offset) {
     }
 
@@ -69,8 +65,4 @@ public abstract class DynamicImageLayerInfo {
             return singleton().layerNumber;
         }
     }
-
-    public abstract int getPreviousMaxTypeId();
-
-    public abstract long getPreviousImageHeapEndOffset();
 }

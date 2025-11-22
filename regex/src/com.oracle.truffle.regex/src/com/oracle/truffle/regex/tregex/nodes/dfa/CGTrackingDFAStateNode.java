@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,11 +41,16 @@
 package com.oracle.truffle.regex.tregex.nodes.dfa;
 
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.strings.TruffleString;
 
-public final class CGTrackingDFAStateNode extends DFAStateNode {
+public class CGTrackingDFAStateNode extends DFAStateNode {
 
+    @CompilationFinal(dimensions = 1) private final short[] lastTransitionIndex;
+    @CompilationFinal(dimensions = 1) private final DFACaptureGroupLazyTransition[] lazyTransitions;
+    private final DFACaptureGroupLazyTransition preAnchoredFinalStateTransition;
     private final DFACaptureGroupLazyTransition preUnAnchoredFinalStateTransition;
+    private final DFACaptureGroupPartialTransition anchoredFinalStateTransition;
     private final DFACaptureGroupPartialTransition unAnchoredFinalStateTransition;
     private final DFACaptureGroupPartialTransition cgLoopToSelf;
     private final boolean cgLoopToSelfHasDependency;
@@ -57,39 +62,63 @@ public final class CGTrackingDFAStateNode extends DFAStateNode {
                     byte indexOfIsFast,
                     short[] successors,
                     Matchers matchers,
-                    short anchoredFinalSuccessor,
+                    short[] lastTransitionIndex,
+                    DFACaptureGroupLazyTransition[] lazyTransitions,
+                    DFACaptureGroupLazyTransition preAnchoredFinalStateTransition,
                     DFACaptureGroupLazyTransition preUnAnchoredFinalStateTransition,
+                    DFACaptureGroupPartialTransition anchoredFinalStateTransition,
                     DFACaptureGroupPartialTransition unAnchoredFinalStateTransition,
                     DFACaptureGroupPartialTransition cgLoopToSelf,
                     boolean cgLoopToSelfHasDependency) {
-        super(id, flags, loopTransitionIndex, indexOfNodeId, indexOfIsFast, successors, matchers, anchoredFinalSuccessor);
+        super(id, flags, loopTransitionIndex, indexOfNodeId, indexOfIsFast, successors, matchers, null);
+        this.anchoredFinalStateTransition = anchoredFinalStateTransition;
         this.unAnchoredFinalStateTransition = unAnchoredFinalStateTransition;
+        this.lastTransitionIndex = lastTransitionIndex;
+        this.lazyTransitions = lazyTransitions;
+        this.preAnchoredFinalStateTransition = preAnchoredFinalStateTransition;
         this.preUnAnchoredFinalStateTransition = preUnAnchoredFinalStateTransition;
         this.cgLoopToSelf = cgLoopToSelf;
         this.cgLoopToSelfHasDependency = cgLoopToSelfHasDependency;
+    }
+
+    private CGTrackingDFAStateNode(CGTrackingDFAStateNode copy, short copyID) {
+        super(copy, copyID);
+        this.lastTransitionIndex = copy.lastTransitionIndex;
+        this.lazyTransitions = copy.lazyTransitions;
+        this.preAnchoredFinalStateTransition = copy.preAnchoredFinalStateTransition;
+        this.preUnAnchoredFinalStateTransition = copy.preUnAnchoredFinalStateTransition;
+        this.anchoredFinalStateTransition = copy.anchoredFinalStateTransition;
+        this.unAnchoredFinalStateTransition = copy.unAnchoredFinalStateTransition;
+        this.cgLoopToSelf = copy.cgLoopToSelf;
+        this.cgLoopToSelfHasDependency = copy.cgLoopToSelfHasDependency;
     }
 
     private DFACaptureGroupPartialTransition getCGTransitionToSelf() {
         return cgLoopToSelf;
     }
 
+    public short[] getLastTransitionIndex() {
+        return lastTransitionIndex;
+    }
+
     @Override
-    boolean beforeFindSuccessor(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+    public DFAStateNode createNodeSplitCopy(short copyID) {
+        return new CGTrackingDFAStateNode(this, copyID);
+    }
+
+    @Override
+    void beforeFindSuccessor(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
         CompilerAsserts.partialEvaluationConstant(this);
         if (executor.isSearching()) {
-            checkFinalStateCG(locals, executor);
+            checkFinalState(locals, executor);
         }
-        return false;
     }
 
     @Override
     void afterIndexOf(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor, final int preLoopIndex, int postLoopIndex, TruffleString.CodeRange codeRange) {
         assert locals.getIndex() == preLoopIndex;
         if (locals.getIndex() < postLoopIndex) {
-            DFAAbstractNode loopTransitionNode = executor.getNodes()[successors[getLoopToSelf()]];
-            if (loopTransitionNode instanceof CGTrackingTransitionNode cgTrackingLoopTransitionNode) {
-                cgTrackingLoopTransitionNode.apply(locals, executor);
-            }
+            successorFound(locals, executor, getLoopToSelf());
             locals.setLastIndex();
             executor.inputSkip(locals, codeRange);
         }
@@ -123,28 +152,54 @@ public final class CGTrackingDFAStateNode extends DFAStateNode {
             executor.inputIncNextIndexRaw(locals, executor.inputGetCodePointSize(locals, codeRange));
         }
         if (executor.isSearching()) {
-            checkFinalStateCG(locals, executor);
+            checkFinalState(locals, executor);
         }
     }
 
     @Override
-    void atEnd(TRegexDFAExecutorLocals frame, TRegexDFAExecutorNode executor, boolean inputAtEnd) {
+    void successorFound(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor, int i) {
         CompilerAsserts.partialEvaluationConstant(this);
-        if (!isAnchoredFinalState() || !inputAtEnd) {
-            checkFinalStateCG(frame, executor);
+        CompilerAsserts.partialEvaluationConstant(i);
+        lazyTransitions[i].apply(locals, executor);
+        locals.setLastIndex();
+        if (lastTransitionIndex[i] >= 0) {
+            locals.setLastTransition(lastTransitionIndex[i]);
         }
     }
 
-    private void checkFinalStateCG(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+    @Override
+    void atEnd(TRegexDFAExecutorLocals frame, TRegexDFAExecutorNode executor) {
+        CompilerAsserts.partialEvaluationConstant(this);
+        if (isAnchoredFinalState() && executor.inputAtEnd(frame)) {
+            applyAnchoredFinalStateTransition(frame, executor);
+        } else {
+            checkFinalState(frame, executor);
+        }
+    }
+
+    private void checkFinalState(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
         CompilerAsserts.partialEvaluationConstant(this);
         if (isFinalState()) {
-            preUnAnchoredFinalStateTransition.applyPreFinal(locals, executor);
-            unAnchoredFinalStateTransition.applyFinalStateTransition(executor, locals.getCGData(), locals.getIndex());
-            storeResult(locals, executor);
+            applyUnAnchoredFinalStateTransition(locals, executor);
         }
     }
 
-    static void storeResult(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+    private void applyAnchoredFinalStateTransition(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+        DFACaptureGroupTrackingData data = locals.getCGData();
+        preAnchoredFinalStateTransition.applyPreFinal(locals, executor);
+        anchoredFinalStateTransition.applyFinalStateTransition(executor, data, locals.getIndex());
+        storeResult(locals, executor);
+    }
+
+    private void applyUnAnchoredFinalStateTransition(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+        DFACaptureGroupTrackingData data = locals.getCGData();
+        preUnAnchoredFinalStateTransition.applyPreFinal(locals, executor);
+        unAnchoredFinalStateTransition.applyFinalStateTransition(executor, data, locals.getIndex());
+        storeResult(locals, executor);
+    }
+
+    private void storeResult(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
+        CompilerAsserts.partialEvaluationConstant(this);
         if (!executor.isSearching()) {
             locals.getCGData().exportResult(executor, (byte) DFACaptureGroupPartialTransition.FINAL_STATE_RESULT_INDEX);
         }
@@ -152,7 +207,11 @@ public final class CGTrackingDFAStateNode extends DFAStateNode {
     }
 
     public int getCGTrackingCost() {
-        return getCost(preUnAnchoredFinalStateTransition) + getCost(unAnchoredFinalStateTransition);
+        int cost = getCost(preAnchoredFinalStateTransition) + getCost(preUnAnchoredFinalStateTransition) + getCost(anchoredFinalStateTransition) + getCost(unAnchoredFinalStateTransition);
+        for (DFACaptureGroupLazyTransition t : lazyTransitions) {
+            cost += t.getCost();
+        }
+        return cost;
     }
 
     private static int getCost(DFACaptureGroupLazyTransition t) {

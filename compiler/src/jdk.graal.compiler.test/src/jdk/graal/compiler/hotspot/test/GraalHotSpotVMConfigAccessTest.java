@@ -32,6 +32,7 @@ import jdk.graal.compiler.hotspot.GraalHotSpotVMConfig;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntimeProvider;
 import jdk.graal.compiler.runtime.RuntimeProvider;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import jdk.vm.ci.common.JVMCIError;
@@ -39,6 +40,7 @@ import jdk.vm.ci.common.JVMCIError;
 public class GraalHotSpotVMConfigAccessTest {
     @Test
     public void test() {
+        Assume.assumeTrue("Only expect error in JDK with explicit JVMCI version (e.g. labsjdk)", GraalHotSpotVMConfig.JVMCI);
         HotSpotGraalRuntimeProvider rt = (HotSpotGraalRuntimeProvider) Graal.getRequiredCapability(RuntimeProvider.class);
         GraalHotSpotVMConfig config = rt.getVMConfig();
 

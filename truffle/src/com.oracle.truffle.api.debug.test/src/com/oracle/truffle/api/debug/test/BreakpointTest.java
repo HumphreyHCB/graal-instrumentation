@@ -1655,14 +1655,7 @@ public class BreakpointTest extends AbstractDebugTest {
 
         final int numChecks = 1000;
         Context.Builder builder = Context.newBuilder();
-        // TODO GR-65179
-        if (TruffleTestAssumptions.isOptimizingRuntime()) {
-            builder.option("engine.MaximumCompilations", "-1");
-            if (TruffleTestAssumptions.isDeoptLoopDetectionAvailable()) {
-                builder.option("compiler.DeoptCycleDetectionThreshold", "-1");
-            }
-        }
-        try (Context context = builder.build()) {
+        try (Context context = (TruffleTestAssumptions.isOptimizingRuntime() ? builder.option("engine.MaximumCompilations", "-1") : builder).build()) {
             Debugger debugger = context.getEngine().getInstruments().get("debugger").lookup(Debugger.class);
             try (DebuggerSession session = debugger.startSession(event -> {
             })) {

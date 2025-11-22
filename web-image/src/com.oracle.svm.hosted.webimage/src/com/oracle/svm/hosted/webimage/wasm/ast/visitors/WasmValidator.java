@@ -40,6 +40,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.oracle.svm.webimage.wasm.types.WasmLMUtil;
+import com.oracle.svm.webimage.wasm.types.WasmValType;
 import com.oracle.svm.hosted.webimage.wasm.ast.Export;
 import com.oracle.svm.hosted.webimage.wasm.ast.Function;
 import com.oracle.svm.hosted.webimage.wasm.ast.Global;
@@ -53,8 +55,6 @@ import com.oracle.svm.hosted.webimage.wasm.ast.Tag;
 import com.oracle.svm.hosted.webimage.wasm.ast.TypeUse;
 import com.oracle.svm.hosted.webimage.wasm.ast.WasmModule;
 import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
-import com.oracle.svm.webimage.wasm.types.WasmLMUtil;
-import com.oracle.svm.webimage.wasm.types.WasmValType;
 
 import jdk.graal.compiler.debug.GraalError;
 
@@ -64,7 +64,7 @@ import jdk.graal.compiler.debug.GraalError;
  * <ul>
  * <li>Makes some simplifying assumptions (which the AST currently satisfies):
  * <ul>
- * <li>Any labeled block has no input and at most one output value.</li>
+ * <li>Any labeled block has no input or output types.</li>
  * <li>No vector or reference types exist</li>
  * <li>Functions only have a single return value</li>
  * </ul>
@@ -78,24 +78,10 @@ import jdk.graal.compiler.debug.GraalError;
 public class WasmValidator extends WasmVisitor {
     static class CtrlFrame {
         final WasmId.Label label;
-        final WasmValType returnType;
-        /**
-         * Whether the end of this frame (block) is unreachable. There might still be reachable code
-         * in the frame, but if this is true, execution can never reach the end of the block.
-         */
         boolean unreachable = false;
-        /**
-         * Whether any instructions target this block.
-         */
-        boolean targeted = false;
 
-        CtrlFrame(WasmId.Label label, WasmValType returnType) {
+        CtrlFrame(WasmId.Label label) {
             this.label = label;
-            this.returnType = returnType;
-        }
-
-        public WasmValType getReturnType() {
-            return returnType;
         }
     }
 
@@ -357,7 +343,7 @@ public class WasmValidator extends WasmVisitor {
         }
     }
 
-    private static boolean idsEqual(WasmId first, WasmId second) {
+    private static boolean assertIdsEqual(WasmId first, WasmId second) {
         return Objects.equals(first, second);
     }
 
@@ -365,22 +351,13 @@ public class WasmValidator extends WasmVisitor {
         return Objects.requireNonNull(ctrls.peek());
     }
 
-    /**
-     * Whether the current frame is marked as unreachable.
-     *
-     * @see #markUnreachable()
-     */
-    private boolean isUnreachable() {
-        return topFrame().unreachable;
-    }
-
     private void pushVal(WasmValType t) {
-        errorIf(isUnreachable(), "Tried to push " + t + " when unreachable");
         vals.push(t);
     }
 
     private WasmValType popVal() {
-        if (isUnreachable()) {
+        CtrlFrame top = topFrame();
+        if (vals.isEmpty() && top.unreachable) {
             return null;
         }
 
@@ -406,10 +383,6 @@ public class WasmValidator extends WasmVisitor {
      * @param expected The top of the stack must match this (the last element is at the very top).
      */
     private void popVals(WasmValType... expected) {
-        if (isUnreachable()) {
-            return;
-        }
-
         int numTypes = expected.length;
         if (vals.size() < numTypes) {
             throw typeMismatch(expected);
@@ -443,20 +416,12 @@ public class WasmValidator extends WasmVisitor {
     }
 
     private void pushCtrl(WasmId.Label label) {
-        pushCtrl(label, null);
-    }
-
-    private void pushCtrl(WasmId.Label label, WasmValType resultType) {
         assertStackEmpty();
         if (label != null) {
             // No name conflicts.
             assertIdUniqueName(label, ctrls.stream().map(frame -> frame.label).filter(Objects::nonNull).collect(Collectors.toList()));
         }
-        ctrls.push(new CtrlFrame(label, resultType));
-    }
-
-    private void pushBlockCtrl(Instruction.WasmBlock block) {
-        pushCtrl(block.getLabel(), block.getResult());
+        ctrls.push(new CtrlFrame(label));
     }
 
     private void popCtrl(WasmId.Label expectedLabel) {
@@ -465,37 +430,9 @@ public class WasmValidator extends WasmVisitor {
         assertStackEmpty();
         errorIf(frame.label != expectedLabel, "Expected control frame " + expectedLabel + " but got " + frame.label);
         ctrls.pop();
-        /*
-         * If the end of the frame was unreachable and no instruction targeted it, it means that it
-         * is impossible to reach the instruction right after it and we have to mark the outer block
-         * as unreachable as well.
-         */
-        if (!frame.targeted && frame.unreachable && !ctrls.isEmpty()) {
-            markUnreachable();
-        }
-
     }
 
-    private void popBlockCtrl(Instruction.WasmBlock block) {
-        if (block.hasResult()) {
-            popVals(block.getResult());
-        }
-        popCtrl(block.getLabel());
-        if (block.hasResult()) {
-            pushVal(block.getResult());
-        }
-    }
-
-    /**
-     * Marks the top frame as unreachable.
-     * <p>
-     * An unreachable frame satisfies all requirements on the operand stack (i.e.
-     * {@link #popVals(WasmValType...) never errors.}).
-     * <p>
-     * Call this method after visiting any instruction at which execution stops and never returns
-     * (e.g. {@code br}).
-     */
-    private void markUnreachable() {
+    private void unreachable() {
         CtrlFrame top = topFrame();
         vals.clear();
         top.unreachable = true;
@@ -514,15 +451,8 @@ public class WasmValidator extends WasmVisitor {
         typeUse.results.forEach(this::pushVal);
     }
 
-    private CtrlFrame markLabelTargeted(WasmId.Label label) {
-        CtrlFrame frame = ctrls.stream().filter(f -> idsEqual(label, f.label)).findFirst().orElseThrow(() -> error("Label " + label + " does not exist."));
-        frame.targeted = true;
-        return frame;
-    }
-
-    private void markLabelTargetedWithReturnType(WasmId.Label label, WasmValType returnType) {
-        CtrlFrame frame = markLabelTargeted(label);
-        errorIf(!Objects.equals(frame.getReturnType(), returnType), "Label " + label + " has return type " + frame.getReturnType() + " but " + returnType + " was expected");
+    private void assertLabelExists(WasmId.Label label) {
+        errorIf(ctrls.stream().noneMatch(frame -> assertIdsEqual(label, frame.label)), "Label " + label + " does not exist.");
     }
 
     /**
@@ -636,79 +566,35 @@ public class WasmValidator extends WasmVisitor {
 
     @Override
     public void visitBlock(Instruction.Block block) {
-        pushBlockCtrl(block);
+        pushCtrl(block.getLabel());
         super.visitBlock(block);
-        popBlockCtrl(block);
+        popCtrl(block.getLabel());
     }
 
     @Override
     public void visitLoop(Instruction.Loop loop) {
-        pushBlockCtrl(loop);
+        pushCtrl(loop.getLabel());
         super.visitLoop(loop);
-        popBlockCtrl(loop);
+        popCtrl(loop.getLabel());
     }
 
     @Override
     public void visitIf(Instruction.If ifBlock) {
         visitInstruction(ifBlock.condition);
         popVals(i32);
-        pushBlockCtrl(ifBlock);
-
-        /*
-         * Propagating the information about unreachability upward here requires some more work. We
-         * only want to mark the end of the if-block as unreachable if both the end of the then- and
-         * else-branches are unreachable.
-         */
-        boolean thenBlockUnreachable = false;
-        boolean elseBlockUnreachable = false;
-
-        // Control frame around both branches to intercept the unreachable state
-        pushCtrl(null);
-
-        // Control frame around the then-branch
-        pushCtrl(null);
+        pushCtrl(ifBlock.getLabel());
         visitInstructions(ifBlock.thenInstructions);
-        if (topFrame().unreachable) {
-            thenBlockUnreachable = true;
-            topFrame().unreachable = false;
-        }
-        popCtrl(null);
-
         if (ifBlock.hasElse()) {
-            pushCtrl(null);
+            popCtrl(ifBlock.getLabel());
+            pushCtrl(ifBlock.getLabel());
             visitInstructions(ifBlock.elseInstructions);
-            if (topFrame().unreachable) {
-                elseBlockUnreachable = true;
-                topFrame().unreachable = false;
-            }
-            popCtrl(null);
         }
-        if (thenBlockUnreachable && elseBlockUnreachable) {
-            // This will mark the parent block as unreachable once we pop this control frame.
-            markUnreachable();
-        }
-        popCtrl(null);
-        popBlockCtrl(ifBlock);
-    }
-
-    @Override
-    public void visitTryTable(Instruction.TryTable tryBlock) {
-        tryBlock.catchBlocks.forEach(this::assertCatchValid);
-        pushBlockCtrl(tryBlock);
-        visitInstructions(tryBlock.instructions);
-        popBlockCtrl(tryBlock);
-    }
-
-    private void assertCatchValid(Instruction.TryTable.Catch catchClause) {
-        errorIf(!ctxt.hasTag(catchClause.tag), "No matching tag for catch clause: " + catchClause);
-        List<WasmValType> catchParams = catchClause.tag.typeUse.params;
-        errorIf(catchParams.size() != 1, "Can only support catch clause tags with a single param, got" + catchParams.size());
-        markLabelTargetedWithReturnType(catchClause.label, catchParams.getFirst());
+        popCtrl(ifBlock.getLabel());
     }
 
     @Override
     public void visitTry(Instruction.Try tryBlock) {
-        pushBlockCtrl(tryBlock);
+        pushCtrl(tryBlock.getLabel());
         visitInstructions(tryBlock.instructions);
 
         for (Instruction.Try.Catch catchBlock : tryBlock.catchBlocks) {
@@ -719,12 +605,12 @@ public class WasmValidator extends WasmVisitor {
             popCtrl(null);
         }
 
-        popBlockCtrl(tryBlock);
+        popCtrl(tryBlock.getLabel());
     }
 
     @Override
     public void visitUnreachable(Instruction.Unreachable unreachable) {
-        markUnreachable();
+        unreachable();
         super.visitUnreachable(unreachable);
     }
 
@@ -746,10 +632,10 @@ public class WasmValidator extends WasmVisitor {
 
         WasmId.Label targetLabel = inst.getTarget();
 
-        markLabelTargeted(targetLabel);
+        assertLabelExists(targetLabel);
 
         if (inst.condition == null) {
-            markUnreachable();
+            unreachable();
         } else {
             popVals(i32);
         }
@@ -762,13 +648,13 @@ public class WasmValidator extends WasmVisitor {
         popVals(i32);
 
         WasmId.Label defaultLabel = inst.getDefaultTarget();
-        markLabelTargeted(defaultLabel);
+        assertLabelExists(defaultLabel);
 
         for (int i = 0; i < inst.numTargets(); i++) {
-            markLabelTargeted(inst.getTarget(i));
+            assertLabelExists(inst.getTarget(i));
         }
 
-        markUnreachable();
+        unreachable();
     }
 
     @Override
@@ -857,7 +743,6 @@ public class WasmValidator extends WasmVisitor {
 
         errorIf(!ctxt.hasTag(inst.tag), "No matching tag for throw: " + inst);
         applyTypeUse(inst.tag.typeUse);
-        markUnreachable();
     }
 
     @Override

@@ -24,7 +24,6 @@
  */
 package jdk.graal.compiler.hotspot.meta;
 
-import static jdk.graal.compiler.core.common.NativeImageSupport.inRuntimeCode;
 import static jdk.vm.ci.hotspot.HotSpotJVMCIRuntime.runtime;
 
 import java.lang.reflect.Executable;
@@ -32,12 +31,14 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
+import jdk.graal.compiler.core.common.LibGraalSupport;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.hotspot.GraalHotSpotVMConfig;
 import jdk.graal.compiler.hotspot.HotSpotGraalRuntimeProvider;
 import jdk.graal.compiler.hotspot.HotSpotReplacementsImpl;
 import jdk.graal.compiler.hotspot.SnippetObjectConstant;
 import jdk.graal.compiler.word.WordTypes;
+
 import jdk.vm.ci.hotspot.HotSpotConstantReflectionProvider;
 import jdk.vm.ci.hotspot.HotSpotObjectConstant;
 import jdk.vm.ci.hotspot.HotSpotResolvedJavaField;
@@ -62,7 +63,7 @@ public class HotSpotSnippetReflectionProvider implements SnippetReflectionProvid
 
     @Override
     public JavaConstant forObject(Object object) {
-        if (inRuntimeCode()) {
+        if (LibGraalSupport.inLibGraalRuntime()) {
             HotSpotReplacementsImpl.getEncodedSnippets().lookupSnippetType(object.getClass());
             // This can only be a compiler object when in libgraal.
             return new SnippetObjectConstant(object);
@@ -129,9 +130,7 @@ public class HotSpotSnippetReflectionProvider implements SnippetReflectionProvid
     @Override
     public Executable originalMethod(ResolvedJavaMethod method) {
         Objects.requireNonNull(method);
-        if (!(method instanceof HotSpotResolvedJavaMethod)) {
-            throw new IllegalArgumentException(String.format("Unexpected implementation class: %s", method.getClass().getName()));
-        }
+        GraalError.guarantee(method instanceof HotSpotResolvedJavaMethod, "Unexpected implementation class: %s", method.getClass());
 
         if (method.isClassInitializer()) {
             /* <clinit> methods never have a corresponding java.lang.reflect.Method. */
@@ -145,10 +144,6 @@ public class HotSpotSnippetReflectionProvider implements SnippetReflectionProvid
         Objects.requireNonNull(field);
         GraalError.guarantee(field instanceof HotSpotResolvedJavaField, "Unexpected implementation class: %s", field.getClass());
 
-        if (field.isInternal()) {
-            /* internal fields never have a corresponding java.lang.reflect.Field. */
-            return null;
-        }
         return runtime().getMirror(field);
     }
 }

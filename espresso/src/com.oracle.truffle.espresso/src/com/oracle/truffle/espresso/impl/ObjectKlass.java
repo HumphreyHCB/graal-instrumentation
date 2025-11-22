@@ -25,6 +25,7 @@ package com.oracle.truffle.espresso.impl;
 import static com.oracle.truffle.espresso.classfile.Constants.ACC_FINALIZER;
 import static com.oracle.truffle.espresso.classfile.Constants.ACC_SUPER;
 import static com.oracle.truffle.espresso.classfile.Constants.JVM_ACC_WRITTEN_FLAGS;
+import static com.oracle.truffle.espresso.meta.Meta.isSignaturePolymorphicHolderType;
 
 import java.io.PrintStream;
 import java.lang.ref.WeakReference;
@@ -63,7 +64,6 @@ import com.oracle.truffle.espresso.classfile.ParserField;
 import com.oracle.truffle.espresso.classfile.ParserKlass;
 import com.oracle.truffle.espresso.classfile.ParserMethod;
 import com.oracle.truffle.espresso.classfile.attributes.Attribute;
-import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
 import com.oracle.truffle.espresso.classfile.attributes.EnclosingMethodAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.InnerClassesAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.NestHostAttribute;
@@ -82,6 +82,7 @@ import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.classfile.descriptors.TypeSymbols;
 import com.oracle.truffle.espresso.constantpool.RuntimeConstantPool;
 import com.oracle.truffle.espresso.descriptors.EspressoSymbols.Names;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols.Types;
 import com.oracle.truffle.espresso.impl.ModuleTable.ModuleEntry;
 import com.oracle.truffle.espresso.impl.PackageTable.PackageEntry;
 import com.oracle.truffle.espresso.meta.EspressoError;
@@ -99,7 +100,7 @@ import com.oracle.truffle.espresso.vm.InterpreterToVM;
 /**
  * Resolved non-primitive, non-array types in Espresso.
  */
-public final class ObjectKlass extends Klass implements AttributedElement {
+public final class ObjectKlass extends Klass {
 
     public static final ObjectKlass[] EMPTY_ARRAY = new ObjectKlass[0];
     public static final KlassVersion[] EMPTY_KLASSVERSION_ARRAY = new KlassVersion[0];
@@ -132,7 +133,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     private volatile int initState = LOADED;
 
     @CompilationFinal //
-    private StaticObject initializationError;
+    private EspressoException linkError;
 
     @CompilationFinal volatile KlassVersion klassVersion;
 
@@ -158,13 +159,14 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     public static final int LOADED = 0;
     public static final int LINKING = 1;
     public static final int VERIFYING = 2;
-    public static final int VERIFIED = 3;
-    public static final int PREPARED = 4;
-    public static final int LINKED = 5;
-    public static final int INITIALIZING = 6;
+    public static final int FAILED_LINK = 3;
+    public static final int VERIFIED = 4;
+    public static final int PREPARED = 5;
+    public static final int LINKED = 6;
+    public static final int INITIALIZING = 7;
     // Can be erroneous only if initialization triggered !
-    public static final int ERRONEOUS = 7;
-    public static final int INITIALIZED = 8;
+    public static final int ERRONEOUS = 8;
+    public static final int INITIALIZED = 9;
 
     private final StaticObject definingClassLoader;
 
@@ -175,33 +177,31 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     private final ClassHierarchyAssumption noConcreteSubclassesAssumption;
     // endregion
 
-    @Override
-    public Attribute[] getAttributes() {
-        return getKlassVersion().getAttributes();
+    public Attribute getAttribute(Symbol<Name> attrName) {
+        return getLinkedKlass().getAttribute(attrName);
     }
 
     @SuppressWarnings("this-escape")
     public ObjectKlass(EspressoContext context, LinkedKlass linkedKlass, ObjectKlass superKlass, ObjectKlass[] superInterfaces, StaticObject classLoader, ClassRegistry.ClassDefinitionInfo info) {
         super(context, linkedKlass.getName(), linkedKlass.getType(), linkedKlass.getFlags(), linkedKlass.getParserKlass().getHiddenKlassId());
 
-        RuntimeConstantPool pool = new RuntimeConstantPool(linkedKlass.getConstantPool(), this);
-
         this.nest = info.dynamicNest;
         this.hostKlass = info.hostKlass;
-        this.definingClassLoader = classLoader;
+        RuntimeConstantPool pool = new RuntimeConstantPool(linkedKlass.getConstantPool(), this);
+        definingClassLoader = classLoader;
+        this.enclosingMethod = (EnclosingMethodAttribute) linkedKlass.getAttribute(EnclosingMethodAttribute.NAME);
         this.klassVersion = new KlassVersion(pool, linkedKlass, superKlass, superInterfaces);
-        this.enclosingMethod = getAttribute(EnclosingMethodAttribute.NAME, EnclosingMethodAttribute.class);
 
         Field[] skFieldTable = superKlass != null ? superKlass.getInitialFieldTable() : Field.EMPTY_ARRAY;
         LinkedField[] lkInstanceFields = linkedKlass.getInstanceFields();
         LinkedField[] lkStaticFields = linkedKlass.getStaticFields();
 
-        this.fieldTable = new Field[skFieldTable.length + lkInstanceFields.length];
-        this.staticFieldTable = new Field[lkStaticFields.length];
+        fieldTable = new Field[skFieldTable.length + lkInstanceFields.length];
+        staticFieldTable = new Field[lkStaticFields.length];
 
         assert fieldTable.length == linkedKlass.getFieldTableLength();
         System.arraycopy(skFieldTable, 0, fieldTable, 0, skFieldTable.length);
-        this.localFieldTableIndex = skFieldTable.length;
+        localFieldTableIndex = skFieldTable.length;
         for (int i = 0; i < lkInstanceFields.length; i++) {
             Field instanceField = new Field(klassVersion, lkInstanceFields[i], pool);
             fieldTable[localFieldTableIndex + i] = instanceField;
@@ -223,7 +223,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         if (info.protectionDomain != null && !StaticObject.isNull(info.protectionDomain)) {
             // Protection domain should not be host null, and will be initialized to guest null on
             // mirror creation.
-            getMeta().HIDDEN_PROTECTION_DOMAIN.setMaybeHiddenObject(initializeEspressoClass(), info.protectionDomain);
+            getMeta().HIDDEN_PROTECTION_DOMAIN.setHiddenObject(initializeEspressoClass(), info.protectionDomain);
         }
         if (info.classData != null) {
             getMeta().java_lang_Class_classData.setObject(initializeEspressoClass(), info.classData);
@@ -361,10 +361,8 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         return initState >= INITIALIZED;
     }
 
-    private void setErroneousInitialization(StaticObject exception) {
-        assert exception != null;
+    private void setErroneousInitialization() {
         initState = ERRONEOUS;
-        initializationError = exception;
     }
 
     boolean isErroneous() {
@@ -379,13 +377,8 @@ public final class ObjectKlass extends Klass implements AttributedElement {
 
     @TruffleBoundary
     private EspressoException throwNoClassDefFoundError() {
-        assert isErroneous();
         Meta meta = getMeta();
-        if (StaticObject.isNull(initializationError)) {
-            throw meta.throwExceptionWithMessage(meta.java_lang_NoClassDefFoundError, "Could not initialize class: " + getExternalName());
-        } else {
-            throw meta.throwException(meta.java_lang_NoClassDefFoundError, "Could not initialize class: " + getExternalName(), initializationError);
-        }
+        throw meta.throwExceptionWithMessage(meta.java_lang_NoClassDefFoundError, "Erroneous class: " + getName());
     }
 
     @TruffleBoundary
@@ -407,6 +400,8 @@ public final class ObjectKlass extends Klass implements AttributedElement {
                 }
             }
 
+            var tls = getContext().getLanguage().getThreadLocalState();
+            tls.blockContinuationSuspension();
             try {
                 if (!isInterface()) {
                     /*
@@ -430,19 +425,21 @@ public final class ObjectKlass extends Klass implements AttributedElement {
                 // Next, execute the class or interface initialization method of C.
                 Method clinit = getClassInitializer();
                 if (clinit != null) {
-                    clinit.invokeDirectStatic();
+                    clinit.getCallTarget().call();
                 }
             } catch (EspressoException e) {
-                setErroneousInitialization(e.getGuestException());
+                setErroneousInitialization();
                 throw initializationFailed(e);
             } catch (AbstractTruffleException e) {
-                setErroneousInitialization(StaticObject.NULL);
+                setErroneousInitialization();
                 throw e;
             } catch (Throwable e) {
                 getContext().getLogger().log(Level.WARNING, "Host exception during class initialization: {0}", this.getNameAsString());
                 e.printStackTrace();
-                setErroneousInitialization(StaticObject.NULL);
+                setErroneousInitialization();
                 throw e;
+            } finally {
+                tls.unblockContinuationSuspension();
             }
             checkErroneousInitialization();
             initState = INITIALIZED;
@@ -573,6 +570,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     @Override
     public void ensureLinked() {
         if (!isLinked()) {
+            checkErroneousLink();
             if (CompilerDirectives.isCompilationConstant(this)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
             }
@@ -585,7 +583,6 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         getInitLock().lock();
         try {
             if (!isLinkingOrLinked()) {
-                int initialState = initState;
                 initState = LINKING;
                 try {
                     if (getSuperKlass() != null) {
@@ -594,17 +591,23 @@ public final class ObjectKlass extends Klass implements AttributedElement {
                     for (ObjectKlass interf : getSuperInterfaces()) {
                         interf.ensureLinked();
                     }
-                    verify();
-                    prepare();
-                    initState = LINKED;
-                } catch (Throwable t) {
-                    initState = initialState;
-                    throw t;
+                } catch (EspressoException e) {
+                    setErroneousLink(e);
+                    throw e;
                 }
+                verify();
+                try {
+                    prepare();
+                } catch (EspressoException e) {
+                    setErroneousLink(e);
+                    throw e;
+                }
+                initState = LINKED;
             }
         } finally {
             getInitLock().unlock();
         }
+        checkErroneousLink();
     }
 
     void initializeImpl() {
@@ -616,6 +619,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
 
     @HostCompilerDirectives.InliningCutoff
     private void doInitialize() {
+        checkErroneousLink();
         checkErroneousInitialization();
         if (CompilerDirectives.isCompilationConstant(this)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -647,25 +651,37 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         return initState >= VERIFIED;
     }
 
+    private void checkErroneousLink() {
+        if (initState == FAILED_LINK) {
+            throw linkError;
+        }
+    }
+
+    private void setErroneousLink(EspressoException e) {
+        initState = FAILED_LINK;
+        linkError = e;
+    }
+
     private void verify() {
         if (!isVerified()) {
+            checkErroneousLink();
             getInitLock().lock();
             try {
                 if (!isVerifyingOrVerified()) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    int initialState = initState;
                     initState = VERIFYING;
                     try {
                         verifyImpl();
-                        initState = VERIFIED;
-                    } catch (Throwable t) {
-                        initState = initialState;
-                        throw t;
+                    } catch (EspressoException e) {
+                        setErroneousLink(e);
+                        throw e;
                     }
+                    initState = VERIFIED;
                 }
             } finally {
                 getInitLock().unlock();
             }
+            checkErroneousLink();
         }
     }
 
@@ -682,7 +698,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
             for (ObjectKlass interf : getSuperInterfaces()) {
                 interf.verify();
             }
-            if (isMagicAccessor()) {
+            if (meta.sun_reflect_MagicAccessorImpl.isAssignableFrom(this)) {
                 /*
                  * Hotspot comment:
                  *
@@ -759,7 +775,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         return constructors.toArray(Method.EMPTY_ARRAY);
     }
 
-    public Method.MethodVersion[] getMirandaMethods() {
+    Method.MethodVersion[] getMirandaMethods() {
         return getKlassVersion().mirandaMethods;
     }
 
@@ -859,7 +875,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     public Klass nest() {
         if (nest == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            NestHostAttribute nestHost = getAttribute(NestHostAttribute.NAME, NestHostAttribute.class);
+            NestHostAttribute nestHost = (NestHostAttribute) getAttribute(NestHostAttribute.NAME);
             if (nestHost == null) {
                 nest = this;
             } else {
@@ -895,7 +911,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
 
     @Override
     public boolean nestMembersCheck(Klass k) {
-        NestMembersAttribute nestMembers = getAttribute(NestMembersAttribute.NAME, NestMembersAttribute.class);
+        NestMembersAttribute nestMembers = (NestMembersAttribute) getAttribute(NestMembersAttribute.NAME);
         if (nestMembers == null) {
             return false;
         }
@@ -904,7 +920,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         }
         RuntimeConstantPool pool = getConstantPool();
         for (int index : nestMembers.getClasses()) {
-            if (k.getName().equals(pool.className(index))) {
+            if (k.getName().equals(pool.classAt(index).getName(pool))) {
                 return true;
             }
         }
@@ -912,7 +928,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     }
 
     public boolean isSealed() {
-        PermittedSubclassesAttribute permittedSubclasses = getAttribute(PermittedSubclassesAttribute.NAME, PermittedSubclassesAttribute.class);
+        PermittedSubclassesAttribute permittedSubclasses = (PermittedSubclassesAttribute) getAttribute(PermittedSubclassesAttribute.NAME);
         return permittedSubclasses != null && permittedSubclasses.getClasses().length > 0;
     }
 
@@ -921,7 +937,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         if (!getContext().getJavaVersion().java17OrLater()) {
             return true;
         }
-        PermittedSubclassesAttribute permittedSubclasses = getAttribute(PermittedSubclassesAttribute.NAME, PermittedSubclassesAttribute.class);
+        PermittedSubclassesAttribute permittedSubclasses = (PermittedSubclassesAttribute) getAttribute(PermittedSubclassesAttribute.NAME);
         if (permittedSubclasses == null) {
             return true;
         }
@@ -933,7 +949,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         }
         RuntimeConstantPool pool = getConstantPool();
         for (int index : permittedSubclasses.getClasses()) {
-            if (subKlass.getName().equals(pool.className(index))) {
+            if (subKlass.getName().equals(pool.classAt(index).getName(pool))) {
                 // There should be no need to resolve: the previous checks guarantees it would
                 // resolve to k, but resolving here would cause circularity errors.
                 return true;
@@ -947,7 +963,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         if (this != nest()) {
             return nest().getNestMembers();
         }
-        NestMembersAttribute nestMembers = getAttribute(NestMembersAttribute.NAME, NestMembersAttribute.class);
+        NestMembersAttribute nestMembers = (NestMembersAttribute) getAttribute(NestMembersAttribute.NAME);
         if (nestMembers == null || nestMembers.getClasses().length == 0) {
             return new Klass[]{nest()};
         }
@@ -1004,7 +1020,8 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         }
     }
 
-    public Field lookupHiddenField(Symbol<Name> fieldName) {
+    public Field requireHiddenField(Symbol<Name> fieldName) {
+        // Hidden fields are (usually) located at the end of the field table.
         Field[] fTable = fieldTable;
         for (int i = fTable.length - 1; i >= 0; i--) {
             Field f = fTable[i];
@@ -1012,16 +1029,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
                 return f;
             }
         }
-        return null;
-    }
-
-    public Field requireHiddenField(Symbol<Name> fieldName) {
-        // Hidden fields are (usually) located at the end of the field table.
-        Field f = lookupHiddenField(fieldName);
-        if (f == null) {
-            throw EspressoError.shouldNotReachHere("Missing hidden field " + fieldName + " in " + this);
-        }
-        return f;
+        throw EspressoError.shouldNotReachHere("Missing hidden field " + fieldName + " in " + this);
     }
 
     public StaticObject requireEnumConstant(Symbol<Name> fieldName) {
@@ -1095,6 +1103,100 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         return -1;
     }
 
+    @TruffleBoundary
+    public Method resolveInterfaceMethod(Symbol<Name> methodName, Symbol<Signature> signature) {
+        assert isInterface();
+        /*
+         * 2. Otherwise, if C declares a method with the name and descriptor specified by the
+         * interface method reference, method lookup succeeds.
+         */
+        for (Method m : getDeclaredMethods()) {
+            if (methodName == m.getName() && signature == m.getRawSignature()) {
+                return m;
+            }
+        }
+        /*
+         * 3. Otherwise, if the class Object declares a method with the name and descriptor
+         * specified by the interface method reference, which has its ACC_PUBLIC flag set and does
+         * not have its ACC_STATIC flag set, method lookup succeeds.
+         */
+        assert getSuperKlass().getType() == Types.java_lang_Object;
+        Method m = getSuperKlass().lookupDeclaredMethod(methodName, signature);
+        if (m != null && m.isPublic() && !m.isStatic()) {
+            return m;
+        }
+
+        Method resolved = null;
+        /*
+         * Interfaces are sorted, superinterfaces first; traverse in reverse order to get
+         * maximally-specific first.
+         */
+        for (int i = getiKlassTable().length - 1; i >= 0; i--) {
+            ObjectKlass superInterf = getiKlassTable()[i].getKlass();
+            for (Method.MethodVersion superMVersion : superInterf.getInterfaceMethodsTable()) {
+                Method superM = superMVersion.getMethod();
+                /*
+                 * Methods in superInterf.getInterfaceMethodsTable() are all non-static non-private
+                 * methods declared in superInterf.
+                 */
+                if (methodName == superM.getName() && signature == superM.getRawSignature()) {
+                    if (resolved == null) {
+                        resolved = superM;
+                    } else {
+                        /*
+                         * 4. Otherwise, if the maximally-specific superinterface methods
+                         * (&sect;5.4.3.3) of C for the name and descriptor specified by the method
+                         * reference include exactly one method that does not have its ACC_ABSTRACT
+                         * flag set, then this method is chosen and method lookup succeeds.
+                         *
+                         * 5. Otherwise, if any superinterface of C declares a method with the name
+                         * and descriptor specified by the method reference that has neither its
+                         * ACC_PRIVATE flag nor its ACC_STATIC flag set, one of these is arbitrarily
+                         * chosen and method lookup succeeds.
+                         */
+                        resolved = Method.resolveMaximallySpecific(resolved, superM).getMethod();
+                        if (resolved.getITableIndex() == -1) {
+                            /*
+                             * Multiple maximally specific: this method has a poison pill.
+                             *
+                             * NOTE: Since java 9, we can invokespecial interface methods (ie: a
+                             * call directly to the resolved method, rather than after an interface
+                             * lookup). We are looking up a method taken from the implemented
+                             * interface (and not from a currently non-existing itable of the
+                             * implementing interface). This difference, and the possibility of
+                             * invokespecial, means that we cannot return the looked up method
+                             * directly in case of multiple maximally specific method. thus, we
+                             * spawn a new proxy method, attached to no method table, just to fail
+                             * if invokespecial.
+                             */
+                            assert (resolved.identity() == superM.identity());
+                            resolved.setITableIndex(superM.getITableIndex());
+                        }
+                    }
+                }
+            }
+        }
+        return resolved;
+    }
+
+    @Override
+    public Method lookupMethod(Symbol<Name> methodName, Symbol<Signature> signature, LookupMode lookupMode) {
+        KLASS_LOOKUP_METHOD_COUNT.inc();
+        Method method = lookupDeclaredMethod(methodName, signature, lookupMode);
+        if (method == null) {
+            // Implicit interface methods.
+            method = lookupMirandas(methodName, signature);
+        }
+        if (method == null && isSignaturePolymorphicHolderType(getType())) {
+            method = lookupPolysigMethod(methodName, signature, lookupMode);
+        }
+        if (method == null && getSuperKlass() != null) {
+            CompilerAsserts.partialEvaluationConstant(this);
+            method = getSuperKlass().lookupMethod(methodName, signature, lookupMode);
+        }
+        return method;
+    }
+
     public Field[] getFieldTable() {
         if (!getContext().advancedRedefinitionEnabled()) {
             return fieldTable;
@@ -1139,6 +1241,19 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         }
     }
 
+    private Method lookupMirandas(Symbol<Name> methodName, Symbol<Signature> signature) {
+        if (getMirandaMethods() == null) {
+            return null;
+        }
+        for (Method.MethodVersion miranda : getMirandaMethods()) {
+            Method method = miranda.getMethod();
+            if (method.getName() == methodName && method.getRawSignature() == signature) {
+                return method;
+            }
+        }
+        return null;
+    }
+
     void print(PrintStream out) {
         out.println(getType());
         for (Method m : getDeclaredMethods()) {
@@ -1157,10 +1272,9 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         ArrayList<Symbol<Name>> result = new ArrayList<>();
         InnerClassesAttribute innerClasses = getKlassVersion().innerClasses;
         if (innerClasses != null) {
-            for (int i = 0; i < innerClasses.entryCount(); i++) {
-                InnerClassesAttribute.Entry entry = innerClasses.entryAt(i);
+            for (InnerClassesAttribute.Entry entry : innerClasses.entries()) {
                 if (entry.innerClassIndex != 0) {
-                    result.add(getConstantPool().className(entry.innerClassIndex));
+                    result.add(getConstantPool().classAt(entry.innerClassIndex).getName(getConstantPool()));
                 }
             }
         }
@@ -1232,17 +1346,17 @@ public final class ObjectKlass extends Klass implements AttributedElement {
     }
 
     public boolean isRecord() {
-        return isFinalFlagSet() && getSuperKlass() == getMeta().java_lang_Record && getAttribute(RecordAttribute.NAME, RecordAttribute.class) != null;
+        return isFinalFlagSet() && getSuperKlass() == getMeta().java_lang_Record && getAttribute(RecordAttribute.NAME) != null;
     }
 
     @Override
     public String getGenericTypeAsString() {
         if (genericSignature == null) {
-            SignatureAttribute attr = getAttribute(SignatureAttribute.NAME, SignatureAttribute.class);
+            SignatureAttribute attr = (SignatureAttribute) getLinkedKlass().getAttribute(SignatureAttribute.NAME);
             if (attr == null) {
                 genericSignature = ""; // if no generics, the generic signature is empty
             } else {
-                genericSignature = getConstantPool().utf8At(attr.getSignatureIndex(), "generic signature").toString();
+                genericSignature = getConstantPool().symbolAtUnsafe(attr.getSignatureIndex()).toString();
             }
         }
         return genericSignature;
@@ -1260,7 +1374,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
 
     @Override
     public String getSourceDebugExtension() {
-        SourceDebugExtensionAttribute attribute = getAttribute(SourceDebugExtensionAttribute.NAME, SourceDebugExtensionAttribute.class);
+        SourceDebugExtensionAttribute attribute = (SourceDebugExtensionAttribute) getAttribute(SourceDebugExtensionAttribute.NAME);
         return attribute != null ? attribute.getDebugExtension() : null;
     }
 
@@ -1366,12 +1480,6 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         getContext().getClassHierarchyOracle().registerNewKlassVersion(klassVersion);
 
         incrementKlassRedefinitionCount();
-        // Update the class modifiers in the guest for jdk 25+,
-        // but only call out to the guest if they have changed.
-        if (getContext().getJavaVersion().java25OrLater() && oldVersion.getClassModifiers() != klassVersion.getClassModifiers()) {
-            // update the guest value class modifiers
-            getMeta().java_lang_Class_modifiers.setChar(mirror(), (char) klassVersion.getClassModifiers());
-        }
         oldVersion.assumption.invalidate();
     }
 
@@ -1419,7 +1527,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
 
     // used by some plugins during klass redefinition
     public void reRunClinit() {
-        getClassInitializer().invokeDirectStatic();
+        getClassInitializer().getCallTarget().call();
     }
 
     private static void checkCopyMethods(KlassVersion klassVersion, Method method, Method.MethodVersion[][] table, Method.SharedRedefinitionContent content) {
@@ -1552,7 +1660,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         return size;
     }
 
-    public final class KlassVersion implements AttributedElement {
+    public final class KlassVersion {
         final Assumption assumption;
         final RuntimeConstantPool pool;
         final LinkedKlass linkedKlass;
@@ -1581,13 +1689,13 @@ public final class ObjectKlass extends Klass implements AttributedElement {
             this.pool = pool;
             this.linkedKlass = linkedKlass;
             this.modifiers = linkedKlass.getFlags();
-            this.innerClasses = getAttribute(InnerClassesAttribute.NAME, InnerClassesAttribute.class);
+            this.innerClasses = (InnerClassesAttribute) linkedKlass.getAttribute(InnerClassesAttribute.NAME);
 
-            ParserMethod[] parserMethods = linkedKlass.getParserKlass().getMethods();
+            LinkedMethod[] linkedMethods = linkedKlass.getLinkedMethods();
 
-            Method.MethodVersion[] methods = new Method.MethodVersion[parserMethods.length];
-            for (int i = 0; i < parserMethods.length; i++) {
-                methods[i] = new Method(this, parserMethods[i], pool).getMethodVersion();
+            Method.MethodVersion[] methods = new Method.MethodVersion[linkedMethods.length];
+            for (int i = 0; i < linkedMethods.length; i++) {
+                methods[i] = new Method(this, linkedMethods[i], pool).getMethodVersion();
             }
 
             // Package initialization must be done before vtable creation,
@@ -1624,7 +1732,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
             this.pool = pool;
             this.linkedKlass = linkedKlass;
             this.modifiers = linkedKlass.getFlags();
-            this.innerClasses = getAttribute(InnerClassesAttribute.NAME, InnerClassesAttribute.class);
+            this.innerClasses = (InnerClassesAttribute) linkedKlass.getAttribute(InnerClassesAttribute.NAME);
 
             DetectedChange change = packet.detectedChange;
             this.superKlass = change.getSuperKlass();
@@ -1641,18 +1749,19 @@ public final class ObjectKlass extends Klass implements AttributedElement {
             boolean virtualMethodsModified = false;
 
             for (Method.MethodVersion removedMethod : removedMethods) {
-                virtualMethodsModified |= isVirtual(removedMethod.getParserMethod());
-                ParserMethod parserMethod = removedMethod.getParserMethod();
+                virtualMethodsModified |= isVirtual(removedMethod.getLinkedMethod().getParserMethod());
+                ParserMethod parserMethod = removedMethod.getLinkedMethod().getParserMethod();
                 if (invalidatedClasses != null) {
                     checkSuperMethods(superKlass, parserMethod.getFlags(), parserMethod.getName(), parserMethod.getSignature(), invalidatedClasses);
                 }
                 removedMethod.getMethod().removedByRedefinition();
                 ClassRedefinition.LOGGER.fine(
-                                () -> "Removed method " + removedMethod.getMethod().getDeclaringKlass().getName() + "." + removedMethod.getParserMethod().getName());
+                                () -> "Removed method " + removedMethod.getMethod().getDeclaringKlass().getName() + "." + removedMethod.getLinkedMethod().getName());
             }
 
             for (ParserMethod addedMethod : addedMethods) {
-                Method.MethodVersion added = new Method(this, addedMethod, pool).getMethodVersion();
+                LinkedMethod linkedMethod = new LinkedMethod(addedMethod);
+                Method.MethodVersion added = new Method(this, linkedMethod, pool).getMethodVersion();
                 newDeclaredMethods.addLast(added);
                 virtualMethodsModified |= isVirtual(addedMethod);
                 if (invalidatedClasses != null) {
@@ -1792,6 +1901,10 @@ public final class ObjectKlass extends Klass implements AttributedElement {
             return implementor;
         }
 
+        Object getAttribute(Symbol<Name> attrName) {
+            return linkedKlass.getAttribute(attrName);
+        }
+
         ConstantPool getConstantPool() {
             return pool;
         }
@@ -1825,10 +1938,9 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         private int computeModifiers() {
             int flags = modifiers;
             if (innerClasses != null) {
-                for (int i = 0; i < innerClasses.entryCount(); i++) {
-                    InnerClassesAttribute.Entry entry = innerClasses.entryAt(i);
+                for (InnerClassesAttribute.Entry entry : innerClasses.entries()) {
                     if (entry.innerClassIndex != 0) {
-                        Symbol<Name> innerClassName = getConstantPool().className(entry.innerClassIndex);
+                        Symbol<Name> innerClassName = getConstantPool().classAt(entry.innerClassIndex).getName(getConstantPool());
                         if (innerClassName.equals(getName())) {
                             flags = entry.innerClassAccessFlags;
                             break;
@@ -1889,7 +2001,7 @@ public final class ObjectKlass extends Klass implements AttributedElement {
         }
 
         public String getSourceFile() {
-            SourceFileAttribute sfa = getAttribute(SourceFileAttribute.NAME, SourceFileAttribute.class);
+            SourceFileAttribute sfa = (SourceFileAttribute) getAttribute(Names.SourceFile);
             if (sfa == null) {
                 return null;
             }
@@ -1901,11 +2013,6 @@ public final class ObjectKlass extends Klass implements AttributedElement {
                 source = getContext().findOrCreateSource(ObjectKlass.this);
             }
             return source;
-        }
-
-        @Override
-        public Attribute[] getAttributes() {
-            return linkedKlass.getParserKlass().getAttributes();
         }
 
         @Override

@@ -35,10 +35,6 @@ import com.oracle.svm.core.c.function.CEntryPointOptions;
 import com.oracle.svm.core.code.CodeInfo;
 import com.oracle.svm.core.code.RuntimeCodeInfoAccess;
 import com.oracle.svm.core.deopt.SubstrateInstalledCode;
-import com.oracle.svm.core.graal.isolated.ClientHandle;
-import com.oracle.svm.core.graal.isolated.ClientIsolateThread;
-import com.oracle.svm.core.graal.isolated.IsolatedCompileClient;
-import com.oracle.svm.core.graal.isolated.IsolatedCompileContext;
 import com.oracle.svm.core.graal.meta.SharedRuntimeMethod;
 import com.oracle.svm.core.memory.NativeMemory;
 import com.oracle.svm.core.meta.SharedMethod;
@@ -106,6 +102,7 @@ public final class IsolatedRuntimeCodeInstaller extends RuntimeCodeInstaller {
         return installMethodCodeInClientIsolate(installInfo, installedCodeFactoryHandle, method);
     }
 
+    @SuppressWarnings("try")
     private CodeInstallInfo doPrepareInstall() {
         IsolatedReferenceAdjuster adjuster = new IsolatedReferenceAdjuster();
 

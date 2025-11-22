@@ -796,9 +796,13 @@ public abstract class Source {
     }
 
     private URI getNamedURI(String name, byte[] bytes) {
+        return getNamedURI(name, bytes, 0, bytes.length);
+    }
+
+    private URI getNamedURI(String name, byte[] bytes, int byteIndex, int length) {
         String digest;
         if (bytes != null) {
-            digest = digest(bytes, 0, bytes.length);
+            digest = digest(bytes, byteIndex, length);
         } else {
             digest = Integer.toString(System.identityHashCode(this), 16);
         }

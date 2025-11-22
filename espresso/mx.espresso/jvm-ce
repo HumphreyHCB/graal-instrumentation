@@ -1,6 +1,6 @@
-# /vm,/substratevm,/tools,/regex with CE components, with libgraal, doesn't build native standalone
-DYNAMIC_IMPORTS=/vm,/substratevm,/tools,/regex
-COMPONENTS=cmp,gvm,lg,ni,nic,nil,sdkni,svm,svmjdwp,svmt,svmsl,tflc,tflsm
+# mx --dynamicimports=/vm,/substratevm --components="Espresso Launcher,LibGraal,SubstrateVM,suite:tools" --native-images=lib:jvmcicompiler --disable-installables=true graalvm-show
+
+DYNAMIC_IMPORTS=/vm,/substratevm,/regex
+COMPONENTS=Espresso Launcher,LibGraal,SubstrateVM,suite:tools,tflm,rgx
 NATIVE_IMAGES=lib:jvmcicompiler
-NON_REBUILDABLE_IMAGES=lib:jvmcicompiler
-JVM_STANDALONE_WITH_LLVM=false
+DISABLE_INSTALLABLES=true

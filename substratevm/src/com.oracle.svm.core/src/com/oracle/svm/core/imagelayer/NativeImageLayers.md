@@ -93,11 +93,10 @@ In the future we will eventually provide a solution to refine the resource inclu
 
 ##### `--layer-create` suboption `package=<package-name>`
 
-Suboption `package` allows the inclusion of individual Java packages. For this kind of inclusion it does not matter if the specified package is from a classpath entry or part of a module, both are supported.
+Suboption `package` allows the inclusion of individual Java packages. For this kind of inclusion it does not matter if the specified package is from a classpath-entry or part of a module, both are supported.
 Contrary to the `module` suboption, resources are not also automatically included. If resource inclusion is needed, the usual ways can be used (`resource-config.json`, `reachability-metadata.json` or resource related Feature API).
-When a given package name ends with `.*`, all packages that share the same package-prefix are registered for inclusion. E.g. `package=io.netty.*` registers all packages that start with `io.netty` for inclusion.
 
-##### `--layer-create` suboption `path=<classpath-entry>`
+##### `--layer-create` suboption `path=<classpath entry>`
 
 This is a convenience suboption that requires a `classpath entry`.
 If the provided entry is not also specified in the classpath of the given `native-image` invocation, an error message is shown.
@@ -116,8 +115,6 @@ Args = --layer-create=@layer-create.args
 The `layer-create.args` file-path is relative to the directory that contains the `native-image.properties` file and might look like this:
 ```
 base-layer.nil
-# ignore this classpath/modulepath entry during layer compatibility checks
-digest-ignore
 module=java.base
 # micronaut and dependencies
 package=io.micronaut.*
@@ -131,13 +128,6 @@ package=org.reactivestreams.*
 ```
 Each line corresponds to one entry in the list of comma-separated entries that can usually be found in a regular `--layer-create` argument.
 Lines starting with `#` are ignored and can therefore be used to provide comments in such an option argument file.
-
-Note the use of the `digest-ignore` suboption in the `layer-create.args` example file above.
-This suboption _only takes effect_ when the `--layer-create` option is specified _within a file_, and is ignored if provided via the command line.
-When defining `--layer-create` in a file, always include this suboption (see [compatibility rules](#compatibility-rules)).
-
-Avoid placing other class or resource files in the same classpath/modulepath entry as the file(s) defining `--layer-create`.
-These files would be excluded from compatibility checks, potentially leading to subtle, difficult-to-debug issues.
 
 ### Option `--layer-use` consumes a shared layer, and can extend it or create a final executable:
 
@@ -196,40 +186,11 @@ native-image --module-path target/AwesomeLib-1.0-SNAPSHOT.jar --shared
 3. The layer specified by `--layer-use` must be compatible with the standalone command line.
    The compatibility rules refer to:
     - class/jar file compatibility (`-cp`, `-p`, same JDK, same GraalVM, same libs, etc.)
-    - config compatibility: image builder options (e.g. GC config), etc.
+    - config compatibility: GC config, etc.
     - Java system properties and Environment variables compatibility
     - access compatibility: no additional unsafe and field accesses are allowed
 
    In case of incompatibility an error message is printed and the build process is aborted.
-   More information about compatibility checking can be found [below](#compatibility-rules)
-
-### Compatibility rules
-
-Layer build compatibility checks are performed to ensure the consistency of _image builder arguments_ and _classpath/modulepath entries_.
-These will be covered in the following subsections.
-
-#### Image builder arguments compatibility
-
-The list below gives a few examples of checks that are already implemented.
-
-- Module system options `--add-exports`, `--add-opens`, `--add-reads` that were passed in the previous image build also need to be passed in the current image build.
-  Note that additional module system options not found in the previous image build are allowed to be used in the current image build.
-- Builder options of the form `-H:NeverInline=<pattern>` follow the same logic as the module system options above.
-- If debug option `-g` was passed in the previous image build it must also be passed in the current image build at the same position.
-- Other options like `-H:EntryPointNamePrefix=...`, `-H:APIFunctionPrefix=...`, ... follow the same logic as the `-g` option.
-- Environment variables provided using `-E` to the previous image build must be passed to the current image build, with their values remaining unchanged. Additional environment variables may be supplied to the current build if needed.
-
-#### Classpath & modulepath compatibility
-
-The classpath/modulepath entries used in the previous image layer build must also be included in the current image layer build.
-These entries must retain the same content. If any of the shared entries are modified (.e.g, updated jar files), the previous image layer must be rebuilt with the updated versions.
-
-For example, assume the previous layer build used the classpath: `/path/to/foo.jar:/path/to/bar.jar`.
-Then the current layer build must include both `/path/to/foo.jar` and `/path/to/bar.jar`, possibly alongside additional entries: `path/to/foo.jar:/path/to/bar.jar:/path/to/extra.jar`.
-Additionally, the contents of `foo.jar` and `bar.jar` should remain unchanged between the two builds.
-
-**Exception**: Classpath or modulepath entries that include a `native-image.properties` file specifying the `--layer-create` option with the `digest-ignore` suboption are exempt from this rule.
-These entries should be _excluded_ from subsequent layer builds.
 
 ### Limitations
 
@@ -240,31 +201,19 @@ These entries should be _excluded_ from subsequent layer builds.
 - A shared layer is using the _.so_ extension to conform with the standard OS loader restrictions. However, it is not a
   standard shared library file, and it cannot be used with other applications.
 
-### Class Initialization
-
-With Native Image Layers class initialization needs to be coherent between layers.
-To achieve this we enforce that the initialization state of types in shared layers stays exactly the same in the
-subsequent dependent layers.
-More concretely if a class `A` is initialized at build time in a base layer, then it will be automatically
-initialized at build time in the extension layers. The same holds for run time initialization.
-In the future we plan to relax this restriction and allow run-time initialized types in base layers to be promoted
-into build-time initialized types in the extension layers.
-
 ## Packaging Native Image Layers
 
 At build time a shared layer is stored in a layer archive that contains the following artifacts:
 
 ```shell
 [shared-layer.nil]                   # shared layer archive file
-  ├── shared-layer.lsb               # snapshot of the shared layer metadata; used by subsequent build processes
-  ├── shared-layer.big               # serialized shared layer compiler graphs; used by subsequent build processes
+  ├── shared-layer.json              # snapshot of the shared layer metadata; used by subsequent build processes
   ├── shared-layer.so                # shared object of the shared layer; used by subsequent build processes and at run time
   └── shared-layer.properties        # contains info about layer input data
 ```
 
 The layer snapshot file will be consumed by subsequent build processes that depend on this layer.
 It contains Native Image metadata, such as the analysis universe and available image singletons.
-Sharing compiler graphs between layers enables cross-layer optimizations such as inlining.
 The shared object file will be used at build time for symbol resolution, and at run time for application execution.
 The layer properties file contains metadata that uniquely identifies this layer: the options used to create the
 layer, all the input files and their checksum.

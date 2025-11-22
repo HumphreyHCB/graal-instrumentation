@@ -77,13 +77,16 @@ public final class CAnnotationProcessorCache {
             @Override
             public Boolean getValueOrDefault(UnmodifiableEconomicMap<OptionKey<?>, Object> values) {
                 if (!values.containsKey(this)) {
-                    /*
-                     * If the user hasn't specified this option, we should determine an optimal
-                     * value automatically. If query code generation isn't explicitly requested, and
-                     * we are running cross-arch build, CAP cache is required (since we cannot run
-                     * any query code).
-                     */
-                    return !ExitAfterQueryCodeGeneration.getValue() && !ImageSingletons.lookup(Platform.class).getArchitecture().equals(SubstrateUtil.getArchitectureName());
+                    // If user hasn't specified this option, we should determine optimal default
+                    // value.
+                    if (!ExitAfterQueryCodeGeneration.getValue() && !ImageSingletons.lookup(Platform.class).getArchitecture().equals(SubstrateUtil.getArchitectureName())) {
+                        // If query code generation isn't explicitly requested, and we are running
+                        // cross-arch build, CAP cache should be required (since we cannot run query
+                        // code).
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
                 return (Boolean) values.get(this);
             }
@@ -115,6 +118,7 @@ public final class CAnnotationProcessorCache {
     }
 
     private File cache;
+    private File query;
 
     public CAnnotationProcessorCache() {
         if ((Options.UseCAPCache.getValue() || Options.NewCAPCache.getValue())) {
@@ -141,7 +145,7 @@ public final class CAnnotationProcessorCache {
 
         if (Options.QueryCodeDir.hasBeenSet()) {
             Path queryPath = FileSystems.getDefault().getPath(Options.QueryCodeDir.getValue()).toAbsolutePath();
-            File query = queryPath.toFile();
+            query = queryPath.toFile();
             if (!query.exists()) {
                 try {
                     query = Files.createDirectories(queryPath).toFile();
@@ -184,15 +188,16 @@ public final class CAnnotationProcessorCache {
                 writer.write(line);
                 writer.write(Character.LINE_SEPARATOR);
             }
+            return;
         } catch (IOException e) {
-            throw shouldNotReachHere("Invalid CAnnotation Processor Cache item:" + cachedItem);
+            throw shouldNotReachHere("Invalid CAnnotation Processor Cache item:" + cachedItem.toString());
         }
     }
 
     private void clearCache() {
         try {
             final Path cachePath = cache.toPath();
-            Files.walkFileTree(cachePath, new SimpleFileVisitor<>() {
+            Files.walkFileTree(cachePath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     assert file.toString().endsWith(FILE_EXTENSION);

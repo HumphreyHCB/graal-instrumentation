@@ -26,11 +26,12 @@ package com.oracle.svm.hosted.annotation;
 
 import static com.oracle.svm.core.util.VMError.intentionallyUnimplemented;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 
 import com.oracle.graal.pointsto.infrastructure.GraphProvider;
-import com.oracle.svm.util.AnnotatedWrapper;
-import com.oracle.svm.util.OriginalMethodProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.ConstantPool;
@@ -43,10 +44,8 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
-import jdk.vm.ci.meta.annotation.Annotated;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-public abstract class CustomSubstitutionMethod implements ResolvedJavaMethod, GraphProvider, OriginalMethodProvider, AnnotationWrapper, AnnotatedWrapper {
+public abstract class CustomSubstitutionMethod implements ResolvedJavaMethod, GraphProvider, OriginalMethodProvider, AnnotationWrapper {
 
     protected final ResolvedJavaMethod original;
 
@@ -171,11 +170,6 @@ public abstract class CustomSubstitutionMethod implements ResolvedJavaMethod, Gr
     }
 
     @Override
-    public boolean isDeclared() {
-        return original.isDeclared();
-    }
-
-    @Override
     public boolean isClassInitializer() {
         return original.isClassInitializer();
     }
@@ -219,13 +213,18 @@ public abstract class CustomSubstitutionMethod implements ResolvedJavaMethod, Gr
     }
 
     @Override
-    public Annotated getWrappedAnnotated() {
+    public AnnotatedElement getAnnotationRoot() {
         return original;
     }
 
     @Override
     public Parameter[] getParameters() {
         return original.getParameters();
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
+        return original.getParameterAnnotations();
     }
 
     @Override
@@ -270,16 +269,6 @@ public abstract class CustomSubstitutionMethod implements ResolvedJavaMethod, Gr
 
     @Override
     public SpeculationLog getSpeculationLog() {
-        throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
-        throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
         throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 }

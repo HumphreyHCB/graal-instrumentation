@@ -56,11 +56,8 @@ int collatz(int n) {
 
 int number = 127;
 
-int test() {
+int main() {
   printf("%d\n", collatz(number));
   return 0;
 }
 
-int main() {
-  return test();
-}

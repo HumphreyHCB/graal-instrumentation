@@ -63,11 +63,10 @@ import java.util.stream.Collectors;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport;
 
-import com.oracle.graal.pointsto.ObjectScanner.OtherReason;
-import com.oracle.graal.pointsto.ObjectScanner.ScanReason;
+import com.oracle.graal.pointsto.ObjectScanner;
 import com.oracle.svm.core.ClassLoaderSupport;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
@@ -82,8 +81,6 @@ import com.oracle.svm.core.option.AccumulatingLocatableMultiOptionValue;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.FeatureImpl;
-import com.oracle.svm.hosted.FeatureImpl.AfterRegistrationAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
 import com.oracle.svm.hosted.ImageClassLoader;
@@ -96,6 +93,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionStability;
 import jdk.graal.compiler.options.OptionType;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.internal.access.SharedSecrets;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -106,7 +104,6 @@ import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.ResourceBundleBasedAdapter;
 import sun.util.resources.LocaleData;
 import sun.util.resources.ParallelListResourceBundle;
-import sun.util.spi.CalendarProvider;
 
 /**
  * LocalizationFeature is the core class of SVM localization support. It contains all the options
@@ -285,7 +282,6 @@ public class LocalizationFeature implements InternalFeature {
              */
             addProviders();
         }
-        this.imageClassLoader = ((AfterRegistrationAccessImpl) access).getImageClassLoader();
     }
 
     @Override
@@ -296,14 +292,23 @@ public class LocalizationFeature implements InternalFeature {
         }
         langAliasesCacheField = access.findField(CLDRLocaleProviderAdapter.class, "langAliasesCache");
         parentLocalesMapField = access.findField(CLDRLocaleProviderAdapter.class, "parentLocalesMap");
-        baseLocaleCacheField = access.findField("sun.util.locale.BaseLocale$1InterningCache", "CACHE");
-        localeCacheField = access.findField("java.util.Locale$LocaleCache", "LOCALE_CACHE");
-        localeObjectCacheMapField = null;
+
+        if (JavaVersionUtil.JAVA_SPEC >= 23) {
+            baseLocaleCacheField = access.findField("sun.util.locale.BaseLocale$1InterningCache", "CACHE");
+            localeCacheField = access.findField("java.util.Locale$LocaleCache", "LOCALE_CACHE");
+            localeObjectCacheMapField = null;
+        } else {
+            baseLocaleCacheField = access.findField("sun.util.locale.BaseLocale$Cache", "CACHE");
+            localeCacheField = access.findField("java.util.Locale$Cache", "LOCALECACHE");
+            localeObjectCacheMapField = access.findField("sun.util.locale.LocaleObjectCache", "map");
+        }
         candidatesCacheField = access.findField("java.util.ResourceBundle$Control", "CANDIDATES_CACHE");
 
         String reason = "All ResourceBundleControlProvider that are registered as services end up as objects in the image heap, and are therefore registered to be initialized at image build time";
         ServiceLoader.load(ResourceBundleControlProvider.class).stream()
                         .forEach(provider -> ImageSingletons.lookup(RuntimeClassInitializationSupport.class).initializeAtBuildTime(provider.type(), reason));
+
+        this.imageClassLoader = access.getImageClassLoader();
     }
 
     /**
@@ -315,7 +320,7 @@ public class LocalizationFeature implements InternalFeature {
      * {@link ResourceBundle} object in the heap, and we eagerly initialize it.
      */
     @SuppressWarnings("unused")
-    private void eagerlyInitializeBundles(DuringAnalysisAccess access, ResourceBundle bundle, ScanReason reason) {
+    private void eagerlyInitializeBundles(DuringAnalysisAccess access, ResourceBundle bundle, ObjectScanner.ScanReason reason) {
         assert optimizedMode : "Should only be triggered in the optimized mode.";
         try {
             /*
@@ -342,30 +347,22 @@ public class LocalizationFeature implements InternalFeature {
     }
 
     @Override
-    public void beforeAnalysis(BeforeAnalysisAccess a) {
+    public void beforeAnalysis(BeforeAnalysisAccess access) {
         addResourceBundles();
-        var access = (FeatureImpl.BeforeAnalysisAccessImpl) a;
-        /*
-         * Static @Stable fields initialized in static initializers of build-time initialized
-         * classes.
-         */
-        access.allowStableFieldFoldingBeforeAnalysis(access.findField("sun.util.locale.BaseLocale", "constantBaseLocales"));
-        access.allowStableFieldFoldingBeforeAnalysis(access.findField("java.lang.CharacterDataLatin1", "sharpsMap"));
     }
 
     @Override
     public void duringAnalysis(DuringAnalysisAccess a) {
         DuringAnalysisAccessImpl access = (DuringAnalysisAccessImpl) a;
-        ScanReason reason = new OtherReason("Manual rescan triggered during analysis from " + LocalizationFeature.class);
-        scanLocaleCache(access, baseLocaleCacheField, reason);
-        scanLocaleCache(access, localeCacheField, reason);
-        scanLocaleCache(access, candidatesCacheField, reason);
-        access.rescanRoot(langAliasesCacheField, reason);
-        access.rescanRoot(parentLocalesMapField, reason);
+        scanLocaleCache(access, baseLocaleCacheField);
+        scanLocaleCache(access, localeCacheField);
+        scanLocaleCache(access, candidatesCacheField);
+        access.rescanRoot(langAliasesCacheField);
+        access.rescanRoot(parentLocalesMapField);
     }
 
-    private void scanLocaleCache(DuringAnalysisAccessImpl access, Field cacheFieldField, ScanReason reason) {
-        access.rescanRoot(cacheFieldField, reason);
+    private void scanLocaleCache(DuringAnalysisAccessImpl access, Field cacheFieldField) {
+        access.rescanRoot(cacheFieldField);
 
         Object localeCache;
         try {
@@ -374,7 +371,7 @@ public class LocalizationFeature implements InternalFeature {
             throw VMError.shouldNotReachHere(ex);
         }
         if (localeCache != null && localeObjectCacheMapField != null) {
-            access.rescanField(localeCache, localeObjectCacheMapField, reason);
+            access.rescanField(localeCache, localeObjectCacheMapField);
         }
     }
 
@@ -456,8 +453,7 @@ public class LocalizationFeature implements InternalFeature {
                     TimeZoneNameProvider.class,
                     JavaTimeDateTimePatternProvider.class,
                     CalendarDataProvider.class,
-                    CalendarNameProvider.class,
-                    CalendarProvider.class);
+                    CalendarNameProvider.class);
 
     @Platforms(Platform.HOSTED_ONLY.class)
     private void addProviders() {
@@ -516,7 +512,7 @@ public class LocalizationFeature implements InternalFeature {
                                          * Locale data bundle class names do not contain underscores
                                          */
                                         String baseName = e.getClassName().split("_")[0];
-                                        prepareNegativeBundle(AccessCondition.unconditional(), baseName, locale, true);
+                                        prepareNegativeBundle(ConfigurationCondition.alwaysTrue(), baseName, locale, true);
                                         continue; /* No bundle for this `locale`. */
                                     }
                                     if (bundle instanceof ParallelListResourceBundle) {
@@ -533,14 +529,14 @@ public class LocalizationFeature implements InternalFeature {
              * No eager loading of bundle content, so we need to include the
              * `sun.text.resources.FormatData` bundle supplement as well.
              */
-            prepareBundle(AccessCondition.unconditional(), "sun.text.resources.JavaTimeSupplementary");
+            prepareBundle(ConfigurationCondition.alwaysTrue(), "sun.text.resources.JavaTimeSupplementary");
         }
 
         final String[] alwaysRegisteredResourceBundles = new String[]{
                         "sun.util.logging.resources.logging"
         };
         for (String bundleName : alwaysRegisteredResourceBundles) {
-            prepareBundle(AccessCondition.unconditional(), bundleName);
+            prepareBundle(ConfigurationCondition.alwaysTrue(), bundleName);
         }
 
         for (String bundleName : Options.IncludeResourceBundles.getValue().values()) {
@@ -557,13 +553,13 @@ public class LocalizationFeature implements InternalFeature {
             if (locale != null) {
                 /* Get rid of locale specific suffix. */
                 String baseName = input.substring(0, splitIndex);
-                prepareBundle(AccessCondition.unconditional(), baseName, Collections.singletonList(locale));
+                prepareBundle(ConfigurationCondition.alwaysTrue(), baseName, Collections.singletonList(locale));
                 return;
             } else {
                 trace("Cannot parse wanted locale " + input.substring(splitIndex + 1) + ", default will be used instead.");
             }
         }
-        prepareBundle(AccessCondition.unconditional(), input, allLocales);
+        prepareBundle(ConfigurationCondition.alwaysTrue(), input, allLocales);
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
@@ -580,7 +576,7 @@ public class LocalizationFeature implements InternalFeature {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public void prepareBundle(AccessCondition condition, String baseName) {
+    public void prepareBundle(ConfigurationCondition condition, String baseName) {
         prepareBundle(condition, baseName, allLocales);
     }
 
@@ -592,7 +588,7 @@ public class LocalizationFeature implements InternalFeature {
     };
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public void prepareBundle(AccessCondition condition, String baseName, Collection<Locale> wantedLocales) {
+    public void prepareBundle(ConfigurationCondition condition, String baseName, Collection<Locale> wantedLocales) {
         prepareBundleInternal(condition, baseName, wantedLocales);
 
         String alternativeBundleName = null;
@@ -607,7 +603,7 @@ public class LocalizationFeature implements InternalFeature {
         }
     }
 
-    private void prepareBundleInternal(AccessCondition condition, String baseName, Collection<Locale> wantedLocales) {
+    private void prepareBundleInternal(ConfigurationCondition condition, String baseName, Collection<Locale> wantedLocales) {
         boolean somethingFound = false;
         for (Locale locale : wantedLocales) {
             support.registerBundleLookup(condition, baseName);
@@ -664,7 +660,7 @@ public class LocalizationFeature implements InternalFeature {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    protected void prepareNegativeBundle(AccessCondition condition, String baseName, Locale locale, boolean jdkBundle) {
+    protected void prepareNegativeBundle(ConfigurationCondition condition, String baseName, Locale locale, boolean jdkBundle) {
         support.registerBundleLookup(condition, baseName);
         support.registerRequiredReflectionAndResourcesForBundleAndLocale(baseName, locale, jdkBundle);
     }
@@ -672,11 +668,11 @@ public class LocalizationFeature implements InternalFeature {
     @Platforms(Platform.HOSTED_ONLY.class)
     protected void prepareJDKBundle(ResourceBundle bundle, Locale locale) {
         String baseName = bundle.getBaseBundleName();
-        prepareBundle(AccessCondition.unconditional(), baseName, bundle, locale, true);
+        prepareBundle(ConfigurationCondition.alwaysTrue(), baseName, bundle, locale, true);
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    private void prepareBundle(AccessCondition condition, String bundleName, ResourceBundle bundle, Locale locale, boolean jdkBundle) {
+    private void prepareBundle(ConfigurationCondition condition, String bundleName, ResourceBundle bundle, Locale locale, boolean jdkBundle) {
         trace("Adding bundle " + bundleName + ", locale " + locale + " with condition " + condition);
         /*
          * Ensure that the bundle contents are loaded. We need to walk the whole bundle parent chain

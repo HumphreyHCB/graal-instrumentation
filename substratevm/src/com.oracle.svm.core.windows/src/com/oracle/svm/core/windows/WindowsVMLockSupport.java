@@ -26,6 +26,7 @@ package com.oracle.svm.core.windows;
 
 import static com.oracle.svm.core.heap.RestrictHeapAccess.Access.NO_ALLOCATION;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.LogHandler;
 import org.graalvm.nativeimage.Platform;
@@ -43,18 +44,11 @@ import com.oracle.svm.core.locks.VMSemaphore;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.stack.StackOverflowCheck;
 import com.oracle.svm.core.thread.VMThreads.SafepointBehavior;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Disallowed;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.windows.headers.Process;
 import com.oracle.svm.core.windows.headers.SynchAPI;
 import com.oracle.svm.core.windows.headers.WinBase;
 
-import jdk.graal.compiler.word.Word;
-
 @AutomaticallyRegisteredImageSingleton(VMLockSupport.class)
-@SingletonTraits(access = AllAccess.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Disallowed.class)
 public final class WindowsVMLockSupport extends VMLockSupport {
 
     @Override
@@ -84,7 +78,7 @@ public final class WindowsVMLockSupport extends VMLockSupport {
 
     @Uninterruptible(reason = "Error handling is interruptible.", calleeMustBe = false)
     @RestrictHeapAccess(access = NO_ALLOCATION, reason = "Must not allocate in fatal error handling.")
-    static void fatalError(String functionName) {
+    private static void fatalError(String functionName) {
         /*
          * Functions are called very early and late during our execution, so there is not much we
          * can do when they fail.
@@ -302,18 +296,14 @@ final class WindowsVMSemaphore extends VMSemaphore {
     @Override
     @Uninterruptible(reason = "The isolate teardown is in progress.")
     public int destroy() {
-        int result = WinBase.CloseHandle(hSemaphore);
+        int errorCode = WinBase.CloseHandle(hSemaphore);
         hSemaphore = Word.nullPointer();
-        return result != 0 ? 0 : 1;
+        return errorCode;
     }
 
     @Override
     public void await() {
-        int result = SynchAPI.WaitForSingleObject(hSemaphore, SynchAPI.INFINITE());
-        if (result != SynchAPI.WAIT_OBJECT_0()) {
-            assert result == SynchAPI.WAIT_FAILED() : result;
-            WindowsVMLockSupport.fatalError("WaitForSingleObject");
-        }
+        WindowsVMLockSupport.checkResult(SynchAPI.WaitForSingleObject(hSemaphore, SynchAPI.INFINITE()), "WaitForSingleObject");
     }
 
     @Override

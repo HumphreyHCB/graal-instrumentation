@@ -48,7 +48,6 @@ import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import com.oracle.truffle.api.impl.CheckMultiReleaseSupport;
 import com.oracle.truffle.api.impl.DefaultTruffleRuntime;
 
 /**
@@ -106,14 +105,6 @@ public final class Truffle {
     }
 
     private static TruffleRuntime createRuntime() throws InternalError {
-        if (!CheckMultiReleaseSupport.isSupported() && !Boolean.getBoolean("polyglotimpl.DisableMultiReleaseCheck")) {
-            throw new InternalError("Truffle could not be initialized because Multi-Release classes are not configured correctly. " +
-                            "This most likely means Truffle classes have been repackaged incorrectly and the `Multi-Release: true` attribute in META-INF/MANIFEST.MF has been lost. " +
-                            "A common cause of this error is invalid Uber JAR configuration. " +
-                            "For more information see: https://www.graalvm.org/latest/reference-manual/embed-languages/#uber-jar-file-creation. " +
-                            "This check may be disabled with '-Dpolyglotimpl.DisableMultiReleaseCheck=true'.");
-        }
-
         if (Boolean.getBoolean("truffle.UseFallbackRuntime")) {
             return new DefaultTruffleRuntime("The fallback runtime was explicitly selected using the -Dtruffle.UseFallbackRuntime option.");
         }
@@ -129,12 +120,8 @@ public final class Truffle {
                  * This path is taken if a truffle runtime class is directly specified. In such case
                  * we try to export JVMCI to the module of that class.
                  */
-                String errorMessage = maybeExportJVMCITo(runtimeClass);
-                if (errorMessage == null) {
-                    return (TruffleRuntime) runtimeClass.getDeclaredConstructor().newInstance();
-                } else {
-                    return new DefaultTruffleRuntime(errorMessage);
-                }
+                maybeExportJVMCITo(runtimeClass);
+                return (TruffleRuntime) runtimeClass.getDeclaredConstructor().newInstance();
             } catch (Throwable e) {
                 // Fail fast for other errors
                 throw new InternalError(e);
@@ -170,16 +157,16 @@ public final class Truffle {
         return new DefaultTruffleRuntime(reason);
     }
 
-    private static String maybeExportJVMCITo(Class<?> runtimeClass) throws ReflectiveOperationException {
+    private static void maybeExportJVMCITo(Class<?> runtimeClass) throws ReflectiveOperationException {
         Class<?> modulesSupport;
         try {
             modulesSupport = Class.forName("com.oracle.truffle.runtime.ModulesSupport");
         } catch (ClassNotFoundException e) {
             // we ignore if modules support is not available.
             // this typically means that the runtime not on the module-path
-            return null;
+            return;
         }
-        return (String) modulesSupport.getMethod("exportJVMCI", Class.class).invoke(null, runtimeClass);
+        modulesSupport.getMethod("exportJVMCI", Class.class).invoke(null, runtimeClass);
     }
 
     @SuppressWarnings("deprecation")

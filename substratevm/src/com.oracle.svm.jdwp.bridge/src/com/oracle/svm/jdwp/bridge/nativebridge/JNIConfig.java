@@ -200,16 +200,16 @@ public final class JNIConfig {
      */
     public static final class Builder {
 
-        private static final LongUnaryOperator ATTACH_UNSUPPORTED = _ -> {
+        private static final LongUnaryOperator ATTACH_UNSUPPORTED = (isolate) -> {
             throw new UnsupportedOperationException("Attach is not supported.");
         };
-        private static final LongUnaryOperator DETACH_UNSUPPORTED = _ -> {
+        private static final LongUnaryOperator DETACH_UNSUPPORTED = (isolateThread) -> {
             throw new UnsupportedOperationException("Detach is not supported.");
         };
-        private static final LongBinaryOperator SHUTDOWN_UNSUPPORTED = (_, _) -> {
+        private static final LongBinaryOperator SHUTDOWN_UNSUPPORTED = (isolate, isolateThread) -> {
             throw new UnsupportedOperationException("Isolate shutdown is not supported.");
         };
-        private static final LongBinaryOperator RELEASE_UNSUPPORTED = (_, _) -> {
+        private static final LongBinaryOperator RELEASE_UNSUPPORTED = (isolateThread, handle) -> {
             throw new UnsupportedOperationException("Native object clean up is not supported.");
         };
 
@@ -291,7 +291,7 @@ public final class JNIConfig {
 
         private static <T> void insert(Map<Class<? extends Annotation>, List<Pair<Class<?>, T>>> into, Class<?> type, Class<? extends Annotation> annotationType, T marshaller) {
             verifyAnnotation(annotationType);
-            List<Pair<Class<?>, T>> types = into.computeIfAbsent(annotationType, _ -> new LinkedList<>());
+            List<Pair<Class<?>, T>> types = into.computeIfAbsent(annotationType, (k) -> new LinkedList<>());
             Pair<Class<?>, T> toInsert = Pair.create(type, marshaller);
             boolean inserted = false;
             for (ListIterator<Pair<Class<?>, T>> it = types.listIterator(); it.hasNext();) {

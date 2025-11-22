@@ -42,7 +42,7 @@ public class OutputSlot extends Slot {
 
     @Override
     public Point getRelativePosition() {
-        int gap = getFigure().getWidth() - getFigure().getOutputSlotsWidth();
+        int gap = getFigure().getWidth() - Figure.getSlotsWidth(getFigure().getOutputSlots());
         if (gap < 0) {
             gap = 0;
         }

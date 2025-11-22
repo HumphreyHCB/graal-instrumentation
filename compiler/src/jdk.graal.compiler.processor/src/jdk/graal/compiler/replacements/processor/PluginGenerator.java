@@ -28,11 +28,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,7 +51,7 @@ public class PluginGenerator {
     private final Map<Element, List<GeneratedPlugin>> plugins;
 
     public PluginGenerator() {
-        this.plugins = new LinkedHashMap<>();
+        this.plugins = new HashMap<>();
     }
 
     public void addPlugin(GeneratedPlugin plugin) {
@@ -116,15 +114,10 @@ public class PluginGenerator {
      * Map from an architecture's name as it appears in a package name to its name returned by
      * {@code jdk.vm.ci.code.Architecture.getName()}.
      */
-    private static final Map<String, String> SUPPORTED_JVMCI_ARCHITECTURES;
-
-    static {
-        LinkedHashMap<String, String> supportedArchitectures = new LinkedHashMap<>();
-        supportedArchitectures.put("amd64", "AMD64");
-        supportedArchitectures.put("aarch64", "aarch64");
-        supportedArchitectures.put("riscv64", "riscv64");
-        SUPPORTED_JVMCI_ARCHITECTURES = Collections.unmodifiableMap(supportedArchitectures);
-    }
+    private static final Map<String, String> SUPPORTED_JVMCI_ARCHITECTURES = Map.of(
+                    "amd64", "AMD64",
+                    "aarch64", "aarch64",
+                    "riscv64", "riscv64");
 
     private static void createPluginFactory(AbstractProcessor processor, Element topLevelClass, List<GeneratedPlugin> plugins) {
         PackageElement pkg = (PackageElement) topLevelClass.getEnclosingElement();
@@ -167,7 +160,7 @@ public class PluginGenerator {
     }
 
     protected static void createImports(PrintWriter out, AbstractProcessor processor, List<GeneratedPlugin> plugins, String importingPackage) {
-        HashSet<String> extra = new LinkedHashSet<>();
+        HashSet<String> extra = new HashSet<>();
 
         extra.add("jdk.vm.ci.meta.ResolvedJavaMethod");
         extra.add("jdk.graal.compiler.nodes.ValueNode");

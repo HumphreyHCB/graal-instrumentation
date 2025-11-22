@@ -28,6 +28,11 @@ package com.oracle.svm.hosted.webimage.wasm.ast.visitors;
 import java.io.IOException;
 import java.io.Writer;
 
+import com.oracle.svm.webimage.wasm.types.WasmPackedType;
+import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
+import com.oracle.svm.webimage.wasm.types.WasmStorageType;
+import com.oracle.svm.webimage.wasm.types.WasmUtil;
+import com.oracle.svm.webimage.wasm.types.WasmValType;
 import com.oracle.svm.hosted.webimage.options.WebImageOptions;
 import com.oracle.svm.hosted.webimage.wasm.WebImageWasmOptions;
 import com.oracle.svm.hosted.webimage.wasm.ast.Data;
@@ -55,11 +60,6 @@ import com.oracle.svm.hosted.webimage.wasmgc.ast.RecursiveGroup;
 import com.oracle.svm.hosted.webimage.wasmgc.ast.StructType;
 import com.oracle.svm.hosted.webimage.wasmgc.ast.TypeDefinition;
 import com.oracle.svm.hosted.webimage.wasmgc.types.WasmRefType;
-import com.oracle.svm.webimage.wasm.types.WasmPackedType;
-import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
-import com.oracle.svm.webimage.wasm.types.WasmStorageType;
-import com.oracle.svm.webimage.wasm.types.WasmUtil;
-import com.oracle.svm.webimage.wasm.types.WasmValType;
 
 import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.debug.GraalError;
@@ -710,22 +710,14 @@ public class WasmPrinter extends WasmVisitor {
         parenClose();
     }
 
-    private void printBlockPrefix(String name, Instruction.WasmBlock block) {
-        print(name);
-        space();
-        printId(block.getLabel());
-        if (block.hasResult()) {
-            space();
-            printResult(block.getResult());
-        }
-        space();
-        printComment(block.getComment());
-    }
-
     @Override
     @SuppressWarnings("try")
     public void visitBlock(Instruction.Block block) {
-        printBlockPrefix("block", block);
+        print("block");
+        space();
+        printId(block.getLabel());
+        space();
+        printComment(block.getComment());
         try (var ignored = new Indenter()) {
             super.visitBlock(block);
         }
@@ -735,7 +727,11 @@ public class WasmPrinter extends WasmVisitor {
     @Override
     @SuppressWarnings("try")
     public void visitLoop(Instruction.Loop loop) {
-        printBlockPrefix("loop", loop);
+        print("loop");
+        space();
+        printId(loop.getLabel());
+        space();
+        printComment(loop.getComment());
         try (var ignored = new Indenter()) {
             super.visitLoop(loop);
         }
@@ -745,7 +741,11 @@ public class WasmPrinter extends WasmVisitor {
     @Override
     @SuppressWarnings("try")
     public void visitIf(Instruction.If ifBlock) {
-        printBlockPrefix("if", ifBlock);
+        print("if");
+        space();
+        printId(ifBlock.getLabel());
+        space();
+        printComment(ifBlock.getComment());
 
         try (var ignored = new Indenter()) {
             visitInstruction(ifBlock.condition);
@@ -773,28 +773,12 @@ public class WasmPrinter extends WasmVisitor {
 
     @Override
     @SuppressWarnings("try")
-    public void visitTryTable(Instruction.TryTable tryBlock) {
-        printBlockPrefix("try_table", tryBlock);
-
-        try (var ignored = new Indenter()) {
-            for (Instruction.TryTable.Catch catchBlock : tryBlock.catchBlocks) {
-                newline();
-                parenOpen("catch");
-                space();
-                printId(catchBlock.tag);
-                space();
-                printId(catchBlock.label);
-                parenClose();
-            }
-            super.visitInstructions(tryBlock.instructions);
-        }
-        newline();
-    }
-
-    @Override
-    @SuppressWarnings("try")
     public void visitTry(Instruction.Try tryBlock) {
-        printBlockPrefix("try", tryBlock);
+        print("try");
+        space();
+        printId(tryBlock.getLabel());
+        space();
+        printComment(tryBlock.getComment());
 
         try (var ignored = new Indenter()) {
             newline();

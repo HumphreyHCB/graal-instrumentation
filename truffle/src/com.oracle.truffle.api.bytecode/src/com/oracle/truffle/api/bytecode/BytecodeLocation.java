@@ -131,7 +131,7 @@ public final class BytecodeLocation {
      */
     @Override
     public String toString() {
-        return String.format("BytecodeLocation[bytecode=%s, bci=%d]@%s", bytecodes, bytecodeIndex, getInstruction().toString());
+        return String.format("BytecodeLocation [bytecode=%s, bci=%d]", bytecodes, bytecodeIndex);
     }
 
     /**
@@ -278,7 +278,14 @@ public final class BytecodeLocation {
          * into the frame before any operation that might call another node. This incurs a bit of
          * overhead during regular execution (but just for the uncached interpreter).
          */
-        BytecodeNode foundBytecodeNode = BytecodeNode.get(frameInstance);
+        Node location = frameInstance.getCallNode();
+        BytecodeNode foundBytecodeNode = null;
+        for (Node current = location; current != null; current = current.getParent()) {
+            if (current instanceof BytecodeNode bytecodeNode) {
+                foundBytecodeNode = bytecodeNode;
+                break;
+            }
+        }
         if (foundBytecodeNode == null) {
             return null;
         }

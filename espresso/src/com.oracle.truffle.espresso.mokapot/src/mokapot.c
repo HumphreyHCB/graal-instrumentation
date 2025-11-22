@@ -46,11 +46,11 @@ JNIEXPORT void JNICALL mokapotAttachThread(MokapotEnv* moka_env) {
   tls_moka_env = moka_env;
 }
 
-JNIEXPORT OS_DL_HANDLE JNICALL mokapotGetRTLD_DEFAULT(void) {
+JNIEXPORT OS_DL_HANDLE JNICALL mokapotGetRTLD_DEFAULT() {
     return os_get_RTLD_DEFAULT();
 }
 
-JNIEXPORT OS_DL_HANDLE JNICALL mokapotGetProcessHandle(void) {
+JNIEXPORT OS_DL_HANDLE JNICALL mokapotGetProcessHandle() {
     return os_get_ProcessHandle();
 }
 
@@ -103,7 +103,6 @@ JNIEXPORT MokapotEnv* JNICALL initializeMokapotContext(JNIEnv* env, void* (*fetc
   #define INIT__(name) \
       functions->name = fetch_by_name(#name, (void*)&name);
   VM_METHOD_LIST(INIT__)
-  PD_VM_METHOD_LIST(INIT__)
   #undef INIT_
 
   // Persist Moka env in TLS.
@@ -119,7 +118,7 @@ JNIEXPORT MokapotEnv* JNICALL initializeMokapotContext(JNIEnv* env, void* (*fetc
   return moka_env;
 }
 
-MokapotEnv* getEnv(void) {
+MokapotEnv* getEnv() {
   // thread local Moka or JNI Env?
   return tls_moka_env;
 }
@@ -391,12 +390,8 @@ JNIEXPORT void JNICALL JVM_Yield(JNIEnv *env, jclass threadClass) {
 
 JNIEXPORT void JNICALL JVM_Sleep(JNIEnv *env, jclass threadClass, jlong millis) {
   UNIMPLEMENTED(JVM_Sleep);
-}
 
 
-JNIEXPORT void JNICALL
-JVM_SleepNanos(JNIEnv *env, jclass threadClass, jlong nanos) {
-  IMPLEMENTED(JVM_SleepNanos);
 }
 
 JNIEXPORT jobject JNICALL JVM_CurrentCarrierThread(JNIEnv *env, jclass threadClass) {
@@ -882,8 +877,7 @@ JNIEXPORT void JNICALL JVM_ReportFinalizationComplete(JNIEnv *env, jobject final
 }
 
 JNIEXPORT jboolean JNICALL JVM_IsFinalizationEnabled(JNIEnv *env) {
-  IMPLEMENTED(JVM_IsFinalizationEnabled);
-  return (*getEnv())->JVM_IsFinalizationEnabled(env);
+  return JNI_TRUE;
 }
 
 JNIEXPORT jint JNICALL JVM_DTraceGetVersion(JNIEnv *env) {
@@ -1069,7 +1063,7 @@ JNIEXPORT jboolean JNICALL JVM_IsSameClassPackage(JNIEnv *env, jclass class1, jc
 
 JNIEXPORT jint JNICALL JVM_GetLastErrorString(char *buf, int len) {
   NATIVE(JVM_GetLastErrorString);
-  return (jint) os_lasterror(buf, len);
+  return os_lasterror(buf, len);
 }
 
 JNIEXPORT char* JNICALL JVM_NativePath(char *pathname) {
@@ -1243,7 +1237,7 @@ JNIEXPORT int JNICALL JVM_GetHostName(char *name, int namelen) {
   return os_get_host_name(name, namelen);
 }
 
-static JNIEnv* getGuestJNI(void) {
+static JNIEnv* getGuestJNI() {
   JNIEnv *jniEnv = NULL;
   JavaVM *vm = (*getEnv())->vm;
   (*vm)->GetEnv(vm, (void **) &jniEnv, JNI_VERSION_1_6);
@@ -1411,16 +1405,9 @@ JNIEXPORT jboolean JNICALL JVM_AreNestMates(JNIEnv *env, jclass current, jclass 
   return (*getEnv())->JVM_AreNestMates(env, current, member);
 }
 
-JNIEXPORT void JNICALL JVM_BeforeHalt(void) {
+JNIEXPORT void JNICALL JVM_BeforeHalt() {
   IMPLEMENTED(JVM_BeforeHalt);
-  (*getEnv())->JVM_BeforeHalt();
-}
-
-
-JNIEXPORT void JNICALL
-JVM_ExpandStackFrameInfo(JNIEnv *env, jobject obj) {
-  IMPLEMENTED(JVM_ExpandStackFrameInfo);
-  (*getEnv())->JVM_ExpandStackFrameInfo(env, obj);
+  return (*getEnv())->JVM_BeforeHalt();
 }
 
 JNIEXPORT jobject JNICALL JVM_CallStackWalk(JNIEnv *env, jobject stackStream, jlong mode,
@@ -1493,7 +1480,7 @@ JNIEXPORT jboolean JNICALL JVM_IsPreviewEnabled(void) {
 }
 
 JNIEXPORT jboolean JNICALL JVM_IsContinuationsSupported(void) {
-  // TODO: GR-54288 Currently virtual threads are just platform threads in Espresso
+  // TODO: actually support them.
   IMPLEMENTED(JVM_IsContinuationsSupported);
   return JNI_FALSE;
 }
@@ -1552,12 +1539,6 @@ JNIEXPORT jboolean JNICALL JVM_IsUseContainerSupport(void) {
   return JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL
-JVM_IsContainerized(void) {
-  UNIMPLEMENTED(JVM_IsContainerized);
-  return JNI_FALSE;
-}
-
 JNIEXPORT jobjectArray JNICALL JVM_GetRecordComponents(JNIEnv *env, jclass ofClass) {
     IMPLEMENTED(JVM_GetRecordComponents);
     return (*getEnv())->JVM_GetRecordComponents(env, ofClass);
@@ -1570,15 +1551,7 @@ JNIEXPORT void JNICALL JVM_RegisterLambdaProxyClassForArchiving(JNIEnv* env, jcl
                                          jobject implMethodMember,
                                          jobject instantiatedMethodType,
                                          jclass lambdaProxyClass) {
-  IMPLEMENTED(JVM_RegisterLambdaProxyClassForArchiving);
-  (*getEnv())->JVM_RegisterLambdaProxyClassForArchiving(env,
-          caller,
-          invokedName,
-          invokedType,
-          methodType,
-          implMethodMember,
-          instantiatedMethodType,
-          lambdaProxyClass);
+  UNIMPLEMENTED(JVM_RegisterLambdaProxyClassForArchiving);
   return;
 }
 
@@ -1588,14 +1561,8 @@ JNIEXPORT jclass JNICALL JVM_LookupLambdaProxyClassFromArchive(JNIEnv* env, jcla
                                       jobject methodType,
                                       jobject implMethodMember,
                                       jobject instantiatedMethodType) {
-  IMPLEMENTED(JVM_LookupLambdaProxyClassFromArchive);
-  return (*getEnv())->JVM_LookupLambdaProxyClassFromArchive(env,
-          caller,
-          invokedName,
-          invokedType,
-          methodType,
-          implMethodMember,
-          instantiatedMethodType);
+  UNIMPLEMENTED(JVM_LookupLambdaProxyClassFromArchive);
+  return NULL;
 }
 
 JNIEXPORT jboolean JNICALL JVM_IsCDSDumpingEnabled(JNIEnv* env) {
@@ -1613,16 +1580,6 @@ JNIEXPORT jboolean JNICALL JVM_IsDumpingClassList(JNIEnv* env) {
   return (*getEnv())->JVM_IsDumpingClassList(env);
 }
 
-JNIEXPORT jint JNICALL JVM_GetCDSConfigStatus(void) {
-  IMPLEMENTED(JVM_GetCDSConfigStatus);
-  return (*getEnv())->JVM_GetCDSConfigStatus();
-}
-
-JNIEXPORT jboolean JNICALL JVM_NeedsClassInitBarrierForCDS(JNIEnv* env, jclass cls) {
-  UNIMPLEMENTED(JVM_NeedsClassInitBarrierForCDS);
-  return 0;
-}
-
 JNIEXPORT jstring JNICALL JVM_GetExtendedNPEMessage(JNIEnv *env, jthrowable throwable) {
   IMPLEMENTED(JVM_GetExtendedNPEMessage);
   return (*getEnv())->JVM_GetExtendedNPEMessage(env, throwable);
@@ -1633,7 +1590,7 @@ JNIEXPORT jobjectArray JNICALL JVM_GetProperties(JNIEnv *env) {
   return (*getEnv())->JVM_GetProperties(env);
 }
 
-JNIEXPORT jlong JNICALL JVM_GetRandomSeedForDumping(void) {
+JNIEXPORT jlong JNICALL JVM_GetRandomSeedForDumping() {
   IMPLEMENTED(JVM_GetRandomSeedForDumping);
   return (*getEnv())->JVM_GetRandomSeedForDumping();
 }
@@ -1664,11 +1621,6 @@ JNIEXPORT jboolean JNICALL JVM_PhantomReferenceRefersTo(JNIEnv *env, jobject ref
   return (*getEnv())->JVM_PhantomReferenceRefersTo(env, ref, o);
 }
 
-JNIEXPORT jobject JNICALL JVM_ReferenceGet(JNIEnv *env, jobject ref) {
-    UNIMPLEMENTED(JVM_ReferenceGet);
-    return NULL;
-}
-
 JNIEXPORT jboolean JNICALL JVM_ReferenceRefersTo(JNIEnv *env, jobject ref, jobject o) {
   IMPLEMENTED(JVM_ReferenceRefersTo);
   return (*getEnv())->JVM_ReferenceRefersTo(env, ref, o);
@@ -1697,44 +1649,34 @@ JNIEXPORT void JNICALL JVM_DumpDynamicArchive(JNIEnv *env, jstring archiveName) 
   UNIMPLEMENTED(JVM_DumpDynamicArchive);
 }
 
+JNIEXPORT void JNICALL JVM_VirtualThreadMountBegin(JNIEnv* env, jobject vthread, jboolean first_mount) {
+  UNIMPLEMENTED(JVM_VirtualThreadUnmountBegin);
+}
+
+JNIEXPORT void JNICALL JVM_VirtualThreadMountEnd(JNIEnv* env, jobject vthread, jboolean first_mount) {
+  UNIMPLEMENTED(JVM_VirtualThreadUnmountEnd);
+}
+
+JNIEXPORT void JNICALL JVM_VirtualThreadUnmountBegin(JNIEnv* env, jobject vthread, jboolean last_unmount) {
+  UNIMPLEMENTED(JVM_VirtualThreadUnmountBegin);
+}
+
+JNIEXPORT void JNICALL JVM_VirtualThreadUnmountEnd(JNIEnv* env, jobject vthread, jboolean last_unmount) {
+  UNIMPLEMENTED(JVM_VirtualThreadUnmountEnd);
+}
+
 JNIEXPORT void JNICALL JVM_VirtualThreadHideFrames(JNIEnv* env, jobject vthread, jboolean hide) {
   UNIMPLEMENTED(JVM_VirtualThreadHideFrames);
 }
 
-JNIEXPORT void JNICALL
-JVM_VirtualThreadDisableSuspend(JNIEnv* env, jclass clazz, jboolean enter) {
-  UNIMPLEMENTED(JVM_VirtualThreadDisableSuspend);
-}
-
-JNIEXPORT void JNICALL
-JVM_VirtualThreadPinnedEvent(JNIEnv* env, jclass clazz, jstring op) {
-  UNIMPLEMENTED(JVM_VirtualThreadPinnedEvent);
-}
-
-JNIEXPORT jobject JNICALL
-JVM_TakeVirtualThreadListToUnblock(JNIEnv* env, jclass ignored) {
-  UNIMPLEMENTED(JVM_TakeVirtualThreadListToUnblock);
-  return NULL;
-}
-
 JNIEXPORT jint JNICALL JVM_GetClassFileVersion(JNIEnv *env, jclass current) {
-  IMPLEMENTED(JVM_GetClassFileVersion);
-  return (*getEnv())->JVM_GetClassFileVersion(env, current);
+  UNIMPLEMENTED(JVM_GetClassFileVersion);
+  return 0;
 }
 
 JNIEXPORT jboolean JNICALL JVM_IsForeignLinkerSupported(void) {
   IMPLEMENTED(JVM_IsForeignLinkerSupported);
   return (*getEnv())->JVM_IsForeignLinkerSupported();
-}
-
-JNIEXPORT jboolean JNICALL
-JVM_IsStaticallyLinked(void) {
-  IMPLEMENTED(JVM_IsStaticallyLinked);
-#ifdef ESPRESSO_NFI_STATIC
-  return JNI_TRUE;
-#else
-  return JNI_FALSE;
-#endif
 }
 
 JNIEXPORT void JNICALL JVM_VirtualThreadStart(JNIEnv* env, jobject vthread) {
@@ -1756,11 +1698,6 @@ JNIEXPORT void JNICALL JVM_VirtualThreadUnmount(JNIEnv* env, jobject vthread, jb
 JNIEXPORT jboolean JNICALL JVM_PrintWarningAtDynamicAgentLoad(void) {
   UNIMPLEMENTED(JVM_PrintWarningAtDynamicAgentLoad);
   return JNI_FALSE;
-}
-
-JNIEXPORT jobject JNICALL JVM_CreateThreadSnapshot(JNIEnv* env, jobject thread) {
-  IMPLEMENTED(JVM_CreateThreadSnapshot);
-  return (*getEnv())->JVM_CreateThreadSnapshot(env, thread);
 }
 
 

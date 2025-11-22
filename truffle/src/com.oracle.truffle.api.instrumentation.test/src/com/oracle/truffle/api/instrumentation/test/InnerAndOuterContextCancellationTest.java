@@ -56,6 +56,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.oracle.truffle.api.test.ReflectionUtils;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.PolyglotException;
@@ -74,8 +75,6 @@ import com.oracle.truffle.api.instrumentation.ExecutionEventListener;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
-import com.oracle.truffle.api.test.ReflectionUtils;
-import com.oracle.truffle.tck.tests.TruffleTestAssumptions;
 
 public class InnerAndOuterContextCancellationTest {
 
@@ -90,15 +89,7 @@ public class InnerAndOuterContextCancellationTest {
     private void setupSingleRun(boolean multiEngine, boolean multiThreading) {
         if (!multiEngine) {
             if (engine == null) {
-                Engine.Builder builder = Engine.newBuilder();
-                if (TruffleTestAssumptions.isOptimizingRuntime()) {
-                    // TODO GR-65179
-                    builder.option("engine.MaximumCompilations", "-1");
-                    if (TruffleTestAssumptions.isDeoptLoopDetectionAvailable()) {
-                        builder.option("compiler.DeoptCycleDetectionThreshold", "-1");
-                    }
-                }
-                engine = builder.build();
+                engine = Engine.create();
                 instrumentEnv = engine.getInstruments().get("InstrumentationUpdateInstrument").lookup(TruffleInstrument.Env.class);
             }
             Context.Builder builder = Context.newBuilder(ID).engine(engine);
@@ -110,13 +101,6 @@ public class InnerAndOuterContextCancellationTest {
             Context.Builder builder = Context.newBuilder(ID);
             if (multiThreading) {
                 builder.allowCreateThread(true);
-            }
-            if (TruffleTestAssumptions.isOptimizingRuntime()) {
-                // TODO GR-65179
-                builder.option("engine.MaximumCompilations", "-1");
-                if (TruffleTestAssumptions.isDeoptLoopDetectionAvailable()) {
-                    builder.option("compiler.DeoptCycleDetectionThreshold", "-1");
-                }
             }
             context = builder.build();
             instrumentEnv = context.getEngine().getInstruments().get("InstrumentationUpdateInstrument").lookup(TruffleInstrument.Env.class);
@@ -303,12 +287,10 @@ public class InnerAndOuterContextCancellationTest {
     static class InfiniteJob implements Callable<Void> {
         private final Engine engine;
         private final ExecutorService cancelExecutorService;
-        private final List<CancelInfiniteJob> cancelInfiniteJobList;
 
-        InfiniteJob(Engine engine, ExecutorService cancelExecutorService, List<CancelInfiniteJob> cancelInfiniteJobList) {
+        InfiniteJob(Engine engine, ExecutorService cancelExecutorService) {
             this.engine = engine;
             this.cancelExecutorService = cancelExecutorService;
-            this.cancelInfiniteJobList = cancelInfiniteJobList;
         }
 
         @Override
@@ -318,9 +300,27 @@ public class InnerAndOuterContextCancellationTest {
             try (Context context = builder.build()) {
                 context.initialize(InstrumentationTestLanguage.ID);
                 CancelInfiniteJob cancelInfiniteJob = new CancelInfiniteJob(context, Thread.currentThread());
-                cancelInfiniteJobList.add(cancelInfiniteJob);
                 cancelExecutorService.submit(cancelInfiniteJob);
                 try {
+                    TruffleInstrument.Env instrEnv = engine.getInstruments().get("InstrumentationUpdateInstrument").lookup(TruffleInstrument.Env.class);
+                    instrEnv.getInstrumenter().attachExecutionEventListener(SourceSectionFilter.newBuilder().tagIs(StandardTags.StatementTag.class).build(), new ExecutionEventListener() {
+                        @Override
+                        public void onEnter(EventContext c, VirtualFrame frame) {
+                            if (cancelInfiniteJob.thread == Thread.currentThread()) {
+                                cancelInfiniteJob.startLatch.countDown();
+                            }
+                        }
+
+                        @Override
+                        public void onReturnValue(EventContext c, VirtualFrame frame, Object result) {
+
+                        }
+
+                        @Override
+                        public void onReturnExceptional(EventContext c, VirtualFrame frame, Throwable exception) {
+
+                        }
+                    });
                     context.eval(statements(Integer.MAX_VALUE));
                     fail();
                 } catch (PolyglotException e) {
@@ -352,30 +352,8 @@ public class InnerAndOuterContextCancellationTest {
         ExecutorService cancelExecutorService = Executors.newFixedThreadPool(jobs);
         List<Future<?>> futures = new ArrayList<>();
         try (Engine engine = Engine.create()) {
-            TruffleInstrument.Env instrEnv = engine.getInstruments().get("InstrumentationUpdateInstrument").lookup(TruffleInstrument.Env.class);
-            List<CancelInfiniteJob> cancelInfiniteJobList = new CopyOnWriteArrayList<>();
-            instrEnv.getInstrumenter().attachExecutionEventListener(SourceSectionFilter.newBuilder().tagIs(StandardTags.StatementTag.class).build(), new ExecutionEventListener() {
-                @Override
-                public void onEnter(EventContext c, VirtualFrame frame) {
-                    for (CancelInfiniteJob cancelInfiniteJob : cancelInfiniteJobList) {
-                        if (cancelInfiniteJob.thread == Thread.currentThread()) {
-                            cancelInfiniteJob.startLatch.countDown();
-                        }
-                    }
-                }
-
-                @Override
-                public void onReturnValue(EventContext c, VirtualFrame frame, Object result) {
-
-                }
-
-                @Override
-                public void onReturnExceptional(EventContext c, VirtualFrame frame, Throwable exception) {
-
-                }
-            });
             for (int i = 0; i < jobs; i++) {
-                futures.add(executorService.submit(new InfiniteJob(engine, cancelExecutorService, cancelInfiniteJobList)));
+                futures.add(executorService.submit(new InfiniteJob(engine, cancelExecutorService)));
             }
 
             for (Future<?> future : futures) {

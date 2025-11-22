@@ -766,8 +766,8 @@ public class TagTest extends AbstractInstructionTest {
         assertFails(() -> node.getCallTarget().call(), TestException.class);
         assertEvents(node,
                         events,
-                        new Event(EventKind.ENTER, 0x0000, 0x0020, null, RootTag.class),
-                        new Event(EventKind.EXCEPTIONAL, 0x0000, 0x0020, TestException.class, RootTag.class));
+                        new Event(EventKind.ENTER, 0x0000, 0x001e, null, RootTag.class),
+                        new Event(EventKind.EXCEPTIONAL, 0x0000, 0x001e, TestException.class, RootTag.class));
     }
 
     @Test
@@ -803,8 +803,8 @@ public class TagTest extends AbstractInstructionTest {
         assertEquals(42, node.getCallTarget().call());
         assertEvents(node,
                         events,
-                        new Event(EventKind.ENTER, 0x0000, 0x002a, null, RootTag.class),
-                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x002a, Integer.class, RootTag.class));
+                        new Event(EventKind.ENTER, 0x0000, 0x0028, null, RootTag.class),
+                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x0028, Integer.class, RootTag.class));
 
     }
 
@@ -1057,8 +1057,8 @@ public class TagTest extends AbstractInstructionTest {
 
         assertEvents(node,
                         events,
-                        new Event(EventKind.ENTER, 0x0000, 0x001e, null, ExpressionTag.class),
-                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x001e, 42, ExpressionTag.class));
+                        new Event(EventKind.ENTER, 0x0000, 0x0020, null, ExpressionTag.class),
+                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x0020, 42, ExpressionTag.class));
 
     }
 
@@ -1095,8 +1095,8 @@ public class TagTest extends AbstractInstructionTest {
 
         assertEvents(node,
                         events,
-                        new Event(EventKind.ENTER, 0x0000, 0x001e, null, ExpressionTag.class),
-                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x001e, 42, ExpressionTag.class));
+                        new Event(EventKind.ENTER, 0x0000, 0x0020, null, ExpressionTag.class),
+                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x0020, 42, ExpressionTag.class));
 
     }
 
@@ -1212,8 +1212,8 @@ public class TagTest extends AbstractInstructionTest {
 
         assertEvents(node,
                         events,
-                        new Event(0, EventKind.ENTER, 0x0000, 0x002a, null, RootTag.class),
-                        new Event(3, EventKind.RETURN_VALUE, 0x0000, 0x002a, 42, RootTag.class));
+                        new Event(0, EventKind.ENTER, 0x0000, 0x0028, null, RootTag.class),
+                        new Event(3, EventKind.RETURN_VALUE, 0x0000, 0x0028, 42, RootTag.class));
 
     }
 
@@ -1264,8 +1264,8 @@ public class TagTest extends AbstractInstructionTest {
 
         assertEvents(node,
                         events,
-                        new Event(1, EventKind.ENTER, 0x0006, 0x002a, null, RootBodyTag.class),
-                        new Event(2, EventKind.RETURN_VALUE, 0x0006, 0x002a, 42, RootBodyTag.class));
+                        new Event(1, EventKind.ENTER, 0x0006, 0x0028, null, RootBodyTag.class),
+                        new Event(2, EventKind.RETURN_VALUE, 0x0006, 0x0028, 42, RootBodyTag.class));
     }
 
     @Test
@@ -1317,10 +1317,10 @@ public class TagTest extends AbstractInstructionTest {
 
         assertEvents(node,
                         events,
-                        new Event(0, EventKind.ENTER, 0x0000, 0x0050, null, RootTag.class),
-                        new Event(2, EventKind.ENTER, 0x000c, 0x003a, null, RootBodyTag.class),
-                        new Event(3, EventKind.RETURN_VALUE, 0x000c, 0x003a, 42, RootBodyTag.class),
-                        new Event(5, EventKind.RETURN_VALUE, 0x0000, 0x0050, 42, RootTag.class));
+                        new Event(0, EventKind.ENTER, 0x0000, 0x004c, null, RootTag.class),
+                        new Event(2, EventKind.ENTER, 0x000c, 0x0038, null, RootBodyTag.class),
+                        new Event(3, EventKind.RETURN_VALUE, 0x000c, 0x0038, 42, RootBodyTag.class),
+                        new Event(5, EventKind.RETURN_VALUE, 0x0000, 0x004c, 42, RootTag.class));
 
     }
 
@@ -2142,12 +2142,12 @@ public class TagTest extends AbstractInstructionTest {
                         "return");
         assertEquals(123L, node.getCallTarget().call());
         assertEvents(node, events,
-                        new Event(EventKind.ENTER, 0x0000, 0x01e, null, StatementTag.class),
+                        new Event(EventKind.ENTER, 0x0000, 0x022, null, StatementTag.class),
                         new Event(EventKind.ENTER, 0x0000, 0x01e, null, ExpressionTag.class),
                         new Event(EventKind.YIELD, 0x0000, 0x01e, 42L, ExpressionTag.class),
                         new Event(EventKind.RESUME, 0x0000, 0x01e, null, ExpressionTag.class),
                         new Event(EventKind.RETURN_VALUE, 0x0000, 0x01e, 123L, ExpressionTag.class),
-                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x01e, 123L, StatementTag.class));
+                        new Event(EventKind.RETURN_VALUE, 0x0000, 0x022, 123L, StatementTag.class));
 
     }
 
@@ -2891,7 +2891,7 @@ public class TagTest extends AbstractInstructionTest {
 
     }
 
-    @ExpectError("Tag instrumentation uses implicit root tagging, but the RootTag was not provided by the language class 'com.oracle.truffle.api.bytecode.test.TagTest.NoRootTagTestLanguage'. " +
+    @ExpectError("Tag instrumentation uses implicit root tagging, but the RootTag was not provded by the language class 'com.oracle.truffle.api.bytecode.test.TagTest.NoRootTagTestLanguage'. " +
                     "Specify the tag using @ProvidedTags(RootTag.class) on the language class or explicitly disable root tagging using @GenerateBytecode(.., enableRootTagging=false) to resolve this.")
     @GenerateBytecode(languageClass = NoRootTagTestLanguage.class, //
                     enableTagInstrumentation = true)
@@ -2944,7 +2944,7 @@ public class TagTest extends AbstractInstructionTest {
 
     }
 
-    @ExpectError("Tag instrumentation uses implicit root body tagging, but the RootTag was not provided by the language class 'com.oracle.truffle.api.bytecode.test.TagTest.NoRootBodyTagTestLanguage'. " +
+    @ExpectError("Tag instrumentation uses implicit root body tagging, but the RootTag was not provded by the language class 'com.oracle.truffle.api.bytecode.test.TagTest.NoRootBodyTagTestLanguage'. " +
                     "Specify the tag using @ProvidedTags(RootBodyTag.class) on the language class or explicitly disable root tagging using @GenerateBytecode(.., enableRootBodyTagging=false) to resolve this.")
     @GenerateBytecode(languageClass = NoRootBodyTagTestLanguage.class, //
                     enableTagInstrumentation = true)

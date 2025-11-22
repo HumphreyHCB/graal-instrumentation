@@ -41,7 +41,6 @@ import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.NodeBitMap;
 import jdk.graal.compiler.graph.spi.NodeWithIdentity;
 import jdk.graal.compiler.nodes.ControlSinkNode;
-import jdk.graal.compiler.nodes.FixedGlobalValueNumberable;
 import jdk.graal.compiler.nodes.FixedGuardNode;
 import jdk.graal.compiler.nodes.FixedNode;
 import jdk.graal.compiler.nodes.FixedWithNextNode;
@@ -314,22 +313,18 @@ public class DominatorBasedGlobalValueNumberingPhase extends PostRunCanonicaliza
                 final LoopBeginNode exitedLoop = ((LoopExitNode) cur).loopBegin();
                 killLoopLocations(((HIRLoop) cfg.blockFor(exitedLoop).getLoop()).getKillLocations(), blockMap);
             }
-            boolean mustGVN = (cur instanceof FixedGlobalValueNumberable);
-            if (!mustGVN) {
-                // Handle nodes which don't explicitly opt into DGVN
-                if (MemoryKill.isMemoryKill(cur)) {
-                    blockMap.killValuesByPotentialMemoryKill(cur);
-                    return;
-                }
 
-                if (!canGVN(cur)) {
-                    return;
-                }
+            if (MemoryKill.isMemoryKill(cur)) {
+                blockMap.killValuesByPotentialMemoryKill(cur);
+                return;
+            }
+
+            if (!canGVN(cur)) {
+                return;
             }
 
             boolean canSubsitute = blockMap.hasSubstitute(cur);
-            // assume FixedGlobalValueNumberable nodes shouldn't be moved
-            boolean canLICM = loopCandidate != null && !mustGVN;
+            boolean canLICM = loopCandidate != null;
             if (cur instanceof MemoryAccess) {
                 MemoryAccess access = (MemoryAccess) cur;
                 if (loopKillsLocation(thisLoopKilledLocations, access.getLocationIdentity())) {
@@ -352,20 +347,14 @@ public class DominatorBasedGlobalValueNumberingPhase extends PostRunCanonicaliza
              * a limited form of LICM for nodes that are dominated by the loop header and dominate
              * all exits. Such operations that are unconditionally executed in the particular loop.
              */
-            boolean substituted = false;
             if (canSubsitute) {
                 // GVN node
-                substituted = blockMap.substitute(cur, cfg, licmNodes, canLICM ? loopCandidate : null);
+                blockMap.substitute(cur, cfg, licmNodes, canLICM ? loopCandidate : null);
             } else {
                 if (canLICM) {
                     tryPerformLICM(loopCandidate, cur, licmNodes);
                 }
                 blockMap.rememberNodeForGVN(cur);
-            }
-            if (mustGVN && !substituted) {
-                if (MemoryKill.isMemoryKill(cur)) {
-                    blockMap.killValuesByPotentialMemoryKill(cur);
-                }
             }
         }
 
@@ -420,7 +409,7 @@ public class DominatorBasedGlobalValueNumberingPhase extends PostRunCanonicaliza
             loop.loopsData().getCFG().getNodeToBlock().set(n, loop.loopsData().getCFG().getNodeToBlock().get(loop.loopBegin().forwardEnd()));
             loop.loopBegin().getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, loop.loopBegin().graph(), "After LICM of node %s for loop %s", n, loop);
             earlyGVNLICM.increment(loop.loopBegin().getDebug());
-            if (loop.loopBegin().getDebug().areCountersEnabled()) {
+            if (loop.loopBegin().getDebug().isCountEnabled()) {
                 DebugContext.counter(earlyGVNLICM.getName() + "_" + n.getClass().getSimpleName()).increment(n.graph().getDebug());
             }
             return true;
@@ -600,49 +589,47 @@ public class DominatorBasedGlobalValueNumberingPhase extends PostRunCanonicaliza
          * Perform actual global value numbering. Replace node {@code n} with an equal node (inputs
          * and data fields) up in the dominance chain.
          */
-        public boolean substitute(Node n, ControlFlowGraph cfg, NodeBitMap licmNodes, Loop invariantInLoop) {
+        public void substitute(Node n, ControlFlowGraph cfg, NodeBitMap licmNodes, Loop invariantInLoop) {
             Node edgeDataEqual = find(n);
-            if (edgeDataEqual == null) {
-                return false;
-            }
-            assert edgeDataEqual.graph() != null;
-            assert edgeDataEqual instanceof FixedNode : "Only process fixed nodes";
-            StructuredGraph graph = (StructuredGraph) edgeDataEqual.graph();
+            if (edgeDataEqual != null) {
+                assert edgeDataEqual.graph() != null;
+                assert edgeDataEqual instanceof FixedNode : "Only process fixed nodes";
+                StructuredGraph graph = (StructuredGraph) edgeDataEqual.graph();
 
-            HIRBlock defBlock = cfg.blockFor(edgeDataEqual);
+                HIRBlock defBlock = cfg.blockFor(edgeDataEqual);
 
-            if (invariantInLoop != null) {
-                HIRBlock loopDefBlock = cfg.blockFor(invariantInLoop.loopBegin()).getLoop().getHeader().getDominator();
-                if (loopDefBlock.strictlyDominates(defBlock)) {
-                    /*
-                     * The LICM location strictly dominates the GVN location so it must be the final
-                     * location. Move the GVN node to the LICM location and then perform the
-                     * substitution normally.
-                     */
-                    if (!tryPerformLICM(invariantInLoop, (FixedNode) edgeDataEqual, licmNodes)) {
-                        GraalError.shouldNotReachHere("tryPerformLICM must succeed for " + edgeDataEqual); // ExcludeFromJacocoGeneratedReport
+                if (invariantInLoop != null) {
+                    HIRBlock loopDefBlock = cfg.blockFor(invariantInLoop.loopBegin()).getLoop().getHeader().getDominator();
+                    if (loopDefBlock.strictlyDominates(defBlock)) {
+                        /*
+                         * The LICM location strictly dominates the GVN location so it must be the
+                         * final location. Move the GVN node to the LICM location and then perform
+                         * the substitution normally.
+                         */
+                        if (!tryPerformLICM(invariantInLoop, (FixedNode) edgeDataEqual, licmNodes)) {
+                            GraalError.shouldNotReachHere("tryPerformLICM must succeed for " + edgeDataEqual); // ExcludeFromJacocoGeneratedReport
+                        }
+                    } else {
+                        GraalError.guarantee(defBlock.dominates(loopDefBlock), "No dominance relation between GVN and LICM locations: %s and %s", defBlock, loopDefBlock);
                     }
-                } else {
-                    GraalError.guarantee(defBlock.dominates(loopDefBlock), "No dominance relation between GVN and LICM locations: %s and %s", defBlock, loopDefBlock);
+                }
+
+                if (!LoopUtility.canUseWithoutProxy(cfg, edgeDataEqual, n)) {
+                    earlyGVNAbort.increment(graph.getDebug());
+                    return;
+                }
+
+                graph.getDebug().log(DebugContext.VERY_DETAILED_LEVEL, "Early GVN: replacing %s with %s", n, edgeDataEqual);
+                graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "Before replacing %s with %s", n, edgeDataEqual);
+                n.replaceAtUsages(edgeDataEqual);
+                GraphUtil.unlinkFixedNode((FixedWithNextNode) n);
+                n.safeDelete();
+                graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "After replacing %s with %s", n, edgeDataEqual);
+                earlyGVN.increment(graph.getDebug());
+                if (graph.getDebug().isCountEnabled()) {
+                    DebugContext.counter(earlyGVN.getName() + "_" + edgeDataEqual.getClass().getSimpleName()).increment(graph.getDebug());
                 }
             }
-
-            if (!LoopUtility.canUseWithoutProxy(cfg, edgeDataEqual, n)) {
-                earlyGVNAbort.increment(graph.getDebug());
-                return false;
-            }
-
-            graph.getDebug().log(DebugContext.VERY_DETAILED_LEVEL, "Early GVN: replacing %s with %s", n, edgeDataEqual);
-            graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "Before replacing %s with %s", n, edgeDataEqual);
-            n.replaceAtUsages(edgeDataEqual);
-            GraphUtil.unlinkFixedNode((FixedWithNextNode) n);
-            n.safeDelete();
-            graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "After replacing %s with %s", n, edgeDataEqual);
-            earlyGVN.increment(graph.getDebug());
-            if (graph.getDebug().areCountersEnabled()) {
-                DebugContext.counter(earlyGVN.getName() + "_" + edgeDataEqual.getClass().getSimpleName()).increment(graph.getDebug());
-            }
-            return true;
         }
 
         /**

@@ -41,7 +41,6 @@
 package com.oracle.truffle.api.bytecode;
 
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.dsl.Bind.DefaultExpression;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -58,7 +57,6 @@ import com.oracle.truffle.api.nodes.RootNode;
  *
  * @since 24.2
  */
-@DefaultExpression("$continuationRootNode")
 public abstract class ContinuationRootNode extends RootNode {
 
     /**

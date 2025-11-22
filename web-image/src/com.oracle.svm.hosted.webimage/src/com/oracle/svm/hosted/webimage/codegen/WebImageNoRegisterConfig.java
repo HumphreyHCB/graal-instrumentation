@@ -29,13 +29,12 @@ import com.oracle.svm.core.util.VMError;
 
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
+import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterAttributes;
 import jdk.vm.ci.code.ValueKindFactory;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.PlatformKind;
-
-import java.util.List;
 
 public class WebImageNoRegisterConfig implements SubstrateRegisterConfig {
     @Override
@@ -49,32 +48,32 @@ public class WebImageNoRegisterConfig implements SubstrateRegisterConfig {
     }
 
     @Override
-    public List<Register> getCallingConventionRegisters(CallingConvention.Type type, JavaKind kind) {
+    public RegisterArray getCallingConventionRegisters(CallingConvention.Type type, JavaKind kind) {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 
     @Override
-    public List<Register> getAllocatableRegisters() {
+    public RegisterArray getAllocatableRegisters() {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 
     @Override
-    public List<Register> filterAllocatableRegisters(PlatformKind kind, List<Register> registers) {
+    public RegisterArray filterAllocatableRegisters(PlatformKind kind, RegisterArray registers) {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 
     @Override
-    public List<Register> getCallerSaveRegisters() {
+    public RegisterArray getCallerSaveRegisters() {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 
     @Override
-    public List<Register> getCalleeSaveRegisters() {
+    public RegisterArray getCalleeSaveRegisters() {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 
     @Override
-    public List<RegisterAttributes> getAttributesMap() {
+    public RegisterAttributes[] getAttributesMap() {
         throw VMError.shouldNotReachHereAtRuntime();
     }
 

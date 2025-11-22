@@ -113,7 +113,7 @@ public class TStringOpsRegionEqualsTest extends TStringOpsTest<ArrayRegionEquals
 
     @Test
     public void testRegionEquals() {
-        testWithNativeExcept(getRegionEqualsWithOrMaskWithStride(), null, 1L << 11, DUMMY_LOCATION,
+        testWithNativeExcept(getRegionEqualsWithOrMaskWithStrideIntl(), null, 1L << 11, DUMMY_LOCATION,
                         arrayA, offsetA, lengthA, strideA, fromIndexA,
                         arrayB, offsetB, lengthB, strideB, fromIndexB, null, lengthCMP);
     }

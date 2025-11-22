@@ -24,14 +24,14 @@
  */
 package com.oracle.svm.hosted.webimage.codegen;
 
-import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.meta.HostedType;
-import com.oracle.svm.hosted.webimage.codegen.type.TypeVtableLowerer;
 import com.oracle.svm.webimage.functionintrinsics.JSFunctionDefinition;
 import com.oracle.svm.webimage.functionintrinsics.JSGenericFunctionDefinition;
-import com.oracle.svm.webimage.hightiercodegen.Emitter;
-import com.oracle.svm.webimage.hightiercodegen.IEmitter;
+import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.webimage.codegen.type.TypeVtableLowerer;
+import com.oracle.svm.hosted.meta.HostedType;
 
+import jdk.graal.compiler.hightiercodegen.Emitter;
+import jdk.graal.compiler.hightiercodegen.IEmitter;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.vm.ci.meta.JavaKind;
 

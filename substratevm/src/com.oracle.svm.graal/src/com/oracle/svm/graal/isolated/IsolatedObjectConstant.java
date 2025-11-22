@@ -28,10 +28,6 @@ import org.graalvm.nativeimage.c.function.CEntryPoint;
 
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.c.function.CEntryPointOptions;
-import com.oracle.svm.core.graal.isolated.ClientHandle;
-import com.oracle.svm.core.graal.isolated.ClientIsolateThread;
-import com.oracle.svm.core.graal.isolated.IsolatedCompileClient;
-import com.oracle.svm.core.graal.isolated.IsolatedCompileContext;
 import com.oracle.svm.core.meta.SubstrateObjectConstant;
 
 import jdk.vm.ci.meta.MetaAccessProvider;
@@ -60,7 +56,7 @@ public final class IsolatedObjectConstant extends SubstrateObjectConstant {
         return provider.lookupJavaType(getObjectClass());
     }
 
-    public Class<?> getObjectClass() {
+    private Class<?> getObjectClass() {
         if (cachedClass == null) {
             cachedClass = ImageHeapObjects.deref(getObjectClass0(IsolatedCompileContext.get().getClient(), handle));
         }

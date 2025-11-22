@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,6 +33,7 @@ import jdk.graal.compiler.hotspot.CompilationTask;
 import jdk.graal.compiler.hotspot.HotSpotGraalCompiler;
 import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
 import jdk.graal.compiler.options.OptionValues;
+
 import jdk.vm.ci.hotspot.HotSpotCompilationRequest;
 import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
@@ -124,6 +125,7 @@ public class MemoryUsageBenchmark extends HotSpotGraalCompilerTest {
         new MemoryUsageBenchmark().run();
     }
 
+    @SuppressWarnings("try")
     private void doCompilation(String methodName, String label) {
         HotSpotResolvedJavaMethod method = (HotSpotResolvedJavaMethod) getResolvedJavaMethod(methodName);
 
@@ -132,7 +134,7 @@ public class MemoryUsageBenchmark extends HotSpotGraalCompilerTest {
 
         long jvmciEnv = 0L;
 
-        try (MemoryUsageCloseable _ = label == null ? null : new MemoryUsageCloseable(label)) {
+        try (MemoryUsageCloseable c = label == null ? null : new MemoryUsageCloseable(label)) {
             HotSpotJVMCIRuntime runtime = HotSpotJVMCIRuntime.runtime();
             int entryBCI = JVMCICompiler.INVOCATION_ENTRY_BCI;
             HotSpotCompilationRequest request = new HotSpotCompilationRequest(method, entryBCI, jvmciEnv);
@@ -141,6 +143,7 @@ public class MemoryUsageBenchmark extends HotSpotGraalCompilerTest {
         }
     }
 
+    @SuppressWarnings("try")
     private void allocSpyCompilation(String methodName) {
         if (AllocSpy.isEnabled()) {
             HotSpotResolvedJavaMethod method = (HotSpotResolvedJavaMethod) getResolvedJavaMethod(methodName);
@@ -149,7 +152,7 @@ public class MemoryUsageBenchmark extends HotSpotGraalCompilerTest {
             method.reprofile();
 
             long jvmciEnv = 0L;
-            try (AllocSpy _ = AllocSpy.open(methodName)) {
+            try (AllocSpy as = AllocSpy.open(methodName)) {
                 HotSpotJVMCIRuntime runtime = HotSpotJVMCIRuntime.runtime();
                 HotSpotCompilationRequest request = new HotSpotCompilationRequest(method, JVMCICompiler.INVOCATION_ENTRY_BCI, jvmciEnv);
                 HotSpotGraalCompiler compiler = (HotSpotGraalCompiler) runtime.getCompiler();

@@ -35,10 +35,6 @@ import org.graalvm.nativeimage.impl.InternalPlatform;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.jdk.JNIRegistrationUtil;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 
@@ -46,7 +42,6 @@ import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
  * Registration of classes, methods, and fields accessed via JNI by C code of the JDK.
  */
 @Platforms({InternalPlatform.PLATFORM_JNI.class})
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 @AutomaticallyRegisteredFeature
 class JNIRegistrationJavaNet extends JNIRegistrationUtil implements InternalFeature {
     private boolean hasPlatformSocketOptions;
@@ -72,9 +67,6 @@ class JNIRegistrationJavaNet extends JNIRegistrationUtil implements InternalFeat
         if (isDarwin()) {
             /* Caches the default interface. */
             initializeAtRunTime(a, "java.net.DefaultInterface");
-        }
-        if (isWindows()) {
-            initializeAtRunTime(a, "sun.net.dns.ResolverConfigurationImpl");
         }
     }
 
@@ -110,11 +102,6 @@ class JNIRegistrationJavaNet extends JNIRegistrationUtil implements InternalFeat
         }
 
         a.registerReachabilityHandler(JNIRegistrationJavaNet::registerDefaultProxySelectorInit, method(a, "sun.net.spi.DefaultProxySelector", "init"));
-
-        if (isWindows()) {
-            a.registerReachabilityHandler(JNIRegistrationJavaNet::registerResolverConfigurationImplInit0,
-                            method(a, "sun.net.dns.ResolverConfigurationImpl", "init0"));
-        }
     }
 
     static void registerInitInetAddressIDs(DuringAnalysisAccess a) {
@@ -133,9 +120,6 @@ class JNIRegistrationJavaNet extends JNIRegistrationUtil implements InternalFeat
         RuntimeJNIAccess.register(constructor(a, "java.net.Inet6Address"));
         RuntimeJNIAccess.register(fields(a, "java.net.Inet6Address", "holder6"));
         RuntimeJNIAccess.register(fields(a, "java.net.Inet6Address$Inet6AddressHolder", "ipaddress", "scope_id", "scope_id_set", "scope_ifname"));
-
-        /* Used by getEnhancedExceptionsAllowed() in net_util.c (JDK-8348986) */
-        RuntimeJNIAccess.register(fields(a, "jdk.internal.util.Exceptions", "enhancedNonSocketExceptionText"));
     }
 
     private static void registerNetworkInterfaceInit(DuringAnalysisAccess a) {
@@ -181,9 +165,5 @@ class JNIRegistrationJavaNet extends JNIRegistrationUtil implements InternalFeat
         RuntimeJNIAccess.register(fields(a, "java.net.Proxy$Type", "HTTP", "SOCKS"));
 
         RuntimeJNIAccess.register(method(a, "java.net.InetSocketAddress", "createUnresolved", String.class, int.class));
-    }
-
-    private static void registerResolverConfigurationImplInit0(DuringAnalysisAccess a) {
-        RuntimeJNIAccess.register(fields(a, "sun.net.dns.ResolverConfigurationImpl", "os_searchlist", "os_nameservers"));
     }
 }

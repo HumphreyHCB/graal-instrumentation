@@ -24,7 +24,6 @@
  */
 package com.oracle.svm.agent;
 
-import static com.oracle.svm.agent.BreakpointInterceptor.getTypeDescriptor;
 import static com.oracle.svm.core.jni.JNIObjectHandles.nullHandle;
 import static com.oracle.svm.jvmtiagentbase.Support.check;
 import static com.oracle.svm.jvmtiagentbase.Support.checkJni;
@@ -95,8 +94,8 @@ final class JniCallInterceptor {
 
         tracer.traceCall("jni",
                         function,
-                        getTypeDescriptor(env, clazz),
-                        getTypeDescriptor(env, declaringClass),
+                        getClassNameOr(env, clazz, null, Tracer.UNKNOWN_VALUE),
+                        getClassNameOr(env, declaringClass, null, Tracer.UNKNOWN_VALUE),
                         getClassNameOr(env, callerClass, null, Tracer.UNKNOWN_VALUE),
                         result,
                         state.getFullStackTraceOrNull(),
@@ -138,10 +137,7 @@ final class JniCallInterceptor {
             result = nullHandle();
         }
         if (shouldTrace()) {
-            String className = fromCString(name);
-            if (className != null) {
-                traceCall(env, "FindClass", nullHandle(), nullHandle(), callerClass, name.notEqual(nullHandle()), state, className);
-            }
+            traceCall(env, "FindClass", nullHandle(), nullHandle(), callerClass, name.notEqual(nullHandle()), state, fromCString(name));
         }
         return result;
     }

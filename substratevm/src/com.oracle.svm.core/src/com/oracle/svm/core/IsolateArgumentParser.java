@@ -34,10 +34,8 @@ import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CO
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -55,29 +53,11 @@ import com.oracle.svm.core.c.function.CEntryPointCreateIsolateParameters;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredImageSingleton;
 import com.oracle.svm.core.graal.RuntimeCompilation;
 import com.oracle.svm.core.headers.LibC;
-import com.oracle.svm.core.imagelayer.BuildingImageLayerPredicate;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
-import com.oracle.svm.core.layeredimagesingleton.ImageSingletonLoader;
-import com.oracle.svm.core.layeredimagesingleton.ImageSingletonWriter;
-import com.oracle.svm.core.layeredimagesingleton.LayeredPersistFlags;
 import com.oracle.svm.core.memory.UntrackedNullableNativeMemory;
 import com.oracle.svm.core.option.RuntimeOptionKey;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacksSupplier;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InitialLayerOnly;
-import com.oracle.svm.core.traits.SingletonTrait;
-import com.oracle.svm.core.traits.SingletonTraitKind;
-import com.oracle.svm.core.traits.SingletonTraits;
-import com.oracle.svm.core.util.ImageHeapList;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.options.OptionKey;
-import jdk.graal.compiler.word.Word;
 
 /**
  * Parses a small subset of the runtime arguments before the image heap is mapped and before the
@@ -87,10 +67,17 @@ import jdk.graal.compiler.word.Word;
  * stored in {@code argv} is used.
  */
 @AutomaticallyRegisteredImageSingleton
-@SingletonTraits(access = AllAccess.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = InitialLayerOnly.class)
 public class IsolateArgumentParser {
-    @SuppressWarnings("unchecked")//
-    private final List<RuntimeOptionKey<?>> options = (List<RuntimeOptionKey<?>>) ImageHeapList.createGeneric(RuntimeOptionKey.class);
+    private static final RuntimeOptionKey<?>[] OPTIONS = {
+                    SubstrateGCOptions.MinHeapSize,
+                    SubstrateGCOptions.MaxHeapSize,
+                    SubstrateGCOptions.MaxNewSize,
+                    SubstrateGCOptions.ReservedAddressSpaceSize,
+                    SubstrateOptions.ActiveProcessorCount,
+                    SubstrateOptions.ConcealedOptions.AutomaticReferenceHandling,
+                    SubstrateOptions.ConcealedOptions.UsePerfData,
+                    SubstrateOptions.ConcealedOptions.MaxRAM
+    };
     private static final CGlobalData<CCharPointer> OPTION_NAMES = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionNames);
     private static final CGlobalData<CIntPointer> OPTION_NAME_POSITIONS = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionNamePosition);
     private static final CGlobalData<CCharPointer> OPTION_TYPES = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionTypes);
@@ -99,8 +86,11 @@ public class IsolateArgumentParser {
     /**
      * All values (regardless of their type) are stored as 8 byte values. See
      * {@link IsolateArguments#setParsedArgs(CLongPointer)} for more information.
+     *
+     * For directly initializing this array, no method depending on
+     * {@link IsolateArgumentParser#singleton()} may be used.
      */
-    private long[] parsedOptionValues;
+    private final long[] parsedOptionValues = new long[getOptions0().length];
 
     private static final long K = 1024;
     private static final long M = K * K;
@@ -119,23 +109,10 @@ public class IsolateArgumentParser {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public synchronized void register(RuntimeOptionKey<?> optionKey) {
-        assert optionKey != null;
-        assert singleton().parsedOptionValues == null;
-
-        singleton().options.add(optionKey);
-    }
-
-    @Platforms(Platform.HOSTED_ONLY.class)
-    public synchronized void sealOptions() {
-        singleton().parsedOptionValues = new long[getOptionCount()];
-    }
-
-    @Platforms(Platform.HOSTED_ONLY.class)
     private static byte[] createOptionNames() {
         StringBuilder optionNames = new StringBuilder();
         for (int i = 0; i < getOptionCount(); i++) {
-            optionNames.append(getOptions().get(i).getName());
+            optionNames.append(getOptions()[i].getName());
             optionNames.append("\0");
         }
         return optionNames.toString().getBytes(StandardCharsets.ISO_8859_1);
@@ -161,7 +138,7 @@ public class IsolateArgumentParser {
         byte[] result = new byte[Byte.BYTES * getOptionCount()];
         ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.nativeOrder());
         for (int i = 0; i < getOptionCount(); i++) {
-            Class<?> optionValueType = getOptions().get(i).getDescriptor().getOptionValueType();
+            Class<?> optionValueType = getOptions()[i].getDescriptor().getOptionValueType();
             buffer.put(OptionValueType.fromClass(optionValueType));
         }
         return result;
@@ -172,7 +149,7 @@ public class IsolateArgumentParser {
         byte[] result = new byte[Long.BYTES * getOptionCount()];
         ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.nativeOrder());
         for (int i = 0; i < getOptionCount(); i++) {
-            RuntimeOptionKey<?> option = getOptions().get(i);
+            RuntimeOptionKey<?> option = getOptions()[i];
             VMError.guarantee(option.isIsolateCreationOnly(), "Options parsed by IsolateArgumentParser should all have the IsolateCreationOnly flag. %s doesn't", option);
             long value = toLong(option.getHostedValue(), option.getDescriptor().getOptionValueType());
             buffer.putLong(value);
@@ -196,17 +173,18 @@ public class IsolateArgumentParser {
     }
 
     @Fold
-    protected static List<RuntimeOptionKey<?>> getOptions() {
-        return singleton().options;
+    protected static RuntimeOptionKey<?>[] getOptions() {
+        return singleton().getOptions0();
+    }
+
+    @Fold
+    protected RuntimeOptionKey<?>[] getOptions0() {
+        return OPTIONS;
     }
 
     @Fold
     protected static int getOptionCount() {
-        if (ImageLayerBuildingSupport.firstImageBuild()) {
-            return getOptions().size();
-        } else {
-            return LayeredOptionInfo.singleton().getNumOptions();
-        }
+        return getOptions().length;
     }
 
     @Uninterruptible(reason = "Still being initialized.")
@@ -318,7 +296,7 @@ public class IsolateArgumentParser {
 
     public void verifyOptionValues() {
         for (int i = 0; i < getOptionCount(); i++) {
-            RuntimeOptionKey<?> option = getOptions().get(i);
+            RuntimeOptionKey<?> option = getOptions()[i];
             if (shouldValidate(option)) {
                 validate(option, getOptionValue(i));
             }
@@ -358,7 +336,7 @@ public class IsolateArgumentParser {
     }
 
     protected Object getOptionValue(int index) {
-        Class<?> optionValueType = getOptions().get(index).getDescriptor().getOptionValueType();
+        Class<?> optionValueType = getOptions()[index].getDescriptor().getOptionValueType();
         long value = parsedOptionValues[index];
         if (optionValueType == Boolean.class) {
             assert value == 0L || value == 1L : value;
@@ -412,14 +390,7 @@ public class IsolateArgumentParser {
             arguments.setIsCompilationIsolate(false);
         }
 
-        /*
-         * If a value for ReservedAddressSpaceSize is set in the isolate parameters, then this value
-         * has a higher priority than a default value that was set at build-time.
-         */
-        UnsignedWord reservedAddressSpaceSize = parameters.reservedSpaceSize();
-        if (reservedAddressSpaceSize.notEqual(0)) {
-            writeLong(arguments, getOptionIndex(SubstrateGCOptions.ReservedAddressSpaceSize), reservedAddressSpaceSize.rawValue());
-        }
+        writeLong(arguments, getOptionIndex(SubstrateGCOptions.ReservedAddressSpaceSize), parameters.reservedSpaceSize().rawValue());
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
@@ -582,20 +553,10 @@ public class IsolateArgumentParser {
 
     @Fold
     public static int getOptionIndex(RuntimeOptionKey<?> key) {
-        if (ImageLayerBuildingSupport.firstImageBuild()) {
-            List<RuntimeOptionKey<?>> options = getOptions();
-            for (int i = 0; i < options.size(); i++) {
-                if (options.get(i) == key) {
-                    return i;
-                }
-            }
-        } else {
-            var keyName = key.getName();
-            var optionNames = LayeredOptionInfo.singleton().getOptionNames();
-            for (int i = 0; i < optionNames.size(); i++) {
-                if (optionNames.get(i).equals(keyName)) {
-                    return i;
-                }
+        RuntimeOptionKey<?>[] options = getOptions();
+        for (int i = 0; i < options.length; i++) {
+            if (options[i] == key) {
+                return i;
             }
         }
 
@@ -630,78 +591,6 @@ public class IsolateArgumentParser {
         @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
         public static boolean isNumeric(byte optionValueType) {
             return optionValueType == INTEGER || optionValueType == LONG;
-        }
-    }
-
-    /**
-     * Within {@link IsolateArgumentParser} many methods need to be {@link Fold}ed. This class adds
-     * support so that we can handle these method folds within the application layer.
-     */
-    @Platforms(Platform.HOSTED_ONLY.class)
-    @AutomaticallyRegisteredImageSingleton(onlyWith = BuildingImageLayerPredicate.class)
-    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = LayeredCallbacks.class, layeredInstallationKind = Independent.class)
-    static class LayeredOptionInfo {
-        private static final int UNSET = -1;
-        final int numOptions;
-        final List<String> optionNames;
-
-        LayeredOptionInfo() {
-            this(UNSET, null);
-        }
-
-        LayeredOptionInfo(int numOptions, List<String> optionNames) {
-            this.numOptions = numOptions;
-            this.optionNames = optionNames;
-        }
-
-        static LayeredOptionInfo singleton() {
-            return ImageSingletons.lookup(LayeredOptionInfo.class);
-        }
-
-        int getNumOptions() {
-            if (numOptions == UNSET) {
-                throw VMError.shouldNotReachHere("numOptions is unset");
-            }
-            return numOptions;
-        }
-
-        List<String> getOptionNames() {
-            Objects.requireNonNull(optionNames);
-            return optionNames;
-        }
-    }
-
-    static class LayeredCallbacks extends SingletonLayeredCallbacksSupplier {
-
-        @Override
-        public SingletonTrait getLayeredCallbacksTrait() {
-            return new SingletonTrait(SingletonTraitKind.LAYERED_CALLBACKS, new SingletonLayeredCallbacks<LayeredOptionInfo>() {
-                @Override
-                public LayeredPersistFlags doPersist(ImageSingletonWriter writer, LayeredOptionInfo singleton) {
-                    if (ImageLayerBuildingSupport.firstImageBuild()) {
-                        writer.writeInt("numOptions", IsolateArgumentParser.getOptionCount());
-                        writer.writeStringList("optionNames", IsolateArgumentParser.getOptions().stream().map(OptionKey::getName).toList());
-                    } else {
-                        writer.writeInt("numOptions", singleton.getNumOptions());
-                        writer.writeStringList("optionNames", singleton.optionNames);
-                    }
-                    return LayeredPersistFlags.CREATE;
-                }
-
-                @Override
-                public Class<? extends SingletonLayeredCallbacks.LayeredSingletonInstantiator<?>> getSingletonInstantiator() {
-                    return SingletonInstantiator.class;
-                }
-            });
-        }
-    }
-
-    static class SingletonInstantiator implements SingletonLayeredCallbacks.LayeredSingletonInstantiator<LayeredOptionInfo> {
-        @Override
-        public LayeredOptionInfo createFromLoader(ImageSingletonLoader loader) {
-            int numOptions = loader.readInt("numOptions");
-            var optionNames = Collections.unmodifiableList(loader.readStringList("optionNames"));
-            return new LayeredOptionInfo(numOptions, optionNames);
         }
     }
 }

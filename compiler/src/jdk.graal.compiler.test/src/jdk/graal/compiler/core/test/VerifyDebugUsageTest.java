@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,6 @@ import java.lang.reflect.Modifier;
 import org.junit.Test;
 
 import jdk.graal.compiler.api.test.Graal;
-import jdk.graal.compiler.core.test.VerifyPhase.VerificationError;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugContext.Builder;
@@ -46,6 +45,7 @@ import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.PhaseSuite;
+import jdk.graal.compiler.phases.VerifyPhase.VerificationError;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.graal.compiler.phases.util.Providers;
 import jdk.graal.compiler.runtime.RuntimeProvider;
@@ -67,9 +67,10 @@ public class VerifyDebugUsageTest {
 
     private static final class InvalidLogAndIndentUsagePhase extends TestPhase {
         @Override
+        @SuppressWarnings("try")
         protected void run(StructuredGraph graph) {
             DebugContext debug = graph.getDebug();
-            try (Indent _ = debug.logAndIndent("%s", graph.toString())) {
+            try (Indent i = debug.logAndIndent("%s", graph.toString())) {
                 for (Node n : graph.getNodes()) {
                     debug.log("%s", n);
                 }
@@ -106,6 +107,15 @@ public class VerifyDebugUsageTest {
         }
     }
 
+    private static final class InvalidVerifyUsagePhase extends TestPhase {
+        @Override
+        protected void run(StructuredGraph graph) {
+            DebugContext debug = graph.getDebug();
+            debug.verify(graph, "%s", graph.toString());
+        }
+
+    }
+
     private static final class InvalidConcatLogUsagePhase extends TestPhase {
         @Override
         protected void run(StructuredGraph graph) {
@@ -119,9 +129,10 @@ public class VerifyDebugUsageTest {
 
     private static final class InvalidConcatLogAndIndentUsagePhase extends TestPhase {
         @Override
+        @SuppressWarnings("try")
         protected void run(StructuredGraph graph) {
             DebugContext debug = graph.getDebug();
-            try (Indent _ = debug.logAndIndent("error " + graph)) {
+            try (Indent i = debug.logAndIndent("error " + graph)) {
                 for (Node n : graph.getNodes()) {
                     debug.log("%s", n);
                 }
@@ -139,6 +150,15 @@ public class VerifyDebugUsageTest {
 
     }
 
+    static class InvalidConcatVerifyUsagePhase extends TestPhase {
+        @Override
+        protected void run(StructuredGraph graph) {
+            DebugContext debug = graph.getDebug();
+            debug.verify(graph, "error " + graph);
+        }
+
+    }
+
     static class ValidLogUsagePhase extends TestPhase {
         @Override
         protected void run(StructuredGraph graph) {
@@ -152,9 +172,10 @@ public class VerifyDebugUsageTest {
 
     static class ValidLogAndIndentUsagePhase extends TestPhase {
         @Override
+        @SuppressWarnings("try")
         protected void run(StructuredGraph graph) {
             DebugContext debug = graph.getDebug();
-            try (Indent _ = debug.logAndIndent("%s", graph)) {
+            try (Indent i = debug.logAndIndent("%s", graph)) {
                 for (Node n : graph.getNodes()) {
                     debug.log("%s", n);
                 }
@@ -168,6 +189,15 @@ public class VerifyDebugUsageTest {
         protected void run(StructuredGraph graph) {
             DebugContext debug = graph.getDebug();
             debug.dump(DebugContext.BASIC_LEVEL, graph, "%s", graph);
+        }
+
+    }
+
+    static class ValidVerifyUsagePhase extends TestPhase {
+        @Override
+        protected void run(StructuredGraph graph) {
+            DebugContext debug = graph.getDebug();
+            debug.verify(graph, "%s", graph);
         }
 
     }
@@ -213,6 +243,11 @@ public class VerifyDebugUsageTest {
     }
 
     @Test(expected = VerificationError.class)
+    public void testVerifyInvalid() {
+        testDebugUsageClass(InvalidVerifyUsagePhase.class);
+    }
+
+    @Test(expected = VerificationError.class)
     public void testDumpInvalid() {
         testDebugUsageClass(InvalidDumpUsagePhase.class);
     }
@@ -238,6 +273,11 @@ public class VerifyDebugUsageTest {
     }
 
     @Test(expected = VerificationError.class)
+    public void testVerifyInvalidConcat() {
+        testDebugUsageClass(InvalidConcatVerifyUsagePhase.class);
+    }
+
+    @Test(expected = VerificationError.class)
     public void testDumpInvalidConcat() {
         testDebugUsageClass(InvalidConcatDumpUsagePhase.class);
     }
@@ -250,6 +290,11 @@ public class VerifyDebugUsageTest {
     @Test()
     public void testLogAndIndentValid() {
         testDebugUsageClass(ValidLogAndIndentUsagePhase.class);
+    }
+
+    @Test
+    public void testVerifyValid() {
+        testDebugUsageClass(ValidVerifyUsagePhase.class);
     }
 
     @Test
@@ -277,6 +322,7 @@ public class VerifyDebugUsageTest {
         testDebugUsageClass(ValidGraalErrorCtorPhase.class);
     }
 
+    @SuppressWarnings("try")
     private static void testDebugUsageClass(Class<?> c) {
         RuntimeProvider rt = Graal.getRequiredCapability(RuntimeProvider.class);
         Providers providers = rt.getHostBackend().getProviders();
@@ -293,7 +339,7 @@ public class VerifyDebugUsageTest {
                 ResolvedJavaMethod method = metaAccess.lookupJavaMethod(m);
                 StructuredGraph graph = new StructuredGraph.Builder(options, debug).method(method).build();
                 graphBuilderSuite.apply(graph, context);
-                try (DebugCloseable _ = debug.disableIntercept()) {
+                try (DebugCloseable s = debug.disableIntercept()) {
                     new VerifyDebugUsage().apply(graph, context);
                 }
             }

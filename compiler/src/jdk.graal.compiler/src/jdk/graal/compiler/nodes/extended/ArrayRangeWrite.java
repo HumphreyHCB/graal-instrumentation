@@ -24,22 +24,13 @@
  */
 package jdk.graal.compiler.nodes.extended;
 
-import jdk.graal.compiler.nodes.FixedAccessNodeInterface;
 import jdk.graal.compiler.nodes.FixedNode;
 import jdk.graal.compiler.nodes.FixedWithNextNode;
+import jdk.graal.compiler.nodes.FixedWithNextNodeInterface;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.memory.address.AddressNode;
 
-/**
- * Represents a node in the graph that writes to a range of memory in an array. This interface
- * provides methods to access the address of the region being written, the length of the range, and
- * other relevant information about the write operation.
- */
-public interface ArrayRangeWrite extends FixedAccessNodeInterface {
-
-    /**
-     * Returns the address node representing the base address of the array being written to.
-     */
+public interface ArrayRangeWrite extends FixedWithNextNodeInterface {
     AddressNode getAddress();
 
     /**
@@ -59,9 +50,6 @@ public interface ArrayRangeWrite extends FixedAccessNodeInterface {
      */
     boolean isInitialization();
 
-    /**
-     * Returns the stride (in bytes) between consecutive elements in the array.
-     */
     int getElementStride();
 
     /**

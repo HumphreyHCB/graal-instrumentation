@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.graal.isolated;
 
-import com.oracle.svm.core.graal.isolated.ClientHandle;
-
 import jdk.vm.ci.meta.SpeculationLog.SpeculationReason;
 
 public final class IsolatedSpeculationReason extends IsolatedObjectProxy<SpeculationReason> implements SpeculationReason {

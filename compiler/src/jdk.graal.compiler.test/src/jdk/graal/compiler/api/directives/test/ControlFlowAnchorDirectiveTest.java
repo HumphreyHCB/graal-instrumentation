@@ -29,14 +29,10 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import jdk.graal.compiler.annotation.AnnotationValue;
-import jdk.graal.compiler.annotation.AnnotationValueSupport;
 import jdk.graal.compiler.api.directives.GraalDirectives;
 import jdk.graal.compiler.core.test.GraalCompilerTest;
 import jdk.graal.compiler.graph.Node;
@@ -48,6 +44,9 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
 import jdk.graal.compiler.nodes.debug.ControlFlowAnchorNode;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
+import org.junit.Assert;
+import org.junit.Test;
+
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public class ControlFlowAnchorDirectiveTest extends GraalCompilerTest {
@@ -227,16 +226,14 @@ public class ControlFlowAnchorDirectiveTest extends GraalCompilerTest {
         g.copy(g.getDebug());
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<AnnotationValue> getNodeCountAnnotations(StructuredGraph graph) {
+    private static List<NodeCount> getNodeCountAnnotations(StructuredGraph graph) {
         ResolvedJavaMethod method = graph.method();
-        AnnotationValue snippet = AnnotationValueSupport.getAnnotationValue(method, AnchorSnippet.class);
+        AnchorSnippet snippet = method.getAnnotation(AnchorSnippet.class);
         if (snippet != null) {
-            return (List<AnnotationValue>) snippet.get("value", List.class);
+            return Arrays.asList(snippet.value());
         }
 
-        AnnotationValue single = AnnotationValueSupport.getAnnotationValue(method, NodeCount.class);
-
+        NodeCount single = method.getAnnotation(NodeCount.class);
         if (single != null) {
             return Collections.singletonList(single);
         }
@@ -249,7 +246,6 @@ public class ControlFlowAnchorDirectiveTest extends GraalCompilerTest {
         return OptimisticOptimizations.ALL.remove(OptimisticOptimizations.Optimization.RemoveNeverExecutedCode);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void checkLowTierGraph(StructuredGraph graph) {
         List<ControlFlowAnchorNode> anchors = graph.getNodes().filter(ControlFlowAnchorNode.class).snapshot();
@@ -263,10 +259,9 @@ public class ControlFlowAnchorDirectiveTest extends GraalCompilerTest {
             }
         }
 
-        for (AnnotationValue nodeCount : getNodeCountAnnotations(graph)) {
-            Class<? extends Node> nodeClass = (Class<? extends Node>) getSnippetReflection().originalClass(nodeCount.getType("nodeClass"));
-            NodeIterable<? extends Node> nodes = graph.getNodes().filter(nodeClass);
-            Assert.assertEquals(nodeClass.getSimpleName(), nodeCount.getInt("expectedCount"), nodes.count());
+        for (NodeCount nodeCount : getNodeCountAnnotations(graph)) {
+            NodeIterable<? extends Node> nodes = graph.getNodes().filter(nodeCount.nodeClass());
+            Assert.assertEquals(nodeCount.nodeClass().getSimpleName(), nodeCount.expectedCount(), nodes.count());
         }
     }
 }

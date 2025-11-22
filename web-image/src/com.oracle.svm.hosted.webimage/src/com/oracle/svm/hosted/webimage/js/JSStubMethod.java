@@ -26,22 +26,21 @@
 package com.oracle.svm.hosted.webimage.js;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.graalvm.webimage.api.JS;
+import org.graalvm.nativeimage.AnnotationAccess;
 
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.HostedProviders;
-import com.oracle.svm.hosted.annotation.CustomSubstitutionMethod;
-import com.oracle.svm.hosted.phases.HostedGraphKit;
-import com.oracle.svm.hosted.webimage.options.WebImageOptions;
-import com.oracle.svm.hosted.webimage.phases.WebImageHostedGraphKit;
-import com.oracle.svm.util.AnnotationUtil;
-import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.webimage.annotation.JSRawCall;
 import com.oracle.svm.webimage.functionintrinsics.JSConversion;
+import com.oracle.svm.hosted.annotation.CustomSubstitutionMethod;
+import com.oracle.svm.hosted.webimage.options.WebImageOptions;
+import com.oracle.svm.hosted.webimage.phases.WebImageHostedGraphKit;
+import com.oracle.svm.hosted.phases.HostedGraphKit;
+import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
@@ -104,29 +103,8 @@ public class JSStubMethod extends CustomSubstitutionMethod {
 
     @Override
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
-        boolean rawCall;
-        boolean coercion;
-        JSBody.JSCode jsCode;
-        if (getOriginal() instanceof JSObjectAccessMethod jsObjectAccessMethod) {
-            rawCall = false;
-            /*
-             * Only the load return value should be coerced. For stores, only regular conversion
-             * should be applied.
-             *
-             * TODO GR-65036 We should coerce in both directions
-             */
-            coercion = jsObjectAccessMethod.isLoad();
-            jsCode = jsObjectAccessMethod.getJSCode();
-        } else {
-            rawCall = AnnotationUtil.isAnnotationPresent(method, JSRawCall.class);
-            coercion = AnnotationUtil.isAnnotationPresent(method, JS.Coerce.class);
-            JS js = Objects.requireNonNull(AnnotationUtil.getAnnotation(method, JS.class));
-            jsCode = new JSBody.JSCode(js, method);
-        }
-        return buildGraph(debug, method, providers, purpose, jsCode, coercion, rawCall);
-    }
-
-    private static StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose, JSBody.JSCode jsCode, boolean coercion, boolean rawCall) {
+        boolean rawCall = AnnotationAccess.isAnnotationPresent(method, JSRawCall.class);
+        boolean coercion = AnnotationAccess.isAnnotationPresent(method, JS.Coerce.class);
         if (rawCall && coercion) {
             throw JVMCIError.shouldNotReachHere("Cannot use JS.Coerce and JSRawCall annotation simultaneously: " + method.format("%H.%n"));
         }
@@ -157,6 +135,13 @@ public class JSStubMethod extends CustomSubstitutionMethod {
 
         // Step 2: insert the JS body representation node.
         int bci = kit.bci();
+        JSBody.JSCode jsCode;
+        JS js = AnnotationAccess.getAnnotation(method, JS.class);
+        if (js != null) {
+            jsCode = new JSBody.JSCode(js, method);
+        } else {
+            throw JVMCIError.shouldNotReachHere();
+        }
 
         Stamp jsBodyStamp = rawCall ? returnStamp(method.getSignature()) : StampFactory.object();
         AnalysisMethod exceptionHandler;

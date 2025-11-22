@@ -25,16 +25,10 @@
 package com.oracle.svm.core.layeredimagesingleton;
 
 import java.util.Collection;
-import java.util.Set;
 
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InstallationKind;
-import com.oracle.svm.core.traits.SingletonTrait;
-import com.oracle.svm.core.traits.SingletonTraitKind;
 
 import jdk.vm.ci.meta.JavaConstant;
 
@@ -48,21 +42,16 @@ public interface LayeredImageSingletonSupport {
     /**
      * This method is intended to be used in special situations during the building process to
      * access singletons which (1) are only allowed to be accessed at runtime
-     * ({@link SingletonAccessFlags#RUNTIME_ACCESS_ONLY}) and/or (2) are annotated with
-     * {@link InstallationKind#MULTI_LAYER}.
+     * ({@link LayeredImageSingletonBuilderFlags#RUNTIME_ACCESS}) and/or (2) implement
+     * {@link MultiLayeredImageSingleton}.
      */
     <T> T lookup(Class<T> key, boolean accessRuntimeOnly, boolean accessMultiLayer);
 
-    Set<Object> getSingletonsWithTrait(SingletonLayeredInstallationKind.InstallationKind kind);
+    Collection<Class<?>> getMultiLayeredImageSingletonKeys();
 
-    Collection<Class<?>> getKeysWithTrait(SingletonLayeredInstallationKind.InstallationKind kind);
+    Collection<Class<?>> getFutureLayerAccessibleImageSingletonKeys();
 
-    void forbidNewTraitInstallations(SingletonLayeredInstallationKind.InstallationKind kind);
+    void freezeLayeredImageSingletonMetadata();
 
     JavaConstant getInitialLayerOnlyImageSingleton(Class<?> key);
-
-    /**
-     * @return trait associated with this key if it exists, or else {@code null}.
-     */
-    SingletonTrait getTraitForUninstalledSingleton(Class<?> key, SingletonTraitKind kind);
 }

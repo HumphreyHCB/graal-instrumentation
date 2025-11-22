@@ -44,7 +44,7 @@ import com.oracle.truffle.runtime.OptimizedTruffleRuntimeListener;
 public class MaximumCompilationsTest {
     public static class AllwaysDeoptRoot extends RootNode {
 
-        AllwaysDeoptRoot() {
+        protected AllwaysDeoptRoot() {
             super(null);
         }
 
@@ -80,8 +80,7 @@ public class MaximumCompilationsTest {
             }
         });
 
-        Context.Builder builder = Context.newBuilder().option("engine.CompilationFailureAction", "Silent");
-        try (Context context = (Runtime.version().feature() >= 25 ? builder.option("compiler.DeoptCycleDetectionThreshold", "-1") : builder).build()) {
+        try (Context context = Context.newBuilder().option("engine.CompilationFailureAction", "Silent").build()) {
             context.enter();
             CallTarget callTarget = new AllwaysDeoptRoot().getCallTarget();
             callTargetRef.set(callTarget);

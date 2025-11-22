@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -126,8 +126,6 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
 
     private final boolean immutableGraph;
 
-    private final boolean verifyProxies;
-
     public SchedulePhase(OptionValues options) {
         this(false, options);
     }
@@ -141,13 +139,8 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
     }
 
     public SchedulePhase(SchedulingStrategy strategy, boolean immutableGraph) {
-        this(strategy, immutableGraph, true);
-    }
-
-    public SchedulePhase(SchedulingStrategy strategy, boolean immutableGraph, boolean verifyProxies) {
         this.selectedStrategy = strategy;
         this.immutableGraph = immutableGraph;
-        this.verifyProxies = verifyProxies;
     }
 
     /**
@@ -214,7 +207,6 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
     protected void run(StructuredGraph graph, CoreProviders context) {
         try (NodeEventScope scope = verifyImmutableGraph(graph)) {
             Instance inst = new Instance(context.getLowerer().supportsImplicitNullChecks());
-            inst.verifyProxies = verifyProxies;
             inst.run(graph, selectedStrategy, immutableGraph);
         }
     }
@@ -243,14 +235,6 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
         }
     }
 
-    public static void runWithoutContextOptimizations(StructuredGraph graph, SchedulingStrategy strategy, ControlFlowGraph cfg, boolean immutable, boolean verifyProxies) {
-        if (shouldApply(graph, strategy)) {
-            Instance inst = new Instance(cfg, false);
-            inst.verifyProxies = verifyProxies;
-            inst.run(graph, strategy, immutable);
-        }
-    }
-
     public static void run(StructuredGraph graph, SchedulingStrategy strategy, ControlFlowGraph cfg, CoreProviders context, boolean immutable) {
         if (shouldApply(graph, strategy)) {
             Instance inst = new Instance(cfg, context.getLowerer().supportsImplicitNullChecks());
@@ -268,7 +252,6 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
         protected BlockMap<List<Node>> blockToNodesMap;
         protected NodeMap<HIRBlock> nodeToBlockMap;
         protected boolean supportsImplicitNullChecks;
-        private boolean verifyProxies;
 
         public Instance(boolean supportsImplicitNullChecks) {
             this(null, supportsImplicitNullChecks);
@@ -309,11 +292,12 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
 
                 assert verifySchedule(cfg, latestBlockToNodesMap, currentNodeMap);
                 assert (!Assertions.detailedAssertionsEnabled(graph.getOptions())) ||
-                                ScheduleVerification.check(cfg.getStartBlock(), latestBlockToNodesMap, currentNodeMap, verifyProxies);
+                                ScheduleVerification.check(cfg.getStartBlock(), latestBlockToNodesMap, currentNodeMap);
 
                 this.blockToNodesMap = latestBlockToNodesMap;
 
             }
+            cfg.setNodeToBlock(currentNodeMap);
 
             graph.setLastSchedule(new ScheduleResult(this.cfg, this.nodeToBlockMap, this.blockToNodesMap, selectedStrategy));
         }
@@ -354,9 +338,9 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                             // We are scheduling a floating read node => check memory
                             // anti-dependencies.
                             FloatingReadNode floatingReadNode = (FloatingReadNode) currentNode;
-                            if (floatingReadNode.potentialAntiDependency()) {
+                            LocationIdentity location = floatingReadNode.getLocationIdentity();
+                            if (location.isMutable()) {
                                 // Location can be killed.
-                                LocationIdentity location = floatingReadNode.getLocationIdentity();
                                 constrainingLocation = location;
                                 if (currentBlock.canKill(location)) {
                                     if (killed == null) {
@@ -493,14 +477,12 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
 
         private static void sortNodesLatestWithinBlock(ControlFlowGraph cfg, BlockMap<List<Node>> earliestBlockToNodesMap, BlockMap<List<Node>> latestBlockToNodesMap, NodeMap<HIRBlock> currentNodeMap,
                         BlockMap<ArrayList<FloatingReadNode>> watchListMap, NodeBitMap visited, boolean supportsImplicitNullChecks) {
-            NodeStack nodeStack = new NodeStack();
             for (HIRBlock b : cfg.getBlocks()) {
-                sortNodesLatestWithinBlock(nodeStack, b, earliestBlockToNodesMap, latestBlockToNodesMap, currentNodeMap, watchListMap, visited, supportsImplicitNullChecks);
+                sortNodesLatestWithinBlock(b, earliestBlockToNodesMap, latestBlockToNodesMap, currentNodeMap, watchListMap, visited, supportsImplicitNullChecks);
             }
         }
 
-        private static void sortNodesLatestWithinBlock(NodeStack nodeStack, HIRBlock b, BlockMap<List<Node>> earliestBlockToNodesMap, BlockMap<List<Node>> latestBlockToNodesMap,
-                        NodeMap<HIRBlock> nodeMap,
+        private static void sortNodesLatestWithinBlock(HIRBlock b, BlockMap<List<Node>> earliestBlockToNodesMap, BlockMap<List<Node>> latestBlockToNodesMap, NodeMap<HIRBlock> nodeMap,
                         BlockMap<ArrayList<FloatingReadNode>> watchListMap, NodeBitMap unprocessed, boolean supportsImplicitNullChecks) {
             List<Node> earliestSorting = earliestBlockToNodesMap.get(b);
             ArrayList<Node> result = new ArrayList<>(earliestSorting.size());
@@ -518,7 +500,7 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                     // if multiple proxies reference the same value, schedule the value of a
                     // proxy once
                     if (value != null && nodeMap.get(value) == b && unprocessed.isMarked(value)) {
-                        sortIntoList(nodeStack, value, b, result, nodeMap, unprocessed);
+                        sortIntoList(value, b, result, nodeMap, unprocessed, null);
                     }
                 }
             }
@@ -528,19 +510,18 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                 // Only if the end node is either a control split or an end node, we need to force
                 // it to be the last node in the schedule.
                 fixedEndNode = endNode;
-                unprocessed.clear(fixedEndNode);
             }
             for (Node n : earliestSorting) {
                 if (n != fixedEndNode) {
                     if (n instanceof FixedNode) {
                         assert nodeMap.get(n) == b : Assertions.errorMessageContext("n", n, "b", b);
-                        checkWatchList(nodeStack, b, nodeMap, unprocessed, result, watchList, n);
-                        sortIntoList(nodeStack, n, b, result, nodeMap, unprocessed);
+                        checkWatchList(b, nodeMap, unprocessed, result, watchList, n);
+                        sortIntoList(n, b, result, nodeMap, unprocessed, null);
                     } else if (nodeMap.get(n) == b && n instanceof FloatingReadNode) {
                         FloatingReadNode floatingReadNode = (FloatingReadNode) n;
                         if (isImplicitNullOpportunity(floatingReadNode, b, supportsImplicitNullChecks)) {
                             // Schedule at the beginning of the block.
-                            sortIntoList(nodeStack, floatingReadNode, b, result, nodeMap, unprocessed);
+                            sortIntoList(floatingReadNode, b, result, nodeMap, unprocessed, null);
                         } else {
                             LocationIdentity location = floatingReadNode.getLocationIdentity();
                             if (b.canKill(location)) {
@@ -559,41 +540,38 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                 assert nodeMap.get(n) == b : n;
                 assert !(n instanceof FixedNode) : n;
                 if (unprocessed.isMarked(n)) {
-                    sortIntoList(nodeStack, n, b, result, nodeMap, unprocessed);
+                    sortIntoList(n, b, result, nodeMap, unprocessed, fixedEndNode);
                 }
             }
 
-            if (fixedEndNode != null) {
-                result.add(fixedEndNode);
-            } else if (endNode != null && unprocessed.isMarked(endNode)) {
-                sortIntoList(nodeStack, endNode, b, result, nodeMap, unprocessed);
+            if (endNode != null && unprocessed.isMarked(endNode)) {
+                sortIntoList(endNode, b, result, nodeMap, unprocessed, null);
             }
 
             latestBlockToNodesMap.put(b, result);
         }
 
-        private static void checkWatchList(NodeStack nodeStack, HIRBlock b, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed, ArrayList<Node> result, ArrayList<FloatingReadNode> watchList, Node n) {
+        private static void checkWatchList(HIRBlock b, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed, ArrayList<Node> result, ArrayList<FloatingReadNode> watchList, Node n) {
             if (watchList != null && !watchList.isEmpty()) {
                 // Check if this node kills a node in the watch list.
                 if (MemoryKill.isSingleMemoryKill(n)) {
                     LocationIdentity identity = ((SingleMemoryKill) n).getKilledLocationIdentity();
-                    checkWatchList(nodeStack, watchList, identity, b, result, nodeMap, unprocessed);
+                    checkWatchList(watchList, identity, b, result, nodeMap, unprocessed);
                 } else if (MemoryKill.isMultiMemoryKill(n)) {
                     for (LocationIdentity identity : ((MultiMemoryKill) n).getKilledLocationIdentities()) {
-                        checkWatchList(nodeStack, watchList, identity, b, result, nodeMap, unprocessed);
+                        checkWatchList(watchList, identity, b, result, nodeMap, unprocessed);
                     }
                 }
             }
         }
 
-        private static void checkWatchList(NodeStack nodeStack, ArrayList<FloatingReadNode> watchList, LocationIdentity identity, HIRBlock b, ArrayList<Node> result, NodeMap<HIRBlock> nodeMap,
-                        NodeBitMap unprocessed) {
+        private static void checkWatchList(ArrayList<FloatingReadNode> watchList, LocationIdentity identity, HIRBlock b, ArrayList<Node> result, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed) {
             if (identity.isImmutable()) {
                 // Nothing to do. This can happen for an initialization write.
             } else if (identity.isAny()) {
                 for (FloatingReadNode r : watchList) {
                     if (unprocessed.isMarked(r)) {
-                        sortIntoList(nodeStack, r, b, result, nodeMap, unprocessed);
+                        sortIntoList(r, b, result, nodeMap, unprocessed, null);
                     }
                 }
                 watchList.clear();
@@ -605,7 +583,7 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                     assert locationIdentity.isMutable();
                     if (unprocessed.isMarked(r)) {
                         if (identity.overlaps(locationIdentity)) {
-                            sortIntoList(nodeStack, r, b, result, nodeMap, unprocessed);
+                            sortIntoList(r, b, result, nodeMap, unprocessed, null);
                         } else {
                             ++index;
                             continue;
@@ -618,12 +596,13 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
             }
         }
 
-        private static void sortIntoList(NodeStack stack, Node n, HIRBlock b, ArrayList<Node> result, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed) {
+        private static void sortIntoList(Node n, HIRBlock b, ArrayList<Node> result, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed, Node excludeNode) {
             assert unprocessed.isMarked(n) : Assertions.errorMessage(n);
             assert nodeMap.get(n) == b : Assertions.errorMessage(n);
-            assert stack.isEmpty() : "Node stack must be pre-allocated, but empty.";
-            assert !(n instanceof PhiNode) : "Phi nodes will never be sorted into the list.";
-            assert !(n instanceof ProxyNode) : "Proxy nodes will never be sorted into the list.";
+
+            if (n instanceof PhiNode) {
+                return;
+            }
 
             unprocessed.clear(n);
 
@@ -631,32 +610,33 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
              * Schedule all unprocessed transitive inputs. This uses an explicit stack instead of
              * recursion to avoid overflowing the call stack.
              */
-            pushUnprocessedInputs(n, b, nodeMap, unprocessed, stack);
+            NodeStack stack = new NodeStack();
+            ArrayList<Node> tempList = new ArrayList<>();
+            stack.push(n);
             while (!stack.isEmpty()) {
                 Node top = stack.peek();
-                int added = pushUnprocessedInputs(top, b, nodeMap, unprocessed, stack);
-                if (added == 0) {
-                    if (unprocessed.isMarked(top)) {
-                        result.add(top);
+                pushUnprocessedInputs(top, b, nodeMap, unprocessed, excludeNode, stack, tempList);
+                if (stack.peek() == top) {
+                    if (top != n) {
+                        if (unprocessed.isMarked(top) && !(top instanceof ProxyNode)) {
+                            result.add(top);
+                        }
                         unprocessed.clear(top);
                     }
                     stack.pop();
                 }
             }
-            result.add(n);
+
+            if (n instanceof ProxyNode) {
+                // Skip proxy nodes.
+            } else {
+                result.add(n);
+            }
         }
 
-        private static int pushUnprocessedInputs(Node n, HIRBlock b, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed, NodeStack stack) {
-            int pushCount = 0;
-            for (Node input : n.inputs()) {
-                if (nodeMap.get(input) == b && unprocessed.isMarked(input)) {
-                    assert !(input instanceof PhiNode) : "Phi nodes will always be already unmarked in the bitmap.";
-                    assert !(input instanceof ProxyNode) : "Proxy nodes will always be already unmarked in the bitmap.";
-                    stack.push(input);
-                    pushCount++;
-                }
-            }
-
+        private static void pushUnprocessedInputs(Node n, HIRBlock b, NodeMap<HIRBlock> nodeMap, NodeBitMap unprocessed, Node excludeNode, NodeStack stack, ArrayList<Node> tempList) {
+            tempList.clear();
+            n.inputs().snapshotTo(tempList);
             /*
              * Nodes on top of the stack are scheduled first. Pushing inputs left to right would
              * therefore mean scheduling them right to left. We observe the best performance when
@@ -664,8 +644,12 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
              * explore more elaborate scheduling policies, like scheduling for reduced register
              * pressure using Sethi-Ullman numbering (GR-34624).
              */
-            stack.reverseTopElements(pushCount);
-            return pushCount;
+            for (int i = tempList.size() - 1; i >= 0; i--) {
+                Node input = tempList.get(i);
+                if (nodeMap.get(input) == b && unprocessed.isMarked(input) && input != excludeNode && !(input instanceof PhiNode)) {
+                    stack.push(input);
+                }
+            }
         }
 
         protected void calcLatestBlock(HIRBlock earliestBlock, SchedulingStrategy strategy, Node currentNode, NodeMap<HIRBlock> currentNodeMap, LocationIdentity constrainingLocation,
@@ -751,12 +735,16 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
             if (!supportsImplicitNullChecks) {
                 return false;
             }
-            if (currentNode instanceof FloatingReadNode floatingReadNode) {
+            if (currentNode instanceof FloatingReadNode) {
+                FloatingReadNode floatingReadNode = (FloatingReadNode) currentNode;
                 Node pred = block.getBeginNode().predecessor();
-                if (pred instanceof IfNode ifNode) {
-                    if (ifNode.condition() instanceof IsNullNode isNullNode && ifNode.getTrueSuccessorProbability() == 0.0) {
-                        ValueNode base = floatingReadNode.getAddress().getBase();
-                        return base != null && getUnproxifiedUncompressed(base) == getUnproxifiedUncompressed(isNullNode.getValue());
+                if (pred instanceof IfNode) {
+                    IfNode ifNode = (IfNode) pred;
+                    if (ifNode.condition() instanceof IsNullNode && ifNode.getTrueSuccessorProbability() == 0.0) {
+                        IsNullNode isNullNode = (IsNullNode) ifNode.condition();
+                        if (getUnproxifiedUncompressed(floatingReadNode.getAddress().getBase()) == getUnproxifiedUncompressed(isNullNode.getValue())) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -860,7 +848,16 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
              * Number of nodes in this micro block.
              */
             public int getNodeCount() {
+                assert getActualNodeCount() == nodeCount : getActualNodeCount() + " != " + nodeCount;
                 return nodeCount;
+            }
+
+            private int getActualNodeCount() {
+                int count = 0;
+                for (NodeEntry e = head; e != null; e = e.next) {
+                    count++;
+                }
+                return count;
             }
 
             /**
@@ -948,7 +945,7 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                 }
             }
 
-            if (graph.getGuardsStage().allowsFloatingGuards() && graph.hasNode(GuardNode.TYPE)) {
+            if (graph.getGuardsStage().allowsFloatingGuards() && graph.getNodes(GuardNode.TYPE).isNotEmpty()) {
                 // Now process guards.
                 if (GuardPriorities.getValue(graph.getOptions()) && withGuardOrder) {
                     EnumMap<GuardPriority, List<GuardNode>> guardsByPriority = new EnumMap<>(GuardPriority.class);
@@ -963,6 +960,8 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                 } else {
                     processNodes(visited, entries, stack, startBlock, graph.getNodes(GuardNode.TYPE));
                 }
+            } else {
+                assert graph.getNodes(GuardNode.TYPE).isEmpty();
             }
 
             // Now process inputs of fixed nodes.
@@ -1053,7 +1052,7 @@ public final class SchedulePhase extends BasePhase<CoreProviders> {
                 }
             }
 
-            assert (!Assertions.detailedAssertionsEnabled(cfg.graph.getOptions())) || ScheduleVerification.check(cfg.getStartBlock(), blockToNodes, nodeToBlock, verifyProxies);
+            assert (!Assertions.detailedAssertionsEnabled(cfg.graph.getOptions())) || ScheduleVerification.check(cfg.getStartBlock(), blockToNodes, nodeToBlock);
         }
 
         private static void processNodes(NodeBitMap visited, NodeMap<MicroBlock> entries, NodeStack stack, MicroBlock startBlock, Iterable<? extends Node> nodes) {

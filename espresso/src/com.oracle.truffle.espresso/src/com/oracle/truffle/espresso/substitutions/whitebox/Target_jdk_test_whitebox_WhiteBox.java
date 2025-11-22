@@ -255,26 +255,6 @@ public final class Target_jdk_test_whitebox_WhiteBox {
         return true;
     }
 
-    @Substitution(hasReceiver = true)
-    public static boolean isUbsanEnabled(@SuppressWarnings("unused") StaticObject self) {
-        return false;
-    }
-
-    @Substitution(hasReceiver = true)
-    public static boolean isAsanEnabled(@SuppressWarnings("unused") StaticObject self) {
-        return false;
-    }
-
-    @Substitution(hasReceiver = true)
-    public static boolean hasLibgraal(@SuppressWarnings("unused") StaticObject self) {
-        return false;
-    }
-
-    @Substitution(hasReceiver = true)
-    public static boolean isStatic(@SuppressWarnings("unused") StaticObject self) {
-        return false;
-    }
-
     public static class WhiteBoxNameProvider extends SubstitutionNamesProvider {
         private static final String[] NAMES = {
                         "Ljdk/test/whitebox/WhiteBox;",

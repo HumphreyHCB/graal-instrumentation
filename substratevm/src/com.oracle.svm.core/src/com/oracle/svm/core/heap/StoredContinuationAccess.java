@@ -116,11 +116,6 @@ public final class StoredContinuationAccess {
         return s.ip;
     }
 
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public static boolean isInitialized(StoredContinuation s) {
-        return s.ip.isNonNull();
-    }
-
     public static int allocateToYield(Target_jdk_internal_vm_Continuation c, Pointer baseSp, Pointer sp, CodePointer ip) {
         assert baseSp.isNonNull() && sp.isNonNull() && ip.isNonNull();
 
@@ -190,9 +185,9 @@ public final class StoredContinuationAccess {
 
     @AlwaysInline("De-virtualize calls to ObjectReferenceVisitor")
     @Uninterruptible(reason = "StoredContinuation must not move.", callerMustBe = true)
-    public static void walkReferences(StoredContinuation s, ObjectReferenceVisitor visitor) {
+    public static boolean walkReferences(StoredContinuation s, ObjectReferenceVisitor visitor) {
         if (!shouldWalkContinuation(s)) {
-            return;
+            return true;
         }
 
         JavaStackWalk walk = StackValue.get(JavaStackWalker.sizeOfJavaStackWalk());
@@ -213,6 +208,8 @@ public final class StoredContinuationAccess {
                 CodeInfoAccess.releaseTether(untetheredCodeInfo, tether);
             }
         }
+
+        return true;
     }
 
     @AlwaysInline("De-virtualize calls to visitor.")

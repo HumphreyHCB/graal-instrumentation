@@ -79,7 +79,6 @@ import jdk.graal.compiler.nodes.java.MethodCallTargetNode;
 import jdk.graal.compiler.nodes.java.StoreIndexedNode;
 import jdk.graal.compiler.phases.common.inlining.InliningUtil;
 import jdk.graal.compiler.phases.util.Providers;
-import jdk.graal.compiler.replacements.DefaultJavaLoweringProvider;
 import jdk.graal.compiler.replacements.GraphKit;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.CallingConvention;
@@ -240,7 +239,7 @@ public class SubstrateGraphKit extends GraphKit {
 
         // Sign or zero extend to get a clean int value. If a boolean result is expected, the int
         // value is coerced to true or false.
-        return DefaultJavaLoweringProvider.implicitUnsafePrimitiveLoadConvert(asKind(returnType), result);
+        return getLoweringProvider().implicitLoadConvertWithBooleanCoercionIfNecessary(getGraph(), asKind(returnType), result);
     }
 
     public InvokeNode createIndirectCall(ValueNode targetAddress, List<ValueNode> args, Signature signature, SubstrateCallingConventionKind callKind) {

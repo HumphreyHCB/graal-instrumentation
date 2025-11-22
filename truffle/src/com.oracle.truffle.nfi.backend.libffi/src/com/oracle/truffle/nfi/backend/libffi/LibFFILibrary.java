@@ -41,6 +41,7 @@
 package com.oracle.truffle.nfi.backend.libffi;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -123,14 +124,14 @@ final class LibFFILibrary implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    String getLanguageId() {
-        return LibFFILanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return LibFFILanguage.class;
     }
 
     @ExportMessage

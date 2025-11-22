@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.core.genscavenge;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
@@ -33,8 +31,9 @@ import org.graalvm.word.Pointer;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.genscavenge.remset.RememberedSet;
+import com.oracle.svm.core.heap.ObjectReferenceVisitor;
 import com.oracle.svm.core.heap.ReferenceAccess;
-import com.oracle.svm.core.heap.UninterruptibleObjectReferenceVisitor;
+import com.oracle.svm.core.hub.LayoutEncoding;
 import com.oracle.svm.core.log.Log;
 
 import jdk.graal.compiler.word.Word;
@@ -48,7 +47,7 @@ import jdk.graal.compiler.word.Word;
  * Since this visitor is used during collection, one instance of it is constructed during native
  * image generation.
  */
-public final class GreyToBlackObjRefVisitor implements UninterruptibleObjectReferenceVisitor {
+final class GreyToBlackObjRefVisitor implements ObjectReferenceVisitor {
     private final Counters counters;
 
     @Platforms(Platform.HOSTED_ONLY.class)
@@ -61,32 +60,31 @@ public final class GreyToBlackObjRefVisitor implements UninterruptibleObjectRefe
     }
 
     @Override
-    @AlwaysInline("GC performance")
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
-        Pointer pos = firstObjRef;
-        Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
-        while (pos.belowThan(end)) {
-            visitObjectReference(pos, compressed, holderObject);
-            pos = pos.add(referenceSize);
-        }
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    public boolean visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+        return visitObjectReferenceInline(objRef, 0, compressed, holderObject);
     }
 
+    @Override
     @AlwaysInline("GC performance")
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    private void visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+    public boolean visitObjectReferenceInline(Pointer objRef, int innerOffset, boolean compressed, Object holderObject) {
+        assert innerOffset >= 0;
         assert !objRef.isNull();
         counters.noteObjRef();
 
-        Pointer p = ReferenceAccess.singleton().readObjectAsUntrackedPointer(objRef, compressed);
+        Pointer offsetP = ReferenceAccess.singleton().readObjectAsUntrackedPointer(objRef, compressed);
+        assert offsetP.isNonNull() || innerOffset == 0;
+
+        Pointer p = offsetP.subtract(innerOffset);
         if (p.isNull()) {
             counters.noteNullReferent();
-            return;
+            return true;
         }
 
         if (HeapImpl.getHeapImpl().isInImageHeap(p)) {
             counters.noteNonHeapReferent();
-            return;
+            return true;
         }
 
         // This is the most expensive check as it accesses the heap fairly randomly, which results
@@ -99,31 +97,35 @@ public final class GreyToBlackObjRefVisitor implements UninterruptibleObjectRefe
                 counters.noteForwardedReferent();
                 // Update the reference to point to the forwarded Object.
                 Object obj = ohi.getForwardedObject(p, header);
-                ReferenceAccess.singleton().writeObjectAt(objRef, obj, compressed);
-                RememberedSet.get().dirtyCardIfNecessary(holderObject, obj, objRef);
-                return;
+                Object offsetObj = (innerOffset == 0) ? obj : Word.objectToUntrackedPointer(obj).add(innerOffset).toObject();
+                ReferenceAccess.singleton().writeObjectAt(objRef, offsetObj, compressed);
+                RememberedSet.get().dirtyCardIfNecessary(holderObject, obj);
+                return true;
             }
 
-            Object obj = p.toObjectNonNull();
+            Object obj = p.toObject();
             if (SerialGCOptions.useCompactingOldGen() && ObjectHeaderImpl.isMarkedHeader(header)) {
-                RememberedSet.get().dirtyCardIfNecessary(holderObject, obj, objRef);
-                return;
+                RememberedSet.get().dirtyCardIfNecessary(holderObject, obj);
+                return true;
             }
 
             // Promote the Object if necessary, making it at least grey, and ...
+            assert innerOffset < LayoutEncoding.getSizeFromObjectInGC(obj).rawValue();
             Object copy = GCImpl.getGCImpl().promoteObject(obj, header);
             if (copy != obj) {
                 // ... update the reference to point to the copy, making the reference black.
                 counters.noteCopiedReferent();
-                ReferenceAccess.singleton().writeObjectAt(objRef, copy, compressed);
+                Object offsetCopy = (innerOffset == 0) ? copy : Word.objectToUntrackedPointer(copy).add(innerOffset).toObject();
+                ReferenceAccess.singleton().writeObjectAt(objRef, offsetCopy, compressed);
             } else {
                 counters.noteUnmodifiedReference();
             }
 
             // The reference will not be updated if a whole chunk is promoted. However, we still
             // might have to dirty the card.
-            RememberedSet.get().dirtyCardIfNecessary(holderObject, copy, objRef);
+            RememberedSet.get().dirtyCardIfNecessary(holderObject, copy);
         }
+        return true;
     }
 
     public Counters openCounters() {

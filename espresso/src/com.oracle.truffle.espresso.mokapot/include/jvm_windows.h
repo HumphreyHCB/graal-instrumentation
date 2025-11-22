@@ -75,7 +75,7 @@ extern "C" {
 #endif
 
 JNIEXPORT void * JNICALL
-JVM_GetThreadInterruptEvent(void);
+JVM_GetThreadInterruptEvent();
 
 #ifdef __cplusplus
 } /* extern "C" */

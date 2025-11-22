@@ -373,7 +373,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
         List<LocalVariable> locals = b.getLocals();
         assertEquals(5, locals.size());
         assertEquals(42L, root.getCallTarget().call());
-        if (run.hasBlockScoping() && !run.testTracer()) {
+        if (run.hasBlockScoping()) {
             assertEquals(0, locals.get(0).getStartIndex());
             assertEquals(endBci, locals.get(0).getEndIndex());
             assertEquals("l0", locals.get(0).getName());
@@ -702,7 +702,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
         assertEquals("x", x.getName());
         assertNull(x.getTypeProfile());
 
-        // force cached
+        // Force cached.
         outer.getBytecodeNode().setUncachedThreshold(0);
 
         assertEquals(42L, outer.getCallTarget().call(false));
@@ -804,7 +804,7 @@ public class LocalsTest extends AbstractBasicInterpreterTest {
 
     }
 
-    private void assertParseFailure(BytecodeParser<BasicInterpreterBuilder> parser) {
+    private <T extends BasicInterpreterBuilder> void assertParseFailure(BytecodeParser<T> parser) {
         assertThrows(IllegalArgumentException.class, () -> parseNode("invalid", parser));
     }
 

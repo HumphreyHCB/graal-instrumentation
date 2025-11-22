@@ -43,7 +43,6 @@ package com.oracle.truffle.sl.nodes.util;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateCached;
@@ -122,7 +121,6 @@ public abstract class SLToTruffleStringNode extends Node {
         return value.getName();
     }
 
-    @InliningCutoff
     @Specialization(limit = "LIMIT")
     public static TruffleString fromInterop(Object value,
                     @CachedLibrary("value") InteropLibrary interop,

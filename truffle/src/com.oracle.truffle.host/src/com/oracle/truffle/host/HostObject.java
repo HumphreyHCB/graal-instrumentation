@@ -68,6 +68,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleStackTrace;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -801,7 +802,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw InvalidArrayIndexException.create(index);
             }
-            return toGuest.execute(node, val);
+            return toGuest.execute(node, receiver.context, val);
         }
 
         @TruffleBoundary
@@ -825,7 +826,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw receiver.context.hostToGuestException(t);
             }
-            return toGuest.execute(node, hostValue);
+            return toGuest.execute(node, receiver.context, hostValue);
         }
 
         @Specialization(guards = {"!receiver.isNull()", "receiver.isMapEntry(hostClassCache)"})
@@ -853,7 +854,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw InvalidArrayIndexException.create(index);
             }
-            return toGuest.execute(node, hostResult);
+            return toGuest.execute(node, receiver.context, hostResult);
         }
 
         @SuppressWarnings("unused")
@@ -2789,14 +2790,14 @@ final class HostObject implements TruffleObject {
 
     @SuppressWarnings("static-method")
     @ExportMessage
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @SuppressWarnings("static-method")
     @ExportMessage
-    String getLanguageId() {
-        return HostLanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return HostLanguage.class;
     }
 
     @ExportMessage
@@ -2908,7 +2909,7 @@ final class HostObject implements TruffleObject {
                         @Bind Node node,
                         @Shared @Cached(value = "receiver.getHostClassCache()", allowUncached = true) HostClassCache hostClassCache,
                         @Shared("toGuest") @Cached(inline = true) ToGuestValueNode toGuest) {
-            return toGuest.execute(node, arrayIteratorImpl(receiver));
+            return toGuest.execute(node, receiver.context, arrayIteratorImpl(receiver));
         }
 
         @TruffleBoundary
@@ -2929,7 +2930,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw receiver.context.hostToGuestException(t);
             }
-            return toGuest.execute(node, hostValue);
+            return toGuest.execute(node, receiver.context, hostValue);
         }
 
         @SuppressWarnings("unused")
@@ -3010,7 +3011,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw receiver.context.hostToGuestException(t);
             }
-            return toGuest.execute(node, next);
+            return toGuest.execute(node, receiver.context, next);
         }
 
         @SuppressWarnings("unused")
@@ -3125,7 +3126,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw UnknownKeyException.create(key);
             }
-            return toGuest.execute(node, hostResult);
+            return toGuest.execute(node, receiver.context, hostResult);
         }
 
         @SuppressWarnings("unused")
@@ -3276,7 +3277,7 @@ final class HostObject implements TruffleObject {
                 error.enter(node);
                 throw receiver.context.hostToGuestException(t);
             }
-            return toGuest.execute(node, hostValue);
+            return toGuest.execute(node, receiver.context, hostValue);
         }
 
         @SuppressWarnings("unused")
@@ -3773,14 +3774,14 @@ final class HostObject implements TruffleObject {
                         @Cached("field") HostFieldDesc cachedField,
                         @Cached ToGuestValueNode toGuest) {
             Object val = cachedField.get(object.obj);
-            return toGuest.execute(node, val);
+            return toGuest.execute(node, object.context, val);
         }
 
         @Specialization(replaces = "doCached")
         @TruffleBoundary
         static Object doUncached(HostFieldDesc field, HostObject object) {
             Object val = field.get(object.obj);
-            return ToGuestValueNodeGen.getUncached().execute(null, val);
+            return ToGuestValueNodeGen.getUncached().execute(null, object.context, val);
         }
     }
 

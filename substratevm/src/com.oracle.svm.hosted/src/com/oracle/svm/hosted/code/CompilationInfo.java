@@ -106,6 +106,7 @@ public class CompilationInfo {
         return compilationGraph;
     }
 
+    @SuppressWarnings("try")
     public StructuredGraph createGraph(DebugContext debug, OptionValues options, CompilationIdentifier compilationId, boolean decode) {
         var encodedGraph = getCompilationGraph().getEncodedGraph();
         var graph = new StructuredGraph.Builder(options, debug)
@@ -116,7 +117,7 @@ public class CompilationInfo {
                         .build();
 
         if (decode) {
-            try (var _ = debug.scope("CreateGraph", graph, method)) {
+            try (var s = debug.scope("CreateGraph", graph, method)) {
                 var decoder = new GraphDecoder(AnalysisParsedGraph.HOST_ARCHITECTURE, graph);
                 decoder.decode(encodedGraph);
             } catch (Throwable ex) {

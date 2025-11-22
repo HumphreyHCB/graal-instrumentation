@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import jdk.graal.compiler.nodes.NodeClassMap;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.word.LocationIdentity;
 
@@ -73,7 +72,7 @@ import com.oracle.svm.hosted.phases.AnalysisGraphBuilderPhase;
 
 import jdk.graal.compiler.core.common.spi.ConstantFieldProvider;
 import jdk.graal.compiler.debug.DebugContext;
-import jdk.graal.compiler.debug.DebugDumpHandlersFactory;
+import jdk.graal.compiler.debug.DebugHandlersFactory;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.java.BytecodeParser;
 import jdk.graal.compiler.java.GraphBuilderPhase;
@@ -201,7 +200,7 @@ public class RuntimeCompiledMethodSupport {
         }
 
         @Override
-        public DebugContext getDebug(OptionValues options, List<DebugDumpHandlersFactory> factories) {
+        public DebugContext getDebug(OptionValues options, List<DebugHandlersFactory> factories) {
             return new DebugContext.Builder(options, factories).description(getDescription()).build();
         }
 
@@ -210,6 +209,7 @@ public class RuntimeCompiledMethodSupport {
             compileRuntimeCompiledMethod(debug);
         }
 
+        @SuppressWarnings("try")
         private void compileRuntimeCompiledMethod(DebugContext debug) {
             assert method.getMultiMethodKey() == RUNTIME_COMPILED_METHOD;
 
@@ -242,7 +242,7 @@ public class RuntimeCompiledMethodSupport {
                 }
             }
 
-            try (DebugContext.Scope _ = debug.scope("RuntimeOptimize", graph, method, this)) {
+            try (DebugContext.Scope s = debug.scope("RuntimeOptimize", graph, method, this)) {
                 CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
                 canonicalizer.apply(graph, compilationState.runtimeCompilationProviders);
 
@@ -298,6 +298,7 @@ public class RuntimeCompiledMethodSupport {
         return true;
     }
 
+    @SuppressWarnings("try")
     private static void encodeRuntimeCompiledMethods(HostedUniverse hUniverse, CompilationState compilationState) {
         compilationState.graphEncoder.finishPrepare();
 
@@ -309,8 +310,8 @@ public class RuntimeCompiledMethodSupport {
             var method = runtimeInfo.getKey();
             DebugContext debug = new DebugContext.Builder(graph.getOptions(), new GraalDebugHandlersFactory(compilationState.runtimeCompilationProviders.getSnippetReflection())).build();
             graph.resetDebug(debug);
-            try (DebugContext.Scope _ = debug.scope("Graph Encoding", graph);
-                            DebugContext.Activation _ = debug.activate()) {
+            try (DebugContext.Scope s = debug.scope("Graph Encoding", graph);
+                            DebugContext.Activation a = debug.activate()) {
                 long startOffset = compilationState.graphEncoder.encode(graph);
                 compilationState.objectReplacer.createMethod(method).setEncodedGraphStartOffset(startOffset);
             } catch (Throwable ex) {
@@ -376,7 +377,6 @@ public class RuntimeCompiledMethodSupport {
      */
     @SuppressWarnings("javadoc")
     public static class RuntimeCompilationGraphEncoder extends GraphEncoder {
-        public static final NodeClassMap RUNTIME_NODE_CLASS_MAP = new NodeClassMap();
 
         private final ImageHeapScanner heapScanner;
         /**
@@ -386,7 +386,7 @@ public class RuntimeCompiledMethodSupport {
         private final Map<ImageHeapConstant, LocationIdentity> locationIdentityCache;
 
         public RuntimeCompilationGraphEncoder(Architecture architecture, ImageHeapScanner heapScanner) {
-            super(architecture, null, RUNTIME_NODE_CLASS_MAP);
+            super(architecture);
             this.heapScanner = heapScanner;
             this.locationIdentityCache = new ConcurrentHashMap<>();
         }
@@ -474,11 +474,6 @@ public class RuntimeCompiledMethodSupport {
         @Override
         protected boolean shouldVerifyFrameStates() {
             return Options.VerifyRuntimeCompilationFrameStates.getValue();
-        }
-
-        @Override
-        protected boolean strictDynamicAccessInferenceIsApplicable() {
-            return false;
         }
     }
 

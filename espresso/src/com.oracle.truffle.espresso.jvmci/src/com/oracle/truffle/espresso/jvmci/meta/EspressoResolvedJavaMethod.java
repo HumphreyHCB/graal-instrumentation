@@ -23,12 +23,8 @@
 package com.oracle.truffle.espresso.jvmci.meta;
 
 import static com.oracle.truffle.espresso.jvmci.EspressoJVMCIRuntime.runtime;
-import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.ANNOTATION_DEFAULT_VALUE;
-import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.DECLARED_ANNOTATIONS;
-import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.PARAMETER_ANNOTATIONS;
-import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedInstanceType.TYPE_ANNOTATIONS;
+import static com.oracle.truffle.espresso.jvmci.meta.EspressoResolvedJavaType.NO_ANNOTATIONS;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.BRIDGE;
-import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.SCOPED_METHOD;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.SYNTHETIC;
 import static com.oracle.truffle.espresso.jvmci.meta.ExtendedModifiers.VARARGS;
 import static java.lang.reflect.Modifier.ABSTRACT;
@@ -41,6 +37,7 @@ import static java.lang.reflect.Modifier.STATIC;
 import static java.lang.reflect.Modifier.STRICT;
 import static java.lang.reflect.Modifier.SYNCHRONIZED;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -56,23 +53,19 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.TriState;
-import jdk.vm.ci.meta.annotation.AbstractAnnotated;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-public final class EspressoResolvedJavaMethod extends AbstractAnnotated implements ResolvedJavaMethod {
+public final class EspressoResolvedJavaMethod implements ResolvedJavaMethod {
     private static final int JVM_METHOD_MODIFIERS = PUBLIC | PRIVATE | PROTECTED | STATIC | FINAL | SYNCHRONIZED | BRIDGE | VARARGS | NATIVE | ABSTRACT | STRICT | SYNTHETIC;
     public static final Parameter[] NO_PARAMETERS = new Parameter[0];
 
     private final EspressoResolvedInstanceType holder;
-    private final boolean poisonPill;
     private Executable mirrorCache;
     private String nameCache;
     private byte[] code;
     private EspressoSignature signature;
 
-    private EspressoResolvedJavaMethod(EspressoResolvedInstanceType holder, boolean poisonPill) {
+    private EspressoResolvedJavaMethod(EspressoResolvedInstanceType holder) {
         this.holder = holder;
-        this.poisonPill = poisonPill;
     }
 
     @Override
@@ -154,14 +147,6 @@ public final class EspressoResolvedJavaMethod extends AbstractAnnotated implemen
     }
 
     @Override
-    public boolean isDeclared() {
-        if (isConstructor() || isClassInitializer()) {
-            return false;
-        }
-        return !poisonPill;
-    }
-
-    @Override
     public boolean isClassInitializer() {
         return isStatic() && "<clinit>".equals(getName());
     }
@@ -196,6 +181,11 @@ public final class EspressoResolvedJavaMethod extends AbstractAnnotated implemen
     @Override
     public EspressoConstantPool getConstantPool() {
         return holder.getConstantPool();
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
+        return getMirror().getParameterAnnotations();
     }
 
     @Override
@@ -277,7 +267,28 @@ public final class EspressoResolvedJavaMethod extends AbstractAnnotated implemen
         throw JVMCIError.unimplemented();
     }
 
+    @Override
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        return getMirror().getAnnotation(annotationClass);
+    }
+
     private native boolean hasAnnotations();
+
+    @Override
+    public Annotation[] getAnnotations() {
+        if (!hasAnnotations()) {
+            return NO_ANNOTATIONS;
+        }
+        return getMirror().getAnnotations();
+    }
+
+    @Override
+    public Annotation[] getDeclaredAnnotations() {
+        if (!hasAnnotations()) {
+            return NO_ANNOTATIONS;
+        }
+        return getMirror().getDeclaredAnnotations();
+    }
 
     @Override
     public int getModifiers() {
@@ -313,40 +324,6 @@ public final class EspressoResolvedJavaMethod extends AbstractAnnotated implemen
     public native boolean isLeafMethod();
 
     @Override
-    public boolean isScoped() {
-        return (getFlags() & SCOPED_METHOD) != 0;
-    }
-
-    @Override
-    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
-        if (!hasAnnotations()) {
-            return null;
-        }
-        byte[] bytes = getRawAnnotationBytes(DECLARED_ANNOTATIONS);
-        return AnnotationsInfo.make(bytes, getConstantPool(), getDeclaringClass());
-    }
-
-    @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
-        byte[] bytes = getRawAnnotationBytes(TYPE_ANNOTATIONS);
-        return AnnotationsInfo.make(bytes, getConstantPool(), getDeclaringClass());
-    }
-
-    @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
-        byte[] bytes = getRawAnnotationBytes(ANNOTATION_DEFAULT_VALUE);
-        return AnnotationsInfo.make(bytes, getConstantPool(), getDeclaringClass());
-    }
-
-    @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
-        byte[] bytes = getRawAnnotationBytes(PARAMETER_ANNOTATIONS);
-        return AnnotationsInfo.make(bytes, getConstantPool(), getDeclaringClass());
-    }
-
-    private native byte[] getRawAnnotationBytes(int category);
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -355,17 +332,13 @@ public final class EspressoResolvedJavaMethod extends AbstractAnnotated implemen
             return false;
         }
         EspressoResolvedJavaMethod that = (EspressoResolvedJavaMethod) o;
-        return this.poisonPill == that.poisonPill && equals0(that);
+        return equals0(that);
     }
 
     private native boolean equals0(EspressoResolvedJavaMethod that);
 
     @Override
-    public int hashCode() {
-        return 13 * Boolean.hashCode(poisonPill) + hashCode0();
-    }
-
-    private native int hashCode0();
+    public native int hashCode();
 
     @Override
     public String toString() {

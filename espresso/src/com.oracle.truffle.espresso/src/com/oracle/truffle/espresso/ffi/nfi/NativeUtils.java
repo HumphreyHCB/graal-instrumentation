@@ -22,8 +22,7 @@
  */
 package com.oracle.truffle.espresso.ffi.nfi;
 
-import static com.oracle.truffle.espresso.substitutions.standard.Target_sun_misc_Unsafe.ADDRESS_SIZE;
-
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -173,41 +172,25 @@ public final class NativeUtils {
             return null;
         }
         ByteBuffer buf = directByteBuffer(rawBytesPtr, Integer.MAX_VALUE);
+
+        int utfLen = 0;
         while (buf.get() != 0) {
-            // find the end of the utf8
+            utfLen++;
         }
-        buf.limit(buf.position() - 1);
-        buf.position(0);
-        return ModifiedUTF8.toJavaStringSafe(buf);
+
+        byte[] bytes = new byte[utfLen];
+        buf.clear();
+        buf.get(bytes);
+        try {
+            return ModifiedUTF8.toJavaString(bytes);
+        } catch (IOException e) {
+            // return StaticObject.NULL;
+            throw EspressoError.shouldNotReachHere(e);
+        }
     }
 
     @TruffleBoundary
     public static ByteBuffer allocateDirect(int capacity) {
         return ByteBuffer.allocateDirect(capacity).order(ByteOrder.nativeOrder());
-    }
-
-    @TruffleBoundary
-    public static ByteBuffer[] getByteBuffersFromIOVec(long address, int len) {
-        // constants
-        int lenOffset = ADDRESS_SIZE;
-        int sizeOfIOVec = (short) (ADDRESS_SIZE * 2);
-        int baseOffset = 0;
-
-        long curIOVecAddr = address;
-        long nextAddr;
-        long nextLen;
-        ByteBuffer[] buffs = new ByteBuffer[len];
-        for (int i = 0; i < len; i++) {
-            if (ADDRESS_SIZE == 4) {
-                nextAddr = UNSAFE.getInt(curIOVecAddr + baseOffset);
-                nextLen = UNSAFE.getInt(curIOVecAddr + lenOffset);
-            } else {
-                nextAddr = UNSAFE.getLong(curIOVecAddr + baseOffset);
-                nextLen = UNSAFE.getLong(curIOVecAddr + lenOffset);
-            }
-            buffs[i] = directByteBuffer(nextAddr, nextLen);
-            curIOVecAddr += sizeOfIOVec;
-        }
-        return buffs;
     }
 }

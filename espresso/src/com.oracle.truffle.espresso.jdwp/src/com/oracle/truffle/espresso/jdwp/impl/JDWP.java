@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.espresso.classfile.attributes.LineNumberTableRef;
@@ -36,7 +35,6 @@ import com.oracle.truffle.espresso.jdwp.api.CallFrame;
 import com.oracle.truffle.espresso.jdwp.api.ClassStatusConstants;
 import com.oracle.truffle.espresso.jdwp.api.ErrorCodes;
 import com.oracle.truffle.espresso.jdwp.api.FieldRef;
-import com.oracle.truffle.espresso.jdwp.api.Ids;
 import com.oracle.truffle.espresso.jdwp.api.JDWPConstantPool;
 import com.oracle.truffle.espresso.jdwp.api.JDWPContext;
 import com.oracle.truffle.espresso.jdwp.api.KlassRef;
@@ -66,36 +64,13 @@ public final class JDWP {
         static class VERSION {
             public static final int ID = 1;
 
-            static CommandResult createReply(Packet packet, JDWPContext context) {
+            static CommandResult createReply(Packet packet, com.oracle.truffle.espresso.jdwp.impl.VirtualMachine vm) {
                 PacketStream reply = new PacketStream().replyPacket().id(packet.id);
-                int majorVersion;
-                int minorVersion;
-                int featureVersion = context.getJavaFeatureVersion();
-                if (featureVersion < 9) {
-                    majorVersion = 1;
-                    minorVersion = featureVersion;
-                } else if (featureVersion < 11) {
-                    majorVersion = 9;
-                    minorVersion = 0;
-                } else if (featureVersion < 13) {
-                    majorVersion = 11;
-                    minorVersion = 0;
-                } else {
-                    majorVersion = featureVersion;
-                    minorVersion = 0;
-                }
-                String javaVersion = context.getSystemProperty("java.version");
-                String vmName = context.getSystemProperty("java.vm.name");
-                String vmInfo = context.getSystemProperty("java.vm.info");
-                reply.writeString(String.format("""
-                                Java Debug Wire Protocol version %d.%d
-                                JVM Debug Interface version %d.%d
-                                JVM version %s (%s, %s)""", majorVersion, minorVersion, majorVersion, minorVersion,
-                                javaVersion, vmName, vmInfo));
-                reply.writeInt(majorVersion);
-                reply.writeInt(minorVersion);
-                reply.writeString(javaVersion);
-                reply.writeString(vmName);
+                reply.writeString(vm.getVmDescription());
+                reply.writeInt(1);
+                reply.writeInt(8);
+                reply.writeString(vm.getVmVersion());
+                reply.writeString(vm.getVmName());
                 return new CommandResult(reply);
             }
         }
@@ -137,8 +112,8 @@ public final class JDWP {
             static CommandResult createReply(Packet packet, JDWPContext context, DebuggerController controller) {
                 PacketStream reply = new PacketStream().replyPacket().id(packet.id);
 
-                Set<? extends KlassRef> allLoadedClasses = context.getAllLoadedClasses();
-                reply.writeInt(allLoadedClasses.size());
+                KlassRef[] allLoadedClasses = context.getAllLoadedClasses();
+                reply.writeInt(allLoadedClasses.length);
 
                 for (KlassRef klass : allLoadedClasses) {
                     reply.writeByte(TypeTag.getKind(klass));
@@ -146,7 +121,7 @@ public final class JDWP {
                     reply.writeString(klass.getTypeAsString());
                     reply.writeInt(klass.getStatus());
                 }
-                controller.fine(() -> "Loaded classes: " + allLoadedClasses.size());
+                controller.fine(() -> "Loaded classes: " + allLoadedClasses.length);
 
                 return new CommandResult(reply);
             }
@@ -197,13 +172,13 @@ public final class JDWP {
         static class IDSIZES {
             public static final int ID = 7;
 
-            static CommandResult createReply(Packet packet) {
+            static CommandResult createReply(Packet packet, com.oracle.truffle.espresso.jdwp.impl.VirtualMachine vm) {
                 PacketStream reply = new PacketStream().replyPacket().id(packet.id);
-                reply.writeInt(Ids.ID_SIZE);
-                reply.writeInt(Ids.ID_SIZE);
-                reply.writeInt(Ids.ID_SIZE);
-                reply.writeInt(Ids.ID_SIZE);
-                reply.writeInt(Ids.ID_SIZE);
+                reply.writeInt(vm.getSizeOfFieldRef());
+                reply.writeInt(vm.getSizeOfMethodRef());
+                reply.writeInt(vm.getSizeofObjectRef());
+                reply.writeInt(vm.getSizeOfClassRef());
+                reply.writeInt(vm.getSizeOfFrameRef());
                 return new CommandResult(reply);
             }
         }
@@ -428,7 +403,9 @@ public final class JDWP {
                 // ensure redefinition atomicity by suspending all
                 // guest threads during the redefine transaction
                 Object[] allGuestThreads = controller.getVisibleGuestThreads();
+                Object prev = null;
                 try {
+                    prev = controller.enterTruffleContext();
                     for (Object guestThread : allGuestThreads) {
                         controller.suspend(guestThread);
                     }
@@ -443,6 +420,7 @@ public final class JDWP {
                     for (Object guestThread : allGuestThreads) {
                         controller.resume(guestThread);
                     }
+                    controller.leaveTruffleContext(prev);
                 }
                 return new CommandResult(reply);
             }
@@ -463,8 +441,8 @@ public final class JDWP {
             static CommandResult createReply(Packet packet, JDWPContext context) {
                 PacketStream reply = new PacketStream().replyPacket().id(packet.id);
 
-                Set<? extends KlassRef> allLoadedClasses = context.getAllLoadedClasses();
-                reply.writeInt(allLoadedClasses.size());
+                KlassRef[] allLoadedClasses = context.getAllLoadedClasses();
+                reply.writeInt(allLoadedClasses.length);
 
                 for (KlassRef klass : allLoadedClasses) {
                     reply.writeByte(TypeTag.getKind(klass));
@@ -1109,13 +1087,8 @@ public final class JDWP {
                     if (tag == TagConstants.OBJECT) {
                         tag = context.getTag(field.getTypeAsString());
                     }
-                    try {
-                        Object value = readValue(tag, input, context);
-                        context.setStaticFieldValue(field, value);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    Object value = readValue(tag, input, context);
+                    context.setStaticFieldValue(field, value);
                 }
                 return new CommandResult(reply);
             }
@@ -1176,12 +1149,7 @@ public final class JDWP {
                 Object[] args = new Object[arguments];
                 for (int i = 0; i < arguments; i++) {
                     byte valueKind = input.readByte();
-                    try {
-                        args[i] = readValue(valueKind, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    args[i] = readValue(valueKind, input, context);
                 }
 
                 int invocationOptions = input.readInt();
@@ -1264,12 +1232,7 @@ public final class JDWP {
                 // we leave room for the allocated object as the first arg
                 for (int i = 1; i < args.length; i++) {
                     byte valueKind = input.readByte();
-                    try {
-                        args[i] = readValue(valueKind, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    args[i] = readValue(valueKind, input, context);
                 }
 
                 int invocationOptions = input.readInt();
@@ -1373,12 +1336,7 @@ public final class JDWP {
                 Object[] args = new Object[arguments];
                 for (int i = 0; i < arguments; i++) {
                     byte valueKind = input.readByte();
-                    try {
-                        args[i] = readValue(valueKind, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    args[i] = readValue(valueKind, input, context);
                 }
 
                 int invocationOptions = input.readInt();
@@ -1706,13 +1664,7 @@ public final class JDWP {
                     if (tag == TagConstants.OBJECT) {
                         tag = context.getTag(field.getTypeAsString());
                     }
-                    Object value;
-                    try {
-                        value = readValue(tag, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    Object value = readValue(tag, input, context);
                     field.setValue(object, value);
                 }
                 return new CommandResult(reply);
@@ -1838,12 +1790,7 @@ public final class JDWP {
                 args[0] = receiver;
                 for (int i = 1; i < args.length; i++) {
                     byte valueKind = input.readByte();
-                    try {
-                        args[i] = readValue(valueKind, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    args[i] = readValue(valueKind, input, context);
                 }
 
                 controller.fine(() -> "trying to invoke method: " + method.getNameAsString());
@@ -2117,7 +2064,7 @@ public final class JDWP {
                     if ((masked & JVMTI_THREAD_STATE_RUNNABLE) != 0) {
                         return ThreadStatusConstants.RUNNING;
                     } else if ((masked & JVMTI_THREAD_STATE_BLOCKED_ON_MONITOR_ENTER) != 0) {
-                        return ThreadStatusConstants.MONITOR;
+                        return ThreadStatusConstants.WAIT;
                     }
                     return ThreadStatusConstants.RUNNING;
                 } else if ((masked & JVMTI_THREAD_STATE_WAITING) != 0) {
@@ -2439,14 +2386,7 @@ public final class JDWP {
                     return new CommandResult(reply);
                 }
 
-                byte valueKind = input.readByte();
-                Object returnValue;
-                try {
-                    returnValue = readValue(valueKind, input, controller.getContext());
-                } catch (MissingReferenceException e) {
-                    reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                    return new CommandResult(reply);
-                }
+                Object returnValue = readValue(input, controller.getContext());
                 if (returnValue == Void.TYPE) {
                     // we have to use an Interop value, so simply use
                     // the NULL object, since it will be popped for void
@@ -2646,21 +2586,31 @@ public final class JDWP {
 
                 byte tag = context.getArrayComponentTag(array);
 
-                try {
-                    setArrayValues(context, input, index, values, array, tag);
-                } catch (MissingReferenceException e) {
-                    reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                    return new CommandResult(reply);
-                }
+                setArrayValues(context, input, index, values, array, tag);
                 return new CommandResult(reply);
             }
 
-            private static void setArrayValues(JDWPContext context, PacketStream input, int index, int values, Object array, byte tag) throws MissingReferenceException {
+            private static void setArrayValues(JDWPContext context, PacketStream input, int index, int values, Object array, byte tag) {
                 for (int i = index; i < index + values; i++) {
-                    Object value = readValue(tag, input, context);
-                    if (value == null) {
-                        throw new MissingReferenceException();
-                    }
+                    Object value = switch (tag) {
+                        case TagConstants.BOOLEAN -> input.readBoolean();
+                        case TagConstants.BYTE -> input.readByte();
+                        case TagConstants.SHORT -> input.readShort();
+                        case TagConstants.CHAR -> input.readChar();
+                        case TagConstants.INT -> input.readInt();
+                        case TagConstants.FLOAT -> input.readFloat();
+                        case TagConstants.LONG -> input.readLong();
+                        case TagConstants.DOUBLE -> input.readDouble();
+                        case TagConstants.ARRAY,
+                                        TagConstants.STRING,
+                                        TagConstants.CLASS_LOADER,
+                                        TagConstants.CLASS_OBJECT,
+                                        TagConstants.THREAD,
+                                        TagConstants.THREAD_GROUP,
+                                        TagConstants.OBJECT ->
+                            context.getIds().fromId((int) input.readLong());
+                        default -> throw new RuntimeException("should not reach here: " + tag);
+                    };
                     context.setArrayValue(array, i, value);
                 }
             }
@@ -2684,7 +2634,7 @@ public final class JDWP {
                 if (classLoader == null) {
                     return new CommandResult(reply);
                 }
-                Set<? extends KlassRef> klasses = context.getInitiatedClasses(classLoader);
+                List<? extends KlassRef> klasses = context.getInitiatedClasses(classLoader);
 
                 reply.writeInt(klasses.size());
 
@@ -2788,13 +2738,7 @@ public final class JDWP {
                 for (int i = 0; i < slots; i++) {
                     String identifier = input.readInt() + ""; // slot index
                     byte kind = input.readByte();
-                    Object value;
-                    try {
-                        value = readValue(kind, input, context);
-                    } catch (MissingReferenceException e) {
-                        reply.errorCode(ErrorCodes.INVALID_OBJECT);
-                        return new CommandResult(reply);
-                    }
+                    Object value = readValue(kind, input, context);
                     frame.setVariable(value, identifier);
                 }
                 return new CommandResult(reply);
@@ -2966,10 +2910,8 @@ public final class JDWP {
         }
     }
 
-    private static Object readValue(byte valueKind, PacketStream input, JDWPContext context) throws MissingReferenceException {
+    private static Object readValue(byte valueKind, PacketStream input, JDWPContext context) {
         switch (valueKind) {
-            case TagConstants.VOID:
-                return Void.TYPE;
             case TagConstants.BOOLEAN:
                 return input.readBoolean();
             case TagConstants.BYTE:
@@ -2993,13 +2935,41 @@ public final class JDWP {
             case TagConstants.THREAD_GROUP:
             case TagConstants.CLASS_LOADER:
             case TagConstants.CLASS_OBJECT:
-                Object value = context.getIds().fromId((int) input.readLong());
-                if (value == null) {
-                    // the object was garbage collected, so callers need to reply with
-                    // INVALID_OBJECT
-                    throw new MissingReferenceException();
-                }
-                return value;
+                return context.getIds().fromId((int) input.readLong());
+            default:
+                throw new RuntimeException("Should not reach here!");
+        }
+    }
+
+    private static Object readValue(PacketStream input, JDWPContext context) {
+        byte valueKind = input.readByte();
+        switch (valueKind) {
+            case TagConstants.VOID:
+                return Void.TYPE;
+            case TagConstants.BOOLEAN:
+                return input.readBoolean();
+            case TagConstants.BYTE:
+                return input.readByte();
+            case TagConstants.SHORT:
+                return input.readShort();
+            case TagConstants.CHAR:
+                return input.readChar();
+            case TagConstants.INT:
+                return input.readInt();
+            case TagConstants.FLOAT:
+                return input.readFloat();
+            case TagConstants.LONG:
+                return input.readLong();
+            case TagConstants.DOUBLE:
+                return input.readDouble();
+            case TagConstants.ARRAY:
+            case TagConstants.STRING:
+            case TagConstants.OBJECT:
+            case TagConstants.THREAD:
+            case TagConstants.THREAD_GROUP:
+            case TagConstants.CLASS_LOADER:
+            case TagConstants.CLASS_OBJECT:
+                return context.getIds().fromId((int) input.readLong());
             default:
                 throw new RuntimeException("Should not reach here!");
         }
@@ -3326,9 +3296,5 @@ public final class JDWP {
             return null;
         }
         return object;
-    }
-
-    private static class MissingReferenceException extends Exception {
-        static final long serialVersionUID = -2187514293129322348L;
     }
 }

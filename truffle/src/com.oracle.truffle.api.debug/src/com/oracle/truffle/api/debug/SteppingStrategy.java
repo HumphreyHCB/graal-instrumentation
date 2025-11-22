@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -39,9 +39,6 @@
  * SOFTWARE.
  */
 package com.oracle.truffle.api.debug;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.instrumentation.EventContext;
@@ -156,20 +153,8 @@ abstract class SteppingStrategy {
         return false;
     }
 
-    boolean isContinue() {
-        return false;
-    }
-
-    boolean isAlwaysHalt() {
-        return false;
-    }
-
     @SuppressWarnings("unused")
     void add(SteppingStrategy nextStrategy) {
-        throw new UnsupportedOperationException("Not composable.");
-    }
-
-    List<SteppingStrategy> getNestedStrategies() {
         throw new UnsupportedOperationException("Not composable.");
     }
 
@@ -205,8 +190,8 @@ abstract class SteppingStrategy {
         return new ComposedStrategy(strategy1, strategy2);
     }
 
-    static SteppingStrategy createPreserveAndHalt(SteppingStrategy strategy) {
-        return new PreserveAndHalt(strategy);
+    static SteppingStrategy createPreserveAfterHalt(SteppingStrategy strategy) {
+        return new PreserveAfterHalt(strategy);
     }
 
     private static final class Kill extends SteppingStrategy {
@@ -234,11 +219,6 @@ abstract class SteppingStrategy {
     }
 
     private static final class AlwaysHalt extends SteppingStrategy {
-
-        @Override
-        boolean isAlwaysHalt() {
-            return true;
-        }
 
         @Override
         boolean isActive(EventContext context, SuspendAnchor suspendAnchor) {
@@ -269,11 +249,6 @@ abstract class SteppingStrategy {
      * </ul>
      */
     private static final class Continue extends SteppingStrategy {
-
-        @Override
-        boolean isContinue() {
-            return true;
-        }
 
         @Override
         boolean step(DebuggerSession steppingSession, EventContext context, SuspendAnchor suspendAnchor) {
@@ -812,14 +787,6 @@ abstract class SteppingStrategy {
         }
 
         @Override
-        boolean isContinue() {
-            if (current == last) {
-                return last.isContinue();
-            }
-            return false;
-        }
-
-        @Override
         boolean isKill() {
             if (current == last) {
                 return last.isKill();
@@ -839,15 +806,6 @@ abstract class SteppingStrategy {
         }
 
         @Override
-        List<SteppingStrategy> getNestedStrategies() {
-            List<SteppingStrategy> list = new ArrayList<>();
-            for (SteppingStrategy s = current; s.next != null; s = s.next) {
-                list.add(s);
-            }
-            return list;
-        }
-
-        @Override
         boolean isSingleStep() {
             // if the current or any of the next strategies is a single step, we should return true
             for (SteppingStrategy s = current; s.next != null; s = s.next) {
@@ -861,7 +819,7 @@ abstract class SteppingStrategy {
         @Override
         public String toString() {
             StringBuilder all = new StringBuilder();
-            for (SteppingStrategy s = first; s != null; s = s.next) {
+            for (SteppingStrategy s = first; s.next != null; s = s.next) {
                 if (all.length() > 0) {
                     all.append(", ");
                 }
@@ -877,25 +835,12 @@ abstract class SteppingStrategy {
      * request is sent. We want to be able to remember the stepping request which should still be
      * completed afterward
      */
-    static final class PreserveAndHalt extends SteppingStrategy {
+    static final class PreserveAfterHalt extends SteppingStrategy {
         private final SteppingStrategy current;
-        private final SteppingStrategy halt = createAlwaysHalt();
+        private boolean halted = false;
 
-        private PreserveAndHalt(SteppingStrategy strategy) {
+        private PreserveAfterHalt(SteppingStrategy strategy) {
             current = strategy;
-        }
-
-        @Override
-        boolean isComposable() {
-            return true;
-        }
-
-        @Override
-        List<SteppingStrategy> getNestedStrategies() {
-            List<SteppingStrategy> list = new ArrayList<>();
-            list.add(halt);
-            list.add(current);
-            return list;
         }
 
         @Override
@@ -935,18 +880,23 @@ abstract class SteppingStrategy {
 
         @Override
         boolean isActive(EventContext context, SuspendAnchor suspendAnchor) {
-            return !halt.isConsumed() && halt.isActive(context, suspendAnchor) || //
-                            current.isActive(context, suspendAnchor);
+            boolean shouldHalt = !halted && suspendAnchor == SuspendAnchor.BEFORE;
+            return shouldHalt || current.isActive(context, suspendAnchor);
         }
 
         @Override
         boolean step(DebuggerSession steppingSession, EventContext context, SuspendAnchor suspendAnchor) {
-            boolean hit = !halt.isConsumed() && halt.step(steppingSession, context, suspendAnchor);
+            boolean hit = false;
+            if (!halted && suspendAnchor == SuspendAnchor.BEFORE) {
+                // we're hitting the suspend step
+                halted = true;
+                hit = true;
+            }
             // we have to check if the current strategy is active, because step is only called
             // when active, but we don't know if isActive returned true due to the always halt
             // request.
-            if (!hit && current.isActive(context, suspendAnchor)) {
-                hit = current.step(steppingSession, context, suspendAnchor);
+            if (current.isActive(context, suspendAnchor)) {
+                hit |= current.step(steppingSession, context, suspendAnchor);
             }
             return hit;
         }
@@ -959,16 +909,14 @@ abstract class SteppingStrategy {
         @Override
         void consume() {
             // only consume the current strategy when it completed the step
-            if (!halt.isConsumed()) {
-                halt.consume();
-            } else if (current.isSingleStepCompleted()) {
+            if (current.isSingleStepCompleted()) {
                 current.consume();
             }
         }
 
         @Override
         boolean isConsumed() {
-            return halt.isConsumed() && current.isConsumed();
+            return halted && current.isConsumed();
         }
 
         @Override
@@ -982,14 +930,13 @@ abstract class SteppingStrategy {
         }
 
         @Override
-        boolean isAlwaysHalt() {
-            return !halt.isConsumed();
-        }
-
-        @Override
         public String toString() {
             String all = current.toString();
-            return "PRESERVE_AND_HALT(" + all + ")";
+            return "PRESERVE_STEPPING(" + all + ")";
+        }
+
+        void haltNextExecution() {
+            halted = false;
         }
     }
 }

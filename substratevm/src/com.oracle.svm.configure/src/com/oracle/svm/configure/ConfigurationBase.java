@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.function.Consumer;
 
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
+
 import jdk.graal.compiler.util.json.JsonPrintable;
 import jdk.graal.compiler.util.json.JsonWriter;
 
@@ -39,7 +41,7 @@ public abstract class ConfigurationBase<T extends ConfigurationBase<T, P>, P> im
 
     protected abstract void merge(T other);
 
-    public abstract void mergeConditional(UnresolvedAccessCondition condition, T other);
+    public abstract void mergeConditional(UnresolvedConfigurationCondition condition, T other);
 
     protected abstract void subtract(T other);
 

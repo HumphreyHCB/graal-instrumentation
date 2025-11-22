@@ -130,16 +130,6 @@ public final class HotSpotTruffleRuntime extends OptimizedTruffleRuntime {
         }
     }
 
-    /*
-     * Invoked before the first compilation, but still on an interpreter thread. This makes it safe
-     * to initialize certain classes.
-     */
-    private void onFirstCompilation() {
-        installDefaultListeners();
-        // make sure lookup types are installed lazily when the first compilation is scheduled
-        getLookupTypes();
-    }
-
     /**
      * Contains lazily computed data such as the compilation queue and helper for stack
      * introspection.
@@ -149,7 +139,7 @@ public final class HotSpotTruffleRuntime extends OptimizedTruffleRuntime {
 
         Lazy(HotSpotTruffleRuntime runtime) {
             super(runtime);
-            runtime.onFirstCompilation();
+            runtime.installDefaultListeners();
         }
 
         @Override
@@ -493,18 +483,16 @@ public final class HotSpotTruffleRuntime extends OptimizedTruffleRuntime {
     }
 
     private void installCallBoundaryMethods(HotSpotTruffleCompiler compiler) {
-        for (Method method : OptimizedCallTarget.class.getDeclaredMethods()) {
-            if (method.getName().equals("callBoundary")) {
-                assert method.getAnnotation(TruffleCallBoundary.class) != null;
-                ResolvedJavaMethod resolvedJavaMethod = getMetaAccess().lookupJavaMethod(method);
+        ResolvedJavaType type = getMetaAccess().lookupJavaType(OptimizedCallTarget.class);
+        for (ResolvedJavaMethod method : type.getDeclaredMethods(false)) {
+            if (method.getAnnotation(TruffleCallBoundary.class) != null) {
                 if (compiler != null) {
                     OptimizedCallTarget initCallTarget = initializeCallTarget;
                     Objects.requireNonNull(initCallTarget);
-                    compiler.installTruffleCallBoundaryMethod(resolvedJavaMethod, initCallTarget);
+                    compiler.installTruffleCallBoundaryMethod(method, initCallTarget);
                 } else {
-                    setNotInlinableOrCompilable(resolvedJavaMethod);
+                    setNotInlinableOrCompilable(method);
                 }
-                break;
             }
         }
     }

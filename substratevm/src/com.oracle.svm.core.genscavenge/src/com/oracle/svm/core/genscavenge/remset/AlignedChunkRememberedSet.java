@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.core.genscavenge.remset;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
 import java.util.List;
 
 import org.graalvm.nativeimage.Platform;
@@ -44,7 +42,6 @@ import com.oracle.svm.core.genscavenge.HeapParameters;
 import com.oracle.svm.core.genscavenge.ObjectHeaderImpl;
 import com.oracle.svm.core.genscavenge.SerialGCOptions;
 import com.oracle.svm.core.genscavenge.compacting.ObjectMoveInfo;
-import com.oracle.svm.core.genscavenge.graal.ForcedSerialPostWriteBarrier;
 import com.oracle.svm.core.heap.UninterruptibleObjectVisitor;
 import com.oracle.svm.core.hub.LayoutEncoding;
 import com.oracle.svm.core.image.ImageHeapObject;
@@ -53,7 +50,6 @@ import com.oracle.svm.core.util.PointerUtils;
 import com.oracle.svm.core.util.UnsignedUtils;
 
 import jdk.graal.compiler.api.replacements.Fold;
-import jdk.graal.compiler.nodes.memory.address.OffsetAddressNode;
 import jdk.graal.compiler.replacements.nodes.AssertionNode;
 import jdk.graal.compiler.word.Word;
 
@@ -120,7 +116,7 @@ public final class AlignedChunkRememberedSet {
         Pointer offset = AlignedHeapChunk.getObjectsStart(chunk);
         Pointer top = HeapChunk.getTopPointer(chunk);
         while (offset.belowThan(top)) {
-            Object obj = offset.toObjectNonNull();
+            Object obj = offset.toObject();
             UnsignedWord objSize = LayoutEncoding.getSizeFromObjectInGC(obj);
             enableRememberedSetForObject(chunk, obj, objSize);
             offset = offset.add(objSize);
@@ -147,11 +143,6 @@ public final class AlignedChunkRememberedSet {
         } else {
             CardTable.setDirty(cardTableStart, index);
         }
-    }
-
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    static void dirtyAllReferencesOf(Object obj) {
-        ForcedSerialPostWriteBarrier.force(OffsetAddressNode.address(obj, 0), false);
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -215,8 +206,8 @@ public final class AlignedChunkRememberedSet {
         UnsignedWord index = CardTable.memoryOffsetToIndex(start.subtract(objectsStart));
         Pointer ptr = FirstObjectTable.getFirstObjectImprecise(fotStart, objectsStart, index);
         while (ptr.belowThan(end)) {
-            Object obj = ptr.toObjectNonNull();
-            visitor.visitObject(obj);
+            Object obj = ptr.toObject();
+            visitor.visitObjectInline(obj);
             ptr = LayoutEncoding.getObjectEndInlineInGC(obj);
         }
     }
@@ -226,10 +217,6 @@ public final class AlignedChunkRememberedSet {
         success &= CardTable.verify(getCardTableStart(chunk), getCardTableEnd(chunk), AlignedHeapChunk.getObjectsStart(chunk), HeapChunk.getTopPointer(chunk));
         success &= FirstObjectTable.verify(getFirstObjectTableStart(chunk), AlignedHeapChunk.getObjectsStart(chunk), HeapChunk.getTopPointer(chunk));
         return success;
-    }
-
-    static boolean usePreciseCardMarking() {
-        return false;
     }
 
     /** Return the index of an object within the tables of a chunk. */

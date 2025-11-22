@@ -33,7 +33,6 @@ import org.graalvm.collections.Equivalence;
 
 import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.core.common.util.ReversedList;
-import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.LoopBeginNode;
@@ -48,9 +47,6 @@ import jdk.graal.compiler.nodes.cfg.HIRBlock;
  * be considered invalid.
  */
 public class LoopsData {
-
-    public static final DebugContext.CountingTimerKey ComputeLoopsDataTime = DebugContext.countingTimer("ComputeLoopsData");
-
     /**
      * A mapping of all loop begin nodes to the respective {@link Loop}.
      */
@@ -88,27 +84,25 @@ public class LoopsData {
 
     @SuppressWarnings({"try", "this-escape"})
     protected LoopsData(final StructuredGraph graph, ControlFlowGraph preComputedCFG) {
-        try (DebugCloseable a = ComputeLoopsDataTime.start(graph.getDebug())) {
-            loopBeginToEx = EconomicMap.create(Equivalence.IDENTITY);
-            DebugContext debug = graph.getDebug();
-            if (preComputedCFG == null) {
-                try (DebugContext.Scope s = debug.scope("ControlFlowGraph")) {
-                    boolean backendBlocks = graph.isAfterStage(GraphState.StageFlag.FINAL_SCHEDULE);
-                    this.cfg = ControlFlowGraph.newBuilder(graph).connectBlocks(true).modifiableBlocks(backendBlocks).computeLoops(true).computeDominators(true).computePostdominators(
-                                    true).computeFrequency(true).build();
-                } catch (Throwable e) {
-                    throw debug.handle(e);
-                }
-            } else {
-                this.cfg = preComputedCFG;
+        loopBeginToEx = EconomicMap.create(Equivalence.IDENTITY);
+        DebugContext debug = graph.getDebug();
+        if (preComputedCFG == null) {
+            try (DebugContext.Scope s = debug.scope("ControlFlowGraph")) {
+                boolean backendBlocks = graph.isAfterStage(GraphState.StageFlag.FINAL_SCHEDULE);
+                this.cfg = ControlFlowGraph.newBuilder(graph).connectBlocks(true).backendBlocks(backendBlocks).computeLoops(true).computeDominators(true).computePostdominators(true).computeFrequency(
+                                true).build();
+            } catch (Throwable e) {
+                throw debug.handle(e);
             }
-            assert checkLoopOrder(cfg.getLoops());
-            loops = new ArrayList<>(cfg.getLoops().size());
-            for (CFGLoop<HIRBlock> loop : cfg.getLoops()) {
-                Loop ex = new Loop(loop, this);
-                loops.add(ex);
-                loopBeginToEx.put(ex.loopBegin(), ex);
-            }
+        } else {
+            this.cfg = preComputedCFG;
+        }
+        assert checkLoopOrder(cfg.getLoops());
+        loops = new ArrayList<>(cfg.getLoops().size());
+        for (CFGLoop<HIRBlock> loop : cfg.getLoops()) {
+            Loop ex = new Loop(loop, this);
+            loops.add(ex);
+            loopBeginToEx.put(ex.loopBegin(), ex);
         }
     }
 

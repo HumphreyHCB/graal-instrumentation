@@ -43,6 +43,7 @@ package org.graalvm.wasm.debugging.parser;
 
 import java.nio.file.Path;
 
+import com.oracle.truffle.api.TruffleLanguage;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.wasm.debugging.DebugLineMap;
 import org.graalvm.wasm.debugging.data.DebugDataUtil;
@@ -52,38 +53,45 @@ import org.graalvm.wasm.debugging.encoding.Attributes;
 import org.graalvm.wasm.debugging.languages.DebugLanguageSupport;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.source.Source;
 
 /**
  * Extracts the debug information and converts it to an internal representation of values.
  */
 public class DebugTranslator {
     private final DebugParser parser;
+    private final DebugSourceLoader sourceLoader;
+    private final String testCompDir;
+    private final TruffleLanguage.Env env;
 
-    public DebugTranslator(byte[] data) {
+    public DebugTranslator(byte[] data, String testCompDir, TruffleLanguage.Env env) {
         this.parser = new DebugParser(data);
+        this.sourceLoader = new DebugSourceLoader();
+        this.testCompDir = testCompDir;
+        this.env = env;
     }
 
     @TruffleBoundary
     public EconomicMap<Integer, DebugFunction> readCompilationUnits(byte[] customData, int debugInfoOffset) {
         assert customData != null : "the array containing the debug information must not be null when trying to parse the information";
         assert debugInfoOffset != DebugUtil.UNDEFINED : "the offset of the debug information must be valid";
-        final EconomicMap<Integer, DebugFunction> debugFunctions = EconomicMap.create();
+        EconomicMap<Integer, DebugFunction> debugFunctions = EconomicMap.create();
         int unitOffset = 0;
-        DebugParseUnit unit = parser.readCompilationUnit(debugInfoOffset, unitOffset);
-        while (unit != null) {
+        DebugParseUnit entryUnit = parser.readCompilationUnit(debugInfoOffset, unitOffset);
+        while (entryUnit != null) {
             // Only read compilation units for which sources are available
-            final DebugParserContext context = parseCompilationUnit(unit, customData, debugInfoOffset);
-            if (context != null) {
-                final DebugData compilationUnit = parser.readCompilationUnitChildren(unit, debugInfoOffset);
-                if (compilationUnit != null) {
-                    if (DebugTranslator.parseFunctions(context, compilationUnit)) {
+            if (parseCompilationUnit(entryUnit, customData, debugInfoOffset) != null) {
+                final DebugParseUnit unit = parser.readEntries(debugInfoOffset, unitOffset);
+                if (unit != null) {
+                    final DebugParserContext context = parseCompilationUnit(unit, customData, debugInfoOffset);
+                    if (context != null) {
                         debugFunctions.putAll(context.functions());
                     }
                 }
             }
             unitOffset = parser.getNextCompilationUnitOffset(debugInfoOffset, unitOffset);
             if (unitOffset != -1) {
-                unit = parser.readCompilationUnit(debugInfoOffset, unitOffset);
+                entryUnit = parser.readCompilationUnit(debugInfoOffset, unitOffset);
             }
         }
         return debugFunctions;
@@ -107,6 +115,9 @@ public class DebugTranslator {
         if (compDir == null) {
             return null;
         }
+        if (!testCompDir.isEmpty()) {
+            compDir = testCompDir;
+        }
         final int lineOffset = DebugUtil.getLineOffsetOrUndefined(customData, debugInfoOffset);
         final int lineLength = DebugUtil.getLineLengthOrUndefined(customData, debugInfoOffset);
         if (lineOffset == DebugUtil.UNDEFINED || lineLength == DebugUtil.UNDEFINED) {
@@ -117,34 +128,32 @@ public class DebugTranslator {
             return null;
         }
         int nullSources = 0;
-        final Path[] filePaths = new Path[fileLineMaps.length];
-        for (int i = 0; i < filePaths.length; i++) {
+        Source[] fileSources = new Source[fileLineMaps.length];
+        for (int i = 0; i < fileSources.length; i++) {
             final DebugLineMap lineMap = fileLineMaps[i];
             if (lineMap != null) {
-                filePaths[i] = lineMap.getFilePath();
+                final Path path = lineMap.getFilePath();
+                fileSources[i] = sourceLoader.load(path, languageName, !testCompDir.isEmpty(), env);
             }
-            if (filePaths[i] == null) {
+            if (fileSources[i] == null) {
                 nullSources++;
             }
         }
-        if (nullSources == filePaths.length) {
+        if (nullSources == fileSources.length) {
             return null;
         }
-        return new DebugParserContext(customData, debugInfoOffset, entries, fileLineMaps, filePaths, languageName, objectFactory);
-    }
-
-    private static boolean parseFunctions(DebugParserContext context, DebugData data) {
+        final DebugParserContext context = new DebugParserContext(customData, debugInfoOffset, entries, fileLineMaps, fileSources);
         final int[] pcs = DebugDataUtil.readPcsOrNull(data, context);
         if (pcs == null) {
-            return false;
+            return null;
         }
         assert pcs.length == 2 : "the pc range of a debug compilation unit must contain exactly two values (start pc and end pc)";
         final int scopeStart = pcs[0];
         final int scopeEnd = pcs[1];
         final DebugParserScope scope = context.globalScope().with(null, scopeStart, scopeEnd);
         for (DebugData child : data.children()) {
-            context.objectFactory().parse(context, scope, child);
+            objectFactory.parse(context, scope, child);
         }
-        return true;
+        return context;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,6 +40,13 @@
  */
 package org.graalvm.wasm.launcher;
 
+import org.graalvm.launcher.AbstractLanguageLauncher;
+import org.graalvm.options.OptionCategory;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,18 +55,11 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.graalvm.launcher.AbstractLanguageLauncher;
-import org.graalvm.options.OptionCategory;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.Source;
-import org.graalvm.polyglot.Value;
-
 public class WasmLauncher extends AbstractLanguageLauncher {
-    protected File file = null;
+    private File file = null;
     private VersionAction versionAction = VersionAction.None;
-    protected String customEntryPoint = null;
-    protected String[] programArguments = null;
+    private String customEntryPoint = null;
+    private String[] programArguments = null;
     private ArrayList<String> argumentErrors = null;
 
     private static final String USAGE = "Usage: wasm [OPTION...] [FILE] [ARG...]";
@@ -146,7 +146,7 @@ public class WasmLauncher extends AbstractLanguageLauncher {
 
         try (Context context = contextBuilder.build()) {
             runVersionAction(versionAction, context.getEngine());
-            Value mainModule = context.eval(Source.newBuilder(getLanguageId(), file).build()).newInstance();
+            Value mainModule = context.eval(Source.newBuilder(getLanguageId(), file).build());
 
             Value entryPoint = detectEntryPoint(mainModule);
             if (entryPoint == null) {
@@ -168,14 +168,13 @@ public class WasmLauncher extends AbstractLanguageLauncher {
         }
     }
 
-    protected Value detectEntryPoint(Value mainModule) {
-        Value exports = mainModule.getMember("exports");
+    private Value detectEntryPoint(Value mainModule) {
         if (customEntryPoint != null) {
-            return exports.getMember(customEntryPoint);
+            return mainModule.getMember(customEntryPoint);
         }
-        Value candidate = exports.getMember("_start");
+        Value candidate = mainModule.getMember("_start");
         if (candidate == null) {
-            candidate = exports.getMember("_main");
+            candidate = mainModule.getMember("_main");
         }
         return candidate;
     }

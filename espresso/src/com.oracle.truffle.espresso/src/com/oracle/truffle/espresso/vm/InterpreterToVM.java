@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.vm;
 
-import static com.oracle.truffle.espresso.threads.ThreadState.BLOCKED;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -57,6 +55,7 @@ import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
 import com.oracle.truffle.espresso.substitutions.Throws;
 import com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_Thread;
+import com.oracle.truffle.espresso.threads.State;
 import com.oracle.truffle.espresso.threads.Transition;
 
 public final class InterpreterToVM extends ContextAccessImpl {
@@ -404,11 +403,11 @@ public final class InterpreterToVM extends ContextAccessImpl {
         }
     }
 
-    @TruffleBoundary
+    @TruffleBoundary /*- Throwable.addSuppressed blocklisted by SVM (from try-with-resources) */
+    @SuppressWarnings("try")
     private static void contendedMonitorEnter(StaticObject obj, Meta meta, EspressoLock lock, EspressoContext context) {
-        Transition transition = Transition.transition(BLOCKED, meta);
-        try {
-            StaticObject thread = context.getCurrentPlatformThread();
+        StaticObject thread = context.getCurrentPlatformThread();
+        try (Transition transition = Transition.transition(context, State.BLOCKED)) {
             if (context.getEspressoEnv().EnableManagement) {
                 // Locks bookkeeping.
                 meta.HIDDEN_THREAD_PENDING_MONITOR.setHiddenObject(thread, obj);
@@ -426,8 +425,6 @@ public final class InterpreterToVM extends ContextAccessImpl {
             if (context.getEspressoEnv().EnableManagement) {
                 meta.HIDDEN_THREAD_PENDING_MONITOR.setHiddenObject(thread, null);
             }
-        } finally {
-            transition.restore(meta);
         }
     }
 
@@ -614,8 +611,7 @@ public final class InterpreterToVM extends ContextAccessImpl {
 
     // Recursion depth = 4
     public static StaticObject fillInStackTrace(@JavaType(Throwable.class) StaticObject throwable, Meta meta) {
-        int maxDepth = meta.getLanguage().getMaxStackTraceDepth();
-        VM.StackTrace frames = getStackTrace(new FillInStackTraceFramesFilter(), maxDepth);
+        VM.StackTrace frames = getStackTrace(new FillInStackTraceFramesFilter(), EspressoContext.DEFAULT_STACK_SIZE);
         meta.HIDDEN_FRAMES.setHiddenObject(throwable, frames);
         meta.java_lang_Throwable_backtrace.setObject(throwable, throwable);
         if (meta.getJavaVersion().java9OrLater()) {

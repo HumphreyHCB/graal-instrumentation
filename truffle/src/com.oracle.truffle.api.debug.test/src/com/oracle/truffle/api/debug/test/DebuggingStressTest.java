@@ -49,7 +49,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.junit.Test;
@@ -57,7 +56,6 @@ import org.junit.Test;
 import com.oracle.truffle.api.debug.Breakpoint;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.debug.DebuggerSession;
-import com.oracle.truffle.tck.tests.TruffleTestAssumptions;
 
 @SuppressWarnings("this-escape")
 public class DebuggingStressTest extends AbstractDebugTest {
@@ -110,15 +108,7 @@ public class DebuggingStressTest extends AbstractDebugTest {
             bp[i] = Breakpoint.newBuilder(getSourceImpl(source)).lineIs(i + 1).build();
         }
 
-        Context.Builder builder = Context.newBuilder();
-        if (TruffleTestAssumptions.isOptimizingRuntime()) {
-            // TODO GR-65179
-            builder.option("engine.MaximumCompilations", "-1");
-            if (TruffleTestAssumptions.isDeoptLoopDetectionAvailable()) {
-                builder.option("compiler.DeoptCycleDetectionThreshold", "-1");
-            }
-        }
-        Context context = builder.build();
+        Context context = Context.newBuilder().build();
         BlockingQueue<Source> evalQueue = new LinkedBlockingQueue<>();
         Semaphore evalSemaphore = new Semaphore(0);
 

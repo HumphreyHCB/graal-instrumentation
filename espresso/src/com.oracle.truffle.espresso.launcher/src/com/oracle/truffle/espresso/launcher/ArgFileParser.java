@@ -110,9 +110,6 @@ public final class ArgFileParser {
                         break charloop;
                     }
                 }
-                if (!sb.isEmpty()) {
-                    return sb.toString();
-                }
                 state = FIND_NEXT;
                 continue;
             }

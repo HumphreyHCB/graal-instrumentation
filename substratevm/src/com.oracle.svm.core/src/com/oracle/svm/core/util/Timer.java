@@ -24,19 +24,20 @@
  */
 package com.oracle.svm.core.util;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
+import com.oracle.svm.core.Isolates;
 import com.oracle.svm.core.Uninterruptible;
+
+import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 
 /**
  * An uninterruptible nanosecond-precision timer that can be started repeatedly.
  */
 public class Timer implements AutoCloseable {
     private final String name;
-    private long lastStartedNanos;
-    private long lastStoppedNanos;
-    private boolean startedAtLeastOnce;
-    private boolean running;
+    private long startedNanos;
+    private long stoppedNanos;
+    private boolean wasStarted;
+    private boolean wasStopped;
     private long totalElapsedNanos;
 
     public Timer(String name) {
@@ -54,35 +55,31 @@ public class Timer implements AutoCloseable {
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public boolean wasStartedAtLeastOnce() {
-        return startedAtLeastOnce;
-    }
-
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public boolean isRunning() {
-        return running;
-    }
-
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public Timer startAt(long nanoTime) {
-        assert !running : "Timer already running";
-        lastStartedNanos = nanoTime;
-        startedAtLeastOnce = true;
-        lastStoppedNanos = 0L;
-        running = true;
+        /*
+         * GR-63365: assert !wasStarted : "Timer already started";
+         */
+        startedNanos = nanoTime;
+        wasStarted = true;
+        stoppedNanos = 0L;
+        wasStopped = false;
         return this;
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public long lastStartedNanoTime() {
-        assert startedAtLeastOnce : "Timer not started";
-        return lastStartedNanos;
+    public long startedNanos() {
+        if (!wasStarted) {
+            /* If a timer was not started, pretend it was started at the start of the VM. */
+            assert startedNanos == 0;
+            return Isolates.getStartTimeNanos();
+        }
+        return startedNanos;
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public long lastStoppedNanoTime() {
-        assert startedAtLeastOnce && !running : "Timer not stopped";
-        return lastStoppedNanos;
+    public long stoppedNanos() {
+        assert wasStopped : "Timer not stopped";
+        return stoppedNanos;
     }
 
     @Override
@@ -98,16 +95,26 @@ public class Timer implements AutoCloseable {
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public void stopAt(long nanoTime) {
-        assert running : "Timer not running";
-        assert nanoTime >= lastStartedNanoTime() : "Invalid stop time";
-        lastStoppedNanos = nanoTime;
-        running = false;
-        totalElapsedNanos += lastStoppedNanos - lastStartedNanoTime();
+        /*
+         * GR-63365: assert !wasStopped : "Timer already stopped";
+         */
+        stoppedNanos = nanoTime;
+        wasStopped = true;
+        /*
+         * GR-63365: assert stoppedNanos >= startedNanos() : "Invalid stop time";
+         */
+        totalElapsedNanos += stoppedNanos - startedNanos();
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public long lastIntervalNanos() {
-        return lastStoppedNanoTime() - lastStartedNanoTime();
+        assert wasStopped : "Timer not stopped";
+        return stoppedNanos() - startedNanos();
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public long lastIntervalMillis() {
+        return TimeUtils.roundNanosToMillis(lastIntervalNanos());
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
@@ -116,12 +123,19 @@ public class Timer implements AutoCloseable {
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public long totalMillis() {
+        return TimeUtils.roundNanosToMillis(totalNanos());
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public void reset() {
-        assert !running : "Attempting to reset a running timer";
-        lastStartedNanos = 0L;
-        startedAtLeastOnce = false;
-        lastStoppedNanos = 0L;
-        running = false;
+        /*
+         * GR-63365: assert wasStopped : "Attempting to reset a started timer";
+         */
+        startedNanos = 0L;
+        wasStarted = false;
+        stoppedNanos = 0L;
+        wasStopped = false;
         totalElapsedNanos = 0L;
     }
 }

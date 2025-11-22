@@ -30,11 +30,10 @@ import java.util.function.Supplier;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.UnmodifiableEconomicMap;
-
-import com.oracle.svm.hosted.meta.HostedMethod;
-
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.MetricKey;
+
+import com.oracle.svm.hosted.meta.HostedMethod;
 
 class LoggerScopeImpl implements LoggerScope {
     private final String name;

@@ -22,16 +22,11 @@
  */
 package com.oracle.truffle.espresso.constantpool;
 
-import com.oracle.truffle.espresso.classfile.ConstantPool.Tag;
+import com.oracle.truffle.espresso.classfile.constantpool.ClassMethodRefConstant;
 import com.oracle.truffle.espresso.impl.Method;
 
-class ResolvedClassMethodRefConstant extends ResolvedMethodRefConstant {
+public class ResolvedClassMethodRefConstant extends ResolvedMethodRefConstant implements ClassMethodRefConstant {
     ResolvedClassMethodRefConstant(Method resolved) {
         super(resolved);
-    }
-
-    @Override
-    public Tag tag() {
-        return Tag.METHOD_REF;
     }
 }

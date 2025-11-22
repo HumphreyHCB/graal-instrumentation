@@ -24,47 +24,37 @@
  */
 package com.oracle.svm.hosted.imagelayer;
 
-import static com.oracle.svm.hosted.NativeImageClassLoaderSupport.PathDigestEntry;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.jar.JarOutputStream;
-
-import org.graalvm.nativeimage.Platform;
 
 import com.oracle.svm.core.BuildArtifacts;
 import com.oracle.svm.core.BuildArtifacts.ArtifactType;
-import com.oracle.svm.core.SubstrateOptions;
-import com.oracle.svm.core.option.SubstrateOptionsParser;
 import com.oracle.svm.core.util.ArchiveSupport;
 import com.oracle.svm.core.util.UserError;
-import com.oracle.svm.hosted.NativeImageClassLoaderSupport;
 import com.oracle.svm.hosted.NativeImageGenerator;
 
 /* Builds an image layer, either initial or intermediate. */
 public class WriteLayerArchiveSupport extends LayerArchiveSupport {
-    private final List<String> builderArguments;
-    private final List<PathDigestEntry> buildPathDigests;
 
-    public WriteLayerArchiveSupport(String layerName, NativeImageClassLoaderSupport classLoaderSupport, Path tempDir, ArchiveSupport archiveSupport, boolean enableLogging) {
-        super(layerName, classLoaderSupport.getLayerFile(), tempDir.resolve(LAYER_TEMP_DIR_PREFIX + "write"), archiveSupport, enableLogging);
-        if (!layerName.startsWith(SHARED_LIB_NAME_PREFIX)) {
-            throw UserError.abort("Shared layer library image name given with '" +
-                            SubstrateOptionsParser.commandArgument(SubstrateOptions.Name, layerName) +
-                            "' needs to start with '" + SHARED_LIB_NAME_PREFIX + "'");
-        }
-        builderArguments = new ArrayList<>(classLoaderSupport.getHostedOptionParser().getArguments());
-        buildPathDigests = new ArrayList<>(classLoaderSupport.computePathEntryDigests());
+    /** The original location of the layer output file. */
+    private final Path outputLayerLocation;
+
+    public WriteLayerArchiveSupport(ArchiveSupport archiveSupport, Path layerFile) {
+        super(archiveSupport);
+        this.outputLayerLocation = validateLayerFile(layerFile);
     }
 
-    @Override
-    protected void validateLayerFile() {
-        super.validateLayerFile();
-
+    private static Path validateLayerFile(Path layerFile) {
+        Path fileName = layerFile.getFileName();
+        if (fileName == null || !fileName.toString().endsWith(LAYER_FILE_EXTENSION)) {
+            throw UserError.abort("The given layer file " + layerFile + " must end with '" + LAYER_FILE_EXTENSION + "'.");
+        }
         Path layerFilePath = layerFile.toAbsolutePath();
+        if (Files.isDirectory(layerFilePath)) {
+            throw UserError.abort("The given layer file " + layerFile + " is a directory and not a file.");
+        }
         Path layerParentPath = layerFilePath.getParent();
         if (layerParentPath == null) {
             throw UserError.abort("The given layer file " + layerFile + " doesn't have a parent directory.");
@@ -75,45 +65,32 @@ public class WriteLayerArchiveSupport extends LayerArchiveSupport {
         if (Files.exists(layerFilePath) && !Files.isWritable(layerFilePath)) {
             throw UserError.abort("The given layer file " + layerFile + " is not writeable.");
         }
+        return layerFile;
     }
 
-    private static <T> void writeBuildEntries(Path path, List<T> buildEntries, String buildEntryTypeDescription) {
-        try {
-            Files.write(path, buildEntries.stream().map(T::toString).toList());
-        } catch (IOException e) {
-            throw UserError.abort("Unable to write " + buildEntryTypeDescription + " to file " + path);
-        }
-    }
-
-    public void write(Platform current) {
-        try (JarOutputStream jarOutStream = new JarOutputStream(Files.newOutputStream(layerFile), archiveSupport.createManifest())) {
+    public void write(String imageName) {
+        layerProperties.writeLayerName(String.valueOf(imageName));
+        layerProperties.write();
+        try (JarOutputStream jarOutStream = new JarOutputStream(Files.newOutputStream(outputLayerLocation), archiveSupport.createManifest())) {
+            Path imageBuilderOutputDir = NativeImageGenerator.getOutputDirectory();
             // disable compression for significant (un)archiving speedup at the cost of file size
             jarOutStream.setLevel(0);
-            // write builder arguments file and add to jar
-            Path builderArgumentsFilePath = getBuilderArgumentsFilePath();
-            writeBuildEntries(builderArgumentsFilePath, builderArguments, "builder arguments");
-            archiveSupport.addFileToJar(layerDir, builderArgumentsFilePath, layerFile, jarOutStream);
-            // write environment variables file and add to jar
-            Path envVariablesFilePath = getEnvVariablesFilePath();
-            writeBuildEntries(envVariablesFilePath, parseEnvVariables(), "environment variables");
-            archiveSupport.addFileToJar(layerDir, envVariablesFilePath, layerFile, jarOutStream);
-            // write image class and module paths digests file and add to jar
-            Path buildPathDigestsFilePath = getBuildPathDigestsFilePath();
-            writeBuildEntries(buildPathDigestsFilePath, buildPathDigests, "build path digests");
-            archiveSupport.addFileToJar(layerDir, buildPathDigestsFilePath, layerFile, jarOutStream);
             // copy the layer snapshot file and its graphs file to the jar
-            archiveSupport.addFileToJar(layerDir, getSnapshotPath(), layerFile, jarOutStream);
-            archiveSupport.addFileToJar(layerDir, getSnapshotGraphsPath(), layerFile, jarOutStream);
+            Path snapshotFile = BuildArtifacts.singleton().get(BuildArtifacts.ArtifactType.LAYER_SNAPSHOT).getFirst();
+            archiveSupport.addFileToJar(imageBuilderOutputDir, snapshotFile, outputLayerLocation, jarOutStream);
+            Path snapshotGraphsFile = BuildArtifacts.singleton().get(BuildArtifacts.ArtifactType.LAYER_SNAPSHOT_GRAPHS).getFirst();
+            archiveSupport.addFileToJar(imageBuilderOutputDir, snapshotGraphsFile, outputLayerLocation, jarOutStream);
             // copy the shared object file to the jar
             Path sharedLibFile = BuildArtifacts.singleton().get(BuildArtifacts.ArtifactType.IMAGE_LAYER).getFirst();
-            archiveSupport.addFileToJar(NativeImageGenerator.getOutputDirectory(), sharedLibFile, layerFile, jarOutStream);
-            // write properties file and add to jar
-            layerProperties.write(current);
-            archiveSupport.addFileToJar(layerDir, getLayerPropertiesFile(), layerFile, jarOutStream);
-            BuildArtifacts.singleton().add(ArtifactType.IMAGE_LAYER_BUNDLE, layerFile);
+            archiveSupport.addFileToJar(imageBuilderOutputDir, sharedLibFile, outputLayerLocation, jarOutStream);
+            // copy the properties file to the jar
+            Path propertiesFile = imageBuilderOutputDir.resolve(layerPropertiesFileName);
+            archiveSupport.addFileToJar(imageBuilderOutputDir, propertiesFile, outputLayerLocation, jarOutStream);
+            BuildArtifacts.singleton().add(ArtifactType.IMAGE_LAYER_BUNDLE, outputLayerLocation);
         } catch (IOException e) {
-            throw UserError.abort("Failed to create Native Image Layer file " + layerFile.getFileName(), e);
+            throw UserError.abort("Failed to create Native Image Layer file " + outputLayerLocation.getFileName(), e);
         }
-        info("Layer written to %s", layerFile);
+        info("Layer written to %s", outputLayerLocation);
     }
+
 }

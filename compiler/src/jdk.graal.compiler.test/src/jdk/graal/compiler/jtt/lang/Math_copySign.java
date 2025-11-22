@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,13 +24,12 @@
  */
 package jdk.graal.compiler.jtt.lang;
 
-import org.junit.Test;
-
 import jdk.graal.compiler.jtt.JTTTest;
+import org.junit.Test;
 
 public class Math_copySign extends JTTTest {
 
-    public static final float[] FLOAT_VALUES = {
+    private static final float[] floatValues = {
                     123.4f,
                     -56.7f,
                     7e30f,
@@ -50,7 +49,7 @@ public class Math_copySign extends JTTTest {
                     -0x0.0002P-126f
     };
 
-    public static final double[] DOUBLE_VALUES = {
+    private static final double[] doubleValues = {
                     123.4d,
                     -56.7d,
                     7e30d,
@@ -76,8 +75,8 @@ public class Math_copySign extends JTTTest {
 
     @Test
     public void testFloatCopySign() {
-        for (float magnitude : FLOAT_VALUES) {
-            for (float sign : FLOAT_VALUES) {
+        for (float magnitude : floatValues) {
+            for (float sign : floatValues) {
                 runTest("floatCopySign", magnitude, sign);
             }
         }
@@ -89,8 +88,8 @@ public class Math_copySign extends JTTTest {
 
     @Test
     public void testDoubleCopySign() {
-        for (double magnitude : DOUBLE_VALUES) {
-            for (double sign : DOUBLE_VALUES) {
+        for (double magnitude : doubleValues) {
+            for (double sign : doubleValues) {
                 runTest("doubleCopySign", magnitude, sign);
             }
         }

@@ -24,24 +24,21 @@
  */
 package jdk.graal.compiler.hotspot;
 
+import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 import jdk.graal.compiler.core.common.LibGraalSupport;
 import jdk.graal.compiler.debug.GraalError;
+
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
-import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.MetaUtil;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaType;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 /**
  * A minimal implementation of {@link ResolvedJavaType} for use by libgraal.
@@ -62,7 +59,6 @@ public final class SnippetResolvedJavaType implements ResolvedJavaType {
     private SnippetResolvedJavaType arrayOfType;
 
     public SnippetResolvedJavaType(Class<?> javaClass) {
-        assert !javaClass.isRecord() : javaClass;
         this.javaClass = javaClass;
     }
 
@@ -244,16 +240,6 @@ public final class SnippetResolvedJavaType implements ResolvedJavaType {
     }
 
     @Override
-    public boolean isHidden() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<JavaType> getPermittedSubclasses() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public JavaKind getJavaKind() {
         return JavaKind.Object;
     }
@@ -309,17 +295,7 @@ public final class SnippetResolvedJavaType implements ResolvedJavaType {
     }
 
     @Override
-    public ResolvedJavaType[] getDeclaredTypes() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ResolvedJavaType getEnclosingType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ResolvedJavaMethod getEnclosingMethod() {
         throw new UnsupportedOperationException();
     }
 
@@ -343,21 +319,6 @@ public final class SnippetResolvedJavaType implements ResolvedJavaType {
     }
 
     @Override
-    public boolean isRecord() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ResolvedJavaMethod getClassInitializer() {
         throw new UnsupportedOperationException();
     }
@@ -368,12 +329,17 @@ public final class SnippetResolvedJavaType implements ResolvedJavaType {
     }
 
     @Override
-    public <T> T getDeclaredAnnotationInfo(Function<AnnotationsInfo, T> parser) {
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
+    public Annotation[] getAnnotations() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Annotation[] getDeclaredAnnotations() {
         throw new UnsupportedOperationException();
     }
 

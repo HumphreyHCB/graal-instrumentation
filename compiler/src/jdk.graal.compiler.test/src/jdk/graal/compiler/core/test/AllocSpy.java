@@ -33,13 +33,12 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.google.monitoring.runtime.instrumentation.AllocationRecorder;
 import com.google.monitoring.runtime.instrumentation.Sampler;
-
-import jdk.graal.compiler.util.EconomicHashMap;
 
 /**
  * Tool for analyzing allocations within a scope using the
@@ -127,8 +126,8 @@ public final class AllocSpy implements AutoCloseable {
 
     final Object name;
     final AllocSpy parent;
-    final Map<String, CountedValue> bytesPerGraalContext = new EconomicHashMap<>();
-    final Map<String, CountedValue> instancesPerGraalContext = new EconomicHashMap<>();
+    final Map<String, CountedValue> bytesPerGraalContext = new HashMap<>();
+    final Map<String, CountedValue> instancesPerGraalContext = new HashMap<>();
 
     public static AllocSpy open(Object name) {
         if (ENABLED) {

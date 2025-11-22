@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,11 +40,6 @@
  */
 package com.oracle.truffle.regex.test.dummylang;
 
-import org.graalvm.options.OptionDescriptor;
-import org.graalvm.options.OptionDescriptors;
-import org.graalvm.options.OptionKey;
-import org.graalvm.options.OptionValues;
-
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -72,78 +67,57 @@ public class TRegexTestDummyLanguage extends TruffleLanguage<TRegexTestDummyLang
     public static final String NAME = "REGEXDUMMYLANG";
     public static final String ID = "regexDummyLang";
     public static final String MIME_TYPE = "application/tregexdummy";
+    public static final String BENCH_PREFIX = "__BENCH__";
+    public static final String BENCH_CG_PREFIX = "__BENCH_CG__";
 
     @Override
     protected CallTarget parse(ParsingRequest parsingRequest) {
-        OptionValues options = parsingRequest.getOptionValues();
+        String src = parsingRequest.getSource().getCharacters().toString();
+        if (src.startsWith(BENCH_PREFIX)) {
+            final Object regex = DummyLanguageContext.get(null).getEnv().parseInternal(
+                            Source.newBuilder(RegexLanguage.ID, "BooleanMatch=true," + src.substring(BENCH_PREFIX.length()), parsingRequest.getSource().getName()).internal(true).build()).call();
+
+            return new RootNode(this) {
+
+                private final Object compiledRegex = regex;
+                private final String name = parsingRequest.getSource().getName();
+
+                @Child RegexBenchNode benchNode = TRegexTestDummyLanguageFactory.RegexBenchNodeGen.create();
+
+                @Override
+                public Object execute(VirtualFrame frame) {
+                    Object[] args = frame.getArguments();
+                    return benchNode.execute(this, compiledRegex, args[0], (int) args[1]);
+                }
+
+                @Override
+                public String toString() {
+                    return name + ' ' + ((RegexObject) compiledRegex).getLabel();
+                }
+            }.getCallTarget();
+        }
+        if (src.startsWith(BENCH_CG_PREFIX)) {
+            final Object regex = DummyLanguageContext.get(null).getEnv().parseInternal(
+                            Source.newBuilder(RegexLanguage.ID, src.substring(BENCH_CG_PREFIX.length()), parsingRequest.getSource().getName()).internal(true).build()).call();
+            return new RootNode(this) {
+
+                private final Object compiledRegex = regex;
+
+                @Child RegexBenchCGNode benchNode = TRegexTestDummyLanguageFactory.RegexBenchCGNodeGen.create();
+
+                @Override
+                public Object execute(VirtualFrame frame) {
+                    Object[] args = frame.getArguments();
+                    return benchNode.execute(this, compiledRegex, args[0], (int) args[1]);
+                }
+            }.getCallTarget();
+        }
         try {
-            final CallTarget regex = parseRegex(parsingRequest);
-            switch (options.get(TRegexTestDummyLanguageOptions.Mode)) {
-                case Test -> {
-                    return regex;
-                }
-                case Bench -> {
-                    return new RootNode(this) {
-
-                        private final Object compiledRegex = regex.call();
-                        private final String name = parsingRequest.getSource().getName();
-
-                        @Child RegexBenchNode benchNode = TRegexTestDummyLanguageFactory.RegexBenchNodeGen.create();
-
-                        @Override
-                        public Object execute(VirtualFrame frame) {
-                            Object[] args = frame.getArguments();
-                            return benchNode.execute(this, compiledRegex, args[0], (int) args[1]);
-                        }
-
-                        @Override
-                        public String toString() {
-                            return name + ' ' + ((RegexObject) compiledRegex).getLabel();
-                        }
-                    }.getCallTarget();
-                }
-                case BenchCG -> {
-                    return new RootNode(this) {
-
-                        private final Object compiledRegex = regex.call();
-
-                        @Child RegexBenchCGNode benchNode = TRegexTestDummyLanguageFactory.RegexBenchCGNodeGen.create();
-
-                        @Override
-                        public Object execute(VirtualFrame frame) {
-                            Object[] args = frame.getArguments();
-                            return benchNode.execute(this, compiledRegex, args[0], (int) args[1]);
-                        }
-                    }.getCallTarget();
-                }
-                default -> throw CompilerDirectives.shouldNotReachHere();
-            }
+            return DummyLanguageContext.get(null).getEnv().parseInternal(
+                            Source.newBuilder(RegexLanguage.ID, src, parsingRequest.getSource().getName()).internal(true).build());
         } catch (RegexSyntaxException e) {
             throw e.withErrorCodeInMessage();
         }
-    }
-
-    private static CallTarget parseRegex(ParsingRequest parsingRequest) {
-        OptionValues optionValues = parsingRequest.getOptionValues();
-        Source.LiteralBuilder builder = Source.newBuilder(RegexLanguage.ID, parsingRequest.getSource().getCharacters(), parsingRequest.getSource().getName()).internal(true);
-        for (OptionDescriptor optionDescriptor : optionValues.getDescriptors()) {
-            if (optionDescriptor.getKey() == TRegexTestDummyLanguageOptions.Mode) {
-                continue;
-            }
-            OptionKey<?> key = optionDescriptor.getKey();
-            if (optionValues.hasBeenSet(key)) {
-                builder.option("regex" + optionDescriptor.getName().substring("regexDummyLang".length()), String.valueOf(optionValues.get(key)));
-            }
-        }
-        if (optionValues.get(TRegexTestDummyLanguageOptions.Mode) == TRegexTestDummyLanguageOptions.ExecutionMode.Bench) {
-            builder.option("regex.BooleanMatch", "true");
-        }
-        return DummyLanguageContext.get(null).getEnv().parseInternal(builder.build());
-    }
-
-    @Override
-    protected OptionDescriptors getSourceOptionDescriptors() {
-        return new TRegexTestDummyLangOptionDescriptors();
     }
 
     @GenerateInline

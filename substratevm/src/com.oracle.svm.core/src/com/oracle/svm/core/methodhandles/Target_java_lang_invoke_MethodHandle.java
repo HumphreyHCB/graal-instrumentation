@@ -37,18 +37,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
-import com.oracle.svm.core.ForeignSupport;
+import com.oracle.svm.core.LinkToNativeSupport;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.classinitialization.EnsureClassInitializedNode;
-import com.oracle.svm.core.hub.RuntimeClassLoading;
-import com.oracle.svm.core.hub.RuntimeClassLoading.NoRuntimeClassLoading;
-import com.oracle.svm.core.hub.crema.CremaSupport;
 import com.oracle.svm.core.invoke.MethodHandleUtils;
 import com.oracle.svm.core.invoke.Target_java_lang_invoke_MemberName;
 import com.oracle.svm.core.reflect.SubstrateAccessor;
@@ -57,7 +53,6 @@ import com.oracle.svm.core.reflect.SubstrateMethodAccessor;
 import com.oracle.svm.core.reflect.target.Target_java_lang_reflect_Constructor;
 import com.oracle.svm.core.reflect.target.Target_java_lang_reflect_Field;
 import com.oracle.svm.core.reflect.target.Target_java_lang_reflect_Method;
-import com.oracle.svm.core.reflect.target.Target_jdk_internal_reflect_ConstructorAccessor;
 import com.oracle.svm.core.reflect.target.Target_jdk_internal_reflect_MethodAccessor;
 import com.oracle.svm.core.util.VMError;
 
@@ -87,17 +82,6 @@ final class Target_java_lang_invoke_MethodHandle {
     /* All MethodHandle.invoke* methods funnel through here. */
     @Substitute(polymorphicSignature = true)
     Object invokeBasic(Object... args) throws Throwable {
-        if (RuntimeClassLoading.isSupported()) {
-            Target_java_lang_invoke_LambdaForm form = internalForm();
-            Target_java_lang_invoke_MemberName vmentry = form.vmentry;
-            if (vmentry == null) {
-                // if the form comes from the image, its entry might have been reset
-                form.prepare();
-                vmentry = form.vmentry;
-                assert vmentry != null;
-            }
-            return CremaSupport.singleton().invokeBasic(vmentry, this, args);
-        }
         Target_java_lang_invoke_MemberName memberName = internalMemberName();
         Object ret;
         if (memberName != null) {
@@ -140,47 +124,34 @@ final class Target_java_lang_invoke_MethodHandle {
 
     @Substitute(polymorphicSignature = true)
     static Object linkToVirtual(Object... args) throws Throwable {
-        if (RuntimeClassLoading.isSupported()) {
-            return CremaSupport.singleton().linkToVirtual(args);
-        }
         return Util_java_lang_invoke_MethodHandle.linkTo(args);
     }
 
     @Substitute(polymorphicSignature = true)
     static Object linkToStatic(Object... args) throws Throwable {
-        if (RuntimeClassLoading.isSupported()) {
-            return CremaSupport.singleton().linkToStatic(args);
-        }
         return Util_java_lang_invoke_MethodHandle.linkTo(args);
     }
 
     @Substitute(polymorphicSignature = true)
     static Object linkToInterface(Object... args) throws Throwable {
-        if (RuntimeClassLoading.isSupported()) {
-            return CremaSupport.singleton().linkToInterface(args);
-        }
         return Util_java_lang_invoke_MethodHandle.linkTo(args);
     }
 
     @Substitute(polymorphicSignature = true)
     static Object linkToSpecial(Object... args) throws Throwable {
-        if (RuntimeClassLoading.isSupported()) {
-            return CremaSupport.singleton().linkToSpecial(args);
-        }
         return Util_java_lang_invoke_MethodHandle.linkTo(args);
     }
 
     @Substitute(polymorphicSignature = true)
     static Object linkToNative(Object... args) throws Throwable {
-        if (ForeignSupport.isAvailable()) {
-            return ForeignSupport.singleton().linkToNative(args);
+        if (LinkToNativeSupport.isAvailable()) {
+            return LinkToNativeSupport.singleton().linkToNative(args);
         } else {
             throw unsupportedFeature("The foreign downcalls feature is not available. Please make sure that preview features are enabled with '--enable-preview'.");
         }
     }
 
     @Substitute
-    @TargetElement(onlyWith = NoRuntimeClassLoading.class)
     void maybeCustomize() {
         /*
          * JDK 8 update 60 added an additional customization possibility for method handles. For all
@@ -189,7 +160,6 @@ final class Target_java_lang_invoke_MethodHandle {
     }
 
     @Delete
-    @TargetElement(onlyWith = NoRuntimeClassLoading.class)
     native void customize();
 }
 
@@ -202,11 +172,6 @@ final class Util_java_lang_invoke_MethodHandle {
     }
 
     static Object invokeInternal(Target_java_lang_invoke_MemberName memberName, MethodType methodType, Object... args) throws Throwable {
-        /*
-         * This is never reached in the "crema" case since invokeBasic & linkTo* are instead
-         * redirected to CremaSupport.
-         */
-        assert !RuntimeClassLoading.isSupported();
         /*
          * The method handle may have been resolved at build time. If that is the case, the
          * SVM-specific information needed to perform the invoke is not stored in the handle yet, so
@@ -315,20 +280,13 @@ final class Util_java_lang_invoke_MethodHandle {
         return getConstructorAccessor(constructor);
     }
 
-    @SuppressWarnings("DataFlowIssue")
     private static SubstrateConstructorAccessor getConstructorAccessor(Constructor<?> constructor) {
-        Target_java_lang_reflect_Constructor internalConstructor = SubstrateUtil.cast(constructor, Target_java_lang_reflect_Constructor.class);
-        Target_jdk_internal_reflect_ConstructorAccessor constructorAccessor = internalConstructor.constructorAccessor;
-        var result = constructorAccessor == null ? internalConstructor.acquireConstructorAccessor() : constructorAccessor;
-        return SubstrateUtil.cast(result, SubstrateConstructorAccessor.class);
+        return SubstrateUtil.cast(SubstrateUtil.cast(constructor, Target_java_lang_reflect_Constructor.class).acquireConstructorAccessor(), SubstrateConstructorAccessor.class);
     }
 
     private static <T extends AccessibleObject & Member> void checkMember(T member, boolean isStatic) {
-        if (Modifier.isStatic(member.getModifiers()) != isStatic) {
-            throw VMError.shouldNotReachHere("Cannot perform " +
-                            (isStatic ? "static" : "non-static") + " operation on a " +
-                            (isStatic ? "non-static" : "static") + " member");
-        }
+        VMError.guarantee(Modifier.isStatic(member.getModifiers()) == isStatic,
+                        "Cannot perform %s operation on a %s member".formatted(isStatic ? "static" : "non-static", isStatic ? "non-static" : "static"));
     }
 
     private static SubstrateAccessor getAccessor(Target_java_lang_invoke_MemberName memberName) {
@@ -337,10 +295,7 @@ final class Util_java_lang_invoke_MethodHandle {
     }
 
     private static void checkArgs(Object[] args, int expectedLength, String methodName) {
-        if ((expectedLength == 0 && args == null) || args.length == expectedLength) {
-            return;
-        }
-        throw VMError.shouldNotReachHere(methodName + " requires exactly " + expectedLength + " arguments");
+        VMError.guarantee((expectedLength == 0 && args == null) || args.length == expectedLength, "%s requires exactly %d arguments".formatted(methodName, expectedLength));
     }
 
     private static void convertArgs(Object[] args, MethodType methodType) throws Throwable {

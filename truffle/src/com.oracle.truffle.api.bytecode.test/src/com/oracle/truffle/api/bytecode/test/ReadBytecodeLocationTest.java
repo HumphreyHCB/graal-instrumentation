@@ -284,14 +284,14 @@ abstract class BytecodeNodeWithStoredBci extends RootNode implements BytecodeRoo
         }
     }
 
-    @Prolog(storeBytecodeIndex = false)
+    @Prolog
     public static final class DoNothingProlog {
         @Specialization
         public static void doNothing() {
         }
     }
 
-    @EpilogReturn(storeBytecodeIndex = false)
+    @EpilogReturn
     public static final class DoNothingEpilog {
         @Specialization
         public static Object doNothing(Object returnValue) {
@@ -299,14 +299,14 @@ abstract class BytecodeNodeWithStoredBci extends RootNode implements BytecodeRoo
         }
     }
 
-    @EpilogExceptional(storeBytecodeIndex = false)
+    @EpilogExceptional
     public static final class DoNothingEpilogExceptional {
         @Specialization
         public static void doNothing(@SuppressWarnings("unused") AbstractTruffleException ex) {
         }
     }
 
-    @Operation(storeBytecodeIndex = true)
+    @Operation
     public static final class MakeRootAndFrame {
         @Specialization
         public static BytecodeAndFrame perform(VirtualFrame frame,
@@ -316,7 +316,7 @@ abstract class BytecodeNodeWithStoredBci extends RootNode implements BytecodeRoo
         }
     }
 
-    @Operation(storeBytecodeIndex = false)
+    @Operation
     public static final class GetSourceCharacters {
         @Specialization
         public static String perform(@SuppressWarnings("unused") VirtualFrame frame, BytecodeAndFrame rootAndFrame) {
@@ -324,7 +324,7 @@ abstract class BytecodeNodeWithStoredBci extends RootNode implements BytecodeRoo
         }
     }
 
-    @Operation(storeBytecodeIndex = false)
+    @Operation
     public static final class Throw {
         @Specialization
         public static Object perform(Object result) {

@@ -25,6 +25,7 @@
 package com.oracle.svm.hosted.c;
 
 import java.io.IOException;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,7 +79,6 @@ import com.oracle.svm.hosted.NativeImageOptions;
 import com.oracle.svm.hosted.c.info.ElementInfo;
 import com.oracle.svm.hosted.c.libc.HostedLibCBase;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
-import com.oracle.svm.util.AnnotationUtil;
 import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.util.ReflectionUtil.ReflectionUtilError;
 
@@ -94,7 +94,6 @@ import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.annotation.Annotated;
 
 public final class NativeLibraries {
 
@@ -298,7 +297,7 @@ public final class NativeLibraries {
     }
 
     private static String getStaticLibraryName(String libraryName) {
-        boolean targetWindows = Platform.includedIn(InternalPlatform.WINDOWS_BASE.class);
+        boolean targetWindows = Platform.includedIn(Platform.WINDOWS.class);
         String prefix = targetWindows ? "" : "lib";
         String suffix = targetWindows ? ".lib" : ".a";
         return prefix + libraryName + suffix;
@@ -398,13 +397,9 @@ public final class NativeLibraries {
     }
 
     public void reportErrors() {
-        if (!errors.isEmpty()) {
+        if (errors.size() > 0) {
             throw UserError.abort(errors.stream().map(CInterfaceError::getMessage).collect(Collectors.toList()));
         }
-    }
-
-    public boolean isMethodInConfiguration(ResolvedJavaMethod method) {
-        return makeContext(getDirectives(method)).isInConfiguration();
     }
 
     public void loadJavaMethod(ResolvedJavaMethod method) {
@@ -413,9 +408,9 @@ public final class NativeLibraries {
 
         if (!context.isInConfiguration()) {
             /* Nothing to do, all elements in context are ignored. */
-        } else if (AnnotationUtil.getAnnotation(method, CConstant.class) != null) {
+        } else if (method.getAnnotation(CConstant.class) != null) {
             context.appendConstantAccessor(method);
-        } else if (AnnotationUtil.getAnnotation(method, CFunction.class) != null) {
+        } else if (method.getAnnotation(CFunction.class) != null) {
             /* Nothing to do, handled elsewhere but the NativeCodeContext above is important. */
         } else {
             addError("Method is not annotated with supported C interface annotation", method);
@@ -427,15 +422,15 @@ public final class NativeLibraries {
 
         if (!context.isInConfiguration()) {
             /* Nothing to do, all elements in context are ignored. */
-        } else if (AnnotationUtil.getAnnotation(type, CStruct.class) != null) {
+        } else if (type.getAnnotation(CStruct.class) != null) {
             context.appendStructType(type);
-        } else if (AnnotationUtil.getAnnotation(type, RawStructure.class) != null) {
+        } else if (type.getAnnotation(RawStructure.class) != null) {
             context.appendRawStructType(type);
-        } else if (AnnotationUtil.getAnnotation(type, CPointerTo.class) != null) {
+        } else if (type.getAnnotation(CPointerTo.class) != null) {
             context.appendCPointerToType(type);
-        } else if (AnnotationUtil.getAnnotation(type, RawPointerTo.class) != null) {
+        } else if (type.getAnnotation(RawPointerTo.class) != null) {
             context.appendRawPointerToType(type);
-        } else if (AnnotationUtil.getAnnotation(type, CEnum.class) != null) {
+        } else if (type.getAnnotation(CEnum.class) != null) {
             context.appendEnumType(type);
         } else {
             addError("Type is not annotated with supported C interface annotation", type);
@@ -498,13 +493,9 @@ public final class NativeLibraries {
         return allStaticLibs.get(Paths.get(getStaticLibraryName(staticLibraryName)));
     }
 
-    public Collection<Path> getAllStaticLibNames() {
-        return getAllStaticLibs().keySet();
-    }
-
     private Map<Path, Path> getAllStaticLibs() {
         Map<Path, Path> allStaticLibs = new LinkedHashMap<>();
-        String libSuffix = Platform.includedIn(InternalPlatform.WINDOWS_BASE.class) ? ".lib" : ".a";
+        String libSuffix = Platform.includedIn(Platform.WINDOWS.class) ? ".lib" : ".a";
         for (String libraryPath : getLibraryPaths()) {
             try (Stream<Path> paths = Files.list(Paths.get(libraryPath))) {
                 paths.filter(Files::isRegularFile)
@@ -540,7 +531,7 @@ public final class NativeLibraries {
         return result;
     }
 
-    private static Object unwrap(Annotated e) {
+    private static Object unwrap(AnnotatedElement e) {
         Object element = e;
         assert element instanceof ResolvedJavaType || element instanceof ResolvedJavaMethod;
         while (element instanceof WrappedElement) {
@@ -550,13 +541,13 @@ public final class NativeLibraries {
         return element;
     }
 
-    public void registerElementInfo(Annotated e, ElementInfo elementInfo) {
+    public void registerElementInfo(AnnotatedElement e, ElementInfo elementInfo) {
         Object element = unwrap(e);
         assert !elementToInfo.containsKey(element);
         elementToInfo.put(element, elementInfo);
     }
 
-    public ElementInfo findElementInfo(Annotated element) {
+    public ElementInfo findElementInfo(AnnotatedElement element) {
         Object element1 = unwrap(element);
         ElementInfo result = elementToInfo.get(element1);
         if (result == null && element1 instanceof ResolvedJavaType && ((ResolvedJavaType) element1).getInterfaces().length == 1) {
@@ -574,7 +565,7 @@ public final class NativeLibraries {
     }
 
     private Class<? extends CContext.Directives> getDirectives(ResolvedJavaType type) {
-        CContext useUnit = AnnotationUtil.getAnnotation(type, CContext.class);
+        CContext useUnit = type.getAnnotation(CContext.class);
         if (useUnit != null) {
             return getDirectives(useUnit);
         } else if (type.getEnclosingType() != null) {
@@ -584,27 +575,8 @@ public final class NativeLibraries {
         }
     }
 
-    public CLibrary getCLibrary(ResolvedJavaMethod method) {
-        CLibrary cLibrary = AnnotationUtil.getAnnotation(method, CLibrary.class);
-        if (cLibrary == null) {
-            return getCLibrary(method.getDeclaringClass());
-        }
-        return cLibrary;
-    }
-
-    public CLibrary getCLibrary(ResolvedJavaType type) {
-        CLibrary cLibrary = AnnotationUtil.getAnnotation(type, CLibrary.class);
-        if (cLibrary != null) {
-            return cLibrary;
-        } else if (type.getEnclosingType() != null) {
-            return getCLibrary(type.getEnclosingType());
-        } else {
-            return null;
-        }
-    }
-
     public void finish() {
-        libraryPaths.addAll(SubstrateOptions.CLibraryPath.getValue().values().stream().map(Path::toString).toList());
+        libraryPaths.addAll(SubstrateOptions.CLibraryPath.getValue().values().stream().map(Path::toString).collect(Collectors.toList()));
         for (NativeCodeContext context : compilationUnitToContext.values()) {
             if (context.isInConfiguration()) {
                 libraries.addAll(context.getDirectives().getLibraries());
@@ -670,9 +642,9 @@ public final class NativeLibraries {
         return constantReflection;
     }
 
-    public void processAnnotated() {
+    public boolean processAnnotated() {
         if (annotated.isEmpty()) {
-            return;
+            return false;
         }
         for (CLibrary lib : annotated) {
             if (lib.requireStatic()) {
@@ -682,6 +654,7 @@ public final class NativeLibraries {
             }
         }
         annotated.clear();
+        return true;
     }
 
     public List<String> getJniStaticLibraries() {

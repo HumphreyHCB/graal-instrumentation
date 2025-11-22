@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@ package jdk.graal.compiler.hotspot;
 
 import jdk.graal.compiler.core.common.CompilerProfiler;
 import jdk.graal.compiler.serviceprovider.ServiceProvider;
+
 import jdk.vm.ci.hotspot.JFR;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -46,7 +47,7 @@ public final class JFRCompilerProfiler implements CompilerProfiler {
     }
 
     @Override
-    public void notifyCompilerInliningEvent(int compileId, ResolvedJavaMethod caller, ResolvedJavaMethod callee,
+    public void notifyCompilerInlingEvent(int compileId, ResolvedJavaMethod caller, ResolvedJavaMethod callee,
                     boolean succeeded, String message, int bci) {
         JFR.CompilerInliningEvent.write(compileId, caller, callee, succeeded, message, bci);
     }

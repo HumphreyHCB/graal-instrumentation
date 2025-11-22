@@ -39,7 +39,7 @@ public class StructFieldInfo extends SizableInfo {
     @SuppressWarnings("this-escape")
     public StructFieldInfo(String name, ElementKind kind) {
         super(name, kind);
-        this.offset = adoptChild(new PropertyInfo<>("offset"));
+        this.offset = adoptChild(new PropertyInfo<Integer>("offset"));
     }
 
     public PropertyInfo<Integer> getOffsetInfo() {

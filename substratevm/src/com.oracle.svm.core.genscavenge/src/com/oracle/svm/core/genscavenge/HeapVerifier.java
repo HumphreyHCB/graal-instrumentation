@@ -33,9 +33,7 @@ import org.graalvm.word.Pointer;
 
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.genscavenge.AlignedHeapChunk.AlignedHeader;
-import com.oracle.svm.core.genscavenge.StackVerifier.VerifyFrameReferencesVisitor;
 import com.oracle.svm.core.genscavenge.UnalignedHeapChunk.UnalignedHeader;
-import com.oracle.svm.core.genscavenge.metaspace.MetaspaceImpl;
 import com.oracle.svm.core.genscavenge.remset.RememberedSet;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.heap.ObjectHeader;
@@ -46,7 +44,6 @@ import com.oracle.svm.core.heap.ReferenceInternals;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.InteriorObjRefWalker;
 import com.oracle.svm.core.log.Log;
-import com.oracle.svm.core.metaspace.Metaspace;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
 
 import jdk.graal.compiler.api.replacements.Fold;
@@ -68,7 +65,6 @@ public class HeapVerifier {
     public boolean verify(Occasion occasion) {
         boolean success = true;
         success &= verifyImageHeap();
-        success &= verifyMetaspace();
         success &= verifyYoungGeneration(occasion);
         success &= verifyOldGeneration();
         success &= verifyRememberedSets();
@@ -82,13 +78,6 @@ public class HeapVerifier {
             success &= verifyUnalignedChunks(null, info.getFirstWritableUnalignedChunk(), info.getLastWritableUnalignedChunk());
         }
         return success;
-    }
-
-    private static boolean verifyMetaspace() {
-        if (!Metaspace.isSupported()) {
-            return true;
-        }
-        return MetaspaceImpl.singleton().verify();
     }
 
     private static boolean verifyYoungGeneration(Occasion occasion) {
@@ -145,22 +134,18 @@ public class HeapVerifier {
             success &= rememberedSet.verify(info.getFirstWritableUnalignedChunk(), info.getLastWritableUnalignedChunk());
         }
 
-        if (Metaspace.isSupported()) {
-            success &= MetaspaceImpl.singleton().verifyRememberedSets();
-        }
-
         success &= HeapImpl.getHeapImpl().getOldGeneration().verifyRememberedSets();
         return success;
     }
 
-    public static boolean verifyRememberedSet(Space space) {
+    static boolean verifyRememberedSet(Space space) {
         boolean success = true;
         success &= RememberedSet.get().verify(space.getFirstAlignedHeapChunk());
         success &= RememberedSet.get().verify(space.getFirstUnalignedHeapChunk());
         return success;
     }
 
-    public static boolean verifySpace(Space space) {
+    static boolean verifySpace(Space space) {
         boolean success = true;
         success &= verifyChunkList(space, "aligned", space.getFirstAlignedHeapChunk(), space.getLastAlignedHeapChunk());
         success &= verifyChunkList(space, "unaligned", space.getFirstUnalignedHeapChunk(), space.getLastUnalignedHeapChunk());
@@ -318,14 +303,9 @@ public class HeapVerifier {
             // Not all objects in the image heap have the remembered set bit in the header, so
             // we can't verify that this bit is set.
 
-        } else if (space.isOldSpace() || space.isMetaspace()) {
+        } else if (space.isOldSpace()) {
             if (SerialGCOptions.useRememberedSet() && !RememberedSet.get().hasRememberedSet(header)) {
-                Log.log().string("Object ").zhex(ptr).string(" is in ").string(space.getName()).string(" chunk ").zhex(chunk).string(" but does not have a remembered set.").newline();
-                return false;
-            }
-        } else if (space.isYoungSpace()) {
-            if (SerialGCOptions.useRememberedSet() && RememberedSet.get().hasRememberedSet(header)) {
-                Log.log().string("Object ").zhex(ptr).string(" is in ").string(space.getName()).string(" chunk ").zhex(chunk).string(" but has a remembered set.").newline();
+                Log.log().string("Object ").zhex(ptr).string(" is in old generation chunk ").zhex(chunk).string(" but does not have a remembered set.").newline();
                 return false;
             }
         }
@@ -368,7 +348,7 @@ public class HeapVerifier {
             return true;
         }
 
-        if (SerialGCOptions.VerifyReferencesPointIntoValidChunk.getValue() && !HeapImpl.getHeapImpl().isInHeapSlow(referencedObject)) {
+        if (SerialGCOptions.VerifyReferencesPointIntoValidChunk.getValue() && !HeapImpl.getHeapImpl().isInHeap(referencedObject)) {
             Log.log().string("Object reference at ").zhex(reference).string(" points outside the Java heap: ").zhex(referencedObject).string(". ");
             printParent(parentObject);
             return false;
@@ -404,11 +384,10 @@ public class HeapVerifier {
     }
 
     private static void printParent(Object parentObject) {
-        if (parentObject instanceof VerifyFrameReferencesVisitor visitor) {
-            Log.log().string("The invalid reference is on the stack: sp=").zhex(visitor.getSP()).string(", ip=").zhex(visitor.getIP()).newline();
-        } else {
-            assert parentObject != null;
+        if (parentObject != null) {
             Log.log().string("The object that contains the invalid reference is of type ").string(parentObject.getClass().getName()).newline();
+        } else {
+            Log.log().string("The invalid reference is on the stack").newline();
         }
     }
 
@@ -429,8 +408,9 @@ public class HeapVerifier {
         }
 
         @Override
-        public void visitObject(Object object) {
+        public boolean visitObject(Object object) {
             result &= verifyObject(object, aChunk, uChunk);
+            return true;
         }
     }
 
@@ -446,17 +426,9 @@ public class HeapVerifier {
         }
 
         @Override
-        public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
-            Pointer pos = firstObjRef;
-            Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
-            while (pos.belowThan(end)) {
-                visitObjectReference(pos, compressed, holderObject);
-                pos = pos.add(referenceSize);
-            }
-        }
-
-        private void visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+        public boolean visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
             result &= verifyReference(holderObject, objRef, compressed);
+            return true;
         }
     }
 

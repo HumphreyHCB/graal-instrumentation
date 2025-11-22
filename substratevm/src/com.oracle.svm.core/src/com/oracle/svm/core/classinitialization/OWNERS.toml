@@ -1,8 +1,0 @@
-[[rule]]
-files = "*"
-all = [
-    "christian.haeubl@oracle.com",
-    "vojin.jovanovic@oracle.com",
-]
-any = [
-]

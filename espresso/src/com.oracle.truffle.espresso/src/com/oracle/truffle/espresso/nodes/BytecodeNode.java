@@ -290,31 +290,46 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper.YieldException;
+import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags.StatementTag;
+import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.BytecodeOSRNode;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.LoopNode;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.analysis.liveness.LivenessAnalysis;
 import com.oracle.truffle.espresso.bytecode.MapperBCI;
-import com.oracle.truffle.espresso.classfile.ConstantPool;
 import com.oracle.truffle.espresso.classfile.ExceptionHandler;
 import com.oracle.truffle.espresso.classfile.JavaKind;
+import com.oracle.truffle.espresso.classfile.attributes.BootstrapMethodsAttribute;
 import com.oracle.truffle.espresso.classfile.attributes.LineNumberTableAttribute;
 import com.oracle.truffle.espresso.classfile.bytecode.BytecodeLookupSwitch;
 import com.oracle.truffle.espresso.classfile.bytecode.BytecodeStream;
 import com.oracle.truffle.espresso.classfile.bytecode.BytecodeTableSwitch;
 import com.oracle.truffle.espresso.classfile.bytecode.Bytecodes;
 import com.oracle.truffle.espresso.classfile.bytecode.VolatileArrayAccess;
+import com.oracle.truffle.espresso.classfile.constantpool.ClassConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.DoubleConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.DynamicConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.FloatConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.IntegerConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.LongConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.MethodHandleConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.MethodRefConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.MethodTypeConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.PoolConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.Resolvable;
+import com.oracle.truffle.espresso.classfile.constantpool.StringConstant;
 import com.oracle.truffle.espresso.classfile.descriptors.SignatureSymbols;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.classfile.perf.DebugCounter;
-import com.oracle.truffle.espresso.constantpool.ResolvedConstant;
+import com.oracle.truffle.espresso.constantpool.Resolution;
 import com.oracle.truffle.espresso.constantpool.ResolvedDynamicConstant;
 import com.oracle.truffle.espresso.constantpool.ResolvedWithInvokerClassMethodRefConstant;
 import com.oracle.truffle.espresso.constantpool.RuntimeConstantPool;
@@ -371,14 +386,13 @@ import com.oracle.truffle.espresso.shared.resolver.CallSiteType;
 import com.oracle.truffle.espresso.shared.resolver.FieldAccessType;
 import com.oracle.truffle.espresso.shared.resolver.ResolvedCall;
 import com.oracle.truffle.espresso.substitutions.standard.Target_java_lang_invoke_MethodHandleNatives.SiteTypes;
-import com.oracle.truffle.espresso.threads.ThreadState;
 import com.oracle.truffle.espresso.vm.InterpreterToVM;
 import com.oracle.truffle.espresso.vm.continuation.HostFrameRecord;
 import com.oracle.truffle.espresso.vm.continuation.UnwindContinuationException;
 
 /**
  * Bytecode interpreter loop.
- * <p>
+ *
  * Calling convention uses strict Java primitive types although internally the VM basic types are
  * used with conversions at the boundaries.
  *
@@ -484,14 +498,12 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         return frameDescriptor;
     }
 
-    public SourceSection getSourceSectionAtBCI(int bci) {
-        return getMethodVersion().getSourceSectionAtBCI(bci);
+    Source getSource() {
+        return getMethodVersion().getMethod().getSource();
     }
 
-    private EspressoContext getMethodContext() {
-        // This should be used instead of getContext() because it leads to a constant while the
-        // generic EspressoNode.getContext() doesn't necessarily lead to a constant.
-        return getMethodVersion().getMethod().getContext();
+    public SourceSection getSourceSectionAtBCI(int bci) {
+        return getMethodVersion().getSourceSectionAtBCI(bci);
     }
 
     @ExplodeLoop
@@ -724,7 +736,6 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     private Object executeBodyFromBCI(VirtualFrame frame, int startBCI, int startTop, int startStatementIndex,
                     boolean isOSR, boolean resumeContinuation) {
         CompilerAsserts.partialEvaluationConstant(startBCI);
-        assert ThreadState.currentThreadInEspresso(getContext());
         final InstrumentationSupport instrument = this.instrumentation;
         int statementIndex = startStatementIndex;
         boolean skipLivenessActions = instrument != null;
@@ -1279,8 +1290,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                         }
                         Object returnValue = getReturnValueAsObject(frame, top);
                         if (instrument != null) {
-                            instrument.notifyExit(frame, this, returnValue);
-                            instrument.notifyStatementExit(frame, statementIndex, returnValue);
+                            instrument.exitAt(frame, statementIndex, returnValue);
                         }
 
                         // This branch must not be a loop exit.
@@ -1464,13 +1474,6 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                         livenessAnalysis.performPostBCI(frame, curBCI, skipLivenessActions);
                         int targetBCI = bs.nextBCI(curBCI);
                         livenessAnalysis.performOnEdge(frame, curBCI, targetBCI, skipLivenessActions);
-                        if (instrument != null) {
-                            int nextStatementIndex = instrument.getNextStatementIndex(statementIndex, targetBCI);
-                            if (nextStatementIndex != statementIndex) {
-                                instrument.notifyStatementChange(frame, statementIndex, nextStatementIndex, targetBCI);
-                                statementIndex = nextStatementIndex;
-                            }
-                        }
                         top += Bytecodes.stackEffectOf(wideOpcode);
                         curBCI = targetBCI;
                         continue loop;
@@ -1550,15 +1553,14 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             } catch (AbstractTruffleException | StackOverflowError | OutOfMemoryError e) {
                 CompilerAsserts.partialEvaluationConstant(curBCI);
                 // Handle both guest and host StackOverflowError.
-                EspressoContext context = getMethodContext();
-                if (e == context.getStackOverflow() || e instanceof StackOverflowError) {
+                if (e == getContext().getStackOverflow() || e instanceof StackOverflowError) {
                     // Always deopt on SOE.
                     CompilerDirectives.transferToInterpreter();
                     EspressoException wrappedStackOverflowError = null;
-                    if (e == context.getStackOverflow()) {
+                    if (e == getContext().getStackOverflow()) {
                         wrappedStackOverflowError = (EspressoException) e;
                     } else {
-                        wrappedStackOverflowError = context.getStackOverflow();
+                        wrappedStackOverflowError = getContext().getStackOverflow();
                     }
                     /*
                      * Stack Overflow management. All calls to stack manipulation are manually
@@ -1602,18 +1604,15 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                             // this branch is not compiled, it can be a loop exit
                             throw e;
                         }
-                        if (!context.getEspressoEnv().Polyglot) {
-                            CompilerDirectives.transferToInterpreter();
-                            throw EspressoError.shouldNotReachHere("Unexpected non-espresso AbstractTruffleException", e);
-                        }
+                        assert getContext().getEspressoEnv().Polyglot;
                         Meta meta = getMethod().getMeta();
                         meta.polyglot.ForeignException.safeInitialize(); // should fold
                         wrappedException = EspressoException.wrap(
-                                        getAllocator().createForeignException(context, e, InteropLibrary.getUncached(e)), meta);
+                                        getAllocator().createForeignException(getContext(), e, InteropLibrary.getUncached(e)), meta);
                     } else {
                         assert e instanceof OutOfMemoryError;
                         CompilerDirectives.transferToInterpreter();
-                        wrappedException = context.getOutOfMemory();
+                        wrappedException = getContext().getOutOfMemory();
                     }
 
                     ExceptionHandler[] handlers = getMethodVersion().getExceptionHandlers();
@@ -1751,9 +1750,8 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     }
 
     private BaseQuickNode getBaseQuickNode(int curBCI, int top, int statementIndex, BaseQuickNode quickNode) {
-        EspressoContext context = getMethodContext();
         // block while class redefinition is ongoing
-        context.getClassRedefinition().check();
+        getMethod().getContext().getClassRedefinition().check();
         // re-check if node was already replaced by another thread
         if (quickNode != nodes[readCPI(curBCI)]) {
             // another thread beat us
@@ -1769,7 +1767,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                 // another thread beat us
                 return nodes[cpi];
             } else {
-                BaseQuickNode newNode = insert(dispatchQuickened(top, curBCI, originalOpcode, statementIndex, resolvedInvoke, context.getEspressoEnv().bytecodeLevelInlining));
+                BaseQuickNode newNode = insert(dispatchQuickened(top, curBCI, originalOpcode, statementIndex, resolvedInvoke, getMethod().getContext().getEspressoEnv().bytecodeLevelInlining));
                 nodes[cpi] = newNode;
                 return newNode;
             }
@@ -1829,9 +1827,9 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     }
 
     @Override
-    public void prepareForInstrumentation(Set<Class<?>> tags) {
+    public InstrumentableNode materializeInstrumentableNodes(Set<Class<? extends Tag>> materializedTags) {
         InstrumentationSupport info = this.instrumentation;
-        if (info == null && tags.contains(StatementTag.class)) {
+        if (info == null && materializedTags.contains(StatementTag.class)) {
             Lock lock = getLock();
             lock.lock();
             try {
@@ -1839,7 +1837,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                 // double checked locking
                 if (info == null) {
                     generifyBytecodeLevelInlining();
-                    this.instrumentation = info = insert(new InstrumentationSupport(getMethodVersion()));
+                    this.instrumentation = info = insert(new InstrumentationSupport(getMethodVersion(), frameDescriptor));
                     // the debug info contains instrumentable nodes so we need to notify for
                     // instrumentation updates.
                     notifyInserted(info);
@@ -1848,6 +1846,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
                 lock.unlock();
             }
         }
+        return this;
     }
 
     private static boolean takeBranchRef1(StaticObject operand, int opcode) {
@@ -2027,24 +2026,54 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             TruffleSafepoint.poll(this);
             if (CompilerDirectives.hasNextTier() && ++loopCount.value >= REPORT_LOOP_STRIDE) {
                 LoopNode.reportLoopCount(this, REPORT_LOOP_STRIDE);
-                if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(this, REPORT_LOOP_STRIDE)) {
-                    livenessAnalysis.catchUpOSR(frame, targetBCI, skipLivenessActions);
-                    Object osrResult;
-                    try {
-                        osrResult = BytecodeOSRNode.tryOSR(this, targetBCI, new EspressoOSRInterpreterState(top, nextStatementIndex), null, frame);
-                    } catch (Throwable any) {
-                        // Has already been guest-handled in OSR. Shortcut out of the method.
-                        throw new EspressoOSRReturnException(any);
-                    }
-                    if (osrResult != null) {
-                        throw new EspressoOSRReturnException(osrResult);
-                    }
-                }
                 loopCount.value = 0;
+            }
+            if (CompilerDirectives.inInterpreter() && BytecodeOSRNode.pollOSRBackEdge(this)) {
+                livenessAnalysis.catchUpOSR(frame, targetBCI, skipLivenessActions);
+                Object osrResult;
+                StoredWrapperNode storedWrapperNode = null;
+                try {
+                    storedWrapperNode = storeWrapperNodeIfSet(frame, instrument);
+                    osrResult = BytecodeOSRNode.tryOSR(this, targetBCI, new EspressoOSRInterpreterState(top, nextStatementIndex), null, frame);
+                } catch (Throwable any) {
+                    // Has already been guest-handled in OSR. Shortcut out of the method.
+                    throw new EspressoOSRReturnException(any);
+                } finally {
+                    restoreWrapperNode(frame, storedWrapperNode, instrument);
+                }
+                if (osrResult != null) {
+                    throw new EspressoOSRReturnException(osrResult);
+                }
             }
         }
         livenessAnalysis.performOnEdge(frame, curBCI, targetBCI, skipLivenessActions);
         return nextStatementIndex;
+    }
+
+    private static void restoreWrapperNode(VirtualFrame frame, StoredWrapperNode storedWrapperNode, InstrumentationSupport instrument) {
+        // restore wrapper nodes after OSR
+        if (storedWrapperNode != null) {
+            frame.setAuxiliarySlot(instrument.wrapperSlotIndex, storedWrapperNode.storedWrapperNode());
+            if (InstrumentationSupport.assertionsEnabled()) {
+                frame.setAuxiliarySlot(instrument.indexSlotIndex, storedWrapperNode.storedIndex());
+            }
+        }
+    }
+
+    private static StoredWrapperNode storeWrapperNodeIfSet(VirtualFrame frame, InstrumentationSupport instrument) {
+        // check if we have stores wrapper nodes and index in the frame and store if so
+        if (instrument != null) {
+            Object storedWrapperNode = frame.getAuxiliarySlot(instrument.wrapperSlotIndex);
+            int storedIndex = 0;
+            if (InstrumentationSupport.assertionsEnabled()) {
+                storedIndex = (int) frame.getAuxiliarySlot(instrument.indexSlotIndex);
+            }
+            return new StoredWrapperNode(storedWrapperNode, storedIndex);
+        }
+        return null;
+    }
+
+    private record StoredWrapperNode(Object storedWrapperNode, int storedIndex) {
     }
 
     @ExplodeLoop
@@ -2073,57 +2102,51 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     private void putPoolConstant(VirtualFrame frame, int top, char cpi, int opcode) {
         assert opcode == LDC || opcode == LDC_W || opcode == LDC2_W;
         RuntimeConstantPool pool = getConstantPool();
-        ConstantPool.Tag tag = pool.tagAt(cpi);
-        switch (tag) {
-            case INTEGER -> {
-                assert opcode == LDC || opcode == LDC_W;
-                putInt(frame, top, pool.intAt(cpi));
-            }
-            case FLOAT -> {
-                assert opcode == LDC || opcode == LDC_W;
-                putFloat(frame, top, pool.floatAt(cpi));
-            }
-            case LONG -> {
-                assert opcode == LDC2_W;
-                putLong(frame, top, pool.longAt(cpi));
-            }
-            case DOUBLE -> {
-                assert opcode == LDC2_W;
-                putDouble(frame, top, pool.doubleAt(cpi));
-            }
-            case CLASS -> {
-                assert opcode == LDC || opcode == LDC_W;
-                Klass klass = pool.resolvedKlassAt(getDeclaringKlass(), cpi);
-                putObject(frame, top, klass.mirror());
-            }
-            case STRING -> {
-                assert opcode == LDC || opcode == LDC_W;
-                StaticObject internedString = pool.resolvedStringAt(cpi);
-                putObject(frame, top, internedString);
-            }
-            case METHODHANDLE -> {
-                assert opcode == LDC || opcode == LDC_W;
-                StaticObject methodHandle = pool.resolvedMethodHandleAt(getDeclaringKlass(), cpi);
-                putObject(frame, top, methodHandle);
-            }
-            case METHODTYPE -> {
-                assert opcode == LDC || opcode == LDC_W;
-                StaticObject methodType = pool.resolvedMethodTypeAt(getDeclaringKlass(), cpi);
-                putObject(frame, top, methodType);
-            }
-            case DYNAMIC -> {
-                ResolvedDynamicConstant dynamicConstant = pool.resolvedDynamicConstantAt(getDeclaringKlass(), cpi);
-                dynamicConstant.putResolved(frame, top, this);
-            }
-            default -> {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw EspressoError.unimplemented(pool.toString(cpi));
-            }
+        PoolConstant constant = pool.at(cpi);
+        if (constant instanceof IntegerConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            putInt(frame, top, ((IntegerConstant) constant).value());
+        } else if (constant instanceof LongConstant) {
+            assert opcode == LDC2_W;
+            putLong(frame, top, ((LongConstant) constant).value());
+        } else if (constant instanceof DoubleConstant) {
+            assert opcode == LDC2_W;
+            putDouble(frame, top, ((DoubleConstant) constant).value());
+        } else if (constant instanceof FloatConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            putFloat(frame, top, ((FloatConstant) constant).value());
+        } else if (constant instanceof StringConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            StaticObject internedString = pool.resolvedStringAt(cpi);
+            putObject(frame, top, internedString);
+        } else if (constant instanceof ClassConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            Klass klass = pool.resolvedKlassAt(getDeclaringKlass(), cpi);
+            putObject(frame, top, klass.mirror());
+        } else if (constant instanceof MethodHandleConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            StaticObject methodHandle = pool.resolvedMethodHandleAt(getDeclaringKlass(), cpi);
+            putObject(frame, top, methodHandle);
+        } else if (constant instanceof MethodTypeConstant) {
+            assert opcode == LDC || opcode == LDC_W;
+            StaticObject methodType = pool.resolvedMethodTypeAt(getDeclaringKlass(), cpi);
+            putObject(frame, top, methodType);
+        } else if (constant instanceof DynamicConstant) {
+            ResolvedDynamicConstant dynamicConstant = pool.resolvedDynamicConstantAt(getDeclaringKlass(), cpi);
+            dynamicConstant.putResolved(frame, top, this);
+        } else {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw EspressoError.unimplemented(constant.toString());
         }
     }
 
     private RuntimeConstantPool getConstantPool() {
         return getMethodVersion().getPool();
+    }
+
+    @TruffleBoundary
+    private BootstrapMethodsAttribute getBootstrapMethods() {
+        return (BootstrapMethodsAttribute) (getDeclaringKlass()).getAttribute(BootstrapMethodsAttribute.NAME);
     }
 
     // region Bytecode quickening
@@ -2268,7 +2291,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         CompilerDirectives.transferToInterpreterAndInvalidate();
         assert Bytecodes.isInvoke(opcode);
         InvokeQuickNode quick = (InvokeQuickNode) tryPatchQuick(curBCI, cpi -> getResolvedInvoke(opcode, cpi),
-                        resolvedInvoke -> dispatchQuickened(top, curBCI, opcode, statementIndex, resolvedInvoke, getMethodContext().getEspressoEnv().bytecodeLevelInlining));
+                        resolvedInvoke -> dispatchQuickened(top, curBCI, opcode, statementIndex, resolvedInvoke, getMethod().getContext().getEspressoEnv().bytecodeLevelInlining));
         return quick;
     }
 
@@ -2279,7 +2302,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     public int reQuickenInvoke(VirtualFrame frame, int top, int opcode, int curBCI, int statementIndex) {
         CompilerAsserts.neverPartOfCompilation();
         assert Bytecodes.isInvoke(opcode);
-        BaseQuickNode invoke = generifyInlinedMethodNode(top, opcode, curBCI, statementIndex, null);
+        BaseQuickNode invoke = generifyInlinedMethodNode(top, opcode, curBCI, statementIndex);
         // Perform the call outside of the lock.
         return invoke.execute(frame, false);
     }
@@ -2314,17 +2337,9 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
      * Reverts Bytecode-level method inlining at the current bci, in case instrumentation starts
      * happening on this node.
      */
-    public BaseQuickNode generifyInlinedMethodNode(int top, int opcode, int curBCI, int statementIndex, ResolvedCall<Klass, Method, Field> resolvedCall) {
+    public BaseQuickNode generifyInlinedMethodNode(int top, int opcode, int curBCI, int statementIndex) {
         CompilerAsserts.neverPartOfCompilation();
-        ResolvedInvoke resolvedInvoke;
-        if (resolvedCall == null) {
-            resolvedInvoke = getResolvedInvoke(opcode, readOriginalCPI(curBCI));
-        } else {
-            assert !resolvedCall.getResolvedMethod().isInvokeIntrinsic() : "An inlined method may never be an invokeGeneric.";
-            assert resolvedCall.getCallKind() != CallKind.ITABLE_LOOKUP : "A bytecode-inlined method may not be from an interface dispatch.";
-            resolvedInvoke = new ResolvedInvoke(resolvedCall, null);
-        }
-
+        ResolvedInvoke resolvedInvoke = getResolvedInvoke(opcode, readOriginalCPI(curBCI));
         return atomic(() -> {
             assert bs.currentBC(curBCI) == QUICK;
             char nodeIndex = readCPI(curBCI);
@@ -2506,12 +2521,11 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
 
     private Field resolveField(int opcode, char cpi) {
         assert opcode == GETFIELD || opcode == GETSTATIC || opcode == PUTFIELD || opcode == PUTSTATIC;
-        ObjectKlass declaringKlass = getMethod().getDeclaringKlass();
-        Field field = getConstantPool().resolvedFieldAt(declaringKlass, cpi);
+        Field field = getConstantPool().resolvedFieldAt(getMethod().getDeclaringKlass(), cpi);
         if (field.needsReResolution()) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            declaringKlass.getContext().getClassRedefinition().check();
-            field = getConstantPool().resolveFieldAndUpdate(declaringKlass, cpi, field);
+            getMethod().getContext().getClassRedefinition().check();
+            field = getConstantPool().resolveFieldAndUpdate(getMethod().getDeclaringKlass(), cpi, field);
         }
         return field;
     }
@@ -2525,19 +2539,18 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     }
 
     private ResolvedInvoke getResolvedInvoke(int opcode, char cpi) {
-        // (GR-67109) assert !lockIsHeld();
+        assert !lockIsHeld();
         // During resolution of the symbolic reference to the method, any of the exceptions
         // pertaining to method resolution (&sect;5.4.3.3) can be thrown.
-        ObjectKlass declaringKlass = getDeclaringKlass();
-        ResolvedConstant resolvedConstant = getConstantPool().resolvedAt(declaringKlass, cpi);
-        Method resolutionSeed = (Method) resolvedConstant.value();
+        MethodRefConstant methodRefConstant = getConstantPool().resolvedMethodRefAt(getDeclaringKlass(), cpi);
+        Method resolutionSeed = (Method) ((Resolvable.ResolvedConstant) methodRefConstant).value();
 
-        Klass symbolicRef = getConstantPool().getResolvedHolderKlass(cpi, declaringKlass);
+        Klass symbolicRef = Resolution.getResolvedHolderKlass(getConstantPool().methodAt(cpi), getConstantPool(), getDeclaringKlass());
         CallSiteType callSiteType = SiteTypes.callSiteFromOpCode(opcode);
-        ResolvedCall<Klass, Method, Field> resolvedCall = EspressoLinkResolver.resolveCallSiteOrThrow(declaringKlass.getContext(), declaringKlass, resolutionSeed, callSiteType, symbolicRef);
+        ResolvedCall<Klass, Method, Field> resolvedCall = EspressoLinkResolver.resolveCallSiteOrThrow(getContext(), getDeclaringKlass(), resolutionSeed, callSiteType, symbolicRef);
         MethodHandleInvoker invoker = null;
         // There might be an invoker if it's an InvokeGeneric
-        if (resolvedConstant instanceof ResolvedWithInvokerClassMethodRefConstant withInvoker) {
+        if (methodRefConstant instanceof ResolvedWithInvokerClassMethodRefConstant withInvoker) {
             invoker = withInvoker.invoker();
             assert invoker == null || ((opcode == INVOKEVIRTUAL || opcode == INVOKESPECIAL) && resolvedCall.getResolvedMethod().isInvokeIntrinsic());
         }
@@ -2718,8 +2731,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         CompilerAsserts.partialEvaluationConstant(field);
         CompilerAsserts.partialEvaluationConstant(mode);
 
-        Method method = getMethod();
-        EspressoLinkResolver.checkFieldAccessOrThrow(method.getContext(), field, mode, getDeclaringKlass(), method);
+        EspressoLinkResolver.checkFieldAccessOrThrow(getContext(), field, mode, getDeclaringKlass(), getMethod());
 
         byte typeHeader = field.getType().byteAt(0);
         int slotCount = (typeHeader == 'J' || typeHeader == 'D') ? 2 : 1;
@@ -2748,56 +2760,56 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             case 'Z':
                 boolean booleanValue = stackIntToBoolean(popInt(frame, top - 1));
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, booleanValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, booleanValue);
                 }
                 InterpreterToVM.setFieldBoolean(booleanValue, receiver, field);
                 break;
             case 'B':
                 byte byteValue = (byte) popInt(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, byteValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, byteValue);
                 }
                 InterpreterToVM.setFieldByte(byteValue, receiver, field);
                 break;
             case 'C':
                 char charValue = (char) popInt(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, charValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, charValue);
                 }
                 InterpreterToVM.setFieldChar(charValue, receiver, field);
                 break;
             case 'S':
                 short shortValue = (short) popInt(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, shortValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, shortValue);
                 }
                 InterpreterToVM.setFieldShort(shortValue, receiver, field);
                 break;
             case 'I':
                 int intValue = popInt(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, intValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, intValue);
                 }
                 InterpreterToVM.setFieldInt(intValue, receiver, field);
                 break;
             case 'D':
                 double doubleValue = popDouble(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, doubleValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, doubleValue);
                 }
                 InterpreterToVM.setFieldDouble(doubleValue, receiver, field);
                 break;
             case 'F':
                 float floatValue = popFloat(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, floatValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, floatValue);
                 }
                 InterpreterToVM.setFieldFloat(floatValue, receiver, field);
                 break;
             case 'J':
                 long longValue = popLong(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, longValue);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, longValue);
                 }
                 InterpreterToVM.setFieldLong(longValue, receiver, field);
                 break;
@@ -2805,7 +2817,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             case 'L':
                 StaticObject value = popObject(frame, top - 1);
                 if (instrumentation != null) {
-                    instrumentation.notifyFieldModification(frame, statementIndex, field, this, receiver, value);
+                    instrumentation.notifyFieldModification(frame, statementIndex, field, receiver, value);
                 }
                 InterpreterToVM.setFieldObject(value, receiver, field);
                 break;
@@ -2832,8 +2844,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
 
         CompilerAsserts.partialEvaluationConstant(field);
 
-        Method method = getMethod();
-        EspressoLinkResolver.checkFieldAccessOrThrow(method.getContext(), field, mode, getDeclaringKlass(), method);
+        EspressoLinkResolver.checkFieldAccessOrThrow(getContext(), field, mode, getDeclaringKlass(), getMethod());
 
         int slot = top - 1;
         StaticObject receiver;
@@ -2856,7 +2867,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         }
 
         if (instrumentation != null) {
-            instrumentation.notifyFieldAccess(frame, statementIndex, field, this, receiver);
+            instrumentation.notifyFieldAccess(frame, statementIndex, field, receiver);
         }
 
         int resultAt = mode.isStatic() ? top : (top - 1);
@@ -2910,14 +2921,14 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
     public void notifyFieldModification(VirtualFrame frame, int index, Field field, StaticObject receiver, Object value) {
         // Notifications are only for Espresso objects
         if (instrumentation != null && (noForeignObjects.isValid() || receiver.isEspressoObject())) {
-            instrumentation.notifyFieldModification(frame, index, field, this, receiver, value);
+            instrumentation.notifyFieldModification(frame, index, field, receiver, value);
         }
     }
 
     public void notifyFieldAccess(VirtualFrame frame, int index, Field field, StaticObject receiver) {
         // Notifications are only for Espresso objects
         if (instrumentation != null && (noForeignObjects.isValid() || receiver.isEspressoObject())) {
-            instrumentation.notifyFieldAccess(frame, index, field, this, receiver);
+            instrumentation.notifyFieldAccess(frame, index, field, receiver);
         }
     }
 
@@ -2927,6 +2938,8 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
 
     static final class InstrumentationSupport extends EspressoNode {
         static final int NO_STATEMENT = -1;
+        private static final Object WRAPPER_SLOT_KEY = new Object();
+        private static final Object WRAPPER_INDEX_SLOT_KEY = new Object();
 
         @SuppressWarnings("all")
         private static boolean assertionsEnabled() {
@@ -2935,29 +2948,54 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             return areAssertionsEnabled;
         }
 
-        @Children private final EspressoStatementNode[] statementNodes;
+        @Children private final EspressoBaseStatementNode[] statementNodes;
         @Child private MapperBCI hookBCIToNodeIndex;
 
         private final EspressoContext context;
         private final MethodVersion method;
 
-        InstrumentationSupport(MethodVersion method) {
+        private final int wrapperSlotIndex;
+        private final int indexSlotIndex;
+
+        InstrumentationSupport(MethodVersion method, FrameDescriptor frameDescriptor) {
             this.method = method;
             this.context = method.getMethod().getContext();
+
+            this.wrapperSlotIndex = frameDescriptor.findOrAddAuxiliarySlot(WRAPPER_SLOT_KEY);
+            this.indexSlotIndex = frameDescriptor.findOrAddAuxiliarySlot(WRAPPER_INDEX_SLOT_KEY);
 
             LineNumberTableAttribute table = method.getLineNumberTableAttribute();
 
             if (table != LineNumberTableAttribute.EMPTY) {
                 List<LineNumberTableAttribute.Entry> entries = table.getEntries();
-                EspressoStatementNode[] statements = new EspressoStatementNode[entries.size()];
-                MapperBCI mapper = new MapperBCI(table);
+                // don't allow multiple entries with same line, keep only the first one
+                // reduce the checks needed heavily by keeping track of max seen line number
+                int[] seenLines = new int[entries.size()];
+                Arrays.fill(seenLines, -1);
+                int maxSeenLine = -1;
+
+                this.statementNodes = new EspressoBaseStatementNode[entries.size()];
+                this.hookBCIToNodeIndex = new MapperBCI(table);
+
                 for (int i = 0; i < entries.size(); i++) {
                     LineNumberTableAttribute.Entry entry = entries.get(i);
                     int lineNumber = entry.getLineNumber();
-                    statements[mapper.initIndex(i, entry.getBCI())] = new EspressoStatementNode(method.getMethod().getSource().createSection(lineNumber));
+                    boolean seen = false;
+                    boolean checkSeen = !(maxSeenLine < lineNumber);
+                    if (checkSeen) {
+                        for (int seenLine : seenLines) {
+                            if (seenLine == lineNumber) {
+                                seen = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!seen) {
+                        statementNodes[hookBCIToNodeIndex.initIndex(i, entry.getBCI())] = new EspressoStatementNode(entry.getBCI(), lineNumber);
+                        seenLines[i] = lineNumber;
+                        maxSeenLine = Math.max(maxSeenLine, lineNumber);
+                    }
                 }
-                this.hookBCIToNodeIndex = mapper;
-                this.statementNodes = statements;
             } else {
                 this.statementNodes = null;
                 this.hookBCIToNodeIndex = null;
@@ -2969,7 +3007,7 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
          */
         void notifyStatementChange(VirtualFrame frame, int statementIndex, int nextStatementIndex, int targetBci) {
             assert statementIndex != nextStatementIndex;
-            notifyStatementExit(frame, statementIndex, StaticObject.NULL);
+            notifyStatementExit(frame, statementIndex);
             setBCI(frame, targetBci);
             notifyStatementEnter(frame, nextStatementIndex);
         }
@@ -2984,66 +3022,75 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             resumeAt(frame, statementIndex);
         }
 
-        void notifyStatementExit(VirtualFrame frame, int statementIndex, Object returnValue) {
+        void notifyStatementExit(VirtualFrame frame, int statementIndex) {
             CompilerAsserts.partialEvaluationConstant(statementIndex);
-            exitAt(frame, statementIndex, returnValue);
+            exitAt(frame, statementIndex, StaticObject.NULL);
         }
 
         public void notifyEntry(VirtualFrame frame, AbstractInstrumentableBytecodeNode instrumentableNode) {
             if (context.shouldReportVMEvents() && method.getMethod().hasActiveHook()) {
-                context.reportOnMethodEntry(method, instrumentableNode, instrumentableNode.getScope(frame, true));
+                context.reportOnMethodEntry(method, instrumentableNode.getScope(frame, true));
             }
         }
 
         public void notifyResume(VirtualFrame frame, AbstractInstrumentableBytecodeNode instrumentableNode) {
             if (context.shouldReportVMEvents() && method.getMethod().hasActiveHook()) {
-                context.reportOnMethodEntry(method, instrumentableNode, instrumentableNode.getScope(frame, true));
-            }
-        }
-
-        public void notifyExit(@SuppressWarnings("unused") VirtualFrame frame, AbstractInstrumentableBytecodeNode instrumentableNode, Object returnValue) {
-            if (context.shouldReportVMEvents() && method.getMethod().hasActiveHook()) {
-                context.reportOnMethodReturn(method, instrumentableNode, returnValue);
+                context.reportOnMethodEntry(method, instrumentableNode.getScope(frame, true));
             }
         }
 
         void notifyExceptionAt(VirtualFrame frame, Throwable t, int statementIndex) {
-            ProbeNode probeNode = getProbeAt(statementIndex);
-            if (probeNode == null) {
+            assert (int) frame.getAuxiliarySlot(indexSlotIndex) == statementIndex;
+            WrapperNode wrapperNode = (WrapperNode) frame.getAuxiliarySlot(wrapperSlotIndex);
+            if (wrapperNode == null) {
                 return;
             }
+            ProbeNode probeNode = wrapperNode.getProbeNode();
             probeNode.onReturnExceptionalOrUnwind(frame, t, false);
         }
 
         void notifyYieldAt(VirtualFrame frame, Object o, int statementIndex) {
-            ProbeNode probeNode = getProbeAt(statementIndex);
-            if (probeNode == null) {
+            assert (int) frame.getAuxiliarySlot(indexSlotIndex) == statementIndex;
+            WrapperNode wrapperNode = (WrapperNode) frame.getAuxiliarySlot(wrapperSlotIndex);
+            if (wrapperNode == null) {
                 return;
             }
+            ProbeNode probeNode = wrapperNode.getProbeNode();
             probeNode.onYield(frame, o);
         }
 
-        public void notifyFieldModification(VirtualFrame frame, int index, Field field, AbstractInstrumentableBytecodeNode instrumentableNode, StaticObject receiver, Object value) {
+        public void notifyFieldModification(VirtualFrame frame, int index, Field field, StaticObject receiver, Object value) {
             if (context.shouldReportVMEvents() && field.hasActiveBreakpoint()) {
-                if (context.reportOnFieldModification(field, instrumentableNode, receiver, value)) {
+                if (context.reportOnFieldModification(field, receiver, value)) {
                     enterAt(frame, index);
                 }
             }
         }
 
-        public void notifyFieldAccess(VirtualFrame frame, int index, Field field, AbstractInstrumentableBytecodeNode instrumentableNode, StaticObject receiver) {
+        public void notifyFieldAccess(VirtualFrame frame, int index, Field field, StaticObject receiver) {
             if (context.shouldReportVMEvents() && field.hasActiveBreakpoint()) {
-                if (context.reportOnFieldAccess(field, instrumentableNode, receiver)) {
+                if (context.reportOnFieldAccess(field, receiver)) {
                     enterAt(frame, index);
                 }
             }
         }
 
         private void enterAt(VirtualFrame frame, int index) {
-            ProbeNode probeNode = getProbeAt(index);
-            if (probeNode == null) {
+            WrapperNode wrapperNode = getWrapperAt(index);
+            /*
+             * We need to store this wrapper node in the frame to make sure we exit on the same
+             * wrapper. Wrapper nodes can be replaced at arbitrary time for example when the
+             * debugger is disposed and the session is ended.
+             */
+            frame.setAuxiliarySlot(wrapperSlotIndex, wrapperNode);
+            // only add wrapper index in frame when assertions enabled
+            if (assertionsEnabled()) {
+                frame.setAuxiliarySlot(indexSlotIndex, index);
+            }
+            if (wrapperNode == null) {
                 return;
             }
+            ProbeNode probeNode = wrapperNode.getProbeNode();
             try {
                 probeNode.onEnter(frame);
             } catch (Throwable t) {
@@ -3062,10 +3109,21 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         }
 
         private void resumeAt(VirtualFrame frame, int index) {
-            ProbeNode probeNode = getProbeAt(index);
-            if (probeNode == null) {
+            WrapperNode wrapperNode = getWrapperAt(index);
+            /*
+             * We need to store this wrapper node in the frame to make sure we exit on the same
+             * wrapper. Wrapper nodes can be replaced at arbitrary time for example when the
+             * debugger is disposed and the session is ended.
+             */
+            frame.setAuxiliarySlot(wrapperSlotIndex, wrapperNode);
+            // only add wrapper index in frame when assertions enabled
+            if (assertionsEnabled()) {
+                frame.setAuxiliarySlot(indexSlotIndex, index);
+            }
+            if (wrapperNode == null) {
                 return;
             }
+            ProbeNode probeNode = wrapperNode.getProbeNode();
             try {
                 probeNode.onResume(frame);
             } catch (Throwable t) {
@@ -3084,10 +3142,12 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
         }
 
         private void exitAt(VirtualFrame frame, int index, Object returnValue) {
-            ProbeNode probeNode = getProbeAt(index);
-            if (probeNode == null) {
+            assert (int) frame.getAuxiliarySlot(indexSlotIndex) == index;
+            WrapperNode wrapperNode = (WrapperNode) frame.getAuxiliarySlot(wrapperSlotIndex);
+            if (wrapperNode == null) {
                 return;
             }
+            ProbeNode probeNode = wrapperNode.getProbeNode();
             try {
                 probeNode.onReturnValue(frame, returnValue);
             } catch (Throwable t) {
@@ -3130,16 +3190,21 @@ public final class BytecodeNode extends AbstractInstrumentableBytecodeNode imple
             return hookBCIToNodeIndex.lookupBucket(startBci);
         }
 
-        private ProbeNode getProbeAt(int index) {
+        /*
+         * This method must only be called when entering a node. The returned node should be stored
+         * in the frame in the WRAPPER_SLOT along with the index. This is needed to make sure that
+         * we always exit on the same wrapper.
+         */
+        private WrapperNode getWrapperAt(int index) {
             if (statementNodes == null || index < 0) {
                 return null;
             }
-            EspressoStatementNode node = statementNodes[index];
-            if (node == null) {
+            EspressoBaseStatementNode node = statementNodes[index];
+            if (!(node instanceof WrapperNode)) {
                 return null;
             }
             CompilerAsserts.partialEvaluationConstant(node);
-            return node.findProbe();
+            return ((WrapperNode) node);
         }
     }
 

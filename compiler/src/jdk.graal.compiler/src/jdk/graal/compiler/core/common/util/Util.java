@@ -72,7 +72,7 @@ public class Util {
      * possibly non-empty line following the final newline.
      */
     public static String indent(String lines, String indentation) {
-        if (lines.isEmpty()) {
+        if (lines.length() == 0) {
             return lines;
         }
         final String newLine = "\n";
@@ -95,7 +95,9 @@ public class Util {
         sb.append(String.format("%c%c%c%c%c ", ' ', method.isSynchronized() ? 's' : ' ', ' ', ' ', method.isNative() ? 'n' : ' '));
         sb.append("     ");        // more indent
         sb.append("    ");         // initial inlining indent
-        sb.append("  ".repeat(Math.max(0, inliningDepth)));
+        for (int i = 0; i < inliningDepth; i++) {
+            sb.append("  ");
+        }
         sb.append(String.format("@ %d  %s   %s%s", bci, methodName(method), success ? "" : "not inlining ", String.format(msg, args)));
         TTY.println(sb.toString());
     }
@@ -114,48 +116,4 @@ public class Util {
         }
         return sb.toString();
     }
-
-    /**
-     * Transforms {@code s} to be no longer than {code max} via truncation. The truncation replaces
-     * the middle section of {@code s} with {@code "<truncated(" + L + ", " + H + ")>"} where
-     * {@code L} is the length of the cut-out part of {@code s} and H is its hash code in lowercase
-     * hex. Note that if truncation is performed, the returned value may be shorter than
-     * {@code max}. For example:
-     *
-     * <pre>
-     * var s = "123456789_123456789_123456789_123456789_123456789_";
-     * var cs = truncateString(s, 40);
-     * assert s.length() == 50;
-     * assert cs.length() == 32;
-     * assert cs.equals("123<truncated(43, c285d1fd)>789_");
-     * </pre>
-     *
-     * @param max must be greater than the length of {@link #TRUNCATION_PLACEHOLDER}
-     * @throws IllegalArgumentException if {@code max <= TRUNCATION_PLACEHOLDER.length()}
-     */
-    public static String truncateString(String s, int max) {
-        if (max <= TRUNCATION_PLACEHOLDER.length()) {
-            throw new IllegalArgumentException(max + " <= " + TRUNCATION_PLACEHOLDER.length());
-        }
-        if (s.length() > max) {
-            int preservedLen = max - TRUNCATION_PLACEHOLDER.length();
-            int prefixEnd = preservedLen / 2;
-            int suffixStart = (s.length() - preservedLen / 2) - 1;
-            String prefix = s.substring(0, prefixEnd);
-            String middle = s.substring(prefixEnd, suffixStart);
-            middle = TRUNCATION_FORMAT.formatted(middle.length(), middle.hashCode());
-            String suffix = s.substring(suffixStart);
-            return "%s%s%s".formatted(prefix, middle, suffix);
-        }
-        return s;
-    }
-
-    private static final String TRUNCATION_FORMAT = "<truncated(%d, %x)>";
-
-    /**
-     * The placeholder for the value embedded in the value returned by
-     * {@link #truncateString(String, int)} if truncation is performed describing the truncation
-     * performed.
-     */
-    public static final String TRUNCATION_PLACEHOLDER = TRUNCATION_FORMAT.formatted(Integer.MAX_VALUE, String.valueOf(Integer.MAX_VALUE).hashCode());
 }

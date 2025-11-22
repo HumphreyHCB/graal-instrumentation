@@ -29,19 +29,19 @@ import org.graalvm.nativeimage.Platforms;
 
 /**
  * A image-heap stored {@link ConditionalRuntimeValue#value} that is guarded by run-time computed
- * conditions.
+ * {@link ConditionalRuntimeValue#conditions}.
  * </p>
- * The conditions are stored in {@link ConditionalRuntimeValue#dynamicAccessMetadata} as an array to
- * save space in the image heap. This is subject to further optimizations.
+ * {@link ConditionalRuntimeValue#conditions} are stored as an array to save space in the image
+ * heap. This is subject to further optimizations.
  *
  * @param <T> type of the stored value.
  */
 public final class ConditionalRuntimeValue<T> {
-    final RuntimeDynamicAccessMetadata dynamicAccessMetadata;
+    RuntimeConditionSet conditions;
     volatile T value;
 
-    public ConditionalRuntimeValue(RuntimeDynamicAccessMetadata dynamicAccessMetadata, T value) {
-        this.dynamicAccessMetadata = dynamicAccessMetadata;
+    public ConditionalRuntimeValue(RuntimeConditionSet conditions, T value) {
+        this.conditions = conditions;
         this.value = value;
     }
 
@@ -50,12 +50,12 @@ public final class ConditionalRuntimeValue<T> {
         return value;
     }
 
-    public RuntimeDynamicAccessMetadata getDynamicAccessMetadata() {
-        return dynamicAccessMetadata;
+    public RuntimeConditionSet getConditions() {
+        return conditions;
     }
 
     public T getValue() {
-        if (dynamicAccessMetadata.satisfied()) {
+        if (conditions.satisfied()) {
             return value;
         } else {
             return null;

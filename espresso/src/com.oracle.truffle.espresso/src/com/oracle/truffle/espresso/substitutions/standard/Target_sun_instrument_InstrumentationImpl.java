@@ -23,7 +23,7 @@
 package com.oracle.truffle.espresso.substitutions.standard;
 
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.List;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.espresso.EspressoLanguage;
@@ -36,7 +36,6 @@ import com.oracle.truffle.espresso.impl.Klass;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.jdwp.api.RedefineInfo;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.redefinition.RedefinitionException;
 import com.oracle.truffle.espresso.runtime.Classpath;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -93,11 +92,7 @@ public final class Target_sun_instrument_InstrumentationImpl {
         for (int i = 0; i < redefineInfos.length; i++) {
             redefineInfos[i] = translateClassDefinition(context.getMeta(), classDefinitions.get(context.getLanguage(), i));
         }
-        try {
-            context.getClassRedefinition().redefineClasses(redefineInfos, true);
-        } catch (RedefinitionException e) {
-            throw e.throwInstrumentationGuestException(context.getMeta());
-        }
+        context.getClassRedefinition().redefineClasses(redefineInfos, true);
     }
 
     private static RedefineInfo translateClassDefinition(Meta meta, @JavaType(internalName = "Ljava/lang/instrument/ClassDefinition;") StaticObject classDefinition) {
@@ -144,11 +139,7 @@ public final class Target_sun_instrument_InstrumentationImpl {
                 throw meta.throwExceptionWithMessage(meta.java_lang_instrument_UnmodifiableClassException, getUnmodifiableMessage(klasses[i]));
             }
         }
-        try {
-            context.getJavaAgents().retransformClasses(klasses);
-        } catch (RedefinitionException e) {
-            throw e.throwInstrumentationGuestException(context.getMeta());
-        }
+        context.getJavaAgents().retransformClasses(klasses);
     }
 
     @Substitution(hasReceiver = true)
@@ -175,16 +166,15 @@ public final class Target_sun_instrument_InstrumentationImpl {
                     @SuppressWarnings("unused") long agentId,
                     @JavaType(ClassLoader.class) StaticObject loader,
                     @Inject EspressoContext context) {
-        Set<Klass> initiatedKlasses = context.getRegistries().getLoadedClassesByLoader(loader, false);
+        List<Klass> initiatedKlasses = context.getRegistries().getClassRegistry(loader).getLoadedKlasses();
         return toGuestClassArray(context, initiatedKlasses);
     }
 
     @TruffleBoundary
-    private static StaticObject toGuestClassArray(EspressoContext context, Set<Klass> initiatedKlasses) {
+    private static StaticObject toGuestClassArray(EspressoContext context, List<Klass> initiatedKlasses) {
         StaticObject[] guestKlasses = new StaticObject[initiatedKlasses.size()];
-        int i = 0;
-        for (Klass initiatedKlass : initiatedKlasses) {
-            guestKlasses[i++] = initiatedKlass.mirror();
+        for (int i = 0; i < initiatedKlasses.size(); i++) {
+            guestKlasses[i] = initiatedKlasses.get(i).mirror();
         }
         return StaticObject.wrap(guestKlasses, context.getMeta());
     }

@@ -37,20 +37,13 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.hub.RuntimeClassLoading.NoRuntimeClassLoading;
-import com.oracle.svm.core.hub.RuntimeClassLoading.WithRuntimeClassLoading;
 import com.oracle.svm.core.invoke.Target_java_lang_invoke_MemberName;
+import com.oracle.svm.core.jdk.JDK21OrEarlier;
 
 @TargetClass(value = MethodHandles.class, innerClass = "Lookup")
 final class Target_java_lang_invoke_MethodHandles_Lookup {
     // Checkstyle: stop
     @Delete //
-    @TargetElement(onlyWith = NoRuntimeClassLoading.class, name = "LOOKASIDE_TABLE") //
-    static ConcurrentHashMap<Target_java_lang_invoke_MemberName, MethodHandle> LOOKASIDE_TABLE_DELETED;
-
-    @Alias //
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClass = ConcurrentHashMap.class)//
-    @TargetElement(onlyWith = WithRuntimeClassLoading.class) //
     static ConcurrentHashMap<Target_java_lang_invoke_MemberName, MethodHandle> LOOKASIDE_TABLE;
     // Checkstyle: resume
 
@@ -96,6 +89,12 @@ final class Target_java_lang_invoke_MethodHandles_Lookup {
     }
 
     @Delete
-    @TargetElement(onlyWith = NoRuntimeClassLoading.class) //
     native MethodHandle linkMethodHandleConstant(byte refKind, Class<?> defc, String name, Object type) throws ReflectiveOperationException;
+
+    /** This call is a noop without the security manager. */
+    @SuppressWarnings("unused")
+    @Substitute
+    @TargetElement(onlyWith = JDK21OrEarlier.class)
+    void checkSecurityManager(Class<?> refc) {
+    }
 }

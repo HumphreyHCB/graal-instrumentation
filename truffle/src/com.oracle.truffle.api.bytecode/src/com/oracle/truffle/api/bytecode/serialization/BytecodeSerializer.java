@@ -44,7 +44,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import com.oracle.truffle.api.bytecode.BytecodeRootNode;
-import com.oracle.truffle.api.bytecode.GenerateBytecode;
 
 /**
  * Represents a class that can serialize constants in a bytecode interpreter.
@@ -72,14 +71,13 @@ import com.oracle.truffle.api.bytecode.GenerateBytecode;
  * A serializer is responsible for encoding:
  * <ul>
  * <li>objects used as constants in the bytecode (e.g., objects passed to {@code emitLoadConstant}
- * or constant operands, except primitive ones that are
- * {@link GenerateBytecode#inlinePrimitiveConstants inlined})</li>
+ * or constant operands)</li>
  * <li>objects stored in non-{@code transient} fields of the root node</li>
  * <li>{@link com.oracle.truffle.api.source.Source} objects passed in builder calls (i.e., sources
  * passed to {@code beginSource})</li>
  * </ul>
  *
- * @see GenerateBytecode#enableSerialization
+ * @see com.oracle.truffle.api.bytecode.GenerateBytecode#enableSerialization
  * @since 24.2
  */
 @FunctionalInterface

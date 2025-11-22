@@ -125,10 +125,14 @@ public abstract class AbstractCommittedMemoryProvider implements CommittedMemory
         VMError.guarantee(result == 0, "Error while freeing virtual memory.");
     }
 
-    /**
-     * The total number of bytes reserved for the whole address space. This address space contains
-     * at least the image heap and the collected Java heap, but may also contain other data such as
-     * the null regions, the metaspace, or auxiliary images.
-     */
+    @Override
+    public UnsignedWord getCollectedHeapAddressSpaceSize() {
+        /* Only a part of the address space is available for the collected Java heap. */
+        UnsignedWord reservedAddressSpace = getReservedAddressSpaceSize();
+        UnsignedWord imageHeapSize = Heap.getHeap().getImageHeapReservedBytes();
+        assert reservedAddressSpace.aboveThan(imageHeapSize);
+        return reservedAddressSpace.subtract(imageHeapSize);
+    }
+
     protected abstract UnsignedWord getReservedAddressSpaceSize();
 }

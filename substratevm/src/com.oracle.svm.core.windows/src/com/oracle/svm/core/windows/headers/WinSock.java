@@ -25,6 +25,8 @@
 
 package com.oracle.svm.core.windows.headers;
 
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.CContext;
 import org.graalvm.nativeimage.c.function.CFunction;
 import org.graalvm.nativeimage.c.function.CFunction.Transition;
@@ -37,6 +39,7 @@ import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
 // Checkstyle: stop
 
 @CContext(WindowsDirectives.class)
+@Platforms(Platform.WINDOWS.class)
 public class WinSock {
 
     @CFunction(transition = Transition.NO_TRANSITION)

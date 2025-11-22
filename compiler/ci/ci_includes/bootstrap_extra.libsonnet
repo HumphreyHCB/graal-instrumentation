@@ -5,8 +5,8 @@
 
   # See definition of `gate_jobs` local variable in ../ci_common/gate.jsonnet
   local gate_jobs = {
-    "compiler-bootstrap-labsjdk-latest-linux-amd64": {},
-    "compiler-bootstrap_economy-labsjdk-latest-linux-amd64": {},
+    "gate-compiler-bootstrap-labsjdk-latest-linux-amd64": g.many_cores,
+    "gate-compiler-bootstrap_economy-labsjdk-latest-linux-amd64": g.many_cores,
   },
   local gates = g.as_gates(gate_jobs),
   local dailies = g.as_dailies(gate_jobs),

@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import jdk.graal.compiler.nodes.NodeClassMap;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
 
@@ -150,9 +149,14 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
 
     private final int leafId;
 
-    @SuppressWarnings("try")
     @LibGraalSupport.HostedOnly
     public NodeClass(Class<T> clazz, NodeClass<? super T> superNodeClass) {
+        this(clazz, superNodeClass, null, 0);
+    }
+
+    @SuppressWarnings("try")
+    @LibGraalSupport.HostedOnly
+    private NodeClass(Class<T> clazz, NodeClass<? super T> superNodeClass, int[] presetIterableIds, int presetIterableId) {
         super(clazz);
         DebugContext debug = DebugContext.forCurrentThread();
         this.superNodeClass = superNodeClass;
@@ -197,7 +201,10 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
         GraalError.guarantee(!allowedUsageTypes.contains(InputType.Memory) || MemoryKillMarker.class.isAssignableFrom(clazz),
                         "Node of type %s with allowedUsageType of memory must inherit from MemoryKill", clazz);
 
-        if (IterableNodeType.class.isAssignableFrom(clazz)) {
+        if (presetIterableIds != null) {
+            this.iterableIds = presetIterableIds;
+            this.iterableId = presetIterableId;
+        } else if (IterableNodeType.class.isAssignableFrom(clazz)) {
             ITERABLE_NODE_TYPES.increment(debug);
             this.iterableId = nextIterableId.getAndIncrement();
 
@@ -323,13 +330,6 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
 
     public boolean valueNumberable() {
         return canGVN;
-    }
-
-    /**
-     * Determines if this node type is abstract.
-     */
-    public boolean isAbstract() {
-        return Modifier.isAbstract(this.getClazz().getModifiers());
     }
 
     /**
@@ -953,7 +953,8 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
 
         private Node forward() {
             while (mask != 0) {
-                Node next = getAndAdvanceInput();
+                Node next = getInput();
+                mask = advanceInput();
                 if (next != null) {
                     return next;
                 }
@@ -977,45 +978,47 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
             }
         }
 
-        private Node getAndAdvanceInput() {
-            long state = mask & 0x03;
-            Node result;
+        public final long advanceInput() {
+            int state = (int) mask & 0x03;
             if (state == 0) {
-                result = Edges.getNodeUnsafe(node, mask & 0xFC);
-                mask = mask >>> NEXT_EDGE;
+                // Skip normal field.
+                return mask >>> NEXT_EDGE;
+            } else if (state == 1) {
+                // We are iterating a node list.
+                if ((mask & 0xFFFF00) != 0) {
+                    // Node list count is non-zero, decrease by 1.
+                    return mask - 0x100;
+                } else {
+                    // Node list is finished => go to next input.
+                    return mask >>> 24;
+                }
+            } else {
+                // Need to expand node list.
+                NodeList<?> nodeList = Edges.getNodeListUnsafe(node, mask & 0xFC);
+                if (nodeList != null) {
+                    int size = nodeList.size();
+                    if (size != 0) {
+                        // Set pointer to upper most index of node list.
+                        return ((mask >>> NEXT_EDGE) << 24) | (mask & 0xFD) | ((long) (size - 1) << NEXT_EDGE);
+                    }
+                }
+                // Node list is empty or null => skip.
+                return mask >>> NEXT_EDGE;
+            }
+        }
+
+        public Node getInput() {
+            int state = (int) mask & 0x03;
+            if (state == 0) {
+                return Edges.getNodeUnsafe(node, mask & 0xFC);
             } else if (state == 1) {
                 // We are iterating a node list.
                 NodeList<?> nodeList = Edges.getNodeListUnsafe(node, mask & 0xFC);
-                result = nodeList.nodes[nodeList.size() - 1 - (int) ((mask >>> NEXT_EDGE) & 0xFFFF)];
-                if ((mask & 0xFFFF00) != 0) {
-                    // Node list count is non-zero, decrease by 1.
-                    mask = mask - 0x100;
-                } else {
-                    // Node list is finished => go to next input.
-                    mask = mask >>> 24;
-                }
+                return nodeList.nodes[nodeList.size() - 1 - (int) ((mask >>> NEXT_EDGE) & 0xFFFF)];
             } else {
                 // Node list needs to expand first.
-                result = null;
-                NodeList<?> nodeList = Edges.getNodeListUnsafe(node, mask & 0xFC);
-                int size;
-                if (nodeList != null && ((size = nodeList.size()) != 0)) {
-                    // Set pointer to upper most index of node list.
-                    mask = ((mask >>> NEXT_EDGE) << 24) | (mask & 0xFD) | ((long) (size - 1) << NEXT_EDGE);
-                    result = nodeList.nodes[size - 1 - (int) ((mask >>> NEXT_EDGE) & 0xFFFF)];
-                    if ((mask & 0xFFFF00) != 0) {
-                        // Node list count is non-zero, decrease by 1.
-                        mask = mask - 0x100;
-                    } else {
-                        // Node list is finished => go to next input.
-                        mask = mask >>> 24;
-                    }
-                } else {
-                    // Node list is empty or null => skip.
-                    mask = mask >>> NEXT_EDGE;
-                }
+                return null;
             }
-            return result;
         }
 
         @Override
@@ -1484,38 +1487,5 @@ public final class NodeClass<T> extends FieldIntrospection<T> {
             }
         }
         list.clearWithoutUpdate();
-    }
-
-    /**
-     * The cached id for a {@link NodeClass} object in a specific {@link NodeClassMap}.
-     *
-     * @param map an object whose identity uniquely identifies a {@link NodeClassMap}
-     */
-    record CachedId(Object map, Integer id) {
-    }
-
-    private CachedId cachedId;
-
-    /**
-     * Sets the cache for this object's {@code id} in {@code map}.
-     *
-     * @param map an object whose identity uniquely identifies a {@link NodeClassMap}
-     */
-    public void setCachedId(Object map, Integer id) {
-        cachedId = new CachedId(map, id);
-    }
-
-    /**
-     * Gets the cache for this object's id in {@code map}.
-     *
-     * @param map an object whose identity uniquely identifies a {@link NodeClassMap}
-     * @return null if no cached id for this object in {@code map} is available
-     */
-    public Integer getCachedId(Object map) {
-        var c = cachedId;
-        if (c != null && c.map == map) {
-            return c.id;
-        }
-        return null;
     }
 }

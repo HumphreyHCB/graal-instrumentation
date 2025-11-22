@@ -24,7 +24,6 @@
  */
 package jdk.graal.compiler.lir.gen;
 
-import static jdk.graal.compiler.core.common.GraalOptions.AlignJumpTableEntry;
 import static jdk.graal.compiler.core.common.GraalOptions.LoopHeaderAlignment;
 import static jdk.vm.ci.code.ValueUtil.asAllocatableValue;
 import static jdk.vm.ci.code.ValueUtil.asStackSlot;
@@ -200,7 +199,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
     }
 
     public RegisterAttributes attributes(Register register) {
-        return getRegisterConfig().getAttributesMap().get(register.number);
+        return getRegisterConfig().getAttributesMap()[register.number];
     }
 
     @Override
@@ -530,8 +529,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
      * <li>Else we fall back to a series of compare and branches.</li>
      * </ol>
      */
-    public void emitStrategySwitch(JavaConstant[] keyConstants, double[] keyProbabilities, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue value,
-                    boolean inputMayBeOutOfRange, boolean mayEmitThreadedCode) {
+    public void emitStrategySwitch(JavaConstant[] keyConstants, double[] keyProbabilities, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue value) {
         SwitchStrategy strategy = SwitchStrategy.getBestStrategy(keyProbabilities, keyConstants, keyTargets);
 
         if (strategy.getAverageEffort() < JUMP_TABLE_THRESHOLD) {
@@ -542,7 +540,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
         // If the density of the jump table would be larger than this value then we will emit one
         double minDensity = 1 / Math.sqrt(strategy.getAverageEffort());
 
-        Subrange subrangeForDirectJump = findSubrangeForDirectJumpTable(keyConstants, keyProbabilities, minDensity, mayEmitThreadedCode);
+        Subrange subrangeForDirectJump = findSubrangeForDirectJumpTable(keyConstants, keyProbabilities, minDensity);
         if (subrangeForDirectJump != null) {
             int loIdx = subrangeForDirectJump.loIdx;
 
@@ -555,13 +553,13 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
                         break;
                     }
                 }
-                if (mayEmitThreadedCode || directJumpForSubrange(keyConstants, minDensity, 0, extendedLoIdx, subrangeForDirectJump.hiIdx)) {
+                if (directJumpForSubrange(keyConstants, minDensity, 0, extendedLoIdx, subrangeForDirectJump.hiIdx)) {
                     loIdx = extendedLoIdx;
                     minValue = 0;
                 }
             }
 
-            emitDirectJumpTableHelper(keyConstants, keyProbabilities, keyTargets, defaultTarget, value, minValue, loIdx, subrangeForDirectJump.hiIdx, inputMayBeOutOfRange, mayEmitThreadedCode);
+            emitDirectJumpTableHelper(keyConstants, keyProbabilities, keyTargets, defaultTarget, value, minValue, loIdx, subrangeForDirectJump.hiIdx);
             return;
         }
 
@@ -600,8 +598,8 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
      * jump table with them, the default target will now check the other remaining targets. In the
      * best case, our subrange will cover the whole range and there is no remaining target.
      */
-    private static Subrange findSubrangeForDirectJumpTable(JavaConstant[] keyConstants, double[] keyProbabilities, double minDensity, boolean mayEmitThreadedCode) {
-        if (mayEmitThreadedCode || directJumpForSubrange(keyConstants, minDensity, keyConstants[0].asInt(), 0, keyConstants.length - 1)) {
+    private static Subrange findSubrangeForDirectJumpTable(JavaConstant[] keyConstants, double[] keyProbabilities, double minDensity) {
+        if (directJumpForSubrange(keyConstants, minDensity, keyConstants[0].asInt(), 0, keyConstants.length - 1)) {
             // If all cases can be fit into a jump table then ignore the probability
             return new Subrange(0, keyConstants.length - 1);
         }
@@ -640,8 +638,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
         return null;
     }
 
-    private void emitDirectJumpTableHelper(JavaConstant[] keyConstants, double[] keyProbs, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue value, int minValue, int loIdx, int hiIdx,
-                    boolean inputMayBeOutOfRange, boolean mayEmitThreadedCode) {
+    private void emitDirectJumpTableHelper(JavaConstant[] keyConstants, double[] keyProbs, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue value, int minValue, int loIdx, int hiIdx) {
         int maxValue = keyConstants[hiIdx].asInt();
         // This cannot overflow because we have ensured that above
         int subrangeValueRange = maxValue - minValue + 1;
@@ -676,12 +673,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
             remainingStrategy = SwitchStrategy.getBestStrategy(remainingKeyProbabilities, remainingKeyConstants, remainingKeyTargets);
         }
 
-        if (AlignJumpTableEntry.getValue(getResult().getLIR().getOptions())) {
-            for (LabelRef jumpTableEntry : targets) {
-                jumpTableEntry.getTargetBlock().setAlign(true);
-            }
-        }
-        emitRangeTableSwitch(minValue, defaultTarget, targets, remainingStrategy, remainingKeyTargets, value, inputMayBeOutOfRange, mayEmitThreadedCode);
+        emitRangeTableSwitch(minValue, defaultTarget, targets, remainingStrategy, remainingKeyTargets, value);
     }
 
     private void emitHashedJumpTableHelper(JavaConstant[] keyConstants, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue value, IntHasher h) {
@@ -706,9 +698,8 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
     private static final int MAX_DIRECT_SIZE = 128;
 
     /**
-     * Each jump table entry is 4 bytes on AArch64 or 8 bytes on AMD64, so if the jump table is too
-     * sparse we may waste a lot of space. As a result, we emit a table if it is not too large, OR
-     * if it is dense enough.
+     * Each label is 4 bytes in the direct jump table, so if the table is too sparse we may waste a
+     * lot of space. As a result, we emit a table if it is not too large, OR if it is dense enough.
      */
     private static boolean directJumpForSubrange(JavaConstant[] keyConstants, double minDensity, int minValue, int loIdx, int hiIdx) {
         // Subtraction of 2 sorted signed values will not overflow the unsigned range
@@ -731,8 +722,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
      * remainingStrategy} will decide the jump destination among {@code remainingTargets} and {@code
      * defaultTarget} when the value of {@code key} is not in the jump table.
      */
-    protected abstract void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key,
-                    boolean inputMayBeOutOfRange, boolean mayEmitThreadedCode);
+    protected abstract void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key);
 
     protected abstract void emitHashTableSwitch(JavaConstant[] keys, LabelRef defaultTarget, LabelRef[] targets, AllocatableValue value, Value hash);
 
@@ -806,7 +796,7 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
 
     @Override
     public LIRInstruction createZapRegisters() {
-        Register[] zappedRegisters = getResult().getFrameMap().getRegisterConfig().getAllocatableRegisters().toArray(Register[]::new);
+        Register[] zappedRegisters = getResult().getFrameMap().getRegisterConfig().getAllocatableRegisters().toArray();
         return createZapRegisters(zappedRegisters);
     }
 
@@ -865,4 +855,9 @@ public abstract class LIRGenerator extends CoreProvidersDelegate implements LIRG
     public int getArrayBaseOffset(JavaKind elementKind) {
         return getMetaAccess().getArrayBaseOffset(elementKind);
     }
+
+    /**
+     * Returns the register holding the heap base address for compressed pointer.
+     */
+    public abstract Register getHeapBaseRegister();
 }

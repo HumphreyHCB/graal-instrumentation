@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.hosted.foreign;
 
-import static com.oracle.svm.util.AnnotationUtil.newAnnotationValue;
-
 import java.util.List;
 
 import org.graalvm.nativeimage.c.function.CFunction;
@@ -37,6 +35,7 @@ import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.foreign.AbiUtils;
 import com.oracle.svm.core.foreign.DowncallStubsHolder;
 import com.oracle.svm.core.foreign.ForeignFunctionsRuntime;
+import com.oracle.svm.core.foreign.LinkToNativeSupportImpl;
 import com.oracle.svm.core.foreign.NativeEntryPointInfo;
 import com.oracle.svm.core.foreign.Target_jdk_internal_foreign_abi_NativeEntryPoint;
 import com.oracle.svm.core.graal.code.AssignedLocation;
@@ -44,11 +43,12 @@ import com.oracle.svm.core.graal.code.SubstrateCallingConventionType;
 import com.oracle.svm.core.graal.snippets.CFunctionSnippets;
 import com.oracle.svm.core.thread.VMThreads;
 import com.oracle.svm.core.util.BasedOnJDKFile;
+import com.oracle.svm.hosted.annotation.AnnotationValue;
+import com.oracle.svm.hosted.annotation.SubstrateAnnotationExtractor;
 import com.oracle.svm.hosted.code.NonBytecodeMethod;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
 import com.oracle.svm.util.ReflectionUtil;
 
-import jdk.graal.compiler.annotation.AnnotationValue;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.java.FrameStateBuilder;
@@ -65,10 +65,10 @@ import jdk.vm.ci.meta.Signature;
  * float, double, pointer) which fit in a register --- done by HotSpot's implementation using method
  * handles (or specialized classes);</li>
  * <li>Unbox the arguments (the arguments are in an array of Objects, due to funneling through
- * {@link ForeignFunctionsRuntime#linkToNative}) --- done by
+ * {@link LinkToNativeSupportImpl#linkToNative}) --- done by
  * {@link ForeignGraphKit#unboxArguments};</li>
  * <li>Further adapt arguments as to satisfy SubstrateVM's backends --- done by
- * {@link AbiUtils#adapt}</li>
+ * {@link AbiUtils.adapt}</li>
  * <li>Perform a C-function call:</li>
  * <ul>
  * <li>Setup the frame anchor and capture call state --- Implemented in
@@ -85,7 +85,6 @@ import jdk.vm.ci.meta.Signature;
  * the call state, which could happen if a safepoint was inserted between the downcall and the
  * capture.
  */
-@SuppressWarnings("javadoc")
 @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+7/src/hotspot/share/prims/nativeEntryPoint.cpp")
 @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/hotspot/cpu/x86/downcallLinker_x86_64.cpp")
 @BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+17/src/hotspot/cpu/aarch64/downcallLinker_aarch64.cpp")
@@ -105,13 +104,16 @@ class DowncallStub extends NonBytecodeMethod {
         this.nep = nep;
     }
 
-    private static final List<AnnotationValue> INJECTED_ANNOTATIONS_FOR_ALLOW_HEAP_ACCESS = List.of(
-                    newAnnotationValue(Uninterruptible.class,
-                                    "reason", "See DowncallStub.getInjectedAnnotations.",
-                                    "calleeMustBe", false));
+    @Uninterruptible(reason = "See DowncallStub.getInjectedAnnotations.", calleeMustBe = false)
+    @SuppressWarnings("unused")
+    private static void uninterruptibleAnnotationForAllowHeapAccessHolder() {
+    }
+
+    private static final AnnotationValue[] INJECTED_ANNOTATIONS_FOR_ALLOW_HEAP_ACCESS = SubstrateAnnotationExtractor.prepareInjectedAnnotations(
+                    Uninterruptible.Utils.getAnnotation(ReflectionUtil.lookupMethod(DowncallStub.class, "uninterruptibleAnnotationForAllowHeapAccessHolder")));
 
     @Override
-    public List<AnnotationValue> getInjectedAnnotations() {
+    public AnnotationValue[] getInjectedAnnotations() {
         /*
          * When allowHeapAccess is enabled, a HeapMemorySegmentImpl may be passed to a downcall. In
          * that case, the downcall stub will generate a native pointer to the backing object. Thus,
@@ -121,16 +123,16 @@ class DowncallStub extends NonBytecodeMethod {
         if (nep.allowHeapAccess()) {
             return INJECTED_ANNOTATIONS_FOR_ALLOW_HEAP_ACCESS;
         }
-        return List.of();
+        return null;
     }
 
     /**
      * The arguments follow the structure described in
-     * {@link ForeignFunctionsRuntime#linkToNative(Object...)}.
+     * {@link LinkToNativeSupportImpl#linkToNative(Object...)}.
      */
     @Override
     public StructuredGraph buildGraph(DebugContext debug, AnalysisMethod method, HostedProviders providers, Purpose purpose) {
-        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method);
+        ForeignGraphKit kit = new ForeignGraphKit(debug, providers, method, purpose);
         FrameStateBuilder state = kit.getFrameState();
         boolean deoptimizationTarget = SubstrateCompilationDirectives.isDeoptTarget(method);
         List<ValueNode> arguments = kit.getInitialArguments();

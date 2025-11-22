@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 package jdk.graal.compiler.nodes.spi;
 
 import java.util.BitSet;
-import java.util.Map;
 
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.api.replacements.SnippetTemplateCache;
@@ -40,7 +39,6 @@ import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderPlugin;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin;
 import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.replacements.SnippetTemplate;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -56,12 +54,6 @@ public interface Replacements extends GeneratedPluginInjectionProvider {
      * bytecode into a graph.
      */
     GraphBuilderConfiguration.Plugins getGraphBuilderPlugins();
-
-    /**
-     * Least recently used cache for snippet templates. When a new element is added to this map, it
-     * evicts the least recently used element in case of full capacity.
-     */
-    Map<SnippetTemplate.CacheKey, SnippetTemplate> getTemplatesCache();
 
     /**
      * Gets the plugin type that intrinsifies calls to {@code method}.
@@ -101,6 +93,13 @@ public interface Replacements extends GeneratedPluginInjectionProvider {
      * Registers a method as snippet.
      */
     void registerSnippet(ResolvedJavaMethod method, ResolvedJavaMethod original, Object receiver, boolean trackNodeSourcePosition, OptionValues options);
+
+    /**
+     * Marks a plugin as conditionally applied. In the contenxt of libgraal conditional plugins
+     * can't be used in during graph encoding for snippets and method substitutions and this is used
+     * to detect violations of this restriction.
+     */
+    void registerConditionalPlugin(InvocationPlugin plugin);
 
     /**
      * Gets a graph that is a substitution for a given method.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,6 @@ import org.junit.runners.Parameterized;
 
 import jdk.graal.compiler.core.test.GraalCompilerTest;
 import jdk.graal.compiler.hotspot.JVMCIVersionCheck;
-import jdk.graal.compiler.util.CollectionsUtil;
 
 /**
  * Tests that {@link JVMCIVersionCheck} handles OpenJDK versions correctly.
@@ -49,18 +48,17 @@ public class JVMCIVersionCheckOpenJDKTest extends GraalCompilerTest {
     public static Collection<Object[]> data() {
         return List.of(
                         /*
-                         * Comparing a LabsJDK version against an OpenJDK version always fails
-                         * unless the OpenJDK version is higher than the LabsJDK version (and thus
-                         * might have required JVMCI changes).
+                         * If comparing a LabsJDK version against an OpenJDK version, ignore the
+                         * JVMCI build number.
                          */
                         expectFail("99+99-jvmci-b02", "99+98"),
-                        expectFail("99+99-jvmci-b02", "99+99"),
+                        expectPass("99+99-jvmci-b02", "99+99"),
                         expectPass("99+99-jvmci-b02", "99+100"),
                         /*
                          * Also if comparing against an OpenJDK early access version.
                          */
                         expectFail("99+99-jvmci-b02", "99-ea+98"),
-                        expectFail("99+99-jvmci-b02", "99-ea+99"),
+                        expectPass("99+99-jvmci-b02", "99-ea+99"),
                         expectPass("99+99-jvmci-b02", "99-ea+100"),
                         /*
                          * OpenJDK version with unknown $PRE value are ignored.
@@ -89,12 +87,9 @@ public class JVMCIVersionCheckOpenJDKTest extends GraalCompilerTest {
                         expectPass("99+99", "99+99"),
                         expectPass("99+99", "99+100"),
 
-                        /*
-                         * Comparing an OpenJDK version against a LabsJDK version fails because they
-                         * are not comparable.
-                         */
+                        /* Comparing an OpenJDK version against a LabsJDK version. */
                         expectFail("99+99", "99+98-jvmci-b01"),
-                        expectFail("99+99", "99+99-jvmci-b01"),
+                        expectPass("99+99", "99+99-jvmci-b01"),
                         expectPass("99+99", "99+100-jvmci-b01"));
     }
 
@@ -128,7 +123,7 @@ public class JVMCIVersionCheckOpenJDKTest extends GraalCompilerTest {
         Runtime.Version version = Runtime.Version.parse(minVersion);
         if (version.optional().isEmpty()) {
             // OpenJDK version
-            return CollectionsUtil.mapOf(Integer.toString(version.feature()), CollectionsUtil.mapOf(
+            return Map.of(Integer.toString(version.feature()), Map.of(
                             DEFAULT_VENDOR_ENTRY, JVMCIVersionCheck.createOpenJDKVersion(minVersion)));
         } else {
             // LabsJDK version
@@ -138,8 +133,8 @@ public class JVMCIVersionCheckOpenJDKTest extends GraalCompilerTest {
             int jvmciBuild = Integer.parseInt(optional.split("jvmci-b", 2)[1]);
             // get the version string without the option part
             String versionWithoutOptional = version.toString().split("-" + optional, 2)[0];
-            return CollectionsUtil.mapOf(Integer.toString(version.feature()), CollectionsUtil.mapOf(
-                            DEFAULT_VENDOR_ENTRY, JVMCIVersionCheck.createLabsJDKVersionUntilGraalVmForJDK25(versionWithoutOptional, jvmciBuild)));
+            return Map.of(Integer.toString(version.feature()), Map.of(
+                            DEFAULT_VENDOR_ENTRY, JVMCIVersionCheck.createLabsJDKVersion(versionWithoutOptional, jvmciBuild)));
         }
     }
 

@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.c.constant.CEnum;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 
@@ -90,7 +91,6 @@ import com.oracle.svm.shadowed.org.bytedeco.llvm.LLVM.LLVMBasicBlockRef;
 import com.oracle.svm.shadowed.org.bytedeco.llvm.LLVM.LLVMTypeRef;
 import com.oracle.svm.shadowed.org.bytedeco.llvm.LLVM.LLVMValueRef;
 import com.oracle.svm.shadowed.org.bytedeco.llvm.global.LLVM;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.code.CompilationResult;
 import jdk.graal.compiler.code.DataSection;
@@ -113,7 +113,6 @@ import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.lir.LIRFrameState;
 import jdk.graal.compiler.lir.LIRInstruction;
-import jdk.graal.compiler.lir.LIRValueUtil;
 import jdk.graal.compiler.lir.LabelRef;
 import jdk.graal.compiler.lir.Variable;
 import jdk.graal.compiler.lir.VirtualStackSlot;
@@ -461,7 +460,7 @@ public class LLVMGenerator extends CoreProvidersDelegate implements LIRGenerator
     }
 
     private static boolean isCEnumType(ResolvedJavaType type) {
-        return type.isEnum() && AnnotationUtil.isAnnotationPresent(type, CEnum.class);
+        return type.isEnum() && AnnotationAccess.isAnnotationPresent(type, CEnum.class);
     }
 
     /* Constants */
@@ -583,8 +582,8 @@ public class LLVMGenerator extends CoreProvidersDelegate implements LIRGenerator
 
     @Override
     public Variable emitMove(Value input) {
-        if (LIRValueUtil.isVariable(input) && LIRValueUtil.asVariable(input) instanceof LLVMVariable) {
-            return LIRValueUtil.asVariable(input);
+        if (input instanceof LLVMVariable) {
+            return (LLVMVariable) input;
         } else if (input instanceof LLVMValueWrapper) {
             return new LLVMVariable(getVal(input));
         }
@@ -620,7 +619,7 @@ public class LLVMGenerator extends CoreProvidersDelegate implements LIRGenerator
         } else if (LLVMIRBuilder.isWordType(destType) && LLVMIRBuilder.isObjectType(sourceType)) {
             source = builder.buildPtrToInt(source);
         }
-        ((LLVMVariable) LIRValueUtil.asVariable(dst)).set(source);
+        ((LLVMVariable) dst).set(source);
     }
 
     @Override
@@ -1850,10 +1849,5 @@ public class LLVMGenerator extends CoreProvidersDelegate implements LIRGenerator
     @Override
     public void emitCacheWritebackSync(boolean isPreSync) {
         builder.buildFence();
-    }
-
-    @Override
-    public boolean isReservedRegister(Register r) {
-        return ReservedRegisters.singleton().isReservedRegister(r);
     }
 }

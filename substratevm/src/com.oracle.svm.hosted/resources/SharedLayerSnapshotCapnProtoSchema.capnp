@@ -1,7 +1,3 @@
-# Schema file for the layer snapshot.
-# After modifying this file regenerate the schema SharedLayerSnapshotCapnProtoSchemaHolder.java file with:
-# mx capnp-compile
-
 @0x9eb32e19f86ee174;
 using Java = import "/capnp/java.capnp";
 $Java.package("com.oracle.svm.hosted.imagelayer");
@@ -12,8 +8,6 @@ using MethodId = Int32;
 using FieldId = Int32;
 using ConstantId = Int32;
 using SingletonObjId = Int32;
-using KeyStoreId = Int32;
-using HostedMethodIndex = Int32;
 
 struct PersistedAnalysisType {
   id @0 :TypeId;
@@ -26,54 +20,49 @@ struct PersistedAnalysisType {
   # Most of these fields apply only to instances and could be in a union or a separate structure:
   isInterface @7 :Bool;
   isEnum @8 :Bool;
-  # True if the type's initialization status was computed as BUILD_TIME. Build-time initialized types are not simulated.
   isInitialized @9 :Bool;
-  # True if the type was configured as initialized at BUILD_TIME but initialization failed so it was registered as RUN_TIME.
-  isFailedInitialization @10 :Bool;
-  # Type's initializer simulation succeeded. We'll also persist simulated field values.
-  isSuccessfulSimulation @11 :Bool;
-  # Type's initializer simulation failed.
-  isFailedSimulation @12 :Bool;
-  isLinked @13 :Bool;
-  sourceFileName @14 :Text;
-  enclosingTypeId @15 :TypeId;
-  componentTypeId @16 :TypeId;
-  superClassTypeId @17 :TypeId;
-  isInstantiated @18 :Bool;
-  isUnsafeAllocated @19 :Bool;
-  isReachable @20 :Bool;
-  interfaces @21 :List(TypeId);
-  instanceFieldIds @22 :List(FieldId);
-  instanceFieldIdsWithSuper @23 :List(FieldId);
-  staticFieldIds @24 :List(FieldId);
-  annotationList @25 :List(PersistedAnnotation);
-  classInitializationInfo @26 :ClassInitializationInfo;
-  hasArrayType @27 :Bool;
-  hasClassInitInfo @28 :Bool;
-  subTypes @29 :List(TypeId);
-  isAnySubtypeInstantiated @30 :Bool;
+  isInitializedAtBuildTime @10 :Bool;
+  isLinked @11 :Bool;
+  sourceFileName @12 :Text;
+  enclosingTypeId @13 :TypeId;
+  componentTypeId @14 :TypeId;
+  superClassTypeId @15 :TypeId;
+  isInstantiated @16 :Bool;
+  isUnsafeAllocated @17 :Bool;
+  isReachable @18 :Bool;
+  interfaces @19 :List(TypeId);
+  instanceFieldIds @20 :List(FieldId);
+  instanceFieldIdsWithSuper @21 :List(FieldId);
+  staticFieldIds @22 :List(FieldId);
+  annotationList @23 :List(Annotation);
+  classInitializationInfo @24 :ClassInitializationInfo;
+  hasArrayType @25 :Bool;
+  subTypes @26 :List(TypeId);
+  isAnySubtypeInstantiated @27 :Bool;
   wrappedType :union {
-    none @31 :Void; # default
+    none @28 :Void; # default
     serializationGenerated :group {
-      rawDeclaringClass @32 :Text;
-      rawTargetConstructor @33 :Text;
+      rawDeclaringClass @29 :Text;
+      rawTargetConstructor @30 :Text;
     }
     lambda :group {
-      capturingClass @34 :Text;
+      capturingClass @31 :Text;
     }
-    proxyType @35 :Void;
+    proxyType @32 :Void;
   }
-  isRecord @36 :Bool;
 }
 
 struct ClassInitializationInfo {
-  isInitialized @0 :Bool;
-  isInErrorState @1 :Bool;
-  isLinked @2 :Bool;
-  hasInitializer @3 :Bool;
-  isBuildTimeInitialized @4 :Bool;
-  isTracked @5 :Bool;
-  initializerMethodId @6 :MethodId;
+  isNoInitializerNoTracking @0 :Bool;
+  isInitializedNoTracking @1 :Bool;
+  isFailedNoTracking @2 :Bool;
+  isInitialized @3 :Bool;
+  isInErrorState @4 :Bool;
+  isLinked @5 :Bool;
+  hasInitializer @6 :Bool;
+  isBuildTimeInitialized @7 :Bool;
+  isTracked @8 :Bool;
+  initializerMethodId @9 :MethodId;
 }
 
 struct PersistedAnalysisMethod {
@@ -86,8 +75,8 @@ struct PersistedAnalysisMethod {
   argumentTypeIds @6 :List(TypeId);
   returnTypeId @7 :TypeId;
   modifiers @8 :Int32;
-  bytecode @9 :Data;
-  bytecodeSize @10 :Int32;
+  code @9 :Data;
+  codeSize @10 :Int32;
   isConstructor @11 :Bool;
   isSynthetic @12 :Bool;
   canBeStaticallyBound @13 :Bool;
@@ -97,41 +86,38 @@ struct PersistedAnalysisMethod {
   isImplementationInvoked @17 :Bool;
   isIntrinsicMethod @18 :Bool;
   methodHandleIntrinsicName @19 :Text;
-  annotationList @20 :List(PersistedAnnotation);
+  annotationList @20 :List(Annotation);
   isVarArgs @21 :Bool;
   isBridge @22 :Bool;
-  isDeclared @23 :Bool;
-  analysisGraphLocation @24 :Text;
-  analysisGraphIsIntrinsic @25 :Bool;
-  strengthenedGraphLocation @26 :Text;
-  hostedMethodIndex @27 :HostedMethodIndex;
-  compilationBehaviorOrdinal @28 :Int8;
+  analysisGraphLocation @23 :Text;
+  analysisGraphIsIntrinsic @24 :Bool;
+  strengthenedGraphLocation @25 :Text;
   wrappedMethod :union {
-    none @29 :Void; # default
+    none @26 :Void; # default
     factoryMethod :group {
-      targetConstructorId @30 :MethodId;
-      throwAllocatedObject @31 :Bool;
-      instantiatedTypeId @32 :TypeId;
+      targetConstructorId @27 :MethodId;
+      throwAllocatedObject @28 :Bool;
+      instantiatedTypeId @29 :TypeId;
     }
     outlinedSB :group {
-      methodTypeReturn @33 :Text;
-      methodTypeParameters @34 :List(Text);
+      methodTypeReturn @30 :Text;
+      methodTypeParameters @31 :List(Text);
     }
     cEntryPointCallStub :group {
-      originalMethodId @35 :MethodId;
-      notPublished @36 :Bool;
+      originalMethodId @32 :MethodId;
+      notPublished @33 :Bool;
     }
     wrappedMember :group {
       union {
-        reflectionExpandSignature @37 :Void;
-        javaCallVariantWrapper @38 :Void;
+        reflectionExpandSignature @34 :Void;
+        javaCallVariantWrapper @35 :Void;
       }
-      name @39 :Text;
-      declaringClassName @40 :Text;
-      argumentTypeNames @41 :List(Text);
+      name @36 :Text;
+      declaringClassName @37 :Text;
+      argumentTypeNames @38 :List(Text);
     }
     polymorphicSignature :group {
-      callers @42 :List(MethodId);
+      callers @39 :List(MethodId);
     }
   }
 }
@@ -149,15 +135,12 @@ struct PersistedAnalysisField {
   isRead @9 :Bool;
   isWritten @10 :Bool;
   isFolded @11 :Bool;
-  isUnsafeAccessed @12 :Bool;
-  isStatic @13 :Bool;
-  isSynthetic @14 :Bool;
-  annotationList @15 :List(PersistedAnnotation);
-  name @16 :Text;
-  priorInstalledLayerNum @17 :Int32;
-  assignmentStatus @18 :Int32;
-  simulatedFieldValue @19 :ConstantReference;
-  updatableReceivers @20 :List(ConstantId);
+  isStatic @12 :Bool;
+  isSynthetic @13 :Bool;
+  annotationList @14 :List(Annotation);
+  name @15 :Text;
+  priorInstalledLayerNum @16 :Int32;
+  assignmentStatus @17 :Int32;
 }
 
 struct CEntryPointLiteralReference {
@@ -177,11 +160,8 @@ struct ConstantReference {
     methodPointer :group {
       methodId @4 :MethodId;
     }
-    methodOffset :group {
-      methodId @5 :MethodId;
-    }
-    cEntryPointLiteralCodePointer @6 :CEntryPointLiteralReference;
-    cGlobalDataBasePointer @7 :Void;
+    cEntryPointLiteralCodePointer @5 :CEntryPointLiteralReference;
+    cGlobalDataBasePointer @6 :Void;
   }
 }
 
@@ -242,28 +222,20 @@ struct ImageSingletonKey {
   persistFlag @1 :Int32;
   objectId @2 :SingletonObjId;
   constantId @3 :ConstantId;
-  isInitialLayerOnly @4 :Bool;
-  keyStoreId @5 :KeyStoreId;
 }
 
 struct ImageSingletonObject {
   id @0 :SingletonObjId;
   className @1 :Text;
-  keyStoreId @2 :KeyStoreId;
-  singletonInstantiatorClass @3 :Text;
+  store @2 :List(KeyStoreEntry);
 }
 
-struct KeyStoreInstance {
-  id @0 :KeyStoreId;
-  keyStore @1 :List(KeyStoreEntry);
-}
-
-struct PersistedAnnotation {
+struct Annotation {
   typeName @0 :Text;
-  values @1 :List(PersistedAnnotationElement);
+  values @1 :List(AnnotationValue);
 }
 
-struct PersistedAnnotationElement {
+struct AnnotationValue {
   name @0 :Text;
   union {
     string @1 :Text;
@@ -274,10 +246,10 @@ struct PersistedAnnotationElement {
       name @5 :Text;
     }
     className @6 :Text;
-    annotation @7 :PersistedAnnotation;
+    annotation @7 :Annotation;
     members :group {
       className @8 :Text;
-      memberValues @9 :List(PersistedAnnotationElement);
+      memberValues @9 :List(AnnotationValue);
     }
   }
 }
@@ -289,7 +261,7 @@ struct SharedLayerSnapshot {
   nextConstantId @3 :ConstantId;
   staticPrimitiveFieldsConstantId @4 :ConstantId;
   staticObjectFieldsConstantId @5 :ConstantId;
-  imageHeapEndOffset @6 :Int64;
+  imageHeapSize @6 :Int64;
   constantsToRelink @7 :List(ConstantId);
   types @8 :List(PersistedAnalysisType);
   methods @9 :List(PersistedAnalysisMethod);
@@ -301,13 +273,6 @@ struct SharedLayerSnapshot {
   staticFinalFieldFoldingSingleton @15 :StaticFinalFieldFoldingSingleton;
   registeredJNILibraries @16 :List(Text);
   layeredRuntimeMetadataSingleton @17 :LayeredRuntimeMetadataSingleton;
-  dynamicHubInfos @18 :List(DynamicHubInfo);
-  hostedMethods @19 :List(PersistedHostedMethod);
-  nodeClassMapLocation @20 :Text;
-  sharedLayerBootLayerModules @21 :List(Text);
-  layeredModule @22 :LayeredModule;
-  cGlobals @23 :List(CGlobalDataInfo);
-  keyStoreInstances @24 :List(KeyStoreInstance);
 }
 
 struct StaticFinalFieldFoldingSingleton {
@@ -320,24 +285,7 @@ struct StaticFinalFieldFoldingSingleton {
 
 struct LayeredRuntimeMetadataSingleton {
   methods @0 :List(MethodId);
-  methodStates @1 :List(Bool);
-  fields @2 :List(FieldId);
-  fieldStates @3 :List(Bool);
-}
-
-struct LayeredModule {
-  openModulePackages @0 :List(ModulePackages);
-  exportedModulePackages @1 :List(ModulePackages);
-}
-
-struct ModulePackages {
-  moduleKey @0 :Text;
-  packages @1 :List(Packages);
-}
-
-struct Packages {
-  packageKey @0 :Text;
-  modules @1 :List(Text);
+  fields @1 :List(FieldId);
 }
 
 struct PrimitiveValue {
@@ -356,51 +304,4 @@ struct PrimitiveArray {
     j @6 :List(Int64);
     d @7 :List(Float64);
   }
-}
-
-struct CGlobalDataInfo {
-   isSymbolReference @0 :Bool;
-   isGlobalSymbol @1 :Bool;
-   nonConstant @2 :Bool;
-   layeredSymbolName @3 :Text;
-   linkingInfo :union {
-     originalSymbolName @4 :Text;
-     codeLocation @5 :CodeLocation;
-   }
-}
-
-struct CodeLocation {
-    bytecodeIndex @0 :Int32;
-    stacktraceName @1 :Text;
-}
-
-struct DispatchSlotInfo {
-    declaredHostedMethodIndex @0 :HostedMethodIndex;
-    resolvedHostedMethodIndex @1 :HostedMethodIndex;
-    slotIndex @2 :Int32;
-    resolutionStatus @3 :Int32;
-    slotSymbolName @4 :Text;
-}
-
-struct PersistedHostedMethod {
-    index @0 :Int32;
-    methodId @1 :MethodId;
-    vTableIndex @2 :Int32;
-    installedOffset @3 :Int32;
-    isVirtualCallTarget @4 :Bool;
-    symbolName @5 :Text;
-    hostedMethodName @6 :Text;
-    hostedMethodUniqueName @7 :Text;
-}
-
-struct DynamicHubInfo {
-    typeId @0 :TypeId;
-    installed @1 :Bool;
-    typecheckId @2 :Int32;
-    numClassTypes @3 :Int32;
-    numIterableInterfaceTypes @4 :Int32;
-    typecheckSlotValues @5 :List(Int32);
-    locallyDeclaredSlotsHostedMethodIndexes @6 :List(HostedMethodIndex);
-    dispatchTableSlotValues @7 :List(DispatchSlotInfo);
-    interfaceId @8 :Int32;
 }

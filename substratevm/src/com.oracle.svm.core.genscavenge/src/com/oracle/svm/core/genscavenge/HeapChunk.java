@@ -27,7 +27,6 @@ package com.oracle.svm.core.genscavenge;
 import java.util.function.IntUnaryOperator;
 
 import org.graalvm.nativeimage.c.struct.RawField;
-import org.graalvm.nativeimage.c.struct.RawFieldOffset;
 import org.graalvm.nativeimage.c.struct.RawFieldAddress;
 import org.graalvm.nativeimage.c.struct.RawStructure;
 import org.graalvm.nativeimage.c.struct.UniqueLocationIdentity;
@@ -45,10 +44,8 @@ import com.oracle.svm.core.c.struct.PinnedObjectField;
 import com.oracle.svm.core.heap.ObjectVisitor;
 import com.oracle.svm.core.hub.LayoutEncoding;
 import com.oracle.svm.core.identityhashcode.IdentityHashCodeSupport;
-import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.directives.GraalDirectives;
-import jdk.graal.compiler.nodes.NamedLocationIdentity;
 import jdk.graal.compiler.word.Word;
 
 /**
@@ -81,9 +78,6 @@ import jdk.graal.compiler.word.Word;
  * allocated within the HeapChunk are examined by the collector.
  */
 public final class HeapChunk {
-
-    public static final LocationIdentity CHUNK_HEADER_TOP_IDENTITY = NamedLocationIdentity.mutable("ChunkHeader.top");
-
     private HeapChunk() { // all static
     }
 
@@ -112,16 +106,12 @@ public final class HeapChunk {
          * in the chunk.
          */
         @RawField
-        UnsignedWord getTopOffset(LocationIdentity topIdentity);
+        @UniqueLocationIdentity
+        UnsignedWord getTopOffset();
 
         @RawField
-        void setTopOffset(UnsignedWord newTop, LocationIdentity topIdentity);
-
-        @RawFieldOffset
-        static int offsetOfTopOffset() {
-            // replaced
-            throw VMError.shouldNotReachHereAtRuntime(); // ExcludeFromJacocoGeneratedReport
-        }
+        @UniqueLocationIdentity
+        void setTopOffset(UnsignedWord newTop);
 
         /** Offset of the limit of memory available for allocation. */
         @RawField
@@ -204,18 +194,18 @@ public final class HeapChunk {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static UnsignedWord getTopOffset(Header<?> that) {
         assert getTopPointer(that).isNonNull() : "Not safe: top currently points to NULL.";
-        return that.getTopOffset(CHUNK_HEADER_TOP_IDENTITY);
+        return that.getTopOffset();
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static Pointer getTopPointer(Header<?> that) {
-        return asPointer(that).add(that.getTopOffset(CHUNK_HEADER_TOP_IDENTITY));
+        return asPointer(that).add(that.getTopOffset());
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static void setTopPointer(Header<?> that, Pointer newTop) {
         // Note that the address arithmetic also works for newTop == NULL, e.g. in TLAB allocation
-        that.setTopOffset(newTop.subtract(asPointer(that)), CHUNK_HEADER_TOP_IDENTITY);
+        that.setTopOffset(newTop.subtract(asPointer(that)));
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -311,30 +301,33 @@ public final class HeapChunk {
 
     @NeverInline("Not performance critical")
     @Uninterruptible(reason = "Forced inlining (StoredContinuation objects must not move).")
-    public static void walkObjectsFrom(Header<?> that, Pointer start, ObjectVisitor visitor) {
-        walkObjectsFromInline(that, start, visitor);
+    public static boolean walkObjectsFrom(Header<?> that, Pointer start, ObjectVisitor visitor) {
+        return walkObjectsFromInline(that, start, visitor);
     }
 
     @AlwaysInline("GC performance")
     @Uninterruptible(reason = "Forced inlining (StoredContinuation objects must not move).", callerMustBe = true)
-    public static void walkObjectsFromInline(Header<?> that, Pointer start, ObjectVisitor visitor) {
+    public static boolean walkObjectsFromInline(Header<?> that, Pointer start, ObjectVisitor visitor) {
         Pointer p = start;
         while (p.belowThan(getTopPointer(that))) { // crucial: top can move, so always re-read
-            Object obj = p.toObjectNonNull();
-            callVisitor(visitor, obj);
+            Object obj = p.toObject();
+            if (!callVisitor(visitor, obj)) {
+                return false;
+            }
             p = p.add(LayoutEncoding.getSizeFromObjectInlineInGC(obj));
         }
+        return true;
     }
 
     @AlwaysInline("de-virtualize calls to ObjectReferenceVisitor")
     @Uninterruptible(reason = "Bridge between uninterruptible and potentially interruptible code.", mayBeInlined = true, calleeMustBe = false)
-    private static void callVisitor(ObjectVisitor visitor, Object obj) {
-        visitor.visitObject(obj);
+    private static boolean callVisitor(ObjectVisitor visitor, Object obj) {
+        return visitor.visitObjectInline(obj);
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public static UnsignedWord availableObjectMemory(Header<?> that) {
-        return that.getEndOffset().subtract(that.getTopOffset(CHUNK_HEADER_TOP_IDENTITY));
+        return that.getEndOffset().subtract(that.getTopOffset());
     }
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)

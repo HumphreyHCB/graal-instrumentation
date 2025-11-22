@@ -24,7 +24,7 @@
  */
 package com.oracle.svm.truffle.api;
 
-import jdk.graal.compiler.truffle.ConstantFieldInfo;
+import com.oracle.truffle.compiler.ConstantFieldInfo;
 
 public interface TruffleField {
 

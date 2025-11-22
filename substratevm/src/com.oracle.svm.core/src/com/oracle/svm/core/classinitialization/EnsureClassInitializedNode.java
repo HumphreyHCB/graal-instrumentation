@@ -44,7 +44,6 @@ import jdk.graal.compiler.nodes.spi.Canonicalizable;
 import jdk.graal.compiler.nodes.spi.CanonicalizerTool;
 import jdk.graal.compiler.nodes.spi.Lowerable;
 import jdk.graal.compiler.nodes.type.StampTool;
-import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
@@ -99,9 +98,8 @@ public class EnsureClassInitializedNode extends WithExceptionNode implements Can
     }
 
     public ResolvedJavaType constantTypeOrNull(ConstantReflectionProvider constantReflection) {
-        ValueNode value = GraphUtil.unproxify(hub);
-        if (value.isConstant()) {
-            return constantReflection.asJavaType(value.asConstant());
+        if (hub.isConstant()) {
+            return constantReflection.asJavaType(hub.asConstant());
         } else {
             return null;
         }

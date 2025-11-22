@@ -35,7 +35,6 @@ import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.Feature;
 
-import com.oracle.svm.core.encoder.SymbolEncoder;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredImageSingleton;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.ReflectionUtil;
@@ -64,14 +63,16 @@ public class ServiceCatalogSupport {
 
     @SuppressWarnings("unchecked")
     public void enableServiceCatalogMapTransformer(Feature.BeforeAnalysisAccess access) {
-        access.registerFieldValueTransformer(ReflectionUtil.lookupField(ServicesCatalog.class, "map"), (_, original) -> {
+        access.registerFieldValueTransformer(ReflectionUtil.lookupField(ServicesCatalog.class, "map"), (receiver, original) -> {
             VMError.guarantee(sealed);
             ConcurrentHashMap<String, List<ServicesCatalog.ServiceProvider>> map = (ConcurrentHashMap<String, List<ServicesCatalog.ServiceProvider>>) original;
             final ConcurrentHashMap<String, List<ServicesCatalog.ServiceProvider>> res = new ConcurrentHashMap<>();
             map.forEach((key, value) -> {
                 if (omittedServiceProviders.containsKey(key)) {
                     var omittedServices = omittedServiceProviders.get(key);
-                    List<ServicesCatalog.ServiceProvider> filtered = value.stream().filter(v -> !omittedServices.contains(v.providerName())).collect(Collectors.toList());
+                    List<ServicesCatalog.ServiceProvider> filtered = value.stream()
+                                    .filter(v -> !omittedServices.contains(v.providerName()))
+                                    .collect(Collectors.toList());
                     res.put(key, filtered);
                 } else {
                     res.put(key, value);
@@ -85,10 +86,11 @@ public class ServiceCatalogSupport {
             String service = ((ModuleDescriptor.Provides) receiver).service();
             if (omittedServiceProviders.containsKey(service)) {
                 var omittedProviders = omittedServiceProviders.get(service);
-                providers = providers.stream().filter(p -> !omittedProviders.contains(p)).toList();
+                providers = providers.stream()
+                                .filter(p -> !omittedProviders.contains(p))
+                                .collect(Collectors.toList());
             }
-            SymbolEncoder encoder = SymbolEncoder.singleton();
-            return providers.stream().map(encoder::encodeClass).toList();
+            return providers;
         });
     }
 }

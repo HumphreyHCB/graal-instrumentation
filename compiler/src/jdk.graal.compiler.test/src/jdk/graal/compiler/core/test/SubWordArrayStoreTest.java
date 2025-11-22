@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,35 +24,21 @@
  */
 package jdk.graal.compiler.core.test;
 
-import static java.lang.classfile.ClassFile.ACC_STATIC;
-import static java.lang.constant.ConstantDescs.CD_Object;
-import static java.lang.constant.ConstantDescs.CD_boolean;
-import static java.lang.constant.ConstantDescs.CD_long;
-import static java.lang.constant.ConstantDescs.CD_void;
-import static java.lang.constant.ConstantDescs.MTD_void;
-import static jdk.graal.compiler.core.test.SubWordFieldStoreTest.getUnsafePutMethodName;
-
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.Opcode;
-import java.lang.classfile.TypeKind;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.constantpool.FieldRefEntry;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodTypeDesc;
 import java.util.ArrayList;
 import java.util.List;
 
+import jdk.graal.compiler.debug.GraalError;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.MethodVisitor;
 
-import jdk.graal.compiler.debug.GraalError;
-import jdk.graal.compiler.test.GraalTest;
-import jdk.internal.misc.Unsafe;
+import jdk.vm.ci.meta.JavaKind;
 
 @RunWith(Parameterized.class)
-public class SubWordArrayStoreTest extends GraalCompilerTest implements CustomizedBytecodePattern {
+public class SubWordArrayStoreTest extends CustomizedBytecodePatternTest {
 
     @Parameterized.Parameters(name = "{0}, {1}, {2}, {3}")
     public static List<Object[]> data() {
@@ -60,10 +46,10 @@ public class SubWordArrayStoreTest extends GraalCompilerTest implements Customiz
         for (int i : new int[]{0xFFFF0000, 0xFFFF0001, 0x0000FFFF, 0x01020304}) {
             for (boolean unsafeStore : new boolean[]{false, true}) {
                 for (boolean unsafeLoad : new boolean[]{false, true}) {
-                    ret.add(new Object[]{TypeKind.BOOLEAN, i, unsafeStore, unsafeLoad});
-                    ret.add(new Object[]{TypeKind.BYTE, i, unsafeStore, unsafeLoad});
-                    ret.add(new Object[]{TypeKind.SHORT, i, unsafeStore, unsafeLoad});
-                    ret.add(new Object[]{TypeKind.CHAR, i, unsafeStore, unsafeLoad});
+                    ret.add(new Object[]{JavaKind.Boolean, i, unsafeStore, unsafeLoad});
+                    ret.add(new Object[]{JavaKind.Byte, i, unsafeStore, unsafeLoad});
+                    ret.add(new Object[]{JavaKind.Short, i, unsafeStore, unsafeLoad});
+                    ret.add(new Object[]{JavaKind.Char, i, unsafeStore, unsafeLoad});
                 }
             }
         }
@@ -71,14 +57,13 @@ public class SubWordArrayStoreTest extends GraalCompilerTest implements Customiz
     }
 
     private static final String SNIPPET = "snippet";
-    private static final String FIELD = "array";
 
-    private final TypeKind kind;
+    private final JavaKind kind;
     private final int value;
     private final boolean unsafeStore;
     private final boolean unsafeLoad;
 
-    public SubWordArrayStoreTest(TypeKind kind, int value, boolean unsafeStore, boolean unsafeLoad) {
+    public SubWordArrayStoreTest(JavaKind kind, int value, boolean unsafeStore, boolean unsafeLoad) {
         this.kind = kind;
         this.value = value;
         this.unsafeStore = unsafeStore;
@@ -87,92 +72,123 @@ public class SubWordArrayStoreTest extends GraalCompilerTest implements Customiz
 
     @Test
     public void testArrayStore() throws ClassNotFoundException {
-        Class<?> testClass = getClass(SubWordArrayStoreTest.class.getName() + "$" + kind.toString().toLowerCase() + "Getter");
+        Class<?> testClass = getClass(SubWordArrayStoreTest.class.getName() + "$" + kind.toString() + "Getter");
         test(getResolvedJavaMethod(testClass, SNIPPET), null);
     }
 
+    private static long arrayBaseOffset(JavaKind kind) {
+        switch (kind) {
+            case Boolean:
+                return UNSAFE.arrayBaseOffset(boolean[].class);
+            case Byte:
+                return UNSAFE.arrayBaseOffset(byte[].class);
+            case Short:
+                return UNSAFE.arrayBaseOffset(short[].class);
+            case Char:
+                return UNSAFE.arrayBaseOffset(char[].class);
+            default:
+                throw GraalError.shouldNotReachHereUnexpectedValue(kind); // ExcludeFromJacocoGeneratedReport
+        }
+    }
+
+    static int toASMType(JavaKind kind) {
+        switch (kind) {
+            case Boolean:
+                return T_BOOLEAN;
+            case Byte:
+                return T_BYTE;
+            case Short:
+                return T_SHORT;
+            case Char:
+                return T_CHAR;
+            default:
+                throw GraalError.shouldNotReachHereUnexpectedValue(kind); // ExcludeFromJacocoGeneratedReport
+        }
+    }
+
+    private static int toArrayStoreOpcode(JavaKind kind) {
+        switch (kind) {
+            case Boolean:
+            case Byte:
+                return BASTORE;
+            case Short:
+                return SASTORE;
+            case Char:
+                return CASTORE;
+            default:
+                throw GraalError.shouldNotReachHereUnexpectedValue(kind); // ExcludeFromJacocoGeneratedReport
+        }
+    }
+
+    private static int toArrayLoadOpcode(JavaKind kind) {
+        switch (kind) {
+            case Boolean:
+            case Byte:
+                return BALOAD;
+            case Short:
+                return SALOAD;
+            case Char:
+                return CALOAD;
+            default:
+                throw GraalError.shouldNotReachHereUnexpectedValue(kind); // ExcludeFromJacocoGeneratedReport
+        }
+    }
+
     @Override
-    public byte[] generateClass(String className) {
-        ClassDesc thisClass = ClassDesc.of(className);
-        ClassDesc targetType = kind.upperBound();
+    protected byte[] generateClass(String internalClassName) {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+        cw.visit(52, ACC_SUPER | ACC_PUBLIC, internalClassName, null, "java/lang/Object", null);
 
-        // @formatter:off
-        return ClassFile.of().build(thisClass, classBuilder -> classBuilder
-                        .withField(FIELD, targetType.arrayType(), ACC_PUBLIC_STATIC)
-                        .withMethodBody("<clinit>", MTD_void, ACC_STATIC, b -> b
-                                        .bipush(16)
-                                        .newarray(kind)
-                                        .putstatic(thisClass, FIELD, targetType.arrayType())
-                                        .return_())
-                        .withMethodBody(SNIPPET, MethodTypeDesc.of(CD_boolean), ACC_PUBLIC_STATIC, b -> generateSnippet(b, thisClass)));
-        // @formatter:on
-    }
+        final String fieldName = "array";
+        final String fieldDescriptor = "[" + kind.getTypeChar();
 
-    private static long arrayBaseOffset(TypeKind kind) {
-        return switch (kind) {
-            case BOOLEAN -> UNSAFE.arrayBaseOffset(boolean[].class);
-            case BYTE -> UNSAFE.arrayBaseOffset(byte[].class);
-            case SHORT -> UNSAFE.arrayBaseOffset(short[].class);
-            case CHAR -> UNSAFE.arrayBaseOffset(char[].class);
-            default -> throw GraalError.shouldNotReachHereUnexpectedValue(kind);
-        };
-    }
+        FieldVisitor field = cw.visitField(ACC_PUBLIC | ACC_STATIC, fieldName, fieldDescriptor, null, null);
+        field.visitEnd();
 
-    private void generateSnippet(CodeBuilder b, ClassDesc thisClass) {
-        // @formatter:off
-        ClassDesc targetType = kind.upperBound();
+        MethodVisitor clinit = cw.visitMethod(ACC_STATIC, "<clinit>", "()V", null, null);
+        clinit.visitCode();
+        clinit.visitIntInsn(BIPUSH, 16);
+        clinit.visitIntInsn(NEWARRAY, toASMType(kind));
+        clinit.visitFieldInsn(PUTSTATIC, internalClassName, fieldName, fieldDescriptor);
+        clinit.visitInsn(RETURN);
+        clinit.visitMaxs(1, 0);
+        clinit.visitEnd();
 
-        ClassDesc classGraalTest = cd(GraalTest.class);
-        ClassDesc classUnsafe = cd(Unsafe.class);
-
-        ConstantPoolBuilder cpb = ConstantPoolBuilder.of();
-        FieldRefEntry unsafeField = cpb.fieldRefEntry(classGraalTest, "UNSAFE", classUnsafe);
-        FieldRefEntry arrayField = cpb.fieldRefEntry(thisClass, FIELD, targetType.arrayType());
+        MethodVisitor snippet = cw.visitMethod(ACC_PUBLIC | ACC_STATIC, SNIPPET, "()Z", null, null);
+        snippet.visitCode();
 
         if (unsafeStore) {
-            b
-                            .getstatic(unsafeField)
-                            .getstatic(arrayField)
-                            .ldc(arrayBaseOffset(kind))
-                            .ldc(value)
-                            .invokevirtual(classUnsafe, "put" + getUnsafePutMethodName(kind), MethodTypeDesc.of(CD_void, CD_Object, CD_long, targetType));
+            SubWordTestUtil.getUnsafe(snippet);
+            snippet.visitFieldInsn(GETSTATIC, internalClassName, fieldName, fieldDescriptor);
+            snippet.visitLdcInsn(arrayBaseOffset(kind));
+            snippet.visitLdcInsn(value);
+            snippet.visitMethodInsn(INVOKEVIRTUAL, "jdk/internal/misc/Unsafe", "put" + SubWordTestUtil.getUnsafePutMethodName(kind), "(Ljava/lang/Object;J" + kind.getTypeChar() + ")V", false);
         } else {
-            b
-                            .getstatic(arrayField)
-                            .iconst_0()
-                            .ldc(value);
-
-            switch (kind) {
-                case BOOLEAN, BYTE -> b.bastore();
-                case SHORT -> b.sastore();
-                case CHAR -> b.castore();
-            }
+            snippet.visitFieldInsn(GETSTATIC, internalClassName, fieldName, fieldDescriptor);
+            snippet.visitInsn(ICONST_0);
+            snippet.visitLdcInsn(value);
+            snippet.visitInsn(toArrayStoreOpcode(kind));
         }
 
         if (unsafeLoad) {
-            b
-                            .getstatic(unsafeField)
-                            .getstatic(arrayField)
-                            .ldc(arrayBaseOffset(kind))
-                            .invokevirtual(classUnsafe, "get" + getUnsafePutMethodName(kind), MethodTypeDesc.of(targetType, CD_Object, CD_long));
+            SubWordTestUtil.getUnsafe(snippet);
+            snippet.visitFieldInsn(GETSTATIC, internalClassName, fieldName, fieldDescriptor);
+            snippet.visitLdcInsn(arrayBaseOffset(kind));
+            snippet.visitMethodInsn(INVOKEVIRTUAL, "jdk/internal/misc/Unsafe", "get" + SubWordTestUtil.getUnsafePutMethodName(kind), "(Ljava/lang/Object;J)" + kind.getTypeChar(), false);
         } else {
-            b
-                            .getstatic(arrayField)
-                            .iconst_0();
-
-            switch (kind) {
-                case BOOLEAN, BYTE -> b.baload();
-                case SHORT -> b.saload();
-                case CHAR -> b.caload();
-            }
+            snippet.visitFieldInsn(GETSTATIC, internalClassName, fieldName, fieldDescriptor);
+            snippet.visitInsn(ICONST_0);
+            snippet.visitInsn(toArrayLoadOpcode(kind));
         }
 
-        b
-                        .ldc(value)
-                        .conversion(TypeKind.INT, kind)
-                        .ifThenElse(Opcode.IF_ICMPEQ,
-                                        thenBlock -> thenBlock.iconst_1().ireturn(),
-                                        elseBlock -> elseBlock.iconst_0().ireturn());
-        // @formatter:on
+        snippet.visitLdcInsn(value);
+        SubWordTestUtil.convertToKind(snippet, kind);
+        SubWordTestUtil.testEqual(snippet);
+
+        snippet.visitMaxs(5, 0);
+        snippet.visitEnd();
+
+        cw.visitEnd();
+        return cw.toByteArray();
     }
 }

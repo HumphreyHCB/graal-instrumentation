@@ -26,8 +26,9 @@ package jdk.graal.compiler.lir.alloc.lsra;
 
 import static jdk.vm.ci.code.ValueUtil.isRegister;
 
-import jdk.graal.compiler.lir.alloc.lsra.Interval.UsePosList;
 import jdk.graal.compiler.lir.debug.IntervalDumper;
+import jdk.graal.compiler.lir.alloc.lsra.Interval.UsePosList;
+
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.Value;
 
@@ -54,10 +55,11 @@ class LinearScanIntervalDumper implements IntervalDumper {
         visitor.visitIntervalStart(interval.splitParent().operand, operand, interval.location(), hint, type);
 
         // print ranges
-        Interval.RangeIterator cur = new Interval.RangeIterator(interval);
-        while (!cur.isAtEnd()) {
-            visitor.visitRange(cur.from(), cur.to());
-            cur.next();
+        Range cur = interval.first();
+        while (!cur.isEndMarker()) {
+            visitor.visitRange(cur.from, cur.to);
+            cur = cur.next;
+            assert cur != null : "range list not closed with range sentinel";
         }
 
         // print use positions

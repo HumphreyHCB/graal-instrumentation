@@ -36,10 +36,6 @@ import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.classinitialization.ClassInitializationInfo;
 import com.oracle.svm.core.heap.UnknownObjectField;
 import com.oracle.svm.core.heap.UnknownPrimitiveField;
-import com.oracle.svm.core.hub.RuntimeClassLoading.ClassDefinitionInfo;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
-import com.oracle.svm.core.layered.LayeredFieldValue;
-import com.oracle.svm.core.layered.LayeredFieldValueTransformer;
 import com.oracle.svm.core.meta.SharedType;
 
 import jdk.internal.vm.annotation.Stable;
@@ -71,11 +67,8 @@ public final class DynamicHubCompanion {
     /** The {@link Modifier modifiers} of this class. */
     final int modifiers;
 
-    /**
-     * The class that serves as the host for the nest. All nestmates have the same host. Initially
-     * set to {@code null} for runtime-loaded classes.
-     */
-    @Stable Class<?> nestHost;
+    /** The class that serves as the host for the nest. All nestmates have the same host. */
+    final Class<?> nestHost;
 
     /** The simple binary name of this class, as returned by {@code Class.getSimpleBinaryName0}. */
     final String simpleBinaryName;
@@ -94,10 +87,8 @@ public final class DynamicHubCompanion {
 
     /**
      * The hub for an array of this type, or null if the array type has been determined as
-     * uninstantiated by the static analysis. In layered builds, it is possible for this value to be
-     * initially set to null and then updated in a subsequent layer.
+     * uninstantiated by the static analysis.
      */
-    @LayeredFieldValue(transformer = ArrayHubTransformer.class) //
     @Stable DynamicHub arrayHub;
 
     /**
@@ -115,7 +106,7 @@ public final class DynamicHubCompanion {
      * Back link to the SubstrateType used by the substrate meta access. Only used for the subset of
      * types for which a SubstrateType exists.
      */
-    @UnknownObjectField(availability = BuildPhaseProvider.AfterAnalysis.class, fullyQualifiedTypes = "com.oracle.svm.graal.meta.SubstrateType", canBeNull = true) //
+    @UnknownObjectField(fullyQualifiedTypes = "com.oracle.svm.graal.meta.SubstrateType", canBeNull = true) //
     @Stable SharedType metaType;
 
     /**
@@ -129,11 +120,11 @@ public final class DynamicHubCompanion {
      * Metadata for querying the reflection data. When using layered images this field is always
      * null and should not be queried. Instead, use {@link LayeredReflectionMetadataSingleton}.
      */
-    @UnknownObjectField(canBeNull = true, types = ImageReflectionMetadata.class, availability = BuildPhaseProvider.AfterCompilation.class) //
-    @Stable ReflectionMetadata reflectionMetadata;
+    @UnknownObjectField(canBeNull = true, availability = BuildPhaseProvider.AfterCompilation.class) //
+    @Stable DynamicHub.ReflectionMetadata reflectionMetadata;
 
-    @UnknownObjectField(canBeNull = true, types = ImageDynamicHubMetadata.class, availability = BuildPhaseProvider.AfterCompilation.class) //
-    @Stable DynamicHubMetadata hubMetadata;
+    @UnknownObjectField(canBeNull = true, availability = BuildPhaseProvider.AfterCompilation.class) //
+    @Stable DynamicHub.DynamicHubMetadata hubMetadata;
 
     /**
      * Classloader used for loading this class. Most classes have the correct class loader set
@@ -153,22 +144,23 @@ public final class DynamicHubCompanion {
     Constructor<?> cachedConstructor;
     Object jfrEventConfiguration;
     @Stable boolean canUnsafeAllocate;
-    Object classData;
 
     @Platforms(Platform.HOSTED_ONLY.class)
     static DynamicHubCompanion createHosted(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
-                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, Object classData) {
-        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, nestHost, simpleBinaryName, declaringClass, signature, classData, null);
+                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature) {
+
+        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, nestHost, simpleBinaryName, declaringClass, signature, null);
     }
 
     static DynamicHubCompanion createAtRuntime(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
-                    ClassLoader classLoader, String simpleBinaryName, Object declaringClass, String signature, ClassDefinitionInfo info) {
+                    ClassLoader classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature,
+                    ResolvedJavaType interpreterType) {
         assert RuntimeClassLoading.isSupported();
-        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, info.dynamicNest, simpleBinaryName, declaringClass, signature, info.classData, info.protectionDomain);
+        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, nestHost, simpleBinaryName, declaringClass, signature, interpreterType);
     }
 
     private DynamicHubCompanion(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
-                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, Object classData, ProtectionDomain protectionDomain) {
+                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, ResolvedJavaType interpreterType) {
         this.module = module;
         this.superHub = superHub;
         this.sourceFileName = sourceFileName;
@@ -179,56 +171,6 @@ public final class DynamicHubCompanion {
         this.signature = signature;
 
         this.classLoader = classLoader;
-        this.classData = classData;
-        this.protectionDomain = protectionDomain;
-    }
-
-    public void setHubMetadata(RuntimeDynamicHubMetadata hubMetadata) {
-        this.hubMetadata = hubMetadata;
-    }
-
-    public void setReflectionMetadata(RuntimeReflectionMetadata reflectionMetadata) {
-        this.reflectionMetadata = reflectionMetadata;
-    }
-
-    /**
-     * In layered builds it is possible for a {@link DynamicHubCompanion#arrayHub} to become
-     * reachable in a later layer than the layer in which the companion is installed in. When this
-     * happens we must update the companion's field to point to the newly installed value.
-     */
-    static class ArrayHubTransformer extends LayeredFieldValueTransformer<DynamicHubCompanion> {
-        boolean appLayer = ImageLayerBuildingSupport.buildingApplicationLayer();
-
-        @Override
-        public boolean isValueAvailable(DynamicHubCompanion receiver) {
-            /*
-             * As soon as we have a non-null value we set the field. Otherwise, once the ready for
-             * compilation phase has been reached no new dynamic hubs will be added and the value
-             * can set.
-             */
-            return receiver.arrayHub != null || BuildPhaseProvider.isReadyForCompilation();
-        }
-
-        @Override
-        public Result transform(DynamicHubCompanion receiver) {
-            /*
-             * When there is a concrete array hub value, then no update is needed in later layers.
-             * However, when both the value is null and we are not in the application layer, then we
-             * may update the value in a later layer.
-             */
-            return new Result(receiver.arrayHub, receiver.arrayHub == null && !appLayer);
-        }
-
-        @Override
-        public boolean isUpdateAvailable(DynamicHubCompanion receiver) {
-            /* A concrete new value has been found. */
-            return receiver.arrayHub != null;
-        }
-
-        @Override
-        public Result update(DynamicHubCompanion receiver) {
-            assert receiver.arrayHub != null : "update should only be called when a valid arrayHub is available";
-            return new Result(receiver.arrayHub, false);
-        }
+        this.interpreterType = interpreterType;
     }
 }

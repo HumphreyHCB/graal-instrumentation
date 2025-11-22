@@ -25,7 +25,6 @@
 package com.oracle.svm.hosted.meta;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,10 +39,8 @@ import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.svm.core.InvalidMethodPointerHandler;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateUtil;
-import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
-import com.oracle.svm.hosted.OpenTypeWorldFeature;
-import com.oracle.svm.hosted.imagelayer.LayeredDispatchTableFeature;
+import com.oracle.svm.hosted.imagelayer.LayeredDispatchTableSupport;
 
 import jdk.graal.compiler.debug.Assertions;
 
@@ -63,10 +60,8 @@ public final class VTableBuilder {
         VTableBuilder builder = new VTableBuilder(hUniverse, hMetaAccess);
         if (SubstrateOptions.useClosedTypeWorldHubLayout()) {
             builder.buildClosedTypeWorldVTables();
-            hUniverse.methods.forEach((_, v) -> v.finalizeIndirectCallVTableIndex());
         } else {
             builder.buildOpenTypeWorldDispatchTables();
-            hUniverse.methods.forEach((_, v) -> v.finalizeIndirectCallVTableIndex());
             assert builder.verifyOpenTypeWorldDispatchTables();
         }
     }
@@ -75,7 +70,6 @@ public final class VTableBuilder {
         private final boolean closedTypeWorld;
         private final boolean registerTrackedTypes;
         private final boolean registerAllTypes;
-        private final OpenTypeWorldFeature otwFeature = OpenTypeWorldFeature.singleton();
 
         OpenTypeWorldHubLayoutUtils(HostedUniverse hUniverse) {
             closedTypeWorld = SubstrateOptions.useClosedTypeWorld();
@@ -106,7 +100,7 @@ public final class VTableBuilder {
                      *
                      * GR-60010 - We are currently loading base analysis types too late.
                      */
-                    return otwFeature.isOpenTypeWorldDispatchTableMethodsCalculated(type.getWrapped());
+                    return type.getWrapped().isOpenTypeWorldDispatchTableMethodsCalculated();
                 }
 
                 /*
@@ -120,7 +114,7 @@ public final class VTableBuilder {
                  * When using the open type world we are conservative and calculate metadata for all
                  * types seen during analysis.
                  */
-                return otwFeature.isOpenTypeWorldDispatchTableMethodsCalculated(type.getWrapped());
+                return type.getWrapped().isOpenTypeWorldDispatchTableMethodsCalculated();
             }
         }
 
@@ -157,11 +151,11 @@ public final class VTableBuilder {
 
                 // retrieve method from open world
                 if (slotMethod.getDeclaringClass().isInterface()) {
-                    int interfaceID = slotMethod.getDeclaringClass().getInterfaceID();
+                    int interfaceTypeID = slotMethod.getDeclaringClass().getTypeID();
                     int[] typeCheckSlots = type.getOpenTypeWorldTypeCheckSlots();
                     boolean found = false;
                     for (int itableIdx = 0; itableIdx < type.getNumInterfaceTypes(); itableIdx++) {
-                        if (typeCheckSlots[type.getNumClassTypes() + itableIdx] == interfaceID) {
+                        if (typeCheckSlots[type.getNumClassTypes() + itableIdx] == interfaceTypeID) {
                             HostedMethod dispatchResult = type.openTypeWorldDispatchTables[type.itableStartingOffsets[itableIdx] + slotMethod.getVTableIndex()];
                             assert dispatchResult.equals(resolvedMethod) : Assertions.errorMessage(slotMethod, dispatchResult, resolvedMethod);
                             found = true;
@@ -184,15 +178,10 @@ public final class VTableBuilder {
     }
 
     private List<HostedMethod> generateITable(HostedType type) {
-        return generateDispatchTable(type, List.of());
+        return generateDispatchTable(type, 0);
     }
 
-    private static void installVTableIndex(HostedMethod hMethod, int index) {
-        assert hMethod.computedVTableIndex == HostedMethod.MISSING_VTABLE_IDX : hMethod.computedVTableIndex;
-        hMethod.computedVTableIndex = index;
-    }
-
-    private List<HostedMethod> generateDispatchTable(HostedType type, List<HostedMethod> parentClassTable) {
+    private List<HostedMethod> generateDispatchTable(HostedType type, int startingIndex) {
         Predicate<HostedMethod> includeMethod;
         if (openHubUtils.filterVTableMethods(type)) {
             // include only methods which will be indirect calls
@@ -219,49 +208,49 @@ public final class VTableBuilder {
                 return !m.getWrapped().canBeStaticallyBound();
             };
         }
-        var table = openHubUtils.otwFeature.getOpenTypeWorldDispatchTableMethods(type.getWrapped()).stream().map(hUniverse::lookup).filter(includeMethod).sorted(HostedUniverse.METHOD_COMPARATOR)
-                        .toList();
+        var table = type.getWrapped().getOpenTypeWorldDispatchTableMethods().stream().map(hUniverse::lookup).filter(includeMethod).sorted(HostedUniverse.METHOD_COMPARATOR).toList();
 
-        int index = parentClassTable.size();
+        int index = startingIndex;
         for (HostedMethod typeMethod : table) {
             assert typeMethod.getDeclaringClass().equals(type) : typeMethod;
-            installVTableIndex(typeMethod, index);
+            assert typeMethod.vtableIndex == -1 : typeMethod.vtableIndex;
+            typeMethod.vtableIndex = index;
             index++;
         }
 
         if (openHubUtils.shouldRegisterType(type)) {
-            LayeredDispatchTableFeature.singleton().registerDeclaredDispatchInfo(type, table);
+            LayeredDispatchTableSupport.singleton().registerDeclaredDispatchInfo(type, table);
         }
 
         return table;
     }
 
-    private void generateOpenTypeWorldDispatchTable(HostedInstanceClass type, Map<HostedType, List<HostedMethod>> classTablesMap, HostedMethod invalidDispatchTableEntryHandler) {
+    private void generateOpenTypeWorldDispatchTable(HostedInstanceClass type, Map<HostedType, List<HostedMethod>> dispatchTablesMap, HostedMethod invalidDispatchTableEntryHandler) {
         var superClass = type.getSuperclass();
-        List<HostedMethod> parentClassTable = superClass == null ? List.of() : classTablesMap.get(superClass);
-        List<HostedMethod> classTableWithoutSuper = generateDispatchTable(type, parentClassTable);
-        List<HostedMethod> classTableMethods;
+        List<HostedMethod> parentClassTable = superClass == null ? List.of() : dispatchTablesMap.get(superClass);
+        List<HostedMethod> classTableWithoutSuper = generateDispatchTable(type, parentClassTable.size());
+        List<HostedMethod> resultClassTableMethods;
         if (!classTableWithoutSuper.isEmpty()) {
-            classTableMethods = new ArrayList<>(parentClassTable);
-            classTableMethods.addAll(classTableWithoutSuper);
+            resultClassTableMethods = new ArrayList<>(parentClassTable);
+            resultClassTableMethods.addAll(classTableWithoutSuper);
         } else {
             /*
              * If the type doesn't declare any new methods, then we can use the parent's class
              * table.
              */
-            classTableMethods = parentClassTable;
+            resultClassTableMethods = parentClassTable;
         }
-        classTablesMap.put(type, classTableMethods);
+        dispatchTablesMap.put(type, resultClassTableMethods);
 
         if (!type.isAbstract()) {
             // create concrete dispatch classes
-            List<HostedMethod> aggregatedTable = new ArrayList<>(classTableMethods);
+            List<HostedMethod> aggregatedTable = new ArrayList<>(resultClassTableMethods);
             HostedType[] interfaces = type.typeCheckInterfaceOrder;
             type.itableStartingOffsets = new int[interfaces.length];
-            int currentITableOffset = classTableMethods.size();
+            int currentITableOffset = resultClassTableMethods.size();
             for (int i = 0; i < interfaces.length; i++) {
                 HostedType interfaceType = interfaces[i];
-                List<HostedMethod> interfaceMethods = classTablesMap.get(interfaceType);
+                List<HostedMethod> interfaceMethods = dispatchTablesMap.get(interfaceType);
 
                 type.itableStartingOffsets[i] = currentITableOffset;
                 aggregatedTable.addAll(interfaceMethods);
@@ -269,7 +258,6 @@ public final class VTableBuilder {
             }
             type.openTypeWorldDispatchTables = new HostedMethod[aggregatedTable.size()];
             type.openTypeWorldDispatchTableSlotTargets = aggregatedTable.toArray(HostedMethod[]::new);
-
             boolean[] validTarget = new boolean[aggregatedTable.size()];
             for (int i = 0; i < aggregatedTable.size(); i++) {
                 HostedMethod method = aggregatedTable.get(i);
@@ -284,46 +272,34 @@ public final class VTableBuilder {
                         targetMethod = resolvedMethod;
                         validTarget[i] = true;
                     }
+
+                    if (SubstrateUtil.assertionsEnabled()) {
+                        var indirectCallTarget = hUniverse.lookup(method.getWrapped().getIndirectCallTarget());
+                        if (!indirectCallTarget.equals(method)) {
+                            var resolvedIndirectCallTarget = (HostedMethod) type.resolveConcreteMethod(indirectCallTarget, type);
+                            boolean condition = (resolvedMethod == null && resolvedIndirectCallTarget == null) || (resolvedMethod != null && resolvedMethod.equals(resolvedIndirectCallTarget));
+                            assert condition : Assertions.errorMessage("Mismatch in method and normal call", method, indirectCallTarget);
+                        }
+                    }
                 }
 
                 type.openTypeWorldDispatchTables[i] = targetMethod;
             }
 
             if (openHubUtils.shouldRegisterType(type)) {
-                LayeredDispatchTableFeature.singleton().registerNonArrayDispatchTable(type, validTarget);
-            }
-        }
-        if (RuntimeClassLoading.isSupported()) {
-            assert !type.isInterface();
-            List<HostedMethod> sourceTable;
-            if (type.isAbstract()) {
-                sourceTable = classTableMethods;
-            } else {
-                sourceTable = Arrays.asList(type.openTypeWorldDispatchTableSlotTargets);
-            }
-            type.cremaOpenTypeWorldDispatchTables = new HostedMethod[sourceTable.size()];
-            for (int i = 0; i < sourceTable.size(); i++) {
-                HostedMethod resultMethod = sourceTable.get(i);
-                var resolvedMethod = (HostedMethod) type.resolveConcreteMethod(resultMethod, type);
-                if (resolvedMethod != null) {
-                    resultMethod = resolvedMethod;
-                }
-                type.cremaOpenTypeWorldDispatchTables[i] = resultMethod;
+                LayeredDispatchTableSupport.singleton().registerNonArrayDispatchTable(type, validTarget);
             }
         }
 
         for (HostedType subType : type.subTypes) {
             if (subType instanceof HostedInstanceClass instanceClass && openHubUtils.shouldIncludeType(subType)) {
-                generateOpenTypeWorldDispatchTable(instanceClass, classTablesMap, invalidDispatchTableEntryHandler);
+                generateOpenTypeWorldDispatchTable(instanceClass, dispatchTablesMap, invalidDispatchTableEntryHandler);
             }
         }
     }
 
     private void buildOpenTypeWorldDispatchTables() {
-        /*
-         * Map from type to class table (i.e. the type's vtable w/o any appended itables).
-         */
-        Map<HostedType, List<HostedMethod>> classTablesMap = new HashMap<>();
+        Map<HostedType, List<HostedMethod>> dispatchTablesMap = new HashMap<>();
 
         for (HostedType type : hUniverse.getTypes()) {
             /*
@@ -331,30 +307,22 @@ public final class VTableBuilder {
              * looking at their declared methods.
              */
             if (type.isInterface() && openHubUtils.shouldIncludeType(type)) {
-                List<HostedMethod> itable = generateITable(type);
-                classTablesMap.put(type, itable);
-                if (RuntimeClassLoading.isSupported()) {
-                    type.cremaOpenTypeWorldDispatchTables = new HostedMethod[itable.size()];
-                    for (int i = 0; i < itable.size(); i++) {
-                        type.cremaOpenTypeWorldDispatchTables[i] = itable.get(i);
-                    }
-                }
+                dispatchTablesMap.put(type, generateITable(type));
             }
         }
 
         HostedMethod invalidDispatchTableEntryHandler = hMetaAccess.lookupJavaMethod(InvalidMethodPointerHandler.INVALID_VTABLE_ENTRY_HANDLER_METHOD);
-        generateOpenTypeWorldDispatchTable((HostedInstanceClass) hUniverse.objectType(), classTablesMap, invalidDispatchTableEntryHandler);
+        generateOpenTypeWorldDispatchTable((HostedInstanceClass) hUniverse.objectType(), dispatchTablesMap, invalidDispatchTableEntryHandler);
 
         int[] emptyITableOffsets = new int[0];
         var objectType = hUniverse.getObjectClass();
         for (HostedType type : hUniverse.getTypes()) {
             if (type.isArray() && openHubUtils.shouldIncludeType(type)) {
                 type.openTypeWorldDispatchTables = objectType.openTypeWorldDispatchTables;
-                type.cremaOpenTypeWorldDispatchTables = objectType.cremaOpenTypeWorldDispatchTables;
                 type.openTypeWorldDispatchTableSlotTargets = objectType.openTypeWorldDispatchTableSlotTargets;
                 type.itableStartingOffsets = objectType.itableStartingOffsets;
                 if (openHubUtils.shouldRegisterType(type)) {
-                    LayeredDispatchTableFeature.singleton().registerArrayDispatchTable(type, objectType);
+                    LayeredDispatchTableSupport.singleton().registerArrayDispatchTable(type, objectType);
                 }
             }
             if (type.openTypeWorldDispatchTables == null) {
@@ -362,12 +330,6 @@ public final class VTableBuilder {
                 type.openTypeWorldDispatchTables = HostedMethod.EMPTY_ARRAY;
                 type.openTypeWorldDispatchTableSlotTargets = HostedMethod.EMPTY_ARRAY;
                 type.itableStartingOffsets = emptyITableOffsets;
-            }
-            if (RuntimeClassLoading.isSupported()) {
-                if (type.isPrimitive()) {
-                    type.cremaOpenTypeWorldDispatchTables = HostedMethod.EMPTY_ARRAY;
-                }
-                assert type.cremaOpenTypeWorldDispatchTables != null : "No dispatch tables for type " + type;
             }
         }
     }
@@ -468,8 +430,8 @@ public final class VTableBuilder {
             if (type.isArray()) {
                 type.closedTypeWorldVTable = objectClass.closedTypeWorldVTable;
             }
-            if (type.closedTypeWorldVTable == null || type.closedTypeWorldVTable.length == 0) {
-                assert type.isInterface() || type.isPrimitive() || type.closedTypeWorldVTable.length == 0;
+            if (type.closedTypeWorldVTable == null) {
+                assert type.isInterface() || type.isPrimitive();
                 type.closedTypeWorldVTable = HostedMethod.EMPTY_ARRAY;
             }
 
@@ -501,13 +463,9 @@ public final class VTableBuilder {
         return allSubtypes;
     }
 
-    private void assignImplementationsAndBuildVTable(HostedClass clazz, Map<HostedType, ArrayList<HostedMethod>> vtablesMap, Map<HostedType, BitSet> usedSlotsMap,
-                    Map<HostedMethod, Set<Integer>> vtablesSlots) {
-        assignImplementations(clazz, vtablesMap, usedSlotsMap, vtablesSlots);
-        buildVTable(clazz, vtablesMap, usedSlotsMap, vtablesSlots);
-    }
-
     private void buildVTable(HostedClass clazz, Map<HostedType, ArrayList<HostedMethod>> vtablesMap, Map<HostedType, BitSet> usedSlotsMap, Map<HostedMethod, Set<Integer>> vtablesSlots) {
+        assignImplementations(clazz, vtablesMap, usedSlotsMap, vtablesSlots);
+
         ArrayList<HostedMethod> vtable = vtablesMap.get(clazz);
         HostedMethod[] vtableArray = vtable.toArray(new HostedMethod[vtable.size()]);
         assert vtableArray.length == 0 || vtableArray[vtableArray.length - 1] != null : "Unnecessary entry at end of vtable";
@@ -515,7 +473,7 @@ public final class VTableBuilder {
 
         for (HostedType subClass : clazz.subTypes) {
             if (!subClass.isInterface() && !subClass.isArray()) {
-                assignImplementationsAndBuildVTable((HostedClass) subClass, vtablesMap, usedSlotsMap, vtablesSlots);
+                buildVTable((HostedClass) subClass, vtablesMap, usedSlotsMap, vtablesSlots);
             }
         }
     }
@@ -551,7 +509,7 @@ public final class VTableBuilder {
                      * assignments into account.
                      */
                     int slot = findSlot(method, vtablesMap, usedSlotsMap, vtablesSlots);
-                    installVTableIndex(method, slot);
+                    method.vtableIndex = slot;
 
                     /* Assign the vtable slot for the type and all subtypes. */
                     assignImplementations(method.getDeclaringClass(), method, slot, vtablesMap);
@@ -578,6 +536,7 @@ public final class VTableBuilder {
                     assert vtable.get(slot) == null;
                     vtable.set(slot, resolvedMethod);
                 }
+                resolvedMethod.vtableIndex = slot;
             }
         }
 
@@ -654,7 +613,7 @@ public final class VTableBuilder {
         for (HostedMethod impl : method.implementations) {
             markSlotAsUsed(resultSlot, impl.getDeclaringClass(), vtablesMap, usedSlotsMap);
 
-            vtablesSlots.computeIfAbsent(impl, _ -> new HashSet<>()).add(resultSlot);
+            vtablesSlots.computeIfAbsent(impl, k -> new HashSet<>()).add(resultSlot);
         }
 
         return resultSlot;

@@ -26,7 +26,6 @@ import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +67,6 @@ import com.oracle.truffle.espresso.jdwp.api.RedefineInfo;
 import com.oracle.truffle.espresso.jdwp.api.TagConstants;
 import com.oracle.truffle.espresso.jdwp.api.VMEventListenerImpl;
 import com.oracle.truffle.espresso.jdwp.impl.DebuggerController;
-import com.oracle.truffle.espresso.jdwp.impl.DebuggerInstrumentController;
 import com.oracle.truffle.espresso.jdwp.impl.JDWPInstrument;
 import com.oracle.truffle.espresso.jdwp.impl.TypeTag;
 import com.oracle.truffle.espresso.meta.EspressoError;
@@ -77,9 +75,8 @@ import com.oracle.truffle.espresso.nodes.BciProvider;
 import com.oracle.truffle.espresso.nodes.EspressoInstrumentableRootNode;
 import com.oracle.truffle.espresso.nodes.EspressoRootNode;
 import com.oracle.truffle.espresso.nodes.interop.ToEspressoNode;
-import com.oracle.truffle.espresso.redefinition.RedefinitionException;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
-import com.oracle.truffle.espresso.threads.ThreadState;
+import com.oracle.truffle.espresso.threads.State;
 import com.oracle.truffle.espresso.vm.InterpreterToVM;
 
 public final class JDWPContextImpl implements JDWPContext {
@@ -99,23 +96,18 @@ public final class JDWPContextImpl implements JDWPContext {
         this.ids = new Ids<>(StaticObject.NULL);
     }
 
-    private static DebuggerInstrumentController getInstrumentController(TruffleLanguage.Env env) {
-        return env.lookup(env.getInstruments().get(JDWPInstrument.ID), DebuggerInstrumentController.class);
-    }
-
     public void jdwpInit(TruffleLanguage.Env env, Object mainThread, VMEventListenerImpl eventListener) {
         Debugger debugger = env.lookup(env.getInstruments().get("debugger"), Debugger.class);
-        DebuggerInstrumentController instrumentController = getInstrumentController(env);
-        this.controller = instrumentController.createContextController(debugger, context.getEspressoEnv().JDWPOptions, env.getContext(), this, mainThread, eventListener);
+        this.controller = env.lookup(env.getInstruments().get(JDWPInstrument.ID), DebuggerController.class);
         vmEventListener = eventListener;
         eventListener.activate(mainThread, controller, this);
+        controller.initialize(debugger, context.getEspressoEnv().JDWPOptions, this, mainThread, eventListener);
     }
 
     public void finalizeContext() {
         if (context.getEspressoEnv().JDWPOptions != null) {
             if (controller != null) { // in case we exited before initializing the controller field
-                TruffleLanguage.Env env = context.getEnv();
-                getInstrumentController(env).disposeController(env.getContext());
+                controller.disposeDebugger(false);
             }
         }
     }
@@ -124,23 +116,11 @@ public final class JDWPContextImpl implements JDWPContext {
     public void replaceController(DebuggerController newController) {
         this.controller = newController;
         vmEventListener.replaceController(newController);
-        TruffleLanguage.Env env = context.getEnv();
-        getInstrumentController(env).replaceController(env.getContext(), newController);
     }
 
     @Override
     public Ids<Object> getIds() {
         return ids;
-    }
-
-    @Override
-    public Thread createSystemThread(Runnable runnable) {
-        return context.getEnv().createSystemThread(runnable);
-    }
-
-    @Override
-    public Thread createPolyglotThread(Runnable runnable) {
-        return context.getEnv().newTruffleThreadBuilder(runnable).build();
     }
 
     @Override
@@ -154,7 +134,7 @@ public final class JDWPContextImpl implements JDWPContext {
             if (context.getMeta().java_lang_Thread.isAssignableFrom(staticObject.getKlass())) {
                 if (checkTerminated) {
                     // check if thread has been terminated
-                    return !ThreadState.isTerminated(getThreadStatus(thread));
+                    return getThreadStatus(thread) != State.TERMINATED.value;
                 }
                 return true;
             }
@@ -214,21 +194,21 @@ public final class JDWPContextImpl implements JDWPContext {
                 // primitive
                 switch (componentRawName) {
                     case "I":
-                        return new KlassRef[]{context.getMeta()._int.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._int.getArrayClass(dimensions)};
                     case "Z":
-                        return new KlassRef[]{context.getMeta()._boolean.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._boolean.getArrayClass(dimensions)};
                     case "S":
-                        return new KlassRef[]{context.getMeta()._short.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._short.getArrayClass(dimensions)};
                     case "C":
-                        return new KlassRef[]{context.getMeta()._char.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._char.getArrayClass(dimensions)};
                     case "B":
-                        return new KlassRef[]{context.getMeta()._byte.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._byte.getArrayClass(dimensions)};
                     case "J":
-                        return new KlassRef[]{context.getMeta()._long.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._long.getArrayClass(dimensions)};
                     case "D":
-                        return new KlassRef[]{context.getMeta()._double.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._double.getArrayClass(dimensions)};
                     case "F":
-                        return new KlassRef[]{context.getMeta()._float.getArrayClassNoCreate(dimensions)};
+                        return new KlassRef[]{context.getMeta()._float.getArrayClass(dimensions)};
                     default:
                         throw new RuntimeException("invalid primitive component type " + componentRawName);
                 }
@@ -237,14 +217,11 @@ public final class JDWPContextImpl implements JDWPContext {
                 String componentType = componentRawName.substring(1, componentRawName.length() - 1);
                 Symbol<Type> type = context.getTypes().fromClassGetName(componentType);
                 KlassRef[] klassRefs = context.getRegistries().findLoadedClassAny(type);
-                List<KlassRef> result = new ArrayList<>();
-                for (KlassRef klassRef : klassRefs) {
-                    KlassRef array = klassRef.getArrayClassNoCreate(dimensions);
-                    if (array != null) {
-                        result.add(array);
-                    }
+                KlassRef[] result = new KlassRef[klassRefs.length];
+                for (int i = 0; i < klassRefs.length; i++) {
+                    result[i] = klassRefs[i].getArrayClass(dimensions);
                 }
-                return result.toArray(new KlassRef[0]);
+                return result;
             }
         } else {
             // regular type
@@ -254,20 +231,19 @@ public final class JDWPContextImpl implements JDWPContext {
     }
 
     @Override
-    public Set<? extends KlassRef> getAllLoadedClasses() {
-        return context.getRegistries().getAllLoadedClasses();
+    public KlassRef[] getAllLoadedClasses() {
+        return context.getRegistries().getAllLoadedClasses().toArray(new KlassRef[0]);
     }
 
     @Override
-    public Set<? extends KlassRef> getInitiatedClasses(Object classLoader) {
-        return context.getRegistries().getLoadedClassesByLoader((StaticObject) classLoader, false);
+    public List<? extends KlassRef> getInitiatedClasses(Object classLoader) {
+        return context.getRegistries().getLoadedClassesByLoader((StaticObject) classLoader);
     }
 
     @Override
     public boolean isValidClassLoader(Object object) {
         if (object instanceof StaticObject loader) {
-            // boot loader is StaticObject.NULL
-            return StaticObject.isNull(loader) || InterpreterToVM.instanceOf(loader, context.getMeta().java_lang_ClassLoader);
+            return InterpreterToVM.instanceOf(loader, context.getMeta().java_lang_ClassLoader);
         }
         return false;
     }
@@ -299,18 +275,12 @@ public final class JDWPContextImpl implements JDWPContext {
 
     @Override
     public void steppingInProgress(Thread t, boolean value) {
-        context.getLanguage().getThreadLocalStateFor(t).setSteppingInProgress(value);
-    }
-
-    @Override
-    public boolean isSteppingInProgress(Thread t) {
-        EspressoThreadLocalState state = context.getLanguage().getThreadLocalStateFor(t);
-        // Here, the thread local state can be null for threads having been unregistered already.
-        // This is OK, and we can safely return false in such cases.
-        if (state != null) {
-            return state.isSteppingInProgress();
-        } else {
-            return false;
+        Object previous = null;
+        try {
+            previous = controller.enterTruffleContext();
+            context.getLanguage().getThreadLocalStateFor(t).setSteppingInProgress(value);
+        } finally {
+            controller.leaveTruffleContext(previous);
         }
     }
 
@@ -326,20 +296,20 @@ public final class JDWPContextImpl implements JDWPContext {
             }
             result.add(activeThread);
         }
-        return result.toArray(StaticObject.EMPTY_ARRAY);
+        return result.toArray(new StaticObject[result.size()]);
     }
 
     @Override
     public String getStringValue(Object object) {
         if (object instanceof StaticObject staticObject) {
-            return (String) UNCACHED.toDisplayString(staticObject, false);
+            return (String) InteropLibrary.getUncached().toDisplayString(staticObject, false);
         }
         return object.toString();
     }
 
     @Override
     public MethodVersionRef getMethodFromRootNode(RootNode root) {
-        if (root instanceof EspressoRootNode) {
+        if (root != null && root instanceof EspressoRootNode) {
             return ((EspressoRootNode) root).getMethodVersion();
         }
         return null;
@@ -444,16 +414,15 @@ public final class JDWPContextImpl implements JDWPContext {
         StaticObject staticObject = (StaticObject) array;
         EspressoLanguage language = context.getLanguage();
         if (staticObject.isForeignObject()) {
-            long arrayLength;
             try {
-                arrayLength = UNCACHED.getArraySize(staticObject.rawForeignObject(language));
+                long arrayLength = UNCACHED.getArraySize(staticObject.rawForeignObject(language));
+                if (arrayLength > Integer.MAX_VALUE) {
+                    return -1;
+                }
+                return (int) arrayLength;
             } catch (UnsupportedMessageException e) {
                 return -1;
             }
-            if (arrayLength > Integer.MAX_VALUE) {
-                return -1;
-            }
-            return (int) arrayLength;
         }
         return staticObject.length(language);
     }
@@ -509,7 +478,7 @@ public final class JDWPContextImpl implements JDWPContext {
         if (arrayRef.isForeignObject()) {
             Object value = null;
             try {
-                value = UNCACHED.readArrayElement(arrayRef.rawForeignObject(arrayRef.getKlass().getLanguage()), index);
+                value = InteropLibrary.getUncached().readArrayElement(arrayRef.rawForeignObject(arrayRef.getKlass().getLanguage()), index);
                 return ToEspressoNode.getUncachedToEspresso(componentType, meta).execute(value);
             } catch (UnsupportedMessageException e) {
                 throw EspressoError.shouldNotReachHere("readArrayElement on a non-array foreign object", e);
@@ -533,20 +502,18 @@ public final class JDWPContextImpl implements JDWPContext {
         Klass componentType = ((ArrayKlass) arrayRef.getKlass()).getComponentType();
         Meta meta = componentType.getMeta();
         if (arrayRef.isForeignObject()) {
-            Object unWrappedValue;
-            if (value instanceof StaticObject staticObject) {
-                unWrappedValue = staticObject.isForeignObject() ? staticObject.rawForeignObject(meta.getLanguage()) : staticObject;
-            } else {
-                unWrappedValue = value;
-            }
             try {
-                UNCACHED.writeArrayElement(arrayRef.rawForeignObject(arrayRef.getKlass().getLanguage()), index, unWrappedValue);
+                Object unWrappedValue = value;
+                if (value instanceof StaticObject staticObject) {
+                    unWrappedValue = staticObject.isForeignObject() ? staticObject.rawForeignObject(meta.getLanguage()) : staticObject;
+                }
+                InteropLibrary.getUncached().writeArrayElement(arrayRef.rawForeignObject(arrayRef.getKlass().getLanguage()), index, unWrappedValue);
             } catch (UnsupportedMessageException e) {
                 throw EspressoError.shouldNotReachHere("writeArrayElement on a non-array foreign object", e);
-            } catch (UnsupportedTypeException e) {
-                throw meta.throwExceptionWithMessage(meta.java_lang_ClassCastException, "%s cannot be cast to %s", value, componentType.getTypeAsString());
             } catch (InvalidArrayIndexException e) {
                 throw meta.throwExceptionWithMessage(meta.java_lang_ArrayIndexOutOfBoundsException, e.getMessage());
+            } catch (UnsupportedTypeException e) {
+                throw meta.throwExceptionWithMessage(meta.java_lang_ClassCastException, "%s cannot be cast to %s", value, componentType.getTypeAsString());
             }
         } else if (componentType.isPrimitive()) {
             // primitive array type needs wrapping
@@ -634,12 +601,24 @@ public final class JDWPContextImpl implements JDWPContext {
 
     @Override
     public void stopThread(Object guestThread, Object guestThrowable) {
-        context.getThreadAccess().stop((StaticObject) guestThread, (StaticObject) guestThrowable);
+        Object previous = null;
+        try {
+            previous = controller.enterTruffleContext();
+            context.getThreadAccess().stop((StaticObject) guestThread, (StaticObject) guestThrowable);
+        } finally {
+            controller.leaveTruffleContext(previous);
+        }
     }
 
     @Override
     public void interruptThread(Object thread) {
-        context.interruptThread((StaticObject) thread);
+        Object previous = null;
+        try {
+            previous = controller.enterTruffleContext();
+            context.interruptThread((StaticObject) thread);
+        } finally {
+            controller.leaveTruffleContext(previous);
+        }
     }
 
     @Override
@@ -649,7 +628,13 @@ public final class JDWPContextImpl implements JDWPContext {
 
     @Override
     public void exit(int exitCode) {
-        context.truffleExit(null, exitCode);
+        Object previous = null;
+        try {
+            previous = controller.enterTruffleContext();
+            context.truffleExit(null, exitCode);
+        } finally {
+            controller.leaveTruffleContext(previous);
+        }
     }
 
     @Override
@@ -673,21 +658,19 @@ public final class JDWPContextImpl implements JDWPContext {
     }
 
     @Override
-    public int getNextBCI(MethodRef method, Node rawNode, Frame frame) {
-        int bci = getBCI(rawNode, frame);
-        if (bci >= 0) {
-            BytecodeStream bs = new BytecodeStream(method.getOriginalCode());
-            int nextBci = bs.nextBCI(bci);
-            if (nextBci < bs.endBCI()) {
-                // Use the next only if it's in bounds.
-                bci = nextBci;
+    public int getNextBCI(RootNode callerRoot, Frame frame) {
+        if (callerRoot instanceof EspressoRootNode espressoRootNode) {
+            int bci = (int) readBCIFromFrame(callerRoot, frame);
+            if (bci >= 0) {
+                BytecodeStream bs = new BytecodeStream(espressoRootNode.getMethodVersion().getOriginalCode());
+                return bs.nextBCI(bci);
             }
         }
-        return bci;
+        return -1;
     }
 
     @Override
-    public int readBCIFromFrame(RootNode root, Frame frame) {
+    public long readBCIFromFrame(RootNode root, Frame frame) {
         if (root instanceof EspressoRootNode rootNode && frame != null) {
             return rootNode.readBCI(frame);
         }
@@ -813,7 +796,7 @@ public final class JDWPContextImpl implements JDWPContext {
         return null;
     }
 
-    public int getBCI(Node rawNode, Frame frame) {
+    public long getBCI(Node rawNode, Frame frame) {
         BciProvider bciProvider = getBciProviderNode(rawNode);
         if (bciProvider == null) {
             return -1;
@@ -849,23 +832,6 @@ public final class JDWPContextImpl implements JDWPContext {
     }
 
     public synchronized int redefineClasses(List<RedefineInfo> redefineInfos) {
-        try {
-            context.getClassRedefinition().redefineClasses(redefineInfos, true);
-            return 0;
-        } catch (RedefinitionException e) {
-            return e.getJDWPErrorCode();
-        }
-    }
-
-    @Override
-    public int getJavaFeatureVersion() {
-        return context.getJavaVersion().featureVersion();
-    }
-
-    @Override
-    public String getSystemProperty(String name) {
-        Meta meta = context.getMeta();
-        StaticObject guestString = (StaticObject) meta.java_lang_System_getProperty.invokeDirectStatic(meta.toGuestString(name));
-        return meta.toHostString(guestString);
+        return context.getClassRedefinition().redefineClasses(redefineInfos, false, true);
     }
 }

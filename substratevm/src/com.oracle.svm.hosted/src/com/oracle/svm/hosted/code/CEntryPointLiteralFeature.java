@@ -43,7 +43,6 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.hosted.FeatureImpl.CompilationAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
 import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -67,7 +66,7 @@ public class CEntryPointLiteralFeature implements InternalFeature {
                 ResolvedJavaMethod javaMethod = metaAccess.lookupJavaMethod(reflectionMethod);
                 if (javaMethod instanceof AnalysisMethod) {
                     AnalysisMethod aMethod = (AnalysisMethod) javaMethod;
-                    CEntryPoint annotation = AnnotationUtil.getAnnotation(aMethod, CEntryPoint.class);
+                    CEntryPoint annotation = aMethod.getAnnotation(CEntryPoint.class);
                     UserError.guarantee(annotation != null, "Method referenced by %s must be annotated with @%s: %s", CEntryPointLiteral.class.getSimpleName(),
                                     CEntryPoint.class.getSimpleName(), javaMethod);
                     CEntryPointCallStubSupport.singleton().registerStubForMethod(aMethod, () -> CEntryPointData.create(aMethod));

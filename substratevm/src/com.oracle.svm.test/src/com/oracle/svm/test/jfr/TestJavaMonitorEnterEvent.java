@@ -53,24 +53,25 @@ public class TestJavaMonitorEnterEvent extends JfrRecordingTest {
         String[] events = new String[]{JfrEvent.JavaMonitorEnter.getName()};
         Recording recording = startRecording(events);
 
-        firstThread = new Thread(() -> {
+        Runnable first = () -> {
             try {
                 helper.doWork();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        });
+        };
 
-        secondThread = new Thread(() -> {
+        Runnable second = () -> {
             try {
                 passedCheckpoint = true;
                 helper.doWork();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        });
+        };
+        firstThread = new Thread(first);
+        secondThread = new Thread(second);
 
-        /* Start the first thread so that it can then start the second thread. */
         firstThread.start();
 
         firstThread.join();
@@ -89,8 +90,6 @@ public class TestJavaMonitorEnterEvent extends JfrRecordingTest {
                 found = true;
                 break;
             }
-
-            checkTopStackFrame(event, "monitorEnter");
         }
         assertTrue("Expected monitor blocked event not found", found);
     }

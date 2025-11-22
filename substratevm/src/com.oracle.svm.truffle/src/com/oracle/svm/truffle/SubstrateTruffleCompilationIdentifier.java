@@ -30,8 +30,6 @@ import com.oracle.truffle.compiler.TruffleCompilationTask;
 
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.truffle.TruffleCompilationIdentifier;
-import jdk.graal.compiler.truffle.TruffleDebugJavaMethod;
-import jdk.vm.ci.meta.JavaMethod;
 
 public final class SubstrateTruffleCompilationIdentifier extends SubstrateCompilationIdentifier implements TruffleCompilationIdentifier {
 
@@ -82,10 +80,5 @@ public final class SubstrateTruffleCompilationIdentifier extends SubstrateCompil
     @Override
     public long getTruffleCompilationId() {
         return id;
-    }
-
-    @Override
-    public JavaMethod asJavaMethod() {
-        return new TruffleDebugJavaMethod(getTask(), getCompilable());
     }
 }

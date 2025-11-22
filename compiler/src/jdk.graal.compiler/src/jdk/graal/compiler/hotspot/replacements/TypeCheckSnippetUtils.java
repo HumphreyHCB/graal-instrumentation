@@ -59,6 +59,7 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.TypeCheckHints;
 import jdk.graal.compiler.replacements.SnippetCounter;
 import jdk.graal.compiler.replacements.SnippetCounter.Group;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.graal.compiler.word.Word;
 import jdk.vm.ci.hotspot.HotSpotResolvedObjectType;
 import jdk.vm.ci.meta.MetaAccessProvider;
@@ -90,12 +91,12 @@ public class TypeCheckSnippetUtils {
     }
 
     // @formatter:off
-    @SyncPort(from = "https://github.com/openjdk/jdk25u/blob/c59e44a7aa2aeff0823830b698d524523b996650/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L4243-L4461",
+    @SyncPort(from = "https://github.com/openjdk/jdk/blob/9a3f9997b68a1f64e53b9711b878fb073c3c9b90/src/hotspot/cpu/x86/macroAssembler_x86.cpp#L5017-L5235",
               sha1 = "10849f217123323ad73af5fe2aee2876a2943e1d")
     // @formatter:on
     static boolean checkSecondarySubType(KlassPointer t, KlassPointer s, boolean isTAlwaysAbstract, Counters counters) {
         // if (S.cache == T) return true
-        if (useSecondarySupersCache(INJECTED_VMCONFIG) &&
+        if ((JavaVersionUtil.JAVA_SPEC == 21 || (JavaVersionUtil.JAVA_SPEC >= 23 && useSecondarySupersCache(INJECTED_VMCONFIG))) &&
                         probability(FREQUENT_PROBABILITY, s.readKlassPointer(secondarySuperCacheOffset(INJECTED_VMCONFIG), SECONDARY_SUPER_CACHE_LOCATION).equal(t))) {
             counters.cacheHit.inc();
             return true;
@@ -107,7 +108,7 @@ public class TypeCheckSnippetUtils {
             return true;
         }
 
-        if (!useSecondarySupersTable(INJECTED_VMCONFIG)) {
+        if (JavaVersionUtil.JAVA_SPEC == 21 || (JavaVersionUtil.JAVA_SPEC >= 23 && !useSecondarySupersTable(INJECTED_VMCONFIG))) {
             Word secondarySupers = s.readWord(secondarySupersOffset(INJECTED_VMCONFIG), SECONDARY_SUPERS_LOCATION);
             int length = secondarySupers.readInt(metaspaceArrayLengthOffset(INJECTED_VMCONFIG), METASPACE_ARRAY_LENGTH_LOCATION);
             for (int i = 0; i < length; i++) {

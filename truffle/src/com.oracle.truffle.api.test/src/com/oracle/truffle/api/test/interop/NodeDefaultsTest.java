@@ -147,13 +147,13 @@ public class NodeDefaultsTest extends InteropLibraryBaseTest {
     static final class ProxyLanguageValue implements TruffleObject {
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage

@@ -143,17 +143,7 @@ public abstract sealed class PrimitiveTypeState extends TypeState permits Primit
     }
 
     @Override
-    public Iterator<Integer> typeIdsIterator() {
-        throw shouldNotReachHere();
-    }
-
-    @Override
     public boolean containsType(AnalysisType exactType) {
-        throw shouldNotReachHere();
-    }
-
-    @Override
-    public boolean containsType(int typeId) {
         throw shouldNotReachHere();
     }
 

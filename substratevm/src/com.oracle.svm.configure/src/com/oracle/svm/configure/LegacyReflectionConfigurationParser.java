@@ -32,8 +32,9 @@ import java.util.Optional;
 
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 
-import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
+import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
 import com.oracle.svm.util.TypeResult;
 
 final class LegacyReflectionConfigurationParser<C, T> extends ReflectionConfigurationParser<C, T> {
@@ -44,7 +45,7 @@ final class LegacyReflectionConfigurationParser<C, T> extends ReflectionConfigur
                     "allPublicClasses", "methods", "queriedMethods", "fields", CONDITIONAL_KEY,
                     "queryAllDeclaredConstructors", "queryAllPublicConstructors", "queryAllDeclaredMethods", "queryAllPublicMethods", "unsafeAllocated", "serializable");
 
-    LegacyReflectionConfigurationParser(AccessConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate, EnumSet<ConfigurationParserOption> parserOptions) {
+    LegacyReflectionConfigurationParser(ConfigurationConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate, EnumSet<ConfigurationParserOption> parserOptions) {
         super(conditionResolver, delegate, parserOptions);
     }
 
@@ -76,19 +77,18 @@ final class LegacyReflectionConfigurationParser<C, T> extends ReflectionConfigur
          */
         boolean isType = type.get().definedAsType();
 
-        UnresolvedAccessCondition unresolvedCondition = parseCondition(data, false);
+        UnresolvedConfigurationCondition unresolvedCondition = parseCondition(data, isType);
         TypeResult<C> conditionResult = conditionResolver.resolveCondition(unresolvedCondition);
         if (!conditionResult.isPresent()) {
             return;
         }
 
-        boolean jniParser = checkOption(ConfigurationParserOption.JNI_PARSER);
         /*
          * Even if primitives cannot be queried through Class.forName, they can be registered to
          * allow getDeclaredMethods() and similar bulk queries at run time.
          */
         C condition = conditionResult.get();
-        TypeResult<T> result = delegate.resolveType(condition, typeDescriptor, true, jniParser);
+        TypeResult<T> result = delegate.resolveType(condition, typeDescriptor, true);
         if (!result.isPresent()) {
             handleMissingElement("Could not resolve " + typeDescriptor + " for reflection configuration.", result.getException());
             return;
@@ -97,33 +97,30 @@ final class LegacyReflectionConfigurationParser<C, T> extends ReflectionConfigur
         C queryCondition = isType ? conditionResolver.alwaysTrue() : condition;
         T clazz = result.get();
         delegate.registerType(conditionResult.get(), clazz);
-        if (jniParser) {
-            delegate.registerAsJniAccessed(condition, clazz);
-        }
 
-        registerIfNotDefault(data, false, clazz, "allDeclaredConstructors", () -> delegate.registerDeclaredConstructors(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, false, clazz, "allPublicConstructors", () -> delegate.registerPublicConstructors(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, false, clazz, "allDeclaredMethods", () -> delegate.registerDeclaredMethods(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, false, clazz, "allPublicMethods", () -> delegate.registerPublicMethods(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, false, clazz, "allDeclaredFields", () -> delegate.registerDeclaredFields(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, false, clazz, "allPublicFields", () -> delegate.registerPublicFields(condition, false, jniParser, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allDeclaredClasses", () -> delegate.registerDeclaredClasses(queryCondition, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allRecordComponents", () -> delegate.registerRecordComponents(queryCondition, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allPermittedSubclasses", () -> delegate.registerPermittedSubclasses(queryCondition, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allNestMembers", () -> delegate.registerNestMembers(queryCondition, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allSigners", () -> delegate.registerSigners(queryCondition, clazz));
-        registerIfNotDefault(data, !jniParser && isType, clazz, "allPublicClasses", () -> delegate.registerPublicClasses(queryCondition, clazz));
-        registerIfNotDefault(data, isType, clazz, "queryAllDeclaredConstructors", () -> delegate.registerDeclaredConstructors(queryCondition, true, jniParser, clazz));
-        registerIfNotDefault(data, isType, clazz, "queryAllPublicConstructors", () -> delegate.registerPublicConstructors(queryCondition, true, jniParser, clazz));
-        registerIfNotDefault(data, isType, clazz, "queryAllDeclaredMethods", () -> delegate.registerDeclaredMethods(queryCondition, true, jniParser, clazz));
-        registerIfNotDefault(data, isType, clazz, "queryAllPublicMethods", () -> delegate.registerPublicMethods(queryCondition, true, jniParser, clazz));
+        registerIfNotDefault(data, false, clazz, "allDeclaredConstructors", () -> delegate.registerDeclaredConstructors(condition, false, clazz));
+        registerIfNotDefault(data, false, clazz, "allPublicConstructors", () -> delegate.registerPublicConstructors(condition, false, clazz));
+        registerIfNotDefault(data, false, clazz, "allDeclaredMethods", () -> delegate.registerDeclaredMethods(condition, false, clazz));
+        registerIfNotDefault(data, false, clazz, "allPublicMethods", () -> delegate.registerPublicMethods(condition, false, clazz));
+        registerIfNotDefault(data, false, clazz, "allDeclaredFields", () -> delegate.registerDeclaredFields(condition, false, clazz));
+        registerIfNotDefault(data, false, clazz, "allPublicFields", () -> delegate.registerPublicFields(condition, false, clazz));
+        registerIfNotDefault(data, isType, clazz, "allDeclaredClasses", () -> delegate.registerDeclaredClasses(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "allRecordComponents", () -> delegate.registerRecordComponents(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "allPermittedSubclasses", () -> delegate.registerPermittedSubclasses(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "allNestMembers", () -> delegate.registerNestMembers(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "allSigners", () -> delegate.registerSigners(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "allPublicClasses", () -> delegate.registerPublicClasses(queryCondition, clazz));
+        registerIfNotDefault(data, isType, clazz, "queryAllDeclaredConstructors", () -> delegate.registerDeclaredConstructors(queryCondition, true, clazz));
+        registerIfNotDefault(data, isType, clazz, "queryAllPublicConstructors", () -> delegate.registerPublicConstructors(queryCondition, true, clazz));
+        registerIfNotDefault(data, isType, clazz, "queryAllDeclaredMethods", () -> delegate.registerDeclaredMethods(queryCondition, true, clazz));
+        registerIfNotDefault(data, isType, clazz, "queryAllPublicMethods", () -> delegate.registerPublicMethods(queryCondition, true, clazz));
         if (isType) {
             /*
              * Fields cannot be registered as queried only by the user, we register them
              * unconditionally if the class is registered via "type".
              */
-            delegate.registerDeclaredFields(queryCondition, true, jniParser, clazz);
-            delegate.registerPublicFields(queryCondition, true, jniParser, clazz);
+            delegate.registerDeclaredFields(queryCondition, true, clazz);
+            delegate.registerPublicFields(queryCondition, true, clazz);
         }
         registerIfNotDefault(data, false, clazz, "unsafeAllocated", () -> delegate.registerUnsafeAllocated(condition, clazz));
         MapCursor<String, Object> cursor = data.getEntries();
@@ -133,13 +130,13 @@ final class LegacyReflectionConfigurationParser<C, T> extends ReflectionConfigur
             try {
                 switch (name) {
                     case "methods":
-                        parseMethods(condition, false, asList(value, "Attribute 'methods' must be an array of method descriptors"), clazz, jniParser);
+                        parseMethods(condition, false, asList(value, "Attribute 'methods' must be an array of method descriptors"), clazz);
                         break;
                     case "queriedMethods":
-                        parseMethods(condition, true, asList(value, "Attribute 'queriedMethods' must be an array of method descriptors"), clazz, jniParser);
+                        parseMethods(condition, true, asList(value, "Attribute 'queriedMethods' must be an array of method descriptors"), clazz);
                         break;
                     case "fields":
-                        parseFields(condition, asList(value, "Attribute 'fields' must be an array of field descriptors"), clazz, jniParser);
+                        parseFields(condition, asList(value, "Attribute 'fields' must be an array of field descriptors"), clazz);
                         break;
                 }
             } catch (LinkageError e) {

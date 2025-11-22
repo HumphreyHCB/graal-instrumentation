@@ -24,21 +24,17 @@ package com.oracle.truffle.espresso.jvmci.meta;
 
 import static com.oracle.truffle.espresso.jvmci.EspressoJVMCIRuntime.runtime;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.JavaKind;
-import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaType;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 public final class EspressoResolvedArrayType extends EspressoResolvedObjectType {
     private final EspressoResolvedJavaType elementalType;
@@ -119,7 +115,8 @@ public final class EspressoResolvedArrayType extends EspressoResolvedObjectType 
 
     @Override
     public boolean isAssignableFrom(ResolvedJavaType other) {
-        if (other instanceof EspressoResolvedArrayType otherArrayType) {
+        if (other instanceof EspressoResolvedArrayType) {
+            EspressoResolvedArrayType otherArrayType = (EspressoResolvedArrayType) other;
             if (otherArrayType.dimensions > dimensions) {
                 return elementalType.isAssignableFrom(otherArrayType);
             } else if (otherArrayType.dimensions == dimensions) {
@@ -218,16 +215,6 @@ public final class EspressoResolvedArrayType extends EspressoResolvedObjectType 
     }
 
     @Override
-    public boolean isHidden() {
-        return false;
-    }
-
-    @Override
-    public List<JavaType> getPermittedSubclasses() {
-        return null;
-    }
-
-    @Override
     public EspressoResolvedJavaType resolve(ResolvedJavaType accessingClass) {
         EspressoResolvedJavaType resolvedElementalType = getElementalType().resolve(accessingClass);
         if (resolvedElementalType.equals(elementalType)) {
@@ -284,17 +271,7 @@ public final class EspressoResolvedArrayType extends EspressoResolvedObjectType 
     }
 
     @Override
-    public ResolvedJavaType[] getDeclaredTypes() {
-        return new ResolvedJavaType[0];
-    }
-
-    @Override
     public ResolvedJavaType getEnclosingType() {
-        return null;
-    }
-
-    @Override
-    public ResolvedJavaMethod getEnclosingMethod() {
         return null;
     }
 
@@ -309,11 +286,6 @@ public final class EspressoResolvedArrayType extends EspressoResolvedObjectType 
     }
 
     @Override
-    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
-        return Collections.emptyList();
-    }
-
-    @Override
     public ResolvedJavaMethod getClassInitializer() {
         return null;
     }
@@ -324,28 +296,23 @@ public final class EspressoResolvedArrayType extends EspressoResolvedObjectType 
     }
 
     @Override
-    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return null;
     }
 
     @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
-        return null;
+    public Annotation[] getAnnotations() {
+        return NO_ANNOTATIONS;
+    }
+
+    @Override
+    public Annotation[] getDeclaredAnnotations() {
+        return NO_ANNOTATIONS;
     }
 
     @Override
     public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
         return getElementalType().lookupType(unresolvedJavaType, resolve);
-    }
-
-    @Override
-    public boolean isRecord() {
-        return false;
-    }
-
-    @Override
-    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
-        return null;
     }
 
     @Override

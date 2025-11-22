@@ -50,7 +50,7 @@ public abstract class AddPathToBindingsNode extends EspressoNode {
                     @Bind("getContext()") EspressoContext context,
                     @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedTypeException, ArityException {
         StaticObject guestPath = getGuestPath(args, context, lib);
-        context.getLazyCaches().getAddPathToBindingsCache().execute(guestPath, this);
+        context.getLazyCaches().getAddPathToBindingsCache().execute(guestPath);
     }
 
     @ExportLibrary(InteropLibrary.class)

@@ -44,6 +44,7 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -157,7 +158,7 @@ public abstract class ProxyInteropObject implements TruffleObject {
      * {@link ProxyLanguage} language.
      */
     @ExportMessage
-    protected boolean hasLanguageId() {
+    protected boolean hasLanguage() {
         return isScope(); // A scope must have a language associated
     }
 
@@ -167,9 +168,9 @@ public abstract class ProxyInteropObject implements TruffleObject {
      */
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected String getLanguageId() throws UnsupportedMessageException {
-        if (hasLanguageId()) {
-            return ProxyLanguage.ID;
+    protected Class<? extends TruffleLanguage<?>> getLanguage() throws UnsupportedMessageException {
+        if (hasLanguage()) {
+            return ProxyLanguage.class;
         } else {
             throw UnsupportedMessageException.create();
         }

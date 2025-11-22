@@ -28,8 +28,9 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import jdk.graal.compiler.bytecode.Bytecode;
 import jdk.graal.compiler.debug.DebugContext;
@@ -37,16 +38,15 @@ import jdk.graal.compiler.debug.DebugDumpHandler;
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.debug.DebugOptions.PrintGraphTarget;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.java.BciBlockMapping;
+import jdk.graal.compiler.java.BciBlockMapping.BciBlock;
+import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.graphio.GraphElements;
 import jdk.graal.compiler.graphio.GraphOutput;
 import jdk.graal.compiler.graphio.GraphOutput.Builder;
 import jdk.graal.compiler.graphio.GraphStructure;
 import jdk.graal.compiler.graphio.GraphTypes;
-import jdk.graal.compiler.java.BciBlockMapping;
-import jdk.graal.compiler.java.BciBlockMapping.BciBlock;
-import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.util.EconomicHashMap;
-import jdk.graal.compiler.util.EconomicHashSet;
+
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Signature;
@@ -68,7 +68,7 @@ public class BciBlockMappingDumpHandler implements DebugDumpHandler {
                 int id = nextId++;
                 Builder<BciBlockMapping, BciBlock, ResolvedJavaMethod> builder = GraphOutput.newBuilder(structure).elements(ELEMENTS).types(TYPES);
                 GraphOutput<BciBlockMapping, ResolvedJavaMethod> output = debug.buildOutput(builder);
-                Map<Object, Object> properties = new EconomicHashMap<>();
+                Map<Object, Object> properties = new HashMap<>();
                 properties.put("hasJsrBytecodes", ((BciBlockMapping) object).hasJsrBytecodes);
                 // ideally this should collaborate with the graph printer to open/close groups
                 output.print((BciBlockMapping) object, properties, id, format, arguments);
@@ -121,7 +121,7 @@ public class BciBlockMappingDumpHandler implements DebugDumpHandler {
             if (graph.getStartBlock() == null) {
                 return Collections.emptySet();
             }
-            Set<BciBlock> blocks = new EconomicHashSet<>();
+            HashSet<BciBlock> blocks = new HashSet<>();
             ArrayDeque<BciBlock> workStack = new ArrayDeque<>();
             workStack.push(graph.getStartBlock());
             while (!workStack.isEmpty()) {
@@ -161,7 +161,7 @@ public class BciBlockMappingDumpHandler implements DebugDumpHandler {
             int id = node.getId();
             if (id < 0) {
                 if (artificialIds == null) {
-                    artificialIds = new EconomicHashMap<>();
+                    artificialIds = new HashMap<>();
                 }
                 id = artificialIds.computeIfAbsent(node, b -> nextArtifcialId++);
             }

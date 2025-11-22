@@ -25,8 +25,11 @@ package com.oracle.truffle.espresso.impl;
 import java.lang.reflect.Modifier;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.espresso.classfile.ConstantPool;
 import com.oracle.truffle.espresso.classfile.JavaKind;
-import com.oracle.truffle.espresso.constantpool.RuntimeConstantPool;
+import com.oracle.truffle.espresso.classfile.descriptors.Name;
+import com.oracle.truffle.espresso.classfile.descriptors.Signature;
+import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.impl.ModuleTable.ModuleEntry;
 import com.oracle.truffle.espresso.impl.ObjectKlass.KlassVersion;
 import com.oracle.truffle.espresso.impl.PackageTable.PackageEntry;
@@ -71,7 +74,7 @@ public final class PrimitiveKlass extends Klass {
     }
 
     @Override
-    public RuntimeConstantPool getConstantPool() {
+    public ConstantPool getConstantPool() {
         return null;
     }
 
@@ -103,6 +106,11 @@ public final class PrimitiveKlass extends Klass {
     @Override
     public Method.MethodVersion[] getDeclaredMethodVersions() {
         return Method.EMPTY_VERSION_ARRAY;
+    }
+
+    @Override
+    public Method lookupMethod(Symbol<Name> methodName, Symbol<Signature> signature, LookupMode lookupMode) {
+        return null;
     }
 
     @Override

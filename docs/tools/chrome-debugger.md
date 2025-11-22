@@ -122,19 +122,13 @@ class DebuggerSample {
     }
 }
 ```
-When running on OpenJDK, the following Maven dependencies must be declared to use the Chrome Inspector tool with embedded code:
+When running on OpenJDK, the following Maven dependency must be declared to use the Chrome Inspector tool from an embedding:
 
 ```xml
-<dependency> 
-    <groupId>org.graalvm.polyglot</groupId> 
-    <artifactId>polyglot</artifactId> 
-    <version>${graalvm.polyglot.version}</version>
-</dependency>
 <dependency>
     <groupId>org.graalvm.tools</groupId>
     <artifactId>chromeinspector</artifactId>
-    <version>${graalvm.polyglot.version}</version>
+    <version>${graalvm.version}</version>
 </dependency>
 ```
-
 The Chrome Inspector tool is always available as a tool on GraalVM. No dependency needs to be explicitly declared there.

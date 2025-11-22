@@ -33,7 +33,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -43,10 +42,13 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.graalvm.nativeimage.ImageSingletons;
 
+import com.oracle.svm.webimage.fs.WebImageNIOFileSystemProvider;
+import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
+import com.oracle.svm.webimage.print.WebImageOutErrPrinters;
+import com.oracle.svm.webimage.print.WebImagePrintingProvider;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Inject;
@@ -54,11 +56,9 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
+import com.oracle.svm.core.jdk.JDK21OrEarlier;
+import com.oracle.svm.core.jdk.JDKLatest;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.webimage.fs.WebImageNIOFileSystemProvider;
-import com.oracle.svm.webimage.functionintrinsics.JSFunctionIntrinsics;
-import com.oracle.svm.webimage.print.WebImageOutErrPrinters;
-import com.oracle.svm.webimage.print.WebImagePrintingProvider;
 
 /*
  * Checkstyle: stop method name check
@@ -74,8 +74,8 @@ public class WebImageIOSubstitutions {
  * That code is never executed (unless we explicitly request that path normalization), but still
  * makes ICU4J reachable in the analysis.
  */
-@TargetClass(className = "org.graalvm.shadowed.com.google.common.jimfs.PathNormalization$4")
-final class Target_org_graalvm_shadowed_com_google_common_jimfs_PathNormalization_4 {
+@TargetClass(className = "com.google.common.jimfs.PathNormalization$4")
+final class Target_com_google_common_jimfs_PathNormalization_4 {
 
     @SuppressWarnings({"static-method", "unused"})
     @Substitute
@@ -84,8 +84,8 @@ final class Target_org_graalvm_shadowed_com_google_common_jimfs_PathNormalizatio
     }
 }
 
-@TargetClass(className = "org.graalvm.shadowed.com.google.common.jimfs.JimfsPath")
-final class Target_org_graalvm_shadowed_com_google_common_jimfs_JimfsPath {
+@TargetClass(className = "com.google.common.jimfs.JimfsPath")
+final class Target_com_google_common_jimfs_JimfsPath {
 
     @SuppressWarnings({"static-method", "unused"})
     @Substitute
@@ -175,6 +175,7 @@ final class Target_java_io_FileInputStream_Web {
     }
 
     @Substitute
+    @TargetElement(onlyWith = JDKLatest.class)
     @SuppressWarnings({"static-method"})
     private boolean isRegularFile() {
         return !fd.equals(FileDescriptor.in);
@@ -347,44 +348,20 @@ final class Target_java_nio_file_Files_Web {
 @TargetClass(java.io.RandomAccessFile.class)
 @SuppressWarnings("all")
 final class Target_java_io_RandomAccessFile_Web {
-    @Alias static int O_RDWR;
-    @Alias FileChannel channel;
 
     @Substitute
     private void open0(String name, int mode) throws FileNotFoundException {
-        Path path = Path.of(name);
-        if (Files.notExists(path)) {
-            throw new FileNotFoundException(name + " does not exist.");
-        }
-        if (Files.isDirectory(path)) {
-            throw new FileNotFoundException(name + " is a directory.");
-        }
-        if ((mode & O_RDWR) != 0) {
-            throw new UnsupportedOperationException("open RandomAccessFile with mode other than readonly.");
-        }
-
-        try {
-            Set<StandardOpenOption> options = Set.of(StandardOpenOption.READ);
-            channel = FileChannel.open(Path.of(name), options);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        throw new UnsupportedOperationException("RandomAccessFile.open0");
     }
 
     @Substitute
     private int read0() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(1);
-        int result = channel.read(buffer);
-        return buffer.get(0);
+        throw new UnsupportedOperationException("RandomAccessFile.read0");
     }
 
     @Substitute
-    private int readBytes0(byte[] b, int off, int len) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(len);
-        int read = channel.read(buf);
-        buf.flip();
-        buf.get(b, off, Math.min(read, len));
-        return read;
+    private int readBytes(byte[] b, int off, int len) throws IOException {
+        throw new UnsupportedOperationException("RandomAccessFile.readBytes");
     }
 
     @Substitute
@@ -399,17 +376,17 @@ final class Target_java_io_RandomAccessFile_Web {
 
     @Substitute
     public long getFilePointer() throws IOException {
-        return channel.position();
+        throw new UnsupportedOperationException("RandomAccessFile.getFilePointer");
     }
 
     @Substitute
     private void seek0(long pos) throws IOException {
-        channel.position(pos);
+        throw new UnsupportedOperationException("RandomAccessFile.seek0");
     }
 
     @Substitute
     public long length() throws IOException {
-        return channel.size();
+        throw new UnsupportedOperationException("RandomAccessFile.length");
     }
 
     @Substitute
@@ -419,7 +396,7 @@ final class Target_java_io_RandomAccessFile_Web {
 
     @Substitute
     private static void initIDs() {
-        // do nothing
+        throw new UnsupportedOperationException("RandomAccessFile.initIDs");
     }
 }
 
@@ -437,6 +414,13 @@ final class Target_sun_nio_ch_FileChannelImpl_Web {
     }
 
     @Substitute
+    @TargetElement(name = "open", onlyWith = JDK21OrEarlier.class)
+    public static FileChannel openJDK21(FileDescriptor fd, String path, boolean readable, boolean writable, boolean direct, Closeable parent) {
+        throw new UnsupportedOperationException("FileChannelImpl.open");
+    }
+
+    @Substitute
+    @TargetElement(onlyWith = JDKLatest.class)
     public static FileChannel open(FileDescriptor fd, String path, boolean readable, boolean writable, boolean sync, boolean direct, Closeable parent) {
         throw new UnsupportedOperationException("FileChannelImpl.open");
     }
@@ -446,14 +430,6 @@ final class Target_sun_nio_ch_FileChannelImpl_Web {
         throw new UnsupportedOperationException("FileChannelImpl.size");
     }
 
-}
-
-@TargetClass(className = "sun.nio.fs.DefaultFileSystemProvider")
-final class Target_sun_nio_fs_DefaultFileSystemProvider {
-    @Substitute
-    public static FileSystem theFileSystem() {
-        return WebImageNIOFileSystemProvider.INSTANCE.getFileSystem(null);
-    }
 }
 
 @TargetClass(className = "java.nio.file.TempFileHelper")

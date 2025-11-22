@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,17 +24,16 @@
  */
 package jdk.graal.compiler.core.test.ea;
 
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Test;
+import java.util.HashSet;
 
 import jdk.graal.compiler.api.directives.GraalDirectives;
 import jdk.graal.compiler.core.test.GraalCompilerTest;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.nodes.debug.BlackholeNode;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
-import jdk.graal.compiler.util.EconomicHashSet;
+import org.junit.Assert;
+import org.junit.Test;
+
 import jdk.vm.ci.code.InstalledCode;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -56,7 +55,7 @@ public class PartialEscapeAnalysisTreesTest extends EATestBase {
             this.right = right;
         }
 
-        public void visit(Set<TreeNode> instances) {
+        public void visit(HashSet<TreeNode> instances) {
             instances.add(this);
             if (left != null) {
                 left.visit(instances);
@@ -67,7 +66,7 @@ public class PartialEscapeAnalysisTreesTest extends EATestBase {
         }
 
         int countInstances() {
-            Set<TreeNode> instances = new EconomicHashSet<>();
+            HashSet<TreeNode> instances = new HashSet<>();
             visit(instances);
             return instances.size();
         }
@@ -108,11 +107,12 @@ public class PartialEscapeAnalysisTreesTest extends EATestBase {
      * Prepare a graph that includes some blackholes and then remove the blackholes and compile
      * normally to create an unusual situation for PEA.
      */
+    @SuppressWarnings("try")
     public void testGraph(String name) {
         ResolvedJavaMethod method = getResolvedJavaMethod(name);
 
         prepareGraph(name, true);
-        try (DebugContext.Scope _ = graph.getDebug().scope(getClass(), method, getCodeCache(), graph)) {
+        try (DebugContext.Scope s = graph.getDebug().scope(getClass(), method, getCodeCache(), graph)) {
             for (BlackholeNode node : graph.getNodes().filter(BlackholeNode.class)) {
                 graph.removeFixed(node);
             }

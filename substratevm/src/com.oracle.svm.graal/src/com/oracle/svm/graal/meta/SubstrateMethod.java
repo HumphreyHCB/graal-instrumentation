@@ -28,16 +28,15 @@ import static com.oracle.svm.core.util.VMError.intentionallyUnimplemented;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHere;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHereAtRuntime;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.function.Function;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
-import com.oracle.svm.core.BuildPhaseProvider.AfterCompilation;
 import com.oracle.svm.core.BuildPhaseProvider.AfterHeapLayout;
 import com.oracle.svm.core.BuildPhaseProvider.ReadyForCompilation;
 import com.oracle.svm.core.Uninterruptible;
@@ -51,11 +50,9 @@ import com.oracle.svm.core.graal.meta.SharedRuntimeMethod;
 import com.oracle.svm.core.graal.phases.SubstrateSafepointInsertionPhase;
 import com.oracle.svm.core.heap.UnknownObjectField;
 import com.oracle.svm.core.heap.UnknownPrimitiveField;
-import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.HostedStringDeduplication;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.core.common.util.TypeConversion;
@@ -70,7 +67,6 @@ import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
 import jdk.vm.ci.meta.TriState;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 public class SubstrateMethod implements SharedRuntimeMethod {
 
@@ -91,10 +87,8 @@ public class SubstrateMethod implements SharedRuntimeMethod {
     private final String name;
     private final int hashCode;
     private SubstrateType declaringClass;
-    private LocalVariableTable localVariableTable;
     @UnknownPrimitiveField(availability = ReadyForCompilation.class) private int encodedGraphStartOffset;
-    @UnknownPrimitiveField(availability = AfterCompilation.class) private int vTableIndex;
-    @UnknownObjectField(availability = AfterCompilation.class) private SubstrateMethod indirectCallTarget;
+    @UnknownPrimitiveField(availability = AfterHeapLayout.class) private int vTableIndex;
 
     /**
      * A metadata object describing the image code that contains the compiled code of this method.
@@ -125,14 +119,14 @@ public class SubstrateMethod implements SharedRuntimeMethod {
         imageCodeInfo = codeInfo;
         encodedLineNumberTable = EncodedLineNumberTable.encode(original.getLineNumberTable());
 
-        assert AnnotationUtil.getAnnotation(original, CEntryPoint.class) == null : "Can't compile entry point method";
+        assert original.getAnnotation(CEntryPoint.class) == null : "Can't compile entry point method";
 
         modifiers = original.getModifiers();
         name = stringTable.deduplicate(original.getName(), true);
 
         /*
          * AnalysisMethods of snippets are stored in a hash map of SubstrateReplacements. The
-         * GraalObjectReplacer replaces them with SubstrateMethods. Therefore, we have to preserve
+         * GraalObjectReplacer replaces them with SubstrateMethods. Therefore we have to preserve
          * the hashCode of the original AnalysisMethod. Note that this is only required because it
          * is a replaced object. For not replaced objects the hash code is preserved automatically
          * in a synthetic hash-code field (see NativeImageHeap.ObjectInfo.identityHashCode).
@@ -146,8 +140,8 @@ public class SubstrateMethod implements SharedRuntimeMethod {
                         makeFlag(Uninterruptible.Utils.isUninterruptible(original), FLAG_BIT_UNINTERRUPTIBLE) |
                         makeFlag(SubstrateSafepointInsertionPhase.needSafepointCheck(original), FLAG_BIT_NEEDS_SAFEPOINT_CHECK) |
                         makeFlag(original.isNativeEntryPoint(), FLAG_BIT_ENTRY_POINT) |
-                        makeFlag(AnnotationUtil.isAnnotationPresent(original, Snippet.class), FLAG_BIT_SNIPPET) |
-                        makeFlag(AnnotationUtil.isAnnotationPresent(original, SubstrateForeignCallTarget.class), FLAG_BIT_FOREIGN_CALL_TARGET) |
+                        makeFlag(original.isAnnotationPresent(Snippet.class), FLAG_BIT_SNIPPET) |
+                        makeFlag(original.isAnnotationPresent(SubstrateForeignCallTarget.class), FLAG_BIT_FOREIGN_CALL_TARGET) |
                         makeFlag(callingConventionKind.ordinal(), FLAG_BIT_CALLING_CONVENTION_KIND, NUM_BITS_CALLING_CONVENTION_KIND) |
                         makeFlag(StubCallingConvention.Utils.hasStubCallingConvention(original), FLAG_BIT_CALLEE_SAVED_REGISTERS);
     }
@@ -181,10 +175,9 @@ public class SubstrateMethod implements SharedRuntimeMethod {
         return hashCode;
     }
 
-    public void setLinks(SubstrateSignature signature, SubstrateType declaringClass, LocalVariableTable localVariableTable) {
+    public void setLinks(SubstrateSignature signature, SubstrateType declaringClass) {
         this.signature = signature;
         this.declaringClass = declaringClass;
-        this.localVariableTable = localVariableTable;
     }
 
     public void setImplementations(SubstrateMethod[] rawImplementations) {
@@ -202,12 +195,8 @@ public class SubstrateMethod implements SharedRuntimeMethod {
         return implementations;
     }
 
-    public void setSubstrateDataAfterCompilation(SubstrateMethod indirectCallTarget, int vTableIndex) {
-        this.indirectCallTarget = indirectCallTarget;
+    public void setSubstrateData(int vTableIndex, int imageCodeOffset, int imageCodeDeoptOffset) {
         this.vTableIndex = vTableIndex;
-    }
-
-    public void setSubstrateDataAfterHeapLayout(int imageCodeOffset, int imageCodeDeoptOffset) {
         this.imageCodeOffset = imageCodeOffset;
         this.imageCodeDeoptOffset = imageCodeDeoptOffset;
     }
@@ -314,11 +303,6 @@ public class SubstrateMethod implements SharedRuntimeMethod {
     }
 
     @Override
-    public SharedMethod getIndirectCallTarget() {
-        return indirectCallTarget;
-    }
-
-    @Override
     public Deoptimizer.StubType getDeoptStubType() {
         return Deoptimizer.StubType.NoDeoptStub;
     }
@@ -365,11 +349,6 @@ public class SubstrateMethod implements SharedRuntimeMethod {
     }
 
     @Override
-    public boolean isDeclared() {
-        throw shouldNotReachHereAtRuntime(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
     public boolean isClassInitializer() {
         assert !("<clinit>".equals(name) && isStatic()) : "class initializers are executed during native image generation and are never in the native image";
         return false;
@@ -383,7 +362,7 @@ public class SubstrateMethod implements SharedRuntimeMethod {
     @Override
     public boolean canBeStaticallyBound() {
         /*
-         * If the method has only a single implementation we have to return true. This lets a
+         * If the method has only a single implementation we have to return true. This let's a
          * virtual call be canonicalized to a special call. This is not just an optimization but a
          * requirement, because such methods don't get a vtable index assigned in the
          * UniverseBuilder.
@@ -417,18 +396,24 @@ public class SubstrateMethod implements SharedRuntimeMethod {
         throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
-    private RuntimeException annotationsUnimplemented() {
-        return VMError.unimplemented("Annotations are not available for JIT compilation at image run time: " + format("%H.%n(%p)"));
+    @Override
+    public Annotation[] getAnnotations() {
+        throw VMError.unimplemented("Annotations are not available for JIT compilation at image run time");
     }
 
     @Override
-    public <T> T getDeclaredAnnotationInfo(Function<AnnotationsInfo, T> parser) {
-        throw annotationsUnimplemented();
+    public Annotation[] getDeclaredAnnotations() {
+        throw VMError.unimplemented("Annotations are not available for JIT compilation at image run time");
     }
 
     @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
-        throw annotationsUnimplemented();
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        throw VMError.unimplemented("Annotations are not available for JIT compilation at image run time");
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
+        throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override
@@ -460,7 +445,7 @@ public class SubstrateMethod implements SharedRuntimeMethod {
 
     @Override
     public LocalVariableTable getLocalVariableTable() {
-        return localVariableTable;
+        return null;
     }
 
     @Override

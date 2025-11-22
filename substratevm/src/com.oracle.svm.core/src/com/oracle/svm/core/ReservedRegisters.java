@@ -45,14 +45,12 @@ public abstract class ReservedRegisters {
     protected final Register frameRegister;
     protected final Register threadRegister;
     protected final Register heapBaseRegister;
-    protected final Register codeBaseRegister;
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    protected ReservedRegisters(Register frameRegister, Register threadRegister, Register heapBaseRegister, Register codeBaseRegisterCandidate) {
+    protected ReservedRegisters(Register frameRegister, Register threadRegister, Register heapBaseRegister) {
         this.frameRegister = frameRegister;
         this.threadRegister = threadRegister;
         this.heapBaseRegister = heapBaseRegister;
-        this.codeBaseRegister = SubstrateOptions.useRelativeCodePointers() ? codeBaseRegisterCandidate : null;
     }
 
     /**
@@ -79,27 +77,21 @@ public abstract class ReservedRegisters {
     }
 
     /**
-     * Returns the register holding the code base address for method pointers, or {@code null} if no
-     * code base register is used.
-     */
-    public Register getCodeBaseRegister() {
-        return codeBaseRegister;
-    }
-
-    /**
      * Returns true if the provided value is a {@link RegisterValue} for a reserved register that is
      * allowed to be in a frame state, i.e., for a reserved register that can be handled by
      * deoptimization.
      */
     public boolean isAllowedInFrameState(JavaValue value) {
-        if (value instanceof RegisterValue rv) {
-            Register r = rv.getRegister();
-            return r.equals(threadRegister) || r.equals(heapBaseRegister) || r.equals(codeBaseRegister);
+        if (value instanceof RegisterValue) {
+            Register register = ((RegisterValue) value).getRegister();
+            if (register.equals(threadRegister) || register.equals(heapBaseRegister)) {
+                return true;
+            }
         }
         return false;
     }
 
-    public boolean isReservedRegister(Register r) {
-        return r.equals(frameRegister) || r.equals(heapBaseRegister) || r.equals(threadRegister) || r.equals(codeBaseRegister);
+    public boolean isReservedRegister(Register reg) {
+        return reg.equals(this.frameRegister) || reg.equals(this.heapBaseRegister) || reg.equals(this.threadRegister);
     }
 }

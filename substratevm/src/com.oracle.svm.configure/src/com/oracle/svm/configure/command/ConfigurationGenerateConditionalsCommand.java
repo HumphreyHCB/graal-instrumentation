@@ -29,7 +29,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import com.oracle.svm.configure.ConfigurationUsageException;
 import com.oracle.svm.configure.config.ConfigurationSet;
@@ -42,7 +44,6 @@ import com.oracle.svm.configure.filters.ComplexFilter;
 import com.oracle.svm.configure.filters.FilterConfigurationParser;
 import com.oracle.svm.configure.filters.HierarchyFilterNode;
 import com.oracle.svm.configure.ConfigurationFile;
-import org.graalvm.collections.EconomicSet;
 
 public final class ConfigurationGenerateConditionalsCommand extends ConfigurationCommand {
     @Override
@@ -52,10 +53,10 @@ public final class ConfigurationGenerateConditionalsCommand extends Configuratio
 
     @Override
     public void apply(Iterator<String> argumentsIterator) throws IOException {
-        EconomicSet<URI> configInputPaths = EconomicSet.create();
-        EconomicSet<URI> configOutputPaths = EconomicSet.create();
+        Set<URI> configInputPaths = new HashSet<>();
+        Set<URI> configOutputPaths = new HashSet<>();
         URI userCodeFilterUri = null;
-        EconomicSet<URI> classNameFiltersUri = EconomicSet.create();
+        Set<URI> classNameFiltersUri = new HashSet<>();
         while (argumentsIterator.hasNext()) {
             String argument = argumentsIterator.next();
             String[] optionValue = argument.split(OPTION_VALUE_SEP);

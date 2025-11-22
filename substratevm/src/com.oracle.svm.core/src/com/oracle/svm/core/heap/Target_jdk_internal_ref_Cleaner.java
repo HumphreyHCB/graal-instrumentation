@@ -24,11 +24,10 @@
  */
 package com.oracle.svm.core.heap;
 
-import static com.oracle.svm.core.NeverInline.CALLER_CATCHES_IMPLICIT_EXCEPTIONS;
-
 import java.lang.ref.Cleaner;
 import java.lang.ref.ReferenceQueue;
 
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import org.graalvm.nativeimage.hosted.FieldValueTransformer;
 
 import com.oracle.svm.core.NeverInline;
@@ -38,6 +37,8 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
+import com.oracle.svm.core.jdk.JDK21OrEarlier;
+import com.oracle.svm.core.jdk.JDKLatest;
 import com.oracle.svm.core.thread.VMThreads;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -71,20 +72,52 @@ final class Target_java_lang_ref_Cleaner {
 @TargetClass(className = "java.lang.ref.Cleaner$Cleanable")
 final class Target_java_lang_ref_Cleaner_Cleanable {
     @AnnotateOriginal
-    @NeverInline(CALLER_CATCHES_IMPLICIT_EXCEPTIONS)
+    @NeverInline("Ensure that every exception can be caught, including implicit exceptions.")
     native void clean();
 }
 
 @TargetClass(className = "jdk.internal.ref.CleanerImpl")
 final class Target_jdk_internal_ref_CleanerImpl {
 
+    @TargetElement(onlyWith = JDK21OrEarlier.class)//
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "jdk.internal.ref.CleanerImpl$PhantomCleanableRef")//
+    Target_jdk_internal_ref_PhantomCleanable_JDK21 phantomCleanableList;
+
+    @TargetElement(onlyWith = JDKLatest.class)//
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "jdk.internal.ref.CleanerImpl$CleanableList")//
     Target_jdk_internal_ref_CleanerImpl_CleanableList activeList;
 
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "java.lang.ref.ReferenceQueue")//
     public ReferenceQueue<Object> queue;
 
-    @TargetElement(name = "run")
+    /**
+     * This loop executes in a daemon thread and waits until there are no more cleanables (including
+     * the {@code Cleaner} itself), ignoring {@link InterruptedException}. This blocks VM tear-down,
+     * so we add a check if the VM is tearing down here.
+     */
+    @TargetElement(name = "run", onlyWith = JDK21OrEarlier.class)
+    @Substitute
+    public void runJDK21() {
+        Thread t = Thread.currentThread();
+        InnocuousThread mlThread = (t instanceof InnocuousThread) ? (InnocuousThread) t : null;
+        while (!phantomCleanableList.isListEmpty()) {
+            if (mlThread != null) {
+                mlThread.eraseThreadLocals();
+            }
+            try {
+                Cleaner.Cleanable ref = (Cleaner.Cleanable) queue.remove(60 * 1000L);
+                if (ref != null) {
+                    ref.clean();
+                }
+            } catch (Throwable e) {
+                if (VMThreads.isTearingDown()) {
+                    return;
+                }
+            }
+        }
+    }
+
+    @TargetElement(name = "run", onlyWith = JDKLatest.class)
     @Substitute
     public void run() {
         Thread t = Thread.currentThread();
@@ -107,7 +140,28 @@ final class Target_jdk_internal_ref_CleanerImpl {
     }
 }
 
-@TargetClass(className = "jdk.internal.ref.PhantomCleanable")
+@TargetClass(className = "jdk.internal.ref.PhantomCleanable", onlyWith = JDK21OrEarlier.class)
+final class Target_jdk_internal_ref_PhantomCleanable_JDK21 {
+    /*
+     * Unlink from the list for the image heap so that we cannot reach Cleanables irrelevant for the
+     * image heap which could fail the image build; we reset the list head anyway.
+     */
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = HolderObjectFieldTransformer.class) //
+    Target_jdk_internal_ref_PhantomCleanable_JDK21 prev;
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = HolderObjectFieldTransformer.class) //
+    Target_jdk_internal_ref_PhantomCleanable_JDK21 next;
+    @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = HolderObjectFieldTransformer.class) //
+    Target_jdk_internal_ref_PhantomCleanable_JDK21 list;
+
+    @Alias
+    native boolean isListEmpty();
+
+    @AnnotateOriginal
+    @NeverInline("Ensure that every exception can be caught, including implicit exceptions.")
+    /* final */ native void clean();
+}
+
+@TargetClass(className = "jdk.internal.ref.PhantomCleanable", onlyWith = JDKLatest.class)
 final class Target_jdk_internal_ref_PhantomCleanable {
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Custom, declClass = GetCleanableListSingletonTransformer.class) //
     Target_jdk_internal_ref_CleanerImpl_CleanableList list;
@@ -117,11 +171,11 @@ final class Target_jdk_internal_ref_PhantomCleanable {
     int index;
 
     @AnnotateOriginal
-    @NeverInline(CALLER_CATCHES_IMPLICIT_EXCEPTIONS)
+    @NeverInline("Ensure that every exception can be caught, including implicit exceptions.")
     /* final */ native void clean();
 }
 
-@TargetClass(className = "jdk.internal.ref.CleanerImpl$CleanableList")
+@TargetClass(className = "jdk.internal.ref.CleanerImpl$CleanableList", onlyWith = JDKLatest.class)
 final class Target_jdk_internal_ref_CleanerImpl_CleanableList {
 
     @Alias @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClassName = "jdk.internal.ref.CleanerImpl$CleanableList$Node") //
@@ -135,7 +189,7 @@ final class Target_jdk_internal_ref_CleanerImpl_CleanableList {
 
 }
 
-@TargetClass(className = "jdk.internal.ref.CleanerImpl$CleanableList$Node")
+@TargetClass(className = "jdk.internal.ref.CleanerImpl$CleanableList$Node", onlyWith = JDKLatest.class)
 final class Target_jdk_internal_ref_CleanerImpl_CleanableList_Node {
 }
 
@@ -147,7 +201,7 @@ final class HolderObjectFieldTransformer implements FieldValueTransformer {
 }
 
 final class Target_jdk_internal_ref_CleanerImpl_CleanableList_Singleton {
-    static final Object list = ReflectionUtil.newInstance(ReflectionUtil.lookupClass("jdk.internal.ref.CleanerImpl$CleanableList"));
+    static final Object list = JavaVersionUtil.JAVA_SPEC > 21 ? ReflectionUtil.newInstance(ReflectionUtil.lookupClass("jdk.internal.ref.CleanerImpl$CleanableList")) : null;
 }
 
 final class GetCleanableListSingletonTransformer implements FieldValueTransformer {

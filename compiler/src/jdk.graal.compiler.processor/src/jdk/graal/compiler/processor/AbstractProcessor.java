@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -86,7 +86,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
      */
     protected abstract boolean doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv);
 
-    private final Map<String, TypeElement> types = new LinkedHashMap<>();
+    private final Map<String, TypeElement> types = new HashMap<>();
 
     /**
      * Gets the {@link TypeMirror} for a given class name.

@@ -27,45 +27,36 @@ package com.oracle.svm.hosted.config;
 import static com.oracle.svm.core.MissingRegistrationUtils.throwMissingRegistrationErrors;
 
 import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.ReflectionRegistry;
-import org.graalvm.nativeimage.impl.RuntimeJNIAccessSupport;
-import org.graalvm.nativeimage.impl.RuntimeProxyRegistrySupport;
 import org.graalvm.nativeimage.impl.RuntimeReflectionSupport;
 import org.graalvm.nativeimage.impl.RuntimeSerializationSupport;
 
-import com.oracle.svm.configure.ClassNameSupport;
-import com.oracle.svm.configure.ConfigurationParser;
 import com.oracle.svm.configure.ConfigurationTypeDescriptor;
-import com.oracle.svm.configure.LambdaConfigurationTypeDescriptor;
 import com.oracle.svm.configure.NamedConfigurationTypeDescriptor;
 import com.oracle.svm.configure.ProxyConfigurationTypeDescriptor;
 import com.oracle.svm.configure.ReflectionConfigurationParserDelegate;
 import com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ImageClassLoader;
-import com.oracle.svm.hosted.lambda.LambdaParser;
+import com.oracle.svm.hosted.reflect.proxy.ProxyRegistry;
 import com.oracle.svm.util.ClassUtil;
 import com.oracle.svm.util.TypeResult;
 
-public class RegistryAdapter implements ReflectionConfigurationParserDelegate<AccessCondition, Class<?>> {
-    protected final ReflectionRegistry registry;
+public class RegistryAdapter implements ReflectionConfigurationParserDelegate<ConfigurationCondition, Class<?>> {
+    private final ReflectionRegistry registry;
     private final ImageClassLoader classLoader;
 
-    public static RegistryAdapter create(ReflectionRegistry registry, RuntimeProxyRegistrySupport proxyRegistry, RuntimeSerializationSupport<AccessCondition> serializationSupport,
-                    RuntimeJNIAccessSupport jniSupport, ImageClassLoader classLoader) {
+    public static RegistryAdapter create(ReflectionRegistry registry, ProxyRegistry proxyRegistry, RuntimeSerializationSupport<ConfigurationCondition> serializationSupport,
+                    ImageClassLoader classLoader) {
         if (registry instanceof RuntimeReflectionSupport) {
-            return new ReflectionRegistryAdapter((RuntimeReflectionSupport) registry, proxyRegistry, serializationSupport, jniSupport, classLoader);
-        } else if (registry instanceof RuntimeJNIAccessSupport) {
-            return new JNIRegistryAdapter(registry, classLoader);
+            return new ReflectionRegistryAdapter((RuntimeReflectionSupport) registry, proxyRegistry, serializationSupport, classLoader);
         } else {
             return new RegistryAdapter(registry, classLoader);
         }
@@ -77,30 +68,22 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
     }
 
     @Override
-    public void registerType(AccessCondition condition, Class<?> type) {
+    public void registerType(ConfigurationCondition condition, Class<?> type) {
         registry.register(condition, type);
     }
 
     @Override
-    public TypeResult<Class<?>> resolveType(AccessCondition condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives, boolean jniAccessible) {
-        return TypeResult.toSingleElement(resolveTypes(condition, typeDescriptor, allowPrimitives, jniAccessible));
-    }
-
-    @Override
-    public TypeResult<List<Class<?>>> resolveTypes(AccessCondition condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives, boolean jniAccessible) {
-        TypeResult<List<Class<?>>> result = resolveTypesInternal(typeDescriptor, allowPrimitives);
-        if (typeDescriptor.getDescriptorType() == ConfigurationTypeDescriptor.Kind.NAMED && !result.isPresent()) {
-            if (throwMissingRegistrationErrors() && result.getException() instanceof ClassNotFoundException) {
-                registry.registerClassLookup(condition, false, result.getName());
-            }
-        }
-        return result;
-    }
-
-    private TypeResult<Class<?>> resolveTypeInternal(ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives) {
+    public TypeResult<Class<?>> resolveType(ConfigurationCondition condition, ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives) {
         switch (typeDescriptor.getDescriptorType()) {
             case NAMED -> {
-                return resolveNamedType((NamedConfigurationTypeDescriptor) typeDescriptor, allowPrimitives);
+                NamedConfigurationTypeDescriptor namedDescriptor = (NamedConfigurationTypeDescriptor) typeDescriptor;
+                TypeResult<Class<?>> result = resolveNamedType(namedDescriptor, allowPrimitives);
+                if (!result.isPresent()) {
+                    if (throwMissingRegistrationErrors() && result.getException() instanceof ClassNotFoundException) {
+                        registry.registerClassLookup(condition, namedDescriptor.name());
+                    }
+                }
+                return result;
             }
             case PROXY -> {
                 return resolveProxyType((ProxyConfigurationTypeDescriptor) typeDescriptor);
@@ -111,16 +94,8 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
         }
     }
 
-    private TypeResult<List<Class<?>>> resolveTypesInternal(ConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives) {
-        if (Objects.requireNonNull(typeDescriptor.getDescriptorType()) == ConfigurationTypeDescriptor.Kind.LAMBDA) {
-            return resolveLambdaType((LambdaConfigurationTypeDescriptor) typeDescriptor);
-        }
-        return TypeResult.toList(resolveTypeInternal(typeDescriptor, allowPrimitives));
-    }
-
-    private TypeResult<Class<?>> resolveNamedType(NamedConfigurationTypeDescriptor namedDescriptor, boolean allowPrimitives) {
-        String reflectionName = ClassNameSupport.typeNameToReflectionName(namedDescriptor.name());
-        TypeResult<Class<?>> result = classLoader.findClass(reflectionName, allowPrimitives);
+    private TypeResult<Class<?>> resolveNamedType(NamedConfigurationTypeDescriptor typeDescriptor, boolean allowPrimitives) {
+        TypeResult<Class<?>> result = classLoader.findClass(typeDescriptor.name(), allowPrimitives);
         if (!result.isPresent() && result.getException() instanceof NoClassDefFoundError) {
             /*
              * In certain cases when the class name is identical to an existing class name except
@@ -128,9 +103,9 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
              * `Class.forName` throws a `ClassNotFoundException`.
              */
             try {
-                Class.forName(reflectionName);
+                Class.forName(typeDescriptor.name());
             } catch (ClassNotFoundException notFoundException) {
-                result = TypeResult.forException(reflectionName, notFoundException);
+                result = TypeResult.forException(typeDescriptor.name(), notFoundException);
             } catch (Throwable t) {
                 // ignore
             }
@@ -140,8 +115,7 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
 
     private TypeResult<Class<?>> resolveProxyType(ProxyConfigurationTypeDescriptor typeDescriptor) {
         String typeName = typeDescriptor.toString();
-        List<TypeResult<Class<?>>> interfaceResults = typeDescriptor.interfaceNames().stream()
-                        .map(interfaceTypeName -> resolveNamedType(NamedConfigurationTypeDescriptor.fromTypeName(interfaceTypeName), false)).toList();
+        List<TypeResult<Class<?>>> interfaceResults = typeDescriptor.interfaceNames().stream().map(name -> resolveNamedType(new NamedConfigurationTypeDescriptor(name), false)).toList();
         List<Class<?>> interfaces = new ArrayList<>();
         for (TypeResult<Class<?>> intf : interfaceResults) {
             if (!intf.isPresent()) {
@@ -158,157 +132,86 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
         }
     }
 
-    private TypeResult<List<Class<?>>> resolveLambdaType(LambdaConfigurationTypeDescriptor typeDescriptor) {
-        TypeResult<Class<?>> declaringClass = resolveTypeInternal(typeDescriptor.declaringClass(), false);
-        if (!declaringClass.isPresent()) {
-            return TypeResult.forException(typeDescriptor.toString(), declaringClass.getException());
-        }
-        TypeResult<Method> declaringMethod = null;
-        if (typeDescriptor.declaringMethod() != null) {
-            declaringMethod = resolveMethod(declaringClass.get(), typeDescriptor.declaringMethod());
-            if (!declaringMethod.isPresent()) {
-                return TypeResult.forException(typeDescriptor.toString(), declaringMethod.getException());
-            }
-        }
-        List<Class<?>> implementedInterfaces = new ArrayList<>();
-        for (NamedConfigurationTypeDescriptor interfaceDescriptor : typeDescriptor.interfaces()) {
-            TypeResult<Class<?>> intf = resolveNamedType(interfaceDescriptor, false);
-            if (!intf.isPresent()) {
-                return TypeResult.forException(typeDescriptor.toString(), intf.getException());
-            }
-            implementedInterfaces.add(intf.get());
-        }
-
-        List<Class<?>> lambdaClasses;
-        try {
-            if (declaringMethod == null) {
-                lambdaClasses = LambdaParser.getLambdaClassesInClass(declaringClass.get(), implementedInterfaces);
-            } else {
-                lambdaClasses = LambdaParser.getLambdaClassesInMethod(declaringMethod.get(), implementedInterfaces);
-            }
-            return !lambdaClasses.isEmpty() ? TypeResult.forType(typeDescriptor.toString(), lambdaClasses)
-                            : exceptionResult(typeDescriptor, declaringClass, declaringMethod, implementedInterfaces, null);
-        } catch (Throwable t) {
-            return exceptionResult(typeDescriptor, declaringClass, declaringMethod, implementedInterfaces, t);
-        }
-    }
-
-    private static TypeResult<List<Class<?>>> exceptionResult(ConfigurationTypeDescriptor typeDescriptor, TypeResult<Class<?>> declaringClass, TypeResult<Method> declaringMethod,
-                    List<Class<?>> implementedInterfaces, Throwable cause) {
-        NoClassDefFoundError error = new NoClassDefFoundError(
-                        "No lambda class found in " + (declaringMethod != null ? declaringMethod.get() : declaringClass.get()) + " implementing " + implementedInterfaces);
-        if (cause != null) {
-            error.initCause(cause);
-        }
-        return TypeResult.forException(typeDescriptor.toString(), error);
-    }
-
-    private TypeResult<Method> resolveMethod(Class<?> declaringClass, ConfigurationParser.ConfigurationMethodDescriptor methodDescriptor) {
-        String name = methodDescriptor.name();
-        List<Class<?>> parameterTypes = new ArrayList<>();
-        for (NamedConfigurationTypeDescriptor parameterType : methodDescriptor.parameterTypes()) {
-            TypeResult<Class<?>> resolvedParameterType = resolveNamedType(parameterType, true);
-            if (!resolvedParameterType.isPresent()) {
-                return TypeResult.forException(resolvedParameterType.getName(), resolvedParameterType.getException());
-            }
-            parameterTypes.add(resolvedParameterType.get());
-        }
-        try {
-            return TypeResult.forType(methodDescriptor.toString(), declaringClass.getDeclaredMethod(name, parameterTypes.toArray(Class<?>[]::new)));
-        } catch (NoSuchMethodException e) {
-            return TypeResult.forException(methodDescriptor.toString(), e);
-        }
+    @Override
+    public void registerPublicClasses(ConfigurationCondition condition, Class<?> type) {
+        registry.register(condition, type.getClasses());
     }
 
     @Override
-    public void registerPublicClasses(AccessCondition condition, Class<?> type) {
+    public void registerDeclaredClasses(ConfigurationCondition condition, Class<?> type) {
+        registry.register(condition, type.getDeclaredClasses());
     }
 
     @Override
-    public void registerDeclaredClasses(AccessCondition condition, Class<?> type) {
+    public void registerRecordComponents(ConfigurationCondition condition, Class<?> type) {
     }
 
     @Override
-    public void registerRecordComponents(AccessCondition condition, Class<?> type) {
+    public void registerPermittedSubclasses(ConfigurationCondition condition, Class<?> type) {
     }
 
     @Override
-    public void registerPermittedSubclasses(AccessCondition condition, Class<?> type) {
+    public void registerNestMembers(ConfigurationCondition condition, Class<?> type) {
     }
 
     @Override
-    public void registerNestMembers(AccessCondition condition, Class<?> type) {
+    public void registerSigners(ConfigurationCondition condition, Class<?> type) {
     }
 
     @Override
-    public void registerSigners(AccessCondition condition, Class<?> type) {
-    }
-
-    @Override
-    public void registerPublicFields(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
+    public void registerPublicFields(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
         if (!queriedOnly) {
-            registry.register(condition, false, false, type.getFields());
+            registry.register(condition, false, type.getFields());
         }
     }
 
     @Override
-    public void registerDeclaredFields(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
+    public void registerDeclaredFields(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
         if (!queriedOnly) {
-            registry.register(condition, false, false, type.getDeclaredFields());
+            registry.register(condition, false, type.getDeclaredFields());
         }
     }
 
     @Override
-    public void registerPublicMethods(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
-        registry.register(condition, queriedOnly, false, type.getMethods());
+    public void registerPublicMethods(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
+        registry.register(condition, queriedOnly, type.getMethods());
     }
 
     @Override
-    public void registerDeclaredMethods(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
-        registry.register(condition, queriedOnly, false, type.getDeclaredMethods());
+    public void registerDeclaredMethods(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
+        registry.register(condition, queriedOnly, type.getDeclaredMethods());
     }
 
     @Override
-    public void registerPublicConstructors(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
-        registry.register(condition, queriedOnly, false, type.getConstructors());
+    public void registerPublicConstructors(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
+        registry.register(condition, queriedOnly, type.getConstructors());
     }
 
     @Override
-    public void registerDeclaredConstructors(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
-        registry.register(condition, queriedOnly, false, type.getDeclaredConstructors());
+    public void registerDeclaredConstructors(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
+        registry.register(condition, queriedOnly, type.getDeclaredConstructors());
     }
 
     @Override
-    @SuppressWarnings("unused")
-    public final void registerField(AccessCondition condition, Class<?> type, String fieldName, boolean allowWrite, boolean jniAccessible) throws NoSuchFieldException {
+    public void registerField(ConfigurationCondition condition, Class<?> type, String fieldName, boolean allowWrite) throws NoSuchFieldException {
         try {
-            registerField(condition, allowWrite, jniAccessible, type.getDeclaredField(fieldName));
+            registry.register(condition, allowWrite, type.getDeclaredField(fieldName));
         } catch (NoSuchFieldException e) {
             if (throwMissingRegistrationErrors()) {
-                registerFieldNegativeQuery(condition, jniAccessible, type, fieldName);
+                registry.registerFieldLookup(condition, type, fieldName);
             } else {
                 throw e;
             }
         }
     }
 
-    @SuppressWarnings("unused")
-    protected void registerField(AccessCondition condition, boolean allowWrite, boolean jniAccessible, Field field) {
-        registry.register(condition, allowWrite, false, field);
-    }
-
-    @SuppressWarnings("unused")
-    protected void registerFieldNegativeQuery(AccessCondition condition, boolean jniAccessible, Class<?> type, String fieldName) {
-        registry.registerFieldLookup(condition, false, type, fieldName);
-    }
-
     @Override
-    public boolean registerAllMethodsWithName(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type, String methodName) {
+    public boolean registerAllMethodsWithName(ConfigurationCondition condition, boolean queriedOnly, Class<?> type, String methodName) {
         boolean found = false;
         Executable[] methods = type.getDeclaredMethods();
         for (Executable method : methods) {
             if (method.getName().equals(methodName)) {
-                registerExecutable(condition, queriedOnly, jniAccessible, method);
+                registerExecutable(condition, queriedOnly, method);
                 found = true;
             }
         }
@@ -316,16 +219,16 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
     }
 
     @Override
-    public boolean registerAllConstructors(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Class<?> type) {
+    public boolean registerAllConstructors(ConfigurationCondition condition, boolean queriedOnly, Class<?> type) {
         Executable[] methods = type.getDeclaredConstructors();
-        registerExecutable(condition, queriedOnly, jniAccessible, methods);
+        registerExecutable(condition, queriedOnly, methods);
         return methods.length > 0;
     }
 
     @Override
-    public void registerUnsafeAllocated(AccessCondition condition, Class<?> clazz) {
+    public void registerUnsafeAllocated(ConfigurationCondition condition, Class<?> clazz) {
         if (!clazz.isArray() && !clazz.isInterface() && !Modifier.isAbstract(clazz.getModifiers())) {
-            ImageSingletons.lookup(RuntimeReflectionSupport.class).registerUnsafeAllocation(condition, false, clazz);
+            registry.register(condition, true, clazz);
             /*
              * Ignore otherwise as the implementation of allocateInstance will anyhow throw an
              * exception.
@@ -334,8 +237,7 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
     }
 
     @Override
-    public final void registerMethod(AccessCondition condition, boolean queriedOnly, Class<?> type, String methodName, List<Class<?>> methodParameterTypes, boolean jniAccessible)
-                    throws NoSuchMethodException {
+    public void registerMethod(ConfigurationCondition condition, boolean queriedOnly, Class<?> type, String methodName, List<Class<?>> methodParameterTypes) throws NoSuchMethodException {
         try {
             Class<?>[] parameterTypesArray = getParameterTypes(methodParameterTypes);
             Method method;
@@ -357,10 +259,10 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
                     throw e;
                 }
             }
-            registerExecutable(condition, queriedOnly, jniAccessible, method);
+            registerExecutable(condition, queriedOnly, method);
         } catch (NoSuchMethodException e) {
             if (throwMissingRegistrationErrors()) {
-                registerMethodNegativeQuery(condition, jniAccessible, type, methodName, methodParameterTypes);
+                registry.registerMethodLookup(condition, type, methodName, getParameterTypes(methodParameterTypes));
             } else {
                 throw e;
             }
@@ -368,14 +270,13 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
     }
 
     @Override
-    public final void registerConstructor(AccessCondition condition, boolean queriedOnly, Class<?> type, List<Class<?>> methodParameterTypes, boolean jniAccessible)
-                    throws NoSuchMethodException {
+    public void registerConstructor(ConfigurationCondition condition, boolean queriedOnly, Class<?> type, List<Class<?>> methodParameterTypes) throws NoSuchMethodException {
         Class<?>[] parameterTypesArray = getParameterTypes(methodParameterTypes);
         try {
-            registerExecutable(condition, queriedOnly, jniAccessible, type.getDeclaredConstructor(parameterTypesArray));
+            registerExecutable(condition, queriedOnly, type.getDeclaredConstructor(parameterTypesArray));
         } catch (NoSuchMethodException e) {
             if (throwMissingRegistrationErrors()) {
-                registerConstructorNegativeQuery(condition, jniAccessible, type, methodParameterTypes);
+                registry.registerConstructorLookup(condition, type, getParameterTypes(methodParameterTypes));
             } else {
                 throw e;
             }
@@ -386,27 +287,13 @@ public class RegistryAdapter implements ReflectionConfigurationParserDelegate<Ac
         return methodParameterTypes.toArray(Class<?>[]::new);
     }
 
-    @SuppressWarnings("unused")
-    protected void registerExecutable(AccessCondition condition, boolean queriedOnly, boolean jniAccessible, Executable... executable) {
-        registry.register(condition, queriedOnly, false, executable);
-    }
-
-    @SuppressWarnings("unused")
-    protected void registerMethodNegativeQuery(AccessCondition condition, boolean jniAccessible, Class<?> type, String methodName, List<Class<?>> methodParameterTypes) {
-        registry.registerMethodLookup(condition, false, type, methodName, getParameterTypes(methodParameterTypes));
-    }
-
-    @SuppressWarnings("unused")
-    protected void registerConstructorNegativeQuery(AccessCondition condition, boolean jniAccessible, Class<?> type, List<Class<?>> constructorParameterTypes) {
-        registry.registerConstructorLookup(condition, false, type, getParameterTypes(constructorParameterTypes));
+    private void registerExecutable(ConfigurationCondition condition, boolean queriedOnly, Executable... executable) {
+        registry.register(condition, queriedOnly, executable);
     }
 
     @Override
-    public void registerAsSerializable(AccessCondition condition, Class<?> clazz) {
-    }
-
-    @Override
-    public void registerAsJniAccessed(AccessCondition condition, Class<?> clazz) {
+    public void registerAsSerializable(ConfigurationCondition condition, Class<?> clazz) {
+        /* Serializable has no effect on JNI registrations */
     }
 
     @Override

@@ -128,13 +128,13 @@ public class RetainedSizeContextBoundaryTest extends AbstractPolyglotTest {
 
         @SuppressWarnings("static-method")
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return LanguageWithScope.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return LanguageWithScope.class;
         }
 
         @ExportMessage

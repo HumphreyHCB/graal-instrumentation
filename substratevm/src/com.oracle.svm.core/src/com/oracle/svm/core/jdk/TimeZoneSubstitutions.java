@@ -31,6 +31,7 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.TimeZone;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platforms;
@@ -47,20 +48,12 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.handles.PrimitiveArrayView;
-import com.oracle.svm.core.headers.LibC;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
+import com.oracle.svm.core.memory.UntrackedNullableNativeMemory;
 import com.oracle.svm.core.option.HostedOptionKey;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.BuiltinTraits.RuntimeAccessOnly;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Disallowed;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
-import jdk.graal.compiler.word.Word;
 
 /**
  * The following classes aim to provide full support for time zones for native-image. This
@@ -108,7 +101,7 @@ final class Target_java_util_TimeZone {
             CCharPointer tzId = LibCHelper.SVM_FindJavaTZmd(tzMappingsPtr, contentLen);
             String result = CTypeConversion.toJavaString(tzId);
             // SVM_FindJavaTZmd returns a newly allocated string
-            LibC.free(tzId);
+            UntrackedNullableNativeMemory.free(tzId);
             return result;
         } finally {
             if (refContent != null) {
@@ -121,7 +114,6 @@ final class Target_java_util_TimeZone {
 /**
  * Holds time zone mapping data.
  */
-@SingletonTraits(access = RuntimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Disallowed.class)
 final class TimeZoneSupport {
     final byte[] tzMappingsContent;
 
@@ -138,7 +130,6 @@ final class TimeZoneSupport {
  * Reads time zone mappings data and stores in the image heap, if necessary.
  */
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 final class TimeZoneFeature implements InternalFeature {
     static class Options {
         @Option(help = "When true, all time zones will be pre-initialized in the image.")//
@@ -163,11 +154,6 @@ final class TimeZoneFeature implements InternalFeature {
             System.err.println("-H:IncludeAllTimeZones and -H:IncludeTimeZones are now deprecated. Native-image includes all timezones" +
                             " by default.");
         }
-    }
-
-    @Override
-    public boolean isInConfiguration(IsInConfigurationAccess access) {
-        return ImageLayerBuildingSupport.lastImageBuild();
     }
 
     private static byte[] cleanCR(byte[] buffer) {

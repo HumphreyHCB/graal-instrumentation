@@ -1,6 +1,7 @@
-# /vm-enterprise,/substratevm-enterprise,/truffle-enterprise,/sulong,/tools-enterprise,/regex with EE components, with libgraal, doesn't build native standalone
-DYNAMIC_IMPORTS=/vm-enterprise,/substratevm-enterprise,/truffle-enterprise,/sulong,/tools-enterprise,/regex
-COMPONENTS=cmp,cmpee,gvm,lg,ni,nic,niee,nil,sdkni,svm,svmjdwp,svmt,svmee,svmte,svmsl,tflc,tflsm
+# mx --dynamicimports=/vm-enterprise,/substratevm-enterprise,/tools-enterprise --components="Espresso Launcher,LibGraal Enterprise,SubstrateVM Enterprise,Java on Truffle LLVM Java libraries,suite:tools,suite:tools-enterprise" --native-images=lib:jvmcicompiler --disable-installables=true graalvm-show
+
+DYNAMIC_IMPORTS=/vm-enterprise,/substratevm-enterprise,/tools-enterprise,/regex
+COMPONENTS=Espresso Launcher,LibGraal Enterprise,SubstrateVM Enterprise,Java on Truffle LLVM Java libraries,suite:tools,suite:tools-enterprise,tflm,rgx
 NATIVE_IMAGES=lib:jvmcicompiler
-NON_REBUILDABLE_IMAGES=lib:jvmcicompiler
-JVM_STANDALONE_WITH_LLVM=true
+DISABLE_INSTALLABLES=true
+EXCLUDE_COMPONENTS=hprf

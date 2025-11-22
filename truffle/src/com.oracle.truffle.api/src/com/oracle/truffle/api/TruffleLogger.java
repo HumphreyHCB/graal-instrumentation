@@ -948,6 +948,7 @@ public final class TruffleLogger {
         private final LoggerNode root;
         private final Set<ContextWeakReference> activeContexts;
         private Map<String, Level> effectiveLevels;
+        private volatile Set<String> knownIds;
 
         LoggerCache(Object loggerCacheSpi) {
             Objects.requireNonNull(loggerCacheSpi);
@@ -1046,11 +1047,24 @@ public final class TruffleLogger {
         }
 
         private TruffleLogger getOrCreateLogger(final String id, final String loggerName) {
-            if (!LanguageAccessor.ENGINE.isKnownLoggerId(loggerCache, id)) {
-                throw new IllegalArgumentException("Unknown language or instrument id " + id + ", known ids: " + String.join(", ", LanguageAccessor.ENGINE.getKnownLoggerIds(loggerCache)));
+            Set<String> ids = getKnownIds();
+            if (!ids.contains(id)) {
+                throw new IllegalArgumentException("Unknown language or instrument id " + id + ", known ids: " + String.join(", ", ids));
             }
             final String globalLoggerId = loggerName == null || loggerName.isEmpty() ? id : id + '.' + loggerName;
             return getOrCreateLogger(globalLoggerId);
+        }
+
+        private Set<String> getKnownIds() {
+            Set<String> result = knownIds;
+            if (result == null) {
+                result = new HashSet<>();
+                result.addAll(LanguageAccessor.engineAccess().getInternalIds());
+                result.addAll(LanguageAccessor.engineAccess().getLanguageIds());
+                result.addAll(LanguageAccessor.engineAccess().getInstrumentIds());
+                knownIds = result;
+            }
+            return result;
         }
 
         Object getSPI() {

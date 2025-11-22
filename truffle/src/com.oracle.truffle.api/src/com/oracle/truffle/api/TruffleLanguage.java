@@ -1507,7 +1507,7 @@ public abstract class TruffleLanguage<C> {
      * this is the behavior of the object type that is being mapped to.
      * <p>
      * Every language view wrapper must return the current language as their associated
-     * {@link com.oracle.truffle.api.interop.InteropLibrary#getLanguageId(Object) language}. An
+     * {@link com.oracle.truffle.api.interop.InteropLibrary#getLanguage(Object) language}. An
      * {@link AssertionError} is thrown when a language view is requested if this contract is
      * violated.
      * <p>
@@ -1545,13 +1545,13 @@ public abstract class TruffleLanguage<C> {
      *     }
      *
      *     &#64;ExportMessage
-     *     boolean hasLanguageId() {
+     *     boolean hasLanguage() {
      *         return true;
      *     }
      *
      *     &#64;ExportMessage
-     *     String getLanguageId() {
-     *         return MyLanguage.ID;
+     *     Class&lt;? extends TruffleLanguage&lt;?&gt;&gt; getLanguage() {
+     *         return MyLanguage.class;
      *     }
      *
      *     &#64;ExportMessage
@@ -2016,8 +2016,8 @@ public abstract class TruffleLanguage<C> {
          * {@link TruffleLanguage#initializeThread(Object, Thread) languages} or instruments'
          * thread-listeners. Creating a system thread does not cause a transition to multi-threaded
          * access. The {@link Env#isCreateThreadAllowed() creation permit} is not required to create
-         * a system thread. The caller must be either entered in a context, or in another system
-         * thread to create a new system thread. If not an {@link IllegalStateException} is thrown.
+         * a system thread, but the caller must be entered in a context to create a system thread,
+         * if not an {@link IllegalStateException} is thrown.
          * <p>
          * It is recommended to set an
          * {@link Thread#setUncaughtExceptionHandler(java.lang.Thread.UncaughtExceptionHandler)
@@ -2284,10 +2284,9 @@ public abstract class TruffleLanguage<C> {
          * @param hostObject the host object to convert
          * @since 19.0
          */
-        @SuppressWarnings("static-method")
         public Object asGuestValue(Object hostObject) {
             try {
-                return LanguageAccessor.engineAccess().toGuestValue(null, hostObject);
+                return LanguageAccessor.engineAccess().toGuestValue(null, hostObject, polyglotLanguageContext);
             } catch (Throwable t) {
                 throw engineToLanguageException(t);
             }
@@ -3999,7 +3998,7 @@ public abstract class TruffleLanguage<C> {
         }
 
         boolean isInitialized() {
-            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
                 boolean localInitialized = initialized;
                 if (initializedUnchangedAssumption.isValid()) {
                     return localInitialized;
@@ -4022,7 +4021,7 @@ public abstract class TruffleLanguage<C> {
         }
 
         Object getLanguageContext() {
-            if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(this)) {
+            if (CompilerDirectives.isPartialEvaluationConstant(this)) {
                 Object languageContext = this.context;
                 if (contextUnchangedAssumption.isValid()) {
                     return languageContext;

@@ -26,7 +26,8 @@ package org.graalvm.igvutil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 
 import jdk.graal.compiler.graphio.parsing.LocationStackFrame;
@@ -40,8 +41,6 @@ import jdk.graal.compiler.graphio.parsing.model.InputNode;
 import jdk.graal.compiler.graphio.parsing.model.KnownPropertyNames;
 import jdk.graal.compiler.graphio.parsing.model.Properties;
 import jdk.graal.compiler.graphio.parsing.model.Property;
-import jdk.graal.compiler.util.EconomicHashMap;
-import jdk.graal.compiler.util.EconomicHashSet;
 import jdk.graal.compiler.util.json.JsonBuilder;
 
 /**
@@ -61,9 +60,9 @@ public class JsonExporter {
         this.documentPropertyFilter = documentPropertyFilter;
     }
 
-    protected static Map<String, ArrayList<String>> stacktrace(LocationStackFrame lsf) {
-        Map<String, ArrayList<String>> langStack = new EconomicHashMap<>();
-        Set<LocationStratum> memo = new EconomicHashSet<>();
+    protected static HashMap<String, ArrayList<String>> stacktrace(LocationStackFrame lsf) {
+        HashMap<String, ArrayList<String>> langStack = new HashMap<>();
+        HashSet<LocationStratum> memo = new HashSet<>();
 
         for (LocationStackFrame t = lsf; t != null; t = t.getParent()) {
             for (LocationStratum s : t.getStrata()) {

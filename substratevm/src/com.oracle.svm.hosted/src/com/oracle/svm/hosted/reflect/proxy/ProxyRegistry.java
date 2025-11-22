@@ -27,20 +27,14 @@ package com.oracle.svm.hosted.reflect.proxy;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
-import org.graalvm.nativeimage.impl.RuntimeProxyRegistrySupport;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 import com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.ConditionalConfigurationRegistry;
 import com.oracle.svm.hosted.ImageClassLoader;
 import com.oracle.svm.util.LogUtils;
 
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
-public class ProxyRegistry extends ConditionalConfigurationRegistry implements RuntimeProxyRegistrySupport, BiConsumer<AccessCondition, List<String>> {
+public class ProxyRegistry extends ConditionalConfigurationRegistry implements BiConsumer<ConfigurationCondition, List<String>> {
     private final DynamicProxyRegistry dynamicProxySupport;
     private final ImageClassLoader imageClassLoader;
 
@@ -50,23 +44,13 @@ public class ProxyRegistry extends ConditionalConfigurationRegistry implements R
     }
 
     @Override
-    public void accept(AccessCondition condition, List<String> proxies) {
+    public void accept(ConfigurationCondition condition, List<String> proxies) {
         Class<?>[] interfaces = checkIfInterfacesAreValid(proxies);
         if (interfaces != null) {
-            registerProxy(condition, false, interfaces);
-        }
-    }
-
-    @Override
-    public Class<?> registerProxy(AccessCondition condition, boolean preserved, Class<?>... interfaces) {
-        abortIfSealed();
-        requireNonNull(interfaces, "interface", "proxy class creation");
-        registerConditionalConfiguration(condition, (cnd) -> dynamicProxySupport.addProxyClass(cnd, preserved, interfaces));
-        try {
-            return dynamicProxySupport.getProxyClassHosted(interfaces);
-        } catch (Throwable t) {
-            /* we return null for illegal proxy classes */
-            return null;
+            registerConditionalConfiguration(condition, (cnd) -> {
+                /* The interfaces array can be empty. The java.lang.reflect.Proxy API allows it. */
+                dynamicProxySupport.addProxyClass(cnd, interfaces);
+            });
         }
     }
 

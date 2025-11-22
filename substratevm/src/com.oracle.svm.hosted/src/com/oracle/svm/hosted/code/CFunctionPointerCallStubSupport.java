@@ -58,7 +58,7 @@ public final class CFunctionPointerCallStubSupport {
 
     public AnalysisMethod getOrCreateStubForMethod(AnalysisMethod method) {
         assert !isStub(method);
-        return methodToStub.computeIfAbsent(method, _ -> {
+        return methodToStub.computeIfAbsent(method, m -> {
             assert !universe.sealed();
             CFunctionPointerCallStubMethod stub = CFunctionPointerCallStubMethod.create(method);
             return universe.lookup(stub);

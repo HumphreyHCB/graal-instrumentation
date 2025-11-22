@@ -116,7 +116,7 @@ public final class CallTreeInfo {
                          * compiled method.
                          */
                         runtimeCandidateMap.computeIfAbsent(new RuntimeCompilationCandidate(callee, invokeTarget),
-                                        _ -> {
+                                        (candidate) -> {
                                             return new InvokeNode(callerMethodNode, invokeInfo.getPosition());
                                         });
                     }

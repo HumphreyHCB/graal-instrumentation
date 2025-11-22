@@ -40,6 +40,9 @@
  */
 package org.graalvm.wasm.collection;
 
+import java.util.Arrays;
+import java.util.NoSuchElementException;
+
 public final class ByteArrayList {
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
@@ -57,38 +60,20 @@ public final class ByteArrayList {
         size++;
     }
 
-    /**
-     * Add the little-endian LEB128 encoding of the signed {@code int} value to the list.
-     */
-    public void addSignedInt32(int valueArg) {
-        int value = valueArg;
-        while (true) {
-            int b = value & 0x7f;
-            value >>= 7;
-            if ((value == 0 && (b & 0x40) == 0) || (value == -1 && (b & 0x40) != 0)) {
-                add((byte) b);
-                break;
-            } else {
-                add((byte) (b | 0x80));
-            }
-        }
+    public void push(byte b) {
+        add(b);
     }
 
-    /**
-     * Add the little-endian LEB128 encoding of the unsigned {@code int} value to the list.
-     */
-    public void addUnsignedInt32(int valueArg) {
-        int value = valueArg;
-        while (true) {
-            int b = value & 0x7f;
-            value >>>= 7;
-            if (value == 0) {
-                add((byte) b);
-                break;
-            } else {
-                add((byte) (b | 0x80));
-            }
+    public byte popBack() {
+        if (size() == 0) {
+            throw new NoSuchElementException("Cannot pop from an empty ByteArrayList.");
         }
+        size--;
+        return array[size];
+    }
+
+    public byte top() {
+        return array[size - 1];
     }
 
     public void set(int index, byte b) {
@@ -148,5 +133,18 @@ public final class ByteArrayList {
         } else {
             return EMPTY_BYTE_ARRAY;
         }
+    }
+
+    public static byte[] concat(ByteArrayList... byteArrayLists) {
+        int totalSize = Arrays.stream(byteArrayLists).mapToInt(ByteArrayList::size).sum();
+        byte[] result = new byte[totalSize];
+        int resultOffset = 0;
+        for (ByteArrayList byteArrayList : byteArrayLists) {
+            if (byteArrayList.array != null) {
+                System.arraycopy(byteArrayList.array, 0, result, resultOffset, byteArrayList.size);
+                resultOffset += byteArrayList.size;
+            }
+        }
+        return result;
     }
 }

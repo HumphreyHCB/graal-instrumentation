@@ -83,7 +83,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.graalvm.collections.Pair;
 import org.graalvm.options.OptionValues;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
@@ -127,6 +126,7 @@ import com.oracle.truffle.polyglot.SystemThread.LanguageSystemThread;
 final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotImpl.VMObject {
 
     private static final TruffleLogger LOG = TruffleLogger.getLogger(PolyglotEngineImpl.OPTION_GROUP_ENGINE, PolyglotContextImpl.class);
+    private static final InteropLibrary UNCACHED = InteropLibrary.getFactory().getUncached();
     private static final Object[] DISPOSED_CONTEXT_THREAD_LOCALS = new Object[0];
     private static final Map<State, State[]> VALID_TRANSITIONS = new EnumMap<>(State.class);
     private static final TruffleSafepoint.Interrupter DO_NOTHING_INTERRUPTER = new TruffleSafepoint.Interrupter() {
@@ -554,8 +554,6 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         this.volatileStatementCounter.set(statementLimit);
         this.threadLocalActions = new PolyglotThreadLocalActions(this);
 
-        maybeInitializeHostLanguage(contexts);
-
         PolyglotEngineImpl.ensureInstrumentsCreated(config.getConfiguredInstruments());
 
         /*
@@ -596,7 +594,6 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         this.subProcesses = new HashSet<>();
         // notifyContextCreated() is called after spiContext.impl is set to this.
         this.engine.noInnerContexts.invalidate();
-        maybeInitializeHostLanguage(contexts);
     }
 
     void setContextAPIReference(Reference<Context> contextAPI) {
@@ -780,6 +777,7 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
             PolyglotLanguage language = languageIterator.next();
             newContexts[i] = new PolyglotLanguageContext(this, language);
         }
+        maybeInitializeHostLanguage(newContexts);
         return newContexts;
     }
 
@@ -930,7 +928,7 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
     @TruffleBoundary
     Object[] enterThreadChanged(boolean enterReverted, boolean pollSafepoint, boolean mustSucceed, PolyglotThreadTask polyglotThreadFirstEnter,
                     boolean leaveAndEnter) {
-        List<Pair<Thread, PolyglotThreadInfo>> deadThreads = null;
+        List<Map.Entry<Thread, PolyglotThreadInfo>> deadThreads = null;
         PolyglotThreadInfo enteredThread = null;
         boolean localEnterReverted = enterReverted;
         Object[] prev = null;
@@ -1123,21 +1121,21 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         }
     }
 
-    private void finalizeAndDisposeThreads(List<Pair<Thread, PolyglotThreadInfo>> deadThreads) {
+    private void finalizeAndDisposeThreads(List<Map.Entry<Thread, PolyglotThreadInfo>> deadThreads) {
         assert !Thread.holdsLock(this);
         Throwable ex = null;
-        for (Pair<Thread, PolyglotThreadInfo> removedThreadInfoEntryToRemove : deadThreads) {
-            ex = notifyThreadFinalizing(removedThreadInfoEntryToRemove.getRight(), ex, false);
+        for (Map.Entry<Thread, PolyglotThreadInfo> removedThreadInfoEntryToRemove : deadThreads) {
+            ex = notifyThreadFinalizing(removedThreadInfoEntryToRemove.getValue(), ex, false);
         }
 
-        for (Pair<Thread, PolyglotThreadInfo> threadInfoEntryToRemove : deadThreads) {
-            ex = notifyThreadDisposing(threadInfoEntryToRemove.getRight(), ex);
+        for (Map.Entry<Thread, PolyglotThreadInfo> threadInfoEntryToRemove : deadThreads) {
+            ex = notifyThreadDisposing(threadInfoEntryToRemove.getValue(), ex);
         }
 
         synchronized (this) {
-            for (Pair<Thread, PolyglotThreadInfo> threadInfoEntryToRemove : deadThreads) {
-                threadInfoEntryToRemove.getRight().setContextThreadLocals(DISPOSED_CONTEXT_THREAD_LOCALS);
-                threads.remove(threadInfoEntryToRemove.getLeft());
+            for (Map.Entry<Thread, PolyglotThreadInfo> threadInfoEntryToRemove : deadThreads) {
+                threadInfoEntryToRemove.getValue().setContextThreadLocals(DISPOSED_CONTEXT_THREAD_LOCALS);
+                threads.remove(threadInfoEntryToRemove.getKey());
             }
         }
 
@@ -1146,22 +1144,20 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         }
     }
 
-    private List<Pair<Thread, PolyglotThreadInfo>> collectDeadThreads() {
+    private List<Map.Entry<Thread, PolyglotThreadInfo>> collectDeadThreads() {
         assert Thread.holdsLock(this);
-        List<Pair<Thread, PolyglotThreadInfo>> deadThreads = null;
+        List<Map.Entry<Thread, PolyglotThreadInfo>> deadThreads = null;
         /*
          * A thread is added to the threads map only by the thread itself, so when the thread is in
          * the map, and it is not alive, then it surely won't be used ever again.
          */
         for (Map.Entry<Thread, PolyglotThreadInfo> threadInfoEntry : threads.entrySet()) {
-            Thread thread = threadInfoEntry.getKey();
-            PolyglotThreadInfo threadInfo = threadInfoEntry.getValue();
-            if (thread != null && threadInfo != null && !thread.isAlive() && !threadInfo.isFinalizingDeadThread()) {
+            if (!threadInfoEntry.getKey().isAlive() && !threadInfoEntry.getValue().isFinalizingDeadThread()) {
                 if (deadThreads == null) {
                     deadThreads = new ArrayList<>();
                 }
-                deadThreads.add(Pair.create(thread, threadInfo));
-                threadInfo.setFinalizingDeadThread();
+                deadThreads.add(threadInfoEntry);
+                threadInfoEntry.getValue().setFinalizingDeadThread();
             }
         }
         return deadThreads;
@@ -1931,7 +1927,7 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         }
         String stringResult;
         try {
-            stringResult = InteropLibrary.getUncached().asString(InteropLibrary.getUncached().toDisplayString(languageContext.getLanguageView(result), true));
+            stringResult = UNCACHED.asString(UNCACHED.toDisplayString(languageContext.getLanguageView(result), true));
         } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere(e);
         }
@@ -2262,10 +2258,22 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         return layer != null ? layer.engine : null;
     }
 
-    static Object toGuestValue(Node node, Object hostValue, boolean asValue) {
-        PolyglotEngineImpl e = PolyglotFastThreadLocals.getEngine(node);
-        Object value = PolyglotHostAccess.toGuestValue(node, e.getAPIAccess(), hostValue);
-        return e.host.toGuestValue(node, value, asValue);
+    Object toGuestValue(Node node, Object hostValue, boolean asValue) {
+        PolyglotEngineImpl localEngine = getConstantEngine(node);
+        PolyglotContextImpl localContext;
+        if (localEngine == null) {
+            localEngine = this.engine;
+            localContext = this;
+        } else {
+            // lookup context as a constant
+            localContext = localEngine.singleContextValue.getConstant();
+            if (localContext == null) {
+                // not a constant use this
+                localContext = this;
+            }
+        }
+        Object value = PolyglotHostAccess.toGuestValue(localContext, hostValue);
+        return localEngine.host.toGuestValue(localContext.getHostContextImpl(), value, asValue);
     }
 
     /**
@@ -3771,8 +3779,7 @@ final class PolyglotContextImpl implements com.oracle.truffle.polyglot.PolyglotI
         }
         PolyglotSharingLayer.Shared s = layer.shared;
         if (s != null) {
-            s.sourceCache.patch(TracingSourceCacheListener.createOrNull(engine), engine.sourceCacheStatisticsListener);
-            layer.initializeInstructionTracers(s);
+            s.sourceCache.patch(TracingSourceCacheListener.createOrNull(engine));
         }
         return true;
     }

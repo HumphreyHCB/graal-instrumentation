@@ -32,24 +32,23 @@ import org.graalvm.collections.UnmodifiableMapCursor;
 import org.graalvm.nativeimage.Platform.HOSTED_ONLY;
 import org.graalvm.nativeimage.Platforms;
 
-import com.oracle.svm.configure.ClassNameSupport;
 import com.oracle.svm.core.util.ImageHeapMap;
 import com.oracle.svm.core.util.VMError;
+
+import jdk.vm.ci.meta.MetaUtil;
 
 /**
  * Information on a class that can be looked up and accessed via JNI.
  */
-public final class JNIAccessibleClass implements PreservableJNIElement {
+public final class JNIAccessibleClass {
     private final Class<?> classObject;
     private EconomicMap<JNIAccessibleMethodDescriptor, JNIAccessibleMethod> methods;
     private EconomicMap<CharSequence, JNIAccessibleField> fields;
-    private boolean preserved;
 
     @Platforms(HOSTED_ONLY.class)
-    public JNIAccessibleClass(Class<?> clazz, boolean preserved) {
+    public JNIAccessibleClass(Class<?> clazz) {
         assert clazz != null;
         this.classObject = clazz;
-        this.preserved = preserved;
     }
 
     @Platforms(HOSTED_ONLY.class)
@@ -75,28 +74,22 @@ public final class JNIAccessibleClass implements PreservableJNIElement {
     }
 
     @Platforms(HOSTED_ONLY.class)
-    public void addOrUpdateField(String name, boolean updatedPreserved, Function<String, JNIAccessibleField> mappingFunction) {
+    public void addFieldIfAbsent(String name, Function<String, JNIAccessibleField> mappingFunction) {
         if (fields == null) {
             fields = ImageHeapMap.createNonLayeredMap(JNIReflectionDictionary.WRAPPED_CSTRING_EQUIVALENCE);
         }
-        JNIAccessibleField existing = fields.get(name);
-        if (existing == null) {
+        if (!fields.containsKey(name)) {
             fields.put(name, mappingFunction.apply(name));
-        } else if (!updatedPreserved) {
-            existing.setNotPreserved();
         }
     }
 
     @Platforms(HOSTED_ONLY.class)
-    public void addOrUpdateMethod(JNIAccessibleMethodDescriptor descriptor, boolean updatedPreserved, Function<JNIAccessibleMethodDescriptor, JNIAccessibleMethod> mappingFunction) {
+    public void addMethodIfAbsent(JNIAccessibleMethodDescriptor descriptor, Function<JNIAccessibleMethodDescriptor, JNIAccessibleMethod> mappingFunction) {
         if (methods == null) {
             methods = ImageHeapMap.createNonLayeredMap();
         }
-        JNIAccessibleMethod existing = methods.get(descriptor);
-        if (existing == null) {
+        if (!methods.containsKey(descriptor)) {
             methods.put(descriptor, mappingFunction.apply(descriptor));
-        } else if (!updatedPreserved) {
-            existing.setNotPreserved();
         }
     }
 
@@ -124,17 +117,7 @@ public final class JNIAccessibleClass implements PreservableJNIElement {
         return method;
     }
 
-    String getJNIName() {
-        return ClassNameSupport.reflectionNameToJNIName(classObject.getName());
-    }
-
-    @Override
-    public boolean isPreserved() {
-        return preserved;
-    }
-
-    @Override
-    public void setNotPreserved() {
-        preserved = false;
+    String getInternalName() {
+        return MetaUtil.toInternalName(classObject.getName());
     }
 }

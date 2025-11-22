@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,8 +23,6 @@
  * questions.
  */
 package com.oracle.svm.core.genscavenge;
-
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -290,20 +288,6 @@ public final class ObjectHeaderImpl extends ObjectHeader {
         return result;
     }
 
-    @Override
-    public long encodeAsTLABObjectHeader(long hubOffsetFromHeapBase) {
-        assert SubstrateOptions.SpawnIsolates.getValue();
-        return hubOffsetFromHeapBase << numReservedExtraHubBits;
-    }
-
-    @Override
-    public int constantHeaderSize() {
-        if (!SubstrateOptions.SpawnIsolates.getValue()) {
-            return -1;
-        }
-        return getReferenceSize();
-    }
-
     /** Clear the object header bits from a header. */
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     UnsignedWord clearBits(UnsignedWord header) {
@@ -333,12 +317,15 @@ public final class ObjectHeaderImpl extends ObjectHeader {
     public long encodeHubPointerForImageHeap(ImageHeapObject obj, long hubOffsetFromHeapBase) {
         long header = hubOffsetFromHeapBase << numReservedExtraHubBits;
         assert (header & reservedHubBitsMask) == 0 : "Object header bits must be zero initially";
-        ChunkedImageHeapPartition partition = (ChunkedImageHeapPartition) obj.getPartition();
-        if (partition.isWritable() && HeapImpl.usesImageHeapCardMarking()) {
-            header |= REMSET_OR_MARKED1_BIT.rawValue();
-        }
-        if (partition.usesUnalignedChunks()) {
-            header |= UNALIGNED_BIT.rawValue();
+        if (obj.getPartition() instanceof ChunkedImageHeapPartition partition) {
+            if (partition.isWritable() && HeapImpl.usesImageHeapCardMarking()) {
+                header |= REMSET_OR_MARKED1_BIT.rawValue();
+            }
+            if (partition.usesUnalignedObjects()) {
+                header |= UNALIGNED_BIT.rawValue();
+            }
+        } else {
+            assert obj.getPartition() instanceof FillerObjectDummyPartition;
         }
         if (isIdentityHashFieldOptional()) {
             header |= (IDHASH_STATE_IN_FIELD.rawValue() << IDHASH_STATE_SHIFT);
@@ -347,13 +334,12 @@ public final class ObjectHeaderImpl extends ObjectHeader {
     }
 
     @Override
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public void verifyDynamicHubOffset(long offsetFromHeapBase) {
+    public void verifyDynamicHubOffsetInImageHeap(long offsetFromHeapBase) {
         long referenceSizeMask = getReferenceSize() == Integer.BYTES ? 0xFFFF_FFFFL : -1L;
         long encoded = (offsetFromHeapBase << numReservedExtraHubBits) & referenceSizeMask;
         boolean shiftLosesInformation = (encoded >>> numReservedExtraHubBits != offsetFromHeapBase);
         if (shiftLosesInformation) {
-            throw VMError.shouldNotReachHere("Hub is too far from heap base for encoding in object header");
+            throw VMError.shouldNotReachHere("Hub is too far from heap base for encoding in object header: " + offsetFromHeapBase);
         }
     }
 

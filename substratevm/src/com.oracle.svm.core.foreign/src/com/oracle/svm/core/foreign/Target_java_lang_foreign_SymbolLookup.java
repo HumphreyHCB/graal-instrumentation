@@ -50,6 +50,7 @@ import com.oracle.svm.core.jdk.StackTraceUtils;
 import com.oracle.svm.core.jdk.Target_java_lang_Module;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
 
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.internal.foreign.MemorySessionImpl;
 import jdk.internal.foreign.Utils;
 import jdk.internal.loader.NativeLibrary;
@@ -66,7 +67,6 @@ import jdk.internal.reflect.Reflection;
  * succeed. See
  * {@link com.oracle.svm.core.jdk.Target_java_lang_ClassLoader#loadLibrary(java.lang.Class, java.lang.String)}
  */
-@SuppressWarnings("javadoc")
 @TargetClass(className = "java.lang.foreign.SymbolLookup", onlyWith = ForeignAPIPredicates.Enabled.class)
 public final class Target_java_lang_foreign_SymbolLookup {
 
@@ -139,7 +139,11 @@ final class Util_java_lang_foreign_SymbolLookup {
          */
         Target_java_lang_Module module = SubstrateUtil.cast(currentClass != null ? currentClass.getModule() : ClassLoader.getSystemClassLoader().getUnnamedModule(),
                         Target_java_lang_Module.class);
-        module.ensureNativeAccess(owner, methodName, currentClass, false);
+        if (JavaVersionUtil.JAVA_SPEC <= 21) {
+            module.ensureNativeAccess(owner, methodName);
+        } else {
+            module.ensureNativeAccess(owner, methodName, currentClass, false);
+        }
 
     }
 

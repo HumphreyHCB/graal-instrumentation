@@ -450,11 +450,9 @@ public class VariablesScopeTest extends AbstractInstrumentationTest {
         }
     }
 
-    @TruffleLanguage.Registration(name = "", id = CustomScopeLanguage.ID, contextPolicy = ContextPolicy.SHARED)
+    @TruffleLanguage.Registration(name = "", id = "test-custom-variables-scope-language", contextPolicy = ContextPolicy.SHARED)
     @ProvidedTags({StandardTags.StatementTag.class, StandardTags.RootTag.class})
     public static class CustomScopeLanguage extends TruffleLanguage<Env> {
-
-        static final String ID = "test-custom-variables-scope-language";
 
         @Override
         protected Env createContext(Env env) {
@@ -476,14 +474,14 @@ public class VariablesScopeTest extends AbstractInstrumentationTest {
 
             @ExportMessage
             @SuppressWarnings("static-method")
-            boolean hasLanguageId() {
+            boolean hasLanguage() {
                 return true;
             }
 
             @ExportMessage
             @SuppressWarnings("static-method")
-            String getLanguageId() {
-                return CustomScopeLanguage.ID;
+            Class<? extends TruffleLanguage<?>> getLanguage() {
+                return CustomScopeLanguage.class;
             }
 
             @ExportMessage
@@ -692,14 +690,14 @@ public class VariablesScopeTest extends AbstractInstrumentationTest {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        String getLanguageId() {
-            return CustomScopeLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return CustomScopeLanguage.class;
         }
 
         @ExportMessage

@@ -24,62 +24,45 @@
  */
 package com.oracle.svm.core.jdk.resources;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import static com.oracle.svm.core.MissingRegistrationUtils.ERROR_EMPHASIS_INDENT;
+
 import java.nio.file.Files;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import com.oracle.svm.configure.ConditionalElement;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
-import com.oracle.svm.configure.config.ResourceConfiguration;
 import com.oracle.svm.core.MissingRegistrationUtils;
-import com.oracle.svm.core.util.VMError;
 
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.loader.Loader;
 
-public final class MissingResourceRegistrationUtils extends MissingRegistrationUtils {
+public final class MissingResourceRegistrationUtils {
 
-    public static void reportResourceAccess(Module module, String resourcePath) {
-        String moduleMessage = module == null ? "" : " from module " + quote(module.getName());
-        String moduleOrNull = module == null ? null : module.getName();
-        ConditionalElement<ResourceConfiguration.ResourceEntry> entry = new ConditionalElement<>(
-                        UnresolvedAccessCondition.unconditional(),
-                        new ResourceConfiguration.ResourceEntry(resourcePath, moduleOrNull));
-        StringWriter json = new StringWriter();
-        try {
-            ResourceConfiguration.conditionalGlobElementJson(entry, getJSONWriter(json), true);
-        } catch (IOException e) {
-            throw VMError.shouldNotReachHere("In memory JSON printing should not fail");
-        }
+    public static void missingResource(String resourcePath) {
         MissingResourceRegistrationError exception = new MissingResourceRegistrationError(
-                        resourceError("resource" + moduleMessage + " at path " + quote(resourcePath), json.toString(), "resources"),
+                        errorMessage("resource at path", resourcePath),
                         resourcePath);
         report(exception);
     }
 
-    public static void reportResourceBundleAccess(Module module, String baseName) {
-        Objects.requireNonNull(module);
-        var bundleConfig = new ResourceConfiguration.BundleConfiguration(UnresolvedAccessCondition.unconditional(), module.getName(), baseName);
-        StringWriter json = new StringWriter();
-        try {
-            ResourceConfiguration.printResourceBundle(bundleConfig, getJSONWriter(json), true);
-        } catch (IOException e) {
-            throw VMError.shouldNotReachHere("In memory JSON printing should not fail");
-        }
-        String moduleMessage = module.isNamed() ? " from module " + quote(module.getName()) : "";
+    public static void missingResourceBundle(String baseName) {
         MissingResourceRegistrationError exception = new MissingResourceRegistrationError(
-                        resourceError("resource bundle" + moduleMessage + " with name " + quote(baseName), json.toString(), "resource-bundles"),
+                        errorMessage("resource bundle with name", baseName),
                         baseName);
         report(exception);
     }
 
-    private static String resourceError(String resourceDescriptor, String resourceJSON, String anchor) {
-        return registrationMessage("access", resourceDescriptor, resourceJSON, "", "resources", anchor);
+    private static String errorMessage(String type, String resourcePath) {
+        /* Can't use multi-line strings as they pull in format and bloat "Hello, World!" */
+        return "The program tried to access the " + type +
+                        System.lineSeparator() +
+                        System.lineSeparator() +
+                        ERROR_EMPHASIS_INDENT + resourcePath +
+                        System.lineSeparator() +
+                        System.lineSeparator() +
+                        "without it being registered as reachable. Add it to the resource metadata to solve this problem. " +
+                        "See https://www.graalvm.org/latest/reference-manual/native-image/metadata/#resources-and-resource-bundles for help";
     }
 
     private static void report(MissingResourceRegistrationError exception) {

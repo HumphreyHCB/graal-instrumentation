@@ -40,15 +40,10 @@
  */
 package org.graalvm.wasm;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-
 import org.graalvm.wasm.constants.BytecodeBitEncoding;
-import org.graalvm.wasm.globals.WasmGlobal;
 import org.graalvm.wasm.memory.WasmMemory;
 
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -58,9 +53,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  */
 @SuppressWarnings("static-method")
 public abstract class RuntimeState {
+    private static final int INITIAL_GLOBALS_SIZE = 64;
     private static final int INITIAL_TABLES_SIZE = 1;
     private static final int INITIAL_MEMORIES_SIZE = 1;
-    private static final int INITIAL_TAG_SIZE = 1;
 
     private final WasmStore store;
     private final WasmModule module;
@@ -71,13 +66,29 @@ public abstract class RuntimeState {
     private final CallTarget[] targets;
     private final WasmFunctionInstance[] functionInstances;
 
-    private final GlobalRegistry globals;
+    /**
+     * This array is monotonically populated from the left. An index i denotes the i-th global in
+     * this module. The value at index i denotes the address of the global in the memory space for
+     * all the globals from all the modules (see {@link GlobalRegistry}).
+     * <p>
+     * This separation of global indices is done because the index spaces of the globals are
+     * module-specific, and the globals can be imported across modules. Thus, the address-space of
+     * the globals is not the same as the module-specific index-space.
+     */
+    @CompilationFinal(dimensions = 1) private int[] globalAddresses;
 
-    @CompilationFinal(dimensions = 1) private WasmTable[] tables;
+    /**
+     * This array is monotonically populated from the left. An index i denotes the i-th table in
+     * this module. The value at index i denotes the address of the table in the memory space for
+     * all the tables from all the module (see {@link TableRegistry}).
+     * <p>
+     * The separation of table instances is done because the index spaces of the tables are
+     * module-specific, and the tables can be imported across modules. Thus, the address-space of
+     * the tables is not the same as the module-specific index-space.
+     */
+    @CompilationFinal(dimensions = 1) private int[] tableAddresses;
 
     @CompilationFinal(dimensions = 1) private WasmMemory[] memories;
-
-    @CompilationFinal(dimensions = 1) private WasmTag[] tags;
 
     /**
      * The passive elem instances that can be used to lazily initialize tables. They can potentially
@@ -97,25 +108,23 @@ public abstract class RuntimeState {
      */
     private final int droppedDataInstanceOffset;
 
-    @CompilationFinal private Linker.LinkState linkState;
+    @CompilationFinal private volatile Linker.LinkState linkState;
 
     @CompilationFinal private int startFunctionIndex;
 
-    static final VarHandle LINK_STATE;
-
-    static {
-        try {
-            LINK_STATE = MethodHandles.lookup().findVarHandle(RuntimeState.class, "linkState", Linker.LinkState.class);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new ExceptionInInitializerError(e);
+    private void ensureGlobalsCapacity(int index) {
+        while (index >= globalAddresses.length) {
+            final int[] nGlobalAddresses = new int[globalAddresses.length * 2];
+            System.arraycopy(globalAddresses, 0, nGlobalAddresses, 0, globalAddresses.length);
+            globalAddresses = nGlobalAddresses;
         }
     }
 
     private void ensureTablesCapacity(int index) {
-        if (index >= tables.length) {
-            final WasmTable[] nTables = new WasmTable[Math.max(Integer.highestOneBit(index) << 1, 2 * tables.length)];
-            System.arraycopy(tables, 0, nTables, 0, tables.length);
-            tables = nTables;
+        if (index >= tableAddresses.length) {
+            final int[] nTableAddresses = new int[Math.max(Integer.highestOneBit(index) << 1, 2 * tableAddresses.length)];
+            System.arraycopy(tableAddresses, 0, nTableAddresses, 0, tableAddresses.length);
+            tableAddresses = nTableAddresses;
         }
     }
 
@@ -127,21 +136,12 @@ public abstract class RuntimeState {
         }
     }
 
-    private void ensureTagCapacity(int index) {
-        if (index >= tags.length) {
-            final WasmTag[] nTags = new WasmTag[Math.max(Integer.highestOneBit(index) << 1, 2 * tags.length)];
-            System.arraycopy(tags, 0, nTags, 0, tags.length);
-            tags = nTags;
-        }
-    }
-
     public RuntimeState(WasmStore store, WasmModule module, int numberOfFunctions, int droppedDataInstanceOffset) {
         this.store = store;
         this.module = module;
-        this.globals = new GlobalRegistry(module.numInternalGlobals(), module.numExternalGlobals());
-        this.tables = new WasmTable[INITIAL_TABLES_SIZE];
+        this.globalAddresses = new int[INITIAL_GLOBALS_SIZE];
+        this.tableAddresses = new int[INITIAL_TABLES_SIZE];
         this.memories = new WasmMemory[INITIAL_MEMORIES_SIZE];
-        this.tags = new WasmTag[INITIAL_TAG_SIZE];
         this.targets = new CallTarget[numberOfFunctions];
         this.functionInstances = new WasmFunctionInstance[numberOfFunctions];
         this.linkState = Linker.LinkState.nonLinked;
@@ -153,22 +153,30 @@ public abstract class RuntimeState {
 
     private void checkNotLinked() {
         // The symbol table must be read-only after the module gets linked.
-        Linker.LinkState state = linkState();
-        if (state == Linker.LinkState.linked || state == Linker.LinkState.failed) {
+        if (linkState == Linker.LinkState.linked) {
             throw CompilerDirectives.shouldNotReachHere("The engine tried to modify the instance after linking.");
         }
     }
 
     public void setLinkInProgress() {
-        setLinkState(Linker.LinkState.nonLinked, Linker.LinkState.inProgress, "Can only switch to in-progress state when not linked.");
+        if (linkState != Linker.LinkState.nonLinked) {
+            throw CompilerDirectives.shouldNotReachHere("Can only switch to in-progress state when not linked.");
+        }
+        this.linkState = Linker.LinkState.inProgress;
     }
 
     public void setLinkCompleted() {
-        setLinkState(Linker.LinkState.inProgress, Linker.LinkState.linked, "Can only switch to linked state when linking is in-progress.");
+        if (linkState != Linker.LinkState.inProgress) {
+            throw CompilerDirectives.shouldNotReachHere("Can only switch to linked state when linking is in-progress.");
+        }
+        this.linkState = Linker.LinkState.linked;
     }
 
     public void setLinkFailed() {
-        setLinkState(Linker.LinkState.inProgress, Linker.LinkState.failed, "Can only switch to failed state when linking is in-progress.");
+        if (linkState != Linker.LinkState.inProgress) {
+            throw CompilerDirectives.shouldNotReachHere("Can only switch to failed state when linking is in-progress.");
+        }
+        this.linkState = Linker.LinkState.failed;
     }
 
     public WasmStore store() {
@@ -180,46 +188,23 @@ public abstract class RuntimeState {
     }
 
     public Linker.LinkState linkState() {
-        CompilerAsserts.neverPartOfCompilation();
-        return (Linker.LinkState) LINK_STATE.getVolatile(this);
-    }
-
-    private void setLinkState(Linker.LinkState expectedState, Linker.LinkState newState, String message) {
-        assert expectedState != Linker.LinkState.linked && expectedState != Linker.LinkState.failed : expectedState;
-        assert Thread.holdsLock(store());
-        if (!LINK_STATE.compareAndSet(this, expectedState, newState)) {
-            /*
-             * setLinkState is always invoked while the linker is holding a store lock, so we should
-             * always see the expected state here and the CAS should never fail.
-             */
-            throw CompilerDirectives.shouldNotReachHere(message);
-        }
+        return linkState;
     }
 
     public boolean isNonLinked() {
-        return linkState() == Linker.LinkState.nonLinked;
+        return linkState == Linker.LinkState.nonLinked;
     }
 
     public boolean isLinkInProgress() {
-        return linkState() == Linker.LinkState.inProgress;
+        return linkState == Linker.LinkState.inProgress;
     }
 
     public boolean isLinkCompleted() {
-        return linkState() == Linker.LinkState.linked;
-    }
-
-    /**
-     * Non-volatile link state check for use in compiled code. May read a stale value, which is OK,
-     * since in that case we'll just (deoptimize and) enter the slow path, and check again. Once
-     * this method has returned true, i.e., we've reached the state {@link Linker.LinkState#linked},
-     * we can safely rely on the module to be linked, and stay linked, since it is a final state.
-     */
-    public boolean isLinkCompletedFastPath() {
         return linkState == Linker.LinkState.linked;
     }
 
     public boolean isLinkFailed() {
-        return linkState() == Linker.LinkState.failed;
+        return linkState == Linker.LinkState.failed;
     }
 
     public SymbolTable symbolTable() {
@@ -242,30 +227,28 @@ public abstract class RuntimeState {
         targets[index] = target;
     }
 
-    public final GlobalRegistry globals() {
-        return globals;
-    }
-
-    public WasmGlobal externalGlobal(int globalIndex) {
-        assert symbolTable().globalExternal(globalIndex) : globalIndex;
-        return globals.externalGlobal(symbolTable().globalAddress(globalIndex));
-    }
-
-    public void setExternalGlobal(int globalIndex, WasmGlobal global) {
-        assert symbolTable().globalExternal(globalIndex) : globalIndex;
-        globals.setExternalGlobal(symbolTable().globalAddress(globalIndex), global);
-    }
-
-    public WasmTable table(int index) {
-        final WasmTable result = tables[index];
-        assert result != null : "Uninitialized table at index: " + index;
+    public int globalAddress(int index) {
+        final int result = globalAddresses[index];
+        assert result != SymbolTable.UNINITIALIZED_ADDRESS : "Uninitialized global at index: " + index;
         return result;
     }
 
-    public void setTable(int tableIndex, WasmTable table) {
+    public void setGlobalAddress(int globalIndex, int address) {
+        ensureGlobalsCapacity(globalIndex);
+        checkNotLinked();
+        globalAddresses[globalIndex] = address;
+    }
+
+    public int tableAddress(int index) {
+        final int result = tableAddresses[index];
+        assert result != SymbolTable.UNINITIALIZED_ADDRESS : "Uninitialized table at index: " + index;
+        return result;
+    }
+
+    public void setTableAddress(int tableIndex, int address) {
         ensureTablesCapacity(tableIndex);
         checkNotLinked();
-        tables[tableIndex] = table;
+        tableAddresses[tableIndex] = address;
     }
 
     public WasmMemory memory(int index) {
@@ -276,16 +259,6 @@ public abstract class RuntimeState {
         ensureMemoriesCapacity(index);
         checkNotLinked();
         memories[index] = memory;
-    }
-
-    public WasmTag tag(int index) {
-        return tags[index];
-    }
-
-    public void setTag(int index, WasmTag tag) {
-        ensureTagCapacity(index);
-        checkNotLinked();
-        tags[index] = tag;
     }
 
     public WasmFunctionInstance functionInstance(WasmFunction function) {

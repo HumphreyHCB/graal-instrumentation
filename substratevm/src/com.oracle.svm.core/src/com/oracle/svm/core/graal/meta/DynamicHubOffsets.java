@@ -27,6 +27,7 @@ package com.oracle.svm.core.graal.meta;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -36,7 +37,6 @@ import com.oracle.svm.core.annotate.InjectAccessors;
 import com.oracle.svm.core.heap.UnknownPrimitiveField;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.util.AnnotationUtil;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
@@ -65,16 +65,9 @@ public class DynamicHubOffsets {
     private int numClassTypesOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int numIterableInterfaceTypesOffset = UNINITIALIZED;
-    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int interfaceIDOffset = UNINITIALIZED;
+    private int numInterfaceTypesOffset = UNINITIALIZED;
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int openTypeWorldTypeCheckSlotsOffset = UNINITIALIZED;
-
-    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int openTypeWorldInterfaceHashParamOffset = UNINITIALIZED;
-    @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int openTypeWorldInterfaceHashTableOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int monitorOffsetOffset = UNINITIALIZED;
@@ -88,7 +81,7 @@ public class DynamicHubOffsets {
     private int componentTypeOffset = UNINITIALIZED;
 
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
-    private int referenceMapCompressedOffsetOffset = UNINITIALIZED;
+    private int referenceMapIndexOffset = UNINITIALIZED;
     @UnknownPrimitiveField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
     private int layerIdOffset = UNINITIALIZED;
 
@@ -115,7 +108,7 @@ public class DynamicHubOffsets {
                 continue;
             }
 
-            if (AnnotationUtil.isAnnotationPresent(field, InjectAccessors.class)) {
+            if (AnnotationAccess.isAnnotationPresent(field, InjectAccessors.class)) {
                 continue;
             }
 
@@ -168,24 +161,12 @@ public class DynamicHubOffsets {
         return numClassTypesOffset;
     }
 
-    public int getNumIterableInterfaceTypesOffset() {
-        return numIterableInterfaceTypesOffset;
-    }
-
-    public int getInterfaceIDOffset() {
-        return interfaceIDOffset;
+    public int getNumInterfaceTypesOffset() {
+        return numInterfaceTypesOffset;
     }
 
     public int getOpenTypeWorldTypeCheckSlotsOffset() {
         return openTypeWorldTypeCheckSlotsOffset;
-    }
-
-    public int getOpenTypeWorldInterfaceHashParamOffset() {
-        return openTypeWorldInterfaceHashParamOffset;
-    }
-
-    public int getOpenTypeWorldInterfaceHashTableOffset() {
-        return openTypeWorldInterfaceHashTableOffset;
     }
 
     public int getMonitorOffsetOffset() {
@@ -204,8 +185,8 @@ public class DynamicHubOffsets {
         return componentTypeOffset;
     }
 
-    public int getReferenceMapCompressedOffsetOffset() {
-        return referenceMapCompressedOffsetOffset;
+    public int getReferenceMapIndexOffset() {
+        return referenceMapIndexOffset;
     }
 
     public int getLayerIdOffset() {

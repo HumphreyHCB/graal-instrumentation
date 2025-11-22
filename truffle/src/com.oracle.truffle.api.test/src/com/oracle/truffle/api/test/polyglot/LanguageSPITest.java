@@ -2715,14 +2715,14 @@ public class LanguageSPITest {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        String getLanguageId() {
-            return ProxyLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return ProxyLanguage.class;
         }
 
         @ExportMessage
@@ -3135,8 +3135,8 @@ public class LanguageSPITest {
 
             assertFails(() -> env.getLanguageInfo(InvalidLanguageClass.class), IllegalArgumentException.class);
 
-            String hostLanguageId = InteropLibrary.getUncached().getLanguageId(env.asBoxedGuestValue(1));
-            assertEquals("host", hostLanguageId);
+            Class<? extends TruffleLanguage<?>> hostLanguage = InteropLibrary.getUncached().getLanguage(env.asBoxedGuestValue(1));
+            assertEquals("host", env.getLanguageInfo(hostLanguage).getId());
         }
     }
 

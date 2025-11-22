@@ -32,8 +32,6 @@ import static jdk.graal.compiler.bytecode.Bytecodes.INVOKEVIRTUAL;
 
 import java.lang.annotation.Annotation;
 
-import jdk.graal.compiler.annotation.AnnotationValue;
-import jdk.graal.compiler.annotation.AnnotationValueSupport;
 import jdk.vm.ci.meta.ConstantPool;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -42,7 +40,7 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
  * bridge methods where the bridged methods have method annotations or parameter annotations. Not
  * all Java compilers copy method annotations and parameter annotations to bridge methods.
  *
- * @see <a href="https://bugs.openjdk.org/browse/JDK-6695379">6695379</a>
+ * @see <a href="http://bugs.java.com/view_bug.do?bug_id=6695379">6695379</a>
  * @see <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=495396">495396</a>
  * @see <a href="https://bugs.eclipse.org/bugs/show_bug.cgi?id=427745">427745</a>
  */
@@ -111,15 +109,30 @@ public class BridgeMethodUtils {
     }
 
     /**
-     * A helper that handles the absence of annotations on bridge methods where the bridged method
-     * has annotations.
+     * A helper for {@link ResolvedJavaMethod#getAnnotation(Class)} that handles the absence of
+     * annotations on bridge methods where the bridged method has annotations.
      */
-    public static AnnotationValue getAnnotation(Class<? extends Annotation> annotationClass, ResolvedJavaMethod method) {
-        AnnotationValue a = AnnotationValueSupport.getAnnotationValue(method, annotationClass);
+    public static <T extends Annotation> T getAnnotation(Class<T> annotationClass, ResolvedJavaMethod method) {
+        T a = method.getAnnotation(annotationClass);
         if (a == null && method.isBridge()) {
             ResolvedJavaMethod bridged = getBridgedMethod(method);
             if (bridged != null) {
-                a = AnnotationValueSupport.getAnnotationValue(bridged, annotationClass);
+                a = bridged.getAnnotation(annotationClass);
+            }
+        }
+        return a;
+    }
+
+    /**
+     * A helper for {@link ResolvedJavaMethod#getParameterAnnotations()} that handles the absence of
+     * parameter annotations on bridge methods where the bridged method has parameter annotations.
+     */
+    public static Annotation[][] getParameterAnnotations(ResolvedJavaMethod method) {
+        Annotation[][] a = method.getParameterAnnotations();
+        if (a.length == 0 && method.isBridge()) {
+            ResolvedJavaMethod bridged = getBridgedMethod(method);
+            if (bridged != null) {
+                a = bridged.getParameterAnnotations();
             }
         }
         return a;

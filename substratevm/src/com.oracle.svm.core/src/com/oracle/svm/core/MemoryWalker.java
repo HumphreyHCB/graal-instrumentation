@@ -34,7 +34,7 @@ public final class MemoryWalker {
     public interface ImageHeapRegionVisitor {
         /** Visit a region from the native image heap. */
         @RestrictHeapAccess(access = RestrictHeapAccess.Access.NO_ALLOCATION, reason = "Must not allocate while visiting memory.")
-        <T> void visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access);
+        <T> boolean visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access);
     }
 
     /** A set of access methods for visiting regions of the native image heap. */
@@ -46,11 +46,13 @@ public final class MemoryWalker {
 
         UnsignedWord getSize(T region);
 
+        String getRegionName(T region);
+
         boolean isWritable(T region);
 
-        boolean usesUnalignedChunks(T region);
+        boolean consistsOfHugeObjects(T region);
 
-        void visitObjects(T region, ObjectVisitor visitor);
+        boolean visitObjects(T region, ObjectVisitor visitor);
     }
 
 }

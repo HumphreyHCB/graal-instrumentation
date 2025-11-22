@@ -57,8 +57,6 @@ final class Stride {
             return fromCodeRangeUTF16(codeRange);
         } else if (TStringGuards.isUTF32(encoding)) {
             return fromCodeRangeUTF32(codeRange);
-        } else if (encoding.isForeignEndian()) {
-            return encoding.naturalStride;
         } else {
             return 0;
         }
@@ -69,8 +67,6 @@ final class Stride {
             return fromCodeRangeUTF16AllowImprecise(codeRange);
         } else if (TStringGuards.isUTF32(encoding)) {
             return fromCodeRangeUTF32AllowImprecise(codeRange);
-        } else if (encoding.isForeignEndian()) {
-            return encoding.naturalStride;
         } else {
             return 0;
         }

@@ -49,7 +49,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  *
  * @since 0.8 or earlier
  */
-// Bind.DefaultExpression("$frame")
 public interface Frame {
 
     /**

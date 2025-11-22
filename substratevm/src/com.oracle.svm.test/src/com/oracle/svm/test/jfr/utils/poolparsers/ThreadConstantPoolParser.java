@@ -28,6 +28,7 @@ package com.oracle.svm.test.jfr.utils.poolparsers;
 
 import java.io.IOException;
 
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import org.junit.Assert;
 
 import com.oracle.svm.core.jfr.JfrType;
@@ -49,7 +50,9 @@ public class ThreadConstantPoolParser extends AbstractRepositoryParser {
             input.readUTF(); // JavaThreadName.
             Assert.assertTrue("JavaThreadId is not correct!", input.readLong() >= 0); // JavaThreadId.
             addExpectedId(JfrType.ThreadGroup, input.readLong()); // ThreadGroupId.
-            input.readBoolean();
+            if (JavaVersionUtil.JAVA_SPEC >= 19) {
+                input.readBoolean();
+            }
         }
     }
 }

@@ -34,7 +34,6 @@ import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.graph.Node;
-import jdk.graal.compiler.nodeinfo.InputType;
 import jdk.graal.compiler.nodes.AbstractBeginNode;
 import jdk.graal.compiler.nodes.AbstractMergeNode;
 import jdk.graal.compiler.nodes.BeginNode;
@@ -245,7 +244,6 @@ public class MultiTypeGuardInlineInfo extends AbstractInlineInfo {
         if (invoke instanceof InvokeWithExceptionNode) {
             InvokeWithExceptionNode invokeWithExceptionNode = (InvokeWithExceptionNode) invoke;
             ExceptionObjectNode exceptionEdge = (ExceptionObjectNode) invokeWithExceptionNode.exceptionEdge();
-            exceptionEdge.replaceAtUsages(exceptionMerge, InputType.Guard, InputType.Anchor);
             exceptionEdge.replaceAtUsages(exceptionObjectPhi);
             exceptionEdge.setNext(null);
             GraphUtil.killCFG(invokeWithExceptionNode.exceptionEdge());

@@ -52,8 +52,9 @@ final class CopyingOldGeneration extends OldGeneration {
     @Platforms(Platform.HOSTED_ONLY.class)
     CopyingOldGeneration(String name) {
         super(name);
-        this.fromSpace = new Space("Old", "O", false, getAge());
-        this.toSpace = new Space("Old To", "O", true, getAge());
+        int age = HeapParameters.getMaxSurvivorSpaces() + 1;
+        this.fromSpace = new Space("Old", "O", false, age);
+        this.toSpace = new Space("Old To", "O", true, age);
     }
 
     @Override
@@ -64,9 +65,8 @@ final class CopyingOldGeneration extends OldGeneration {
     }
 
     @Override
-    public void walkObjects(ObjectVisitor visitor) {
-        getFromSpace().walkObjects(visitor);
-        getToSpace().walkObjects(visitor);
+    public boolean walkObjects(ObjectVisitor visitor) {
+        return getFromSpace().walkObjects(visitor) && getToSpace().walkObjects(visitor);
     }
 
     /** Promote an Object to ToSpace if it is not already in ToSpace. */
@@ -75,7 +75,7 @@ final class CopyingOldGeneration extends OldGeneration {
     @Override
     public Object promoteAlignedObject(Object original, AlignedHeapChunk.AlignedHeader originalChunk, Space originalSpace) {
         assert originalSpace.isFromSpace();
-        return ObjectPromoter.copyAlignedObject(original, originalSpace, getToSpace());
+        return getToSpace().copyAlignedObject(original, originalSpace);
     }
 
     @AlwaysInline("GC performance")
@@ -83,7 +83,7 @@ final class CopyingOldGeneration extends OldGeneration {
     @Override
     protected Object promoteUnalignedObject(Object original, UnalignedHeapChunk.UnalignedHeader originalChunk, Space originalSpace) {
         assert originalSpace.isFromSpace();
-        ObjectPromoter.promoteUnalignedHeapChunk(originalChunk, originalSpace, getToSpace());
+        getToSpace().promoteUnalignedHeapChunk(originalChunk, originalSpace);
         return original;
     }
 
@@ -92,9 +92,9 @@ final class CopyingOldGeneration extends OldGeneration {
     protected boolean promotePinnedObject(Object obj, HeapChunk.Header<?> originalChunk, boolean isAligned, Space originalSpace) {
         assert originalSpace.isFromSpace();
         if (isAligned) {
-            ObjectPromoter.promoteAlignedHeapChunk((AlignedHeapChunk.AlignedHeader) originalChunk, originalSpace, getToSpace());
+            getToSpace().promoteAlignedHeapChunk((AlignedHeapChunk.AlignedHeader) originalChunk, originalSpace);
         } else {
-            ObjectPromoter.promoteUnalignedHeapChunk((UnalignedHeapChunk.UnalignedHeader) originalChunk, originalSpace, getToSpace());
+            getToSpace().promoteUnalignedHeapChunk((UnalignedHeapChunk.UnalignedHeader) originalChunk, originalSpace);
         }
         return true;
     }
@@ -106,8 +106,8 @@ final class CopyingOldGeneration extends OldGeneration {
 
     @Override
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    void beginPromotion(boolean completeCollection) {
-        if (!completeCollection) {
+    void beginPromotion(boolean incrementalGc) {
+        if (incrementalGc) {
             emptyFromSpaceIntoToSpace();
         }
         toGreyObjectsWalker.setScanStart(getToSpace());
@@ -115,7 +115,7 @@ final class CopyingOldGeneration extends OldGeneration {
 
     @Override
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    boolean scanGreyObjects(boolean completeCollection) {
+    boolean scanGreyObjects(boolean incrementalGc) {
         if (!toGreyObjectsWalker.haveGreyObjects()) {
             return false;
         }
@@ -146,6 +146,11 @@ final class CopyingOldGeneration extends OldGeneration {
     }
 
     @Override
+    void appendChunk(AlignedHeapChunk.AlignedHeader hdr) {
+        getToSpace().appendAlignedHeapChunk(hdr);
+    }
+
+    @Override
     void swapSpaces() {
         assert getFromSpace().isEmpty() : "fromSpace should be empty.";
         getFromSpace().absorb(getToSpace());
@@ -153,8 +158,8 @@ final class CopyingOldGeneration extends OldGeneration {
 
     @Override
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    void blackenDirtyCardRoots(GreyToBlackObjectVisitor visitor, GreyToBlackObjRefVisitor refVisitor) {
-        RememberedSet.get().walkDirtyObjects(toSpace.getFirstAlignedHeapChunk(), toSpace.getFirstUnalignedHeapChunk(), Word.nullPointer(), visitor, refVisitor, true);
+    void blackenDirtyCardRoots(GreyToBlackObjectVisitor visitor) {
+        RememberedSet.get().walkDirtyObjects(toSpace.getFirstAlignedHeapChunk(), toSpace.getFirstUnalignedHeapChunk(), Word.nullPointer(), visitor, true);
     }
 
     @Override

@@ -25,8 +25,6 @@
 
 package com.oracle.svm.hosted.webimage.wasm.phases;
 
-import com.oracle.svm.hosted.webimage.wasm.nodes.WasmIsNonZeroNode;
-
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.IfNode;
 import jdk.graal.compiler.nodes.LogicNegationNode;
@@ -40,6 +38,9 @@ import jdk.graal.compiler.nodes.calc.IsNullNode;
 import jdk.graal.compiler.nodes.spi.SimplifierTool;
 import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
+
+import com.oracle.svm.hosted.webimage.wasm.nodes.WasmIsNonZeroNode;
+
 import jdk.vm.ci.meta.JavaKind;
 
 public class WasmSimplification implements CanonicalizerPhase.CustomSimplification {

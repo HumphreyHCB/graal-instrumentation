@@ -41,7 +41,6 @@
 package com.oracle.truffle.regex.tregex.parser.ast;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.regex.RegexOptions;
 import com.oracle.truffle.regex.tregex.parser.Token;
 import com.oracle.truffle.regex.tregex.parser.Token.Quantifier;
 
@@ -60,11 +59,7 @@ public abstract class QuantifiableTerm extends Term {
 
     QuantifiableTerm(QuantifiableTerm copy) {
         super(copy);
-        if (copy.hasQuantifier()) {
-            this.quantifier = new Token.Quantifier(copy.quantifier);
-        } else {
-            this.quantifier = null;
-        }
+        this.quantifier = copy.quantifier;
     }
 
     @Override
@@ -88,7 +83,7 @@ public abstract class QuantifiableTerm extends Term {
     /**
      * Returns {@code true} iff the parser should try to unroll this term's quantifier.
      */
-    public abstract boolean isUnrollingCandidate(RegexOptions options);
+    public abstract boolean isUnrollingCandidate();
 
     public Token.Quantifier getQuantifier() {
         return quantifier;

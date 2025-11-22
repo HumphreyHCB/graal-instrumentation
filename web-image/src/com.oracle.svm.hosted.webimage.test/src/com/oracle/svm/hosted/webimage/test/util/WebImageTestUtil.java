@@ -191,7 +191,8 @@ public class WebImageTestUtil {
     }
 
     public static RunResult runJS(String cmd, String[] arguments, int expectExitCode) {
-        List<String> invokeCmd = new ArrayList<>(WebImageTestOptions.JS_CMD);
+        List<String> invokeCmd = new ArrayList<>();
+        invokeCmd.add(WebImageTestOptions.JS_CMD);
         invokeCmd.add(cmd);
 
         if (arguments != null) {

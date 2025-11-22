@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -36,6 +36,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -504,16 +505,16 @@ abstract class CommonPointerLibraries {
 
     /**
      * @param receiver
-     * @see InteropLibrary#hasLanguageId(Object)
+     * @see InteropLibrary#hasLanguage(Object)
      */
     @ExportMessage
-    static boolean hasLanguageId(LLVMPointerImpl receiver) {
+    static boolean hasLanguage(LLVMPointerImpl receiver) {
         return true;
     }
 
     @ExportMessage
-    static String getLanguageId(@SuppressWarnings("unused") LLVMPointerImpl receiver) {
-        return LLVMLanguage.ID;
+    static Class<? extends TruffleLanguage<?>> getLanguage(@SuppressWarnings("unused") LLVMPointerImpl receiver) {
+        return LLVMLanguage.class;
     }
 
     @ExportMessage

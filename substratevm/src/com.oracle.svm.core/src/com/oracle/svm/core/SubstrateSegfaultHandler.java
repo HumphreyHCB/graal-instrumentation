@@ -56,7 +56,6 @@ import com.oracle.svm.core.graal.stackvalue.UnsafeLateStackValue;
 import com.oracle.svm.core.heap.ReferenceAccess;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.heap.UnknownPrimitiveField;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.jdk.RuntimeSupport;
 import com.oracle.svm.core.layeredimagesingleton.MultiLayeredImageSingleton;
 import com.oracle.svm.core.log.Log;
@@ -65,12 +64,6 @@ import com.oracle.svm.core.stack.StackOverflowCheck;
 import com.oracle.svm.core.thread.VMThreads;
 import com.oracle.svm.core.thread.VMThreads.SafepointBehavior;
 import com.oracle.svm.core.threadlocal.VMThreadLocalSupport;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InitialLayerOnly;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
@@ -79,13 +72,7 @@ import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.word.Word;
 
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = Independent.class)
 class SubstrateSegfaultHandlerFeature implements InternalFeature {
-    @Override
-    public boolean isInConfiguration(IsInConfigurationAccess access) {
-        return ImageLayerBuildingSupport.firstImageBuild();
-    }
-
     @Override
     public List<Class<? extends Feature>> getRequiredFeatures() {
         return Collections.singletonList(IsolateListenerSupportFeature.class);
@@ -142,7 +129,7 @@ final class SubstrateSegfaultHandlerStartupHook implements RuntimeSupport.Hook {
 public abstract class SubstrateSegfaultHandler {
     public static class Options {
         @Option(help = "Install segfault handler that prints register contents and full Java stacktrace. Default: enabled for an executable, disabled for a shared library, disabled when EnableSignalHandling is disabled.")//
-        public static final RuntimeOptionKey<Boolean> InstallSegfaultHandler = new RuntimeOptionKey<>(null);
+        static final RuntimeOptionKey<Boolean> InstallSegfaultHandler = new RuntimeOptionKey<>(null);
     }
 
     private static final long MARKER_VALUE = 0x0123456789ABCDEFL;
@@ -201,7 +188,7 @@ public abstract class SubstrateSegfaultHandler {
         if (isolateThread.isNonNull()) {
             Isolate isolate = VMThreads.IsolateTL.get(isolateThread);
             if (isValid(isolate)) {
-                CEntryPointSnippets.initBaseRegisters(isolate);
+                CEntryPointSnippets.setHeapBase(isolate);
                 WriteCurrentVMThreadNode.writeCurrentVMThread(isolateThread);
                 return true;
             }
@@ -213,10 +200,10 @@ public abstract class SubstrateSegfaultHandler {
     @NeverInline("Prevent register writes from floating")
     private static boolean tryEnterIsolateViaHeapBaseRegister(RegisterDumper.Context context) {
         /*
-         * Set the base registers to null so that we don't execute this code more than once if we
-         * trigger a recursive segfault.
+         * Set the heap base register to null so that we don't execute this code more than once if
+         * we trigger a recursive segfault.
          */
-        CEntryPointSnippets.initBaseRegisters(Word.nullPointer(), Word.nullPointer());
+        CEntryPointSnippets.setHeapBase(Word.nullPointer());
 
         Isolate isolate = (Isolate) RegisterDumper.singleton().getHeapBase(context);
         if (isValid(isolate)) {
@@ -272,7 +259,6 @@ public abstract class SubstrateSegfaultHandler {
     }
 
     @Uninterruptible(reason = "Must be uninterruptible until we get immune to safepoints.")
-    @NeverInline("Base registers are set in caller, prevent reads from floating before that.")
     public static void dump(PointerBase signalInfo, RegisterDumper.Context context, boolean inSVMSegfaultHandler) {
         Pointer sp = (Pointer) RegisterDumper.singleton().getSP(context);
         CodePointer ip = (CodePointer) RegisterDumper.singleton().getIP(context);
@@ -318,7 +304,6 @@ public abstract class SubstrateSegfaultHandler {
         }
     }
 
-    @SingletonTraits(access = AllAccess.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = InitialLayerOnly.class)
     public static class SingleIsolateSegfaultSetup implements IsolateListener {
 
         /**

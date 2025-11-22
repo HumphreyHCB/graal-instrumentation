@@ -38,12 +38,12 @@ import java.util.Objects;
 import org.graalvm.word.WordBase;
 
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
-import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
-import com.oracle.svm.hosted.webimage.wasmgc.types.WasmRefType;
-import com.oracle.svm.util.ClassUtil;
 import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
 import com.oracle.svm.webimage.wasm.types.WasmUtil;
 import com.oracle.svm.webimage.wasm.types.WasmValType;
+import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
+import com.oracle.svm.hosted.webimage.wasmgc.types.WasmRefType;
+import com.oracle.svm.util.ClassUtil;
 
 import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.debug.GraalError;
@@ -148,32 +148,13 @@ public abstract class Instruction {
          * If set to null, the block has no named identifier
          */
         protected final WasmId.Label label;
-        protected final WasmValType result;
 
-        protected WasmBlock(WasmId.Label label, WasmValType result) {
+        public WasmBlock(WasmId.Label label) {
             this.label = label;
-            this.result = result;
         }
 
         public WasmId.Label getLabel() {
             return label;
-        }
-
-        public WasmValType getResult() {
-            return result;
-        }
-
-        public boolean hasResult() {
-            return result != null;
-        }
-
-        @Override
-        protected String toInnerString() {
-            if (hasResult()) {
-                return "() -> " + result;
-            } else {
-                return "() -> ()";
-            }
         }
     }
 
@@ -184,11 +165,7 @@ public abstract class Instruction {
         public final Instructions instructions = new Instructions();
 
         public Block(WasmId.Label label) {
-            this(label, null);
-        }
-
-        public Block(WasmId.Label label, WasmValType result) {
-            super(label, result);
+            super(label);
         }
     }
 
@@ -199,7 +176,7 @@ public abstract class Instruction {
         public final Instructions instructions = new Instructions();
 
         public Loop(WasmId.Label label) {
-            super(label, null);
+            super(label);
         }
     }
 
@@ -213,7 +190,7 @@ public abstract class Instruction {
         public final Instruction condition;
 
         public If(WasmId.Label label, Instruction condition) {
-            super(label, null);
+            super(label);
             this.condition = condition;
         }
 
@@ -223,49 +200,9 @@ public abstract class Instruction {
     }
 
     /**
-     * The WASM try_table from the exception handling proposal.
+     * The WASM try block from the exception handling proposal.
      * <p>
      * Ref: https://github.com/WebAssembly/exception-handling
-     */
-    public static final class TryTable extends WasmBlock {
-        /**
-         * A catch clause for a certain tag.
-         * <p>
-         * When an exception is caught, the block branches to the label of the appropriate clause.
-         */
-        public static final class Catch {
-            public final WasmId.Tag tag;
-            public final WasmId.Label label;
-
-            private Catch(WasmId.Tag tag, WasmId.Label label) {
-                this.tag = tag;
-                this.label = label;
-            }
-
-            @Override
-            public String toString() {
-                return "Catch{tag=" + tag + ", label=" + label + '}';
-            }
-        }
-
-        public final Instructions instructions = new Instructions();
-        public final List<Catch> catchBlocks = new ArrayList<>();
-
-        public TryTable(WasmId.Label label) {
-            super(label, null);
-        }
-
-        public void addCatch(WasmId.Tag tag, WasmId.Label catchLabel) {
-            var catchBlock = new Catch(tag, catchLabel);
-            catchBlocks.add(catchBlock);
-        }
-    }
-
-    /**
-     * The WASM try block from the legacy exception handling proposal.
-     * <p>
-     * Ref:
-     * https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/legacy/Exceptions.md
      */
     public static final class Try extends WasmBlock {
 
@@ -285,7 +222,7 @@ public abstract class Instruction {
         public final List<Catch> catchBlocks = new ArrayList<>();
 
         public Try(WasmId.Label label) {
-            super(label, null);
+            super(label);
         }
 
         public Instructions addCatch(WasmId.Tag tag) {
@@ -608,11 +545,6 @@ public abstract class Instruction {
         public static Const forWord(WordBase word) {
             // TODO GR-42105 Use forInt
             return forLong(word.rawValue());
-        }
-
-        @Override
-        protected String toInnerString() {
-            return literal.type + ", " + literal.asText();
         }
     }
 

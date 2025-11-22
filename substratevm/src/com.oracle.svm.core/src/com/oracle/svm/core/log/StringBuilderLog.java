@@ -31,28 +31,28 @@ import org.graalvm.word.UnsignedWord;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 
 public class StringBuilderLog extends RealLog {
-    private final StringBuilder builder = new StringBuilder();
+    private final StringBuilder stringBuilder = new StringBuilder();
 
     public StringBuilderLog() {
     }
 
-    @Override
     @RestrictHeapAccess(access = RestrictHeapAccess.Access.UNRESTRICTED, reason = "This implementation allocates.")
+    @Override
     protected Log rawBytes(CCharPointer bytes, UnsignedWord length) {
         for (int i = 0; length.aboveThan(i); i++) {
             char currentChar = (char) bytes.read(i);
-            builder.append(currentChar);
+            stringBuilder.append(currentChar);
         }
         return this;
     }
 
     @Override
     public Log flush() {
-        /* Nothing to do. */
+        // noop
         return this;
     }
 
     public String getResult() {
-        return builder.toString();
+        return stringBuilder.toString();
     }
 }

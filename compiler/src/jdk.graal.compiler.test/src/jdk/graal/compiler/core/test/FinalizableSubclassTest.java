@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,9 +28,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.util.Map;
+import java.util.HashMap;
 
-import jdk.graal.compiler.util.EconomicHashMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -71,6 +70,7 @@ public class FinalizableSubclassTest extends GraalCompilerTest {
         }
     }
 
+    @SuppressWarnings("try")
     private StructuredGraph parseAndProcess(Class<?> cl, AllowAssumptions allowAssumptions) {
         Constructor<?>[] constructors = cl.getConstructors();
         Assert.assertTrue(constructors.length == 1);
@@ -78,7 +78,7 @@ public class FinalizableSubclassTest extends GraalCompilerTest {
         OptionValues options = getInitialOptions();
         DebugContext debug = getDebugContext(options, null, javaMethod);
         StructuredGraph graph = new StructuredGraph.Builder(options, debug, allowAssumptions).method(javaMethod).build();
-        try (DebugContext.Scope _ = debug.scope("FinalizableSubclassTest", graph)) {
+        try (DebugContext.Scope s = debug.scope("FinalizableSubclassTest", graph)) {
             GraphBuilderConfiguration conf = GraphBuilderConfiguration.getSnippetDefault(getDefaultGraphBuilderPlugins());
             new TestGraphBuilderPhase.Instance(getProviders(), conf, OptimisticOptimizations.ALL, null).apply(graph);
 
@@ -139,7 +139,7 @@ public class FinalizableSubclassTest extends GraalCompilerTest {
         private static int loaderInstance = 0;
 
         private final String replaceTo;
-        private Map<String, Class<?>> cache = new EconomicHashMap<>();
+        private HashMap<String, Class<?>> cache = new HashMap<>();
 
         private final DebugContext debug;
 

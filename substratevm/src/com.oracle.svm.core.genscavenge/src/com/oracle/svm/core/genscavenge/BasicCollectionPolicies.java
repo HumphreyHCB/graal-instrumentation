@@ -196,7 +196,7 @@ final class BasicCollectionPolicies {
         }
 
         @Override
-        public void onCollectionBegin(boolean completeCollection, long beginNanoTime) {
+        public void onCollectionBegin(boolean completeCollection, long requestingNanoTime) {
         }
 
         @Override
@@ -207,7 +207,7 @@ final class BasicCollectionPolicies {
     public static final class OnlyIncrementally extends BasicPolicy {
 
         @Override
-        public boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection) {
+        public boolean shouldCollectCompletely(boolean followingIncrementalCollection) {
             return false;
         }
 
@@ -220,8 +220,11 @@ final class BasicCollectionPolicies {
     public static final class OnlyCompletely extends BasicPolicy {
 
         @Override
-        public boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection) {
-            return followingIncrementalCollection || !shouldCollectYoungGenSeparately(false);
+        public boolean shouldCollectCompletely(boolean followingIncrementalCollection) {
+            if (!followingIncrementalCollection && shouldCollectYoungGenSeparately(false)) {
+                return false;
+            }
+            return true;
         }
 
         @Override
@@ -238,7 +241,7 @@ final class BasicCollectionPolicies {
         }
 
         @Override
-        public boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection) {
+        public boolean shouldCollectCompletely(boolean followingIncrementalCollection) {
             throw VMError.shouldNotReachHere("Collection must not be initiated in the first place");
         }
 
@@ -255,12 +258,8 @@ final class BasicCollectionPolicies {
     public static final class BySpaceAndTime extends BasicPolicy {
 
         @Override
-        public boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection) {
-            boolean collectYoungSeparately = shouldCollectYoungGenSeparately(false);
-            if (forcedCompleteCollection && !collectYoungSeparately) {
-                return true;
-            }
-            if (!followingIncrementalCollection && collectYoungSeparately) {
+        public boolean shouldCollectCompletely(boolean followingIncrementalCollection) {
+            if (!followingIncrementalCollection && shouldCollectYoungGenSeparately(false)) {
                 return false;
             }
             return estimateUsedHeapAtNextIncrementalCollection().aboveThan(getMaximumHeapSize()) ||

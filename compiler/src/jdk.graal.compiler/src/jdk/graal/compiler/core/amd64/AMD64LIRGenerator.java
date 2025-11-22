@@ -70,7 +70,6 @@ import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.LIRValueUtil;
 import jdk.graal.compiler.lir.LabelRef;
 import jdk.graal.compiler.lir.StandardOp.JumpOp;
-import jdk.graal.compiler.lir.StandardOp.NewScratchRegisterOp;
 import jdk.graal.compiler.lir.SwitchStrategy;
 import jdk.graal.compiler.lir.Variable;
 import jdk.graal.compiler.lir.amd64.AMD64AESDecryptOp;
@@ -93,7 +92,6 @@ import jdk.graal.compiler.lir.amd64.AMD64CalcStringAttributesOp;
 import jdk.graal.compiler.lir.amd64.AMD64Call;
 import jdk.graal.compiler.lir.amd64.AMD64CipherBlockChainingAESDecryptOp;
 import jdk.graal.compiler.lir.amd64.AMD64CipherBlockChainingAESEncryptOp;
-import jdk.graal.compiler.lir.amd64.AMD64CodepointIndexToByteIndexOp;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.BranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.CmpBranchOp;
@@ -142,7 +140,6 @@ import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGenerator;
 import jdk.graal.compiler.lir.gen.MoveFactory;
 import jdk.graal.compiler.phases.util.Providers;
-import jdk.graal.compiler.replacements.nodes.StringCodepointIndexToByteIndexNode;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.amd64.AMD64.CPUFeature;
 import jdk.vm.ci.amd64.AMD64Kind;
@@ -713,7 +710,7 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
 
     @Override
     protected void emitForeignCallOp(ForeignCallLinkage linkage, Value targetAddress, Value result, Value[] arguments, Value[] temps, LIRFrameState info) {
-        long maxOffset = linkage.getMaxCallTargetOffset(getCodeCache());
+        long maxOffset = linkage.getMaxCallTargetOffset();
         if (maxOffset != (int) maxOffset) {
             append(new AMD64Call.DirectFarForeignCallOp(linkage, result, arguments, temps, info));
         } else {
@@ -884,15 +881,9 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
 
     @SuppressWarnings("unchecked")
     @Override
-    public void emitArrayCopyWithReverseBytes(Stride stride, EnumSet<?> runtimeCheckedCPUFeatures, Value arraySrc, Value offsetSrc, Value arrayDst, Value offsetDst, Value length) {
-        append(AMD64ArrayCopyWithConversionsOp.movParamsAndCreateReverseBytes(this, stride, (EnumSet<CPUFeature>) runtimeCheckedCPUFeatures, arraySrc, offsetSrc, arrayDst, offsetDst, length));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
     public Variable emitCalcStringAttributes(CalcStringAttributesEncoding encoding, EnumSet<?> runtimeCheckedCPUFeatures,
                     Value array, Value offset, Value length, boolean assumeValid) {
-        Variable result = newVariable(LIRKind.value(encoding == CalcStringAttributesEncoding.UTF_8 || encoding.isUTF16() ? AMD64Kind.QWORD : AMD64Kind.DWORD));
+        Variable result = newVariable(LIRKind.value(encoding == CalcStringAttributesEncoding.UTF_8 || encoding == CalcStringAttributesEncoding.UTF_16 ? AMD64Kind.QWORD : AMD64Kind.DWORD));
         append(AMD64CalcStringAttributesOp.movParamsAndCreate(this, encoding, (EnumSet<CPUFeature>) runtimeCheckedCPUFeatures, array, offset, length, result, assumeValid));
         return result;
     }
@@ -985,7 +976,7 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
         emitMove(rZ, z);
         emitMove(rZlen, zlen);
 
-        append(new AMD64BigIntegerMultiplyToLenOp(this, rX, rXlen, rY, rYlen, rZ, rZlen));
+        append(new AMD64BigIntegerMultiplyToLenOp(rX, rXlen, rY, rYlen, rZ, rZlen, getHeapBaseRegister()));
     }
 
     @Override
@@ -1002,7 +993,7 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
         emitMove(rLen, len);
         emitMove(rK, k);
 
-        append(new AMD64BigIntegerMulAddOp(this, rOut, rIn, rOffset, rLen, rK));
+        append(new AMD64BigIntegerMulAddOp(rOut, rIn, rOffset, rLen, rK, getHeapBaseRegister()));
         // result of AMD64BigIntegerMulAddOp is stored at rax
         Variable result = newVariable(len.getValueKind());
         emitMove(result, AMD64.rax.asValue(len.getValueKind()));
@@ -1021,7 +1012,7 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
         emitMove(rZ, z);
         emitMove(rZlen, zlen);
 
-        append(new AMD64BigIntegerSquareToLenOp(this, rX, rLen, rZ, rZlen));
+        append(new AMD64BigIntegerSquareToLenOp(rX, rLen, rZ, rZlen, getHeapBaseRegister()));
     }
 
     @Override
@@ -1139,15 +1130,6 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
         return res;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Variable emitCodepointIndexToByteIndex(StringCodepointIndexToByteIndexNode.InputEncoding inputEncoding, EnumSet<?> runtimeCheckedCPUFeatures, Value array, Value offset, Value length,
-                    Value index) {
-        Variable result = newVariable(LIRKind.value(AMD64Kind.DWORD));
-        append(AMD64CodepointIndexToByteIndexOp.movParamsAndCreate(this, inputEncoding, (EnumSet<AMD64.CPUFeature>) runtimeCheckedCPUFeatures, array, offset, length, index, result));
-        return result;
-    }
-
     protected StrategySwitchOp createStrategySwitchOp(SwitchStrategy strategy, LabelRef[] keyTargets, LabelRef defaultTarget, AllocatableValue key, AllocatableValue temp) {
         return new StrategySwitchOp(strategy, keyTargets, defaultTarget, key, temp);
     }
@@ -1160,11 +1142,8 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
     }
 
     @Override
-    protected void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key,
-                    boolean inputMayBeOutOfRange, boolean mayEmitThreadedCode) {
-        AllocatableValue scratch = newVariable(LIRKind.value(target().arch.getWordKind()));
-        append(new NewScratchRegisterOp(scratch));
-        append(new RangeTableSwitchOp(this, lowKey, defaultTarget, targets, remainingStrategy, remainingTargets, key, scratch, inputMayBeOutOfRange, mayEmitThreadedCode));
+    protected void emitRangeTableSwitch(int lowKey, LabelRef defaultTarget, LabelRef[] targets, SwitchStrategy remainingStrategy, LabelRef[] remainingTargets, AllocatableValue key) {
+        append(new RangeTableSwitchOp(this, lowKey, defaultTarget, targets, remainingStrategy, remainingTargets, key));
     }
 
     @Override
@@ -1240,6 +1219,14 @@ public abstract class AMD64LIRGenerator extends LIRGenerator {
 
     public boolean supportsCPUFeature(AMD64.CPUFeature feature) {
         return ((AMD64) target().arch).getFeatures().contains(feature);
+    }
+
+    public boolean supportsCPUFeature(String feature) {
+        try {
+            return ((AMD64) target().arch).getFeatures().contains(AMD64.CPUFeature.valueOf(feature));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public boolean usePopCountInstruction() {

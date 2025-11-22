@@ -28,7 +28,9 @@ package com.oracle.svm.configure;
 import java.util.Comparator;
 import java.util.function.Function;
 
-public record ConditionalElement<T>(UnresolvedAccessCondition condition, T element) {
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
+
+public record ConditionalElement<T>(UnresolvedConfigurationCondition condition, T element) {
 
     public static <T extends Comparable<T>> Comparator<ConditionalElement<T>> comparator() {
         return (o1, o2) -> Comparator

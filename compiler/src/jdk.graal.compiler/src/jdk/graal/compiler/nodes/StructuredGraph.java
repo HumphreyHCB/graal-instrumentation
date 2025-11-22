@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -52,10 +52,8 @@ import jdk.graal.compiler.debug.JavaMethodContext;
 import jdk.graal.compiler.debug.TTY;
 import jdk.graal.compiler.graph.Graph;
 import jdk.graal.compiler.graph.Node;
-import jdk.graal.compiler.graph.NodeBitMap;
 import jdk.graal.compiler.graph.NodeMap;
 import jdk.graal.compiler.graph.NodeSourcePosition;
-import jdk.graal.compiler.graph.iterators.NodeIterable;
 import jdk.graal.compiler.nodes.GraphState.StageFlag;
 import jdk.graal.compiler.nodes.calc.FloatingNode;
 import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
@@ -74,7 +72,6 @@ import jdk.graal.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.Assumptions.Assumption;
-import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaMethod;
 import jdk.vm.ci.meta.ProfilingInfo;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -115,14 +112,6 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
             this.strategy = strategy;
         }
 
-        /**
-         * Returns the cfg which was used for building the schedule.
-         *
-         * <b>NOTE:</b> The cfg's nodeToBlock map is not modified when building the schedule. Use
-         * the corresponding methods in {@link ScheduleResult} ({@link #nodesFor},
-         * {@link #blockFor}, {@link #getNodeToBlockMap}) to get the schedule-specific mapping
-         * between floating nodes and CFG blocks.
-         */
         public ControlFlowGraph getCFG() {
             return cfg;
         }
@@ -325,12 +314,14 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
     private final Assumptions assumptions;
 
     /**
-     * The last schedule which was computed for this graph.
+     * The last schedule which was computed for this graph. Only re-use if
+     * {@link #isLastScheduleValid()} is {@code true}.
      */
     private ScheduleResult lastSchedule;
 
     /**
-     * The last control flow graph which was computed for this graph.
+     * The last control flow graph which was computed for this graph. Only re-use if
+     * {@link #isLastCFGValid()} is {@code true}.
      */
     private ControlFlowGraph lastCFG;
 
@@ -340,8 +331,7 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
     /**
      * Invalidates cached values (e.g., schedule or CFG) if the graph changes. Afterwards, removes
      * itself from the graph's list of listeners. Needs to be added to the graph again after one of
-     * the caches is set to ensure proper invalidation. Caching is used per default but can be
-     * disabled via {@link GraalOptions#CacheCompilerDataStructures}.
+     * the caches is set to ensure proper invalidation.
      */
     private final class CacheInvalidationListener extends NodeEventListener {
 
@@ -350,18 +340,9 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
 
         @Override
         public void changed(NodeEvent e, Node node) {
+            lastCFGValid = false;
             lastScheduleValid = false;
-            if (node instanceof FixedNode) {
-                // a CFG only needs to be invalidated on certain events involving FixedNodes
-                switch (e) {
-                    case NODE_ADDED:
-                    case NODE_REMOVED:
-                    case CONTROL_FLOW_CHANGED:
-                        lastCFGValid = false;
-                        disableCacheInvalidationListener();
-                        break;
-                }
-            }
+            disableCacheInvalidationListener();
         }
     }
 
@@ -370,7 +351,7 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
      * {@link #getLastSchedule()} for obtaining the cached schedule.
      */
     public boolean isLastScheduleValid() {
-        return cacheCompilerDataStructures && cacheInvalidationListener.lastScheduleValid;
+        return cacheInvalidationListener.lastScheduleValid;
     }
 
     /**
@@ -378,17 +359,17 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
      * graph. Use {@link #getLastCFG()} for obtaining the cached cfg.
      */
     public boolean isLastCFGValid() {
-        return cacheCompilerDataStructures && cacheInvalidationListener.lastCFGValid;
+        return cacheInvalidationListener.lastCFGValid;
     }
 
     private void enableCacheInvalidationListener() {
-        if (cacheCompilerDataStructures && cacheInvalidationNES == null) {
+        if (cacheInvalidationNES == null) {
             cacheInvalidationNES = this.trackNodeEvents(cacheInvalidationListener);
         }
     }
 
     private void disableCacheInvalidationListener() {
-        if (cacheCompilerDataStructures && cacheInvalidationNES != null) {
+        if (cacheInvalidationNES != null) {
             cacheInvalidationNES.close();
             cacheInvalidationNES = null;
         }
@@ -436,8 +417,6 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
 
     private OptimizationLog optimizationLog;
 
-    private final boolean cacheCompilerDataStructures;
-
     private StructuredGraph(String name,
                     ResolvedJavaMethod method,
                     int entryBCI,
@@ -468,25 +447,22 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
         this.inliningLog = GraalOptions.TraceInlining.getValue(options) || OptimizationLog.isStructuredOptimizationLogEnabled(options) ? new InliningLog(rootMethod) : null;
         this.callerContext = context;
         this.optimizationLog = OptimizationLog.getInstance(this);
-        this.cacheCompilerDataStructures = GraalOptions.CacheCompilerDataStructures.getValue(options);
-        this.cacheInvalidationListener = cacheCompilerDataStructures ? new CacheInvalidationListener() : null;
+        this.cacheInvalidationListener = new CacheInvalidationListener();
     }
 
     public void setLastSchedule(ScheduleResult result) {
         GraalError.guarantee(result == null || result.cfg.getStartBlock().isModifiable(), "Schedule must use blocks that can be modified");
         lastSchedule = result;
-        if (cacheCompilerDataStructures) {
-            cacheInvalidationListener.lastScheduleValid = result != null;
-            if (result != null) {
-                enableCacheInvalidationListener();
-            }
+        cacheInvalidationListener.lastScheduleValid = result != null;
+        if (result != null) {
+            enableCacheInvalidationListener();
         }
     }
 
     /**
-     * Returns the last schedule which has been computed for this graph. If
-     * {@link GraalOptions#CacheCompilerDataStructures} is enabled, use
-     * {@link #isLastScheduleValid()} to tell if the cached schedule can still be used.
+     * Returns the last schedule which has been computed for this graph. Use
+     * {@link #isLastScheduleValid()} to verify that the graph has not changed since the last
+     * schedule has been computed.
      */
     public ScheduleResult getLastSchedule() {
         return lastSchedule;
@@ -494,19 +470,14 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
 
     public void clearLastSchedule() {
         setLastSchedule(null);
-        if (cacheCompilerDataStructures) {
-            if (!isLastCFGValid()) {
-                disableCacheInvalidationListener();
-            }
-        }
+        clearLastCFG();
     }
 
     /**
-     * Returns the last control flow graph which has been computed for this graph. If
-     * {@link GraalOptions#CacheCompilerDataStructures} is enabled, use {@link #isLastCFGValid()} to
-     * tell if the cached cfg can still be used. Creating a {@link ControlFlowGraph} via
-     * {@link ControlFlowGraphBuilder#build()} will implicitly return and/or update the cached cfg
-     * if caching is enabled.
+     * Returns the last control flow graph which has been computed for this graph. Use
+     * {@link #isLastCFGValid()} to verify that the graph has not changed since the last cfg has
+     * been computed. Creating a {@link ControlFlowGraph} via
+     * {@link ControlFlowGraphBuilder#build()} will implicitly return and/or update the cached cfg.
      */
     public ControlFlowGraph getLastCFG() {
         return lastCFG;
@@ -514,17 +485,14 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
 
     public void setLastCFG(ControlFlowGraph cfg) {
         lastCFG = cfg;
-        if (cacheCompilerDataStructures) {
-            cacheInvalidationListener.lastCFGValid = cfg != null;
-            if (cfg != null) {
-                enableCacheInvalidationListener();
-            }
+        cacheInvalidationListener.lastCFGValid = cfg != null;
+        if (cfg != null) {
+            enableCacheInvalidationListener();
         }
     }
 
     public void clearLastCFG() {
         setLastCFG(null);
-        clearLastSchedule();
     }
 
     @Override
@@ -533,19 +501,6 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
         properties.put("compilationIdentifier", compilationId());
         properties.put("edgeModificationCount", getEdgeModificationCount());
         properties.put("assumptions", String.valueOf(getAssumptions()));
-        if (method() != null && profileProvider != null) {
-            ProfilingInfo profilingInfo = profileProvider.getProfilingInfo(method());
-            if (profilingInfo != null) {
-                for (DeoptimizationReason reason : DeoptimizationReason.values()) {
-                    if (reason != DeoptimizationReason.None) {
-                        int count = profilingInfo.getDeoptimizationCount(reason);
-                        if (count != 0) {
-                            properties.put("DeoptimizationCount-" + reason, count);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -576,7 +531,6 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
              * The schedule contains a NodeMap which is unusable after compression.
              */
             clearLastSchedule();
-            clearLastCFG();
             return true;
         }
         return false;
@@ -1081,21 +1035,8 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
         reduceTrivialMerge(merge, false);
     }
 
-    public void reduceTrivialMerge(AbstractMergeNode merge, boolean forKillCFG) {
-        reduceTrivialMerge(merge, forKillCFG, null);
-    }
-
-    /**
-     * Removes merges with phis that have a single input value.
-     *
-     * @param unusedNodes A set to mark unused nodes in the graph that should be killed later by the
-     *            caller. The set should be used when calling this method for multiple merges. The
-     *            resulting set must be killed with
-     *            {@link GraphUtil#killAllWithUnusedFloatingInputs(NodeIterable, boolean)}. If this
-     *            set is null, the nodes are killed immediately.
-     */
     @SuppressWarnings("static-method")
-    public void reduceTrivialMerge(AbstractMergeNode merge, boolean forKillCFG, NodeBitMap unusedNodes) {
+    public void reduceTrivialMerge(AbstractMergeNode merge, boolean forKillCFG) {
         assert merge.forwardEndCount() == 1 : Assertions.errorMessageContext("merge", merge);
         assert !(merge instanceof LoopBeginNode) || ((LoopBeginNode) merge).loopEnds().isEmpty();
         for (PhiNode phi : merge.phis().snapshot()) {
@@ -1106,11 +1047,7 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
             } else {
                 phi.safeDelete();
                 if (singleValue != null) {
-                    if (unusedNodes == null) {
-                        GraphUtil.tryKillUnused(singleValue);
-                    } else if (GraphUtil.shouldKillUnused(singleValue)) {
-                        unusedNodes.mark(singleValue);
-                    }
+                    GraphUtil.tryKillUnused(singleValue);
                 }
             }
         }
@@ -1125,11 +1062,7 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
         merge.prepareDelete((FixedNode) singleEnd.predecessor());
         merge.safeDelete();
         if (stateAfter != null) {
-            if (unusedNodes == null) {
-                GraphUtil.tryKillUnused(stateAfter);
-            } else if (GraphUtil.shouldKillUnused(stateAfter)) {
-                unusedNodes.mark(stateAfter);
-            }
+            GraphUtil.tryKillUnused(stateAfter);
         }
         if (sux == null) {
             singleEnd.replaceAtPredecessor(null);
@@ -1392,12 +1325,9 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
      */
     public interface GlobalProfileProvider {
 
-        /**
-         * The default time returned when no global profile provider is available on the platform.
-         */
-        int GLOBAL_PROFILE_PROVIDER_DISABLED = -1;
-
         GlobalProfileProvider DEFAULT = new GlobalProfileProvider() {
+
+            public static final int DEFAULT_TIME = -1;
 
             /**
              * The default time provider always returns -1, i.e. the self time is unknown by
@@ -1405,7 +1335,7 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
              */
             @Override
             public double getGlobalSelfTimePercent() {
-                return GLOBAL_PROFILE_PROVIDER_DISABLED;
+                return DEFAULT_TIME;
             }
 
             /**

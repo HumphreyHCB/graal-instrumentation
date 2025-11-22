@@ -184,32 +184,19 @@ public class StandardOp {
         @Alive({OperandFlag.REG, OperandFlag.STACK, OperandFlag.CONST, OperandFlag.OUTGOING}) private Value[] outgoingValues;
 
         private final LabelRef destination;
-        private final boolean isThreadedJump;
 
         public JumpOp(LabelRef destination) {
-            this(TYPE, destination, false);
+            this(TYPE, destination);
         }
 
-        public JumpOp(LabelRef destination, boolean isThreadedJump) {
-            this(TYPE, destination, isThreadedJump);
-        }
-
-        protected JumpOp(LIRInstructionClass<? extends JumpOp> c, LabelRef destination, boolean isThreadedJump) {
+        protected JumpOp(LIRInstructionClass<? extends JumpOp> c, LabelRef destination) {
             super(c);
             this.destination = destination;
             this.outgoingValues = Value.NO_VALUES;
-            this.isThreadedJump = isThreadedJump;
         }
 
         @Override
         public void emitCode(CompilationResultBuilder crb) {
-            if (isThreadedJump) {
-                if (destination.label().isBound()) {
-                    if (crb.asm.replayCodeSnippetAt(crb, destination.label().position())) {
-                        return;
-                    }
-                }
-            }
             if (!crb.isSuccessorEdge(destination)) {
                 crb.asm.jmp(destination.label());
             }
@@ -473,22 +460,6 @@ public class StandardOp {
         }
     }
 
-    public static final class NewScratchRegisterOp extends LIRInstruction {
-        public static final LIRInstructionClass<NewScratchRegisterOp> TYPE = LIRInstructionClass.create(NewScratchRegisterOp.class);
-
-        @Def(OperandFlag.REG) private Value value;
-
-        public NewScratchRegisterOp(Value value) {
-            super(TYPE);
-            this.value = value;
-        }
-
-        @Override
-        public void emitCode(CompilationResultBuilder crb) {
-            // do nothing, just define a value
-        }
-    }
-
     @Opcode("SPILLREGISTERS")
     public static final class SpillRegistersOp extends LIRInstruction {
         public static final LIRInstructionClass<SpillRegistersOp> TYPE = LIRInstructionClass.create(SpillRegistersOp.class);
@@ -508,16 +479,4 @@ public class StandardOp {
         }
     }
 
-    public static final class StartRecordingThreadedSwitchOp extends LIRInstruction {
-        public static final LIRInstructionClass<StartRecordingThreadedSwitchOp> TYPE = LIRInstructionClass.create(StartRecordingThreadedSwitchOp.class);
-
-        public StartRecordingThreadedSwitchOp() {
-            super(TYPE);
-        }
-
-        @Override
-        public void emitCode(CompilationResultBuilder crb) {
-            crb.asm.startRecordingCodeSnippet(crb);
-        }
-    }
 }

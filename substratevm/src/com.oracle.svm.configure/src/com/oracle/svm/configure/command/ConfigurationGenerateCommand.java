@@ -32,8 +32,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import com.oracle.svm.configure.ConfigurationUsageException;
@@ -48,7 +50,6 @@ import com.oracle.svm.configure.trace.TraceProcessor;
 import com.oracle.svm.util.LogUtils;
 
 import jdk.graal.compiler.phases.common.LazyValue;
-import org.graalvm.collections.EconomicSet;
 
 public class ConfigurationGenerateCommand extends ConfigurationCommand {
     @Override
@@ -309,11 +310,11 @@ public class ConfigurationGenerateCommand extends ConfigurationCommand {
 
     @SuppressWarnings("fallthrough")
     private static void failIfAgentLockFilesPresent(ConfigurationFileCollection... collections) {
-        EconomicSet<String> paths = null;
+        Set<String> paths = null;
         for (ConfigurationFileCollection coll : collections) {
             for (URI path : coll.getDetectedAgentLockPaths()) {
                 if (paths == null) {
-                    paths = EconomicSet.create();
+                    paths = new HashSet<>();
                 }
                 paths.add(path.toString());
             }

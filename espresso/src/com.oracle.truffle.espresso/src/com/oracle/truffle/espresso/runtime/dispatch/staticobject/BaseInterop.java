@@ -25,6 +25,7 @@ package com.oracle.truffle.espresso.runtime.dispatch.staticobject;
 import static com.oracle.truffle.espresso.vm.InterpreterToVM.instanceOf;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -40,10 +41,10 @@ import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.impl.Klass;
 import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.nodes.interop.IHashCodeNode;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.GenerateInteropNodes;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.Shareable;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
+import com.oracle.truffle.espresso.vm.VM;
 
 /**
  * BaseInterop (isNull, is/asString, meta-instance, identity, exceptions, toDisplayString) Support
@@ -208,14 +209,10 @@ public class BaseInterop {
     }
 
     @ExportMessage
-    public static int identityHashCode(StaticObject object,
-                    @Cached IHashCodeNode iHashCodeNode) {
+    public static int identityHashCode(StaticObject object) {
         object.checkNotForeign();
-        if (StaticObject.isNull(object)) {
-            return 0;
-        }
         // Working with espresso objects here, guaranteed to have identity.
-        return iHashCodeNode.execute(object);
+        return VM.JVM_IHashCode(object, null /*- path where language is needed is never reached through here. */);
     }
 
     // endregion ### Identity/hashCode
@@ -223,14 +220,14 @@ public class BaseInterop {
     // region ### Language/DisplayString
     @SuppressWarnings("unused")
     @ExportMessage
-    public static boolean hasLanguageId(StaticObject object) {
+    public static boolean hasLanguage(StaticObject object) {
         return true;
     }
 
     @SuppressWarnings("unused")
     @ExportMessage
-    public static String getLanguageId(StaticObject object) {
-        return EspressoLanguage.ID;
+    public static Class<? extends TruffleLanguage<?>> getLanguage(StaticObject object) {
+        return EspressoLanguage.class;
     }
 
     @ExportMessage

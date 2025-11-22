@@ -32,25 +32,25 @@ import com.oracle.svm.core.threadlocal.FastThreadLocalFactory;
 import com.oracle.svm.core.threadlocal.FastThreadLocalObject;
 
 /**
- * Manages per-thread lists of referenced arrays for safe direct memory access from native code.
+ * Manages per-thread lists of referenced objects for safe direct memory access from native code.
  */
 public class JNIThreadLocalPrimitiveArrayViews {
-    private static class ReferencedArrayListNode {
-        final PrimitiveArrayView array;
-        ReferencedArrayListNode next;
+    private static class ReferencedObjectListNode {
+        final PrimitiveArrayView object;
+        ReferencedObjectListNode next;
 
-        ReferencedArrayListNode(PrimitiveArrayView array, ReferencedArrayListNode next) {
-            this.array = array;
+        ReferencedObjectListNode(PrimitiveArrayView object, ReferencedObjectListNode next) {
+            this.object = object;
             this.next = next;
         }
     }
 
-    private static final FastThreadLocalObject<ReferencedArrayListNode> referencedArraysListHead = FastThreadLocalFactory.createObject(ReferencedArrayListNode.class,
-                    "JNIThreadLocalPrimitiveArrayViews.referencedArraysListHead");
+    private static final FastThreadLocalObject<ReferencedObjectListNode> referencedObjectsListHead = FastThreadLocalFactory.createObject(ReferencedObjectListNode.class,
+                    "JNIThreadLocalReferencedObjects.referencedObjectsListHead");
 
     public static PrimitiveArrayView createArrayView(Object array) {
         PrimitiveArrayView ref = PrimitiveArrayView.createForReading(array);
-        referencedArraysListHead.set(new ReferencedArrayListNode(ref, referencedArraysListHead.get()));
+        referencedObjectsListHead.set(new ReferencedObjectListNode(ref, referencedObjectsListHead.get()));
         return ref;
     }
 
@@ -59,23 +59,23 @@ public class JNIThreadLocalPrimitiveArrayViews {
     }
 
     public static void destroyNewestArrayViewByAddress(PointerBase address, int mode) {
-        ReferencedArrayListNode previous = null;
-        ReferencedArrayListNode current = referencedArraysListHead.get();
+        ReferencedObjectListNode previous = null;
+        ReferencedObjectListNode current = referencedObjectsListHead.get();
         while (current != null) {
-            if (current.array.addressOfArrayElement(0) == address) {
+            if (current.object.addressOfArrayElement(0) == address) {
                 if (previous != null) {
                     previous.next = current.next;
                 } else {
-                    referencedArraysListHead.set(current.next);
+                    referencedObjectsListHead.set(current.next);
                 }
 
                 if (mode == 0 || mode == JNIMode.JNI_COMMIT()) {
-                    current.array.syncToHeap();
+                    current.object.syncToHeap();
                 }
                 if (mode == 0 || mode == JNIMode.JNI_ABORT()) {
-                    current.array.close();
+                    current.object.close();
                 } else {
-                    current.array.untrack();
+                    current.object.untrack();
                 }
                 return;
             }
@@ -86,7 +86,7 @@ public class JNIThreadLocalPrimitiveArrayViews {
 
     static int getCount() {
         int count = 0;
-        ReferencedArrayListNode node = referencedArraysListHead.get();
+        ReferencedObjectListNode node = referencedObjectsListHead.get();
         while (node != null) {
             count++;
             node = node.next;

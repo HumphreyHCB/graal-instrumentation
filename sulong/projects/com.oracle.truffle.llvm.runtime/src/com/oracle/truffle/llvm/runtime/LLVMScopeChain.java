@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2021, 2022, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -30,6 +30,7 @@
 package com.oracle.truffle.llvm.runtime;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -126,13 +127,13 @@ public class LLVMScopeChain implements TruffleObject {
     }
 
     @ExportMessage
-    final boolean hasLanguageId() {
+    final boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
-    final String getLanguageId() {
-        return LLVMLanguage.ID;
+    final Class<? extends TruffleLanguage<?>> getLanguage() {
+        return LLVMLanguage.class;
     }
 
     @ExportMessage

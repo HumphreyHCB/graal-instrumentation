@@ -182,7 +182,6 @@ public abstract class FrameMap {
      * be requested.
      */
     public void finish() {
-        GraalError.guarantee(frameSize == -1, "frame size may only be computed once");
         frameSize = currentFrameSize();
         if (frameSize > getRegisterConfig().getMaximumFrameSize()) {
             throw new PermanentBailoutException("Frame size (%d) exceeded maximum allowed frame size (%d).", frameSize, getRegisterConfig().getMaximumFrameSize());

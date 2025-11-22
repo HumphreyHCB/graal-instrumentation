@@ -25,11 +25,13 @@
  */
 package jdk.graal.compiler.nodes.gc;
 
+import org.graalvm.word.LocationIdentity;
+
 import jdk.graal.compiler.core.common.memory.BarrierType;
 import jdk.graal.compiler.core.common.type.AbstractObjectStamp;
+import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.GraalError;
-import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.nodes.NodeView;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
@@ -45,14 +47,19 @@ import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.type.StampTool;
 import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
-public class CardTableBarrierSet extends BarrierSet {
+public class CardTableBarrierSet implements BarrierSet {
     private final ResolvedJavaType objectArrayType;
 
-    public CardTableBarrierSet(ResolvedJavaType objectArrayType, boolean hasDeferredInitBarriers) {
-        super(GraphState.StageFlag.MID_TIER_BARRIER_ADDITION, hasDeferredInitBarriers);
+    public CardTableBarrierSet(ResolvedJavaType objectArrayType) {
         this.objectArrayType = objectArrayType;
+    }
+
+    @Override
+    public BarrierType readBarrierType(LocationIdentity location, ValueNode address, Stamp loadStamp) {
+        return BarrierType.NONE;
     }
 
     @Override
@@ -61,6 +68,21 @@ public class CardTableBarrierSet extends BarrierSet {
             return BarrierType.NONE;
         }
         return store.needsBarrier() ? readWriteBarrier(store.object(), store.value()) : BarrierType.NONE;
+    }
+
+    @Override
+    public BarrierType fieldReadBarrierType(ResolvedJavaField field, JavaKind storageKind) {
+        return BarrierType.NONE;
+    }
+
+    @Override
+    public BarrierType fieldWriteBarrierType(ResolvedJavaField field, JavaKind storageKind) {
+        return storageKind == JavaKind.Object ? BarrierType.FIELD : BarrierType.NONE;
+    }
+
+    @Override
+    public BarrierType arrayWriteBarrierType(JavaKind storageKind) {
+        return storageKind == JavaKind.Object ? BarrierType.ARRAY : BarrierType.NONE;
     }
 
     @Override
@@ -79,65 +101,69 @@ public class CardTableBarrierSet extends BarrierSet {
     }
 
     @Override
+    public boolean hasWriteBarrier() {
+        return true;
+    }
+
+    @Override
+    public boolean hasReadBarrier() {
+        return false;
+    }
+
+    @Override
     public void addBarriers(FixedAccessNode n, CoreProviders context) {
-        switch (n) {
-            case ReadNode readNode -> {
-                // nothing to do
-            }
-            case WriteNode write -> addWriteBarrier(write, write.value(), context);
-            case LoweredAtomicReadAndWriteNode atomic -> addWriteBarrier(atomic, atomic.getNewValue(), context);
-            case AbstractCompareAndSwapNode cmpSwap -> addWriteBarrier(cmpSwap, cmpSwap.getNewValue(), context);
-            case ArrayRangeWrite rangeWrite -> addArrayRangeBarriers(rangeWrite, context);
-            default ->
-                GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
+        if (n instanceof ReadNode) {
+            // nothing to do
+        } else if (n instanceof WriteNode write) {
+            addWriteBarrier(write, write.value(), context);
+        } else if (n instanceof LoweredAtomicReadAndWriteNode atomic) {
+            addWriteBarrier(atomic, atomic.getNewValue(), context);
+        } else if (n instanceof AbstractCompareAndSwapNode cmpSwap) {
+            addWriteBarrier(cmpSwap, cmpSwap.getNewValue(), context);
+        } else if (n instanceof ArrayRangeWrite rangeWrite) {
+            addArrayRangeBarriers(rangeWrite, context);
+        } else {
+            GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
         }
     }
 
     public boolean needsBarrier(FixedAccessNode n) {
-        switch (n) {
-            case ReadNode readNode -> {
-                return false;
-            }
-            case WriteNode write -> {
-                return needsWriteBarrier(write, write.value());
-            }
-            case LoweredAtomicReadAndWriteNode atomic -> {
-                return needsWriteBarrier(atomic, atomic.getNewValue());
-            }
-            case AbstractCompareAndSwapNode cmpSwap -> {
-                return needsWriteBarrier(cmpSwap, cmpSwap.getNewValue());
-            }
-            case ArrayRangeWrite arrayRangeWrite -> {
-                return arrayRangeWriteRequiresBarrier(arrayRangeWrite);
-            }
-            default -> {
-                GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
-                return false;
-            }
+        if (n instanceof ReadNode) {
+            return false;
+        } else if (n instanceof WriteNode) {
+            WriteNode write = (WriteNode) n;
+            return needsWriteBarrier(write, write.value());
+        } else if (n instanceof LoweredAtomicReadAndWriteNode) {
+            LoweredAtomicReadAndWriteNode atomic = (LoweredAtomicReadAndWriteNode) n;
+            return needsWriteBarrier(atomic, atomic.getNewValue());
+        } else if (n instanceof AbstractCompareAndSwapNode) {
+            AbstractCompareAndSwapNode cmpSwap = (AbstractCompareAndSwapNode) n;
+            return needsWriteBarrier(cmpSwap, cmpSwap.getNewValue());
+        } else if (n instanceof ArrayRangeWrite) {
+            return arrayRangeWriteRequiresBarrier((ArrayRangeWrite) n);
+        } else {
+            GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
+            return false;
         }
     }
 
     public boolean hasBarrier(FixedAccessNode n) {
-        switch (n) {
-            case ReadNode readNode -> {
-                return false;
-            }
-            case WriteNode write -> {
-                return hasWriteBarrier(write);
-            }
-            case LoweredAtomicReadAndWriteNode atomic -> {
-                return hasWriteBarrier(atomic);
-            }
-            case AbstractCompareAndSwapNode cmpSwap -> {
-                return hasWriteBarrier(cmpSwap);
-            }
-            case ArrayRangeWrite arrayRangeWrite -> {
-                return hasWriteBarrier(arrayRangeWrite);
-            }
-            default -> {
-                GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
-                return false;
-            }
+        if (n instanceof ReadNode) {
+            return false;
+        } else if (n instanceof WriteNode) {
+            WriteNode write = (WriteNode) n;
+            return hasWriteBarrier(write);
+        } else if (n instanceof LoweredAtomicReadAndWriteNode) {
+            LoweredAtomicReadAndWriteNode atomic = (LoweredAtomicReadAndWriteNode) n;
+            return hasWriteBarrier(atomic);
+        } else if (n instanceof AbstractCompareAndSwapNode) {
+            AbstractCompareAndSwapNode cmpSwap = (AbstractCompareAndSwapNode) n;
+            return hasWriteBarrier(cmpSwap);
+        } else if (n instanceof ArrayRangeWrite) {
+            return hasWriteBarrier((ArrayRangeWrite) n);
+        } else {
+            GraalError.guarantee(n.getBarrierType() == BarrierType.NONE, "missed a node that requires a GC barrier: %s", n.getClass());
+            return false;
         }
     }
 
@@ -168,29 +194,27 @@ public class CardTableBarrierSet extends BarrierSet {
     public boolean needsWriteBarrier(FixedAccessNode node, ValueNode writtenValue) {
         assert !(node instanceof ArrayRangeWrite) : Assertions.errorMessageContext("node", node, "val", writtenValue);
         BarrierType barrierType = node.getBarrierType();
-        return switch (barrierType) {
-            case NONE -> false;
-            case FIELD, AS_NO_KEEPALIVE_WRITE, ARRAY, UNKNOWN -> writeRequiresBarrier(node, writtenValue);
-            default -> throw new GraalError("unexpected barrier type: " + barrierType);
-        };
+        switch (barrierType) {
+            case NONE:
+                return false;
+            case FIELD:
+            case AS_NO_KEEPALIVE_WRITE:
+            case ARRAY:
+            case UNKNOWN:
+                return writeRequiresBarrier(node, writtenValue);
+            default:
+                throw new GraalError("unexpected barrier type: " + barrierType);
+        }
     }
 
     @SuppressWarnings("unused")
     protected boolean writeRequiresBarrier(FixedAccessNode node, ValueNode writtenValue) {
-        if (!(writtenValue.stamp(NodeView.DEFAULT) instanceof AbstractObjectStamp)) {
-            return false;
-        }
-        if (StampTool.isPointerAlwaysNull(writtenValue)) {
-            return false;
-        }
-        return !hasDeferredInitBarriers || !isWriteToNewObject(node);
+        // Null writes can skip the card mark.
+        return isNonNullObjectValue(writtenValue);
     }
 
     protected boolean arrayRangeWriteRequiresBarrier(ArrayRangeWrite write) {
-        if (!write.writesObjectArray()) {
-            return false;
-        }
-        return !hasDeferredInitBarriers || !isWriteToNewObject(write.asFixedAccessNode());
+        return write.writesObjectArray();
     }
 
     private static boolean hasWriteBarrier(FixedAccessNode node) {
@@ -222,10 +246,14 @@ public class CardTableBarrierSet extends BarrierSet {
     }
 
     /**
-     * Decide if a precise barrier is needed for a memory access.
+     * Decide if a precise barrier is needed for an access.
      */
     protected boolean barrierPrecise(FixedAccessNode node, @SuppressWarnings("unused") ValueNode base, @SuppressWarnings("unused") CoreProviders context) {
         return node.getBarrierType() != BarrierType.FIELD && node.getBarrierType() != BarrierType.AS_NO_KEEPALIVE_WRITE;
+    }
+
+    private static boolean isNonNullObjectValue(ValueNode value) {
+        return value.stamp(NodeView.DEFAULT) instanceof AbstractObjectStamp && !StampTool.isPointerAlwaysNull(value);
     }
 
     private static boolean matches(FixedAccessNode node, SerialWriteBarrierNode barrier) {
@@ -239,5 +267,10 @@ public class CardTableBarrierSet extends BarrierSet {
 
     private static boolean matches(ArrayRangeWrite node, SerialArrayRangeWriteBarrierNode barrier) {
         return barrier.getAddress() == node.getAddress() && node.getLength() == barrier.getLength() && node.getElementStride() == barrier.getElementStride();
+    }
+
+    @Override
+    public boolean mayNeedPreWriteBarrier(JavaKind storageKind) {
+        return false;
     }
 }

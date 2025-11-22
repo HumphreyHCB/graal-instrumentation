@@ -193,12 +193,10 @@ public class LayeredImageHeapMap<K, V> implements EconomicMap<K, V> {
             public boolean advance() {
                 boolean advance = current.advance();
                 if (!advance) {
-                    while (cursors.hasNext()) {
+                    if (cursors.hasNext()) {
                         current = cursors.next();
-                        while (current.advance()) {
-                            if (keys.add(current.getKey())) {
-                                return true;
-                            }
+                        if (keys.add(current.getKey())) {
+                            return true;
                         }
                     }
                 }

@@ -27,7 +27,6 @@ package com.oracle.svm.core.graal.aarch64;
 import static com.oracle.svm.core.graal.aarch64.SubstrateAArch64RegisterConfig.fp;
 import static jdk.graal.compiler.lir.LIRInstruction.OperandFlag.ILLEGAL;
 import static jdk.graal.compiler.lir.LIRInstruction.OperandFlag.REG;
-import static jdk.vm.ci.aarch64.AArch64.lr;
 import static jdk.vm.ci.code.ValueUtil.asRegister;
 
 import com.oracle.svm.core.CalleeSavedRegisters;
@@ -68,12 +67,10 @@ public final class AArch64FarReturnOp extends AArch64BlockEndOp {
     public void emitCode(CompilationResultBuilder crb, AArch64MacroAssembler masm) {
         assert sp.getPlatformKind().getSizeInBytes() == FrameAccess.wordSize() && FrameAccess.wordSize() == Long.BYTES : Assertions.errorMessage(sp.getPlatformKind().getSizeInBytes(),
                         FrameAccess.wordSize());
-
         if (!SubstrateOptions.PreserveFramePointer.getValue() && !fromMethodWithCalleeSavedRegisters) {
             /* No need to restore anything in the frame of the new stack pointer. */
             masm.mov(64, AArch64.sp, asRegister(sp));
-            returnTo(asRegister(ip), masm);
-            return;
+            masm.ret(asRegister(ip));
         }
 
         /*
@@ -86,7 +83,7 @@ public final class AArch64FarReturnOp extends AArch64BlockEndOp {
         /*
          * If within the same frame then no additional action is needed.
          */
-        returnTo(asRegister(ip), masm);
+        masm.ret(asRegister(ip));
 
         /*
          * Otherwise we first switch the stack pointer to point to the value of the lowest value
@@ -136,20 +133,7 @@ public final class AArch64FarReturnOp extends AArch64BlockEndOp {
             }
 
             masm.ldr(64, fp, AArch64Address.createImmediateAddress(64, AArch64Address.AddressingMode.IMMEDIATE_POST_INDEXED, AArch64.sp, minCalleeFrameSize));
-            returnTo(ipRegister, masm);
+            masm.ret(ipRegister);
         }
-    }
-
-    private static void returnTo(Register ipRegister, AArch64MacroAssembler masm) {
-        /*
-         * Set lr to the new instruction pointer like a regular return does.
-         *
-         * For dispatching an exception into a frame pending deoptimization, we farReturn into a
-         * deopt stub which will do a regular enter and thus push lr. This keeps the stack walkable
-         * and the frame can be recognized as pending deoptimization due to the return address from
-         * lr matching the deopt stub entry point.
-         */
-        masm.mov(64, lr, ipRegister);
-        masm.ret(lr);
     }
 }

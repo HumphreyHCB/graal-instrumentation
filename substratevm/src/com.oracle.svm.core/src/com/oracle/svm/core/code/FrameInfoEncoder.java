@@ -51,7 +51,6 @@ import com.oracle.svm.core.code.FrameInfoQueryResult.ValueInfo;
 import com.oracle.svm.core.code.FrameInfoQueryResult.ValueType;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.config.ObjectLayout;
-import com.oracle.svm.core.encoder.SymbolEncoder;
 import com.oracle.svm.core.hub.LayoutEncoding;
 import com.oracle.svm.core.meta.SharedField;
 import com.oracle.svm.core.meta.SharedMethod;
@@ -128,7 +127,6 @@ public class FrameInfoEncoder {
 
     public abstract static class SourceFieldsFromMethod extends Customization {
         private final HostedStringDeduplication stringTable = HostedStringDeduplication.singleton();
-        private final SymbolEncoder encoder = SymbolEncoder.singleton();
 
         @Override
         protected void fillSourceFields(ResolvedJavaMethod method, FrameInfoQueryResult resultFrameInfo) {
@@ -146,7 +144,7 @@ public class FrameInfoEncoder {
              */
             int sourceMethodModifiers = method.getModifiers();
             String methodSignature = method.getSignature().toMethodDescriptor();
-            String sourceMethodName = stringTable.deduplicate(encoder.encodeMethod(source.getMethodName(), sourceClass), true);
+            String sourceMethodName = stringTable.deduplicate(source.getMethodName(), true);
             String sourceMethodSignature = CodeInfoEncoder.shouldEncodeAllMethodMetadata() ? stringTable.deduplicate(methodSignature, true) : methodSignature;
             resultFrameInfo.setSourceFields(sourceClass, sourceMethodName, sourceMethodSignature, sourceMethodModifiers);
         }
@@ -276,7 +274,7 @@ public class FrameInfoEncoder {
                 for (CompressedFrameData frame : frameSliceToEncode) {
                     frameSliceFrequency.merge(frame, 1, Integer::sum);
                     if (prevFrame != null) {
-                        frameSuccessorMap.compute(prevFrame, (_, v) -> {
+                        frameSuccessorMap.compute(prevFrame, (k, v) -> {
                             Set<CompressedFrameData> callers;
                             if (v == null) {
                                 callers = new HashSet<>();

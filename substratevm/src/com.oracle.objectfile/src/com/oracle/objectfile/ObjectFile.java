@@ -52,7 +52,6 @@ import com.oracle.objectfile.macho.MachOObjectFile;
 import com.oracle.objectfile.pecoff.PECoffObjectFile;
 
 import jdk.graal.compiler.debug.DebugContext;
-import jdk.graal.compiler.serviceprovider.GraalServices;
 import sun.nio.ch.DirectBuffer;
 
 /**
@@ -173,7 +172,7 @@ public abstract class ObjectFile {
     // FIXME: replace OS string with enum (or just get rid of the concept,
     // perhaps merging with getFilenameSuffix).
     private static String getHostOS() {
-        final String osName = GraalServices.getSavedProperty("os.name");
+        final String osName = System.getProperty("os.name");
         if (osName.startsWith("Linux")) {
             return "Linux";
         } else if (osName.startsWith("Mac OS X")) {
@@ -220,12 +219,16 @@ public abstract class ObjectFile {
     }
 
     private static ObjectFile getNativeObjectFile(int pageSize, boolean runtimeDebugInfoGeneration) {
-        return switch (ObjectFile.getNativeFormat()) {
-            case ELF -> new ELFObjectFile(pageSize, runtimeDebugInfoGeneration);
-            case MACH_O -> new MachOObjectFile(pageSize);
-            case PECOFF -> new PECoffObjectFile(pageSize);
-            case LLVM -> throw new AssertionError("Unsupported NativeObjectFile for format " + ObjectFile.getNativeFormat());
-        };
+        switch (ObjectFile.getNativeFormat()) {
+            case ELF:
+                return new ELFObjectFile(pageSize, runtimeDebugInfoGeneration);
+            case MACH_O:
+                return new MachOObjectFile(pageSize);
+            case PECOFF:
+                return new PECoffObjectFile(pageSize);
+            default:
+                throw new AssertionError("Unreachable");
+        }
     }
 
     public static ObjectFile getNativeObjectFile(int pageSize) {
@@ -1806,7 +1809,7 @@ public abstract class ObjectFile {
 
     public abstract Symbol createDefinedSymbol(String name, Element baseSection, long position, int size, boolean isCode, boolean isGlobal);
 
-    public abstract Symbol createUndefinedSymbol(String name, boolean isCode);
+    public abstract Symbol createUndefinedSymbol(String name, int size, boolean isCode);
 
     protected abstract SymbolTable createSymbolTable();
 
@@ -1825,7 +1828,7 @@ public abstract class ObjectFile {
      * Temporary storage for a debug context installed in a nested scope under a call. to
      * {@link #withDebugContext}
      */
-    protected DebugContext debugContext = DebugContext.disabled(null);
+    private DebugContext debugContext = null;
 
     /**
      * Allows a task to be executed with a debug context in a named subscope bound to the object

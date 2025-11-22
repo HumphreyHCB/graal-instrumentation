@@ -25,7 +25,8 @@
 package com.oracle.svm.hosted.webimage.codegen;
 
 import com.oracle.svm.hosted.webimage.codegen.heap.ConstantMap;
-import com.oracle.svm.webimage.hightiercodegen.CodeBuffer;
+
+import jdk.graal.compiler.hightiercodegen.CodeBuffer;
 
 class KnownHubMapLowerer {
 

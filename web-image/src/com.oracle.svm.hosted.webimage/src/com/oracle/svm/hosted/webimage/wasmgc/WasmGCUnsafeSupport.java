@@ -31,8 +31,8 @@ import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.Platforms;
 
-import com.oracle.graal.pointsto.ObjectScanner;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
+import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.StaticFieldsSupport;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
@@ -44,7 +44,6 @@ import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.webimage.wasm.debug.WasmDebug;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmTrapNode;
-import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.options.Option;
@@ -166,8 +165,7 @@ class WasmGCUnsafeFeature implements InternalFeature {
          * registered above is triggered.
          */
         StaticFieldsSupport.setData(new Object[0], new byte[0]);
-        ObjectScanner.ScanReason reason = new ObjectScanner.OtherReason("Manual rescan for static fields triggered from " + WasmGCUnsafeSupport.class);
-        access.getHeapScanner().rescanObject(StaticFieldsSupport.getCurrentLayerStaticObjectFields(), reason);
-        access.getHeapScanner().rescanObject(StaticFieldsSupport.getCurrentLayerStaticPrimitiveFields(), reason);
+        access.getHeapScanner().rescanObject(StaticFieldsSupport.getCurrentLayerStaticObjectFields());
+        access.getHeapScanner().rescanObject(StaticFieldsSupport.getCurrentLayerStaticPrimitiveFields());
     }
 }

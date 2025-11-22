@@ -44,6 +44,7 @@ import java.lang.foreign.MemorySegment;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -85,13 +86,13 @@ class NativeString implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
-    String getLanguageId() {
-        return PanamaNFILanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return PanamaNFILanguage.class;
     }
 
     @ExportMessage

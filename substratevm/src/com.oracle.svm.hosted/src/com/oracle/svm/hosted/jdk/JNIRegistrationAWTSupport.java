@@ -30,15 +30,11 @@ import org.graalvm.nativeimage.Platforms;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.jdk.JNIRegistrationUtil;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.BuiltinTraits.PartiallyLayerAware;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.FeatureImpl.BeforeImageWriteAccessImpl;
 
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
+
 @Platforms({Platform.WINDOWS.class, Platform.LINUX.class})
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class, other = PartiallyLayerAware.class)
 @AutomaticallyRegisteredFeature
 public class JNIRegistrationAWTSupport extends JNIRegistrationUtil implements InternalFeature {
     @Override
@@ -46,7 +42,11 @@ public class JNIRegistrationAWTSupport extends JNIRegistrationUtil implements In
         JNIRegistrationSupport jniRegistrationSupport = JNIRegistrationSupport.singleton();
         if (jniRegistrationSupport.isRegisteredLibrary("awt")) {
             jniRegistrationSupport.addJvmShimExports(
-                            "JVM_IsStaticallyLinked");
+                            "jio_snprintf");
+            if (JavaVersionUtil.JAVA_SPEC > 21) {
+                jniRegistrationSupport.addJvmShimExports(
+                                "JVM_IsStaticallyLinked");
+            }
             jniRegistrationSupport.addJavaShimExports(
                             "JNU_CallMethodByName",
                             "JNU_CallStaticMethodByName",
@@ -61,8 +61,7 @@ public class JNIRegistrationAWTSupport extends JNIRegistrationUtil implements In
                             "JNU_ThrowIllegalArgumentException",
                             "JNU_ThrowInternalError",
                             "JNU_ThrowNullPointerException",
-                            "JNU_ThrowOutOfMemoryError",
-                            "jio_snprintf");
+                            "JNU_ThrowOutOfMemoryError");
             if (isWindows()) {
                 jniRegistrationSupport.addJvmShimExports(
                                 "JVM_CurrentTimeMillis",
@@ -94,8 +93,14 @@ public class JNIRegistrationAWTSupport extends JNIRegistrationUtil implements In
             jniRegistrationSupport.addJavaShimExports(
                             "JNU_GetEnv",
                             "JNU_ThrowByName",
-                            "JNU_ThrowNullPointerException",
-                            "jio_snprintf");
+                            "JNU_ThrowNullPointerException");
+            if (isWindows()) {
+                jniRegistrationSupport.addJavaShimExports(
+                                "jio_snprintf");
+            } else {
+                jniRegistrationSupport.addJvmShimExports(
+                                "jio_snprintf");
+            }
         }
     }
 

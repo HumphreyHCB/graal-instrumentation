@@ -25,14 +25,18 @@
 package com.oracle.graal.pointsto;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import org.graalvm.nativeimage.hosted.Feature;
 
-import com.oracle.graal.pointsto.ClassInclusionPolicy.SharedLayerImageInclusionPolicy;
+import com.oracle.graal.pointsto.ClassInclusionPolicy.LayeredBaseImageInclusionPolicy;
 import com.oracle.graal.pointsto.api.HostVM;
 import com.oracle.graal.pointsto.api.PointstoOptions;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatures;
@@ -48,14 +52,11 @@ import com.oracle.graal.pointsto.util.CompletionExecutor;
 import com.oracle.graal.pointsto.util.Timer;
 import com.oracle.graal.pointsto.util.TimerCollection;
 import com.oracle.svm.common.meta.MultiMethod;
-import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.util.AnnotationUtil;
-import com.oracle.svm.util.OriginalClassProvider;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugContext.Builder;
-import jdk.graal.compiler.debug.DebugDumpHandlersFactory;
+import jdk.graal.compiler.debug.DebugHandlersFactory;
 import jdk.graal.compiler.debug.Indent;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.DeoptBciSupplier;
@@ -67,9 +68,7 @@ import jdk.graal.compiler.word.WordTypes;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.ConstantReflectionProvider;
-import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaType;
 
 /**
  * This abstract class is shared between Reachability and Points-to. It contains generic methods
@@ -84,11 +83,10 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     protected final int maxConstantObjectsPerType;
     protected final boolean profileConstantObjects;
     protected final boolean optimizeReturnedParameter;
-    protected final boolean useExperimentalReachabilityAnalysis;
 
     protected final OptionValues options;
     protected final DebugContext debug;
-    private final List<DebugDumpHandlersFactory> debugHandlerFactories;
+    private final List<DebugHandlersFactory> debugHandlerFactories;
 
     protected final HostVM hostVM;
     protected final UnsupportedFeatures unsupportedFeatures;
@@ -105,9 +103,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     protected final Timer analysisTimer;
     protected final Timer verifyHeapTimer;
     protected final ClassInclusionPolicy classInclusionPolicy;
-    private static final ResolvedJavaMethod[] NO_METHODS = new ResolvedJavaMethod[]{};
-    private static final ResolvedJavaField[] NO_FIELDS = new ResolvedJavaField[]{};
-    private volatile boolean initialized = false;
 
     @SuppressWarnings("this-escape")
     public AbstractAnalysisEngine(OptionValues options, AnalysisUniverse universe, HostVM hostVM, AnalysisMetaAccess metaAccess, SnippetReflectionProvider snippetReflectionProvider,
@@ -130,8 +125,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         maxConstantObjectsPerType = PointstoOptions.MaxConstantObjectsPerType.getValue(options);
         profileConstantObjects = PointstoOptions.ProfileConstantObjects.getValue(options);
         optimizeReturnedParameter = PointstoOptions.OptimizeReturnedParameter.getValue(options);
-        useExperimentalReachabilityAnalysis = PointstoOptions.UseExperimentalReachabilityAnalysis.getValue(options);
-
         this.snippetReflectionProvider = snippetReflectionProvider;
         this.constantReflectionProvider = constantReflectionProvider;
         this.wordTypes = wordTypes;
@@ -215,7 +208,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
              * After the analysis reaches a stable state check if the shadow heap contains all
              * objects reachable from roots. If this leads to analysis state changes, an additional
              * analysis iteration will be run.
-             *
+             * 
              * We reuse the analysis executor, which at this point should be in before-start state:
              * the analysis finished and it re-initialized the executor for the next iteration. The
              * verifier controls the life cycle of the executor: it starts it and then waits until
@@ -229,19 +222,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         /* Initialize for the next iteration. */
         executor.init(getTiming());
         return analysisModified;
-    }
-
-    @Override
-    public void markInitializationFinished() {
-        assert !initialized;
-
-        initialized = true;
-        universe.notifyBigBangInitialized();
-    }
-
-    @Override
-    public boolean isInitialized() {
-        return initialized;
     }
 
     @Override
@@ -271,11 +251,6 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         return optimizeReturnedParameter;
     }
 
-    @Override
-    public boolean isPointsToAnalysis() {
-        return !useExperimentalReachabilityAnalysis;
-    }
-
     public void profileConstantObject(AnalysisType type) {
         if (profileConstantObjects) {
             PointsToAnalysis.ConstantObjectsProfiler.registerConstant(type);
@@ -284,7 +259,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     }
 
     public boolean isBaseLayerAnalysisEnabled() {
-        return classInclusionPolicy instanceof SharedLayerImageInclusionPolicy;
+        return classInclusionPolicy instanceof LayeredBaseImageInclusionPolicy;
     }
 
     @Override
@@ -298,7 +273,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     }
 
     @Override
-    public List<DebugDumpHandlersFactory> getDebugHandlerFactories() {
+    public List<DebugHandlersFactory> getDebugHandlerFactories() {
         return debugHandlerFactories;
     }
 
@@ -364,7 +339,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
             }
 
             @Override
-            public DebugContext getDebug(OptionValues opts, List<DebugDumpHandlersFactory> factories) {
+            public DebugContext getDebug(OptionValues opts, List<DebugHandlersFactory> factories) {
                 assert opts == getOptions() : opts + " != " + getOptions();
                 return DebugContext.disabled(opts);
             }
@@ -377,86 +352,30 @@ public abstract class AbstractAnalysisEngine implements BigBang {
     }
 
     @Override
-    public void tryRegisterTypeForBaseImage(ResolvedJavaType type) {
-        if (tryApply(type, classInclusionPolicy::isOriginalTypeIncluded, false)) {
-            classInclusionPolicy.includeType(type);
-            ResolvedJavaMethod[] constructors = tryApply(type, t -> t.getDeclaredConstructors(false), NO_METHODS);
-            ResolvedJavaMethod[] methods = tryApply(type, t -> t.getDeclaredMethods(false), NO_METHODS);
-            for (ResolvedJavaMethod[] executables : List.of(constructors, methods)) {
-                for (ResolvedJavaMethod executable : executables) {
-                    if (classInclusionPolicy.isOriginalMethodIncluded(executable)) {
-                        classInclusionPolicy.includeMethod(executable);
-                    }
-                }
-            }
-            ResolvedJavaField[] instanceFields = tryApply(type, t -> t.getInstanceFields(false), NO_FIELDS);
-            ResolvedJavaField[] staticFields = tryApply(type, ResolvedJavaType::getStaticFields, NO_FIELDS);
-            for (ResolvedJavaField[] fields : List.of(instanceFields, staticFields)) {
-                for (ResolvedJavaField field : fields) {
-                    if (classInclusionPolicy.isOriginalFieldIncluded(field)) {
-                        classInclusionPolicy.includeField(field);
-                    }
-                }
-            }
+    public void registerTypeForBaseImage(Class<?> cls) {
+        if (getOrDefault(cls, classInclusionPolicy::isClassIncluded, false)) {
+            classInclusionPolicy.includeClass(cls);
+            Stream.concat(Arrays.stream(getOrDefault(cls, Class::getDeclaredConstructors, new Constructor<?>[0])), Arrays.stream(getOrDefault(cls, Class::getDeclaredMethods, new Method[0])))
+                            .filter(classInclusionPolicy::isMethodIncluded)
+                            .forEach(classInclusionPolicy::includeMethod);
+            Arrays.stream(getOrDefault(cls, Class::getDeclaredFields, new Field[0]))
+                            .filter(classInclusionPolicy::isFieldIncluded)
+                            .forEach(classInclusionPolicy::includeField);
         }
     }
 
     @Override
-    public void tryRegisterMethodForBaseImage(AnalysisMethod method) {
-        if (classInclusionPolicy.isAnalysisMethodIncluded(method)) {
+    public void registerMethodForBaseImage(AnalysisMethod method) {
+        if (classInclusionPolicy.isMethodIncluded(method)) {
             classInclusionPolicy.includeMethod(method);
         }
     }
 
-    @Override
-    public void tryRegisterFieldForBaseImage(AnalysisField field) {
-        if (classInclusionPolicy.isAnalysisFieldIncluded(field)) {
-            classInclusionPolicy.includeField(field);
-        }
-    }
-
-    @Override
-    public void tryRegisterNativeMethodsForBaseImage(ResolvedJavaType type) {
-        /*
-         * Some modules contain native methods that should not be included in the image because they
-         * are hosted only, or because they are currently unsupported.
-         */
-        Set<Module> forbiddenModules = hostVM.getForbiddenModules();
-        if (forbiddenModules.contains(OriginalClassProvider.getJavaClass(type).getModule())) {
-            return;
-        }
-        /*
-         * Some methods in target classes can be marked as native because the substitution only
-         * injects an annotation, or provides an alias, without changing the implementation. Those
-         * methods should not be included in the image.
-         */
-        if (AnnotationUtil.isAnnotationPresent(type, TargetClass.class)) {
-            return;
-        }
-        ResolvedJavaMethod[] methods = tryApply(type, t -> t.getDeclaredMethods(false), NO_METHODS);
-        for (ResolvedJavaMethod method : methods) {
-            if (method.isNative()) {
-                if (getHostVM().isSupportedOriginalMethod(this, method)) {
-                    classInclusionPolicy.includeMethod(method);
-                }
-            }
-        }
-    }
-
-    /**
-     * Applies {@code function} to {@code type} and returns the result or, if
-     * {@link NoClassDefFoundError} or {@link IncompatibleClassChangeError} thrown when applying the
-     * function, returns {@code fallback}.
-     * <p>
-     * The error handling allows for querying members (fields, methods or constructors) of a class
-     * where a member signature refers to a type that is unresolvable due to an incomplete class
-     * path. Such resolution errors need to be ignored when building a shared layer.
-     */
-    private static <U> U tryApply(ResolvedJavaType type, Function<ResolvedJavaType, U> function, U fallback) {
+    public static <T, U> U getOrDefault(T cls, Function<T, U> getMembers, U backup) {
         try {
-            return function.apply(type);
+            return getMembers.apply(cls);
         } catch (NoClassDefFoundError | IncompatibleClassChangeError e) {
-            return fallback;
+            return backup;
         }
     }
 

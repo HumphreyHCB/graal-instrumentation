@@ -25,7 +25,6 @@
 package jdk.graal.compiler.core.phases;
 
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
-import jdk.graal.compiler.phases.common.DeoptimizationGroupingPhase;
 import jdk.graal.compiler.phases.common.FrameStateAssignmentPhase;
 import jdk.graal.compiler.phases.common.GuardLoweringPhase;
 import jdk.graal.compiler.phases.common.LoopSafepointInsertionPhase;
@@ -38,13 +37,12 @@ public class EconomyMidTier extends BaseTier<MidTierContext> {
 
     @SuppressWarnings("this-escape")
     public EconomyMidTier() {
-        CanonicalizerPhase canonicalizer = CanonicalizerPhase.createSingleShot();
+        CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(new RemoveValueProxyPhase(canonicalizer));
         appendPhase(new LoopSafepointInsertionPhase());
         appendPhase(new GuardLoweringPhase());
         appendPhase(new MidTierLoweringPhase(canonicalizer));
         appendPhase(new FrameStateAssignmentPhase());
-        appendPhase(new DeoptimizationGroupingPhase());
         appendPhase(canonicalizer);
         appendPhase(new WriteBarrierAdditionPhase());
     }

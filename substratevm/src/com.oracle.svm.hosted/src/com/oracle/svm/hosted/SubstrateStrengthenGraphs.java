@@ -30,9 +30,7 @@ import com.oracle.graal.pointsto.infrastructure.Universe;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.results.StrengthenGraphs;
-import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateUtil;
-import com.oracle.svm.core.TrackDynamicAccessEnabled;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.graal.nodes.InlinedInvokeArgumentsNode;
 import com.oracle.svm.core.graal.nodes.LoweredDeadEndNode;
@@ -45,7 +43,6 @@ import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
 import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.phases.AnalyzeJavaHomeAccessPhase;
-import com.oracle.svm.hosted.phases.DynamicAccessDetectionPhase;
 
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.ConstantNode;
@@ -62,22 +59,14 @@ import jdk.vm.ci.meta.JavaMethodProfile;
 import jdk.vm.ci.meta.JavaTypeProfile;
 
 public class SubstrateStrengthenGraphs extends StrengthenGraphs {
-    private final Boolean trackDynamicAccess;
+
     private final Boolean trackJavaHomeAccess;
     private final Boolean trackJavaHomeAccessDetailed;
 
     public SubstrateStrengthenGraphs(Inflation bb, Universe converter) {
         super(bb, converter);
-        trackDynamicAccess = TrackDynamicAccessEnabled.isTrackDynamicAccessEnabled();
-        trackJavaHomeAccess = SubstrateOptions.TrackJavaHomeAccess.getValue();
-        trackJavaHomeAccessDetailed = SubstrateOptions.TrackJavaHomeAccessDetailed.getValue();
-    }
-
-    @Override
-    protected void preStrengthenGraphs(StructuredGraph graph, AnalysisMethod method) {
-        if (trackDynamicAccess) {
-            new DynamicAccessDetectionPhase().apply(graph, bb.getProviders(method));
-        }
+        trackJavaHomeAccess = AnalyzeJavaHomeAccessFeature.Options.TrackJavaHomeAccess.getValue(bb.getOptions());
+        trackJavaHomeAccessDetailed = AnalyzeJavaHomeAccessFeature.Options.TrackJavaHomeAccessDetailed.getValue(bb.getOptions());
     }
 
     @Override
@@ -148,14 +137,13 @@ public class SubstrateStrengthenGraphs extends StrengthenGraphs {
     @Override
     protected void setInvokeProfiles(Invoke invoke, JavaTypeProfile typeProfile, JavaMethodProfile methodProfile) {
         if (needsProfiles(invoke.asNode().graph())) {
-            ((SubstrateMethodCallTargetNode) invoke.callTarget()).setProfiles(typeProfile, typeProfile, methodProfile, methodProfile);
+            ((SubstrateMethodCallTargetNode) invoke.callTarget()).setProfiles(typeProfile, methodProfile);
         }
     }
 
-    protected void setInvokeProfiles(Invoke invoke, JavaTypeProfile typeProfile, JavaMethodProfile methodProfile, JavaTypeProfile staticTypeProfile, JavaMethodProfile staticMethodProfile) {
+    protected void setInvokeProfiles(Invoke invoke, JavaTypeProfile typeProfile, JavaMethodProfile methodProfile, JavaTypeProfile staticTypeProfile) {
         if (needsProfiles(invoke.asNode().graph())) {
-            SubstrateMethodCallTargetNode substrateCallTarget = (SubstrateMethodCallTargetNode) invoke.callTarget();
-            substrateCallTarget.setProfiles(typeProfile, staticTypeProfile, methodProfile, staticMethodProfile);
+            ((SubstrateMethodCallTargetNode) invoke.callTarget()).setProfiles(typeProfile, methodProfile, staticTypeProfile);
         }
     }
 

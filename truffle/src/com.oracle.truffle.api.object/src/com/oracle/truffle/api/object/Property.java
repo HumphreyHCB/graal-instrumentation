@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,32 +40,21 @@
  */
 package com.oracle.truffle.api.object;
 
-import java.util.Objects;
-
 /**
  * Property objects represent the mapping between property identifiers (keys) and storage locations.
  * Optionally, properties may have metadata attached to them.
  *
  * @since 0.8 or earlier
  */
-@SuppressWarnings("deprecation")
-public final class Property {
-
-    private final Object key;
-    private final Location location;
-    private final int flags;
-
+public abstract class Property {
     /**
-     * Generic, usual-case constructor for properties storing at least a name.
+     * Constructor for subclasses.
      *
-     * @param key the name of the property
-     * @param location the storage location used to access the property
-     * @param flags property flags (optional)
+     * @since 0.8 or earlier
+     * @deprecated do not use.
      */
-    Property(Object key, Location location, int flags) {
-        this.key = Objects.requireNonNull(key);
-        this.location = Objects.requireNonNull(location);
-        this.flags = flags;
+    @Deprecated(since = "22.2")
+    protected Property() {
     }
 
     /**
@@ -78,8 +67,9 @@ public final class Property {
      * @since 0.8 or earlier
      */
     @Deprecated(since = "22.2")
+    @SuppressWarnings("deprecation")
     public static Property create(Object key, Location location, int flags) {
-        return new Property(key, location, flags);
+        return Layout.getFactory().createProperty(key, location, flags);
     }
 
     /**
@@ -87,18 +77,14 @@ public final class Property {
      *
      * @since 0.8 or earlier
      */
-    public Object getKey() {
-        return key;
-    }
+    public abstract Object getKey();
 
     /**
      * Get property flags, which are free for language-specific use.
      *
      * @since 0.8 or earlier
      */
-    public int getFlags() {
-        return flags;
-    }
+    public abstract int getFlags();
 
     /**
      * Gets the value of this property of the object.
@@ -110,9 +96,7 @@ public final class Property {
      * @deprecated Use {@link DynamicObjectLibrary#getOrDefault(DynamicObject, Object, Object)}.
      */
     @Deprecated(since = "22.2")
-    public Object get(DynamicObject store, Shape shape) {
-        return getLocation().get(store, shape);
-    }
+    public abstract Object get(DynamicObject store, Shape shape);
 
     /**
      * Gets the value of this property of the object.
@@ -125,9 +109,7 @@ public final class Property {
      * @deprecated Use {@link DynamicObjectLibrary#getOrDefault(DynamicObject, Object, Object)}.
      */
     @Deprecated(since = "22.2")
-    public Object get(DynamicObject store, boolean condition) {
-        return getLocation().get(store, condition);
-    }
+    public abstract Object get(DynamicObject store, boolean condition);
 
     /**
      * Get the property location.
@@ -136,9 +118,7 @@ public final class Property {
      *
      * @since 0.8 or earlier
      */
-    public Location getLocation() {
-        return location;
-    }
+    public abstract Location getLocation();
 
     /**
      * Is this property hidden from iteration.
@@ -146,61 +126,5 @@ public final class Property {
      * @see HiddenKey
      * @since 0.8 or earlier
      */
-    public boolean isHidden() {
-        return key instanceof HiddenKey;
-    }
-
-    Property relocate(Location newLocation) {
-        if (!getLocation().equals(newLocation)) {
-            return new Property(key, newLocation, flags);
-        }
-        return this;
-    }
-
-    Property copyWithFlags(int newFlags) {
-        return new Property(key, location, newFlags);
-    }
-
-    /**
-     * @since 0.8 or earlier
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Property other)) {
-            return false;
-        }
-        return (key == other.key || key.equals(other.key)) && flags == other.flags && (location == other.location || location.equals(other.location));
-    }
-
-    boolean isSame(Property other) {
-        if (this == other) {
-            return true;
-        }
-        return key.equals(other.key) && flags == other.flags;
-    }
-
-    /**
-     * @since 0.8 or earlier
-     */
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + key.hashCode();
-        result = prime * result + location.hashCode();
-        result = prime * result + flags;
-        return result;
-    }
-
-    /**
-     * @since 0.8 or earlier
-     */
-    @Override
-    public String toString() {
-        return "\"" + key + "\"" + ":" + location + (flags == 0 ? "" : "%" + flags);
-    }
-
+    public abstract boolean isHidden();
 }

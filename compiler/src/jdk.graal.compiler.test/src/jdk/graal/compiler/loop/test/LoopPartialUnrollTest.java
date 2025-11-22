@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -322,6 +322,7 @@ public class LoopPartialUnrollTest extends GraalCompilerTest {
         assertEquals(referenceGraph, testGraph, false, false);
     }
 
+    @SuppressWarnings("try")
     public StructuredGraph buildGraph(String name, boolean partialUnroll) {
         CompilationIdentifier id = new CompilationIdentifier() {
             @Override
@@ -332,7 +333,7 @@ public class LoopPartialUnrollTest extends GraalCompilerTest {
         ResolvedJavaMethod method = getResolvedJavaMethod(name);
         OptionValues options = new OptionValues(getInitialOptions(), DefaultLoopPolicies.Options.UnrollMaxIterations, 2);
         StructuredGraph graph = parse(builder(method, StructuredGraph.AllowAssumptions.YES, id, options), getEagerGraphBuilderSuite());
-        try (DebugContext.Scope _ = graph.getDebug().scope(name, method, graph)) {
+        try (DebugContext.Scope buildScope = graph.getDebug().scope(name, method, graph)) {
             MidTierContext context = new MidTierContext(getProviders(), getTargetProvider(), OptimisticOptimizations.ALL, null);
 
             CanonicalizerPhase canonicalizer = this.createCanonicalizerPhase();

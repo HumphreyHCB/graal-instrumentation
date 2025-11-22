@@ -25,8 +25,6 @@
 
 package com.oracle.svm.hosted.webimage.wasm.phases;
 
-import com.oracle.svm.hosted.webimage.wasm.nodes.WasmIsNonZeroNode;
-
 import jdk.graal.compiler.core.common.type.FloatStamp;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.LogicConstantNode;
@@ -41,6 +39,8 @@ import jdk.graal.compiler.nodes.calc.FloatLessThanNode;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
+
+import com.oracle.svm.hosted.webimage.wasm.nodes.WasmIsNonZeroNode;
 
 /**
  * Processes {@link CompareNode}s that have {@link CompareNode#unorderedIsTrue()} set to

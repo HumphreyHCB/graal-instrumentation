@@ -24,13 +24,11 @@ package com.oracle.truffle.espresso.jdwp.api;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.debug.Breakpoint;
@@ -38,11 +36,9 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.espresso.jdwp.impl.BreakpointInfo;
 import com.oracle.truffle.espresso.jdwp.impl.ClassPrepareRequest;
 import com.oracle.truffle.espresso.jdwp.impl.DebuggerController;
-import com.oracle.truffle.espresso.jdwp.impl.EventInfo;
 import com.oracle.truffle.espresso.jdwp.impl.FieldBreakpointEvent;
 import com.oracle.truffle.espresso.jdwp.impl.FieldBreakpointInfo;
 import com.oracle.truffle.espresso.jdwp.impl.JDWP;
@@ -61,14 +57,12 @@ public final class VMEventListenerImpl implements VMEventListener {
 
     public static final InteropLibrary UNCACHED = InteropLibrary.getUncached();
 
-    private final Map<Integer, ClassPrepareRequest> classPrepareRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, BreakpointInfo> breakpointRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, RequestFilter> monitorContendedRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, RequestFilter> monitorContendedEnteredRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, RequestFilter> monitorWaitRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, RequestFilter> monitorWaitedRequests = new ConcurrentHashMap<>();
-    private final Map<Integer, FieldRef> fieldRequests = new ConcurrentHashMap<>();
-    private final Collection<Consumer<KlassRef>> classConsumers = new CopyOnWriteArrayList<>();
+    private final HashMap<Integer, ClassPrepareRequest> classPrepareRequests = new HashMap<>();
+    private final HashMap<Integer, BreakpointInfo> breakpointRequests = new HashMap<>();
+    private final HashMap<Integer, RequestFilter> monitorContendedRequests = new HashMap<>();
+    private final HashMap<Integer, RequestFilter> monitorContendedEnteredRequests = new HashMap<>();
+    private final HashMap<Integer, RequestFilter> monitorWaitRequests = new HashMap<>();
+    private final HashMap<Integer, RequestFilter> monitorWaitedRequests = new HashMap<>();
 
     // The connection field is null only until the connection is established. Thus, we need
     // to guard any attempted usage prior to that, e.g. vm dies event.
@@ -86,7 +80,7 @@ public final class VMEventListenerImpl implements VMEventListener {
     private byte vmDeathSuspendPolicy = SuspendStrategy.NONE;
     private int vmStartRequestId;
     private final List<PacketStream> heldEvents = new ArrayList<>();
-    private final Map<Object, Object> currentContendedMonitor = new ConcurrentHashMap<>();
+    private final Map<Object, Object> currentContendedMonitor = new HashMap<>();
     private Object initialThread;
 
     public void activate(Object mainThread, DebuggerController control, JDWPContext jdwpContext) {
@@ -113,7 +107,6 @@ public final class VMEventListenerImpl implements VMEventListener {
         monitorContendedEnteredRequests.clear();
         monitorWaitedRequests.clear();
         monitorWaitRequests.clear();
-        removeFieldRequests();
 
         /*
          * We don't null the connection field here, since there's a race condition between preparing
@@ -130,24 +123,18 @@ public final class VMEventListenerImpl implements VMEventListener {
     }
 
     @Override
-    public void addClassConsumer(Consumer<KlassRef> classConsumer) {
-        classConsumers.add(classConsumer);
-    }
-
-    @Override
-    public void removeClassConsumer(Consumer<KlassRef> classConsumer) {
-        classConsumers.remove(classConsumer);
-    }
-
-    @Override
     public void addClassPrepareRequest(ClassPrepareRequest request) {
-        classPrepareRequests.put(request.getRequestId(), request);
+        synchronized (classPrepareRequests) {
+            classPrepareRequests.put(request.getRequestId(), request);
+        }
     }
 
     @Override
     @TruffleBoundary
     public void removeClassPrepareRequest(int requestId) {
-        classPrepareRequests.remove(requestId);
+        synchronized (classPrepareRequests) {
+            classPrepareRequests.remove(requestId);
+        }
     }
 
     @Override
@@ -169,39 +156,18 @@ public final class VMEventListenerImpl implements VMEventListener {
 
     @Override
     public void clearAllBreakpointRequests() {
-        classConsumers.clear();
         breakpointRequests.clear();
     }
 
     @Override
-    public void addFieldRequest(FieldBreakpointInfo info) {
-        FieldRef field = info.getField();
-        field.addFieldBreakpointInfo(info);
-        fieldRequests.put(info.getRequestId(), field);
-    }
-
-    @Override
-    public void removeFieldRequest(int requestId, FieldRef field) {
-        field.removeFieldBreakpointInfo(requestId);
-        fieldRequests.remove(requestId, field);
-    }
-
-    private void removeFieldRequests() {
-        for (Map.Entry<Integer, FieldRef> entry : fieldRequests.entrySet()) {
-            entry.getValue().removeFieldBreakpointInfo(entry.getKey());
-        }
-        fieldRequests.clear();
-    }
-
-    @Override
     @TruffleBoundary
-    public boolean onFieldModification(FieldRef field, Node node, Object receiver, Object value) {
+    public boolean onFieldModification(FieldRef field, Object receiver, Object value) {
         boolean active = false;
         for (FieldBreakpoint info : field.getFieldBreakpointInfos()) {
             if (info.isModificationBreakpoint()) {
                 // OK, tell the Debug API to suspend the thread now
                 debuggerController.prepareFieldBreakpoint(new FieldBreakpointEvent((FieldBreakpointInfo) info, receiver, value));
-                debuggerController.suspendHere(node);
+                debuggerController.suspend(context.asGuestThread(Thread.currentThread()));
                 active = true;
             }
         }
@@ -210,13 +176,13 @@ public final class VMEventListenerImpl implements VMEventListener {
 
     @Override
     @TruffleBoundary
-    public boolean onFieldAccess(FieldRef field, Node node, Object receiver) {
+    public boolean onFieldAccess(FieldRef field, Object receiver) {
         boolean active = false;
         for (FieldBreakpoint info : field.getFieldBreakpointInfos()) {
             if (info.isAccessBreakpoint()) {
                 // OK, tell the Debug API to suspend the thread now
                 debuggerController.prepareFieldBreakpoint(new FieldBreakpointEvent((FieldBreakpointInfo) info, receiver));
-                debuggerController.suspendHere(node);
+                debuggerController.suspend(context.asGuestThread(Thread.currentThread()));
                 active = true;
             }
         }
@@ -225,7 +191,7 @@ public final class VMEventListenerImpl implements VMEventListener {
 
     @Override
     @TruffleBoundary
-    public boolean onMethodEntry(MethodRef method, Node node, Object scope) {
+    public boolean onMethodEntry(MethodRef method, Object scope) {
         boolean active = false;
         // collect variable information from scope
         List<MethodVariable> variables = new ArrayList<>(1);
@@ -250,7 +216,7 @@ public final class VMEventListenerImpl implements VMEventListener {
             if (hook.onMethodEnter(method, variables.toArray(new MethodVariable[variables.size()]))) {
                 // OK, tell the Debug API to suspend the thread now
                 debuggerController.prepareMethodBreakpoint(new MethodBreakpointEvent((MethodBreakpointInfo) hook, null));
-                debuggerController.suspendHere(node);
+                debuggerController.suspend(context.asGuestThread(Thread.currentThread()));
                 active = true;
 
                 switch (hook.getKind()) {
@@ -270,13 +236,13 @@ public final class VMEventListenerImpl implements VMEventListener {
 
     @Override
     @TruffleBoundary
-    public boolean onMethodReturn(MethodRef method, Node node, Object returnValue) {
+    public boolean onMethodReturn(MethodRef method, Object returnValue) {
         boolean active = false;
         for (MethodHook hook : method.getMethodHooks()) {
             if (hook.onMethodExit(method, returnValue)) {
                 // OK, tell the Debug API to suspend the thread now
                 debuggerController.prepareMethodBreakpoint(new MethodBreakpointEvent((MethodBreakpointInfo) hook, returnValue));
-                debuggerController.suspendHere(node);
+                debuggerController.suspend(context.asGuestThread(Thread.currentThread()));
                 active = true;
 
                 switch (hook.getKind()) {
@@ -297,22 +263,25 @@ public final class VMEventListenerImpl implements VMEventListener {
     @Override
     @TruffleBoundary
     public void classPrepared(KlassRef klass, Object prepareThread) {
-        for (Consumer<KlassRef> c : classConsumers) {
-            c.accept(klass);
-        }
         // check if event should be reported based on the current patterns, otherwise return early
         if (classPrepareRequests.isEmpty()) {
             return;
         }
 
+        String dotName = klass.getNameAsString().replace('/', '.');
         ArrayList<ClassPrepareRequest> toSend = new ArrayList<>();
         byte suspendPolicy = SuspendStrategy.NONE;
 
-        Collection<ClassPrepareRequest> prepareRequests = classPrepareRequests.values();
-        if (!prepareRequests.isEmpty()) {
-            EventInfo event = new EventInfo.Klass(klass, prepareThread);
-            for (ClassPrepareRequest cpr : prepareRequests) {
-                if (cpr.isHit(event)) {
+        // take a snapshot of the current class prepare events
+        // to avoid concurrent modification exceptions
+        ClassPrepareRequest[] prepareRequests;
+        synchronized (classPrepareRequests) {
+            prepareRequests = classPrepareRequests.values().toArray(new ClassPrepareRequest[0]);
+        }
+        for (ClassPrepareRequest cpr : prepareRequests) {
+            Pattern[] patterns = cpr.getPatterns();
+            for (Pattern pattern : patterns) {
+                if ("".equals(pattern.pattern()) || pattern.matcher(dotName).matches()) {
                     toSend.add(cpr);
                     byte cprPolicy = cpr.getSuspendPolicy();
                     if (cprPolicy == SuspendStrategy.ALL) {
@@ -320,9 +289,6 @@ public final class VMEventListenerImpl implements VMEventListener {
                     } else if (cprPolicy == SuspendStrategy.EVENT_THREAD && suspendPolicy != SuspendStrategy.ALL) {
                         suspendPolicy = SuspendStrategy.EVENT_THREAD;
                     }
-                }
-                if (!cpr.isActive()) {
-                    classPrepareRequests.remove(cpr.getRequestId());
                 }
             }
         }
@@ -564,7 +530,7 @@ public final class VMEventListenerImpl implements VMEventListener {
             stream.writeByte(currentFrame.getTypeTag());
             stream.writeLong(currentFrame.getClassId());
             stream.writeLong(currentFrame.getMethodId());
-            long codeIndex = currentFrame.getCodeIndex();
+            long codeIndex = info.getStepOutBCI() != -1 ? info.getStepOutBCI() : currentFrame.getCodeIndex();
             stream.writeLong(codeIndex);
             debuggerController.fine(() -> "Sending step completed event");
 
@@ -711,20 +677,17 @@ public final class VMEventListenerImpl implements VMEventListener {
         if (monitorWaitRequests.isEmpty()) {
             return;
         }
-        CallFrame frame = context.locateObjectWaitFrame();
-        EventInfo event = new EventInfo.Frame(context, frame, guestThread);
         for (Map.Entry<Integer, RequestFilter> entry : monitorWaitRequests.entrySet()) {
             RequestFilter filter = entry.getValue();
-            if (filter.isHit(event)) {
+            if (guestThread == filter.getThread()) {
                 // monitor wait(timeout) is called on a requested thread
                 // create the call frame for the caller location of Object.wait(timeout)
+                CallFrame frame = context.locateObjectWaitFrame();
+
                 debuggerController.immediateSuspend(guestThread, filter.getSuspendPolicy(), () -> {
                     sendMonitorWaitEvent(monitor, timeout, filter, frame);
                     return null;
                 });
-            }
-            if (!filter.isActive()) {
-                monitorWaitRequests.remove(filter.getRequestId());
             }
         }
     }
@@ -784,13 +747,12 @@ public final class VMEventListenerImpl implements VMEventListener {
         if (monitorWaitedRequests.isEmpty()) {
             return;
         }
-        CallFrame frame = context.locateObjectWaitFrame();
-        EventInfo event = new EventInfo.Frame(context, frame, currentThread);
         for (Map.Entry<Integer, RequestFilter> entry : monitorWaitedRequests.entrySet()) {
             RequestFilter filter = entry.getValue();
-            if (filter.isHit(event)) {
+            if (currentThread == filter.getThread()) {
                 // monitor wait(timeout) is called on a requested thread
                 // create the call frame for the caller location of Object.wait(timeout)
+                CallFrame frame = context.locateObjectWaitFrame();
 
                 debuggerController.immediateSuspend(currentThread, filter.getSuspendPolicy(), new Callable<Void>() {
                     @Override
@@ -799,9 +761,6 @@ public final class VMEventListenerImpl implements VMEventListener {
                         return null;
                     }
                 });
-            }
-            if (!filter.isActive()) {
-                monitorWaitedRequests.remove(filter.getRequestId());
             }
         }
     }
@@ -819,21 +778,17 @@ public final class VMEventListenerImpl implements VMEventListener {
             return;
         }
 
-        final CallFrame topFrame = context.getStackTrace(guestThread)[0];
-        EventInfo event = new EventInfo.Frame(context, topFrame, guestThread);
         for (Map.Entry<Integer, RequestFilter> entry : monitorContendedRequests.entrySet()) {
             RequestFilter filter = entry.getValue();
-            if (filter.isHit(event)) {
+            if (guestThread == filter.getThread()) {
                 // monitor is contended on a requested thread
-                MonitorEvent mevent = new MonitorEvent(monitor, filter);
+                MonitorEvent event = new MonitorEvent(monitor, filter);
+                final CallFrame topFrame = context.getStackTrace(guestThread)[0];
 
                 debuggerController.immediateSuspend(guestThread, filter.getSuspendPolicy(), () -> {
-                    sendMonitorContendedEnterEvent(mevent, topFrame);
+                    sendMonitorContendedEnterEvent(event, topFrame);
                     return null;
                 });
-            }
-            if (!filter.isActive()) {
-                monitorContendedRequests.remove(filter.getRequestId());
             }
         }
     }
@@ -851,21 +806,17 @@ public final class VMEventListenerImpl implements VMEventListener {
             return;
         }
 
-        final CallFrame topFrame = context.getStackTrace(guestThread)[0];
-        EventInfo event = new EventInfo.Frame(context, topFrame, guestThread);
         for (Map.Entry<Integer, RequestFilter> entry : monitorContendedEnteredRequests.entrySet()) {
             RequestFilter filter = entry.getValue();
-            if (filter.isHit(event)) {
+            if (guestThread == filter.getThread()) {
                 // monitor is contended on a requested thread
-                MonitorEvent mevent = new MonitorEvent(monitor, filter);
+                MonitorEvent event = new MonitorEvent(monitor, filter);
+                final CallFrame topFrame = context.getStackTrace(guestThread)[0];
 
                 debuggerController.immediateSuspend(guestThread, filter.getSuspendPolicy(), () -> {
-                    sendMonitorContendedEnteredEvent(mevent, topFrame);
+                    sendMonitorContendedEnteredEvent(event, topFrame);
                     return null;
                 });
-            }
-            if (!filter.isActive()) {
-                monitorContendedEnteredRequests.remove(filter.getRequestId());
             }
         }
     }

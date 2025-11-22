@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,7 +41,6 @@
 package com.oracle.truffle.regex.tregex.nodes.dfa;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -53,50 +52,42 @@ import com.oracle.truffle.regex.tregex.util.json.JsonConvertible;
 import com.oracle.truffle.regex.tregex.util.json.JsonValue;
 import com.oracle.truffle.regex.util.EmptyArrays;
 
-public final class DFASimpleCGTransition extends DFAAbstractTransitionNode implements JsonConvertible {
+public final class DFASimpleCGTransition implements JsonConvertible {
 
+    private static final byte[] EMPTY_ARRAY = EmptyArrays.BYTE;
     /**
      * Separate object because this is used as a marker value!
      */
     private static final byte[] FULL_CLEAR_ARRAY = {};
 
+    private static final DFASimpleCGTransition EMPTY_INSTANCE = new DFASimpleCGTransition(EMPTY_ARRAY, EMPTY_ARRAY, -1);
+
     @CompilationFinal(dimensions = 1) private final byte[] indexUpdates;
     @CompilationFinal(dimensions = 1) private final byte[] indexClears;
-    private final short lastGroup;
-    private final boolean isFinalTransition;
+    private final int lastGroup;
 
-    private DFASimpleCGTransition(short id, short successor, byte[] indexUpdates, byte[] indexClears, int lastGroup, boolean isFinalTransition) {
-        super(id, successor);
+    private DFASimpleCGTransition(byte[] indexUpdates, byte[] indexClears, int lastGroup) {
         this.indexUpdates = indexUpdates;
         this.indexClears = indexClears;
-        assert lastGroup <= Short.MAX_VALUE;
-        this.lastGroup = (short) lastGroup;
-        this.isFinalTransition = isFinalTransition;
+        this.lastGroup = lastGroup;
     }
 
-    public static DFASimpleCGTransition create(short id, short successor, NFAStateTransition t, boolean fullClear, boolean isFinalTransition) {
+    public static DFASimpleCGTransition create(NFAStateTransition t, boolean fullClear) {
         if (t == null || (!fullClear && t.getGroupBoundaries().isEmpty())) {
-            return null;
+            return getEmptyInstance();
         }
         t.getGroupBoundaries().materializeArrays();
-        return new DFASimpleCGTransition(id, successor, t.getGroupBoundaries().isEmpty() ? EmptyArrays.BYTE : t.getGroupBoundaries().updatesToByteArray(),
-                        fullClear ? FULL_CLEAR_ARRAY : t.getGroupBoundaries().clearsToByteArray(), t.getGroupBoundaries().getLastGroup(), isFinalTransition);
+        return new DFASimpleCGTransition(t.getGroupBoundaries().isEmpty() ? EMPTY_ARRAY : t.getGroupBoundaries().updatesToByteArray(),
+                        fullClear ? FULL_CLEAR_ARRAY : t.getGroupBoundaries().clearsToByteArray(), t.getGroupBoundaries().getLastGroup());
     }
 
-    @Override
-    void apply(TRegexDFAExecutorLocals locals, TRegexDFAExecutorNode executor) {
-        int index = executor.isForward() ? locals.getIndex() : locals.getNextIndex();
-        int[] result = isFinalTransition && executor.getProperties().isSimpleCGMustCopy() ? locals.getCGData().currentResult : locals.getCGData().results;
-        apply(result, index, executor.getProperties().tracksLastGroup(), executor.isForward());
-    }
-
-    private boolean isFullClear() {
-        return indexClears == FULL_CLEAR_ARRAY;
+    public static DFASimpleCGTransition getEmptyInstance() {
+        return EMPTY_INSTANCE;
     }
 
     public void apply(int[] result, int currentIndex, boolean trackLastGroup, boolean forward) {
         CompilerAsserts.partialEvaluationConstant(this);
-        if (isFullClear()) {
+        if (indexClears == FULL_CLEAR_ARRAY) {
             Arrays.fill(result, -1);
         } else {
             applyIndexClear(result);
@@ -104,6 +95,24 @@ public final class DFASimpleCGTransition extends DFAAbstractTransitionNode imple
         applyIndexUpdate(result, currentIndex);
         if (trackLastGroup && lastGroup != -1) {
             applyLastGroup(result, forward);
+        }
+    }
+
+    public void applyFinal(DFACaptureGroupTrackingData cgData, int currentIndex, boolean simpleCGMustCopy, boolean trackLastGroup, boolean forward) {
+        CompilerAsserts.partialEvaluationConstant(this);
+        int[] result = simpleCGMustCopy ? cgData.currentResult : cgData.results;
+        if (indexClears == FULL_CLEAR_ARRAY) {
+            Arrays.fill(result, -1);
+        } else {
+            applyIndexClear(result);
+        }
+        applyIndexUpdate(result, currentIndex);
+        if (trackLastGroup && lastGroup != -1) {
+            if (simpleCGMustCopy) {
+                applyLastGroup(cgData.currentResult, forward);
+            } else {
+                applyLastGroup(cgData.results, forward);
+            }
         }
     }
 
@@ -134,26 +143,22 @@ public final class DFASimpleCGTransition extends DFAAbstractTransitionNode imple
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof DFASimpleCGTransition o)) {
+        if (!(obj instanceof DFASimpleCGTransition)) {
             return false;
         }
-        return getSuccessor() == o.getSuccessor() &&
-                        lastGroup == o.lastGroup &&
-                        isFullClear() == o.isFullClear() &&
-                        Arrays.equals(indexUpdates, o.indexUpdates) &&
-                        Arrays.equals(indexClears, o.indexClears);
+        DFASimpleCGTransition o = (DFASimpleCGTransition) obj;
+        return Arrays.equals(indexUpdates, o.indexUpdates) && Arrays.equals(indexClears, o.indexClears);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(indexUpdates), Arrays.hashCode(indexClears), lastGroup, getSuccessor());
+        return Arrays.hashCode(indexUpdates) * 31 + Arrays.hashCode(indexClears);
     }
 
     @TruffleBoundary
     @Override
     public JsonValue toJson() {
         return Json.obj(Json.prop("indexUpdates", DFACaptureGroupPartialTransition.IndexOperation.groupBoundariesToJsonObject(indexUpdates)),
-                        Json.prop("indexClears", DFACaptureGroupPartialTransition.IndexOperation.groupBoundariesToJsonObject(indexClears)),
-                        Json.prop("lastGroup", lastGroup));
+                        Json.prop("indexClears", DFACaptureGroupPartialTransition.IndexOperation.groupBoundariesToJsonObject(indexClears)));
     }
 }

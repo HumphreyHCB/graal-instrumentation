@@ -40,22 +40,22 @@
  */
 package com.oracle.truffle.regex.tregex.string;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.regex.tregex.buffer.CharArrayBuffer;
+import com.oracle.truffle.regex.tregex.string.Encodings.Encoding;
 
 public final class StringBufferUTF16 extends CharArrayBuffer implements AbstractStringBuffer {
 
-    private final Encoding encoding;
+    public StringBufferUTF16() {
+        super();
+    }
 
-    public StringBufferUTF16(int capacity, Encoding encoding) {
-        super(capacity);
-        assert encoding == Encoding.UTF_16 || encoding == Encoding.UTF_16_RAW || encoding == Encoding.UTF_16BE;
-        this.encoding = encoding;
+    public StringBufferUTF16(int initialCapacity) {
+        super(initialCapacity);
     }
 
     @Override
     public Encoding getEncoding() {
-        return encoding;
+        return Encodings.UTF_16;
     }
 
     @Override
@@ -103,29 +103,8 @@ public final class StringBufferUTF16 extends CharArrayBuffer implements Abstract
         setLength(newLength);
     }
 
-    private byte[] toByteSwappedByteArray() {
-        byte[] bytes = new byte[length() << 1];
-        for (int i = 0; i < length(); i++) {
-            char c = get(i);
-            bytes[i << 1] = (byte) (c >> 8);
-            bytes[(i << 1) + 1] = (byte) c;
-        }
-        return bytes;
-    }
-
     @Override
-    public TruffleString asTString() {
-        if (encoding == Encoding.UTF_16BE) {
-            return TruffleString.fromByteArrayUncached(toByteSwappedByteArray(), encoding.getTStringEncoding(), false);
-        }
-        return TruffleString.fromCharArrayUTF16Uncached(toArray());
-    }
-
-    @Override
-    public TruffleString.WithMask asTStringMask(TruffleString pattern) {
-        if (encoding == Encoding.UTF_16BE) {
-            return TruffleString.WithMask.createUncached(pattern, toByteSwappedByteArray(), encoding.getTStringEncoding());
-        }
-        return TruffleString.WithMask.createUTF16Uncached(pattern, toArray());
+    public StringUTF16 materialize() {
+        return new StringUTF16(toArray());
     }
 }

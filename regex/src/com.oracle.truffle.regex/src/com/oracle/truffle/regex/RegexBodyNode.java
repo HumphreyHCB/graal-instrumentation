@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,51 +49,42 @@ import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.nodes.ExecutableNode;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
-import com.oracle.truffle.regex.tregex.string.Encoding;
+import com.oracle.truffle.regex.tregex.string.Encodings;
 
 @GenerateWrapper
 public abstract class RegexBodyNode extends ExecutableNode implements InstrumentableNode {
 
+    protected final RegexSource source;
+    private final RegexLanguage language;
+
     private SourceSection sourceSection;
 
-    protected RegexBodyNode(RegexLanguage language) {
+    protected RegexBodyNode(RegexLanguage language, RegexSource source) {
         super(language);
+        this.source = source;
+        this.language = language;
     }
 
     protected RegexBodyNode(RegexBodyNode copy) {
-        this(copy.getRegexLanguage());
-    }
-
-    private RegexRootNode getRegexRootNode() {
-        Node parent = getParent();
-        if (parent instanceof RegexBodyNodeWrapper) {
-            parent = parent.getParent();
-        }
-        assert parent != null;
-        return (RegexRootNode) parent;
+        this(copy.language, copy.source);
     }
 
     public RegexSource getSource() {
-        RegexSource source1 = getRegexRootNode().getSource();
-        CompilerAsserts.partialEvaluationConstant(source1);
-        return source1;
+        return source;
     }
 
     public RegexLanguage getRegexLanguage() {
-        return getRegexRootNode().getLanguage(RegexLanguage.class);
+        return language;
     }
 
-    public Encoding getEncoding() {
-        Encoding encoding = getSource().getEncoding();
-        CompilerAsserts.partialEvaluationConstant(encoding);
-        return encoding;
+    public Encodings.Encoding getEncoding() {
+        return source.getEncoding();
     }
 
     public boolean isBooleanMatch() {
-        boolean booleanMatch = getSource().getOptions().isBooleanMatch();
+        boolean booleanMatch = source.getOptions().isBooleanMatch();
         CompilerAsserts.partialEvaluationConstant(booleanMatch);
         return booleanMatch;
     }
@@ -102,7 +93,7 @@ public abstract class RegexBodyNode extends ExecutableNode implements Instrument
     @Override
     public SourceSection getSourceSection() {
         if (sourceSection == null) {
-            String patternSrc = getSource().toStringEscaped();
+            String patternSrc = source.toStringEscaped();
             String name = patternSrc.length() > 30 ? patternSrc.substring(0, 30) + "..." : patternSrc;
             Source src = Source.newBuilder(RegexLanguage.ID, patternSrc, name).internal(true).mimeType("application/js-regex").build();
             sourceSection = src.createSection(0, patternSrc.length());
@@ -128,8 +119,8 @@ public abstract class RegexBodyNode extends ExecutableNode implements Instrument
     @TruffleBoundary
     @Override
     public final String toString() {
-        String src = getSource().toStringEscaped();
-        return "tregex " + getSource().getSource().getName() + " " + getEngineLabel() + ": " + (src.length() > 30 ? src.substring(0, 30) + "..." : src);
+        String src = source.toStringEscaped();
+        return "tregex " + source.getSource().getName() + " " + getEngineLabel() + ": " + (src.length() > 30 ? src.substring(0, 30) + "..." : src);
     }
 
     protected String getEngineLabel() {

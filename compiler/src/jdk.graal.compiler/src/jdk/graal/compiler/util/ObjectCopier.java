@@ -28,10 +28,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -41,7 +37,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -55,7 +50,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -72,7 +66,6 @@ import jdk.graal.compiler.core.common.util.FrequencyEncoder;
 import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.replacements.SnippetTemplate;
 import jdk.internal.misc.Unsafe;
-import jdk.vm.ci.meta.JavaKind;
 
 /**
  * Support for deep copying an object across processes by {@linkplain #encode encoding} it to bytes
@@ -98,11 +91,11 @@ public class ObjectCopier {
         protected Builtin(Class<?> clazz, Class<?>... concreteClasses) {
             this.clazz = clazz;
             if (Modifier.isAbstract(clazz.getModifiers())) {
-                this.concreteClasses = CollectionsUtil.setOf(concreteClasses);
+                this.concreteClasses = Set.of(concreteClasses);
             } else {
-                Set<Class<?>> l = new EconomicHashSet<>(Arrays.asList(concreteClasses));
+                ArrayList<Class<?>> l = new ArrayList<>(List.of(concreteClasses));
                 l.add(clazz);
-                this.concreteClasses = Collections.unmodifiableSet(l);
+                this.concreteClasses = Set.copyOf(l);
             }
         }
 
@@ -190,32 +183,6 @@ public class ObjectCopier {
     }
 
     /**
-     * Builtin for handling boxed primitives.
-     */
-    static final class BoxBuiltin extends Builtin {
-
-        private static final Map<Class<?>, JavaKind> CONCRETE_CLASSES = //
-                        Stream.of(JavaKind.values())//
-                                        .filter(k -> k.isPrimitive() && k != JavaKind.Void)//
-                                        .collect(Collectors.toMap(JavaKind::toBoxedJavaClass, Function.identity()));
-
-        BoxBuiltin() {
-            super(Number.class, CONCRETE_CLASSES.keySet().toArray(Class<?>[]::new));
-        }
-
-        @Override
-        protected void encode(Encoder encoder, ObjectCopierOutputStream stream, Object obj) throws IOException {
-            stream.writeUntypedValue(obj);
-        }
-
-        @Override
-        protected Object decode(Decoder decoder, Class<?> concreteType, ObjectCopierInputStream stream) throws IOException {
-            char typeCh = CONCRETE_CLASSES.get(concreteType).getTypeChar();
-            return stream.readUntypedValue(typeCh);
-        }
-    }
-
-    /**
      * Builtin for handling {@link String} values.
      */
     static final class StringBuiltin extends Builtin {
@@ -286,11 +253,12 @@ public class ObjectCopier {
 
         HashMapBuiltin() {
             super(HashMap.class, IdentityHashMap.class, LinkedHashMap.class, SnippetTemplate.LRUCache.class);
-            factories = new EconomicHashMap<>();
-            factories.put(HashMap.class, HashMap::new);
-            factories.put(IdentityHashMap.class, IdentityHashMap::new);
-            factories.put(LinkedHashMap.class, LinkedHashMap::new);
-            factories.put(SnippetTemplate.LRUCache.class, SnippetTemplate.LRUCache::new);
+            int size = SnippetTemplate.Options.MaxTemplatesPerSnippet.getDefaultValue();
+            factories = Map.of(
+                            HashMap.class, HashMap::new,
+                            IdentityHashMap.class, IdentityHashMap::new,
+                            LinkedHashMap.class, LinkedHashMap::new,
+                            SnippetTemplate.LRUCache.class, () -> new SnippetTemplate.LRUCache<>(size, size));
         }
 
         @Override
@@ -441,8 +409,8 @@ public class ObjectCopier {
 
     private static final Comparator<Class<?>> CLASS_COMPARATOR = Comparator.comparing(Class::getName);
     final Map<Class<?>, ClassInfo> classInfos = new TreeMap<>(CLASS_COMPARATOR);
-    final Map<Class<?>, Builtin> builtinClasses = new LinkedHashMap<>();
-    final Set<Class<?>> notBuiltins = new EconomicHashSet<>();
+    final Map<Class<?>, Builtin> builtinClasses = new HashMap<>();
+    final Set<Class<?>> notBuiltins = new HashSet<>();
 
     protected final void addBuiltin(Builtin builtin) {
         addBuiltin(builtin, builtin.clazz);
@@ -460,7 +428,6 @@ public class ObjectCopier {
 
     public ObjectCopier() {
         addBuiltin(new ClassBuiltin());
-        addBuiltin(new BoxBuiltin());
         addBuiltin(new EconomicMapBuiltin());
         addBuiltin(new EnumBuiltin());
 
@@ -498,7 +465,7 @@ public class ObjectCopier {
 
     public static class Decoder extends ObjectCopier {
 
-        private final Map<Integer, Object> idToObject = new EconomicHashMap<>();
+        private final Map<Integer, Object> idToObject = new HashMap<>();
         private final ClassLoader loader;
 
         public Decoder(ClassLoader loader) {
@@ -759,7 +726,7 @@ public class ObjectCopier {
         }
 
         public static Map<Object, Field> gatherExternalValues(List<Field> externalValueFields) {
-            Map<Object, Field> result = EconomicHashMap.newIdentityMap();
+            Map<Object, Field> result = new IdentityHashMap<>();
             for (Field f : externalValueFields) {
                 addExternalValue(result, f);
             }
@@ -1040,23 +1007,6 @@ public class ObjectCopier {
         }
     }
 
-    /**
-     * Denotes a field that should not be treated as an external value.
-     */
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.FIELD)
-    public @interface NotExternalValue {
-        /**
-         * Documents the reason why the annotated field is not an external value.
-         */
-        String reason();
-    }
-
-    /**
-     * Gets the set of static, final fields whose values are not serialized.
-     *
-     * @see NotExternalValue
-     */
     public static List<Field> getExternalValueFields() throws IOException {
         List<Field> externalValues = new ArrayList<>();
         addImmutableCollectionsFields(externalValues);
@@ -1101,14 +1051,10 @@ public class ObjectCopier {
         for (Field field : declaringClass.getDeclaredFields()) {
             int fieldModifiers = field.getModifiers();
             int fieldMask = Modifier.STATIC | Modifier.FINAL;
-            boolean isStaticAndFinal = (fieldModifiers & fieldMask) == fieldMask;
-            if (!isStaticAndFinal) {
+            if ((fieldModifiers & fieldMask) != fieldMask) {
                 continue;
             }
             if (field.getType().isPrimitive()) {
-                continue;
-            }
-            if (field.getAnnotation(NotExternalValue.class) != null) {
                 continue;
             }
             field.setAccessible(true);

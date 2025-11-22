@@ -32,7 +32,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 
-import com.oracle.svm.core.code.RuntimeMetadataDecoderImpl;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.svm.core.BuildPhaseProvider;
@@ -86,11 +85,8 @@ public final class Target_java_lang_reflect_Field {
     @Alias //
     boolean override;
 
-    @Alias @RecomputeFieldValue(isFinal = true, kind = Kind.None) //
-    public int modifiers;
-
     @Alias //
-    public Target_java_lang_reflect_Field root;
+    Target_java_lang_reflect_Field root;
 
     @Alias
     native Target_java_lang_reflect_Field copy();
@@ -137,11 +133,6 @@ public final class Target_java_lang_reflect_Field {
     @Substitute
     private byte[] getTypeAnnotationBytes0() {
         return SubstrateUtil.cast(this, Target_java_lang_reflect_AccessibleObject.class).typeAnnotations;
-    }
-
-    @Substitute
-    public int getModifiers() {
-        return RuntimeMetadataDecoderImpl.clearInternalModifiers(modifiers);
     }
 
     public static final class FieldDeletionReasonComputer implements FieldValueTransformerWithAvailability {

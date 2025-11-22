@@ -31,14 +31,13 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import jdk.graal.compiler.util.EconomicHashSet;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -211,7 +210,7 @@ public class Base64SubstitutionsTest extends GraalOSRTestBase {
         final byte[] illegals;
 
         IllegalBase64CharSupplier(boolean url) {
-            Set<Byte> set = new EconomicHashSet<>();
+            Set<Byte> set = new HashSet<>();
             for (int val = 0; val < 256; val++) {
                 if ((val >= 'A' && val <= 'Z') ||
                                 (val >= 'a' && val <= 'z') ||

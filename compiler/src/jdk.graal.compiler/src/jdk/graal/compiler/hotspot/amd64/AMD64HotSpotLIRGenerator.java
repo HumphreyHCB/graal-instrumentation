@@ -55,7 +55,6 @@ import jdk.graal.compiler.hotspot.HotSpotLIRGenerationResult;
 import jdk.graal.compiler.hotspot.HotSpotLIRGenerator;
 import jdk.graal.compiler.hotspot.HotSpotLockStack;
 import jdk.graal.compiler.hotspot.amd64.g1.AMD64HotSpotG1BarrierSetLIRTool;
-import jdk.graal.compiler.hotspot.amd64.shenandoah.AMD64HotSpotShenandoahBarrierSetLIRGenerator;
 import jdk.graal.compiler.hotspot.amd64.z.AMD64HotSpotZBarrierSetLIRGenerator;
 import jdk.graal.compiler.hotspot.debug.BenchmarkCounters;
 import jdk.graal.compiler.hotspot.meta.HotSpotForeignCallDescriptor;
@@ -91,6 +90,7 @@ import jdk.vm.ci.amd64.AMD64.CPUFeature;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.Register;
+import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterConfig;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.meta.AllocatableValue;
@@ -121,15 +121,11 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
         if (config.gc == HotSpotGraalRuntime.HotSpotGC.Z) {
             return new AMD64HotSpotZBarrierSetLIRGenerator(config, providers);
         }
-        if (config.gc == HotSpotGraalRuntime.HotSpotGC.Shenandoah) {
-            return new AMD64HotSpotShenandoahBarrierSetLIRGenerator(config, providers);
-        }
         return null;
     }
 
     private AMD64HotSpotLIRGenerator(HotSpotProviders providers, GraalHotSpotVMConfig config, LIRGenerationResult lirGenRes, BackupSlotProvider backupSlotProvider) {
-        this(new AMD64HotSpotLIRKindTool(), new AMD64ArithmeticLIRGenerator(null), getBarrierSet(config, providers),
-                        new AMD64HotSpotMoveFactory(backupSlotProvider, providers.getRegisters().getZeroValueRegister(config)), providers, config, lirGenRes);
+        this(new AMD64HotSpotLIRKindTool(), new AMD64ArithmeticLIRGenerator(null), getBarrierSet(config, providers), new AMD64HotSpotMoveFactory(backupSlotProvider), providers, config, lirGenRes);
     }
 
     protected AMD64HotSpotLIRGenerator(LIRKindTool lirKindTool, AMD64ArithmeticLIRGenerator arithmeticLIRGen, BarrierSetLIRGeneratorTool barrierSetLIRGen, MoveFactory moveFactory,
@@ -382,7 +378,7 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
      * @param exclude
      */
     protected Register[] getSaveableRegisters(boolean forSafepoint, AllocatableValue exclude) {
-        List<Register> allocatableRegisters = getResult().getRegisterAllocationConfig().getAllocatableRegisters();
+        RegisterArray allocatableRegisters = getResult().getRegisterAllocationConfig().getAllocatableRegisters();
 
         ArrayList<Register> registers = new ArrayList<>(allocatableRegisters.size());
         for (Register reg : allocatableRegisters) {
@@ -629,12 +625,12 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
 
     @Override
     public int getArrayLengthOffset() {
-        return config.arrayLengthOffsetInBytes;
+        return config.arrayOopDescLengthOffset();
     }
 
     @Override
-    public boolean isReservedRegister(Register r) {
-        return getProviders().getRegisters().isReservedRegister(r);
+    public Register getHeapBaseRegister() {
+        return getProviders().getRegisters().getHeapBaseRegister();
     }
 
     // no need to call super because HotSpot already overrides the value according to the CPU

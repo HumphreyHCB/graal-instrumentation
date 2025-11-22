@@ -24,13 +24,13 @@
  */
 package com.oracle.svm.core.heap;
 
+import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.lir.LIRFrameState;
+import jdk.graal.compiler.lir.framemap.ReferenceMapBuilder;
+
 import com.oracle.svm.core.CalleeSavedRegisters;
 import com.oracle.svm.core.util.VMError;
 
-import jdk.graal.compiler.core.common.LIRKind;
-import jdk.graal.compiler.debug.GraalError;
-import jdk.graal.compiler.lir.LIRFrameState;
-import jdk.graal.compiler.lir.framemap.ReferenceMapBuilder;
 import jdk.vm.ci.code.ReferenceMap;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.StackSlot;
@@ -97,7 +97,6 @@ public class SubstrateReferenceMapBuilder extends ReferenceMapBuilder {
 
     @Override
     public ReferenceMap finish(LIRFrameState state) {
-        GraalError.guarantee(state.getLiveBasePointers() == null, "computing base pointers is unnecessary %s", state);
         return referenceMap;
     }
 

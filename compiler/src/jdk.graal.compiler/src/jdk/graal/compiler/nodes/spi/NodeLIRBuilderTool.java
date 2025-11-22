@@ -92,6 +92,4 @@ public interface NodeLIRBuilderTool extends NodeValueMap {
     default ForeignCallLinkage lookupGraalStub(ValueNode valueNode, ForeignCallDescriptor foreignCallDescriptor) {
         return null;
     }
-
-    void emitStartRecordingThreadedSwitch();
 }

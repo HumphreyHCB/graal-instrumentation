@@ -129,7 +129,11 @@ public final class GenScavengeAllocationSnippets implements Snippets {
             formatObject = snippet(providers, GenScavengeAllocationSnippets.class, "formatObjectSnippet");
             formatArray = snippet(providers, GenScavengeAllocationSnippets.class, "formatArraySnippet");
             formatStoredContinuation = ContinuationSupport.isSupported() ? snippet(providers, GenScavengeAllocationSnippets.class, "formatStoredContinuation") : null;
-            formatPod = Pod.RuntimeSupport.isPresent() ? snippet(providers, GenScavengeAllocationSnippets.class, "formatPodSnippet", NamedLocationIdentity.getArrayLocation(JavaKind.Byte)) : null;
+            formatPod = Pod.RuntimeSupport.isPresent() ? snippet(providers,
+                            GenScavengeAllocationSnippets.class,
+                            "formatPodSnippet",
+                            NamedLocationIdentity.getArrayLocation(JavaKind.Byte))
+                            : null;
         }
 
         public void registerLowering(Map<Class<? extends Node>, NodeLoweringProvider<?>> lowerings) {
@@ -150,7 +154,7 @@ public final class GenScavengeAllocationSnippets implements Snippets {
                 if (graph.getGuardsStage().areFrameStatesAtSideEffects()) {
                     return;
                 }
-                Arguments args = new Arguments(formatObject, graph, tool.getLoweringStage());
+                Arguments args = new Arguments(formatObject, graph.getGuardsStage(), tool.getLoweringStage());
                 args.add("memory", node.getMemory());
                 args.add("hub", node.getHub());
                 args.add("rememberedSet", node.getRememberedSet());
@@ -168,7 +172,7 @@ public final class GenScavengeAllocationSnippets implements Snippets {
                 if (graph.getGuardsStage().areFrameStatesAtSideEffects()) {
                     return;
                 }
-                Arguments args = new Arguments(formatArray, graph, tool.getLoweringStage());
+                Arguments args = new Arguments(formatArray, graph.getGuardsStage(), tool.getLoweringStage());
                 args.add("memory", node.getMemory());
                 args.add("hub", node.getHub());
                 args.add("length", node.getLength());
@@ -190,7 +194,7 @@ public final class GenScavengeAllocationSnippets implements Snippets {
                 if (graph.getGuardsStage().areFrameStatesAtSideEffects()) {
                     return;
                 }
-                Arguments args = new Arguments(formatStoredContinuation, graph, tool.getLoweringStage());
+                Arguments args = new Arguments(formatStoredContinuation, graph.getGuardsStage(), tool.getLoweringStage());
                 args.add("memory", node.getMemory());
                 args.add("hub", node.getHub());
                 args.add("length", node.getLength());
@@ -210,7 +214,7 @@ public final class GenScavengeAllocationSnippets implements Snippets {
                 if (graph.getGuardsStage().areFrameStatesAtSideEffects()) {
                     return;
                 }
-                Arguments args = new Arguments(formatPod, graph, tool.getLoweringStage());
+                Arguments args = new Arguments(formatPod, graph.getGuardsStage(), tool.getLoweringStage());
                 args.add("memory", node.getMemory());
                 args.add("hub", node.getHub());
                 args.add("arrayLength", node.getArrayLength());

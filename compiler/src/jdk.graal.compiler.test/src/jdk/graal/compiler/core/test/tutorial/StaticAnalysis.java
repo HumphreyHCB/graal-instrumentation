@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@ import static jdk.graal.compiler.core.test.GraalCompilerTest.getInitialOptions;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -62,8 +64,6 @@ import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.graal.compiler.phases.graph.StatelessPostOrderNodeIterator;
-import jdk.graal.compiler.util.EconomicHashMap;
-import jdk.graal.compiler.util.EconomicHashSet;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaField;
@@ -160,8 +160,8 @@ public class StaticAnalysis {
 
         protected Results() {
             allInstantiatedTypes = new TypeFlow();
-            fields = new EconomicHashMap<>();
-            methods = new EconomicHashMap<>();
+            fields = new HashMap<>();
+            methods = new HashMap<>();
         }
 
         /**
@@ -235,6 +235,7 @@ public class StaticAnalysis {
         }
 
         @Override
+        @SuppressWarnings("try")
         protected void process() {
             if (!processed) {
                 /* We want to process a method only once. */
@@ -251,7 +252,7 @@ public class StaticAnalysis {
                  * Support for graph dumping, IGV uses this information to show the method name of a
                  * graph.
                  */
-                try (DebugContext.Scope _ = debug.scope("graph building", graph)) {
+                try (DebugContext.Scope scope = debug.scope("graph building", graph)) {
                     /*
                      * We want all types to be resolved by the graph builder, i.e., we want classes
                      * referenced by the bytecodes to be loaded and initialized. Since we do not run
@@ -301,8 +302,8 @@ public class StaticAnalysis {
         private final Set<TypeFlow> uses;
 
         protected TypeFlow() {
-            types = new EconomicHashSet<>();
-            uses = new EconomicHashSet<>();
+            types = new HashSet<>();
+            uses = new HashSet<>();
         }
 
         /**
@@ -367,7 +368,7 @@ public class StaticAnalysis {
             this.callTarget = callTarget;
             this.actualParameters = actualParameterFlows;
             this.actualReturn = actualReturnFlow;
-            this.callees = new EconomicHashSet<>();
+            this.callees = new HashSet<>();
         }
 
         private void linkCallee(ResolvedJavaMethod callee) {

@@ -54,6 +54,7 @@ import jdk.graal.compiler.debug.PathUtilities;
 import jdk.graal.compiler.debug.TTY;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.NodeMap;
+import jdk.graal.compiler.java.LambdaUtils;
 import jdk.graal.compiler.java.StableMethodNameFormatter;
 import jdk.graal.compiler.nodes.ConstantNode;
 import jdk.graal.compiler.nodes.FrameState;
@@ -156,12 +157,12 @@ public final class ProfileReplaySupport {
                     StableProfileProvider profileProvider, TypeFilter profileSaveFilter) {
         if (SaveProfiles.getValue(debug.getOptions()) || LoadProfiles.getValue(debug.getOptions()) != null) {
             LambdaNameFormatter lambdaNameFormatter = new LambdaNameFormatter() {
-                private final StableMethodNameFormatter stableFormatter = new StableMethodNameFormatter();
+                private final StableMethodNameFormatter stableFormatter = new StableMethodNameFormatter(true);
 
                 @Override
                 public boolean isLambda(ResolvedJavaMethod m) {
                     // Include method handles here as well
-                    return m.getDeclaringClass().isHidden();
+                    return LambdaUtils.isLambdaType(m.getDeclaringClass()) || StableMethodNameFormatter.isMethodHandle(m.getDeclaringClass());
                 }
 
                 @Override

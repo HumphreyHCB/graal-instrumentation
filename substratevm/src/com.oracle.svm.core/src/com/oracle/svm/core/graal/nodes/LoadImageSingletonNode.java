@@ -74,8 +74,6 @@ public class LoadImageSingletonNode extends FixedWithNextNode implements Lowerab
         if (tool.allUsagesAvailable() && hasNoUsages()) {
             // can remove this load if it is never used.
             return null;
-        } else if (singletonInfo.isApplicationLayerConstant()) {
-            return singletonInfo.asApplicationLayerConstant(tool.getMetaAccess(), tool.getSnippetReflection());
         }
 
         return this;

@@ -97,7 +97,7 @@ public abstract class LookupVirtualMethodNode extends AbstractLookupNode {
     }
 
     public static boolean isCandidate(Method m) {
-        return m.isPublic() && !m.isStatic() && !m.isDeclaredSignaturePolymorphic();
+        return m.isPublic() && !m.isStatic() && !m.isSignaturePolymorphicDeclared();
     }
 
     @Override

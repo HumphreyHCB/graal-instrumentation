@@ -77,13 +77,6 @@ public class CustomFilter extends AbstractFilter {
     private String code;
     private String name;
 
-    /**
-     * A cached version of the filter chain built by the filter invocation.  This permits reusing the filter instead of
-     * constructor it from scratch each time.  If the filter invocation returns an instance of {@link CachedLanguageFilter}
-     * then that object is saved and used for all future invocations.
-     */
-    private CachedLanguageFilter cachedFilter;
-
     public CustomFilter(String name, String code) {
         this(name, code, MIME_JAVASCRIPT, Lookup.EMPTY);
     }
@@ -120,7 +113,6 @@ public class CustomFilter extends AbstractFilter {
             return;
         }
         code = s;
-        cachedFilter = null;
         fireChangedEvent();
     }
 
@@ -273,11 +265,6 @@ public class CustomFilter extends AbstractFilter {
     })
     @Override
     public void applyWith(FilterEnvironment env) {
-        if (cachedFilter != null) {
-            cachedFilter.apply(env.getDiagram());
-            return;
-        }
-
         PreparedScript previous;
         synchronized (this) {
             previous = executingScript.put(env, null);
@@ -316,12 +303,7 @@ public class CustomFilter extends AbstractFilter {
             if (prep == null) {
                 throw new IllegalStateException(Bundle.ERR_CannotRunScript(name, mimeType));
             } else {
-                Object result = evalScript(env, prep, b);
-                if (result instanceof CachedLanguageFilter) {
-                    cachedFilter = (CachedLanguageFilter) result;
-                    cachedFilter.setName(name);
-                    cachedFilter.apply(env.getDiagram());
-                }
+                evalScript(env, prep, b);
             }
         } catch (ScriptCancelledException ex) {
             throw new FilterCanceledException(env, ex.getCause());

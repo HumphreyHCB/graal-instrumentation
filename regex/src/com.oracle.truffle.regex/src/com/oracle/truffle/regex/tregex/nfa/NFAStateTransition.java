@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.regex.charset.CodePointSet;
 import com.oracle.truffle.regex.tregex.automaton.AbstractTransition;
-import com.oracle.truffle.regex.tregex.automaton.TransitionConstraint;
 import com.oracle.truffle.regex.tregex.parser.ast.GroupBoundaries;
 import com.oracle.truffle.regex.tregex.util.json.Json;
 import com.oracle.truffle.regex.tregex.util.json.JsonConvertible;
@@ -60,17 +59,13 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
     @CompilationFinal private NFAState target;
     private final CodePointSet codePointSet;
     private final GroupBoundaries groupBoundaries;
-    @CompilationFinal(dimensions = 1) private final long[] constraints;
-    @CompilationFinal(dimensions = 1) private final long[] operations;
 
-    public NFAStateTransition(short id, NFAState source, NFAState target, CodePointSet codePointSet, GroupBoundaries groupBoundaries, long[] constraints, long[] operations) {
+    public NFAStateTransition(short id, NFAState source, NFAState target, CodePointSet codePointSet, GroupBoundaries groupBoundaries) {
         this.id = id;
         this.source = source;
         this.target = target;
         this.codePointSet = codePointSet;
         this.groupBoundaries = groupBoundaries;
-        this.constraints = constraints;
-        this.operations = operations;
     }
 
     @Override
@@ -104,18 +99,6 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
         return codePointSet;
     }
 
-    public long[] getConstraints() {
-        return constraints;
-    }
-
-    public boolean hasConstraints() {
-        return constraints.length > 0;
-    }
-
-    public long[] getOperations() {
-        return operations;
-    }
-
     /**
      * groups entered and exited by this transition.
      */
@@ -134,8 +117,6 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
         this.target = original.target;
         this.codePointSet = original.codePointSet;
         this.groupBoundaries = original.groupBoundaries;
-        this.constraints = original.constraints;
-        this.operations = original.operations;
     }
 
     @Override
@@ -148,11 +129,6 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
         return getId();
     }
 
-    @Override
-    public String toString() {
-        return String.format("%d - %s -> %d", source.getId(), codePointSet, target.getId());
-    }
-
     @TruffleBoundary
     @Override
     public JsonValue toJson() {
@@ -161,8 +137,7 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
                         Json.prop("target", target.getId()),
                         Json.prop("matcherBuilder", codePointSet.toString()),
                         Json.prop("groupBoundaries", groupBoundaries),
-                        Json.prop("sourceSections", groupBoundaries.indexUpdateSourceSectionsToJson(source.getStateSet().getStateIndex())),
-                        Json.prop("guards", TransitionConstraint.combineToJson(constraints, operations)));
+                        Json.prop("sourceSections", groupBoundaries.indexUpdateSourceSectionsToJson(source.getStateSet().getStateIndex())));
     }
 
     @TruffleBoundary
@@ -172,7 +147,6 @@ public final class NFAStateTransition implements AbstractTransition<NFAState, NF
                         Json.prop("target", getTarget(forward).getId()),
                         Json.prop("matcherBuilder", codePointSet.toString()),
                         Json.prop("groupBoundaries", groupBoundaries),
-                        Json.prop("sourceSections", groupBoundaries.indexUpdateSourceSectionsToJson(source.getStateSet().getStateIndex())),
-                        Json.prop("guards", TransitionConstraint.combineToJson(getConstraints(), getOperations())));
+                        Json.prop("sourceSections", groupBoundaries.indexUpdateSourceSectionsToJson(source.getStateSet().getStateIndex())));
     }
 }

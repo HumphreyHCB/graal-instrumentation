@@ -31,7 +31,6 @@ import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.probabilit
 import java.lang.ref.Reference;
 
 import org.graalvm.collections.EconomicMap;
-import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CodePointer;
@@ -41,6 +40,8 @@ import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.UnsignedWord;
 
+import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
+import com.oracle.svm.webimage.wasm.code.WasmSimpleCodeInfoQueryResult;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.MemoryWalker;
 import com.oracle.svm.core.NeverInline;
@@ -49,7 +50,6 @@ import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.UnmanagedMemoryUtil;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.genscavenge.HeapVerifier;
 import com.oracle.svm.core.heap.GC;
 import com.oracle.svm.core.heap.GCCause;
@@ -75,8 +75,6 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.webimage.wasm.stack.WebImageWasmStackFrameVisitor;
 import com.oracle.svm.hosted.webimage.wasm.stack.WebImageWasmStackWalker;
-import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
-import com.oracle.svm.webimage.wasm.code.WasmSimpleCodeInfoQueryResult;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.options.Option;
@@ -169,7 +167,9 @@ public class WasmLMGC implements GC {
 
                     // All objects reachable from the stack have to first be marked gray.
                     grayToBlackObjectVisitor.promoteToGray(o);
-                    grayToBlackObjectVisitor.visitObject(o);
+                    if (!grayToBlackObjectVisitor.visitObjectInline(o)) {
+                        return false;
+                    }
                 }
             }
 
@@ -227,7 +227,6 @@ public class WasmLMGC implements GC {
     }
 
     @Override
-    @Platforms(Platform.HOSTED_ONLY.class)
     public String getDefaultMaxHeapSize() {
         return "unknown";
     }
@@ -372,6 +371,8 @@ public class WasmLMGC implements GC {
                 VMError.guarantee(WasmObjectHeader.isBlackObject(o), "Found gray object after mark phase");
                 WasmObjectHeader.markWhite(o);
             }
+
+            return true;
         });
 
         WasmAllocation.coalesce();
@@ -473,10 +474,11 @@ final class BlackenImageHeapRootsVisitor implements MemoryWalker.ImageHeapRegion
     }
 
     @Override
-    public <T> void visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access) {
+    public <T> boolean visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access) {
         if (access.isWritable(region)) {
             access.visitObjects(region, visitor);
         }
+        return true;
     }
 }
 
@@ -545,6 +547,11 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
         return WasmObjectHeader.isGrayObject(o);
     }
 
+    @Override
+    public boolean visitObject(Object o) {
+        return visitObjectInline(o);
+    }
+
     /**
      * Tries to mark the given objects as well as all objects reachable from it as black.
      * <p>
@@ -554,9 +561,9 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
      */
     @Override
     @AlwaysInline("GC performance")
-    public void visitObject(Object o) {
+    public boolean visitObjectInline(Object o) {
         if (!isGray(o)) {
-            return;
+            return true;
         }
 
         assert worklist.isEmpty() : "Worklist must be empty before every visit";
@@ -574,12 +581,14 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
             if (probability(SLOW_PATH_PROBABILITY, KnownIntrinsics.readHub(obj).isReferenceInstanceClass())) {
                 discoverReference(obj, grayReferenceVisitor);
             }
-            InteriorObjRefWalker.walkObject(obj, grayReferenceVisitor);
+            boolean shouldContinue = InteriorObjRefWalker.walkObject(obj, grayReferenceVisitor);
+            assert shouldContinue : "Walk of an object was not successful";
 
             // The object no longer has any references to white objects, it can be marked black
             promoteToBlack(obj);
 
         }
+        return true;
     }
 
     /**
@@ -605,8 +614,7 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
         // Always mark referent as reachable (no support for soft or weak references yet)
         // TODO GR-43486 allow for soft and weak referenced referents to be potentially freed by the
         // GC
-        int referenceSize = ConfigurationValues.getObjectLayout().getReferenceSize();
-        referenceVisitor.visitObjectReferences(ReferenceInternals.getReferentFieldAddress(dr), false, referenceSize, dr, 1);
+        referenceVisitor.visitObjectReferenceInline(ReferenceInternals.getReferentFieldAddress(dr), 0, false, dr);
     }
 
     /**
@@ -614,26 +622,26 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
      */
     private final class GrayHeapVisitor implements ObjectReferenceVisitor {
         @Override
-        @AlwaysInline("GC performance")
-        public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
-            Pointer pos = firstObjRef;
-            Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
-            while (pos.belowThan(end)) {
-                visitObjectReference(pos, compressed);
-                pos = pos.add(referenceSize);
-            }
+        public boolean visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+            return visitObjectReferenceInline(objRef, 0, compressed, holderObject);
         }
 
-        public void visitObjectReference(Pointer objRef, boolean compressed) {
+        @Override
+        @AlwaysInline("GC performance")
+        public boolean visitObjectReferenceInline(Pointer objRef, int innerOffset, boolean compressed, Object holderObject) {
+            assert innerOffset >= 0 : innerOffset;
             assert !objRef.isNull() : "Tried to visit object references of null object";
 
-            Pointer p = ReferenceAccess.singleton().readObjectAsUntrackedPointer(objRef, compressed);
+            Pointer offsetP = ReferenceAccess.singleton().readObjectAsUntrackedPointer(objRef, compressed);
+            assert offsetP.isNonNull() || innerOffset == 0 : innerOffset;
+
+            Pointer p = offsetP.subtract(innerOffset);
             if (p.isNull()) {
-                return;
+                return true;
             }
 
             if (WasmHeap.getHeapImpl().isInImageHeap(p)) {
-                return;
+                return true;
             }
 
             ObjectHeader oh = Heap.getHeap().getObjectHeader();
@@ -644,7 +652,7 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
              * processing.
              */
             if (!WasmObjectHeader.isWhiteHeader(header)) {
-                return;
+                return true;
             }
 
             Object obj = p.toObjectNonNull();
@@ -658,6 +666,7 @@ final class GrayToBlackObjectVisitor implements ObjectVisitor {
                     worklist.push(obj);
                 }
             }
+            return true;
         }
     }
 }

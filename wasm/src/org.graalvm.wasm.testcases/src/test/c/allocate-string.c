@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int test() {
+int main() {
   char staticMemory[100];
   char *dynamicMemory;
 
@@ -58,8 +58,4 @@ int test() {
   printf("1st: %s\n", staticMemory);
   printf("2nd: %s\n", dynamicMemory);
   return 0;
-}
-
-int main() {
-  return test();
 }

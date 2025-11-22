@@ -91,8 +91,6 @@ import jdk.graal.compiler.graphio.parsing.model.InputGraph;
 public class BinaryReader implements GraphParser, ModelControl {
     private static final Logger LOG = Logger.getLogger(BinaryReader.class.getName());
 
-    static final boolean TRACE_PARSE_TIME = false;
-
     private final Logger instLog;
 
     private final DataSource dataSource;
@@ -474,33 +472,15 @@ public class BinaryReader implements GraphParser, ModelControl {
 
     public static final class EnumKlass extends Klass {
         public final String[] values;
-        public final EnumValue[] enums;
-        private volatile int hashCode = 0;
 
         public EnumKlass(String name, String[] values) {
             super(name);
             this.values = values;
-            this.enums = new EnumValue[values.length];
-            for (int i = 0; i < values.length; i++) {
-                this.enums[i] = new EnumValue(this, i);
-            }
-        }
-
-        EnumValue get(int ordinal) {
-            if (ordinal >= 0 && ordinal < enums.length) {
-                return enums[ordinal];
-            }
-            return new EnumValue(this, ordinal);
         }
 
         @Override
         public int hashCode() {
-            int h = hashCode;
-            if (h == 0) {
-                h = Objects.hash(super.hashCode(), Arrays.hashCode(values));
-                hashCode = h;
-            }
-            return h;
+            return super.hash * 31 + Arrays.hashCode(values);
         }
 
         @Override
@@ -666,7 +646,7 @@ public class BinaryReader implements GraphParser, ModelControl {
             case POOL_ENUM: {
                 EnumKlass enumClass = readPoolObject(EnumKlass.class);
                 int ordinal = dataSource.readInt();
-                obj = enumClass.get(ordinal);
+                obj = new EnumValue(enumClass, ordinal);
                 break;
             }
             case POOL_NODE_CLASS: {
@@ -828,7 +808,6 @@ public class BinaryReader implements GraphParser, ModelControl {
         hashStack.push(null);
 
         boolean restart = false;
-        long start = System.nanoTime();
         try {
             while (true) { // TERMINATION ARGUMENT: finite length of data source will result in
                            // EOFException eventually.
@@ -852,11 +831,6 @@ public class BinaryReader implements GraphParser, ModelControl {
         } finally {
             // also terminates the builder
             closeDanglingGroups();
-            if (TRACE_PARSE_TIME) {
-                long end = System.nanoTime();
-                System.err.println(((System.nanoTime() - timeStart) / 1_000_000) + " Parsed file in " + ((end - start) / 1_000_000) + " ms");
-            }
-
         }
         return builder.rootDocument();
     }
@@ -1016,10 +990,7 @@ public class BinaryReader implements GraphParser, ModelControl {
         }
     }
 
-    private static final long timeStart = System.nanoTime();
-
     private InputGraph parseGraph(int dumpId, String format, Object[] args, boolean toplevel) throws IOException {
-        long start = System.nanoTime();
         InputGraph g = builder.startGraph(dumpId, format, args);
         try {
             parseProperties();
@@ -1043,10 +1014,6 @@ public class BinaryReader implements GraphParser, ModelControl {
             // we have to finish the graph.
             reporter.popContext();
             g = builder.endGraph();
-            if (TRACE_PARSE_TIME) {
-                long end = System.nanoTime();
-                System.err.println(((System.nanoTime() - timeStart) / 1_000_000) + " Parsed " + dumpId + " " + String.format(format, args) + " in " + ((end - start) / 1000000) + " ms");
-            }
         }
         return g;
     }

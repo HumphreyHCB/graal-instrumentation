@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,11 +24,6 @@
  */
 package com.oracle.svm.core.graal.aarch64;
 
-import com.oracle.svm.core.graal.meta.SubstrateBasicLoweringProvider;
-import com.oracle.svm.core.graal.nodes.aarch64.AArch64ISBNode;
-import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
-import com.oracle.svm.core.nodes.CodeSynchronizationNode;
-
 import jdk.graal.compiler.core.aarch64.AArch64LoweringProviderMixin;
 import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
 import jdk.graal.compiler.core.common.spi.MetaAccessExtensionProvider;
@@ -38,7 +33,12 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.calc.FloatConvertNode;
 import jdk.graal.compiler.nodes.spi.LoweringTool;
 import jdk.graal.compiler.nodes.spi.PlatformConfigurationProvider;
-import jdk.graal.compiler.vector.architecture.VectorArchitecture;
+
+import com.oracle.svm.core.graal.meta.SubstrateBasicLoweringProvider;
+import com.oracle.svm.core.graal.nodes.aarch64.AArch64ISBNode;
+import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
+import com.oracle.svm.core.nodes.CodeSynchronizationNode;
+
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.MetaAccessProvider;
 
@@ -46,8 +46,8 @@ public class SubstrateAArch64LoweringProvider extends SubstrateBasicLoweringProv
 
     public SubstrateAArch64LoweringProvider(MetaAccessProvider metaAccess, ForeignCallsProvider foreignCalls, PlatformConfigurationProvider platformConfig,
                     MetaAccessExtensionProvider metaAccessExtensionProvider,
-                    TargetDescription target, VectorArchitecture vectorArchitecture) {
-        super(metaAccess, foreignCalls, platformConfig, metaAccessExtensionProvider, target, vectorArchitecture);
+                    TargetDescription target) {
+        super(metaAccess, foreignCalls, platformConfig, metaAccessExtensionProvider, target);
     }
 
     @SuppressWarnings("unchecked")
@@ -67,9 +67,10 @@ public class SubstrateAArch64LoweringProvider extends SubstrateBasicLoweringProv
         }
     }
 
+    @SuppressWarnings("try")
     public void lowerCodeSynchronizationNode(CodeSynchronizationNode node) {
         StructuredGraph graph = node.graph();
-        try (DebugCloseable _ = node.withNodeSourcePosition()) {
+        try (DebugCloseable position = node.withNodeSourcePosition()) {
             AArch64ISBNode replacement = graph.add(new AArch64ISBNode());
             graph.replaceFixed(node, replacement);
         }

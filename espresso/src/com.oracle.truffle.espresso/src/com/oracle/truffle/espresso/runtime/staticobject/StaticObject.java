@@ -311,9 +311,6 @@ public class StaticObject implements TruffleObject, Cloneable {
         return language.getArrayProperty().getObject(this);
     }
 
-    /**
-     * Returns a Java array based on this static object, which must be a guest array.
-     */
     @SuppressWarnings("unchecked")
     public final <T> T unwrap(EspressoLanguage language) {
         checkNotForeign();

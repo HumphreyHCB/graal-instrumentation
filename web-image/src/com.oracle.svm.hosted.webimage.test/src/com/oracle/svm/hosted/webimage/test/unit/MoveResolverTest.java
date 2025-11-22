@@ -38,13 +38,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.graalvm.collections.Pair;
+import jdk.graal.compiler.hightiercodegen.lowerer.MoveResolver;
+import jdk.graal.compiler.hightiercodegen.lowerer.MoveResolver.Schedule;
+import jdk.graal.compiler.test.AddExports;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.oracle.svm.hosted.webimage.codegen.lowerer.MoveResolver;
-import com.oracle.svm.hosted.webimage.codegen.lowerer.MoveResolver.Schedule;
-
-import jdk.graal.compiler.test.AddExports;
 
 /**
  * Test for {@link MoveResolver}.

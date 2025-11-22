@@ -25,11 +25,3 @@
 function unsignedCompareLessI32(x, y) {
     return x >>> 0 < y >>> 0;
 }
-
-function unsignedMinI32(x, y) {
-    return unsignedCompareLessI32(x, y) ? x : y;
-}
-
-function unsignedMaxI32(x, y) {
-    return unsignedCompareLessI32(x, y) ? y : x;
-}

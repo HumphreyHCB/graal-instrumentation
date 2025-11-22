@@ -49,16 +49,6 @@ abstract class BaseTimerKey extends AccumulatedKey implements TimerKey {
         }
 
         @Override
-        public void add(DebugContext debug, long value, TimeUnit units) {
-            accm.add(debug, value, units);
-        }
-
-        @Override
-        public boolean isEnabled(DebugContext debug) {
-            return accm.isEnabled(debug);
-        }
-
-        @Override
         public DebugCloseable start(DebugContext debug) {
             return accm.start(debug);
         }
@@ -98,18 +88,6 @@ abstract class BaseTimerKey extends AccumulatedKey implements TimerKey {
         } else {
             return VOID_CLOSEABLE;
         }
-    }
-
-    @Override
-    public void add(DebugContext debug, long value, TimeUnit units) {
-        if (debug.isTimerEnabled(this)) {
-            addToCurrentValue(debug, getTimeUnit().convert(value, units));
-        }
-    }
-
-    @Override
-    public boolean isEnabled(DebugContext debug) {
-        return debug.isTimerEnabled(this);
     }
 
     @Override

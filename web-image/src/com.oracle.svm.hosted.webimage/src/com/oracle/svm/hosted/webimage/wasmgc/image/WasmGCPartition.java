@@ -71,11 +71,6 @@ public class WasmGCPartition implements ImageHeapPartition {
         return name;
     }
 
-    @Override
-    public boolean isWritable() {
-        return true;
-    }
-
     public boolean isPseudo() {
         return isPseudo;
     }
@@ -104,5 +99,10 @@ public class WasmGCPartition implements ImageHeapPartition {
     public void add(ImageHeapObject obj) {
         objects.add(obj);
         obj.setHeapPartition(this);
+    }
+
+    @Override
+    public boolean isFiller() {
+        return false;
     }
 }

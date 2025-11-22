@@ -46,7 +46,7 @@ public final class DeoptimizeNode extends AbstractDeoptimizeNode implements Lowe
     protected DeoptimizationAction action;
     protected DeoptimizationReason reason;
     protected int debugId;
-    protected Speculation speculation;
+    protected final Speculation speculation;
     protected boolean mayConvertToGuard;
 
     public DeoptimizeNode(DeoptimizationAction action, DeoptimizationReason reason) {
@@ -161,9 +161,4 @@ public final class DeoptimizeNode extends AbstractDeoptimizeNode implements Lowe
 
     @NodeIntrinsic
     public static native void deopt(@ConstantNodeParameter DeoptimizationAction action, @ConstantNodeParameter DeoptimizationReason reason);
-
-    public void setSpeculation(Speculation speculate) {
-        assert speculation.equals(SpeculationLog.NO_SPECULATION);
-        speculation = speculate;
-    }
 }

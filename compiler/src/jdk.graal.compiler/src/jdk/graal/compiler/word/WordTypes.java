@@ -24,10 +24,6 @@
  */
 package jdk.graal.compiler.word;
 
-import org.graalvm.word.WordBase;
-import org.graalvm.word.impl.WordFactoryOperation;
-
-import jdk.graal.compiler.annotation.AnnotationValueSupport;
 import jdk.graal.compiler.core.common.Fields;
 import jdk.graal.compiler.core.common.type.AbstractObjectStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
@@ -36,11 +32,14 @@ import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.type.StampTool;
+import org.graalvm.word.WordBase;
+
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
+import org.graalvm.word.impl.WordFactoryOperation;
 
 /**
  * Encapsulates information for Java types representing raw words (as opposed to Objects).
@@ -83,14 +82,14 @@ public class WordTypes {
      * Determines if a given method denotes a word operation.
      */
     public boolean isWordOperation(ResolvedJavaMethod targetMethod) {
-        if (AnnotationValueSupport.getAnnotationValue(targetMethod, WordFactoryOperation.class) != null) {
+        if (targetMethod.getAnnotation(WordFactoryOperation.class) != null) {
             return true;
         }
 
         final boolean isObjectAccess = objectAccessType.equals(targetMethod.getDeclaringClass());
         final boolean isBarrieredAccess = barrieredAccessType.equals(targetMethod.getDeclaringClass());
         if (isObjectAccess || isBarrieredAccess) {
-            assert AnnotationValueSupport.getAnnotationValue(targetMethod, Word.Operation.class) != null : targetMethod + " should be annotated with @" + Word.Operation.class.getSimpleName();
+            assert targetMethod.getAnnotation(Word.Operation.class) != null : targetMethod + " should be annotated with @" + Word.Operation.class.getSimpleName();
             return true;
         }
         return isWord(targetMethod.getDeclaringClass());

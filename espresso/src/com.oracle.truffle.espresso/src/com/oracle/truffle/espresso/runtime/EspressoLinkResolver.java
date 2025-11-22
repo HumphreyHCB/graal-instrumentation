@@ -29,7 +29,6 @@ import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Klass;
 import com.oracle.truffle.espresso.impl.Method;
-import com.oracle.truffle.espresso.shared.lookup.LookupSuccessInvocationFailure;
 import com.oracle.truffle.espresso.shared.resolver.CallSiteType;
 import com.oracle.truffle.espresso.shared.resolver.FieldAccessType;
 import com.oracle.truffle.espresso.shared.resolver.LinkResolver;
@@ -64,22 +63,14 @@ public final class EspressoLinkResolver {
                     Symbol<Name> name, Symbol<Signature> signature, Klass symbolicHolder,
                     boolean interfaceLookup,
                     boolean accessCheck, boolean loadingConstraints) {
-        try {
-            return LinkResolver.resolveMethodSymbol(ctx, accessingKlass, name, signature, symbolicHolder, interfaceLookup, accessCheck, loadingConstraints);
-        } catch (LookupSuccessInvocationFailure e) {
-            return e.<Method> getResult().forFailing();
-        }
+        return LinkResolver.resolveMethodSymbol(ctx, accessingKlass, name, signature, symbolicHolder, interfaceLookup, accessCheck, loadingConstraints);
     }
 
     public static Method resolveMethodSymbolOrNull(EspressoContext ctx, Klass accessingKlass,
                     Symbol<Name> name, Symbol<Signature> signature, Klass symbolicHolder,
                     boolean interfaceLookup,
                     boolean accessCheck, boolean loadingConstraints) {
-        try {
-            return LinkResolver.resolveMethodSymbolOrNull(ctx, accessingKlass, name, signature, symbolicHolder, interfaceLookup, accessCheck, loadingConstraints);
-        } catch (LookupSuccessInvocationFailure e) {
-            return e.<Method> getResult().forFailing();
-        }
+        return LinkResolver.resolveMethodSymbolOrNull(ctx, accessingKlass, name, signature, symbolicHolder, interfaceLookup, accessCheck, loadingConstraints);
     }
 
     public static ResolvedCall<Klass, Method, Field> resolveCallSiteOrThrow(EspressoContext ctx, Klass currentKlass, Method symbolicResolution, CallSiteType callSiteType, Klass symbolicHolder) {

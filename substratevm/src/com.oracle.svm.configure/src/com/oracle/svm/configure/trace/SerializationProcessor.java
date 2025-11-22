@@ -30,9 +30,9 @@ import static com.oracle.svm.configure.trace.LazyValueUtils.lazyValue;
 import java.util.List;
 
 import org.graalvm.collections.EconomicMap;
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 
 import com.oracle.svm.configure.NamedConfigurationTypeDescriptor;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
 import com.oracle.svm.configure.config.ConfigurationSet;
 import com.oracle.svm.configure.config.SerializationConfiguration;
 import com.oracle.svm.configure.config.TypeConfiguration;
@@ -53,7 +53,7 @@ public class SerializationProcessor extends AbstractProcessor {
         if (invalidResult) {
             return;
         }
-        UnresolvedAccessCondition condition = UnresolvedAccessCondition.unconditional();
+        UnresolvedConfigurationCondition condition = UnresolvedConfigurationCondition.alwaysTrue();
         String function = (String) entry.get("function");
         List<?> args = (List<?>) entry.get("args");
         SerializationConfiguration serializationConfiguration = configurationSet.getSerializationConfiguration();
@@ -66,12 +66,12 @@ public class SerializationProcessor extends AbstractProcessor {
                 return;
             }
 
-            String reflectionName = (String) args.get(0);
+            String className = (String) args.get(0);
 
-            if (reflectionName.contains(LambdaUtils.LAMBDA_CLASS_NAME_SUBSTRING)) {
-                serializationConfiguration.registerLambdaCapturingClass(condition, reflectionName);
+            if (className.contains(LambdaUtils.LAMBDA_CLASS_NAME_SUBSTRING)) {
+                serializationConfiguration.registerLambdaCapturingClass(condition, className);
             } else {
-                reflectionConfiguration.getOrCreateType(condition, NamedConfigurationTypeDescriptor.fromReflectionName(reflectionName)).setSerializable();
+                reflectionConfiguration.getOrCreateType(condition, new NamedConfigurationTypeDescriptor(className)).setSerializable();
             }
         } else if ("SerializedLambda.readResolve".equals(function)) {
             expectSize(args, 1);

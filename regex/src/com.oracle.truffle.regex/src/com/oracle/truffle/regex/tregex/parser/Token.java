@@ -275,10 +275,6 @@ public class Token implements JsonConvertible {
             this.singleChar = singleChar;
         }
 
-        public Quantifier(Quantifier from) {
-            this(from.min, from.max, from.greedy, from.possessive, from.singleChar);
-        }
-
         public boolean isInfiniteLoop() {
             return getMax() == INFINITY;
         }
@@ -358,12 +354,11 @@ public class Token implements JsonConvertible {
         }
 
         /**
-         * Returns {@code true} iff "unrolling" this quantifier is trivial, i.e. (almost) nothing
-         * has to be duplicated. This is the case for quantifiers {@code ?}, {@code *} and
-         * {@code +}.
+         * Returns {@code true} iff "unrolling" this quantifier is trivial, i.e. nothing has to be
+         * duplicated. This is the case for quantifiers {@code ?} and {@code *}.
          */
         public boolean isUnrollTrivial() {
-            return min <= 1 && max <= 1;
+            return min == 0 && max <= 1;
         }
 
         /**

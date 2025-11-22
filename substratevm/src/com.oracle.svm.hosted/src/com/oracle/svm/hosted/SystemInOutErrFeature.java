@@ -27,7 +27,11 @@ package com.oracle.svm.hosted;
 
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 
+import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.util.ReflectionUtil;
+import jdk.internal.access.SharedSecrets;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 
@@ -37,14 +41,8 @@ import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.jdk.SystemInOutErrSupport;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
+import com.oracle.svm.core.layeredimagesingleton.FeatureSingleton;
 import com.oracle.svm.hosted.imagelayer.CrossLayerConstantRegistry;
-
-import jdk.internal.access.SharedSecrets;
-import jdk.vm.ci.meta.JavaConstant;
 
 /**
  * We use an {@link Feature.DuringSetupAccess#registerObjectReplacer object replacer} because the
@@ -53,8 +51,7 @@ import jdk.vm.ci.meta.JavaConstant;
  * {@link RecomputeFieldValue} annotations.
  */
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
-public class SystemInOutErrFeature implements InternalFeature {
+public class SystemInOutErrFeature implements InternalFeature, FeatureSingleton {
     private final InputStream hostedIn;
     private final PrintStream hostedOut;
     private final PrintStream hostedErr;
@@ -67,7 +64,18 @@ public class SystemInOutErrFeature implements InternalFeature {
         hostedOut = wrappers.outWrapper;
         hostedErr = wrappers.errWrapper;
         hostedInitialIn = SharedSecrets.getJavaLangAccess().initialSystemIn();
-        hostedInitialErr = SharedSecrets.getJavaLangAccess().initialSystemErr();
+        /*
+         * GR-55515: Migrate to JavaLangAccess#initialSystemErr(). The method
+         * JavaLangAccess#initialSystemErr() and the System#initialErr field were both introduced in
+         * JDK 23. Once JDK 21 compatibility is no longer required, consider switching to
+         * SharedSecrets.getJavaLangAccess().initialSystemErr().
+         */
+        Field initialErrField = ReflectionUtil.lookupField(true, System.class, "initialErr");
+        try {
+            hostedInitialErr = initialErrField != null ? (PrintStream) initialErrField.get(null) : null;
+        } catch (IllegalAccessException illegalAccess) {
+            throw VMError.shouldNotReachHere(illegalAccess);
+        }
     }
 
     private SystemInOutErrSupport runtime;
@@ -101,7 +109,7 @@ public class SystemInOutErrFeature implements InternalFeature {
             access.registerObjectReplacer(this::replaceStreamsWithRuntimeObject);
         } else {
             var registry = CrossLayerConstantRegistry.singletonOrNull();
-            ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectToConstantReplacer(obj -> (ImageHeapConstant) replaceStreamsWithLayerConstant(registry, obj));
+            ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectToConstantReplacer(obj -> replaceStreamsWithLayerConstant(registry, obj));
         }
     }
 
@@ -126,7 +134,7 @@ public class SystemInOutErrFeature implements InternalFeature {
         }
     }
 
-    JavaConstant replaceStreamsWithLayerConstant(CrossLayerConstantRegistry registry, Object object) {
+    ImageHeapConstant replaceStreamsWithLayerConstant(CrossLayerConstantRegistry registry, Object object) {
         if (object == hostedIn) {
             return registry.getConstant(SYSTEM_IN_KEY_NAME);
         } else if (object == hostedOut) {

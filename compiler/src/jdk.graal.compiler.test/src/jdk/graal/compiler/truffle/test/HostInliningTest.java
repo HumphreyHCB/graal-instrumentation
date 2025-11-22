@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.HostCompilerDirectives.InliningCutoff;
-import com.oracle.truffle.api.HostCompilerDirectives.InliningRoot;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImplicitCast;
@@ -62,8 +62,6 @@ import com.oracle.truffle.api.profiles.InlinedCountingConditionProfile;
 import com.oracle.truffle.runtime.OptimizedCallTarget;
 import com.oracle.truffle.runtime.OptimizedDirectCallNode;
 
-import jdk.graal.compiler.annotation.AnnotationValue;
-import jdk.graal.compiler.annotation.AnnotationValueSupport;
 import jdk.graal.compiler.api.directives.GraalDirectives;
 import jdk.graal.compiler.core.phases.HighTier;
 import jdk.graal.compiler.debug.DebugContext;
@@ -84,7 +82,6 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
 import jdk.graal.compiler.truffle.host.HostInliningPhase;
-import jdk.graal.compiler.util.EconomicHashMap;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
@@ -106,7 +103,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
 
     @Parameters(name = "{0}")
     public static List<TestRun> data() {
-        return List.of(TestRun.DEFAULT);
+        return Arrays.asList(TestRun.DEFAULT);
     }
 
     @Test
@@ -151,39 +148,22 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         runTest("testRangeCheck");
         runTest("testImplicitCast");
         runTest("testNativeCall");
-        runTest("testBCDSLPrologIfVersion");
-        runTest("testInliningRoot");
     }
 
-    /*
-     * Test for GR-69170
-     */
-    @BytecodeInterpreterSwitch
-    static Object testBCDSLPrologIfVersion(@SuppressWarnings("unused") int value) {
-        Object o = null;
-        if (!CompilerDirectives.inInterpreter() && CompilerDirectives.hasNextTier()) {
-            GraalDirectives.deoptimize();
-            o = new Object();
-        }
-        // must be inlined
-        trivialMethod();
-        return o;
-    }
-
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("try")
     void runTest(String methodName) {
         // initialize the Truffle runtime to ensure that all intrinsics are applied
         Truffle.getRuntime();
 
         ResolvedJavaMethod method = getResolvedJavaMethod(methodName);
-        AnnotationValue depth = AnnotationValueSupport.getAnnotationValue(method, ExplorationDepth.class);
+        ExplorationDepth depth = method.getAnnotation(ExplorationDepth.class);
         int explorationDepth = -1;
         if (depth != null) {
-            explorationDepth = depth.getInt("value");
+            explorationDepth = depth.value();
         }
 
-        AnnotationValue nodeCostLimit = AnnotationValueSupport.getAnnotationValue(method, NodeCostLimit.class);
-        OptionValues options = createHostInliningOptions(nodeCostLimit != null ? nodeCostLimit.getInt("value") : NODE_COST_LIMIT, explorationDepth);
+        NodeCostLimit nodeCostLimit = method.getAnnotation(NodeCostLimit.class);
+        OptionValues options = createHostInliningOptions(nodeCostLimit != null ? nodeCostLimit.value() : NODE_COST_LIMIT, explorationDepth);
         StructuredGraph graph = parseForCompile(method, options);
         try {
             // call it so all method are initialized
@@ -198,7 +178,7 @@ public class HostInliningTest extends TruffleCompilerImplTest {
             }
         }
 
-        try (DebugContext.Scope _ = graph.getDebug().scope("Testing", method, graph)) {
+        try (DebugContext.Scope ds = graph.getDebug().scope("Testing", method, graph)) {
             HighTierContext context = getEagerHighTierContext();
             CanonicalizerPhase canonicalizer = createCanonicalizerPhase();
             if (run == TestRun.WITH_CONVERT_TO_GUARD) {
@@ -206,17 +186,16 @@ public class HostInliningTest extends TruffleCompilerImplTest {
             }
             new HostInliningPhase(canonicalizer).apply(graph, context);
 
-            AnnotationValue notInlined = AnnotationValueSupport.getAnnotationValue(method, ExpectNotInlined.class);
-            AnnotationValue sameGraph = AnnotationValueSupport.getAnnotationValue(method, ExpectSameGraph.class);
+            ExpectNotInlined notInlined = method.getAnnotation(ExpectNotInlined.class);
+            ExpectSameGraph sameGraph = method.getAnnotation(ExpectSameGraph.class);
 
             if (sameGraph != null) {
-                ResolvedJavaMethod compareMethod = getResolvedJavaMethod(sameGraph.getString("value"));
+                ResolvedJavaMethod compareMethod = getResolvedJavaMethod(sameGraph.value());
                 StructuredGraph compareGraph = parseForCompile(compareMethod, options);
                 assertEquals(compareGraph, graph);
             }
 
-            assertInvokesFound(graph, notInlined != null ? (List<String>) notInlined.get("name", List.class) : null,
-                            notInlined != null ? (List<Integer>) notInlined.get("count", List.class) : null);
+            assertInvokesFound(graph, notInlined != null ? notInlined.name() : null, notInlined != null ? notInlined.count() : null);
 
         } catch (Throwable e) {
             graph.getDebug().dump(DebugContext.BASIC_LEVEL, graph, "error graph");
@@ -253,8 +232,8 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         });
     }
 
-    public static void assertInvokesFound(StructuredGraph graph, List<String> notInlined, List<Integer> counts) {
-        Map<String, Integer> found = new EconomicHashMap<>();
+    public static void assertInvokesFound(StructuredGraph graph, String[] notInlined, int[] counts) {
+        Map<String, Integer> found = new HashMap<>();
         List<Invoke> invokes = new ArrayList<>();
         invokes.addAll(graph.getNodes().filter(InvokeNode.class).snapshot());
         invokes.addAll(graph.getNodes().filter(InvokeWithExceptionNode.class).snapshot());
@@ -264,10 +243,10 @@ public class HostInliningTest extends TruffleCompilerImplTest {
             if (notInlined == null) {
                 Assert.fail("Unexpected node type found in the graph: " + invoke);
             } else {
-                for (int i = 0; i < notInlined.size(); i++) {
-                    String expectedMethodName = notInlined.get(i);
+                for (int i = 0; i < notInlined.length; i++) {
+                    String expectedMethodName = notInlined[i];
                     if (expectedMethodName.equals(invokedMethod.getName())) {
-                        int expectedCount = counts.get(i);
+                        int expectedCount = counts[i];
                         int currentCount = found.getOrDefault(invokedMethod.getName(), 0);
                         if (expectedCount >= 0) {
                             currentCount++;
@@ -280,13 +259,13 @@ public class HostInliningTest extends TruffleCompilerImplTest {
                         continue invoke;
                     }
                 }
-                Assert.fail("Unexpected invoke found " + invoke + ". Expected one of " + notInlined);
+                Assert.fail("Unexpected invoke found " + invoke + ". Expected one of " + Arrays.toString(notInlined));
             }
         }
         if (notInlined != null) {
-            for (int i = 0; i < notInlined.size(); i++) {
-                String expectedMethodName = notInlined.get(i);
-                int expectedCount = counts.get(i);
+            for (int i = 0; i < notInlined.length; i++) {
+                String expectedMethodName = notInlined[i];
+                int expectedCount = counts[i];
                 int currentCount = found.getOrDefault(expectedMethodName, 0);
                 if (expectedCount >= 0 && currentCount < expectedCount) {
                     Assert.fail("Expected " + expectedCount + " calls to " + expectedMethodName + " but got " + currentCount + ".");
@@ -434,7 +413,6 @@ public class HostInliningTest extends TruffleCompilerImplTest {
     }
 
     static int notExplorable(int value) {
-        // Checkstyle: stop stable iteration order check
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
@@ -456,7 +434,6 @@ public class HostInliningTest extends TruffleCompilerImplTest {
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
         new HashMap<>().put(value, value);
-        // Checkstyle: resume stable iteration order check
         return value;
     }
 
@@ -1005,13 +982,6 @@ public class HostInliningTest extends TruffleCompilerImplTest {
 
     static int testIndirectIntrinsicsImpl(A a) {
         return a.intrinsic(); // inlined and intrinsic
-    }
-
-    @InliningRoot
-    static int testInliningRoot(int value) {
-        // should work just like bytecode interpreter switches
-        trivialMethod();
-        return value;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

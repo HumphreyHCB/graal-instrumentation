@@ -45,7 +45,8 @@ import java.util.Formatter;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.graalvm.collections.EconomicMap;
@@ -56,7 +57,6 @@ import org.graalvm.collections.UnmodifiableEconomicMap;
 import org.graalvm.word.LocationIdentity;
 import org.graalvm.word.WordBase;
 
-import jdk.graal.compiler.annotation.AnnotationValueSupport;
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.api.replacements.Snippet.ConstantParameter;
@@ -480,12 +480,12 @@ public class SnippetTemplate {
      * method that needs to be computed only once. The {@link SnippetInfo} should be created once
      * per snippet and then cached.
      */
-    public static final class SnippetInfo {
+    public abstract static class SnippetInfo {
 
-        private final ResolvedJavaMethod method;
-        private final ResolvedJavaMethod original;
-        private final LocationIdentity[] privateLocations;
-        private final Object receiver;
+        protected final ResolvedJavaMethod method;
+        protected final ResolvedJavaMethod original;
+        protected final LocationIdentity[] privateLocations;
+        protected final Object receiver;
 
         public Object getReceiver() {
             return receiver;
@@ -514,22 +514,20 @@ public class SnippetTemplate {
 
         private final TimerKey creationTimer;
 
-        private final Snippet.SnippetType type;
+        protected final Snippet.SnippetType type;
 
-        private final SnippetParameterInfo snippetParameterInfo;
+        protected abstract SnippetParameterInfo info();
 
-        private SnippetInfo(ResolvedJavaMethod method, ResolvedJavaMethod original, LocationIdentity[] privateLocations, Object receiver, SnippetParameterInfo snippetParameterInfo,
-                        Snippet.SnippetType type) {
+        protected SnippetInfo(ResolvedJavaMethod method, ResolvedJavaMethod original, LocationIdentity[] privateLocations, Object receiver, Snippet.SnippetType type) {
             this.method = method;
             this.original = original;
             this.privateLocations = privateLocations;
-            this.instantiationCounter = DebugContext.counter("SnippetInstantiationCount[%s]", method.getName());
-            this.instantiationTimer = DebugContext.timer("SnippetInstantiationTime[%s]", method.getName());
-            this.creationCounter = DebugContext.counter("SnippetCreationCount[%s]", method.getName());
-            this.creationTimer = DebugContext.timer("SnippetCreationTime[%s]", method.getName());
+            instantiationCounter = DebugContext.counter("SnippetInstantiationCount[%s]", method.getName());
+            instantiationTimer = DebugContext.timer("SnippetInstantiationTime[%s]", method.getName());
+            creationCounter = DebugContext.counter("SnippetCreationCount[%s]", method.getName());
+            creationTimer = DebugContext.timer("SnippetCreationTime[%s]", method.getName());
             this.receiver = receiver;
             this.type = type;
-            this.snippetParameterInfo = snippetParameterInfo;
         }
 
         public boolean isPrivateLocation(LocationIdentity identity) {
@@ -546,32 +544,63 @@ public class SnippetTemplate {
         }
 
         public int getParameterCount() {
-            return snippetParameterInfo.getParameterCount();
+            return info().getParameterCount();
         }
 
         public boolean isConstantParameter(int paramIdx) {
-            return snippetParameterInfo.isConstantParameter(paramIdx);
+            return info().isConstantParameter(paramIdx);
         }
 
         public boolean isVarargsParameter(int paramIdx) {
-            return snippetParameterInfo.isVarargsParameter(paramIdx);
+            return info().isVarargsParameter(paramIdx);
         }
 
         public boolean isNonNullParameter(int paramIdx) {
-            return snippetParameterInfo.isNonNullParameter(paramIdx);
+            return info().isNonNullParameter(paramIdx);
         }
 
         public String getParameterName(int paramIdx) {
-            return snippetParameterInfo.getParameterName(paramIdx);
-        }
-
-        public SnippetInfo copyWith(ResolvedJavaMethod newMethod) {
-            return new SnippetInfo(newMethod, original, privateLocations, receiver, snippetParameterInfo, type);
+            return info().getParameterName(paramIdx);
         }
 
         @Override
         public String toString() {
             return getClass().getSimpleName() + ":" + method.format("%h.%n");
+        }
+    }
+
+    protected static class LazySnippetInfo extends SnippetInfo {
+        protected final AtomicReference<SnippetParameterInfo> lazy = new AtomicReference<>(null);
+
+        protected LazySnippetInfo(ResolvedJavaMethod method, ResolvedJavaMethod original, LocationIdentity[] privateLocations, Object receiver, Snippet.SnippetType type) {
+            super(method, original, privateLocations, receiver, type);
+        }
+
+        @Override
+        protected SnippetParameterInfo info() {
+            if (lazy.get() == null) {
+                lazy.compareAndSet(null, new SnippetParameterInfo(method));
+            }
+            return lazy.get();
+        }
+    }
+
+    public static class EagerSnippetInfo extends SnippetInfo {
+        protected final SnippetParameterInfo snippetParameterInfo;
+
+        protected EagerSnippetInfo(ResolvedJavaMethod method, ResolvedJavaMethod original, LocationIdentity[] privateLocations, Object receiver, SnippetParameterInfo snippetParameterInfo,
+                        Snippet.SnippetType type) {
+            super(method, original, privateLocations, receiver, type);
+            this.snippetParameterInfo = snippetParameterInfo;
+        }
+
+        @Override
+        protected SnippetParameterInfo info() {
+            return snippetParameterInfo;
+        }
+
+        public EagerSnippetInfo copyWith(ResolvedJavaMethod newMethod) {
+            return new EagerSnippetInfo(newMethod, original, privateLocations, receiver, snippetParameterInfo, type);
         }
     }
 
@@ -602,13 +631,9 @@ public class SnippetTemplate {
 
         protected int nextParamIdx;
 
-        public Arguments(SnippetInfo info, StructuredGraph graph, LoweringTool.LoweringStage loweringStage) {
-            this(info, graph.getGuardsStage(), graph.getGraphState().allowsFloatingReads(), loweringStage);
-        }
-
-        public Arguments(SnippetInfo info, GuardsStage guardsStage, boolean allowsFloatingReads, LoweringTool.LoweringStage loweringStage) {
+        public Arguments(SnippetInfo info, GuardsStage guardsStage, LoweringTool.LoweringStage loweringStage) {
             this.info = info;
-            this.cacheKey = new CacheKey(info, guardsStage, allowsFloatingReads, loweringStage);
+            this.cacheKey = new CacheKey(info, guardsStage, loweringStage);
             this.values = new Object[info.getParameterCount()];
             this.constStamps = new Stamp[info.getParameterCount()];
             this.cacheable = true;
@@ -774,23 +799,21 @@ public class SnippetTemplate {
         }
     }
 
-    public static class CacheKey {
+    static class CacheKey {
 
         private final ResolvedJavaMethod method;
         private final Object[] values;
         private final GuardsStage guardsStage;
-        private final boolean allowsFloatingReads;
         private final LoweringTool.LoweringStage loweringStage;
         private int hash;
         private final Snippet.SnippetType type;
 
-        protected CacheKey(SnippetInfo info, GuardsStage guardsStage, boolean allowsFloatingReads, LoweringTool.LoweringStage loweringStage) {
+        protected CacheKey(SnippetInfo info, GuardsStage guardsStage, LoweringTool.LoweringStage loweringStage) {
             this.method = info.method;
             this.guardsStage = guardsStage;
-            this.allowsFloatingReads = allowsFloatingReads;
             this.loweringStage = loweringStage;
             this.values = new Object[info.getParameterCount()];
-            this.hash = Objects.hash(info.method, allowsFloatingReads, loweringStage);
+            this.hash = info.method.hashCode() + 31 * guardsStage.ordinal();
             this.type = info.type;
         }
 
@@ -808,7 +831,7 @@ public class SnippetTemplate {
             if (!method.equals(other.method)) {
                 return false;
             }
-            if (guardsStage != other.guardsStage || loweringStage != other.loweringStage || allowsFloatingReads != other.allowsFloatingReads) {
+            if (guardsStage != other.guardsStage || loweringStage != other.loweringStage) {
                 return false;
             }
             if (type != other.type) {
@@ -834,6 +857,9 @@ public class SnippetTemplate {
     public static class Options {
         @Option(help = "Use a LRU cache for snippet templates.")//
         public static final OptionKey<Boolean> UseSnippetTemplateCache = new OptionKey<>(true);
+
+        @Option(help = "")//
+        public static final OptionKey<Integer> MaxTemplatesPerSnippet = new OptionKey<>(50);
     }
 
     /**
@@ -843,6 +869,7 @@ public class SnippetTemplate {
 
         protected final OptionValues options;
         protected final SnippetReflectionProvider snippetReflection;
+        private final Map<CacheKey, SnippetTemplate> templates;
 
         private final boolean shouldTrackNodeSourcePosition;
 
@@ -850,6 +877,12 @@ public class SnippetTemplate {
             this.options = options;
             this.snippetReflection = providers.getSnippetReflection();
             this.shouldTrackNodeSourcePosition = providers.getCodeCache() != null && providers.getCodeCache().shouldDebugNonSafepoints();
+            if (Options.UseSnippetTemplateCache.getValue(options)) {
+                int size = Options.MaxTemplatesPerSnippet.getValue(options);
+                this.templates = Collections.synchronizedMap(new LRUCache<>(size, size));
+            } else {
+                this.templates = null;
+            }
         }
 
         public static ResolvedJavaMethod findMethod(MetaAccessProvider metaAccess, Class<?> declaringClass, String methodName) {
@@ -933,8 +966,12 @@ public class SnippetTemplate {
             }
             providers.getReplacements().registerSnippet(javaMethod, original, receiver, GraalOptions.TrackNodeSourcePosition.getValue(options), options);
             LocationIdentity[] privateLocations = GraalOptions.SnippetCounters.getValue(options) ? SnippetCounterNode.addSnippetCounters(initialPrivateLocations) : initialPrivateLocations;
-            SnippetParameterInfo snippetParameterInfo = providers.getReplacements().getSnippetParameterInfo(javaMethod);
-            return new SnippetInfo(javaMethod, original, privateLocations, receiver, snippetParameterInfo, type);
+            if (inRuntimeCode() || GraalOptions.EagerSnippets.getValue(options)) {
+                SnippetParameterInfo snippetParameterInfo = providers.getReplacements().getSnippetParameterInfo(javaMethod);
+                return new EagerSnippetInfo(javaMethod, original, privateLocations, receiver, snippetParameterInfo, type);
+            } else {
+                return new LazySnippetInfo(javaMethod, original, privateLocations, receiver, type);
+            }
         }
 
         /**
@@ -944,7 +981,7 @@ public class SnippetTemplate {
         public SnippetTemplate template(CoreProviders context, ValueNode replacee, final Arguments args) {
             StructuredGraph graph = replacee.graph();
             DebugContext outer = graph.getDebug();
-            SnippetTemplate template = Options.UseSnippetTemplateCache.getValue(options) && args.cacheable ? context.getReplacements().getTemplatesCache().get(args.cacheKey) : null;
+            SnippetTemplate template = Options.UseSnippetTemplateCache.getValue(options) && args.cacheable ? templates.get(args.cacheKey) : null;
             if (template == null || (graph.trackNodeSourcePosition() && !template.snippet.trackNodeSourcePosition())) {
                 try (DebugContext debug = context.getReplacements().openSnippetDebugContext("SnippetTemplate_", args.cacheKey.method, outer, options)) {
                     try (DebugCloseable a = SnippetTemplateCreationTime.start(outer);
@@ -965,7 +1002,7 @@ public class SnippetTemplate {
                                         createMidTierPreLoweringPhases(),
                                         createMidTierPostLoweringPhases());
                         if (Options.UseSnippetTemplateCache.getValue(snippetOptions) && args.cacheable) {
-                            context.getReplacements().getTemplatesCache().put(args.cacheKey, template);
+                            templates.put(args.cacheKey, template);
                         }
                         if (outer.areMetricsEnabled()) {
                             DebugContext.counter("SnippetTemplateNodeCount[%#s]", args).add(outer, template.nodes.size());
@@ -1000,21 +1037,11 @@ public class SnippetTemplate {
 
     public static final class LRUCache<K, V> extends LinkedHashMap<K, V> {
         private static final long serialVersionUID = 1L;
-
-        /**
-         * Maximum capacity of the least-recently used snippet template cache. A higher number
-         * increases the total amount of memory used for snippet templates and a lower number
-         * increases the cache misses and thus decreases compilation speed. At a value of 64, the
-         * estimated misses are at 2% of lookups, at 80, they are at 1% of lookups, and at 100, they
-         * are at 0.5% of lookups.
-         */
-        public static final int SNIPPET_CACHE_CAPACITY = 64;
-
         private final int maxCacheSize;
 
-        public LRUCache() {
-            super(SNIPPET_CACHE_CAPACITY, 0.75F, true);
-            this.maxCacheSize = SNIPPET_CACHE_CAPACITY;
+        public LRUCache(int initialCapacity, int maxCacheSize) {
+            super(initialCapacity, 0.75F, true);
+            this.maxCacheSize = maxCacheSize;
         }
 
         @Override
@@ -1032,7 +1059,7 @@ public class SnippetTemplate {
     /**
      * Creates a snippet template.
      */
-    @SuppressWarnings({"try", "this-escape"})
+    @SuppressWarnings("try")
     protected SnippetTemplate(OptionValues options,
                     DebugContext debug,
                     CoreProviders providers,
@@ -1044,8 +1071,6 @@ public class SnippetTemplate {
                     PhaseSuite<CoreProviders> midTierPostLoweringPhases) {
         this.snippetReflection = snippetReflection;
         this.info = args.info;
-
-        assert replacee.graph() != null : Assertions.errorMessage("Cannot snippet lower without a caller graph", replacee, this);
 
         Object[] constantArgs = getConstantArgs(args);
         BitSet nonNullParameters = getNonNullParameters(args);
@@ -1214,7 +1239,6 @@ public class SnippetTemplate {
                 boolean needsPEA = false;
                 boolean needsCE = false;
                 LoweringTool.LoweringStage loweringStage = args.cacheKey.loweringStage;
-                final boolean allowsFloatingReads = args.cacheKey.allowsFloatingReads;
                 for (Node n : snippetCopy.getNodes()) {
                     if (!needsPEA && (n instanceof AbstractNewObjectNode || n instanceof AbstractBoxingNode)) {
                         needsPEA = true;
@@ -1248,8 +1272,8 @@ public class SnippetTemplate {
                 if (loweringStage != LoweringTool.StandardLoweringStage.HIGH_TIER) {
                     // (3)
                     assert !guardsStage.allowsFloatingGuards() : guardsStage;
-                    new FloatingReadPhase(true, allowsFloatingReads, canonicalizer).apply(snippetCopy, providers);
-
+                    // only create memory map nodes if we need the memory graph
+                    new FloatingReadPhase(true, canonicalizer).apply(snippetCopy, providers);
                     if (!snippetCopy.getGraphState().isExplicitExceptionsNoDeopt()) {
                         new GuardLoweringPhase().apply(snippetCopy, providers);
                     }
@@ -1514,8 +1538,7 @@ public class SnippetTemplate {
         for (MethodCallTargetNode target : snippetCopy.getNodes(MethodCallTargetNode.TYPE)) {
             ResolvedJavaMethod targetMethod = target.targetMethod();
             if (targetMethod != null) {
-                assert AnnotationValueSupport.getAnnotationValue(targetMethod, Fold.class) == null &&
-                                AnnotationValueSupport.getAnnotationValue(targetMethod, NodeIntrinsic.class) == null : "plugin should have been processed";
+                assert targetMethod.getAnnotation(Fold.class) == null && targetMethod.getAnnotation(NodeIntrinsic.class) == null : "plugin should have been processed";
             }
         }
         return true;
@@ -1932,48 +1955,46 @@ public class SnippetTemplate {
 
     private void rewireMemoryGraph(ValueNode replacee, UnmodifiableEconomicMap<Node, Node> duplicates) {
         verifyWithExceptionNode(replacee);
-        if (!replacee.graph().getGraphState().allowsFloatingReads()) {
-            return;
-        }
-
-        // rewire outgoing memory edges
-        if (returnNode != null) {
-            // outgoing memory edges are always attached to the replacee
-            replaceMemoryUsages(replacee, new MemoryOutputMap(replacee, returnNode.getMemoryMap(), duplicates));
-            ReturnNode ret = (ReturnNode) duplicates.get(returnNode);
-            if (ret != null) {
-                MemoryMapNode memoryMap = ret.getMemoryMap();
-                if (memoryMap != null) {
-                    ret.setMemoryMap(null);
-                    memoryMap.safeDelete();
+        if (replacee.graph().isAfterStage(StageFlag.FLOATING_READS)) {
+            // rewire outgoing memory edges
+            if (returnNode != null) {
+                // outgoing memory edges are always attached to the replacee
+                replaceMemoryUsages(replacee, new MemoryOutputMap(replacee, returnNode.getMemoryMap(), duplicates));
+                ReturnNode ret = (ReturnNode) duplicates.get(returnNode);
+                if (ret != null) {
+                    MemoryMapNode memoryMap = ret.getMemoryMap();
+                    if (memoryMap != null) {
+                        ret.setMemoryMap(null);
+                        memoryMap.safeDelete();
+                    }
                 }
             }
-        }
-        // rewire exceptional memory edges
-        if (unwindPath != null) {
-            // exceptional memory edges are attached to the exception edge
-            replaceMemoryUsages(((WithExceptionNode) replacee).exceptionEdge(), new MemoryOutputMap(replacee, unwindPath.getMemoryMap(), duplicates));
-            UnwindNode unwind = (UnwindNode) duplicates.get(unwindPath);
-            if (unwind != null) {
-                MemoryMapNode memoryMap = unwind.getMemoryMap();
-                if (memoryMap != null) {
-                    unwind.setMemoryMap(null);
-                    memoryMap.safeDelete();
+            // rewire exceptional memory edges
+            if (unwindPath != null) {
+                // exceptional memory edges are attached to the exception edge
+                replaceMemoryUsages(((WithExceptionNode) replacee).exceptionEdge(), new MemoryOutputMap(replacee, unwindPath.getMemoryMap(), duplicates));
+                UnwindNode unwind = (UnwindNode) duplicates.get(unwindPath);
+                if (unwind != null) {
+                    MemoryMapNode memoryMap = unwind.getMemoryMap();
+                    if (memoryMap != null) {
+                        unwind.setMemoryMap(null);
+                        memoryMap.safeDelete();
+                    }
                 }
             }
-        }
-        if (memoryAnchor != null) {
-            // rewire incoming memory edges
-            MemoryAnchorNode memoryDuplicate = (MemoryAnchorNode) duplicates.get(memoryAnchor);
-            replaceMemoryUsages(memoryDuplicate, new MemoryInputMap(replacee));
+            if (memoryAnchor != null) {
+                // rewire incoming memory edges
+                MemoryAnchorNode memoryDuplicate = (MemoryAnchorNode) duplicates.get(memoryAnchor);
+                replaceMemoryUsages(memoryDuplicate, new MemoryInputMap(replacee));
 
-            if (memoryDuplicate.hasNoUsages()) {
-                if (memoryDuplicate.next() != null) {
-                    memoryDuplicate.graph().removeFixed(memoryDuplicate);
-                } else {
-                    // this was a dummy memory node used when instantiating pure data-flow
-                    // snippets: it was not attached to the control flow.
-                    memoryDuplicate.safeDelete();
+                if (memoryDuplicate.hasNoUsages()) {
+                    if (memoryDuplicate.next() != null) {
+                        memoryDuplicate.graph().removeFixed(memoryDuplicate);
+                    } else {
+                        // this was a dummy memory node used when instantiating pure data-flow
+                        // snippets: it was not attached to the control flow.
+                        memoryDuplicate.safeDelete();
+                    }
                 }
             }
         }
@@ -2482,6 +2503,60 @@ public class SnippetTemplate {
         }
     }
 
+    /**
+     * Replaces a given floating node with this specialized snippet.
+     *
+     * This snippet must be pure data-flow
+     *
+     * @param metaAccess
+     * @param replacee the node that will be replaced
+     * @param replacer object that replaces the usages of {@code replacee}
+     * @param args the arguments to be bound to the flattened positional parameters of the snippet
+     */
+    @SuppressWarnings("try")
+    public void instantiate(MetaAccessProvider metaAccess, FloatingNode replacee, UsageReplacer replacer, Arguments args) {
+        DebugContext debug = replacee.getDebug();
+        try (DebugCloseable a = args.info.instantiationTimer.start(debug);
+                        DebugCloseable b = totalInstantiationTimer.start(debug);
+                        DebugContext.Scope s = debug.withContext(snippet)) {
+            assert assertSnippetKills(replacee);
+
+            args.info.instantiationCounter.increment(debug);
+            totalInstantiationCounter.increment(debug);
+
+            // Inline the snippet nodes, replacing parameters with the given args in the process
+            StartNode entryPointNode = snippet.start();
+            assert entryPointNode.next() == (memoryAnchor == null ? returnNode : memoryAnchor) : entryPointNode.next();
+            StructuredGraph replaceeGraph = replacee.graph();
+            EconomicMap<Node, Node> replacements = bind(replaceeGraph, metaAccess, args);
+            MemoryAnchorNode anchorDuplicate = null;
+            if (memoryAnchor != null) {
+                anchorDuplicate = replaceeGraph.add(new MemoryAnchorNode(info.privateLocations));
+                replacements.put(memoryAnchor, anchorDuplicate);
+            }
+            UnmodifiableEconomicMap<Node, Node> duplicates = inlineSnippet(replacee, debug, replaceeGraph, replacements);
+
+            // floating nodes are not state-splits not need to re-wire frame states
+            assert !(replacee instanceof StateSplit) : Assertions.errorMessageContext("replacee", replacee);
+            updateStamps(replacee, duplicates);
+
+            rewireMemoryGraph(replacee, duplicates);
+            assert anchorDuplicate == null || anchorDuplicate.isDeleted();
+
+            // Replace all usages of the replacee with the value returned by the snippet
+            ValueNode returnValue = (ValueNode) duplicates.get(returnNode.result());
+            replacer.replace(replacee, returnValue);
+            Node returnNodeDuplicate = duplicates.get(returnNode);
+            if (returnNodeDuplicate.isAlive()) {
+                returnNodeDuplicate.safeDelete();
+            }
+
+            debug.dump(DebugContext.DETAILED_LEVEL, replaceeGraph, "After lowering %s with %s", replacee, this);
+        } catch (Throwable e) {
+            throw debug.handle(e);
+        }
+    }
+
     protected void rewireFrameStates(ValueNode replacee, UnmodifiableEconomicMap<Node, Node> duplicates, FixedNode replaceeGraphCFGPredecessor) {
         if (replacee.graph().getGuardsStage().areFrameStatesAtSideEffects() && requiresFrameStateProcessingBeforeFSA(replacee)) {
             rewireFrameStatesBeforeFSA(replacee, duplicates, replaceeGraphCFGPredecessor);
@@ -2850,10 +2925,12 @@ public class SnippetTemplate {
             if (args.info.isConstantParameter(i)) {
                 JavaKind kind = signature.getParameterKind(i - offset);
                 assert inRuntimeCode() || checkConstantArgument(metaAccess, method, signature, i - offset, args.info.getParameterName(i), args.values[i], kind);
+
             } else if (args.info.isVarargsParameter(i)) {
                 assert args.values[i] instanceof Varargs : Assertions.errorMessage(args.values[i], args, method);
                 Varargs varargs = (Varargs) args.values[i];
                 assert inRuntimeCode() || checkVarargs(metaAccess, method, signature, i - offset, args.info.getParameterName(i), varargs);
+
             } else if (args.info.isNonNullParameter(i)) {
                 assert checkNonNull(method, args.info.getParameterName(i), args.values[i]);
             }

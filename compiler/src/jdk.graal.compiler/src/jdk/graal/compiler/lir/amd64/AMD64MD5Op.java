@@ -24,7 +24,6 @@
  */
 package jdk.graal.compiler.lir.amd64;
 
-import static jdk.graal.compiler.asm.amd64.AMD64Assembler.ConditionFlag.BelowEqual;
 import static jdk.vm.ci.amd64.AMD64.rax;
 import static jdk.vm.ci.amd64.AMD64.rbx;
 import static jdk.vm.ci.amd64.AMD64.rcx;
@@ -32,6 +31,7 @@ import static jdk.vm.ci.amd64.AMD64.rdi;
 import static jdk.vm.ci.amd64.AMD64.rdx;
 import static jdk.vm.ci.amd64.AMD64.rsi;
 import static jdk.vm.ci.code.ValueUtil.asRegister;
+import static jdk.graal.compiler.asm.amd64.AMD64Assembler.ConditionFlag.BelowEqual;
 
 import jdk.graal.compiler.asm.Label;
 import jdk.graal.compiler.asm.amd64.AMD64Address;
@@ -41,15 +41,16 @@ import jdk.graal.compiler.lir.LIRInstructionClass;
 import jdk.graal.compiler.lir.SyncPort;
 import jdk.graal.compiler.lir.asm.CompilationResultBuilder;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
+
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.meta.AllocatableValue;
 import jdk.vm.ci.meta.Value;
 
 // @formatter:off
-@SyncPort(from = "https://github.com/openjdk/jdk25u/blob/c59e44a7aa2aeff0823830b698d524523b996650/src/hotspot/cpu/x86/stubGenerator_x86_64.cpp#L1410-L1457",
+@SyncPort(from = "https://github.com/openjdk/jdk/blob/de29ef3bf3a029f99f340de9f093cd20544217fd/src/hotspot/cpu/x86/stubGenerator_x86_64.cpp#L1410-L1457",
           sha1 = "a2a5c672ea09ea19fd9ce7e3c79ab75f3cdc7287")
-@SyncPort(from = "https://github.com/openjdk/jdk25u/blob/98a93e115137a305aed6b7dbf1d4a7d5906fe77c/src/hotspot/cpu/x86/macroAssembler_x86_md5.cpp#L51-L208",
+@SyncPort(from = "https://github.com/openjdk/jdk/blob/98a93e115137a305aed6b7dbf1d4a7d5906fe77c/src/hotspot/cpu/x86/macroAssembler_x86_md5.cpp#L51-L208",
           sha1 = "8367eccc4e44cd5c71915c01d7b01f2f95179aaf")
 // @formatter:on
 public final class AMD64MD5Op extends AMD64LIRInstruction {
@@ -271,7 +272,8 @@ public final class AMD64MD5Op extends AMD64LIRInstruction {
             masm.addq(buf, 64);
             masm.addl(ofs, 64);
             masm.movl(rsi, ofs);
-            masm.cmplAndJcc(rsi, limit, BelowEqual, loop0, false);
+            masm.cmpl(rsi, limit);
+            masm.jcc(BelowEqual, loop0);
             masm.movl(rax, rsi); // return ofs
         }
     }

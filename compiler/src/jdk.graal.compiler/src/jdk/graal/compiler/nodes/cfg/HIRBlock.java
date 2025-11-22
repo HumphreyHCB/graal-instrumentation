@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import jdk.graal.compiler.nodes.extended.IntegerSwitchNode;
 import org.graalvm.word.LocationIdentity;
 
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
@@ -130,12 +129,6 @@ public abstract class HIRBlock extends BasicBlock<HIRBlock> {
     @Override
     public boolean isLoopHeader() {
         return getBeginNode() instanceof LoopBeginNode;
-    }
-
-    @Override
-    public boolean mayEmitThreadedCode() {
-        return (getBeginNode() instanceof LoopBeginNode loopBeginNode && loopBeginNode.mayEmitThreadedCode()) ||
-                        (getEndNode() instanceof IntegerSwitchNode integerSwitchNode && integerSwitchNode.mayEmitThreadedCode());
     }
 
     @Override

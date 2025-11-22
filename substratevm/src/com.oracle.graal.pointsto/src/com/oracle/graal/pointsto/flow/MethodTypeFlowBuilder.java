@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.graalvm.nativeimage.AnnotationAccess;
+
 import com.oracle.graal.pointsto.AbstractAnalysisEngine;
 import com.oracle.graal.pointsto.ObjectScanner.EmbeddedRootScan;
 import com.oracle.graal.pointsto.PointsToAnalysis;
@@ -53,14 +55,12 @@ import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.HostedProviders;
-import com.oracle.graal.pointsto.meta.PointsToAnalysisField;
 import com.oracle.graal.pointsto.meta.PointsToAnalysisMethod;
 import com.oracle.graal.pointsto.phases.InlineBeforeAnalysis;
 import com.oracle.graal.pointsto.results.StrengthenGraphs;
 import com.oracle.graal.pointsto.typestate.TypeState;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.svm.common.meta.MultiMethod;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
@@ -184,7 +184,7 @@ public class MethodTypeFlowBuilder {
     protected StructuredGraph graph;
     private NodeBitMap processedNodes;
     private Map<PhiNode, TypeFlowBuilder<?>> loopPhiFlows;
-    private final GraphKind graphKind;
+    private final MethodFlowsGraph.GraphKind graphKind;
     private boolean processed = false;
     private final boolean newFlowsGraph;
 
@@ -208,7 +208,7 @@ public class MethodTypeFlowBuilder {
         this.graphKind = graphKind;
         if (bb.trackPrimitiveValues()) {
             this.alwaysEnabled = bb.usePredicates()
-                            ? TypeFlowBuilder.create(bb, method, null, PointsToAnalysis.syntheticSourcePosition(method), AlwaysEnabledPredicateFlow.class, bb::getAlwaysEnabledPredicateFlow)
+                            ? TypeFlowBuilder.create(bb, method, null, PointsToAnalysis.syntheticSourcePosition(method), AlwaysEnabledPredicateFlow.class, AlwaysEnabledPredicateFlow::new)
                             : null;
             this.anyPrimitiveSourceTypeFlowBuilder = TypeFlowBuilder.create(bb, method, alwaysEnabled, null, AnyPrimitiveSourceTypeFlow.class, bb::getAnyPrimitiveSourceTypeFlow);
         } else {
@@ -240,7 +240,28 @@ public class MethodTypeFlowBuilder {
         graph = InlineBeforeAnalysis.decodeGraph(bb, method, analysisParsedGraph);
 
         try (DebugContext.Scope s = graph.getDebug().scope("MethodTypeFlowBuilder", graph)) {
-            optimizeGraphBeforeAnalysis(bb, method, graph);
+            CanonicalizerPhase canonicalizerPhase = CanonicalizerPhase.create();
+            canonicalizerPhase.apply(graph, bb.getProviders(method));
+            if (PointstoOptions.ConditionalEliminationBeforeAnalysis.getValue(bb.getOptions())) {
+                /*
+                 * Removing unnecessary conditions before the static analysis runs reduces the size
+                 * of the type flow graph. For example, this removes redundant null checks: the
+                 * bytecode parser emits explicit null checks before e.g., all method calls, field
+                 * access, array accesses; many of those dominate each other.
+                 */
+                new IterativeConditionalEliminationPhase(canonicalizerPhase, false).apply(graph, bb.getProviders(method));
+            }
+            if (PointstoOptions.EscapeAnalysisBeforeAnalysis.getValue(bb.getOptions())) {
+                if (method.isOriginalMethod()) {
+                    /*
+                     * Deoptimization Targets cannot have virtual objects in frame states.
+                     *
+                     * Also, more work is needed to enable PEA in Runtime Compiled Methods.
+                     */
+                    new BoxNodeIdentityPhase().apply(graph, bb.getProviders(method));
+                    new PartialEscapePhase(false, canonicalizerPhase, bb.getOptions()).apply(graph, bb.getProviders(method));
+                }
+            }
 
             if (!bb.getUniverse().hostVM().validateGraph(bb, graph)) {
                 graph = null;
@@ -256,33 +277,8 @@ public class MethodTypeFlowBuilder {
         }
     }
 
-    public static void optimizeGraphBeforeAnalysis(AbstractAnalysisEngine bb, AnalysisMethod method, StructuredGraph graph) {
-        CanonicalizerPhase canonicalizerPhase = CanonicalizerPhase.create();
-        canonicalizerPhase.apply(graph, bb.getProviders(method));
-        if (PointstoOptions.ConditionalEliminationBeforeAnalysis.getValue(bb.getOptions())) {
-            /*
-             * Removing unnecessary conditions before the static analysis runs reduces the size of
-             * the type flow graph. For example, this removes redundant null checks: the bytecode
-             * parser emits explicit null checks before e.g., all method calls, field access, array
-             * accesses; many of those dominate each other.
-             */
-            new IterativeConditionalEliminationPhase(canonicalizerPhase, false).apply(graph, bb.getProviders(method));
-        }
-        if (PointstoOptions.EscapeAnalysisBeforeAnalysis.getValue(bb.getOptions())) {
-            if (method.isOriginalMethod()) {
-                /*
-                 * Deoptimization Targets cannot have virtual objects in frame states.
-                 *
-                 * Also, more work is needed to enable PEA in Runtime Compiled Methods.
-                 */
-                new BoxNodeIdentityPhase().apply(graph, bb.getProviders(method));
-                new PartialEscapePhase(false, canonicalizerPhase, bb.getOptions()).apply(graph, bb.getProviders(method));
-            }
-        }
-    }
-
-    public static void registerUsedElements(AbstractAnalysisEngine bb, StructuredGraph graph, boolean usePredicates) {
-        var method = (AnalysisMethod) graph.method();
+    public static void registerUsedElements(PointsToAnalysis bb, StructuredGraph graph, boolean usePredicates) {
+        PointsToAnalysisMethod method = (PointsToAnalysisMethod) graph.method();
         HostedProviders providers = bb.getProviders(method);
         for (Node n : graph.getNodes()) {
             if (n instanceof InstanceOfNode) {
@@ -298,9 +294,8 @@ public class MethodTypeFlowBuilder {
                 if (!usePredicates) {
                     type.registerAsInstantiated(AbstractAnalysisEngine.sourcePosition(node));
                     for (var f : type.getInstanceFields(true)) {
-                        var field = (PointsToAnalysisField) f;
-                        PointsToAnalysis pta = (PointsToAnalysis) bb;
-                        field.getInitialFlow().addState(pta, TypeState.defaultValueForKind(pta, field.getStorageKind()));
+                        var field = (AnalysisField) f;
+                        field.getInitialFlow().addState(bb, TypeState.defaultValueForKind(bb, field.getStorageKind()));
                     }
                 }
 
@@ -421,7 +416,7 @@ public class MethodTypeFlowBuilder {
      * {@link FrameState} are only used for debugging. We do not want to have larger images just so
      * that users can see a constant value in the debugger.
      */
-    protected static boolean ignoreConstant(AbstractAnalysisEngine bb, ConstantNode node) {
+    protected static boolean ignoreConstant(PointsToAnalysis bb, ConstantNode node) {
         for (var u : node.usages()) {
             if (u instanceof ClassIsAssignableFromNode usage) {
                 if (!bb.getHostVM().isClosedTypeWorld() || usage.getOtherClass() == node || usage.getThisClass() != node) {
@@ -477,7 +472,7 @@ public class MethodTypeFlowBuilder {
      * later. Therefore, we must mark the instanceof checked type as reachable. Moreover, stamp
      * strengthening based on reachability status of types must be disabled.
      */
-    protected static boolean ignoreInstanceOfType(AbstractAnalysisEngine bb, AnalysisType type) {
+    protected static boolean ignoreInstanceOfType(PointsToAnalysis bb, AnalysisType type) {
         if (bb.getHostVM().ignoreInstanceOfTypeDisallowed()) {
             return false;
         }
@@ -498,17 +493,17 @@ public class MethodTypeFlowBuilder {
         return true;
     }
 
-    private static void registerEmbeddedRoot(AbstractAnalysisEngine bb, ConstantNode cn) {
+    private static void registerEmbeddedRoot(PointsToAnalysis bb, ConstantNode cn) {
         bb.getUniverse().registerEmbeddedRoot(cn.asJavaConstant(), AbstractAnalysisEngine.sourcePosition(cn));
     }
 
-    private static void registerForeignCall(AbstractAnalysisEngine bb, ForeignCallsProvider foreignCallsProvider, ForeignCallDescriptor foreignCallDescriptor, ResolvedJavaMethod from) {
+    private static void registerForeignCall(PointsToAnalysis bb, ForeignCallsProvider foreignCallsProvider, ForeignCallDescriptor foreignCallDescriptor, ResolvedJavaMethod from) {
         Optional<AnalysisMethod> targetMethod = bb.getHostVM().handleForeignCall(foreignCallDescriptor, foreignCallsProvider);
         targetMethod.ifPresent(analysisMethod -> bb.addRootMethod(analysisMethod, true, from));
     }
 
     private boolean handleNodeIntrinsic() {
-        if (AnnotationUtil.isAnnotationPresent(method, NodeIntrinsic.class)) {
+        if (AnnotationAccess.isAnnotationPresent(method, NodeIntrinsic.class)) {
             graph.getDebug().log("apply MethodTypeFlow on node intrinsic %s", method);
             AnalysisType returnType = method.getSignature().getReturnType();
             if (bb.isSupportedJavaKind(returnType.getJavaKind())) {
@@ -706,11 +701,6 @@ public class MethodTypeFlowBuilder {
 
         method.setReachableInCurrentLayer();
 
-        if (method.isDelayed()) {
-            /* The method will be analyzed in the application layer */
-            return;
-        }
-
         if (method.analyzedInPriorLayer()) {
             /*
              * We don't need to analyze this method. We already know its return type state from the
@@ -735,7 +725,7 @@ public class MethodTypeFlowBuilder {
         }
 
         boolean insertPlaceholderFlows = bb.getHostVM().getMultiMethodAnalysisPolicy().insertPlaceholderParamAndReturnFlows(method.getMultiMethodKey());
-        if (graphKind == GraphKind.STUB) {
+        if (graphKind == MethodFlowsGraph.GraphKind.STUB) {
             AnalysisError.guarantee(insertPlaceholderFlows, "placeholder flows must be enabled for STUB graphkinds.");
             insertPlaceholderParamAndReturnFlows();
             return;
@@ -1592,13 +1582,13 @@ public class MethodTypeFlowBuilder {
                 state.add(node, newArrayBuilder);
 
             } else if (n instanceof LoadFieldNode node) { // value = object.field
-                processLoadField(node, (PointsToAnalysisField) node.field(), node.object(), state);
+                processLoadField(node, (AnalysisField) node.field(), node.object(), state);
                 if (node.object() != null) {
                     processImplicitNonNull(node.object(), state);
                 }
 
             } else if (n instanceof StoreFieldNode node) { // object.field = value
-                processStoreField(node, (PointsToAnalysisField) node.field(), node.object(), node.value(), node.value().getStackKind(), state);
+                processStoreField(node, (AnalysisField) node.field(), node.object(), node.value(), node.value().getStackKind(), state);
                 if (node.object() != null) {
                     processImplicitNonNull(node.object(), state);
                 }
@@ -1707,7 +1697,7 @@ public class MethodTypeFlowBuilder {
             checkUnsafeOffset(object, offset);
             if (object.getStackKind() == JavaKind.Object) {
                 if (offset instanceof FieldOffsetProvider fieldOffsetProvider) {
-                    processLoadField(node, (PointsToAnalysisField) fieldOffsetProvider.getField(), object, state);
+                    processLoadField(node, (AnalysisField) fieldOffsetProvider.getField(), object, state);
                 } else if (StampTool.isAlwaysArray(object)) {
                     processLoadIndexed(node, object, state);
                 } else {
@@ -1720,7 +1710,7 @@ public class MethodTypeFlowBuilder {
             checkUnsafeOffset(object, offset);
             if (object.getStackKind() == JavaKind.Object) {
                 if (offset instanceof FieldOffsetProvider fieldOffsetProvider) {
-                    processStoreField(node, (PointsToAnalysisField) fieldOffsetProvider.getField(), object, newValue, newValueKind, state);
+                    processStoreField(node, (AnalysisField) fieldOffsetProvider.getField(), object, newValue, newValueKind, state);
                 } else if (StampTool.isAlwaysArray(object)) {
                     processStoreIndexed(node, object, newValue, newValueKind, state);
                 } else {
@@ -1733,7 +1723,7 @@ public class MethodTypeFlowBuilder {
             checkUnsafeOffset(object, offset);
             if (object.getStackKind() == JavaKind.Object) {
                 if (offset instanceof FieldOffsetProvider fieldOffsetProvider) {
-                    var field = (PointsToAnalysisField) fieldOffsetProvider.getField();
+                    var field = (AnalysisField) fieldOffsetProvider.getField();
                     processStoreField(node, field, object, newValue, newValueKind, state);
                     processLoadField(node, field, object, state);
                 } else if (StampTool.isAlwaysArray(object)) {
@@ -1990,12 +1980,12 @@ public class MethodTypeFlowBuilder {
                     if (type.isArray()) {
                         processStoreIndexed(commitAllocationNode, object, value, value.getStackKind(), state);
                     } else {
-                        var field = (PointsToAnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
+                        AnalysisField field = (AnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
                         processStoreField(commitAllocationNode, field, object, value, value.getStackKind(), state);
                     }
                 } else {
                     if (!type.isArray()) {
-                        var field = (PointsToAnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
+                        AnalysisField field = (AnalysisField) ((VirtualInstanceNode) virtualObject).field(i);
                         field.getInitialFlow().addState(bb, TypeState.defaultValueForKind(bb, field.getStorageKind()));
                     }
                 }
@@ -2023,7 +2013,7 @@ public class MethodTypeFlowBuilder {
         state.add(node, newInstanceBuilder);
     }
 
-    protected void processLoadField(ValueNode node, PointsToAnalysisField field, ValueNode object, TypeFlowsOfNodes state) {
+    protected void processLoadField(ValueNode node, AnalysisField field, ValueNode object, TypeFlowsOfNodes state) {
         field.registerAsRead(AbstractAnalysisEngine.sourcePosition(node));
 
         if (bb.isSupportedJavaKind(node.getStackKind())) {
@@ -2049,7 +2039,7 @@ public class MethodTypeFlowBuilder {
         }
     }
 
-    protected void processStoreField(ValueNode node, PointsToAnalysisField field, ValueNode object, ValueNode newValue, JavaKind newValueKind, TypeFlowsOfNodes state) {
+    protected void processStoreField(ValueNode node, AnalysisField field, ValueNode object, ValueNode newValue, JavaKind newValueKind, TypeFlowsOfNodes state) {
         field.registerAsWritten(AbstractAnalysisEngine.sourcePosition(node));
 
         if (bb.isSupportedJavaKind(newValueKind)) {

@@ -65,11 +65,6 @@ class LibGraalCollectionPolicy extends AdaptiveCollectionPolicy {
     private UnsignedWord sizeBefore = Word.zero();
     private GCCause lastGCCause = null;
 
-    @Override
-    public String getName() {
-        return "libgraal";
-    }
-
     /**
      * The hinted GC will be triggered only if the used bytes in eden space is greater than
      * {@link Options#ExpectedEdenSize}, or if the ratio of used bytes to total allocated bytes of
@@ -110,9 +105,9 @@ class LibGraalCollectionPolicy extends AdaptiveCollectionPolicy {
     }
 
     @Override
-    public void onCollectionBegin(boolean completeCollection, long beginNanoTime) {
+    public void onCollectionBegin(boolean completeCollection, long requestingNanoTime) {
         sizeBefore = GCImpl.getChunkBytes();
-        super.onCollectionBegin(completeCollection, beginNanoTime);
+        super.onCollectionBegin(completeCollection, requestingNanoTime);
     }
 
     @Override

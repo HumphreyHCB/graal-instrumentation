@@ -30,8 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.oracle.graal.pointsto.ObjectScanner.OtherReason;
-import com.oracle.graal.pointsto.ObjectScanner.ScanReason;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
@@ -52,7 +50,7 @@ public final class ClassValueFeature implements InternalFeature {
          * hosted environment into the substrate world.
          */
         Map<ClassValue<?>, Map<Class<?>, Object>> values = ClassValueSupport.getValues();
-        ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectReachableCallback(ClassValue.class, (_, obj, _) -> values.computeIfAbsent(obj, _ -> new ConcurrentHashMap<>()));
+        ((FeatureImpl.DuringSetupAccessImpl) access).registerObjectReachableCallback(ClassValue.class, (a1, obj, reason) -> values.computeIfAbsent(obj, k -> new ConcurrentHashMap<>()));
     }
 
     private static final java.lang.reflect.Field IDENTITY = ReflectionUtil.lookupField(ClassValue.class, "identity");
@@ -116,8 +114,7 @@ public final class ClassValueFeature implements InternalFeature {
         }
 
         int numTypes = impl.getUniverse().getTypes().size();
-        ScanReason reason = new OtherReason("Manual rescan triggered from " + ClassValueFeature.class);
-        mapsToRescan.forEach(obj -> impl.rescanObject(obj, reason));
+        mapsToRescan.forEach(impl::rescanObject);
         if (numTypes != impl.getUniverse().getTypes().size()) {
             access.requireAnalysisIteration();
         }

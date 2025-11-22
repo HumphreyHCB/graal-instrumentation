@@ -53,19 +53,15 @@ import static org.graalvm.wasm.nodes.WasmFrame.pushLong;
 import static org.graalvm.wasm.nodes.WasmFrame.pushReference;
 import static org.graalvm.wasm.nodes.WasmFrame.pushVector128;
 
-import java.util.Set;
-
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.wasm.WasmArguments;
 import org.graalvm.wasm.WasmCodeEntry;
 import org.graalvm.wasm.WasmConstant;
-import org.graalvm.wasm.WasmContext;
 import org.graalvm.wasm.WasmInstance;
 import org.graalvm.wasm.WasmLanguage;
 import org.graalvm.wasm.WasmModule;
 import org.graalvm.wasm.WasmType;
 import org.graalvm.wasm.api.Vector128;
-import org.graalvm.wasm.api.Vector128Ops;
 import org.graalvm.wasm.debugging.data.DebugFunction;
 import org.graalvm.wasm.exception.Failure;
 import org.graalvm.wasm.exception.WasmException;
@@ -106,7 +102,7 @@ public class WasmFunctionRootNode extends WasmRootNode {
         codeEntry.errorBranch();
     }
 
-    int resultType(int index) {
+    byte resultType(int index) {
         return codeEntry.resultType(index);
     }
 
@@ -114,7 +110,7 @@ public class WasmFunctionRootNode extends WasmRootNode {
         return module().symbolTable().function(codeEntry.functionIndex()).paramCount();
     }
 
-    int localType(int index) {
+    byte localType(int index) {
         return codeEntry.localType(index);
     }
 
@@ -154,19 +150,27 @@ public class WasmFunctionRootNode extends WasmRootNode {
         if (resultCount == 0) {
             return WasmConstant.VOID;
         } else if (resultCount == 1) {
-            final int resultType = resultType(0);
+            final byte resultType = resultType(0);
             CompilerAsserts.partialEvaluationConstant(resultType);
-            return switch (resultType) {
-                case WasmType.I32_TYPE -> popInt(frame, localCount);
-                case WasmType.I64_TYPE -> popLong(frame, localCount);
-                case WasmType.F32_TYPE -> popFloat(frame, localCount);
-                case WasmType.F64_TYPE -> popDouble(frame, localCount);
-                case WasmType.V128_TYPE -> Vector128Ops.SINGLETON_IMPLEMENTATION.toVector128(popVector128(frame, localCount));
-                default -> {
-                    assert WasmType.isReferenceType(resultType);
-                    yield popReference(frame, localCount);
-                }
-            };
+            switch (resultType) {
+                case WasmType.VOID_TYPE:
+                    return WasmConstant.VOID;
+                case WasmType.I32_TYPE:
+                    return popInt(frame, localCount);
+                case WasmType.I64_TYPE:
+                    return popLong(frame, localCount);
+                case WasmType.F32_TYPE:
+                    return popFloat(frame, localCount);
+                case WasmType.F64_TYPE:
+                    return popDouble(frame, localCount);
+                case WasmType.V128_TYPE:
+                    return popVector128(frame, localCount);
+                case WasmType.FUNCREF_TYPE:
+                case WasmType.EXTERNREF_TYPE:
+                    return popReference(frame, localCount);
+                default:
+                    throw WasmException.format(Failure.UNSPECIFIED_INTERNAL, this, "Unknown result type: %d", resultType);
+            }
         } else {
             moveResultValuesToMultiValueStack(frame, resultCount, localCount);
             return WasmConstant.MULTI_VALUE;
@@ -183,15 +187,27 @@ public class WasmFunctionRootNode extends WasmRootNode {
             final int resultType = resultType(i);
             CompilerAsserts.partialEvaluationConstant(resultType);
             switch (resultType) {
-                case WasmType.I32_TYPE -> primitiveMultiValueStack[i] = popInt(frame, localCount + i);
-                case WasmType.I64_TYPE -> primitiveMultiValueStack[i] = popLong(frame, localCount + i);
-                case WasmType.F32_TYPE -> primitiveMultiValueStack[i] = Float.floatToRawIntBits(popFloat(frame, localCount + i));
-                case WasmType.F64_TYPE -> primitiveMultiValueStack[i] = Double.doubleToRawLongBits(popDouble(frame, localCount + i));
-                case WasmType.V128_TYPE -> objectMultiValueStack[i] = Vector128Ops.SINGLETON_IMPLEMENTATION.toVector128(popVector128(frame, localCount + i));
-                default -> {
-                    assert WasmType.isReferenceType(resultType);
+                case WasmType.I32_TYPE:
+                    primitiveMultiValueStack[i] = popInt(frame, localCount + i);
+                    break;
+                case WasmType.I64_TYPE:
+                    primitiveMultiValueStack[i] = popLong(frame, localCount + i);
+                    break;
+                case WasmType.F32_TYPE:
+                    primitiveMultiValueStack[i] = Float.floatToRawIntBits(popFloat(frame, localCount + i));
+                    break;
+                case WasmType.F64_TYPE:
+                    primitiveMultiValueStack[i] = Double.doubleToRawLongBits(popDouble(frame, localCount + i));
+                    break;
+                case WasmType.V128_TYPE:
+                    objectMultiValueStack[i] = popVector128(frame, localCount + i);
+                    break;
+                case WasmType.FUNCREF_TYPE:
+                case WasmType.EXTERNREF_TYPE:
                     objectMultiValueStack[i] = popReference(frame, localCount + i);
-                }
+                    break;
+                default:
+                    throw WasmException.format(Failure.UNSPECIFIED_INTERNAL, this, "Unknown result type: %d", resultType);
             }
         }
     }
@@ -203,17 +219,27 @@ public class WasmFunctionRootNode extends WasmRootNode {
         assert WasmArguments.getArgumentCount(args) == paramCount : "Expected number of params " + paramCount + ", actual " + WasmArguments.getArgumentCount(args);
         for (int i = 0; i != paramCount; ++i) {
             final Object arg = WasmArguments.getArgument(args, i);
-            int type = localType(i);
+            byte type = localType(i);
             switch (type) {
-                case WasmType.I32_TYPE -> pushInt(frame, i, (int) arg);
-                case WasmType.I64_TYPE -> pushLong(frame, i, (long) arg);
-                case WasmType.F32_TYPE -> pushFloat(frame, i, (float) arg);
-                case WasmType.F64_TYPE -> pushDouble(frame, i, (double) arg);
-                case WasmType.V128_TYPE -> pushVector128(frame, i, Vector128Ops.SINGLETON_IMPLEMENTATION.fromVector128((Vector128) arg));
-                default -> {
-                    assert WasmType.isReferenceType(type);
+                case WasmType.I32_TYPE:
+                    pushInt(frame, i, (int) arg);
+                    break;
+                case WasmType.I64_TYPE:
+                    pushLong(frame, i, (long) arg);
+                    break;
+                case WasmType.F32_TYPE:
+                    pushFloat(frame, i, (float) arg);
+                    break;
+                case WasmType.F64_TYPE:
+                    pushDouble(frame, i, (double) arg);
+                    break;
+                case WasmType.V128_TYPE:
+                    pushVector128(frame, i, (Vector128) arg);
+                    break;
+                case WasmType.FUNCREF_TYPE:
+                case WasmType.EXTERNREF_TYPE:
                     pushReference(frame, i, arg);
-                }
+                    break;
             }
         }
     }
@@ -222,17 +248,27 @@ public class WasmFunctionRootNode extends WasmRootNode {
     private void initializeLocals(VirtualFrame frame) {
         int paramCount = paramCount();
         for (int i = paramCount; i != localCount(); ++i) {
-            int type = localType(i);
+            byte type = localType(i);
             switch (type) {
-                case WasmType.I32_TYPE -> pushInt(frame, i, 0);
-                case WasmType.I64_TYPE -> pushLong(frame, i, 0L);
-                case WasmType.F32_TYPE -> pushFloat(frame, i, 0F);
-                case WasmType.F64_TYPE -> pushDouble(frame, i, 0D);
-                case WasmType.V128_TYPE -> pushVector128(frame, i, Vector128Ops.SINGLETON_IMPLEMENTATION.fromVector128(Vector128.ZERO));
-                default -> {
-                    WasmType.isReferenceType(type);
+                case WasmType.I32_TYPE:
+                    pushInt(frame, i, 0);
+                    break;
+                case WasmType.I64_TYPE:
+                    pushLong(frame, i, 0L);
+                    break;
+                case WasmType.F32_TYPE:
+                    pushFloat(frame, i, 0F);
+                    break;
+                case WasmType.F64_TYPE:
+                    pushDouble(frame, i, 0D);
+                    break;
+                case WasmType.V128_TYPE:
+                    pushVector128(frame, i, Vector128.ZERO);
+                    break;
+                case WasmType.FUNCREF_TYPE:
+                case WasmType.EXTERNREF_TYPE:
                     pushReference(frame, i, WasmConstant.NULL);
-                }
+                    break;
             }
         }
     }
@@ -241,7 +277,7 @@ public class WasmFunctionRootNode extends WasmRootNode {
     private DebugFunction debugFunction() {
         if (module().hasDebugInfo()) {
             int functionSourceLocation = module().functionSourceCodeStartOffset(codeEntry.functionIndex());
-            final EconomicMap<Integer, DebugFunction> debugFunctions = module().debugFunctions();
+            final EconomicMap<Integer, DebugFunction> debugFunctions = module().debugFunctions(this);
             if (debugFunctions.containsKey(functionSourceLocation)) {
                 return debugFunctions.get(functionSourceLocation);
             }
@@ -267,31 +303,7 @@ public class WasmFunctionRootNode extends WasmRootNode {
         if (debugFunction == null) {
             return false;
         }
-        return debugFunction.filePath() != null;
-    }
-
-    @Override
-    protected void prepareForInstrumentation(Set<Class<?>> tags) {
-        if (sourceSection == null) {
-            final DebugFunction debugFunction = debugFunction();
-            if (debugFunction == null) {
-                sourceSection = module().source().createUnavailableSection();
-                return;
-            }
-            if (debugFunction.hasSourceSection()) {
-                sourceSection = debugFunction.getSourceSection();
-                return;
-            }
-            WasmContext context = WasmContext.get(this);
-            if (context != null) {
-                if (!context.getContextOptions().debugTestMode()) {
-                    sourceSection = debugFunction.loadSourceSection(context.environment());
-                }
-            }
-            if (sourceSection == null) {
-                sourceSection = debugFunction.createSourceSection(context == null ? null : context.environment());
-            }
-        }
+        return debugFunction.sourceSection() != null;
     }
 
     @Override
@@ -299,26 +311,16 @@ public class WasmFunctionRootNode extends WasmRootNode {
     public final SourceSection getSourceSection() {
         if (sourceSection == null) {
             final DebugFunction debugFunction = debugFunction();
-            if (debugFunction == null) {
+            if (debugFunction != null) {
+                sourceSection = debugFunction.sourceSection();
+            } else {
                 sourceSection = module().source().createUnavailableSection();
-                return sourceSection;
             }
-            if (debugFunction.hasSourceSection()) {
-                sourceSection = debugFunction.getSourceSection();
-                return sourceSection;
-            }
-            WasmContext context = WasmContext.get(this);
-            sourceSection = debugFunction.createSourceSection(context == null ? null : context.environment());
         }
         return sourceSection;
     }
 
     public final Node[] getCallNodes() {
         return functionNode.getCallNodes();
-    }
-
-    @Override
-    public boolean isInternal() {
-        return false;
     }
 }

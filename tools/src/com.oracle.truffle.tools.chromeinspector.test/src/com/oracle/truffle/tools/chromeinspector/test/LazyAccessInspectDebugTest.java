@@ -284,7 +284,7 @@ public class LazyAccessInspectDebugTest {
             }
 
             @Override
-            protected boolean hasLanguageId() {
+            protected boolean hasLanguage() {
                 // Provides the ProxyLanguage by default.
                 return true;
             }

@@ -25,7 +25,6 @@
 package jdk.graal.compiler.replacements.amd64;
 
 import static jdk.graal.compiler.nodes.calc.FloatTypeTestNode.FloatTypeTestOp.IS_INFINITE;
-import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.CBRT;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.COS;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.EXP;
 import static jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation.LOG;
@@ -61,11 +60,11 @@ import jdk.graal.compiler.nodes.extended.JavaReadNode;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Plugins;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin;
-import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin.ConditionalInvocationPlugin;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins.Registration;
 import jdk.graal.compiler.nodes.java.ArrayLengthNode;
 import jdk.graal.compiler.nodes.memory.address.IndexAddressNode;
+import jdk.graal.compiler.nodes.spi.Replacements;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.replacements.InvocationPluginHelper;
 import jdk.graal.compiler.replacements.SnippetSubstitutionInvocationPlugin;
@@ -83,117 +82,106 @@ import jdk.graal.compiler.replacements.nodes.FloatToHalfFloatNode;
 import jdk.graal.compiler.replacements.nodes.HalfFloatToFloatNode;
 import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode;
 import jdk.graal.compiler.replacements.nodes.UnaryMathIntrinsicNode.UnaryOperation;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
+import jdk.vm.ci.amd64.AMD64;
+import jdk.vm.ci.amd64.AMD64.CPUFeature;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
     @Override
-    public void registerPlugins(Plugins plugins, OptionValues options) {
-        register(plugins, options);
+    public void register(Plugins plugins, Replacements replacements, Architecture architecture, boolean registerForeignCallMath, OptionValues options) {
+        register(plugins, replacements, (AMD64) architecture, options);
     }
 
-    public static void register(Plugins plugins, OptionValues options) {
+    public static void register(Plugins plugins, Replacements replacements, AMD64 arch, OptionValues options) {
         InvocationPlugins invocationPlugins = plugins.getInvocationPlugins();
         invocationPlugins.defer(new Runnable() {
             @Override
             public void run() {
-                registerIntegerLongPlugins(invocationPlugins, JavaKind.Int);
-                registerIntegerLongPlugins(invocationPlugins, JavaKind.Long);
-                registerFloatDoublePlugins(invocationPlugins, JavaKind.Float);
-                registerFloatDoublePlugins(invocationPlugins, JavaKind.Double);
-                registerFloatPlugins(invocationPlugins);
+                registerIntegerLongPlugins(invocationPlugins, JavaKind.Int, arch, replacements);
+                registerIntegerLongPlugins(invocationPlugins, JavaKind.Long, arch, replacements);
+                registerFloatDoublePlugins(invocationPlugins, JavaKind.Float, arch, replacements);
+                registerFloatDoublePlugins(invocationPlugins, JavaKind.Double, arch, replacements);
+                registerFloatPlugins(invocationPlugins, arch, replacements);
 
                 if (GraalOptions.EmitStringSubstitutions.getValue(options)) {
-                    registerStringLatin1Plugins(invocationPlugins);
-                    registerStringUTF16Plugins(invocationPlugins);
+                    registerStringLatin1Plugins(invocationPlugins, replacements);
+                    registerStringUTF16Plugins(invocationPlugins, replacements);
                 }
-                registerMathPlugins(invocationPlugins);
-                registerStrictMathPlugins(invocationPlugins);
-                registerArraysEqualsPlugins(invocationPlugins);
+                registerMathPlugins(invocationPlugins, arch, replacements);
+                registerStrictMathPlugins(invocationPlugins, arch, replacements);
+                registerArraysEqualsPlugins(invocationPlugins, replacements);
             }
         });
     }
 
-    private static void registerIntegerLongPlugins(InvocationPlugins plugins, JavaKind kind) {
+    private static void registerIntegerLongPlugins(InvocationPlugins plugins, JavaKind kind, AMD64 arch, Replacements replacements) {
         Class<?> declaringClass = kind.toBoxedJavaClass();
         Class<?> type = kind.toJavaClass();
-        Registration r = new Registration(plugins, declaringClass);
-        r.register(new ConditionalInvocationPlugin("compress", type, type) {
+        Registration r = new Registration(plugins, declaringClass, replacements);
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.BMI2), new InvocationPlugin("compress", type, type) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value, ValueNode mask) {
                 b.push(kind, b.append(new CompressBitsNode(value, mask)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return CompressBitsNode.isSupported(arch);
-            }
         });
-        r.register(new ConditionalInvocationPlugin("expand", type, type) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.BMI2), new InvocationPlugin("expand", type, type) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value, ValueNode mask) {
                 b.push(kind, b.append(new ExpandBitsNode(value, mask)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return ExpandBitsNode.isSupported(arch);
-            }
         });
     }
 
-    private static void registerFloatPlugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, Float.class);
-        r.register(new ConditionalInvocationPlugin("float16ToFloat", short.class) {
+    private static boolean supportsFeature(AMD64 arch, String feature) {
+        try {
+            return arch.getFeatures().contains(CPUFeature.valueOf(feature));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static void registerFloatPlugins(InvocationPlugins plugins, AMD64 arch, Replacements replacements) {
+        Registration r = new Registration(plugins, Float.class, replacements);
+
+        boolean supportsF16C = supportsFeature(arch, "F16C");
+
+        r.registerConditional(supportsF16C, new InvocationPlugin("float16ToFloat", short.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value) {
                 b.push(JavaKind.Float, b.append(new HalfFloatToFloatNode(value)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return HalfFloatToFloatNode.isSupported(arch);
-            }
         });
-        r.register(new ConditionalInvocationPlugin("floatToFloat16", float.class) {
+        r.registerConditional(supportsF16C, new InvocationPlugin("floatToFloat16", float.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value) {
                 b.push(JavaKind.Short, b.append(new FloatToHalfFloatNode(value)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return FloatToHalfFloatNode.isSupported(arch);
-            }
         });
     }
 
-    private static void registerFloatDoublePlugins(InvocationPlugins plugins, JavaKind kind) {
+    private static void registerFloatDoublePlugins(InvocationPlugins plugins, JavaKind kind, AMD64 arch, Replacements replacements) {
         Class<?> declaringClass = kind.toBoxedJavaClass();
         Class<?> type = kind.toJavaClass();
-        Registration r = new Registration(plugins, declaringClass);
+        Registration r = new Registration(plugins, declaringClass, replacements);
 
-        r.register(new ConditionalInvocationPlugin("isInfinite", type) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.AVX512DQ), new InvocationPlugin("isInfinite", type) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value) {
                 b.push(JavaKind.Boolean, b.append(new FloatTypeTestNode(value, IS_INFINITE)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return FloatTypeTestNode.isSupported(arch);
-            }
         });
     }
 
-    private static void registerMathPlugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, Math.class);
+    private static void registerMathPlugins(InvocationPlugins plugins, AMD64 arch, Replacements replacements) {
+        Registration r = new Registration(plugins, Math.class, replacements);
         registerUnaryMath(r, "log", LOG);
         registerUnaryMath(r, "log10", LOG10);
         registerUnaryMath(r, "exp", EXP);
@@ -201,34 +189,25 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         registerUnaryMath(r, "sin", SIN);
         registerUnaryMath(r, "cos", COS);
         registerUnaryMath(r, "tan", TAN);
-        registerUnaryMath(r, "tanh", TANH);
-        registerUnaryMath(r, "cbrt", CBRT);
+        if (JavaVersionUtil.JAVA_SPEC >= 24) {
+            registerUnaryMath(r, "tanh", TANH);
+        }
 
-        registerFMA(r);
-        registerMinMax(r);
+        registerFMA(r, arch);
+        registerMinMax(r, arch);
 
-        r.register(new ConditionalInvocationPlugin("copySign", float.class, float.class) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.AVX512VL), new InvocationPlugin("copySign", float.class, float.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode magnitude, ValueNode sign) {
                 b.addPush(JavaKind.Float, new CopySignNode(magnitude, sign));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return CopySignNode.isSupported(arch);
-            }
         });
-        r.register(new ConditionalInvocationPlugin("copySign", double.class, double.class) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.AVX512VL), new InvocationPlugin("copySign", double.class, double.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode magnitude, ValueNode sign) {
                 b.addPush(JavaKind.Double, new CopySignNode(magnitude, sign));
                 return true;
-            }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return CopySignNode.isSupported(arch);
             }
         });
         r.register(new InvocationPlugin("round", float.class) {
@@ -247,8 +226,8 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerFMA(Registration r) {
-        r.register(new ConditionalInvocationPlugin("fma", double.class, double.class, double.class) {
+    private static void registerFMA(Registration r, AMD64 arch) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.FMA), new InvocationPlugin("fma", double.class, double.class, double.class) {
             @Override
             public boolean apply(GraphBuilderContext b,
                             ResolvedJavaMethod targetMethod,
@@ -259,13 +238,8 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
                 b.push(JavaKind.Double, b.append(new FusedMultiplyAddNode(na, nb, nc)));
                 return true;
             }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return FusedMultiplyAddNode.isSupported(arch);
-            }
         });
-        r.register(new ConditionalInvocationPlugin("fma", float.class, float.class, float.class) {
+        r.registerConditional(arch.getFeatures().contains(CPUFeature.FMA), new InvocationPlugin("fma", float.class, float.class, float.class) {
             @Override
             public boolean apply(GraphBuilderContext b,
                             ResolvedJavaMethod targetMethod,
@@ -275,11 +249,6 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
                             ValueNode nc) {
                 b.push(JavaKind.Float, b.append(new FusedMultiplyAddNode(na, nb, nc)));
                 return true;
-            }
-
-            @Override
-            public boolean isApplicable(Architecture arch) {
-                return FusedMultiplyAddNode.isSupported(arch);
             }
         });
     }
@@ -304,39 +273,29 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerMinMax(Registration r) {
+    private static void registerMinMax(Registration r, AMD64 arch) {
         JavaKind[] supportedMinMaxKinds = {JavaKind.Float, JavaKind.Double};
         for (JavaKind kind : supportedMinMaxKinds) {
-            r.register(new ConditionalInvocationPlugin("max", kind.toJavaClass(), kind.toJavaClass()) {
+            r.registerConditional(arch.getFeatures().contains(CPUFeature.AVX), new InvocationPlugin("max", kind.toJavaClass(), kind.toJavaClass()) {
                 @Override
                 public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode x, ValueNode y) {
                     b.push(kind, b.append(MaxNode.create(x, y, NodeView.DEFAULT)));
                     return true;
                 }
-
-                @Override
-                public boolean isApplicable(Architecture arch) {
-                    return MaxNode.floatingPointSupportAvailable(arch);
-                }
             });
-            r.register(new ConditionalInvocationPlugin("min", kind.toJavaClass(), kind.toJavaClass()) {
+            r.registerConditional(arch.getFeatures().contains(CPUFeature.AVX), new InvocationPlugin("min", kind.toJavaClass(), kind.toJavaClass()) {
                 @Override
                 public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode x, ValueNode y) {
                     b.push(kind, b.append(MinNode.create(x, y, NodeView.DEFAULT)));
                     return true;
                 }
-
-                @Override
-                public boolean isApplicable(Architecture arch) {
-                    return MinNode.floatingPointSupportAvailable(arch);
-                }
             });
         }
     }
 
-    private static void registerStrictMathPlugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, StrictMath.class);
-        registerMinMax(r);
+    private static void registerStrictMathPlugins(InvocationPlugins plugins, AMD64 arch, Replacements replacements) {
+        Registration r = new Registration(plugins, StrictMath.class, replacements);
+        registerMinMax(r, arch);
     }
 
     private static final class ArrayCompareToPlugin extends InvocationPlugin {
@@ -380,8 +339,8 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         }
     }
 
-    private static void registerStringLatin1Plugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, "java.lang.StringLatin1");
+    private static void registerStringLatin1Plugins(InvocationPlugins plugins, Replacements replacements) {
+        Registration r = new Registration(plugins, "java.lang.StringLatin1", replacements);
         r.setAllowOverwrite(true);
         r.register(new ArrayCompareToPlugin(Stride.S1, Stride.S1, "compareTo", byte[].class, byte[].class));
         r.register(new ArrayCompareToPlugin(Stride.S1, Stride.S2, "compareToUTF16", byte[].class, byte[].class));
@@ -462,9 +421,9 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerStringUTF16Plugins(InvocationPlugins plugins) {
+    private static void registerStringUTF16Plugins(InvocationPlugins plugins, Replacements replacements) {
 
-        Registration r = new Registration(plugins, "java.lang.StringUTF16");
+        Registration r = new Registration(plugins, "java.lang.StringUTF16", replacements);
         r.setAllowOverwrite(true);
         r.register(new ArrayCompareToPlugin(Stride.S2, Stride.S2, "compareTo", byte[].class, byte[].class));
         r.register(new ArrayCompareToPlugin(Stride.S2, Stride.S1, true, "compareToLatin1", byte[].class, byte[].class));
@@ -544,7 +503,7 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
             }
 
         });
-        r.register(new InvocationPlugin("indexOfChar", byte[].class, int.class, int.class, int.class) {
+        r.register(new InvocationPlugin(JavaVersionUtil.JAVA_SPEC == 21 ? "indexOfCharUnsafe" : "indexOfChar", byte[].class, int.class, int.class, int.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode value, ValueNode ch, ValueNode fromIndex, ValueNode max) {
                 ZeroExtendNode toChar = b.add(new ZeroExtendNode(b.add(new NarrowNode(ch, JavaKind.Char.getBitCount())), JavaKind.Int.getBitCount()));
@@ -552,7 +511,7 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
                 return true;
             }
         });
-        Registration r2 = new Registration(plugins, StringUTF16Snippets.class);
+        Registration r2 = new Registration(plugins, StringUTF16Snippets.class, replacements);
         r2.register(new InvocationPlugin("getChar", byte[].class, int.class) {
             @Override
             public boolean apply(GraphBuilderContext b, ResolvedJavaMethod targetMethod, Receiver receiver, ValueNode arg1, ValueNode arg2) {
@@ -564,8 +523,8 @@ public class AMD64GraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerArraysEqualsPlugins(InvocationPlugins plugins) {
-        Registration r = new Registration(plugins, Arrays.class);
+    private static void registerArraysEqualsPlugins(InvocationPlugins plugins, Replacements replacements) {
+        Registration r = new Registration(plugins, Arrays.class, replacements);
         r.register(new StandardGraphBuilderPlugins.ArrayEqualsInvocationPlugin(JavaKind.Float, float[].class, float[].class));
         r.register(new StandardGraphBuilderPlugins.ArrayEqualsInvocationPlugin(JavaKind.Double, double[].class, double[].class));
     }

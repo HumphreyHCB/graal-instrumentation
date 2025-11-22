@@ -28,9 +28,9 @@ import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.os.VirtualMemoryProvider;
-import com.oracle.svm.core.util.BasedOnJDKFile;
 
 import jdk.graal.compiler.core.common.NumUtil;
+import jdk.jfr.internal.Options;
 
 /**
  * Holds all JFR-related options that can be set by the user. It is also used to validate and adjust
@@ -44,32 +44,18 @@ import jdk.graal.compiler.core.common.NumUtil;
  * level via {@link jdk.jfr.internal.JVM}. The option values are stored here until they are
  * eventually used when first recording is created and JFR is initialized.
  */
-@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25-ga/src/jdk.jfr/share/classes/jdk/jfr/internal/Options.java#L48-L55")
-@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25-ga/src/jdk.jfr/share/classes/jdk/jfr/internal/Options.java#L65-L69")
 public class JfrOptionSet {
-    private static final int MEMORY_SIZE_BIT = 1;
-    private static final int GLOBAL_BUFFER_SIZE_BIT = 2;
-    private static final int GLOBAL_BUFFER_COUNT_BIT = 4;
-    private static final int THREAD_BUFFER_SIZE_BIT = 8;
-
-    /*
-     * Use 2.5 MB by default (instead of 10 MB on HotSpot). We explicitly hard-code the default
-     * values here to avoid that those values are copied from HotSpot at build-time because
-     * completely different values might be set there if JFR is enabled at build-time as well.
-     */
-    private static final long DEFAULT_GLOBAL_BUFFER_COUNT = 10;
-    private static final long DEFAULT_GLOBAL_BUFFER_SIZE = 256 * 1024;
-    private static final long DEFAULT_MEMORY_SIZE = DEFAULT_GLOBAL_BUFFER_COUNT * DEFAULT_GLOBAL_BUFFER_SIZE;
-    private static final long DEFAULT_THREAD_BUFFER_SIZE = 8 * 1024;
-    private static final int DEFAULT_STACK_DEPTH = 64;
-    private static final long DEFAULT_MAX_CHUNK_SIZE = 12 * 1024 * 1024;
+    private static final int MEMORY_SIZE = 1;
+    private static final int GLOBAL_BUFFER_SIZE = 2;
+    private static final int GLOBAL_BUFFER_COUNT = 4;
+    private static final int THREAD_BUFFER_SIZE = 8;
 
     private static final long MAX_ADJUSTED_GLOBAL_BUFFER_SIZE = 1 * 1024 * 1024;
     private static final long MIN_ADJUSTED_GLOBAL_BUFFER_SIZE_CUTOFF = 512 * 1024;
     private static final long MIN_GLOBAL_BUFFER_SIZE = 64 * 1024;
     private static final long MIN_GLOBAL_BUFFER_COUNT = 2;
     private static final long MIN_THREAD_BUFFER_SIZE = 4 * 1024;
-    private static final long MIN_MEMORY_SIZE = 1024 * 1024;
+    private static final long MIN_MEMORY_SIZE = 1 * 1024 * 1024;
 
     public final JfrOptionLong threadBufferSize;
     public final JfrOptionLong globalBufferSize;
@@ -80,12 +66,12 @@ public class JfrOptionSet {
 
     @Platforms(Platform.HOSTED_ONLY.class)
     public JfrOptionSet() {
-        threadBufferSize = new JfrOptionLong(DEFAULT_THREAD_BUFFER_SIZE);
-        globalBufferSize = new JfrOptionLong(DEFAULT_GLOBAL_BUFFER_SIZE);
-        globalBufferCount = new JfrOptionLong(DEFAULT_GLOBAL_BUFFER_COUNT);
-        memorySize = new JfrOptionLong(DEFAULT_MEMORY_SIZE);
-        maxChunkSize = new JfrOptionLong(DEFAULT_MAX_CHUNK_SIZE);
-        stackDepth = new JfrOptionLong(DEFAULT_STACK_DEPTH);
+        threadBufferSize = new JfrOptionLong(Options.getThreadBufferSize());
+        globalBufferSize = new JfrOptionLong(Options.getGlobalBufferSize());
+        globalBufferCount = new JfrOptionLong(Options.getGlobalBufferCount());
+        memorySize = new JfrOptionLong(Options.getMemorySize());
+        maxChunkSize = new JfrOptionLong(Options.getMaxChunkSize());
+        stackDepth = new JfrOptionLong(Options.getStackDepth());
     }
 
     public void validateAndAdjustMemoryOptions() {
@@ -134,55 +120,55 @@ public class JfrOptionSet {
 
         int setOfOptions = 0;
         if (memorySize.isUserValue()) {
-            setOfOptions |= MEMORY_SIZE_BIT;
+            setOfOptions |= MEMORY_SIZE;
         }
         if (globalBufferSize.isUserValue()) {
-            setOfOptions |= GLOBAL_BUFFER_SIZE_BIT;
+            setOfOptions |= GLOBAL_BUFFER_SIZE;
         }
         if (globalBufferCount.isUserValue()) {
-            setOfOptions |= GLOBAL_BUFFER_COUNT_BIT;
+            setOfOptions |= GLOBAL_BUFFER_COUNT;
         }
         if (threadBufferSize.isUserValue()) {
-            setOfOptions |= THREAD_BUFFER_SIZE_BIT;
+            setOfOptions |= THREAD_BUFFER_SIZE;
         }
 
         switch (setOfOptions) {
-            case MEMORY_SIZE_BIT | THREAD_BUFFER_SIZE_BIT:
-            case MEMORY_SIZE_BIT:
+            case MEMORY_SIZE | THREAD_BUFFER_SIZE:
+            case MEMORY_SIZE:
                 memoryAndThreadBufferSize();
                 break;
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_COUNT:
                 memorySizeAndBufferCount();
                 break;
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_SIZE_BIT | THREAD_BUFFER_SIZE_BIT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_SIZE | THREAD_BUFFER_SIZE:
                 assert threadBufferSize.isUserValue();
                 // fall through
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_SIZE_BIT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_SIZE:
                 memorySizeAndGlobalBufferSize();
                 break;
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT:
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT | THREAD_BUFFER_SIZE_BIT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_SIZE | GLOBAL_BUFFER_COUNT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_SIZE | GLOBAL_BUFFER_COUNT | THREAD_BUFFER_SIZE:
                 allOptionsSet();
                 break;
-            case GLOBAL_BUFFER_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT | THREAD_BUFFER_SIZE_BIT:
+            case GLOBAL_BUFFER_SIZE | GLOBAL_BUFFER_COUNT | THREAD_BUFFER_SIZE:
                 assert globalBufferCount.isUserValue();
                 assert threadBufferSize.isUserValue();
                 // fall through
-            case GLOBAL_BUFFER_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT:
+            case GLOBAL_BUFFER_SIZE | GLOBAL_BUFFER_COUNT:
                 assert globalBufferSize.isUserValue();
                 // fall through
-            case GLOBAL_BUFFER_SIZE_BIT | THREAD_BUFFER_SIZE_BIT:
-            case GLOBAL_BUFFER_COUNT_BIT:
-            case GLOBAL_BUFFER_SIZE_BIT:
+            case GLOBAL_BUFFER_SIZE | THREAD_BUFFER_SIZE:
+            case GLOBAL_BUFFER_COUNT:
+            case GLOBAL_BUFFER_SIZE:
                 globalBufferSize();
                 break;
-            case MEMORY_SIZE_BIT | GLOBAL_BUFFER_COUNT_BIT | THREAD_BUFFER_SIZE_BIT:
+            case MEMORY_SIZE | GLOBAL_BUFFER_COUNT | THREAD_BUFFER_SIZE:
                 assert memorySize.isUserValue();
                 // fall through
-            case GLOBAL_BUFFER_COUNT_BIT | THREAD_BUFFER_SIZE_BIT:
+            case GLOBAL_BUFFER_COUNT | THREAD_BUFFER_SIZE:
                 assert globalBufferCount.isUserValue();
                 // fall through
-            case THREAD_BUFFER_SIZE_BIT:
+            case THREAD_BUFFER_SIZE:
                 threadBufferSize();
                 break;
             default:

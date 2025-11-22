@@ -26,6 +26,6 @@ package com.oracle.svm.core.jfr;
 
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "jdk.jfr.internal.event.EventConfiguration")
+@TargetClass(className = "jdk.jfr.internal.event.EventConfiguration", onlyWith = HasJfrSupport.class)
 public final class Target_jdk_jfr_internal_event_EventConfiguration {
 }

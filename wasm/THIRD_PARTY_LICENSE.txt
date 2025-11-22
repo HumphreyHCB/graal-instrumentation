@@ -1,1 +1,0 @@
-GraalWasm has no third-party dependencies.

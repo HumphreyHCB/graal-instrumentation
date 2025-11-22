@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2020, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,15 +26,14 @@
 
 package com.oracle.objectfile.elf.dwarf;
 
-import java.util.List;
-
 import com.oracle.objectfile.debugentry.CompiledMethodEntry;
-import com.oracle.objectfile.debugentry.FrameSizeChangeEntry;
 import com.oracle.objectfile.debugentry.range.Range;
+import com.oracle.objectfile.debuginfo.DebugInfoProvider;
 import com.oracle.objectfile.elf.dwarf.constants.DwarfFrameValue;
 import com.oracle.objectfile.elf.dwarf.constants.DwarfSectionName;
-
 import jdk.graal.compiler.debug.DebugContext;
+
+import java.util.List;
 
 /**
  * Section generic generator for debug_frame section.
@@ -46,8 +45,8 @@ public abstract class DwarfFrameSectionImpl extends DwarfSectionImpl {
     private static final int CFA_CIE_id_default = -1;
 
     public DwarfFrameSectionImpl(DwarfDebugInfo dwarfSections) {
-        // debug_frame section depends on debug_line_str section
-        super(dwarfSections, DwarfSectionName.DW_FRAME_SECTION, DwarfSectionName.DW_LINE_STR_SECTION);
+        // debug_frame section depends on debug_line section
+        super(dwarfSections, DwarfSectionName.DW_FRAME_SECTION, DwarfSectionName.DW_LINE_SECTION);
     }
 
     @Override
@@ -75,7 +74,7 @@ public abstract class DwarfFrameSectionImpl extends DwarfSectionImpl {
         int size = buffer.length;
         int pos = 0;
 
-        enableLog(context);
+        enableLog(context, pos);
 
         /*
          * There are entries for the prologue region where the stack is being built, the method body
@@ -144,27 +143,27 @@ public abstract class DwarfFrameSectionImpl extends DwarfSectionImpl {
     private int writeMethodFrame(CompiledMethodEntry compiledEntry, byte[] buffer, int p) {
         int pos = p;
         int lengthPos = pos;
-        Range range = compiledEntry.primary();
+        Range range = compiledEntry.getPrimary();
         long lo = range.getLo();
         long hi = range.getHi();
-        pos = writeFDEHeader(lo, hi, buffer, pos);
-        pos = writeFDEs(compiledEntry.frameSize(), compiledEntry.frameSizeInfos(), buffer, pos);
+        pos = writeFDEHeader((int) lo, (int) hi, buffer, pos);
+        pos = writeFDEs(compiledEntry.getFrameSize(), compiledEntry.getFrameSizeInfos(), buffer, pos);
         pos = writePaddingNops(buffer, pos);
         patchLength(lengthPos, buffer, pos);
         return pos;
     }
 
     private int writeMethodFrames(byte[] buffer, int p) {
-        int pos = p;
-        for (CompiledMethodEntry compiledMethod : getCompiledMethods()) {
-            pos = writeMethodFrame(compiledMethod, buffer, pos);
-        }
-        return pos;
+        Cursor cursor = new Cursor(p);
+        compiledMethodsStream().forEach(compiledMethod -> {
+            cursor.set(writeMethodFrame(compiledMethod, buffer, cursor.get()));
+        });
+        return cursor.get();
     }
 
-    protected abstract int writeFDEs(int frameSize, List<FrameSizeChangeEntry> frameSizeInfos, byte[] buffer, int pos);
+    protected abstract int writeFDEs(int frameSize, List<DebugInfoProvider.DebugFrameSizeChange> frameSizeInfos, byte[] buffer, int pos);
 
-    private int writeFDEHeader(long lo, long hi, byte[] buffer, int p) {
+    private int writeFDEHeader(int lo, int hi, byte[] buffer, int p) {
         /*
          * We only need a vanilla FDE header with default fields the layout is:
          *
@@ -190,7 +189,7 @@ public abstract class DwarfFrameSectionImpl extends DwarfSectionImpl {
         /* CIE_offset */
         pos = writeInt(0, buffer, pos);
         /* Initial address. */
-        pos = writeCodeOffset(lo, buffer, pos);
+        pos = writeRelocatableCodeOffset(lo, buffer, pos);
         /* Address range. */
         return writeLong(hi - lo, buffer, pos);
     }
@@ -264,7 +263,8 @@ public abstract class DwarfFrameSectionImpl extends DwarfSectionImpl {
 
     protected int writeRestore(int register, byte[] buffer, int p) {
         byte op = restoreOp(register);
-        return writeByte(op, buffer, p);
+        int pos = p;
+        return writeByte(op, buffer, pos);
     }
 
     @SuppressWarnings("unused")

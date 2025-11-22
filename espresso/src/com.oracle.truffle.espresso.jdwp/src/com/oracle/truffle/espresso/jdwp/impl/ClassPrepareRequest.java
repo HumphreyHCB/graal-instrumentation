@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +22,8 @@
  */
 package com.oracle.truffle.espresso.jdwp.impl;
 
+import java.util.regex.Pattern;
+
 public final class ClassPrepareRequest {
 
     private final RequestFilter filter;
@@ -30,16 +32,19 @@ public final class ClassPrepareRequest {
         this.filter = filter;
     }
 
-    public boolean isHit(EventInfo event) {
-        return filter.isHit(event);
-    }
-
-    public boolean isActive() {
-        return filter.isActive();
+    public Pattern[] getPatterns() {
+        if (filter.getIncludePatterns().length == 0) {
+            return new Pattern[]{Pattern.compile("")};
+        }
+        return filter.getIncludePatterns();
     }
 
     public int getRequestId() {
         return filter.getRequestId();
+    }
+
+    public Object getThread() {
+        return filter.getThread();
     }
 
     public byte getSuspendPolicy() {

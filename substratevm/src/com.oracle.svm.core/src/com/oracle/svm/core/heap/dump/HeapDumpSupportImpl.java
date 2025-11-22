@@ -52,16 +52,11 @@ import com.oracle.svm.core.os.RawFileOperationSupport.RawFileDescriptor;
 import com.oracle.svm.core.thread.NativeVMOperation;
 import com.oracle.svm.core.thread.NativeVMOperationData;
 import com.oracle.svm.core.thread.VMOperation;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InitialLayerOnly;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.TimeUtils;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.word.Word;
 
-@SingletonTraits(access = AllAccess.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = InitialLayerOnly.class)
 public class HeapDumpSupportImpl extends HeapDumping {
     private final HeapDumpWriter writer;
     private final HeapDumpOperation heapDumpOperation;
@@ -71,8 +66,8 @@ public class HeapDumpSupportImpl extends HeapDumping {
     private boolean outOfMemoryHeapDumpAttempted;
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public HeapDumpSupportImpl() {
-        this.writer = new HeapDumpWriter();
+    public HeapDumpSupportImpl(HeapDumpMetadata metadata) {
+        this.writer = new HeapDumpWriter(metadata);
         this.heapDumpOperation = new HeapDumpOperation();
     }
 
@@ -206,16 +201,13 @@ public class HeapDumpSupportImpl extends HeapDumping {
         }
 
         @Override
+        @RestrictHeapAccess(access = NO_ALLOCATION, reason = "Heap dumping must not allocate.")
         protected void operate(NativeVMOperationData d) {
             HeapDumpVMOperationData data = (HeapDumpVMOperationData) d;
             if (data.getGCBefore()) {
                 Heap.getHeap().getGC().collectCompletely(GCCause.HeapDump);
             }
-            dumpHeap(data);
-        }
 
-        @RestrictHeapAccess(access = NO_ALLOCATION, reason = "Heap dumping must not allocate.")
-        private void dumpHeap(HeapDumpVMOperationData data) {
             try {
                 boolean success = writer.dumpHeap(data.getRawFileDescriptor());
                 data.setSuccess(success);

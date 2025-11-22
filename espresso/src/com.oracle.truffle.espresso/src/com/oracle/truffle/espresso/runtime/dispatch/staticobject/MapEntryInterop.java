@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,7 +36,6 @@ import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
 import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.nodes.interop.InteropUnwrapNode;
 import com.oracle.truffle.espresso.nodes.interop.InvokeEspressoNode;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.GenerateInteropNodes;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.Shareable;
@@ -71,15 +70,14 @@ public class MapEntryInterop extends EspressoInterop {
 
     @ExportMessage
     public static void writeArrayElement(StaticObject receiver, long index, Object value,
-                    @Cached.Exclusive @Cached InvokeEspressoNode invoke,
-                    @Cached InteropUnwrapNode unwrapNode) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached InvokeEspressoNode invoke) throws InvalidArrayIndexException {
         if (index != 1) {
             throw InvalidArrayIndexException.create(index);
         }
         Meta meta = receiver.getKlass().getMeta();
         Method m = doLookup(receiver, meta.java_util_Map_Entry, meta.java_util_Map_Entry_setValue);
         try {
-            invoke.execute(m, receiver, new Object[]{value}, unwrapNode);
+            invoke.execute(m, receiver, new Object[]{value});
         } catch (ArityException | UnsupportedTypeException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw EspressoError.shouldNotReachHere(e);
@@ -88,8 +86,7 @@ public class MapEntryInterop extends EspressoInterop {
 
     @ExportMessage
     public static Object readArrayElement(StaticObject receiver, long index,
-                    @Cached.Exclusive @Cached InvokeEspressoNode invoke,
-                    @Cached InteropUnwrapNode unwrapNode) throws InvalidArrayIndexException {
+                    @Cached.Exclusive @Cached InvokeEspressoNode invoke) throws InvalidArrayIndexException {
         Meta meta = receiver.getKlass().getMeta();
         Method m;
         if (index == 0) {
@@ -100,7 +97,7 @@ public class MapEntryInterop extends EspressoInterop {
             throw InvalidArrayIndexException.create(index);
         }
         try {
-            return invoke.execute(m, receiver, EMPTY_ARRAY, unwrapNode);
+            return invoke.execute(m, receiver, EMPTY_ARRAY);
         } catch (ArityException | UnsupportedTypeException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw EspressoError.shouldNotReachHere(e);

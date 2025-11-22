@@ -169,7 +169,7 @@ public final class InlineSupport {
 
     /**
      * Marks a field to be accessed with unsafe. This annotation is useful to communicate fields
-     * that must not be rewritten by code obfuscation tools like Proguard.
+     * that must not e rewritten by code obfuscation tools like Proguard.
      *
      * @since 23.0
      */
@@ -592,10 +592,9 @@ public final class InlineSupport {
          *
          * @since 23.0
          */
-        @SuppressWarnings({"cast", "rawtypes", "unchecked"})
-        public static <T> ReferenceField<T> create(Lookup declaringLookup, String field, Class<? super T> valueClass) {
+        public static <T> ReferenceField<T> create(Lookup declaringLookup, String field, Class<T> valueClass) {
             Class<?> lookupClass = declaringLookup.lookupClass();
-            return (ReferenceField<T>) new ReferenceField(lookupClass, lookupClass, declaringLookup, field, valueClass);
+            return new ReferenceField<>(lookupClass, lookupClass, declaringLookup, field, valueClass);
         }
     }
 

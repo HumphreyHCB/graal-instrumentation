@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,23 +33,13 @@ import java.util.stream.StreamSupport;
 import com.oracle.graal.pointsto.BigBang;
 import com.oracle.graal.pointsto.PointsToAnalysis;
 import com.oracle.graal.pointsto.flow.PrimitiveComparison;
-import com.oracle.graal.pointsto.flow.TypeFlow;
 import com.oracle.graal.pointsto.flow.context.object.AnalysisObject;
 import com.oracle.graal.pointsto.meta.AnalysisType;
 
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 
-/**
- * This class and its subclasses represent the sets of objects/types/primitive values propagated
- * through {@link TypeFlow} nodes during the run of {@link PointsToAnalysis}. If the
- * {@link TypeState} hierarchy is changed, {@link PointsToStats} might have to be updated to reflect
- * that.
- * 
- * @see TypeFlow
- * @see PointsToStats
- */
-public abstract sealed class TypeState permits EmptyTypeState, NullTypeState, PrimitiveTypeState, SingleTypeState, MultiTypeState {
+public abstract class TypeState {
 
     /** Get the number of types. */
     public abstract int typesCount();
@@ -72,23 +62,8 @@ public abstract sealed class TypeState permits EmptyTypeState, NullTypeState, Pr
         return StreamSupport.stream(types(bb).spliterator(), false);
     }
 
-    /**
-     * A convenience method that allows to iterate over type ids without having to look up the
-     * corresponding {@link AnalysisType} instances as in some cases, the type ids are enough to
-     * implement the given operation.
-     */
-    public abstract Iterator<Integer> typeIdsIterator();
-
     /** Returns true if this type state contains the type, otherwise it returns false. */
     public abstract boolean containsType(AnalysisType exactType);
-
-    /**
-     * A convenience method using {@code typeId} which avoids the lookup of the corresponding
-     * {@link AnalysisType} in case when it is not needed otherwise.
-     *
-     * @see #containsType(AnalysisType)
-     */
-    public abstract boolean containsType(int typeId);
 
     /* Objects accessing methods. */
 
@@ -332,11 +307,6 @@ final class EmptyTypeState extends TypeState {
     }
 
     @Override
-    public Iterator<Integer> typeIdsIterator() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
     protected Iterator<AnalysisObject> objectsIterator(BigBang bb) {
         return Collections.emptyIterator();
     }
@@ -348,11 +318,6 @@ final class EmptyTypeState extends TypeState {
 
     @Override
     public boolean containsType(AnalysisType exactType) {
-        return false;
-    }
-
-    @Override
-    public boolean containsType(int typeId) {
         return false;
     }
 
@@ -405,11 +370,6 @@ final class NullTypeState extends TypeState {
     }
 
     @Override
-    public Iterator<Integer> typeIdsIterator() {
-        return Collections.emptyIterator();
-    }
-
-    @Override
     protected Iterator<AnalysisObject> objectsIterator(BigBang bb) {
         return Collections.emptyIterator();
     }
@@ -421,11 +381,6 @@ final class NullTypeState extends TypeState {
 
     @Override
     public boolean containsType(AnalysisType exactType) {
-        return false;
-    }
-
-    @Override
-    public boolean containsType(int typeId) {
         return false;
     }
 

@@ -27,16 +27,10 @@ package com.oracle.svm.hosted.webimage.test.spec;
 
 import java.nio.file.Path;
 
-import com.oracle.svm.webimage.jtt.api.JSNumberTest;
-import com.oracle.svm.webimage.jtt.api.JSObjectTest;
-import com.oracle.svm.webimage.jtt.api.JSStringTest;
-import com.oracle.svm.webimage.jtt.api.JSSymbolTest;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.oracle.svm.hosted.webimage.test.util.JTTTestSuite;
-import com.oracle.svm.hosted.webimage.test.util.WebImageTestOptions;
 import com.oracle.svm.webimage.jtt.api.CoercionConversionTest;
 import com.oracle.svm.webimage.jtt.api.HtmlApiExamplesTest;
 import com.oracle.svm.webimage.jtt.api.JSErrorsTest;
@@ -48,6 +42,8 @@ import com.oracle.svm.webimage.jtt.api.JavaDocExamplesTest;
 import com.oracle.svm.webimage.jtt.api.JavaProxyConversionTest;
 import com.oracle.svm.webimage.jtt.api.JavaProxyTest;
 import com.oracle.svm.webimage.jtt.testdispatcher.JSAnnotationTests;
+import com.oracle.svm.hosted.webimage.test.util.JTTTestSuite;
+import com.oracle.svm.hosted.webimage.test.util.WebImageTestOptions;
 
 /**
  * Tests for the JavaScriptBody annotation.
@@ -55,12 +51,19 @@ import com.oracle.svm.webimage.jtt.testdispatcher.JSAnnotationTests;
 public class JS_JTT_JSAnnotation extends JTTTestSuite {
 
     // @formatter:off
+    // TODO GR-62854 Remove Runnable#run once JSBodyFeature is enabled for WasmGC and InterceptJSInvokeTypeFlow is used
     private static final String REFLECT_CONFIG = """
 [
   {
     "name" : "java.lang.String",
     "methods": [
         {"name" : "indexOf"}
+    ]
+  },
+  {
+    "name" : "java.lang.Runnable",
+    "methods": [
+        {"name" : "run"}
     ]
   }
 ]""";
@@ -135,27 +138,4 @@ public class JS_JTT_JSAnnotation extends JTTTestSuite {
         testFileAgainstNoBuild(HtmlApiExamplesTest.OUTPUT, HtmlApiExamplesTest.class.getName());
     }
 
-    @Test
-    public void jsNumberTest() {
-        testFileAgainstNoBuild(JSNumberTest.class.getName());
-    }
-
-    @Test
-    public void jsStringTest() {
-        // TODO GR-60603 Enable once JS annotation is supported in WasmGC
-        Assume.assumeFalse(WebImageTestOptions.isWasmGCBackend());
-        testFileAgainstNoBuild(JSStringTest.class.getName());
-    }
-
-    @Test
-    public void jsSymbolTest() {
-        testFileAgainstNoBuild(JSSymbolTest.class.getName());
-    }
-
-    @Test
-    public void jsObjectTest() {
-        // TODO GR-60603 Enable once JS annotation is supported in WasmGC
-        Assume.assumeFalse(WebImageTestOptions.isWasmGCBackend());
-        testFileAgainstNoBuild(JSObjectTest.class.getName());
-    }
 }

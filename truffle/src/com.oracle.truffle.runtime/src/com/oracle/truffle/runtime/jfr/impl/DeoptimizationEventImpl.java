@@ -55,9 +55,4 @@ import jdk.jfr.StackTrace;
 @StackTrace(false)
 class DeoptimizationEventImpl extends RootFunctionEventImpl implements DeoptimizationEvent {
 
-    @Label("Invalidated") @Description("Invalidated") public boolean invalidated;
-
-    public void setInvalidated(boolean invalidated) {
-        this.invalidated = invalidated;
-    }
 }

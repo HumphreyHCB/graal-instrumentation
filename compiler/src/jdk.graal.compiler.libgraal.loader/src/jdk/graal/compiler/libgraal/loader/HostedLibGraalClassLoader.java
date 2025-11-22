@@ -43,11 +43,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,7 +94,7 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
     /**
      * A resource located in the jimage file or on the module path.
      */
-    abstract static class Resource {
+    static abstract class Resource {
         final String name;
 
         Resource(String name) {
@@ -160,12 +158,12 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
     /**
      * Map from the name of a resource (without module qualifier) to its path in the image.
      */
-    private final Map<String, Resource> resources = new LinkedHashMap<>();
+    private final Map<String, Resource> resources = new HashMap<>();
 
     /**
      * Map from a service name to a list of providers.
      */
-    private final Map<String, List<String>> services = new LinkedHashMap<>();
+    private final Map<String, List<String>> services = new HashMap<>();
 
     /**
      * Map from the {@linkplain Class#forName(String) name} of a class to the name of its enclosing
@@ -176,13 +174,13 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
     /**
      * Modules containing classes that can be annotated by {@code LibGraalService}.
      */
-    private static final Set<String> LIBGRAAL_MODULES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+    private static final Set<String> LIBGRAAL_MODULES = Set.of(
                     "jdk.internal.vm.ci",
                     "jdk.graal.compiler",
                     "jdk.graal.compiler.management",
                     "jdk.graal.compiler.libgraal",
                     "org.graalvm.truffle.compiler",
-                    "com.oracle.graal.graal_enterprise")));
+                    "com.oracle.graal.graal_enterprise");
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -221,7 +219,7 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
             Modules.addExports(javaBaseModule, "jdk.internal.vm", unnamedModuleOfThisLoader);
             Modules.addExports(javaBaseModule, "jdk.internal.misc", unnamedModuleOfThisLoader);
 
-            Map<String, String> modulesMap = new LinkedHashMap<>();
+            Map<String, String> modulesMap = new HashMap<>();
 
             Path imagePath = LIBGRAAL_JAVA_HOME.resolve(Path.of("lib", "modules"));
             this.imageReader = BasicImageReader.open(imagePath);
@@ -271,7 +269,7 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
                 }
             }
 
-            modules = Collections.unmodifiableMap(new LinkedHashMap<>(modulesMap));
+            modules = Map.copyOf(modulesMap);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -383,7 +381,7 @@ public final class HostedLibGraalClassLoader extends ClassLoader implements LibG
      * A {@link URLStreamHandler} for use with URLs returned by
      * {@link HostedLibGraalClassLoader#findResource(String)}.
      */
-    private final class ImageURLStreamHandler extends URLStreamHandler {
+    private class ImageURLStreamHandler extends URLStreamHandler {
         @Override
         public URLConnection openConnection(URL u) {
             String protocol = u.getProtocol();

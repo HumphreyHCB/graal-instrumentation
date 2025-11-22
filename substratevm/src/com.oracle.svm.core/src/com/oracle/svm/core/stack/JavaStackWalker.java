@@ -26,6 +26,8 @@ package com.oracle.svm.core.stack;
 
 import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 
+import com.oracle.svm.core.deopt.DeoptimizationSlotPacking;
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.CurrentIsolate;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.Platform;
@@ -44,7 +46,6 @@ import com.oracle.svm.core.code.CodeInfoAccess;
 import com.oracle.svm.core.code.CodeInfoTable;
 import com.oracle.svm.core.code.UntetheredCodeInfo;
 import com.oracle.svm.core.config.ConfigurationValues;
-import com.oracle.svm.core.deopt.DeoptimizationSlotPacking;
 import com.oracle.svm.core.deopt.DeoptimizedFrame;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
@@ -60,7 +61,6 @@ import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.core.common.NumUtil;
-import jdk.graal.compiler.word.Word;
 
 /**
  * Provides methods to iterate over the physical Java stack frames of a thread (native stack frames
@@ -203,24 +203,14 @@ public final class JavaStackWalker {
 
     @Uninterruptible(reason = "Prevent deoptimization of stack frames while in this method.", callerMustBe = true)
     private static void initializeFromFrameAnchor(JavaStackWalk walk, IsolateThread thread, Pointer endSP) {
-        assert thread.isNonNull();
         assert thread != CurrentIsolate.getCurrentThread() : "Walking the stack without specifying a start SP is only allowed when walking other threads";
-        assert VMOperation.isInProgressAtSafepoint() : "Walking the stack of another thread is only safe when that thread is stopped at a safepoint";
 
         JavaFrameAnchor frameAnchor = JavaFrameAnchors.getFrameAnchor(thread);
-        if (frameAnchor.isNull() || SafepointBehavior.isCrashedThread(thread)) {
-            /*
-             * Threads that do not have a frame anchor at a safepoint are not walkable. This can for
-             * example happen for attached threads that do not have any Java frames at the moment.
-             * Threads that are marked as crashed are also not walkable because they may no longer
-             * have a stack. For such threads, we must not access any data in the frame anchor (as
-             * it is a stack allocated struct).
-             */
+        if (frameAnchor.isNull()) {
+            /* Threads that do not have a frame anchor at a safepoint are not walkable. */
             markAsNotWalkable(walk);
         } else {
-            Pointer startSP = frameAnchor.getLastJavaSP();
-            assert startSP.isNonNull();
-            initWalk0(walk, startSP, endSP, frameAnchor.getLastJavaIP(), frameAnchor.getPreviousAnchor());
+            initWalk(walk, thread, frameAnchor.getLastJavaSP(), endSP, frameAnchor.getLastJavaIP(), frameAnchor.getPreviousAnchor());
         }
     }
 
@@ -484,7 +474,7 @@ public final class JavaStackWalker {
 
             DeoptimizedFrame deoptimizedFrame = Deoptimizer.checkEagerDeoptimized(frame);
             if (deoptimizedFrame != null) {
-                if (!visitDeoptimizedFrame(sp, ip, deoptimizedFrame, visitor, data)) {
+                if (!vistDeoptimizedFrame(sp, ip, deoptimizedFrame, visitor, data)) {
                     return false;
                 }
             } else {
@@ -518,7 +508,7 @@ public final class JavaStackWalker {
 
     @Uninterruptible(reason = "Wraps the now safe call to the possibly interruptible visitor.", callerMustBe = true, calleeMustBe = false)
     @RestrictHeapAccess(reason = "Whitelisted because some StackFrameVisitor implementations can allocate.", access = RestrictHeapAccess.Access.UNRESTRICTED)
-    private static boolean visitDeoptimizedFrame(Pointer sp, CodePointer ip, DeoptimizedFrame deoptimizedFrame, ParameterizedStackFrameVisitor visitor, Object data) {
+    private static boolean vistDeoptimizedFrame(Pointer sp, CodePointer ip, DeoptimizedFrame deoptimizedFrame, ParameterizedStackFrameVisitor visitor, Object data) {
         return visitor.visitDeoptimizedFrame(sp, ip, deoptimizedFrame, data);
     }
 

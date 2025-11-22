@@ -41,10 +41,6 @@ import jdk.vm.ci.code.TargetDescription;
 class VerifyFramePointerPhase extends FinalCodeAnalysisPhase {
     @Override
     protected void run(TargetDescription target, LIRGenerationResult lirGenRes, FinalCodeAnalysisContext context) {
-        if (!FramePointerPhase.isSupported(lirGenRes)) {
-            return;
-        }
-
         LIR lir = lirGenRes.getLIR();
         for (int blockId : lir.getBlocks()) {
             if (LIR.isBlockDeleted(blockId)) {

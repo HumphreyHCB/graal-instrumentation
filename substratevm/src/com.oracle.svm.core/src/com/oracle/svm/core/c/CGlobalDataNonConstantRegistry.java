@@ -24,6 +24,9 @@
  */
 package com.oracle.svm.core.c;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Equivalence;
 import org.graalvm.nativeimage.Platform;
@@ -42,6 +45,9 @@ public class CGlobalDataNonConstantRegistry {
 
     private final EconomicMap<CGlobalDataImpl<?>, CGlobalDataInfo> cGlobalDataInfos = ImageHeapMap.create(Equivalence.IDENTITY, "cGlobalDataInfos");
 
+    @Platforms(Platform.HOSTED_ONLY.class) //
+    private final Lock lock = new ReentrantLock();
+
     /**
      * Invoked at runtime via com.oracle.svm.hosted.c.CGlobalDataFeature#getCGlobalDataInfoMethod.
      */
@@ -56,10 +62,11 @@ public class CGlobalDataNonConstantRegistry {
 
     @Platforms(Platform.HOSTED_ONLY.class)
     public void registerNonConstantSymbol(CGlobalDataInfo cGlobalDataInfo) {
-        /*
-         * Note at build time ImageHeapMaps are backed by a concurrent hash map, so this code is
-         * thread safe.
-         */
-        cGlobalDataInfos.put(cGlobalDataInfo.getData(), cGlobalDataInfo);
+        lock.lock();
+        try {
+            cGlobalDataInfos.put(cGlobalDataInfo.getData(), cGlobalDataInfo);
+        } finally {
+            lock.unlock();
+        }
     }
 }

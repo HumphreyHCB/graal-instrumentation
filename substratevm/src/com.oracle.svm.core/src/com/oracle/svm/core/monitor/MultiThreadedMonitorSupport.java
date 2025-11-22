@@ -40,10 +40,13 @@ import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.WeakIdentityHashMap;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.heap.RestrictHeapAccess.Access;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.DynamicHubCompanion;
+import com.oracle.svm.core.jdk.JDK21OrEarlier;
+import com.oracle.svm.core.jdk.JDKLatest;
 import com.oracle.svm.core.jfr.JfrTicks;
 import com.oracle.svm.core.jfr.events.JavaMonitorInflateEvent;
 import com.oracle.svm.core.monitor.JavaMonitorQueuedSynchronizer.JavaMonitorConditionObject;
@@ -52,13 +55,10 @@ import com.oracle.svm.core.stack.StackOverflowCheck;
 import com.oracle.svm.core.thread.JavaThreads;
 import com.oracle.svm.core.thread.ThreadStatus;
 import com.oracle.svm.core.thread.VMOperationControl;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.InitialLayerOnly;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.graal.compiler.word.BarrieredAccess;
 import jdk.internal.misc.Unsafe;
 
@@ -97,7 +97,6 @@ import jdk.internal.misc.Unsafe;
  * object monitor needs a condition object, it is atomically swapped into its
  * {@link JavaMonitorConditionObject} field.
  */
-@SingletonTraits(access = AllAccess.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = InitialLayerOnly.class)
 public class MultiThreadedMonitorSupport extends MonitorSupport {
 
     private static final Unsafe UNSAFE = Unsafe.getUnsafe();
@@ -121,7 +120,9 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
              * java.lang.ref.ReferenceQueue internally. The ReferenceQueue uses the inner static
              * class Lock for all its locking needs.
              */
-            monitorTypes.put(Class.forName("java.lang.ref.ReferenceQueue$Lock"), false);
+            if (JavaVersionUtil.JAVA_SPEC > 21) {
+                monitorTypes.put(Class.forName("java.lang.ref.ReferenceQueue$Lock"), false);
+            }
             /* The WeakIdentityHashMap also synchronizes on its internal ReferenceQueue field. */
             monitorTypes.put(java.lang.ref.ReferenceQueue.class, false);
 
@@ -379,10 +380,15 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
          * too, so we don't have to intercept an InterruptedException from the carrier thread to
          * clear the virtual thread interrupt.
          */
+        long compensation = -1;
         boolean attempted = false;
         boolean pinned = JavaThreads.isCurrentThreadVirtualAndPinned();
         if (pinned) {
-            attempted = Target_jdk_internal_misc_Blocker.begin();
+            if (JavaVersionUtil.JAVA_SPEC < 23) {
+                compensation = Target_jdk_internal_misc_Blocker.beginJDK22();
+            } else {
+                attempted = Target_jdk_internal_misc_Blocker.begin();
+            }
         }
         try {
             /*
@@ -398,7 +404,11 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
             }
         } finally {
             if (pinned) {
-                Target_jdk_internal_misc_Blocker.end(attempted);
+                if (JavaVersionUtil.JAVA_SPEC < 23) {
+                    Target_jdk_internal_misc_Blocker.endJDK22(compensation);
+                } else {
+                    Target_jdk_internal_misc_Blocker.end(attempted);
+                }
             }
         }
     }
@@ -527,10 +537,19 @@ public class MultiThreadedMonitorSupport extends MonitorSupport {
 
 @TargetClass(className = "jdk.internal.misc.Blocker")
 final class Target_jdk_internal_misc_Blocker {
+    @Alias
+    @TargetElement(name = "begin", onlyWith = JDK21OrEarlier.class)
+    public static native long beginJDK22();
 
     @Alias
+    @TargetElement(name = "end", onlyWith = JDK21OrEarlier.class)
+    public static native void endJDK22(long compensateReturn);
+
+    @Alias
+    @TargetElement(onlyWith = JDKLatest.class)
     public static native boolean begin();
 
     @Alias
+    @TargetElement(onlyWith = JDKLatest.class)
     public static native void end(boolean attempted);
 }

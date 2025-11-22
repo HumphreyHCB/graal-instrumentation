@@ -231,9 +231,10 @@ public class ClassInitializationFeature implements InternalFeature {
      * Initializes classes that can be proven safe and prints class initialization statistics.
      */
     @Override
+    @SuppressWarnings("try")
     public void afterAnalysis(AfterAnalysisAccess a) {
         AfterAnalysisAccessImpl access = (AfterAnalysisAccessImpl) a;
-        try (Timer.StopTimer _ = TimerCollection.createTimerAndStart(TimerCollection.Registry.CLINIT)) {
+        try (Timer.StopTimer ignored = TimerCollection.createTimerAndStart(TimerCollection.Registry.CLINIT)) {
 
             if (ClassInitializationOptions.PrintClassInitialization.getValue()) {
                 reportClassInitializationInfo(access, SubstrateOptions.reportsPath());
@@ -289,7 +290,7 @@ public class ClassInitializationFeature implements InternalFeature {
             if (kind != BUILD_TIME) {
                 Optional<AnalysisType> type = access.getMetaAccess().optionalLookupJavaType(clazz);
                 if (type.isPresent()) {
-                    simulated = SimulateClassInitializerSupport.singleton().isSimulatedOrInitializedAtBuildTime(type.get());
+                    simulated = SimulateClassInitializerSupport.singleton().isClassInitializerSimulated(type.get());
                 }
             }
             if (simulated) {

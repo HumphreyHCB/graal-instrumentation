@@ -23,6 +23,7 @@
 package com.oracle.truffle.espresso.libjavavm.arghelper;
 
 import static com.oracle.truffle.espresso.libjavavm.Arguments.abort;
+import static com.oracle.truffle.espresso.libjavavm.Arguments.warn;
 
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -44,6 +45,7 @@ class Native {
     private final ArgumentsHandler handler;
 
     private String argPrefix;
+    private boolean legacyGraalOptionDeprecationWarned = false;
 
     void init(boolean fromXXHandling) {
         argPrefix = fromXXHandling ? "-" : "--vm.";
@@ -54,6 +56,13 @@ class Native {
             setGraalStyleRuntimeOption(arg.substring("Djdk.graal.".length()));
         } else if (arg.startsWith("Dgraal.")) {
             String baseName = arg.substring("Dgraal.".length());
+            if (!legacyGraalOptionDeprecationWarned) {
+                warn("""
+                                WARNING: The 'graal.' property prefix for the Graal option %s
+                                WARNING: (and all other Graal options) is deprecated and will be ignored
+                                WARNING: in a future release. Please use 'jdk.graal.%s' instead.""".formatted(baseName, baseName));
+                legacyGraalOptionDeprecationWarned = true;
+            }
             setGraalStyleRuntimeOption(baseName);
         } else if (arg.startsWith("D")) {
             setSystemProperty(arg.substring("D".length()));
@@ -83,7 +92,7 @@ class Native {
             String helpMsg = descriptor.help();
             if (isBooleanOption(descriptor)) {
                 Boolean val = (Boolean) descriptor.defaultValue();
-                if (!helpMsg.isEmpty()) {
+                if (helpMsg.length() != 0) {
                     helpMsg += ' ';
                 }
                 if (val == null || !val) {

@@ -24,16 +24,37 @@
  */
 package com.oracle.svm.hosted.meta;
 
-import jdk.vm.ci.meta.annotation.AbstractAnnotated;
-import jdk.vm.ci.meta.annotation.Annotated;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 
-public abstract class HostedElement extends AbstractAnnotated {
+import com.oracle.svm.core.util.VMError;
 
-    protected abstract Annotated getWrapped();
+public abstract class HostedElement implements AnnotatedElement {
+
+    protected abstract AnnotatedElement getWrapped();
 
     @Override
-    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
-        return getWrapped().getDeclaredAnnotationInfo(null);
+    public final boolean isAnnotationPresent(Class<? extends Annotation> annotationClass) {
+        return getWrapped().isAnnotationPresent(annotationClass);
+    }
+
+    @Override
+    public final <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        return getWrapped().getAnnotation(annotationClass);
+    }
+
+    @Override
+    public final <T extends Annotation> T getDeclaredAnnotation(Class<T> annotationClass) {
+        return getWrapped().getDeclaredAnnotation(annotationClass);
+    }
+
+    @Override
+    public final Annotation[] getAnnotations() {
+        throw VMError.shouldNotReachHere("Getting all annotations is not supported because it initializes all annotation classes and their dependencies");
+    }
+
+    @Override
+    public final Annotation[] getDeclaredAnnotations() {
+        throw VMError.shouldNotReachHere("Getting all annotations is not supported because it initializes all annotation classes and their dependencies");
     }
 }

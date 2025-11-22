@@ -322,7 +322,8 @@ public interface OptimizationLog {
      */
     static boolean isAnyLoggingEnabled(DebugContext debugContext) {
         return debugContext.isLogEnabledForMethod() || debugContext.isDumpEnabledForMethod() ||
-                        debugContext.areCountersEnabled() ||
+                        DebugOptions.Count.getValue(debugContext.getOptions()) != null ||
+                        debugContext.hasUnscopedCounters() ||
                         isStructuredOptimizationLogEnabled(debugContext.getOptions());
     }
 

@@ -40,39 +40,85 @@
  */
 package org.graalvm.nativeimage.impl;
 
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+import org.graalvm.nativeimage.hosted.RuntimeJNIAccess;
+import org.graalvm.nativeimage.hosted.RuntimeProxyCreation;
 
 public interface RuntimeReflectionSupport extends ReflectionRegistry {
     // needed as reflection-specific ImageSingletons key
-    void registerAllMethodsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllMethodsQuery(ConfigurationCondition condition, boolean queriedOnly, Class<?> clazz);
 
-    void registerAllDeclaredMethodsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllDeclaredMethodsQuery(ConfigurationCondition condition, boolean queriedOnly, Class<?> clazz);
 
-    void registerAllFields(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerAllFields(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllDeclaredFields(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerAllDeclaredFields(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllFieldsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllConstructorsQuery(ConfigurationCondition condition, boolean queriedOnly, Class<?> clazz);
 
-    void registerAllDeclaredFieldsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllDeclaredConstructorsQuery(ConfigurationCondition condition, boolean queriedOnly, Class<?> clazz);
 
-    void registerAllConstructorsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllClassesQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllDeclaredConstructorsQuery(AccessCondition condition, boolean queriedOnly, boolean preserved, Class<?> clazz);
+    void registerAllDeclaredClassesQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllClassesQuery(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerAllRecordComponentsQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllDeclaredClassesQuery(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerAllPermittedSubclassesQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllRecordComponentsQuery(AccessCondition condition, Class<?> clazz);
+    void registerAllNestMembersQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllPermittedSubclassesQuery(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerAllSignersQuery(ConfigurationCondition condition, Class<?> clazz);
 
-    void registerAllNestMembersQuery(AccessCondition condition, boolean preserved, Class<?> clazz);
+    void registerClassLookupException(ConfigurationCondition condition, String typeName, Throwable t);
 
-    void registerAllSignersQuery(AccessCondition condition, Class<?> clazz);
+    default void registerClassFully(ConfigurationCondition condition, Class<?> clazz) {
+        register(condition, false, clazz);
 
-    void registerClassLookupException(AccessCondition condition, String typeName, Throwable t);
+        // GR-62143 Register all fields is very slow.
+        // registerAllDeclaredFields(condition, clazz);
+        // registerAllFields(condition, clazz);
+        registerAllDeclaredMethodsQuery(condition, false, clazz);
+        registerAllMethodsQuery(condition, false, clazz);
+        registerAllDeclaredConstructorsQuery(condition, false, clazz);
+        registerAllConstructorsQuery(condition, false, clazz);
+        registerAllClassesQuery(condition, clazz);
+        registerAllDeclaredClassesQuery(condition, clazz);
+        registerAllNestMembersQuery(condition, clazz);
+        registerAllPermittedSubclassesQuery(condition, clazz);
+        registerAllRecordComponentsQuery(condition, clazz);
+        registerAllSignersQuery(condition, clazz);
 
-    void registerUnsafeAllocation(AccessCondition condition, boolean preserved, Class<?>... classes);
+        /* Register every single-interface proxy */
+        // GR-62293 can't register proxies from jdk modules.
+        if (clazz.getModule() == null && clazz.isInterface()) {
+            RuntimeProxyCreation.register(clazz);
+        }
+
+        RuntimeJNIAccess.register(clazz);
+        try {
+            for (Method declaredMethod : clazz.getDeclaredMethods()) {
+                RuntimeJNIAccess.register(declaredMethod);
+            }
+            for (Constructor<?> declaredConstructor : clazz.getDeclaredConstructors()) {
+                RuntimeJNIAccess.register(declaredConstructor);
+            }
+            // GR-62143 Registering all fields is very slow.
+            // for (Field declaredField : clazz.getDeclaredFields()) {
+            // RuntimeJNIAccess.register(declaredField);
+            // RuntimeReflection.register(declaredField);
+            // }
+        } catch (LinkageError e) {
+            /* If we can't link we can not register for JNI */
+        }
+
+        // GR-62143 Registering all fields is very slow.
+        // RuntimeSerialization.register(clazz);
+
+        // if we register unsafe allocated earlier there are build-time initialization errors
+        register(condition, !(clazz.isArray() || clazz.isInterface() || clazz.isPrimitive() || Modifier.isAbstract(clazz.getModifiers())), clazz);
+    }
 }

@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import jdk.graal.compiler.options.Option;
 import org.graalvm.nativeimage.hosted.Feature;
 
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
@@ -43,8 +44,6 @@ import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.RuntimeOptionKey;
 import com.oracle.svm.core.util.MetricsLogUtils;
-
-import jdk.graal.compiler.options.Option;
 
 public final class AllocationSite {
 
@@ -166,7 +165,7 @@ public final class AllocationSite {
     }
 
     public static RuntimeSupport.Hook getShutdownHook() {
-        return _ -> {
+        return isFirstIsolate -> {
             dumpProfilingResults();
         };
     }

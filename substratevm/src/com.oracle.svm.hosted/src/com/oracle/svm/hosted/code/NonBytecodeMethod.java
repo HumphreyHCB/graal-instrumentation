@@ -24,14 +24,15 @@
  */
 package com.oracle.svm.hosted.code;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 
 import com.oracle.graal.pointsto.infrastructure.GraphProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.annotation.AnnotationWrapper;
-import com.oracle.svm.util.AnnotatedWrapper;
-import com.oracle.svm.util.OriginalMethodProvider;
 
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.ConstantPool;
@@ -43,14 +44,12 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
-import jdk.vm.ci.meta.annotation.Annotated;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 /**
  * Abstract base class for methods with generated Graal IR, i.e., methods that do not originate from
  * bytecode.
  */
-public abstract class NonBytecodeMethod implements GraphProvider, ResolvedJavaMethod, AnnotationWrapper, AnnotatedWrapper, OriginalMethodProvider {
+public abstract class NonBytecodeMethod implements GraphProvider, ResolvedJavaMethod, AnnotationWrapper, OriginalMethodProvider {
 
     /**
      * Line numbers are bogus because this is generated code, but we need to include them in our
@@ -151,11 +150,6 @@ public abstract class NonBytecodeMethod implements GraphProvider, ResolvedJavaMe
     }
 
     @Override
-    public boolean isDeclared() {
-        return false;
-    }
-
-    @Override
     public boolean isClassInitializer() {
         return false;
     }
@@ -190,6 +184,11 @@ public abstract class NonBytecodeMethod implements GraphProvider, ResolvedJavaMe
 
     @Override
     public void reprofile() {
+        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
         throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
@@ -239,18 +238,8 @@ public abstract class NonBytecodeMethod implements GraphProvider, ResolvedJavaMe
     }
 
     @Override
-    public Annotated getWrappedAnnotated() {
+    public AnnotatedElement getAnnotationRoot() {
         return null;
-    }
-
-    @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
-        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
-        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,13 +71,13 @@ import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
 import com.oracle.truffle.espresso.meta.EspressoError;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.nodes.interop.InteropUnwrapNode;
 import com.oracle.truffle.espresso.nodes.interop.LookupInstanceFieldNode;
 import com.oracle.truffle.espresso.nodes.interop.LookupVirtualMethodNode;
 import com.oracle.truffle.espresso.nodes.interop.ToEspressoNode;
 import com.oracle.truffle.espresso.nodes.interop.ToReference;
 import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.EspressoFunction;
+import com.oracle.truffle.espresso.runtime.InteropUtils;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.GenerateInteropNodes;
 import com.oracle.truffle.espresso.runtime.dispatch.messages.Shareable;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
@@ -551,13 +551,12 @@ public class EspressoInterop extends BaseInterop {
     @Shareable(false)
     static Object readMember(StaticObject receiver, String member,
                     @Cached @Exclusive LookupInstanceFieldNode lookupField,
-                    @Cached @Exclusive LookupVirtualMethodNode lookupMethod,
-                    @Cached InteropUnwrapNode unwrapNode) throws UnknownIdentifierException {
+                    @Cached @Exclusive LookupVirtualMethodNode lookupMethod) throws UnknownIdentifierException {
         receiver.checkNotForeign();
         if (notNull(receiver)) {
             Field f = lookupField.execute(getInteropKlass(receiver), member);
             if (f != null) {
-                return unwrapNode.execute(f.get(receiver));
+                return InteropUtils.unwrap(EspressoLanguage.get(lookupField), f.get(receiver), receiver.getKlass().getMeta());
             }
             try {
                 Method[] candidates = lookupMethod.execute(getInteropKlass(receiver), member, -1);
@@ -753,8 +752,8 @@ public class EspressoInterop extends BaseInterop {
             Meta meta = receiver.getKlass().getMeta();
             if (instanceOf(receiver, meta.java_time_LocalDate)) {
                 int year = (int) meta.java_time_LocalDate_year.get(receiver);
-                short month = ((Number) meta.java_time_LocalDate_month.get(receiver)).shortValue();
-                short day = ((Number) meta.java_time_LocalDate_day.get(receiver)).shortValue();
+                short month = (short) meta.java_time_LocalDate_month.get(receiver);
+                short day = (short) meta.java_time_LocalDate_day.get(receiver);
                 return LocalDate.of(year, month, day);
             } else if (instanceOf(receiver, meta.java_time_LocalDateTime)) {
                 StaticObject localDate = (StaticObject) meta.java_time_LocalDateTime_toLocalDate.invokeDirectSpecial(receiver);
@@ -1028,7 +1027,6 @@ public class EspressoInterop extends BaseInterop {
 
             @Specialization(guards = {"receiver.isArray()", "receiver.isEspressoObject()", "!isPrimitiveArray(receiver)"})
             static Object doObject(StaticObject receiver, long index,
-                            @Cached InteropUnwrapNode interopUnwrapNode,
                             @CachedLibrary(limit = "1") InteropLibrary receiverLib,
                             @Shared("error") @Cached BranchProfile error) throws InvalidArrayIndexException {
                 EspressoLanguage language = EspressoLanguage.get(receiverLib);
@@ -1036,9 +1034,7 @@ public class EspressoInterop extends BaseInterop {
                     error.enter();
                     throw InvalidArrayIndexException.create(index);
                 }
-                // before returning from Espresso, we must unwrap the element
-                StaticObject rawResult = receiver.<StaticObject[]> unwrap(language)[(int) index];
-                return interopUnwrapNode.execute(rawResult);
+                return receiver.<StaticObject[]> unwrap(language)[(int) index];
             }
 
             @SuppressWarnings("unused")

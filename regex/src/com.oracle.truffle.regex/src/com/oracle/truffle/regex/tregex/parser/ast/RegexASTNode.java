@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import com.oracle.truffle.regex.tregex.TRegexOptions;
 import com.oracle.truffle.regex.tregex.buffer.CompilationBuffer;
 import com.oracle.truffle.regex.tregex.parser.ast.visitors.CopyVisitor;
 import com.oracle.truffle.regex.tregex.parser.ast.visitors.MarkLookBehindEntriesVisitor;
-import com.oracle.truffle.regex.tregex.util.MathUtil;
 import com.oracle.truffle.regex.tregex.util.json.Json;
 import com.oracle.truffle.regex.tregex.util.json.JsonConvertible;
 import com.oracle.truffle.regex.tregex.util.json.JsonObject;
@@ -502,7 +501,6 @@ public abstract class RegexASTNode implements JsonConvertible {
     }
 
     public void setMinPath(int n) {
-        assert n >= 0;
         minPath = n;
     }
 
@@ -511,7 +509,7 @@ public abstract class RegexASTNode implements JsonConvertible {
     }
 
     public void incMinPath(int n) {
-        minPath = MathUtil.saturatingAdd(minPath, n);
+        minPath += n;
     }
 
     public int getMaxPath() {
@@ -519,7 +517,6 @@ public abstract class RegexASTNode implements JsonConvertible {
     }
 
     public void setMaxPath(int n) {
-        assert n >= 0;
         maxPath = n;
     }
 
@@ -528,7 +525,7 @@ public abstract class RegexASTNode implements JsonConvertible {
     }
 
     public void incMaxPath(int n) {
-        maxPath = MathUtil.saturatingAdd(maxPath, n);
+        maxPath += n;
     }
 
     public int getPrefixLengthMin() {

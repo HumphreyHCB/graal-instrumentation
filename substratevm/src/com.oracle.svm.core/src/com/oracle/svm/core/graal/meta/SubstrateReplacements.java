@@ -35,12 +35,14 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.graalvm.collections.EconomicSet;
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.hosted.Feature.BeforeHeapLayoutAccess;
@@ -51,7 +53,6 @@ import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.option.HostedOptionValues;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.api.replacements.Snippet;
 import jdk.graal.compiler.bytecode.BytecodeProvider;
@@ -61,11 +62,11 @@ import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.core.common.type.TypeReference;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugOptions;
+import jdk.graal.compiler.graph.NodeClass;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.graal.compiler.nodes.GraphEncoder;
 import jdk.graal.compiler.nodes.Invoke;
-import jdk.graal.compiler.nodes.NodeClassMap;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
 import jdk.graal.compiler.nodes.ValueNode;
@@ -111,15 +112,15 @@ public class SubstrateReplacements extends ReplacementsImpl {
         protected final GraphMakerFactory graphMakerFactory;
         protected final Map<ResolvedJavaMethod, StructuredGraph> graphs;
         protected final Deque<Runnable> deferred;
-        protected final EconomicSet<ResolvedJavaMethod> registered;
-        protected final EconomicSet<ResolvedJavaMethod> delayedInvocationPluginMethods;
+        protected final HashSet<ResolvedJavaMethod> registered;
+        protected final Set<ResolvedJavaMethod> delayedInvocationPluginMethods;
 
         protected Builder(GraphMakerFactory graphMakerFactory) {
             this.graphMakerFactory = graphMakerFactory;
             this.graphs = new HashMap<>();
             this.deferred = new ArrayDeque<>();
-            this.registered = EconomicSet.create();
-            this.delayedInvocationPluginMethods = EconomicSet.create();
+            this.registered = new HashSet<>();
+            this.delayedInvocationPluginMethods = new HashSet<>();
         }
     }
 
@@ -142,12 +143,12 @@ public class SubstrateReplacements extends ReplacementsImpl {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)//
-    private final Builder builder;
+    private Builder builder;
 
     private InvocationPlugins snippetInvocationPlugins;
     private byte[] snippetEncoding;
     private Object[] snippetObjects;
-    private NodeClassMap snippetNodeClasses;
+    private NodeClass<?>[] snippetNodeClasses;
     private Map<ResolvedJavaMethod, Integer> snippetStartOffsets;
 
     @Platforms(Platform.HOSTED_ONLY.class)
@@ -184,7 +185,7 @@ public class SubstrateReplacements extends ReplacementsImpl {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public NodeClassMap getSnippetNodeClasses() {
+    public NodeClass<?>[] getSnippetNodeClasses() {
         return snippetNodeClasses;
     }
 
@@ -234,7 +235,7 @@ public class SubstrateReplacements extends ReplacementsImpl {
             PEGraphDecoder graphDecoder = new PEGraphDecoder(ConfigurationValues.getTarget().arch, result, providers, null, snippetInvocationPlugins, new InlineInvokePlugin[0], parameterPlugin, null,
                             null, null, new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), true, false) {
 
-                private final IntrinsicContext intrinsic = new IntrinsicContext(method, null, providers.getReplacements().getDefaultReplacementBytecodeProvider(), INLINE_AFTER_PARSING, false);
+                private IntrinsicContext intrinsic = new IntrinsicContext(method, null, providers.getReplacements().getDefaultReplacementBytecodeProvider(), INLINE_AFTER_PARSING, false);
 
                 @Override
                 protected EncodedGraph lookupEncodedGraph(ResolvedJavaMethod lookupMethod, BytecodeProvider intrinsicBytecodeProvider) {
@@ -270,7 +271,7 @@ public class SubstrateReplacements extends ReplacementsImpl {
     @Platforms(Platform.HOSTED_ONLY.class)
     @Override
     public void registerSnippet(ResolvedJavaMethod method, ResolvedJavaMethod original, Object receiver, boolean trackNodeSourcePosition, OptionValues options) {
-        assert AnnotationUtil.isAnnotationPresent(method, Snippet.class) : "Snippet must be annotated with @" + Snippet.class.getSimpleName() + " " + method;
+        assert AnnotationAccess.isAnnotationPresent(method, Snippet.class) : "Snippet must be annotated with @" + Snippet.class.getSimpleName() + " " + method;
         assert method.hasBytecodes() : "Snippet must not be abstract or native";
         assert builder.graphs.get(method) == null : "snippet registered twice: " + method.getName();
         assert builder.registered.add(method) : "snippet registered twice: " + method.getName();
@@ -300,7 +301,7 @@ public class SubstrateReplacements extends ReplacementsImpl {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    public EconomicSet<ResolvedJavaMethod> getDelayedInvocationPluginMethods() {
+    public Set<ResolvedJavaMethod> getDelayedInvocationPluginMethods() {
         return builder.delayedInvocationPluginMethods;
     }
 
@@ -345,7 +346,7 @@ public class SubstrateReplacements extends ReplacementsImpl {
         snippetInvocationPlugins = makeInvocationPlugins(getGraphBuilderPlugins(), copyFrom.builder, objectReplacer);
 
         snippetEncoding = Arrays.copyOf(copyFrom.snippetEncoding, copyFrom.snippetEncoding.length);
-        snippetNodeClasses = copyFrom.snippetNodeClasses;
+        snippetNodeClasses = Arrays.copyOf(copyFrom.snippetNodeClasses, copyFrom.snippetNodeClasses.length);
         snippetObjects = new Object[copyFrom.snippetObjects.length];
         for (int i = 0; i < snippetObjects.length; i++) {
             snippetObjects[i] = objectReplacer.apply(copyFrom.snippetObjects[i]);

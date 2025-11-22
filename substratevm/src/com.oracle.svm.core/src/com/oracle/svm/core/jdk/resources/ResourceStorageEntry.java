@@ -25,7 +25,8 @@
 
 package com.oracle.svm.core.jdk.resources;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -35,16 +36,14 @@ import com.oracle.svm.core.util.VMError;
 
 public final class ResourceStorageEntry extends ResourceStorageEntryBase {
 
-    private static final byte[][] EMPTY_DATA = new byte[0][];
-
     private final boolean isDirectory;
     private final boolean fromJar;
-    private byte[][] data;
+    private List<byte[]> data;
 
     public ResourceStorageEntry(boolean isDirectory, boolean fromJar) {
         this.isDirectory = isDirectory;
         this.fromJar = fromJar;
-        this.data = EMPTY_DATA;
+        this.data = List.of();
     }
 
     @Override
@@ -58,17 +57,18 @@ public final class ResourceStorageEntry extends ResourceStorageEntryBase {
     }
 
     @Override
-    public byte[][] getData() {
+    public List<byte[]> getData() {
         return data;
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
     @Override
     public void addData(byte[] datum) {
-        byte[][] newData = Arrays.copyOf(data, data.length + 1);
-        newData[data.length] = datum;
+        List<byte[]> newData = new ArrayList<>(data.size() + 1);
+        newData.addAll(data);
+        newData.add(datum);
         /* Always use a compact, immutable data structure in the image heap. */
-        data = newData;
+        data = List.copyOf(newData);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class ResourceStorageEntry extends ResourceStorageEntryBase {
     public void replaceData(byte[]... replacementData) {
         VMError.guarantee(BuildPhaseProvider.isAnalysisFinished(), "Replacing data of a resource entry before analysis finished. Register standard resource instead.");
         VMError.guarantee(!BuildPhaseProvider.isCompilationFinished(), "Trying to replace data of a resource entry after compilation finished.");
-        this.data = replacementData;
+        this.data = List.of(replacementData);
     }
 
     @Override

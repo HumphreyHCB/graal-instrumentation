@@ -43,6 +43,7 @@ package com.oracle.truffle.host;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,11 +52,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
 import org.graalvm.collections.EconomicSet;
-import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess.MutableTargetMapping;
-import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractHostAccess;
-import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractValueDispatch;
 
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -74,15 +72,16 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.host.HostAdapterFactory.AdapterResult;
+import com.oracle.truffle.host.HostContextFactory.ToGuestValueNodeGen;
 import com.oracle.truffle.host.HostLanguage.HostLanguageException;
 
 final class HostContext {
 
     @CompilationFinal Object internalContext;
-    @CompilationFinal Object internalLanguageContext;
     final Map<String, Class<?>> classCache = new HashMap<>();
     final Object topScope = new TopScopeObject(this);
     volatile HostClassLoader classloader;
@@ -126,7 +125,6 @@ final class HostContext {
             throw new AssertionError("must not be used during context preinitialization");
         }
         this.internalContext = internalContext;
-        this.internalLanguageContext = HostAccessor.ENGINE.getHostLanguageContext(internalContext);
         this.contextClassLoader = cl;
         this.classFilter = clFilter;
         this.hostClassLoadingAllowed = hostCLAllowed;
@@ -306,16 +304,22 @@ final class HostContext {
         return hostToGuestException(e, null);
     }
 
-    Value asValue(Node node, Object value) {
+    Object asValue(Node node, Object value) {
         // make language lookup fold if possible
         HostLanguage l = HostLanguage.get(node);
         return l.access.toValue(internalContext, value);
     }
 
-    static Object toGuestValue(Node node, Object hostValue) {
+    Object toGuestValue(Class<?> receiver) {
+        return HostObject.forClass(receiver, this);
+    }
+
+    Object toGuestValue(Node node, Object hostValue) {
         HostLanguage l = HostLanguage.get(node);
-        Object result = l.access.toGuestValue(node, l.api, hostValue);
-        return l.service.toGuestValue(node, result, false);
+        HostContext context = HostContext.get(node);
+        assert context == this;
+        Object result = l.access.toGuestValue(context.internalContext, hostValue);
+        return l.service.toGuestValue(context, result, false);
     }
 
     static boolean isGuestPrimitive(Object receiver) {
@@ -336,23 +340,118 @@ final class HostContext {
     @GenerateInline
     abstract static class ToGuestValueNode extends Node {
 
-        abstract Object execute(Node node, Object receiver);
+        abstract Object execute(Node node, HostContext context, Object receiver);
 
         @Specialization(guards = "receiver == null")
-        Object doNull(Node node, Object receiver) {
-            return HostContext.toGuestValue(node, receiver);
+        Object doNull(HostContext context, @SuppressWarnings("unused") Object receiver) {
+            return context.toGuestValue(this, receiver);
         }
 
         @Specialization(guards = {"receiver != null", "receiver.getClass() == cachedReceiver"}, limit = "3")
-        Object doCached(Node node, Object receiver, @Cached("receiver.getClass()") Class<?> cachedReceiver) {
-            return HostContext.toGuestValue(node, cachedReceiver.cast(receiver));
+        Object doCached(HostContext context, Object receiver, @Cached("receiver.getClass()") Class<?> cachedReceiver) {
+            return context.toGuestValue(this, cachedReceiver.cast(receiver));
         }
 
         @Specialization(replaces = "doCached")
         @TruffleBoundary
-        Object doUncached(Node node, Object receiver) {
-            return HostContext.toGuestValue(node, receiver);
+        Object doUncached(HostContext context, Object receiver) {
+            return context.toGuestValue(this, receiver);
         }
+    }
+
+    static final class ToGuestValuesNode extends Node {
+
+        @Children private volatile ToGuestValueNode[] toGuestValue;
+        @CompilationFinal private volatile boolean needsCopy = false;
+        @CompilationFinal private volatile boolean generic = false;
+
+        private ToGuestValuesNode() {
+        }
+
+        public Object[] apply(HostContext context, Object[] args) {
+            ToGuestValueNode[] nodes = this.toGuestValue;
+            if (nodes == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                nodes = new ToGuestValueNode[args.length];
+                for (int i = 0; i < nodes.length; i++) {
+                    nodes[i] = ToGuestValueNodeGen.create();
+                }
+                toGuestValue = insert(nodes);
+            }
+            if (args.length == nodes.length) {
+                // fast path
+                if (nodes.length == 0) {
+                    return args;
+                } else {
+                    Object[] newArgs = fastToGuestValuesUnroll(nodes, context, args);
+                    return newArgs;
+                }
+            } else {
+                if (!generic || nodes.length != 1) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    nodes = Arrays.copyOf(nodes, 1);
+                    if (nodes[0] == null) {
+                        nodes[0] = ToGuestValueNodeGen.create();
+                    }
+                    this.toGuestValue = insert(nodes);
+                    this.generic = true;
+                }
+                if (args.length == 0) {
+                    return args;
+                }
+                return fastToGuestValues(nodes[0], context, args);
+            }
+        }
+
+        /*
+         * Specialization for constant number of arguments. Uses a profile for each argument.
+         */
+        @ExplodeLoop
+        private Object[] fastToGuestValuesUnroll(ToGuestValueNode[] nodes, HostContext context, Object[] args) {
+            Object[] newArgs = needsCopy ? new Object[nodes.length] : args;
+            for (int i = 0; i < nodes.length; i++) {
+                Object arg = args[i];
+                Object newArg = nodes[i].execute(this, context, arg);
+                if (needsCopy) {
+                    newArgs[i] = newArg;
+                } else if (arg != newArg) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    newArgs = new Object[nodes.length];
+                    System.arraycopy(args, 0, newArgs, 0, args.length);
+                    newArgs[i] = newArg;
+                    needsCopy = true;
+                }
+            }
+            return newArgs;
+        }
+
+        /*
+         * Specialization that supports multiple argument lengths but uses a single profile for all
+         * arguments.
+         */
+        private Object[] fastToGuestValues(ToGuestValueNode node, HostContext context, Object[] args) {
+            assert toGuestValue[0] != null;
+            Object[] newArgs = needsCopy ? new Object[args.length] : args;
+            for (int i = 0; i < args.length; i++) {
+                Object arg = args[i];
+                Object newArg = node.execute(this, context, arg);
+                if (needsCopy) {
+                    newArgs[i] = newArg;
+                } else if (arg != newArg) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    newArgs = new Object[args.length];
+                    System.arraycopy(args, 0, newArgs, 0, args.length);
+                    newArgs[i] = newArg;
+                    needsCopy = true;
+                }
+            }
+            return newArgs;
+        }
+
+        public static ToGuestValuesNode create() {
+            return new ToGuestValuesNode();
+        }
+
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -406,14 +505,14 @@ final class HostContext {
 
         @SuppressWarnings("static-method")
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @SuppressWarnings("static-method")
         @ExportMessage
-        String getLanguageId() {
-            return HostLanguage.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return HostLanguage.class;
         }
 
         @SuppressWarnings("static-method")
@@ -463,14 +562,6 @@ final class HostContext {
             }
             classloader = null;
         }
-    }
-
-    AbstractValueDispatch lookupValueCache(Object value) {
-        return HostAccessor.ENGINE.lookupValueCache(internalContext, value);
-    }
-
-    Context getContextAPI() {
-        return HostAccessor.ENGINE.getContextAPI(internalContext);
     }
 
 }

@@ -33,12 +33,11 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.WeakHashMap;
 
 abstract class GraphProtocol<Graph, Node, NodeClass, Edges, Block, ResolvedJavaMethod, ResolvedJavaField, Signature, NodeSourcePosition, Location> implements Closeable {
@@ -532,7 +531,7 @@ abstract class GraphProtocol<Graph, Node, NodeClass, Edges, Block, ResolvedJavaM
     }
 
     private void writeNodes(Graph info) throws IOException {
-        Map<String, Object> props = new LinkedHashMap<>();
+        Map<String, Object> props = new HashMap<>();
 
         final int size = findNodesCount(info);
         writeInt(size);
@@ -874,7 +873,7 @@ abstract class GraphProtocol<Graph, Node, NodeClass, Edges, Block, ResolvedJavaM
         return true;
     }
 
-    private static Set<Class<?>> badToString;
+    private static HashSet<Class<?>> badToString;
 
     /**
      * This is a helper to identify objects that are encoded as POOL_STRING and have a poor
@@ -885,7 +884,7 @@ abstract class GraphProtocol<Graph, Node, NodeClass, Edges, Block, ResolvedJavaM
      */
     private static synchronized void reportBadToString(Object lookupKey, Object value) {
         if (badToString == null) {
-            badToString = new LinkedHashSet<>();
+            badToString = new HashSet<>();
         }
         if (badToString.add(lookupKey.getClass())) {
             System.err.println("GraphProtocol: toString mismatch for " + lookupKey.getClass() + ": " + value + " != " + lookupKey.toString());

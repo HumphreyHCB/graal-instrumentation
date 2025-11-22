@@ -33,20 +33,12 @@
     ]
   },
 
-  energy_tracking:: {
-    python_version: 3,
-    environment+: {
-      "MX_TRACKER" : "energy"
-    },
-    packages+: {
-      "powerstat": "==0.04.03"
-    },
-    docker: {
-      "image": "buildslave_ol8_podman",
-    },
-  },
-
   product_jdks:: [
+     common["labsjdk-ee-latest"],
+  ],
+
+  jdks_of_interest:: [
+     common["labsjdk-ee-21"],
      common["labsjdk-ee-latest"],
   ],
 
@@ -188,13 +180,6 @@
     platform+:: "-zgc",
     environment+: {
       "JVM_CONFIG"+: "-zgc",
-    }
-  },
-
-  shenandoah_mode:: {
-    platform+:: "-shenandoah",
-    environment+: {
-      "JVM_CONFIG"+: "-shenandoah",
     }
   },
 

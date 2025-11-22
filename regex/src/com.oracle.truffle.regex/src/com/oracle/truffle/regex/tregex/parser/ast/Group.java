@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.regex.RegexOptions;
 import com.oracle.truffle.regex.UnsupportedRegexException;
 import com.oracle.truffle.regex.tregex.TRegexOptions;
 import com.oracle.truffle.regex.tregex.buffer.CompilationBuffer;
@@ -77,7 +76,7 @@ public class Group extends QuantifiableTerm implements RegexASTVisitorIterable {
     private ArrayList<Sequence> alternatives = new ArrayList<>();
     private short visitorIterationIndex = 0;
     private short groupNumber = -1;
-    private int groupsWithGuardsIndex = -1;
+    private short groupsWithGuardsIndex = -1;
     private int enclosedCaptureGroupsLo;
     private int enclosedCaptureGroupsHi;
     private int enclosedZeroWidthGroupsLo;
@@ -107,7 +106,11 @@ public class Group extends QuantifiableTerm implements RegexASTVisitorIterable {
 
     @Override
     public Group copy(RegexAST ast) {
-        return ast.register(new Group(this));
+        Group copy = new Group(this);
+        if (isCapturing()) {
+            ast.registerCaptureGroupCopy(copy);
+        }
+        return ast.register(copy);
     }
 
     @Override
@@ -224,7 +227,8 @@ public class Group extends QuantifiableTerm implements RegexASTVisitorIterable {
     }
 
     public void setGroupsWithGuardsIndex(int groupsWithGuardsIndex) {
-        this.groupsWithGuardsIndex = groupsWithGuardsIndex;
+        assert groupsWithGuardsIndex <= Short.MAX_VALUE;
+        this.groupsWithGuardsIndex = (short) groupsWithGuardsIndex;
     }
 
     /**
@@ -316,8 +320,8 @@ public class Group extends QuantifiableTerm implements RegexASTVisitorIterable {
     }
 
     @Override
-    public boolean isUnrollingCandidate(RegexOptions options) {
-        return hasQuantifier() && getQuantifier().isWithinThreshold(options.quantifierUnrollLimitGroup);
+    public boolean isUnrollingCandidate() {
+        return hasQuantifier() && getQuantifier().isWithinThreshold(TRegexOptions.TRegexQuantifierUnrollThresholdGroup);
     }
 
     /**

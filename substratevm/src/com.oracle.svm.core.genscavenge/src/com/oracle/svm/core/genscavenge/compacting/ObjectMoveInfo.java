@@ -39,6 +39,7 @@ import com.oracle.svm.core.genscavenge.remset.AlignedChunkRememberedSet;
 import com.oracle.svm.core.genscavenge.remset.BrickTable;
 import com.oracle.svm.core.genscavenge.remset.FirstObjectTable;
 import com.oracle.svm.core.hub.LayoutEncoding;
+import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.word.Word;
@@ -179,8 +180,7 @@ public final class ObjectMoveInfo {
             assert objSeqEnd.belowOrEqual(HeapChunk.getTopPointer(chunk));
             while (p.notEqual(objSeqEnd)) {
                 assert p.belowThan(objSeqEnd);
-                Object obj = p.toObjectNonNull();
-                ObjectHeaderImpl.unsetMarkedAndKeepRememberedSetBit(obj);
+                Object obj = p.toObject();
                 UnsignedWord objSize = LayoutEncoding.getSizeFromObjectInlineInGC(obj);
 
                 /*
@@ -194,7 +194,10 @@ public final class ObjectMoveInfo {
                 UnsignedWord offset = newAddress.subtract(AlignedHeapChunk.getObjectsStart(objSeqNewChunk));
                 FirstObjectTable.setTableForObject(AlignedChunkRememberedSet.getFirstObjectTableStart(objSeqNewChunk), offset, offset.add(objSize));
 
-                visitor.visitObject(obj);
+                if (!visitor.visitObjectInline(obj)) {
+                    throw VMError.shouldNotReachHereAtRuntime();
+                }
+
                 p = p.add(objSize);
             }
             if (nextObjSeq.isNonNull() && chunk.getShouldSweepInsteadOfCompact()) {

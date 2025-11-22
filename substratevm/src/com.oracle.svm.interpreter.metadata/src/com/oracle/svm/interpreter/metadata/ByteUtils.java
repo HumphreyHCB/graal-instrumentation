@@ -25,17 +25,15 @@
 
 package com.oracle.svm.interpreter.metadata;
 
-import jdk.internal.misc.Unsafe;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 
 /**
  * A collection of utility methods for dealing with bytes, particularly in byte arrays.
  */
 public final class ByteUtils {
-    private static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
-    private static long offsetFor(int index) {
-        return Unsafe.ARRAY_BYTE_BASE_OFFSET + ((long) index * Unsafe.ARRAY_BYTE_INDEX_SCALE);
-    }
+    private static final VarHandle BYTE_ARRAY_VARHANDLE = MethodHandles.arrayElementVarHandle(byte[].class);
 
     /**
      * Gets a signed 1-byte value.
@@ -78,7 +76,7 @@ public final class ByteUtils {
      * @return the unsigned 1-byte value at index {@code bci} in array {@code data}
      */
     public static int volatileBeU1(byte[] data, int bci) {
-        return UNSAFE.getByteVolatile(data, offsetFor(bci)) & 0xff;
+        return ((byte) BYTE_ARRAY_VARHANDLE.getVolatile(data, bci)) & 0xff;
     }
 
     /**
@@ -89,7 +87,7 @@ public final class ByteUtils {
      * @return the unsigned 1-byte value at index {@code bci} in array {@code data}
      */
     public static int opaqueBeU1(byte[] data, int bci) {
-        return UNSAFE.getByteOpaque(data, offsetFor(bci)) & 0xff;
+        return ((byte) BYTE_ARRAY_VARHANDLE.getOpaque(data, bci)) & 0xff;
     }
 
     /**
@@ -130,7 +128,7 @@ public final class ByteUtils {
         }
     }
 
-    public static void opaqueWrite(byte[] data, int bci, byte value) {
-        UNSAFE.putByteOpaque(data, offsetFor(bci), value);
+    public static void opaqueWrite(byte[] array, int index, byte value) {
+        BYTE_ARRAY_VARHANDLE.setOpaque(array, index, value);
     }
 }

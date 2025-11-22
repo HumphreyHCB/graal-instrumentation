@@ -25,7 +25,6 @@
 package jdk.graal.compiler.core.common.spi;
 
 import jdk.vm.ci.code.CallingConvention;
-import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.meta.InvokeTarget;
 import jdk.vm.ci.meta.Value;
 
@@ -51,7 +50,7 @@ public interface ForeignCallLinkage extends InvokeTarget {
      * the code cache or -1 when not applicable. Intended for determining the required size of
      * address/offset fields.
      */
-    long getMaxCallTargetOffset(CodeCacheProvider codeCache);
+    long getMaxCallTargetOffset();
 
     ForeignCallDescriptor getDescriptor();
 

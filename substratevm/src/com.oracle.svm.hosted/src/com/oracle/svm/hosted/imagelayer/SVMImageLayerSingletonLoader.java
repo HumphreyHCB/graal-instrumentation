@@ -24,25 +24,25 @@
  */
 package com.oracle.svm.hosted.imagelayer;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import static com.oracle.svm.hosted.imagelayer.SVMImageLayerLoader.getBooleans;
+
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import com.oracle.svm.shaded.org.capnproto.Text;
 import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.UnmodifiableEconomicMap;
 
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.layeredimagesingleton.ImageSingletonLoader;
-import com.oracle.svm.core.layeredimagesingleton.LayeredPersistFlags;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind;
-import com.oracle.svm.core.traits.SingletonTrait;
+import com.oracle.svm.core.layeredimagesingleton.InitialLayerOnlyImageSingleton;
+import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingleton.PersistFlags;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.imagelayer.SharedLayerSnapshotCapnProtoSchemaHolder.ImageSingletonKey;
@@ -56,100 +56,75 @@ public class SVMImageLayerSingletonLoader {
     private final HostedImageLayerBuildingSupport imageLayerBuildingSupport;
     private final SharedLayerSnapshotCapnProtoSchemaHolder.SharedLayerSnapshot.Reader snapshot;
     private Map<Class<?>, Integer> initialLayerOnlySingletonConstantIds;
-    private Map<Class<?>, Integer> singletonKeyToRegistrationCallbackKeyStoreId;
 
     public SVMImageLayerSingletonLoader(HostedImageLayerBuildingSupport imageLayerBuildingSupport, SharedLayerSnapshotCapnProtoSchemaHolder.SharedLayerSnapshot.Reader snapshot) {
         this.imageLayerBuildingSupport = imageLayerBuildingSupport;
         this.snapshot = snapshot;
     }
 
-    ImageSingletonLoader createImageSingletonLoader(int keyStoreId) {
-        EconomicMap<String, Object> keyStore = EconomicMap.create();
-        for (KeyStoreEntry.Reader entry : snapshot.getKeyStoreInstances().get(keyStoreId).getKeyStore()) {
-            KeyStoreEntry.Value.Reader v = entry.getValue();
-            Object value = switch (v.which()) {
-                case I -> v.getI();
-                case J -> v.getJ();
-                case STR -> v.getStr().toString();
-                case IL -> CapnProtoAdapters.toIntArray(v.getIl());
-                case ZL -> CapnProtoAdapters.toBooleanArray(v.getZl());
-                case STRL -> CapnProtoAdapters.toStringArray(v.getStrl());
-                case _NOT_IN_SCHEMA -> throw new IllegalStateException("Unexpected value: " + v.which());
-            };
-            keyStore.put(entry.getKey().toString(), value);
-        }
-
-        return new ImageSingletonLoaderImpl(keyStore, snapshot);
-    }
-
-    public Map<Object, Set<Class<?>>> loadImageSingletons(Function<SingletonTrait[], Object> forbiddenObjectCreator) {
-        ArrayList<Object> singletonObjects = new ArrayList<>(snapshot.getSingletonObjects().size());
+    public Map<Object, Set<Class<?>>> loadImageSingletons(Object forbiddenObject) {
+        Map<Integer, Object> idToObjectMap = new HashMap<>();
         Map<Class<?>, Integer> initialLayerKeyToIdMap = new HashMap<>();
-        Map<Class<?>, Integer> singletonKeyToKeyStoreIdMap = new HashMap<>();
-        int curIdx = 0;
         for (ImageSingletonObject.Reader obj : snapshot.getSingletonObjects()) {
-            assert obj.getKeyStoreId() != SVMImageLayerSnapshotUtil.UNDEFINED_KEY_STORE_ID : "No KeyStore associated with Singleton: " + obj.getClassName().toString();
-            VMError.guarantee(obj.getId() == curIdx, "Singleton index mismatch %s %s", obj, curIdx);
-            curIdx++;
-            ImageSingletonLoader imageSingletonLoader = createImageSingletonLoader(obj.getKeyStoreId());
+            String className = obj.getClassName().toString();
+
+            EconomicMap<String, Object> keyStore = EconomicMap.create();
+            for (KeyStoreEntry.Reader entry : obj.getStore()) {
+                KeyStoreEntry.Value.Reader v = entry.getValue();
+                Object value = switch (v.which()) {
+                    case I -> v.getI();
+                    case J -> v.getJ();
+                    case STR -> v.getStr().toString();
+                    case IL -> Stream.of(v.getIl()).flatMapToInt(r -> IntStream.range(0, r.size()).map(r::get)).toArray();
+                    case ZL -> getBooleans(v.getZl());
+                    case STRL -> StreamSupport.stream(v.getStrl().spliterator(), false).map(Text.Reader::toString).toArray(String[]::new);
+                    case _NOT_IN_SCHEMA -> throw new IllegalStateException("Unexpected value: " + v.which());
+                };
+                keyStore.put(entry.getKey().toString(), value);
+            }
 
             // create singleton object instance
             Object result;
             try {
-                String singletonInstantiatorClass = obj.getSingletonInstantiatorClass().toString();
-                Class<?> clazz = imageLayerBuildingSupport.lookupClass(false, singletonInstantiatorClass);
-                var instance = (SingletonLayeredCallbacks.LayeredSingletonInstantiator<?>) ReflectionUtil.newInstance(clazz);
-                result = instance.createFromLoader(imageSingletonLoader);
-                Class<?> instanceClass = imageLayerBuildingSupport.lookupClass(false, obj.getClassName().toString());
-                VMError.guarantee(result.getClass().equals(instanceClass));
+                Class<?> clazz = imageLayerBuildingSupport.lookupClass(false, className);
+                Method createMethod = ReflectionUtil.lookupMethod(clazz, "createFromLoader", ImageSingletonLoader.class);
+                result = createMethod.invoke(null, new ImageSingletonLoaderImpl(keyStore, snapshot));
             } catch (Throwable t) {
                 throw VMError.shouldNotReachHere("Failed to recreate image singleton", t);
             }
 
-            singletonObjects.add(result);
+            idToObjectMap.put(obj.getId(), result);
         }
 
         Map<Object, Set<Class<?>>> singletonInitializationMap = new HashMap<>();
-        SingletonTrait[] initialLayerOnly = new SingletonTrait[]{SingletonLayeredInstallationKind.INITIAL_LAYER_ONLY};
         for (ImageSingletonKey.Reader entry : snapshot.getSingletonKeys()) {
             String className = entry.getKeyClassName().toString();
-            LayeredPersistFlags persistFlags = LayeredPersistFlags.values()[entry.getPersistFlag()];
-            int singletonObjId = entry.getObjectId();
-            if (persistFlags == LayeredPersistFlags.CREATE) {
-                assert singletonObjId != SVMImageLayerSnapshotUtil.UNDEFINED_SINGLETON_OBJ_ID : "Create image singletons should be linked to an object";
-                Object singletonObject = singletonObjects.get(singletonObjId);
+            PersistFlags persistInfo = PersistFlags.values()[entry.getPersistFlag()];
+            int id = entry.getObjectId();
+            if (persistInfo == PersistFlags.CREATE) {
+                assert id != -1 : "Create image singletons should be linked to an object";
+                Object singletonObject = idToObjectMap.get(id);
                 Class<?> clazz = imageLayerBuildingSupport.lookupClass(false, className);
-                singletonInitializationMap.computeIfAbsent(singletonObject, _ -> new HashSet<>());
+                singletonInitializationMap.computeIfAbsent(singletonObject, (k) -> new HashSet<>());
                 singletonInitializationMap.get(singletonObject).add(clazz);
-            } else if (persistFlags == LayeredPersistFlags.FORBIDDEN) {
-                assert singletonObjId == SVMImageLayerSnapshotUtil.UNDEFINED_SINGLETON_OBJ_ID : "Unrestored image singleton should not be linked to an object";
+            } else if (persistInfo == PersistFlags.FORBIDDEN) {
+                assert id == -1 : "Unrestored image singleton should not be linked to an object";
                 Class<?> clazz = imageLayerBuildingSupport.lookupClass(false, className);
-
-                Object forbiddenObject;
-                if (entry.getIsInitialLayerOnly()) {
-                    int constantId = entry.getConstantId();
-                    initialLayerKeyToIdMap.put(clazz, constantId);
-                    forbiddenObject = forbiddenObjectCreator.apply(initialLayerOnly);
-                } else {
-                    forbiddenObject = forbiddenObjectCreator.apply(SingletonTrait.EMPTY_ARRAY);
-                }
-                singletonInitializationMap.computeIfAbsent(forbiddenObject, _ -> new HashSet<>());
+                singletonInitializationMap.computeIfAbsent(forbiddenObject, (k) -> new HashSet<>());
                 singletonInitializationMap.get(forbiddenObject).add(clazz);
-            } else if (persistFlags == LayeredPersistFlags.CALLBACK_ON_REGISTRATION) {
-                Class<?> clazz = imageLayerBuildingSupport.lookupClass(false, className);
-                int keyStoreId = entry.getKeyStoreId();
-                assert keyStoreId != SVMImageLayerSnapshotUtil.UNDEFINED_KEY_STORE_ID;
-                var prev = singletonKeyToKeyStoreIdMap.put(clazz, keyStoreId);
-                assert prev == null : clazz;
+                if (InitialLayerOnlyImageSingleton.class.isAssignableFrom(clazz)) {
+                    int constantId = entry.getConstantId();
+                    if (constantId != -1) {
+                        initialLayerKeyToIdMap.put(clazz, constantId);
+                    }
+                }
             } else {
-                assert persistFlags == LayeredPersistFlags.NOTHING : "Unexpected PersistFlags value: " + persistFlags;
-                assert singletonObjId == SVMImageLayerSnapshotUtil.UNDEFINED_SINGLETON_OBJ_ID : "Unrestored image singleton should not be linked to an object";
-                assert entry.getKeyStoreId() == SVMImageLayerSnapshotUtil.UNDEFINED_KEY_STORE_ID : "Singleton should not have a key store associated with it";
+                assert persistInfo == PersistFlags.NOTHING : "Unexpected PersistFlags value: " + persistInfo;
+                assert id == -1 : "Unrestored image singleton should not be linked to an object";
             }
         }
 
-        initialLayerOnlySingletonConstantIds = Collections.unmodifiableMap(initialLayerKeyToIdMap);
-        singletonKeyToRegistrationCallbackKeyStoreId = Collections.unmodifiableMap(singletonKeyToKeyStoreIdMap);
+        initialLayerOnlySingletonConstantIds = Map.copyOf(initialLayerKeyToIdMap);
 
         return singletonInitializationMap;
     }
@@ -159,24 +134,7 @@ public class SVMImageLayerSingletonLoader {
         if (constantId != -1) {
             return imageLayerBuildingSupport.getLoader().getOrCreateConstant(constantId);
         }
-        throw UserError.abort("Unable to load InitialLayerOnlyImageSingleton: %s", key);
-    }
-
-    public boolean hasRegistrationCallback(Class<?> key) {
-        if (key == ImageLayerBuildingSupport.class) {
-            /*
-             * This singleton is added very early, before prior layer singletons and metadata has
-             * been loaded. Note this singleton does not have a registration callback associated
-             * with it.
-             */
-            return false;
-        }
-        return singletonKeyToRegistrationCallbackKeyStoreId.containsKey(key);
-    }
-
-    public ImageSingletonLoader getImageSingletonLoader(Class<?> key) {
-        assert hasRegistrationCallback(key);
-        return createImageSingletonLoader(singletonKeyToRegistrationCallbackKeyStoreId.get(key));
+        throw UserError.abort("Unable to load InitialLayerOnlyImageSingleton: %s. Please override accessibleInFutureLayers if you want this singleton to be reachable in future layers.", key);
     }
 
     public Class<?> lookupClass(boolean optional, String className) {
@@ -192,42 +150,36 @@ public class SVMImageLayerSingletonLoader {
             this.snapshotReader = snapshotReader;
         }
 
-        private Object get(String keyName) {
-            var result = keyStore.get(keyName);
-            VMError.guarantee(result != null, "Key %s does not exist in KeyStore", keyName);
-            return result;
-        }
-
         @Override
         public List<Boolean> readBoolList(String keyName) {
-            boolean[] l = (boolean[]) get(keyName);
+            boolean[] l = (boolean[]) keyStore.get(keyName);
             return IntStream.range(0, l.length).mapToObj(i -> l[i]).toList();
         }
 
         @Override
         public int readInt(String keyName) {
-            return (int) get(keyName);
+            return (int) keyStore.get(keyName);
         }
 
         @Override
         public List<Integer> readIntList(String keyName) {
-            int[] l = (int[]) get(keyName);
+            int[] l = (int[]) keyStore.get(keyName);
             return IntStream.of(l).boxed().toList();
         }
 
         @Override
         public long readLong(String keyName) {
-            return (long) get(keyName);
+            return (long) keyStore.get(keyName);
         }
 
         @Override
         public String readString(String keyName) {
-            return (String) get(keyName);
+            return (String) keyStore.get(keyName);
         }
 
         @Override
         public List<String> readStringList(String keyName) {
-            return List.of((String[]) get(keyName));
+            return List.of((String[]) keyStore.get(keyName));
         }
 
         public SharedLayerSnapshotCapnProtoSchemaHolder.SharedLayerSnapshot.Reader getSnapshotReader() {

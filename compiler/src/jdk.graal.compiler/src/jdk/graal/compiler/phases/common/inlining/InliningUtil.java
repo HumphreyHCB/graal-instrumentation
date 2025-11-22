@@ -109,6 +109,8 @@ import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.phases.common.inlining.info.InlineInfo;
 import jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener;
 import jdk.graal.compiler.phases.util.ValueMergeUtil;
+import jdk.graal.compiler.replacements.nodes.MacroInvokable;
+import jdk.graal.compiler.replacements.nodes.ResolvedMethodHandleCallTargetNode;
 import jdk.graal.compiler.serviceprovider.SpeculationReasonGroup;
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.meta.DeoptimizationAction;
@@ -495,6 +497,15 @@ public class InliningUtil extends ValueMergeUtil {
         }
         if (unwindNode != null) {
             unwindNode = (UnwindNode) duplicates.get(unwindNode);
+        }
+
+        if (firstCFGNode instanceof MacroInvokable && invoke.callTarget() instanceof ResolvedMethodHandleCallTargetNode) {
+            // Replacing a method handle invoke with a MacroNode
+            MacroInvokable macroInvokable = (MacroInvokable) firstCFGNode;
+            ResolvedMethodHandleCallTargetNode methodHandle = (ResolvedMethodHandleCallTargetNode) invoke.callTarget();
+            if (methodHandle.targetMethod().equals(macroInvokable.getTargetMethod()) && getDepth(invoke.stateAfter()) == getDepth(macroInvokable.stateAfter())) {
+                macroInvokable.addMethodHandleInfo(methodHandle);
+            }
         }
 
         finishInlining(invoke, graph, firstCFGNode, returnNodes, unwindNode, inlineGraph, returnAction, mark);
@@ -1083,10 +1094,10 @@ public class InliningUtil extends ValueMergeUtil {
                     if (okBci == BytecodeFrame.INVALID_FRAMESTATE_BCI) {
                         okBci = frameState.bci;
                     } else {
-                        assert okBci == frameState.bci : node.toString(Verbosity.All);
+                        assert okBci == frameState.bci : node.toString(Verbosity.Debugger);
                     }
                 } else {
-                    assert false : node.toString(Verbosity.All);
+                    assert false : node.toString(Verbosity.Debugger);
                 }
             }
         }

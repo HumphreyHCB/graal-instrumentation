@@ -41,26 +41,25 @@
 package com.oracle.truffle.api.library;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 /**
  * Represents a description of library message. A message description refers to one public method in
  * a {@link Library library} subclass. Messages may be resolved dynamically by calling
- * {@link #resolveExact(Class, String, Class[])} with a known library class, message name and
- * parameter types. Message instances provide meta-data about the simple and qualified name of the
- * message, return type, receiver type, parameter types and library name. Message instances are used
- * to invoke library messages or implement library messages reflectively using the
- * {@link ReflectionLibrary reflection library}.
+ * {@link #resolve(Class, String)} with a known library class and message name. Message instances
+ * provide meta-data about the simple and qualified name of the message, return type, receiver type,
+ * parameter types and library name. Message instances are used to invoke library messages or
+ * implement library messages reflectively using the {@link ReflectionLibrary reflection library}.
  * <p>
  * Message instances are globally unique and can safely be compared by identity. In other words, if
- * the same message is {@link #resolveExact(Class, String, Class[])} resolved} twice the same
- * instance will be returned. Since they are shared message instances must not be used as locks to
- * avoid deadlocks.
+ * the same message is {@link #resolve(Class, String) resolved} twice the same instance will be
+ * returned. Since they are shared message instances must not be used as locks to avoid deadlocks.
  * <p>
  * Note: This class is intended to be sub-classed by generated code only and must *not* be
  * sub-classed by user-code.
@@ -72,11 +71,13 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public abstract class Message {
 
     private final String simpleName;
-    private String qualifiedName; // lazy init
+    private final String qualifiedName;
     private final int id;
+    private final int hash;
     private final boolean deprecated;
     private final Class<?> returnType;
     private final Class<? extends Library> libraryClass;
+    private final List<Class<?>> parameterTypes;
     @CompilationFinal(dimensions = 1) private final Class<?>[] parameterTypesArray;
     private final int parameterCount;
     @CompilationFinal LibraryFactory<Library> library;
@@ -103,13 +104,15 @@ public abstract class Message {
         Objects.requireNonNull(messageName);
         Objects.requireNonNull(returnType);
         this.libraryClass = libraryClass;
-        assert messageName.intern() == messageName : "message name must already be interned";
-        this.simpleName = messageName;
+        this.simpleName = messageName.intern();
         this.returnType = returnType;
         this.parameterTypesArray = parameterTypes;
+        this.parameterTypes = Collections.unmodifiableList(Arrays.asList(parameterTypes));
+        this.qualifiedName = (getLibraryName() + "." + simpleName + parameters(parameterTypes)).intern();
         this.deprecated = deprecated;
         this.id = id;
         this.parameterCount = parameterTypes.length;
+        this.hash = qualifiedName.hashCode();
     }
 
     private static String parameters(Class<?>... parameterTypes) {
@@ -147,10 +150,6 @@ public abstract class Message {
      * @since 19.0
      */
     public final String getQualifiedName() {
-        if (qualifiedName == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            qualifiedName = (getLibraryName() + "." + getSimpleName() + parameters(parameterTypesArray)).intern();
-        }
         return qualifiedName;
     }
 
@@ -209,7 +208,7 @@ public abstract class Message {
      * @since 19.0
      */
     public final List<Class<?>> getParameterTypes() {
-        return List.of(parameterTypesArray);
+        return parameterTypes;
     }
 
     /**
@@ -242,7 +241,7 @@ public abstract class Message {
 
     /**
      * Returns the library class of this message. The library class may be used to
-     * {@link #resolveExact(Class, String, Class[]) resolve} other messages of the same library.
+     * {@link #resolve(Class, String) resolve} other messages of the same library.
      *
      * @since 19.0
      */
@@ -255,6 +254,26 @@ public abstract class Message {
      */
     public final LibraryFactory<?> getFactory() {
         return library;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 19.0
+     */
+    @Override
+    public final boolean equals(Object obj) {
+        return this == obj;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since 19.0
+     */
+    @Override
+    public final int hashCode() {
+        return hash;
     }
 
     /**
@@ -290,63 +309,36 @@ public abstract class Message {
     }
 
     /**
-     * @since 19.0
-     * @deprecated since 25.1, use {@link #resolveExact(Class, String, Class...)} instead. Since
-     *             library messages can now be deprecated and replaced, they need to be resolved
-     *             with argument types.
-     */
-    @TruffleBoundary
-    @Deprecated(since = "25.1")
-    public static Message resolve(Class<? extends Library> libraryClass, String messageName) {
-        return LibraryFactory.resolveMessage(libraryClass, messageName, null, true);
-    }
-
-    /**
-     * @since 19.0
-     * @deprecated since 25.1, use {@link #resolveExact(Class, String, boolean, Class...)} instead.
-     *             Since library messages can now be deprecated and replaced, they need to be
-     *             resolved with argument types.
-     */
-    @TruffleBoundary
-    @Deprecated(since = "25.1")
-    public static Message resolve(Class<? extends Library> libraryClass, String messageName, boolean fail) {
-        return LibraryFactory.resolveMessage(libraryClass, messageName, null, fail);
-    }
-
-    /**
-     * Resolves a message globally for a given library class, message name and argument types. The
-     * message name corresponds to the method name of the library message. The returned message
-     * always returns the same instance for a combination of library class, message and argument
-     * types. The provided library class and message name must not be <code>null</code>. If the
-     * library or message is invalid or not found an {@link IllegalArgumentException} is thrown.
+     * Resolves a message globally for a given library class and message name. The message name
+     * corresponds to the method name of the library message. The returned message always returns
+     * the same instance for a combination of library class and message. The provided library class
+     * and message name must not be <code>null</code>. If the library or message is invalid or not
+     * found an {@link IllegalArgumentException} is thrown.
      *
      * @param libraryClass the class of the library this message is contained in.
      * @param messageName the simple name of this message.
-     * @since 25.1
+     * @since 19.0
      */
     @TruffleBoundary
-    public static Message resolveExact(Class<? extends Library> libraryClass, String messageName, Class<?>... argumentTypes) {
-        Objects.requireNonNull(argumentTypes);
-        return LibraryFactory.resolveMessage(libraryClass, messageName, argumentTypes, true);
+    public static Message resolve(Class<? extends Library> libraryClass, String messageName) {
+        return LibraryFactory.resolveMessage(libraryClass, messageName, true);
     }
 
     /**
      * Resolves a message globally for a given library class and message name. The message name
      * corresponds to the method name of the library message. The returned message always returns
-     * the same instance for a combination of library class, message and argument types. The
-     * provided library class and message name must not be <code>null</code>.
+     * the same instance for a combination of library class and message. The provided library class
+     * and message name must not be <code>null</code>.
      *
      * @param libraryClass the class of the library this message is contained in.
      * @param messageName the simple name of this message.
-     * @param argumentTypes the parameter types of the message
      * @param fail whether to fail with an {@link IllegalArgumentException} or return
      *            <code>null</code> if the message was not found.
-     * @since 25.1
+     * @since 19.0
      */
     @TruffleBoundary
-    public static Message resolveExact(Class<? extends Library> libraryClass, String messageName, boolean fail, Class<?>... argumentTypes) {
-        Objects.requireNonNull(argumentTypes);
-        return LibraryFactory.resolveMessage(libraryClass, messageName, argumentTypes, fail);
+    public static Message resolve(Class<? extends Library> libraryClass, String messageName, boolean fail) {
+        return LibraryFactory.resolveMessage(libraryClass, messageName, fail);
     }
 
 }

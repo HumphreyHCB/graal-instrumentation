@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -72,13 +72,13 @@ import com.oracle.truffle.regex.tregex.nodes.TRegexExecutorNode;
 import com.oracle.truffle.regex.tregex.nodes.input.InputOps;
 import com.oracle.truffle.regex.tregex.parser.CaseFoldData;
 import com.oracle.truffle.regex.tregex.parser.MultiCharacterCaseFolding;
-import com.oracle.truffle.regex.tregex.parser.RegexFlavor;
 import com.oracle.truffle.regex.tregex.parser.Token.Quantifier;
 import com.oracle.truffle.regex.tregex.parser.ast.Group;
 import com.oracle.truffle.regex.tregex.parser.ast.InnerLiteral;
 import com.oracle.truffle.regex.tregex.parser.ast.QuantifiableTerm;
 import com.oracle.truffle.regex.tregex.parser.ast.RegexAST;
 import com.oracle.truffle.regex.tregex.parser.ast.RegexASTSubtreeRootNode;
+import com.oracle.truffle.regex.tregex.parser.flavors.RegexFlavor;
 
 /**
  * This regex executor uses a backtracking algorithm on the NFA. It is used for all expressions that
@@ -360,7 +360,6 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
         }
         if (innerLiteral != null) {
             locals.setIndex(locals.getFromIndex());
-            CompilerAsserts.partialEvaluationConstant(this);
             int innerLiteralIndex = findInnerLiteral(locals);
             if (injectBranchProbability(EXIT_PROBABILITY, innerLiteralIndex < 0)) {
                 return null;
@@ -748,7 +747,7 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
         return subExecutors[subMatcherState.getSubtreeId()];
     }
 
-    private boolean lookAroundExecutorIsLiteral(PureNFAState s) {
+    protected boolean lookAroundExecutorIsLiteral(PureNFAState s) {
         return getSubExecutor(s).unwrap() instanceof TRegexLiteralLookAroundExecutorNode;
     }
 
@@ -778,16 +777,16 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
         }
     }
 
-    private int[] runSubMatcher(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals subLocals, TruffleString.CodeRange codeRange, PureNFAState subMatcherState) {
+    protected int[] runSubMatcher(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals subLocals, TruffleString.CodeRange codeRange, PureNFAState subMatcherState) {
         return (int[]) getSubExecutor(subMatcherState).execute(frame, subLocals, codeRange);
     }
 
-    private static boolean subMatchFailed(PureNFAState curState, Object subMatchResult) {
+    protected static boolean subMatchFailed(PureNFAState curState, Object subMatchResult) {
         return (subMatchResult == null) != curState.isSubMatcherNegated();
     }
 
     @ExplodeLoop
-    private boolean transitionMatches(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals locals, TruffleString.CodeRange codeRange, PureNFATransition transition, int index,
+    protected boolean transitionMatches(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals locals, TruffleString.CodeRange codeRange, PureNFATransition transition, int index,
                     boolean atEnd, int c) {
         PureNFAState target = transition.getTarget();
         CompilerAsserts.partialEvaluationConstant(target);
@@ -894,13 +893,13 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
         }
     }
 
-    private static int getBackRefBoundary(TRegexBacktrackingNFAExecutorLocals locals, PureNFATransition transition, int cgIndex, int index) {
+    protected static int getBackRefBoundary(TRegexBacktrackingNFAExecutorLocals locals, PureNFATransition transition, int cgIndex, int index) {
         return transition.getGroupBoundaries().getUpdateIndices().get(cgIndex) ? index
                         : transition.getGroupBoundaries().getClearIndices().get(cgIndex) ? -1 : locals.getCaptureGroupBoundary(cgIndex);
     }
 
     @ExplodeLoop
-    private void updateState(TRegexBacktrackingNFAExecutorLocals locals, PureNFATransition transition, int index) {
+    protected void updateState(TRegexBacktrackingNFAExecutorLocals locals, PureNFATransition transition, int index) {
         CompilerAsserts.partialEvaluationConstant(transition);
         assert !isRecursiveBackreferences();
         if (transition.hasMatchEndGuard()) {
@@ -917,7 +916,7 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
                 case countSet1 -> {
                     locals.setQuantifierCount(TransitionGuard.getQuantifierIndex(guard), 1);
                 }
-                case countSetMinInc -> {
+                case countSetMin -> {
                     locals.setQuantifierCount(TransitionGuard.getQuantifierIndex(guard), getQuantifier(guard).getMin() + 1);
                 }
                 case enterZeroWidth -> {
@@ -954,7 +953,7 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
      * </p>
      */
     @ExplodeLoop
-    private boolean tryUpdateState(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals locals, TruffleString.CodeRange codeRange, PureNFATransition transition, int index,
+    protected boolean tryUpdateState(VirtualFrame frame, TRegexBacktrackingNFAExecutorLocals locals, TruffleString.CodeRange codeRange, PureNFATransition transition, int index,
                     boolean atEnd, int c) {
         CompilerAsserts.partialEvaluationConstant(transition);
         PureNFAState target = transition.getTarget();
@@ -1017,7 +1016,7 @@ public final class TRegexBacktrackingNFAExecutorNode extends TRegexBacktrackerSu
                 case countSet1 -> {
                     locals.setQuantifierCount(TransitionGuard.getQuantifierIndex(guard), 1);
                 }
-                case countSetMinInc -> {
+                case countSetMin -> {
                     locals.setQuantifierCount(TransitionGuard.getQuantifierIndex(guard), getQuantifier(guard).getMin() + 1);
                 }
                 case countLtMin -> {

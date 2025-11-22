@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,16 +34,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
 import org.junit.Assert;
 import org.junit.Test;
 
 import com.oracle.svm.configure.ConfigurationParserOption;
 import com.oracle.svm.configure.ResourceConfigurationParser;
 import com.oracle.svm.configure.ResourcesRegistry;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
 import com.oracle.svm.configure.config.ResourceConfiguration;
-import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
+import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
 
 import jdk.graal.compiler.util.json.JsonWriter;
 
@@ -52,7 +52,7 @@ public class ResourceConfigurationTest {
     @Test
     public void anyResourceMatches() {
         ResourceConfiguration rc = new ResourceConfiguration();
-        UnresolvedAccessCondition defaultCond = UnresolvedAccessCondition.unconditional();
+        UnresolvedConfigurationCondition defaultCond = UnresolvedConfigurationCondition.alwaysTrue();
         rc.addResourcePattern(defaultCond, ".*/Resource.*txt$");
 
         Assert.assertTrue(rc.anyResourceMatches("com/my/app/Resource0.txt"));
@@ -71,7 +71,7 @@ public class ResourceConfigurationTest {
     @Test
     public void printJson() {
         ResourceConfiguration rc = new ResourceConfiguration();
-        UnresolvedAccessCondition defaultCond = UnresolvedAccessCondition.unconditional();
+        UnresolvedConfigurationCondition defaultCond = UnresolvedConfigurationCondition.alwaysTrue();
         rc.addResourcePattern(defaultCond, ".*/Resource.*txt$");
         rc.ignoreResourcePattern(defaultCond, ".*/Resource2.txt$");
         PipedWriter pw = new PipedWriter();
@@ -91,15 +91,15 @@ public class ResourceConfigurationTest {
             List<String> addedResources = new LinkedList<>();
             List<String> ignoredResources = new LinkedList<>();
 
-            ResourcesRegistry<UnresolvedAccessCondition> registry = new ResourcesRegistry<>() {
+            ResourcesRegistry<UnresolvedConfigurationCondition> registry = new ResourcesRegistry<>() {
 
                 @Override
-                public void addResources(UnresolvedAccessCondition condition, String pattern, Object origin) {
+                public void addResources(UnresolvedConfigurationCondition condition, String pattern, Object origin) {
                     addedResources.add(pattern);
                 }
 
                 @Override
-                public void addGlob(UnresolvedAccessCondition condition, String module, String glob, Object origin) {
+                public void addGlob(UnresolvedConfigurationCondition condition, String module, String glob, Object origin) {
                     throw new AssertionError("Unused function.");
                 }
 
@@ -113,31 +113,31 @@ public class ResourceConfigurationTest {
                 }
 
                 @Override
-                public void ignoreResources(UnresolvedAccessCondition condition, String pattern, Object origin) {
+                public void ignoreResources(UnresolvedConfigurationCondition condition, String pattern) {
                     ignoredResources.add(pattern);
                 }
 
                 @Override
-                public void addResourceBundles(UnresolvedAccessCondition condition, boolean preserved, String name) {
+                public void addResourceBundles(UnresolvedConfigurationCondition condition, String name) {
                 }
 
                 @Override
-                public void addResourceBundles(UnresolvedAccessCondition condition, String basename, Collection<Locale> locales) {
-
-                }
-
-                @Override
-                public void addCondition(AccessCondition accessCondition, Module module, String resourcePath) {
+                public void addResourceBundles(UnresolvedConfigurationCondition condition, String basename, Collection<Locale> locales) {
 
                 }
 
                 @Override
-                public void addClassBasedResourceBundle(UnresolvedAccessCondition condition, String basename, String className) {
+                public void addCondition(ConfigurationCondition configurationCondition, Module module, String resourcePath) {
+
+                }
+
+                @Override
+                public void addClassBasedResourceBundle(UnresolvedConfigurationCondition condition, String basename, String className) {
 
                 }
             };
 
-            ResourceConfigurationParser<UnresolvedAccessCondition> rcp = ResourceConfigurationParser.create(false, AccessConditionResolver.identityResolver(), registry,
+            ResourceConfigurationParser<UnresolvedConfigurationCondition> rcp = ResourceConfigurationParser.create(false, ConfigurationConditionResolver.identityResolver(), registry,
                             EnumSet.of(ConfigurationParserOption.STRICT_CONFIGURATION));
             writerThread.start();
             rcp.parseAndRegister(pr);

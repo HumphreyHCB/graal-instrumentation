@@ -167,6 +167,8 @@ public abstract class InteropMessage extends EspressoNode {
         GetIteratorNextElement,
         HasSourceLocation,
         GetSourceLocation,
+        HasLanguage,
+        GetLanguage,
         HasMetaObject,
         GetMetaObject,
         ToDisplayString,
@@ -181,9 +183,7 @@ public abstract class InteropMessage extends EspressoNode {
         IdentityHashCode,
         IsScope,
         HasScopeParent,
-        GetScopeParent,
-        HasLanguageId,
-        GetLanguageId;
+        GetScopeParent;
 
         public static final int MESSAGE_COUNT = Message.values().length;
     }
@@ -2072,10 +2072,10 @@ public abstract class InteropMessage extends EspressoNode {
     }
 
     @GenerateUncached(inherit = true)
-    public abstract static class HasLanguageId extends InteropMessage {
+    public abstract static class HasLanguage extends InteropMessage {
         @Override
         public final String name() {
-            return "hasLanguageId";
+            return "hasLanguage";
         }
 
         @Override
@@ -2088,10 +2088,10 @@ public abstract class InteropMessage extends EspressoNode {
     }
 
     @GenerateUncached(inherit = true)
-    public abstract static class GetLanguageId extends InteropMessage {
+    public abstract static class GetLanguage extends InteropMessage {
         @Override
         public final String name() {
-            return "getLanguageId";
+            return "getLanguage";
         }
 
         @Override

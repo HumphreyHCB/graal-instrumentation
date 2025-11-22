@@ -178,7 +178,7 @@ public class MethodFlowsGraph implements MethodFlowsGraphInfo {
     private Iterator<TypeFlow<?>> flowsIterator() {
         return new Iterator<>() {
             final Deque<TypeFlow<?>> worklist = new ArrayDeque<>();
-            final Set<TypeFlow<?>> seen = new HashSet<>(); // no EconomicSet, null key is used
+            final Set<TypeFlow<?>> seen = new HashSet<>();
             TypeFlow<?> next;
 
             {
@@ -490,7 +490,10 @@ public class MethodFlowsGraph implements MethodFlowsGraphInfo {
          */
         for (InvokeTypeFlow invokeTypeFlow : getInvokes()) {
             if (!invokeTypeFlow.isDirectInvoke() && !bb.isClosed(invokeTypeFlow.getReceiverType())) {
-                invokeTypeFlow.saturateForOpenTypeWorld(bb);
+                if (invokeTypeFlow.actualReturn != null) {
+                    invokeTypeFlow.actualReturn.enableFlow(bb);
+                    invokeTypeFlow.actualReturn.onSaturated(bb);
+                }
             }
         }
     }

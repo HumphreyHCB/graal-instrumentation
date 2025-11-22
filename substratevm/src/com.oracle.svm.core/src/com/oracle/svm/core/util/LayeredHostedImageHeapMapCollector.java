@@ -25,6 +25,7 @@
 package com.oracle.svm.core.util;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,14 +37,8 @@ import org.graalvm.nativeimage.Platforms;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.layeredimagesingleton.ImageSingletonLoader;
 import com.oracle.svm.core.layeredimagesingleton.ImageSingletonWriter;
-import com.oracle.svm.core.layeredimagesingleton.LayeredPersistFlags;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacksSupplier;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTrait;
-import com.oracle.svm.core.traits.SingletonTraitKind;
-import com.oracle.svm.core.traits.SingletonTraits;
+import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingleton;
+import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingletonBuilderFlags;
 import com.oracle.svm.core.util.ImageHeapMap.HostedImageHeapMap;
 
 /**
@@ -55,8 +50,7 @@ import com.oracle.svm.core.util.ImageHeapMap.HostedImageHeapMap;
  * {@code ImageHeapCollectionFeature#allMaps} to ensure it is always rescanned and reachable.
  */
 @Platforms(Platform.HOSTED_ONLY.class)
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = LayeredHostedImageHeapMapCollector.LayeredCallbacks.class, layeredInstallationKind = Independent.class)
-public class LayeredHostedImageHeapMapCollector {
+public class LayeredHostedImageHeapMapCollector implements LayeredImageSingleton {
     /**
      * Map keys of maps reachable in the current layer.
      */
@@ -98,36 +92,24 @@ public class LayeredHostedImageHeapMapCollector {
         return previousLayerReachableMaps;
     }
 
-    static class LayeredCallbacks extends SingletonLayeredCallbacksSupplier {
-
-        @Override
-        public SingletonTrait getLayeredCallbacksTrait() {
-            return new SingletonTrait(SingletonTraitKind.LAYERED_CALLBACKS, new SingletonLayeredCallbacks<LayeredHostedImageHeapMapCollector>() {
-
-                @Override
-                public LayeredPersistFlags doPersist(ImageSingletonWriter writer, LayeredHostedImageHeapMapCollector singleton) {
-                    Set<String> reachableMapKeys = new HashSet<>(singleton.currentLayerReachableMapsKeys);
-                    if (singleton.previousLayerReachableMapKeys != null) {
-                        reachableMapKeys.addAll(singleton.previousLayerReachableMapKeys);
-                    }
-                    writer.writeStringList("reachableMapKeys", reachableMapKeys.stream().toList());
-                    return LayeredPersistFlags.CREATE;
-                }
-
-                @Override
-                public Class<? extends LayeredSingletonInstantiator<?>> getSingletonInstantiator() {
-                    return SingletonInstantiator.class;
-                }
-            });
-        }
+    @Override
+    public EnumSet<LayeredImageSingletonBuilderFlags> getImageBuilderFlags() {
+        return LayeredImageSingletonBuilderFlags.BUILDTIME_ACCESS_ONLY;
     }
 
-    static class SingletonInstantiator implements SingletonLayeredCallbacks.LayeredSingletonInstantiator<LayeredHostedImageHeapMapCollector> {
-
-        @Override
-        public LayeredHostedImageHeapMapCollector createFromLoader(ImageSingletonLoader loader) {
-            List<String> previousLayerReachableMapKeys = loader.readStringList("reachableMapKeys");
-            return new LayeredHostedImageHeapMapCollector(previousLayerReachableMapKeys);
+    @Override
+    public PersistFlags preparePersist(ImageSingletonWriter writer) {
+        Set<String> reachableMapKeys = new HashSet<>(currentLayerReachableMapsKeys);
+        if (previousLayerReachableMapKeys != null) {
+            reachableMapKeys.addAll(previousLayerReachableMapKeys);
         }
+        writer.writeStringList("reachableMapKeys", reachableMapKeys.stream().toList());
+        return PersistFlags.CREATE;
+    }
+
+    @SuppressWarnings("unused")
+    public static Object createFromLoader(ImageSingletonLoader loader) {
+        List<String> previousLayerReachableMapKeys = loader.readStringList("reachableMapKeys");
+        return new LayeredHostedImageHeapMapCollector(previousLayerReachableMapKeys);
     }
 }

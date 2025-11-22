@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import org.graalvm.collections.EconomicMap;
 
-import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
+import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.TypeResult;
 
@@ -46,10 +46,10 @@ import jdk.graal.compiler.util.json.JsonParserException;
 public abstract class ReflectionConfigurationParser<C, T> extends ConditionalConfigurationParser {
     private static final String CONSTRUCTOR_NAME = "<init>";
 
-    protected final AccessConditionResolver<C> conditionResolver;
+    protected final ConfigurationConditionResolver<C> conditionResolver;
     protected final ReflectionConfigurationParserDelegate<C, T> delegate;
 
-    public ReflectionConfigurationParser(AccessConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate, EnumSet<ConfigurationParserOption> parserOptions) {
+    public ReflectionConfigurationParser(ConfigurationConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate, EnumSet<ConfigurationParserOption> parserOptions) {
         super(parserOptions);
         this.conditionResolver = conditionResolver;
         this.delegate = delegate;
@@ -59,15 +59,14 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
     protected EnumSet<ConfigurationParserOption> supportedOptions() {
         EnumSet<ConfigurationParserOption> base = super.supportedOptions();
         base.add(ConfigurationParserOption.PRINT_MISSING_ELEMENTS);
-        base.add(ConfigurationParserOption.JNI_PARSER);
         return base;
     }
 
-    public static <C, T> ReflectionConfigurationParser<C, T> create(boolean combinedFileSchema,
-                    AccessConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate,
+    public static <C, T> ReflectionConfigurationParser<C, T> create(String combinedFileKey, boolean combinedFileSchema,
+                    ConfigurationConditionResolver<C> conditionResolver, ReflectionConfigurationParserDelegate<C, T> delegate,
                     EnumSet<ConfigurationParserOption> parserOptions) {
         if (combinedFileSchema) {
-            return new ReflectionMetadataParser<>(conditionResolver, delegate, parserOptions);
+            return new ReflectionMetadataParser<>(combinedFileKey, conditionResolver, delegate, parserOptions);
         } else {
             return new LegacyReflectionConfigurationParser<>(conditionResolver, delegate, parserOptions);
         }
@@ -91,19 +90,19 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
         }
     }
 
-    protected void parseFields(C condition, List<Object> fields, T clazz, boolean jniAccessible) {
+    protected void parseFields(C condition, List<Object> fields, T clazz) {
         for (Object field : fields) {
-            parseField(condition, asMap(field, "Elements of 'fields' array must be field descriptor objects"), clazz, jniAccessible);
+            parseField(condition, asMap(field, "Elements of 'fields' array must be field descriptor objects"), clazz);
         }
     }
 
-    private void parseField(C condition, EconomicMap<String, Object> data, T clazz, boolean jniAccessible) {
+    private void parseField(C condition, EconomicMap<String, Object> data, T clazz) {
         checkAttributes(data, "reflection field descriptor object", Collections.singleton("name"), Arrays.asList("allowWrite", "allowUnsafeAccess"));
         String fieldName = asString(data.get("name"), "name");
         boolean allowWrite = data.containsKey("allowWrite") && asBoolean(data.get("allowWrite"), "allowWrite");
 
         try {
-            delegate.registerField(condition, clazz, fieldName, allowWrite, jniAccessible);
+            delegate.registerField(condition, clazz, fieldName, allowWrite);
         } catch (NoSuchFieldException e) {
             handleMissingElement("Field " + formatField(clazz, fieldName) + " not found.");
         } catch (LinkageError e) {
@@ -111,16 +110,17 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
         }
     }
 
-    protected void parseMethods(C condition, boolean queriedOnly, List<Object> methods, T clazz, boolean jniAccessible) {
+    protected void parseMethods(C condition, boolean queriedOnly, List<Object> methods, T clazz) {
         for (Object method : methods) {
-            parseMethod(condition, queriedOnly, asMap(method, "Elements of 'methods' array must be method descriptor objects"), clazz, jniAccessible);
+            parseMethod(condition, queriedOnly, asMap(method, "Elements of 'methods' array must be method descriptor objects"), clazz);
         }
     }
 
-    private void parseMethod(C condition, boolean queriedOnly, EconomicMap<String, Object> data, T clazz, boolean jniAccessible) {
-        String methodName = asString(data.get(NAME_KEY), NAME_KEY);
+    private void parseMethod(C condition, boolean queriedOnly, EconomicMap<String, Object> data, T clazz) {
+        checkAttributes(data, "reflection method descriptor object", Collections.singleton("name"), Collections.singleton("parameterTypes"));
+        String methodName = asString(data.get("name"), "name");
         List<T> methodParameterTypes = null;
-        Object parameterTypes = data.get(PARAMETER_TYPES_KEY);
+        Object parameterTypes = data.get("parameterTypes");
         if (parameterTypes != null) {
             methodParameterTypes = parseMethodParameters(clazz, methodName, asList(parameterTypes, "Attribute 'parameterTypes' must be a list of type names"));
             if (methodParameterTypes == null) {
@@ -132,9 +132,9 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
         if (methodParameterTypes != null) {
             try {
                 if (isConstructor) {
-                    delegate.registerConstructor(condition, queriedOnly, clazz, methodParameterTypes, jniAccessible);
+                    delegate.registerConstructor(condition, queriedOnly, clazz, methodParameterTypes);
                 } else {
-                    delegate.registerMethod(condition, queriedOnly, clazz, methodName, methodParameterTypes, jniAccessible);
+                    delegate.registerMethod(condition, queriedOnly, clazz, methodName, methodParameterTypes);
                 }
             } catch (NoSuchMethodException e) {
                 handleMissingElement("Method " + formatMethod(clazz, methodName, methodParameterTypes) + " not found.");
@@ -145,9 +145,9 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
             try {
                 boolean found;
                 if (isConstructor) {
-                    found = delegate.registerAllConstructors(condition, queriedOnly, jniAccessible, clazz);
+                    found = delegate.registerAllConstructors(condition, queriedOnly, clazz);
                 } else {
-                    found = delegate.registerAllMethodsWithName(condition, queriedOnly, jniAccessible, clazz, methodName);
+                    found = delegate.registerAllMethodsWithName(condition, queriedOnly, clazz, methodName);
                 }
                 if (!found) {
                     throw new JsonParserException("Method " + formatMethod(clazz, methodName) + " not found");
@@ -162,7 +162,7 @@ public abstract class ReflectionConfigurationParser<C, T> extends ConditionalCon
         List<T> result = new ArrayList<>();
         for (Object type : types) {
             String typeName = asString(type, "types");
-            TypeResult<T> typeResult = delegate.resolveType(conditionResolver.alwaysTrue(), NamedConfigurationTypeDescriptor.fromJSONName(typeName), true, false);
+            TypeResult<T> typeResult = delegate.resolveType(conditionResolver.alwaysTrue(), new NamedConfigurationTypeDescriptor(typeName), true);
             if (!typeResult.isPresent()) {
                 handleMissingElement("Could not register method " + formatMethod(clazz, methodName) + " for reflection.", typeResult.getException());
                 return null;

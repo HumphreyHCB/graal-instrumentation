@@ -24,11 +24,8 @@ package com.oracle.truffle.espresso.jdwp.api;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Set;
 
 import com.oracle.truffle.api.TruffleLanguage;
-import com.oracle.truffle.api.TruffleLanguage.Env;
-import com.oracle.truffle.api.TruffleThreadBuilder;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
@@ -68,7 +65,7 @@ public interface JDWPContext {
      *
      * @return array containing every class loaded
      */
-    Set<? extends KlassRef> getAllLoadedClasses();
+    KlassRef[] getAllLoadedClasses();
 
     /**
      * Finds the method for which an root node was created from.
@@ -180,9 +177,9 @@ public interface JDWPContext {
      * Returns all classes for which the class loader initiated loading.
      *
      * @param classLoader guest language class loader
-     * @return set of classes initiated by the class loader
+     * @return array of classes initiated by the class loader
      */
-    Set<? extends KlassRef> getInitiatedClasses(Object classLoader);
+    List<? extends KlassRef> getInitiatedClasses(Object classLoader);
 
     /**
      * Retrieves the field value of a static field.
@@ -222,21 +219,6 @@ public interface JDWPContext {
      * @return the Ids instance for maintaining guest language objects to unique ID.
      */
     Ids<Object> getIds();
-
-    /**
-     * Creates a new system thread.
-     *
-     * @return {@link Env#createSystemThread(java.lang.Runnable)}.
-     */
-    public Thread createSystemThread(Runnable runnable);
-
-    /**
-     * Creates a new polyglot thread bound to the Espresso language context.
-     *
-     * @return {@link Env#newTruffleThreadBuilder(java.lang.Runnable)}.{@link TruffleThreadBuilder#build()
-     *         build()}.
-     */
-    public Thread createPolyglotThread(Runnable runnable);
 
     /**
      * @param string guest language string object
@@ -399,12 +381,11 @@ public interface JDWPContext {
     /**
      * Returns the bci of the next bytecode instruction within the current frame
      *
-     * @param method the current method
-     * @param rawNode the current node
+     * @param callerRoot the root node of the caller frame
      * @param frame the frame to read the current bci from
      * @return the bci of the next instruction
      */
-    int getNextBCI(MethodRef method, Node rawNode, Frame frame);
+    int getNextBCI(RootNode callerRoot, Frame frame);
 
     /**
      * Returns the current BCI or -1 if the BCI cannot be read.
@@ -413,7 +394,7 @@ public interface JDWPContext {
      * @param frame the frame to read the bci from
      * @return the BCI or -1
      */
-    int readBCIFromFrame(RootNode root, Frame frame);
+    long readBCIFromFrame(RootNode root, Frame frame);
 
     /**
      * Returns a {@link CallFrame} representation of the location of
@@ -479,7 +460,7 @@ public interface JDWPContext {
      * @param frame the current frame
      * @return the current bci
      */
-    int getBCI(Node rawNode, Frame frame);
+    long getBCI(Node rawNode, Frame frame);
 
     /**
      * Returns the instrumentable delegate node for the language root node or <code>rootNode</code>
@@ -521,11 +502,5 @@ public interface JDWPContext {
 
     void steppingInProgress(Thread t, boolean value);
 
-    boolean isSteppingInProgress(Thread t);
-
     void replaceController(DebuggerController newController);
-
-    int getJavaFeatureVersion();
-
-    String getSystemProperty(String name);
 }

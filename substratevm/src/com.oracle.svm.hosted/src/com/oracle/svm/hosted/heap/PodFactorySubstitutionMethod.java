@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.graalvm.nativeimage.AnnotationAccess;
+
 import com.oracle.graal.pointsto.infrastructure.SubstitutionProcessor;
 import com.oracle.graal.pointsto.meta.AnalysisField;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -48,7 +50,6 @@ import com.oracle.svm.hosted.annotation.CustomSubstitutionMethod;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
 import com.oracle.svm.hosted.nodes.DeoptProxyNode;
 import com.oracle.svm.hosted.phases.HostedGraphKit;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.debug.DebugContext;
@@ -74,7 +75,7 @@ final class PodFactorySubstitutionProcessor extends SubstitutionProcessor {
 
     @Override
     public ResolvedJavaMethod lookup(ResolvedJavaMethod method) {
-        if (method.isSynthetic() && AnnotationUtil.isAnnotationPresent(method.getDeclaringClass(), PodFactory.class) && !method.isConstructor()) {
+        if (method.isSynthetic() && AnnotationAccess.isAnnotationPresent(method.getDeclaringClass(), PodFactory.class) && !method.isConstructor()) {
             assert !(method instanceof CustomSubstitutionMethod);
             return substitutions.computeIfAbsent(method, PodFactorySubstitutionMethod::new);
         }
@@ -119,7 +120,7 @@ final class PodFactorySubstitutionMethod extends CustomSubstitutionMethod {
         }
 
         AnalysisType factoryType = method.getDeclaringClass();
-        PodFactory annotation = AnnotationUtil.getAnnotation(factoryType, PodFactory.class);
+        PodFactory annotation = factoryType.getAnnotation(PodFactory.class);
         AnalysisType podConcreteType = kit.getMetaAccess().lookupJavaType(annotation.podClass());
         AnalysisMethod targetCtor = findMatchingConstructor(method, podConcreteType.getSuperclass());
 
@@ -131,7 +132,7 @@ final class PodFactorySubstitutionMethod extends CustomSubstitutionMethod {
         int instanceLocal = kit.getFrameState().localsSize() - 1; // reserved when generating class
         int nextDeoptIndex = startMethod(kit, deoptInfo, 0);
         instantiatePod(kit, factoryType, podConcreteType, instanceLocal);
-        if (AnnotationUtil.isAnnotationPresent(this, DeoptTest.class)) {
+        if (isAnnotationPresent(DeoptTest.class)) {
             if (!SubstrateCompilationDirectives.isDeoptTarget(method)) {
                 kit.append(new TestDeoptimizeNode());
             }

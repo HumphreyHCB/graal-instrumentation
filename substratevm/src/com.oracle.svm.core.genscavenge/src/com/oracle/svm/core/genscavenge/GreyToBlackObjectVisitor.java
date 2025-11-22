@@ -24,15 +24,15 @@
  */
 package com.oracle.svm.core.genscavenge;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.svm.core.AlwaysInline;
+import com.oracle.svm.core.NeverInline;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.heap.UninterruptibleObjectVisitor;
 import com.oracle.svm.core.hub.InteriorObjRefWalker;
+import com.oracle.svm.core.util.VMError;
 
 /**
  * Run an ObjectReferenceVisitor ({@link GreyToBlackObjRefVisitor}) over any interior object
@@ -49,15 +49,18 @@ public final class GreyToBlackObjectVisitor implements UninterruptibleObjectVisi
     }
 
     @Override
-    @AlwaysInline("GC performance")
-    @Uninterruptible(reason = "Forced inlining (StoredContinuation objects must not move).", callerMustBe = true)
-    public void visitObject(Object o) {
-        ReferenceObjectProcessing.discoverIfReference(o, objRefVisitor);
-        InteriorObjRefWalker.walkObjectInline(o, objRefVisitor);
+    @NeverInline("Non-performance critical version")
+    @Uninterruptible(reason = "Visitor requires uninterruptible walk.", callerMustBe = true)
+    public boolean visitObject(Object o) {
+        throw VMError.shouldNotReachHere("For performance reasons, this should not be called.");
     }
 
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public void visitObjectArrayRange(Object o, int firstIndex, int count) {
-        InteriorObjRefWalker.walkObjectArrayRangeInline(o, firstIndex, count, objRefVisitor);
+    @Override
+    @AlwaysInline("GC performance")
+    @Uninterruptible(reason = "Forced inlining (StoredContinuation objects must not move).", callerMustBe = true)
+    public boolean visitObjectInline(Object o) {
+        ReferenceObjectProcessing.discoverIfReference(o, objRefVisitor);
+        InteriorObjRefWalker.walkObjectInline(o, objRefVisitor);
+        return true;
     }
 }

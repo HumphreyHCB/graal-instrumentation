@@ -41,10 +41,10 @@ final class CVNames {
     }
 
     static String methodNameToCodeViewName(MethodEntry memberEntry) {
-        return typeNameToCodeViewName(memberEntry.getOwnerType()) + "::" + memberEntry.getMethodName();
+        return typeNameToCodeViewName(memberEntry.ownerType()) + "::" + memberEntry.methodName();
     }
 
     static String fieldNameToCodeViewName(FieldEntry memberEntry) {
-        return typeNameToCodeViewName(memberEntry.getOwnerType()) + "::" + memberEntry.fieldName();
+        return typeNameToCodeViewName(memberEntry.ownerType()) + "::" + memberEntry.fieldName();
     }
 }

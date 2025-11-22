@@ -234,13 +234,13 @@ public class EngineBenchmarkTestLanguage extends TruffleLanguage<EngineBenchmark
         }
 
         @ExportMessage
-        protected final boolean hasLanguageId() {
+        protected final boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        protected final String getLanguageId() {
-            return EngineBenchmark.TEST_LANGUAGE;
+        protected final Class<? extends TruffleLanguage<?>> getLanguage() {
+            return EngineBenchmarkTestLanguage.class;
         }
 
         @ExportMessage

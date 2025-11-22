@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -38,7 +39,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import jdk.graal.compiler.util.EconomicHashSet;
 import jdk.graal.compiler.util.json.JsonBuilder;
 import jdk.graal.compiler.util.json.JsonParser;
 import jdk.graal.compiler.util.json.JsonWriter;
@@ -62,10 +62,10 @@ public class JsonBuilderTest {
      * Asserts that the given map contains exactly the given keys.
      */
     private static void assertKeys(EconomicMap<String, Object> map, String... expectedKeys) {
-        Set<String> mapKeys = new EconomicHashSet<>(map.size());
+        Set<String> mapKeys = new HashSet<>(map.size());
         map.getKeys().forEach(mapKeys::add);
 
-        assertEquals(mapKeys, new EconomicHashSet<>(Arrays.asList(expectedKeys)));
+        assertEquals(mapKeys, new HashSet<>(Arrays.asList(expectedKeys)));
     }
 
     @Before

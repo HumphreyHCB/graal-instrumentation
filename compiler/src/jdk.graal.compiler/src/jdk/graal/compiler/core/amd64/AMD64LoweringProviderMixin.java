@@ -64,4 +64,5 @@ public interface AMD64LoweringProviderMixin extends LoweringProvider {
     default boolean supportsFoldingExtendIntoAccess(ExtendableMemoryAccess access, MemoryExtendKind extendKind) {
         return false;
     }
+
 }

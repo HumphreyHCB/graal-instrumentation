@@ -52,7 +52,7 @@ public class ConfigurationHelpCommand extends ConfigurationCommand {
 
     @Override
     public String getUsage() {
-        return "native-image-utils help";
+        return "native-image-configure help";
     }
 
     @Override
@@ -61,7 +61,7 @@ public class ConfigurationHelpCommand extends ConfigurationCommand {
     }
 
     protected String getToolName() {
-        return "GraalVM native-image-utils tool";
+        return "GraalVM native-image-configure tool";
     }
 
     protected String getToolDescription() {

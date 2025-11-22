@@ -72,7 +72,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.impl.DefaultTruffleRuntime;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
-import com.oracle.truffle.api.instrumentation.EventBinding;
 import com.oracle.truffle.api.instrumentation.ExecutionEventListener;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
 import com.oracle.truffle.api.io.TruffleProcessBuilder;
@@ -351,8 +350,6 @@ final class ObjectSizeCalculator {
 
                         (obj instanceof ContextLocal) ||
                         (obj instanceof ContextThreadLocal) ||
-
-                        (obj instanceof EventBinding<?>) ||
                         /*
                          * For safety, copy the asserts here in case asserts are disabled.
                          */

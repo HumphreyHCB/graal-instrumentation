@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -46,21 +46,24 @@ public enum TableKind {
     externref(WasmType.EXTERNREF_TYPE),
     anyfunc(WasmType.FUNCREF_TYPE);
 
-    private final int value;
+    private final byte byteValue;
 
-    TableKind(int value) {
-        this.value = value;
+    TableKind(byte byteValue) {
+        this.byteValue = byteValue;
     }
 
-    public int value() {
-        return value;
+    public byte byteValue() {
+        return byteValue;
     }
 
-    public static String toString(int value) {
-        return switch (value) {
-            case WasmType.EXTERNREF_TYPE -> "externref";
-            case WasmType.FUNCREF_TYPE -> "anyfunc";
-            default -> "";
-        };
+    public static String toString(byte byteValue) {
+        switch (byteValue) {
+            case WasmType.EXTERNREF_TYPE:
+                return "externref";
+            case WasmType.FUNCREF_TYPE:
+                return "anyfunc";
+            default:
+                return "";
+        }
     }
 }

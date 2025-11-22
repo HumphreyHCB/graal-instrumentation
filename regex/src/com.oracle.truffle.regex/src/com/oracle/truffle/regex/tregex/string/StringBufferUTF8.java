@@ -40,10 +40,14 @@
  */
 package com.oracle.truffle.regex.tregex.string;
 
-import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.regex.tregex.buffer.ByteArrayBuffer;
+import com.oracle.truffle.regex.tregex.string.Encodings.Encoding;
 
 public final class StringBufferUTF8 extends ByteArrayBuffer implements AbstractStringBuffer {
+
+    public StringBufferUTF8() {
+        this(16);
+    }
 
     public StringBufferUTF8(int capacity) {
         super(capacity);
@@ -51,7 +55,7 @@ public final class StringBufferUTF8 extends ByteArrayBuffer implements AbstractS
 
     @Override
     public Encoding getEncoding() {
-        return Encoding.UTF_8;
+        return Encodings.UTF_8;
     }
 
     @Override
@@ -149,12 +153,7 @@ public final class StringBufferUTF8 extends ByteArrayBuffer implements AbstractS
     }
 
     @Override
-    public TruffleString asTString() {
-        return TruffleString.fromByteArrayUncached(toArray(), 0, length(), TruffleString.Encoding.UTF_8, false);
-    }
-
-    @Override
-    public TruffleString.WithMask asTStringMask(TruffleString pattern) {
-        return TruffleString.WithMask.createUncached(pattern, toArray(), TruffleString.Encoding.UTF_8);
+    public StringUTF8 materialize() {
+        return new StringUTF8(toArray());
     }
 }

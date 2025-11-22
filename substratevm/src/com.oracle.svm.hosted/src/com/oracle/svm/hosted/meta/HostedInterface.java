@@ -36,8 +36,6 @@ import jdk.vm.ci.meta.JavaKind;
  */
 public class HostedInterface extends HostedType {
 
-    public static final HostedInterface[] EMPTY_ARRAY = new HostedInterface[0];
-
     public HostedInterface(HostedUniverse universe, AnalysisType wrapped, JavaKind kind, JavaKind storageKind, HostedInterface[] interfaces) {
         super(universe, wrapped, kind, storageKind, null, interfaces);
     }
@@ -89,6 +87,6 @@ public class HostedInterface extends HostedType {
 
     @Override
     public HostedField[] getInstanceFields(boolean includeSuperclasses) {
-        return HostedField.EMPTY_ARRAY;
+        return new HostedField[0];
     }
 }

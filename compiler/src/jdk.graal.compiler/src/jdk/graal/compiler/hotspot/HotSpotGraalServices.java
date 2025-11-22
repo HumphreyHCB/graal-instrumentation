@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,18 @@
 package jdk.graal.compiler.hotspot;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.BitSet;
 import java.util.Objects;
 
 import jdk.graal.compiler.core.common.LibGraalSupport;
 import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
 import jdk.vm.ci.hotspot.HotSpotObjectConstantScope;
-import jdk.vm.ci.hotspot.HotSpotProfilingInfo;
+import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
 import jdk.vm.ci.hotspot.HotSpotSpeculationLog;
 import jdk.vm.ci.hotspot.VMIntrinsicMethod;
 import jdk.vm.ci.meta.JavaConstant;
-import jdk.vm.ci.meta.ProfilingInfo;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.SpeculationLog;
 
@@ -44,16 +46,44 @@ import jdk.vm.ci.meta.SpeculationLog;
  */
 public class HotSpotGraalServices {
 
-    /**
-     * Read the decompile count from the {@code HotSpotMethodData} and either bail out if the count
-     * is too high or enable some debugging logic to detect the cause of the cycle.
-     */
-    public static int getDecompileCount(ResolvedJavaMethod method) {
-        ProfilingInfo info = method.getProfilingInfo();
-        if (info instanceof HotSpotProfilingInfo hotSpotProfilingInfo) {
-            return hotSpotProfilingInfo.getDecompileCount();
+    private static final Method methodGetOopMapAt;
+
+    static {
+        Method getOopMapAt = null;
+
+        try {
+            getOopMapAt = HotSpotResolvedJavaMethod.class.getDeclaredMethod("getOopMapAt", Integer.TYPE);
+        } catch (NoSuchMethodException e) {
         }
-        return -1;
+
+        methodGetOopMapAt = getOopMapAt;
+    }
+
+    /**
+     * Returns true if the JDK includes {@code HotSpotResolvedJavaMethod.getOopMapAt(int, BitSet)}.
+     */
+    public static boolean hasGetOopMapAt() {
+        return methodGetOopMapAt != null;
+    }
+
+    /**
+     * Calls {@code HotSpotResolvedJavaMethod.getOopMapAt(int, BitSet)}.
+     */
+    public static BitSet getOopMapAt(ResolvedJavaMethod method, int bci) {
+        if (methodGetOopMapAt != null) {
+            try {
+                try {
+                    return (BitSet) methodGetOopMapAt.invoke(method, bci);
+                } catch (InvocationTargetException e) {
+                    throw e.getCause();
+                }
+            } catch (Error | RuntimeException e) {
+                throw e;
+            } catch (Throwable throwable) {
+                throw new InternalError(throwable);
+            }
+        }
+        throw new InternalError("This JDK doesn't support ResolvedJavaMethod.getOopMapAt(int, BitSet)");
     }
 
     /**

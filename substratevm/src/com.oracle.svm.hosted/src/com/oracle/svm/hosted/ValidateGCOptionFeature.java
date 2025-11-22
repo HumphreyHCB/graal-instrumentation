@@ -57,6 +57,7 @@ public class ValidateGCOptionFeature implements InternalFeature {
         }
 
         Set<String> possibleValues = GCOptionValue.possibleValues();
+
         if (values.isEmpty()) {
             throw UserError.abort("Invalid option '--gc'. No GC specified. %s", getGCErrorReason(possibleValues));
         }
@@ -68,10 +69,9 @@ public class ValidateGCOptionFeature implements InternalFeature {
             }
         }
 
-        // At the moment, exactly one GC must be selected at build-time.
-        if (values.size() > 1) {
-            String string = String.join(SubstrateOptions.SupportedGCs.getValue().getDelimiter(), values);
-            throw UserError.invalidOptionValue(SubstrateOptions.SupportedGCs, string, "Only one garbage collector can be used at a time.");
+        // Check that the specified combination is valid.
+        if (values.size() != 1) {
+            throw UserError.abort("%s is an invalid combination of GCs for option '--gc'.", StringUtil.joinSingleQuoted(values));
         }
     }
 

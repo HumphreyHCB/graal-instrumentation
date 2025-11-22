@@ -27,6 +27,7 @@ package jdk.graal.compiler.phases;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -41,7 +42,6 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-import jdk.graal.compiler.util.EconomicHashMap;
 
 /**
  * A compiler phase that can apply an ordered collection of phases to a graph.
@@ -424,7 +424,7 @@ public class PhaseSuite<C> extends BasePhase<C> implements PhasePlan<BasePhase<?
 
                 if (printGraphStateDiff && !graph.getGraphState().equals(graphStateBefore)) {
                     if (graphStateDiffs == null) {
-                        graphStateDiffs = new EconomicHashMap<>();
+                        graphStateDiffs = new HashMap<>();
                     }
                     graphStateDiffs.put(index, graph.getGraphState().updateFromPreviousToString(graphStateBefore));
                     graphStateBefore = graph.getGraphState().copy();

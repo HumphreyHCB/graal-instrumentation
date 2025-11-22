@@ -148,9 +148,8 @@ public class LIRInstructionClass<T> extends LIRIntrospection<T> {
 
         @Override
         public void scan(Class<?> startSubclass, Class<?> endSuperclass) {
-            Opcode opcode = startSubclass.getAnnotation(Opcode.class);
-            if (opcode != null) {
-                opcodeConstant = opcode.value();
+            if (startSubclass.getAnnotation(Opcode.class) != null) {
+                opcodeConstant = startSubclass.getAnnotation(Opcode.class).value();
             }
             opcodeField = null;
 

@@ -41,9 +41,6 @@ import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
 import com.oracle.svm.core.jdk.JVMCISubstitutions;
 import com.oracle.svm.core.util.VMError;
 
-import jdk.graal.compiler.nodes.spi.LoweringProvider;
-import jdk.graal.compiler.vector.architecture.VectorLoweringProvider;
-import jdk.graal.compiler.vector.architecture.amd64.VectorAMD64;
 import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.Architecture;
@@ -106,7 +103,7 @@ public class AMD64CPUFeatureAccess extends CPUFeatureAccessImpl {
     }
 
     @Override
-    public void enableFeatures(Architecture runtimeArchitecture, LoweringProvider runtimeLowerer) {
+    public void enableFeatures(Architecture runtimeArchitecture) {
         if (!canUpdateCPUFeatures()) {
             return;
         }
@@ -116,13 +113,7 @@ public class AMD64CPUFeatureAccess extends CPUFeatureAccessImpl {
         architecture.getFeatures().addAll(features);
 
         // update largest storable kind
-        AMD64Kind largestStorableKind = new AMD64(features).getLargestStorableKind(AMD64.XMM);
+        AMD64Kind largestStorableKind = (new AMD64(features, EnumSet.noneOf(AMD64.Flag.class))).getLargestStorableKind(AMD64.XMM);
         JVMCISubstitutions.updateLargestStorableKind(architecture, largestStorableKind);
-        AMD64Kind largestStorableMaskKind = new AMD64(features).getLargestStorableKind(AMD64.MASK);
-        JVMCISubstitutions.updateLargestStorableMaskKind(architecture, largestStorableMaskKind);
-
-        // update vector architecture
-        VectorAMD64 initialVectorArch = (VectorAMD64) ((VectorLoweringProvider) runtimeLowerer).getVectorArchitecture();
-        initialVectorArch.updateForRuntimeArchitecture((AMD64) runtimeArchitecture);
     }
 }

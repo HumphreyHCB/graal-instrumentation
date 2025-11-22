@@ -27,21 +27,11 @@ package com.oracle.svm.hosted.pltgot;
 import java.lang.reflect.Method;
 
 import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.c.function.CEntryPoint;
-import org.graalvm.nativeimage.c.function.CFunction;
 
 import com.oracle.objectfile.SectionName;
-import com.oracle.svm.core.Uninterruptible;
-import com.oracle.svm.core.graal.code.ExplicitCallingConvention;
-import com.oracle.svm.core.graal.code.StubCallingConvention;
-import com.oracle.svm.core.graal.code.SubstrateCallingConventionKind;
-import com.oracle.svm.core.jdk.InternalVMMethod;
-import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.pltgot.PLTGOTConfiguration;
-import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.hosted.meta.HostedMetaAccess;
 import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.vm.ci.code.Register;
 import jdk.vm.ci.code.RegisterConfig;
@@ -52,7 +42,7 @@ public abstract class HostedPLTGOTConfiguration extends PLTGOTConfiguration {
     protected MethodAddressResolutionSupport methodAddressResolutionSupport;
     private final GOTEntryAllocator gotEntryAllocator = new GOTEntryAllocator();
 
-    private final PLTSectionSupport pltSectionSupport;
+    private PLTSectionSupport pltSectionSupport;
     private HostedMetaAccess hostedMetaAccess;
 
     @SuppressWarnings("this-escape")
@@ -62,38 +52,6 @@ public abstract class HostedPLTGOTConfiguration extends PLTGOTConfiguration {
 
     public static HostedPLTGOTConfiguration singleton() {
         return (HostedPLTGOTConfiguration) ImageSingletons.lookup(PLTGOTConfiguration.class);
-    }
-
-    public static boolean canBeCalledViaPLTGOT(SharedMethod method) {
-        if (AnnotationUtil.isAnnotationPresent(method, CEntryPoint.class)) {
-            return false;
-        }
-        if (AnnotationUtil.isAnnotationPresent(method, CFunction.class)) {
-            return false;
-        }
-        if (AnnotationUtil.isAnnotationPresent(method, StubCallingConvention.class)) {
-            return false;
-        }
-        if (AnnotationUtil.isAnnotationPresent(method, Uninterruptible.class)) {
-            return false;
-        }
-        if (AnnotationUtil.isAnnotationPresent(method, SubstrateForeignCallTarget.class)) {
-            return false;
-        }
-        if (AnnotationUtil.isAnnotationPresent(method.getDeclaringClass(), InternalVMMethod.class)) {
-            return false;
-        }
-        ExplicitCallingConvention ecc = AnnotationUtil.getAnnotation(method, ExplicitCallingConvention.class);
-        if (ecc != null && ecc.value().equals(SubstrateCallingConventionKind.ForwardReturnValue)) {
-            /*
-             * Methods that use ForwardReturnValue calling convention can't be resolved with PLT/GOT
-             * on AMD64 because AMD64MethodAddressResolutionDispatcher.resolveMethodAddress uses the
-             * same calling convention, and we can't save the callers value of the `rax` register on
-             * AMD64 without spilling it.
-             */
-            return false;
-        }
-        return true;
     }
 
     public abstract Method getArchSpecificResolverAsMethod();
@@ -107,14 +65,13 @@ public abstract class HostedPLTGOTConfiguration extends PLTGOTConfiguration {
         this.hostedMetaAccess = metaAccess;
     }
 
-    public MethodAddressResolutionSupport initializeMethodAddressResolutionSupport(MethodAddressResolutionSupport support) {
+    public void initializeMethodAddressResolutionSupport(MethodAddressResolutionSupportFactory methodAddressResolutionSupportFactory) {
         assert methodAddressResolutionSupport == null : "The field methodAddressResolutionSupport can't be initialized twice.";
-        methodAddressResolutionSupport = support;
+        methodAddressResolutionSupport = methodAddressResolutionSupportFactory.create();
         if (PLTGOTOptions.PrintPLTGOTCallsInfo.getValue()) {
             methodAddressResolutionSupport = new CollectPLTGOTCallSitesResolutionSupport(methodAddressResolutionSupport);
         }
         methodAddressResolver = getMethodAddressResolutionSupport().createMethodAddressResolver();
-        return methodAddressResolutionSupport;
     }
 
     public MethodAddressResolutionSupport getMethodAddressResolutionSupport() {

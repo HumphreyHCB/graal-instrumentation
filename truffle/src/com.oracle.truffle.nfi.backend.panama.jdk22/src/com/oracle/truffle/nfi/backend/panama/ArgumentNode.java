@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,15 +40,9 @@
  */
 package com.oracle.truffle.nfi.backend.panama;
 
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
-import java.lang.reflect.Array;
-
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -57,6 +51,9 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+
 abstract class ArgumentNode extends Node {
     final PanamaType type;
 
@@ -64,7 +61,7 @@ abstract class ArgumentNode extends Node {
         this.type = type;
     }
 
-    abstract Object execute(Arena arena, Object value) throws UnsupportedTypeException;
+    abstract Object execute(Object value) throws UnsupportedTypeException;
 
     abstract static class ToVOIDNode extends ArgumentNode {
 
@@ -73,7 +70,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization
-        Object doConvert(@SuppressWarnings("unused") Arena arena, @SuppressWarnings("unused") Object value) {
+        Object doConvert(@SuppressWarnings("unused") Object value) {
             return null;
         }
     }
@@ -85,7 +82,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        byte doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        byte doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asByte(value);
@@ -102,7 +99,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        short doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        short doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asShort(value);
@@ -119,7 +116,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        int doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        int doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asInt(value);
@@ -136,7 +133,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        long doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        long doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asLong(value);
@@ -148,26 +145,24 @@ abstract class ArgumentNode extends Node {
 
     abstract static class ToPointerNode extends ArgumentNode {
 
-        abstract long executeLong(Arena arena, Object value) throws UnsupportedTypeException;
-
         ToPointerNode(PanamaType type) {
             super(type);
         }
 
         @Specialization(limit = "3", guards = "interop.isPointer(arg)", rewriteOn = UnsupportedMessageException.class)
-        long putPointer(@SuppressWarnings("unused") Arena arena, Object arg,
+        long putPointer(Object arg,
                         @CachedLibrary("arg") InteropLibrary interop) throws UnsupportedMessageException {
             return interop.asPointer(arg);
         }
 
         @Specialization(limit = "3", guards = {"!interop.isPointer(arg)", "interop.isNull(arg)"})
-        long putNull(@SuppressWarnings("unused") Arena arena, @SuppressWarnings("unused") Object arg,
+        long putNull(@SuppressWarnings("unused") Object arg,
                         @SuppressWarnings("unused") @CachedLibrary("arg") InteropLibrary interop) {
             return NativePointer.NULL.asPointer();
         }
 
         @Specialization(limit = "3", replaces = {"putPointer", "putNull"})
-        static long putGeneric(@SuppressWarnings("unused") Arena arena, Object arg,
+        static long putGeneric(Object arg,
                         @Bind Node node,
                         @CachedLibrary("arg") InteropLibrary interop,
                         @Cached InlinedBranchProfile exception) throws UnsupportedTypeException {
@@ -204,7 +199,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        float doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        float doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asFloat(value);
@@ -221,7 +216,7 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        double doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        double doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
             try {
                 return interop.asDouble(value);
@@ -238,10 +233,11 @@ abstract class ArgumentNode extends Node {
         }
 
         @Specialization(limit = "3")
-        Object doConvert(@SuppressWarnings("unused") Arena arena, Object value,
+        Object doConvert(Object value,
                         @CachedLibrary("value") InteropLibrary interop) throws UnsupportedTypeException {
+            PanamaNFIContext ctx = PanamaNFIContext.get(this);
             try {
-                return allocateFrom(arena, interop.asString(value));
+                return allocateFrom(ctx.getContextArena(), interop.asString(value));
             } catch (UnsupportedMessageException ex) {
                 throw UnsupportedTypeException.create(new Object[]{value});
             }
@@ -250,41 +246,6 @@ abstract class ArgumentNode extends Node {
         @TruffleBoundary(allowInlining = true)
         private static MemorySegment allocateFrom(Arena arena, String str) {
             return arena.allocateFrom(str);
-        }
-    }
-
-    abstract static class ToArrayNode extends ArgumentNode {
-
-        @Child GetArrayElementLayoutNode getArrayElementLayoutNode;
-
-        ToArrayNode(PanamaType type) {
-            super(type);
-            getArrayElementLayoutNode = GetArrayElementLayoutNode.create(type.type);
-        }
-
-        @Specialization(guards = "elementLayout != null")
-        MemorySegment doArray(Arena arena, Object value,
-                        @Bind("getArrayElementLayoutNode.execute(value)") ValueLayout elementLayout) {
-            return doCopy(arena, value, elementLayout);
-        }
-
-        @Fallback
-        MemorySegment doInteropObject(@SuppressWarnings("unused") Arena arena, Object value,
-                        @Cached(parameters = "type") ToPointerNode toPointer) throws UnsupportedTypeException {
-            return wrapPointer(toPointer.executeLong(arena, value));
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static MemorySegment doCopy(Arena arena, Object array, ValueLayout elementLayout) {
-            int arrayLength = Array.getLength(array);
-            MemorySegment dst = arena.allocate(elementLayout, arrayLength);
-            MemorySegment.copy(array, 0, dst, elementLayout, 0, arrayLength);
-            return dst;
-        }
-
-        @TruffleBoundary(allowInlining = true)
-        private static MemorySegment wrapPointer(long ptr) {
-            return MemorySegment.ofAddress(ptr);
         }
     }
 }

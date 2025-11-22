@@ -83,7 +83,7 @@ public class EncodedGraph {
     private final byte[] encoding;
     private final int startOffset;
     protected final Object[] objects;
-    private final NodeClassMap nodeClasses;
+    private final NodeClass<?>[] types;
     private final Assumptions assumptions;
     private final List<ResolvedJavaMethod> inlinedMethods;
     private final boolean trackNodeSourcePosition;
@@ -95,11 +95,11 @@ public class EncodedGraph {
      */
     protected int[] nodeStartOffsets;
 
-    public EncodedGraph(byte[] encoding, int startOffset, Object[] objects, NodeClassMap nodeClasses, StructuredGraph sourceGraph) {
+    public EncodedGraph(byte[] encoding, int startOffset, Object[] objects, NodeClass<?>[] types, StructuredGraph sourceGraph) {
         this(encoding,
                         startOffset,
                         objects,
-                        nodeClasses,
+                        types,
                         sourceGraph.getAssumptions(),
                         sourceGraph.isRecordingInlinedMethods() ? sourceGraph.getMethods() : null,
                         sourceGraph.hasUnsafeAccess(),
@@ -110,7 +110,7 @@ public class EncodedGraph {
         this(original.encoding,
                         original.startOffset,
                         original.objects,
-                        original.nodeClasses,
+                        original.types,
                         original.assumptions,
                         original.inlinedMethods,
                         original.hasUnsafeAccess,
@@ -122,12 +122,12 @@ public class EncodedGraph {
         this.nodeStartOffsets = null;
     }
 
-    public EncodedGraph(byte[] encoding, int startOffset, Object[] objects, NodeClassMap nodeClasses, Assumptions assumptions, List<ResolvedJavaMethod> inlinedMethods,
+    public EncodedGraph(byte[] encoding, int startOffset, Object[] objects, NodeClass<?>[] types, Assumptions assumptions, List<ResolvedJavaMethod> inlinedMethods,
                     boolean hasUnsafeAccess, boolean trackNodeSourcePosition) {
         this.encoding = encoding;
         this.startOffset = startOffset;
         this.objects = objects;
-        this.nodeClasses = nodeClasses;
+        this.types = types;
         this.assumptions = assumptions;
         this.inlinedMethods = inlinedMethods;
         this.trackNodeSourcePosition = trackNodeSourcePosition;
@@ -158,12 +158,8 @@ public class EncodedGraph {
         objects[i] = object;
     }
 
-    public NodeClassMap getNodeClasses() {
-        return nodeClasses;
-    }
-
-    public NodeClass<?> getNodeClass(int id) {
-        return nodeClasses.get(id);
+    public NodeClass<?>[] getNodeClasses() {
+        return types;
     }
 
     public Assumptions getAssumptions() {

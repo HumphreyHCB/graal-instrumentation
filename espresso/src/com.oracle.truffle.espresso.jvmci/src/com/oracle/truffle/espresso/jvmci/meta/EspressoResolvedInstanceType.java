@@ -33,27 +33,22 @@ import static java.lang.reflect.Modifier.INTERFACE;
 import static java.lang.reflect.Modifier.PUBLIC;
 import static java.util.Objects.requireNonNull;
 
-import java.lang.reflect.Executable;
-import java.lang.reflect.Method;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
 import jdk.vm.ci.common.JVMCIError;
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
-import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ModifiersProvider;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.UnresolvedJavaField;
 import jdk.vm.ci.meta.UnresolvedJavaType;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 public final class EspressoResolvedInstanceType extends EspressoResolvedObjectType {
     private static final int JVM_CLASS_MODIFIERS = PUBLIC | FINAL | INTERFACE | ABSTRACT | ANNOTATION | ENUM | SYNTHETIC;
@@ -72,7 +67,6 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
     private EspressoResolvedJavaField[] instanceFields;
     private EspressoResolvedJavaField[] staticFields;
     private EspressoResolvedInstanceType[] interfaces;
-    private List<EspressoResolvedJavaRecordComponent> recordComponents;
     private EspressoResolvedInstanceType superClass;
     private String name;
 
@@ -130,7 +124,8 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
     @Override
     public boolean isAssignableFrom(ResolvedJavaType other) {
         requireNonNull(other);
-        if (other instanceof EspressoResolvedInstanceType otherType) {
+        if (other instanceof EspressoResolvedInstanceType) {
+            EspressoResolvedInstanceType otherType = (EspressoResolvedInstanceType) other;
             return getMirror().isAssignableFrom(otherType.getMirror());
         }
         if (other instanceof EspressoResolvedArrayType) {
@@ -272,25 +267,6 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
     public ResolvedJavaType getComponentType() {
         return null;
     }
-
-    @Override
-    public native boolean isHidden();
-
-    @Override
-    public List<JavaType> getPermittedSubclasses() {
-        Class<?>[] permittedSubclass = getPermittedSubclasses0(getMirror());
-        if (permittedSubclass == null) {
-            return null;
-        }
-        ResolvedJavaType[] permittedSubtypes = new ResolvedJavaType[permittedSubclass.length];
-        MetaAccessProvider metaAccess = runtime().getHostJVMCIBackend().getMetaAccess();
-        for (int i = 0; i != permittedSubtypes.length; i++) {
-            permittedSubtypes[i] = metaAccess.lookupJavaType(permittedSubclass[i]);
-        }
-        return Collections.unmodifiableList(Arrays.asList(permittedSubtypes));
-    }
-
-    private static native Class<?>[] getPermittedSubclasses0(Class<?> mirror);
 
     @Override
     public boolean isDefinitelyResolvedWithRespectTo(ResolvedJavaType accessingClass) {
@@ -475,34 +451,12 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
     }
 
     @Override
-    public ResolvedJavaType[] getDeclaredTypes() {
-        Class<?>[] declaredClasses = getMirror().getDeclaredClasses();
-        ResolvedJavaType[] declaredTypes = new ResolvedJavaType[declaredClasses.length];
-        MetaAccessProvider metaAccess = runtime().getHostJVMCIBackend().getMetaAccess();
-        for (int i = 0; i != declaredTypes.length; i++) {
-            declaredTypes[i] = metaAccess.lookupJavaType(declaredClasses[i]);
-        }
-        return declaredTypes;
-
-    }
-
-    @Override
     public ResolvedJavaType getEnclosingType() {
         Class<?> enclosingClass = getMirror().getEnclosingClass();
         if (enclosingClass == null) {
             return null;
         }
         return runtime().getHostJVMCIBackend().getMetaAccess().lookupJavaType(enclosingClass);
-    }
-
-    @Override
-    public ResolvedJavaMethod getEnclosingMethod() {
-        Method enclosingMethod = getMirror().getEnclosingMethod();
-        Executable enclosingExecutable = enclosingMethod != null ? enclosingMethod : getMirror().getEnclosingConstructor();
-        if (enclosingExecutable != null) {
-            return runtime().getHostJVMCIBackend().getMetaAccess().lookupJavaMethod(enclosingExecutable);
-        }
-        return null;
     }
 
     @Override
@@ -529,21 +483,26 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
     private native EspressoResolvedJavaMethod[] getDeclaredMethods0();
 
     @Override
-    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
-        if (forceLink) {
-            link();
-        }
-        return Arrays.asList(getAllMethods0());
-    }
-
-    private native EspressoResolvedJavaMethod[] getAllMethods0();
-
-    @Override
     public native EspressoResolvedJavaMethod getClassInitializer();
 
     @Override
     public boolean isCloneableWithAllocation() {
         throw JVMCIError.unimplemented();
+    }
+
+    @Override
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        return getMirror().getAnnotation(annotationClass);
+    }
+
+    @Override
+    public Annotation[] getAnnotations() {
+        return getMirror().getAnnotations();
+    }
+
+    @Override
+    public Annotation[] getDeclaredAnnotations() {
+        return getMirror().getDeclaredAnnotations();
     }
 
     @Override
@@ -563,7 +522,11 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
 
     @Override
     public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
-        return lookupType(unresolvedJavaType, this, resolve);
+        JavaType javaType = runtime().lookupType(unresolvedJavaType.getName(), this, resolve);
+        if (javaType instanceof ResolvedJavaType) {
+            return (ResolvedJavaType) javaType;
+        }
+        return null;
     }
 
     public EspressoConstantPool getConstantPool() {
@@ -572,58 +535,6 @@ public final class EspressoResolvedInstanceType extends EspressoResolvedObjectTy
 
     @Override
     protected native Class<?> getMirror0();
-
-    @Override
-    public native boolean isRecord();
-
-    @Override
-    public List<? extends EspressoResolvedJavaRecordComponent> getRecordComponents() {
-        if (!isRecord()) {
-            return null;
-        }
-        if (recordComponents == null) {
-            recordComponents = Collections.unmodifiableList(Arrays.asList(getRecordComponents0()));
-        }
-        return recordComponents;
-    }
-
-    private native EspressoResolvedJavaRecordComponent[] getRecordComponents0();
-
-    /// Denotes class file bytes of a `RuntimeVisibleAnnotations` attribute after
-    /// the `u2 attribute_name_index; u4 attribute_length` prefix.
-    static final int DECLARED_ANNOTATIONS = 0;
-
-    /// Denotes class file bytes of a `RuntimeVisibleParameterAnnotations` attribute after
-    /// the `u2 attribute_name_index; u4 attribute_length` prefix.
-    static final int PARAMETER_ANNOTATIONS = 1;
-
-    /// Denotes class file bytes of a `RuntimeVisibleTypeAnnotations` attribute after
-    /// the `u2 attribute_name_index; u4 attribute_length` prefix.
-    static final int TYPE_ANNOTATIONS = 2;
-
-    /// Denotes class file bytes of a `AnnotationDefault` attribute after
-    /// the `u2 attribute_name_index; u4 attribute_length` prefix.
-    static final int ANNOTATION_DEFAULT_VALUE = 3;
-
-    @Override
-    public AnnotationsInfo getRawDeclaredAnnotationInfo() {
-        if (isArray()) {
-            return null;
-        }
-        byte[] bytes = getRawAnnotationBytes(DECLARED_ANNOTATIONS);
-        return AnnotationsInfo.make(bytes, getConstantPool(), this);
-    }
-
-    @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
-        if (isArray()) {
-            return null;
-        }
-        byte[] bytes = getRawAnnotationBytes(TYPE_ANNOTATIONS);
-        return AnnotationsInfo.make(bytes, getConstantPool(), this);
-    }
-
-    private native byte[] getRawAnnotationBytes(int category);
 
     @Override
     public boolean equals(Object o) {

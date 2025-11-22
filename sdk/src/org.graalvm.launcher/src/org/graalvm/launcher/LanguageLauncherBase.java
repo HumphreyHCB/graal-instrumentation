@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -74,6 +74,7 @@ public abstract class LanguageLauncherBase extends Launcher {
     private static final String WEBSITE_HEADER = "[website]";
 
     private static Engine tempEngine;
+    private boolean seenPolyglot;
     private VersionAction versionAction = VersionAction.None;
 
     static Engine getTempEngine() {
@@ -166,6 +167,14 @@ public abstract class LanguageLauncherBase extends Launcher {
         return instruments;
     }
 
+    final boolean isPolyglot() {
+        return seenPolyglot;
+    }
+
+    final void setPolyglot(boolean polyglot) {
+        seenPolyglot = polyglot;
+    }
+
     final void setupContextBuilder(Context.Builder builder) {
         Path logFile = getLogFile();
         if (logFile != null) {
@@ -209,7 +218,7 @@ public abstract class LanguageLauncherBase extends Launcher {
     protected boolean parseCommonOption(String defaultOptionPrefix, Map<String, String> polyglotOptions, boolean experimentalOptions, String arg) {
         switch (arg) {
             case "--polyglot":
-                // the default, just ignore it
+                seenPolyglot = true;
                 break;
             case "--version:graalvm":
                 versionAction = VersionAction.PrintAndExit;

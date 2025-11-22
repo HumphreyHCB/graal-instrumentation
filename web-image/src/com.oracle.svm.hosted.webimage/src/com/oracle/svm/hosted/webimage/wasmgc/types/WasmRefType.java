@@ -29,8 +29,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
 import com.oracle.svm.webimage.wasm.types.WasmValType;
+import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
 
 import jdk.graal.compiler.debug.GraalError;
 
@@ -55,7 +55,6 @@ public abstract class WasmRefType implements WasmValType {
     public static final WasmRefType ANYREF = Kind.ANY.nullable();
     public static final WasmRefType FUNCREF = Kind.FUNC.nullable();
     public static final WasmRefType EXTERNREF = Kind.EXTERN.nullable();
-    public static final WasmRefType NONE = Kind.NONE.nullable();
 
     /**
      * Enum of all {@link AbsHeap} types. Pulled up to the superclass for convenience.

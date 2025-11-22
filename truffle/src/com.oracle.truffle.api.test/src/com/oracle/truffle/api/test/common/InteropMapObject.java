@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -54,11 +55,11 @@ import com.oracle.truffle.api.library.ExportMessage;
 @SuppressWarnings({"static-method", "unused"})
 public class InteropMapObject implements TruffleObject {
 
-    private final String languageId;
+    private final Class<? extends TruffleLanguage<?>> languageClass;
     private final Map<String, Object> map;
 
-    public InteropMapObject(String languageId) {
-        this.languageId = languageId;
+    public InteropMapObject(Class<? extends TruffleLanguage<?>> languageClass) {
+        this.languageClass = languageClass;
         this.map = new HashMap<>();
     }
 
@@ -133,13 +134,13 @@ public class InteropMapObject implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasLanguageId() {
-        return languageId != null;
+    boolean hasLanguage() {
+        return languageClass != null;
     }
 
     @ExportMessage
-    String getLanguageId() {
-        return languageId;
+    public Class<? extends TruffleLanguage<?>> getLanguage() {
+        return languageClass;
     }
 
     @ExportMessage

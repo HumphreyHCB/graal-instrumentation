@@ -25,8 +25,6 @@
 
 package com.oracle.svm.hosted.webimage.wasm.gc;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
 import org.graalvm.word.Pointer;
 import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordBase;
@@ -167,16 +165,6 @@ public class WasmObjectHeader extends ObjectHeader {
     }
 
     @Override
-    public long encodeAsTLABObjectHeader(long hubOffsetFromHeapBase) {
-        throw VMError.shouldNotReachHereAtRuntime();
-    }
-
-    @Override
-    public int constantHeaderSize() {
-        return -1;
-    }
-
-    @Override
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public Pointer extractPotentialDynamicHubFromHeader(Word header) {
         return (Pointer) clearBits(header);
@@ -198,8 +186,7 @@ public class WasmObjectHeader extends ObjectHeader {
     }
 
     @Override
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public void verifyDynamicHubOffset(long offsetFromHeapBase) {
+    public void verifyDynamicHubOffsetInImageHeap(long offsetFromHeapBase) {
         /* Nothing to do. */
     }
 

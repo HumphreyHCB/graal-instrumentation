@@ -112,7 +112,6 @@ import jdk.graal.compiler.asm.amd64.AVXKind;
 import jdk.graal.compiler.asm.amd64.AVXKind.AVXSize;
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.NumUtil;
-import jdk.graal.compiler.core.common.calc.Condition;
 import jdk.graal.compiler.core.common.calc.FloatConvert;
 import jdk.graal.compiler.core.common.calc.FloatConvertCategory;
 import jdk.graal.compiler.core.common.memory.MemoryExtendKind;
@@ -136,7 +135,6 @@ import jdk.graal.compiler.lir.amd64.AMD64CountLeadingZerosOp;
 import jdk.graal.compiler.lir.amd64.AMD64CountTrailingZerosOp;
 import jdk.graal.compiler.lir.amd64.AMD64FloatToHalfFloatOp;
 import jdk.graal.compiler.lir.amd64.AMD64HalfFloatToFloatOp;
-import jdk.graal.compiler.lir.amd64.AMD64MathCbrtOp;
 import jdk.graal.compiler.lir.amd64.AMD64MathCopySignOp;
 import jdk.graal.compiler.lir.amd64.AMD64MathCosOp;
 import jdk.graal.compiler.lir.amd64.AMD64MathExpOp;
@@ -201,26 +199,6 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
 
     private final AllocatableValue nullRegisterValue;
     protected AMD64SIMDInstructionEncoding simdEncoding;
-
-    protected Value emitIntegerMinMax(LIRKind cmpKind, Value a, Value b, AMD64MathMinMaxFloatOp minMaxOp, NumUtil.Signedness signedness) {
-        AMD64Kind kind = (AMD64Kind) a.getPlatformKind();
-        GraalError.guarantee(kind.isInteger(), "unexpected value in superclass: %s", a);
-        Condition condition;
-        if (minMaxOp == AMD64MathMinMaxFloatOp.Min) {
-            if (signedness == NumUtil.Signedness.SIGNED) {
-                condition = Condition.LE;
-            } else {
-                condition = Condition.BE;
-            }
-        } else {
-            if (signedness == NumUtil.Signedness.SIGNED) {
-                condition = Condition.GE;
-            } else {
-                condition = Condition.AE;
-            }
-        }
-        return getLIRGen().emitConditionalMove(cmpKind.getPlatformKind(), a, b, condition, false, a, b);
-    }
 
     @Override
     public Variable emitNegate(Value inputVal, boolean setFlags) {
@@ -888,16 +866,10 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
      * Emit a floating point to integer conversion that needs fixup code to adjust the result to
      * Java semantics.
      */
-    private AllocatableValue emitFloatConvertWithFixup(LIRKind kind, AMD64RMOp op, OperandSize size, Value input, boolean canBeNaN, boolean canOverflow, NumUtil.Signedness signedness) {
+    private AllocatableValue emitFloatConvertWithFixup(LIRKind kind, AMD64RMOp op, OperandSize size, Value input, boolean canBeNaN, boolean canOverflow) {
         Variable result = getLIRGen().newVariable(kind);
         AMD64ConvertFloatToIntegerOp.OpcodeEmitter emitter = (crb, masm, dst, src) -> op.emit(masm, size, dst, src);
-        getLIRGen().append(new AMD64ConvertFloatToIntegerOp(getLIRGen(), emitter, result, input, canBeNaN, canOverflow, signedness));
-        return result;
-    }
-
-    private AllocatableValue emitIntegerToFloatConvertWithFixup(LIRKind kind, SSEOp op, OperandSize size, Value input, NumUtil.Signedness signedness) {
-        Variable result = getLIRGen().newVariable(kind);
-        getLIRGen().append(new AMD64VectorUnary.SSEConvertToFloatOp(op, result, asAllocatable(input), size, signedness));
+        getLIRGen().append(new AMD64ConvertFloatToIntegerOp(getLIRGen(), emitter, result, input, canBeNaN, canOverflow));
         return result;
     }
 
@@ -963,17 +935,13 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
         if (op.getCategory().equals(FloatConvertCategory.FloatingPointToInteger)) {
             switch (op) {
                 case D2I:
-                case D2UI:
-                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DWORD), SSEOp.CVTTSD2SI, DWORD, input, canBeNaN, canOverflow, op.signedness());
+                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DWORD), SSEOp.CVTTSD2SI, DWORD, input, canBeNaN, canOverflow);
                 case D2L:
-                case D2UL:
-                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.QWORD), SSEOp.CVTTSD2SI, QWORD, input, canBeNaN, canOverflow, op.signedness());
+                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.QWORD), SSEOp.CVTTSD2SI, QWORD, input, canBeNaN, canOverflow);
                 case F2I:
-                case F2UI:
-                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DWORD), SSEOp.CVTTSS2SI, DWORD, input, canBeNaN, canOverflow, op.signedness());
+                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DWORD), SSEOp.CVTTSS2SI, DWORD, input, canBeNaN, canOverflow);
                 case F2L:
-                case F2UL:
-                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.QWORD), SSEOp.CVTTSS2SI, QWORD, input, canBeNaN, canOverflow, op.signedness());
+                    return emitFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.QWORD), SSEOp.CVTTSS2SI, QWORD, input, canBeNaN, canOverflow);
                 default:
                     throw GraalError.shouldNotReachHereUnexpectedValue(op); // ExcludeFromJacocoGeneratedReport
             }
@@ -984,13 +952,13 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
             case F2D:
                 return emitConvertOp(LIRKind.combine(input).changeType(AMD64Kind.DOUBLE), SSEOp.CVTSS2SD, SS, input);
             case I2D:
-                return emitIntegerToFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DOUBLE), SSEOp.CVTSI2SD, DWORD, input, op.signedness());
+                return emitConvertOp(LIRKind.combine(input).changeType(AMD64Kind.DOUBLE), SSEOp.CVTSI2SD, DWORD, input);
             case I2F:
-                return emitIntegerToFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.SINGLE), SSEOp.CVTSI2SS, DWORD, input, op.signedness());
+                return emitConvertOp(LIRKind.combine(input).changeType(AMD64Kind.SINGLE), SSEOp.CVTSI2SS, DWORD, input);
             case L2D:
-                return emitIntegerToFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.DOUBLE), SSEOp.CVTSI2SD, QWORD, input, op.signedness());
+                return emitConvertOp(LIRKind.combine(input).changeType(AMD64Kind.DOUBLE), SSEOp.CVTSI2SD, QWORD, input);
             case L2F:
-                return emitIntegerToFloatConvertWithFixup(LIRKind.combine(input).changeType(AMD64Kind.SINGLE), SSEOp.CVTSI2SS, QWORD, input, op.signedness());
+                return emitConvertOp(LIRKind.combine(input).changeType(AMD64Kind.SINGLE), SSEOp.CVTSI2SS, QWORD, input);
             default:
                 throw GraalError.shouldNotReachHereUnexpectedValue(op); // ExcludeFromJacocoGeneratedReport
         }
@@ -1344,11 +1312,6 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
     }
 
     @Override
-    public Value emitMathCbrt(Value input) {
-        return new AMD64MathCbrtOp().emitLIRWrapper(getLIRGen(), input);
-    }
-
-    @Override
     public Value emitMathPow(Value x, Value y) {
         return new AMD64MathPowOp().emitLIRWrapper(getLIRGen(), x, y);
     }
@@ -1405,15 +1368,6 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
         return result;
     }
 
-    // Object constants can only be inlined if getLIRGen().target().inlineObjects
-    private boolean canInlineStoreVMConstant(AMD64Kind kind, VMConstant c) {
-        if (kind.getSizeInBytes() >= Long.BYTES) {
-            // Store instructions cannot have 8-byte immediate
-            return false;
-        }
-        return !(c instanceof JavaConstant jc) || jc.getJavaKind() != JavaKind.Object || getLIRGen().target().inlineObjects;
-    }
-
     protected void emitStoreConst(AMD64Kind kind, AMD64AddressValue address, ConstantValue value, LIRFrameState state) {
         Constant c = value.getConstant();
         if (JavaConstant.isNull(c)) {
@@ -1421,10 +1375,15 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
             OperandSize size = kind == AMD64Kind.DWORD ? DWORD : QWORD;
             getLIRGen().append(new AMD64BinaryConsumer.MemoryConstOp(AMD64MIOp.MOV, size, address, 0, state));
             return;
-        } else if (c instanceof VMConstant vmc) {
-            if (canInlineStoreVMConstant(kind, vmc)) {
-                getLIRGen().append(new AMD64BinaryConsumer.MemoryVMConstOp(AMD64MIOp.MOV, address, (VMConstant) c, state));
-                return;
+        } else if (c instanceof VMConstant) {
+            // only 32-bit constants can be patched
+            if (kind == AMD64Kind.DWORD) {
+                if (getLIRGen().target().inlineObjects || !(c instanceof JavaConstant)) {
+                    // if c is a JavaConstant, it's an oop, otherwise it's a metaspace constant
+                    assert !(c instanceof JavaConstant) || ((JavaConstant) c).getJavaKind() == JavaKind.Object : c;
+                    getLIRGen().append(new AMD64BinaryConsumer.MemoryVMConstOp(AMD64MIOp.MOV, address, (VMConstant) c, state));
+                    return;
+                }
             }
         } else {
             JavaConstant jc = (JavaConstant) c;
@@ -1693,29 +1652,13 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
     }
 
     @Override
-    public Value emitMathMax(LIRKind cmpKind, Value x, Value y) {
-        if (((AMD64Kind) cmpKind.getPlatformKind()).isInteger()) {
-            return emitIntegerMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Max, NumUtil.Signedness.SIGNED);
-        }
-        return emitMathMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Max);
+    public Value emitMathMax(Value x, Value y) {
+        return emitMathMinMax(x, y, AMD64MathMinMaxFloatOp.Max);
     }
 
     @Override
-    public Value emitMathMin(LIRKind cmpKind, Value x, Value y) {
-        if (((AMD64Kind) cmpKind.getPlatformKind()).isInteger()) {
-            return emitIntegerMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Min, NumUtil.Signedness.SIGNED);
-        }
-        return emitMathMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Min);
-    }
-
-    @Override
-    public Value emitMathUnsignedMax(LIRKind cmpKind, Value x, Value y) {
-        return emitIntegerMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Max, NumUtil.Signedness.UNSIGNED);
-    }
-
-    @Override
-    public Value emitMathUnsignedMin(LIRKind cmpKind, Value x, Value y) {
-        return emitIntegerMinMax(cmpKind, x, y, AMD64MathMinMaxFloatOp.Min, NumUtil.Signedness.UNSIGNED);
+    public Value emitMathMin(Value x, Value y) {
+        return emitMathMinMax(x, y, AMD64MathMinMaxFloatOp.Min);
     }
 
     protected enum AMD64MathMinMaxFloatOp {
@@ -1777,8 +1720,7 @@ public class AMD64ArithmeticLIRGenerator extends ArithmeticLIRGenerator implemen
      * @see Math#min(double, double)
      * @see Math#min(float, float)
      */
-    @SuppressWarnings("unused")
-    protected Value emitMathMinMax(LIRKind cmpKind, Value a, Value b, AMD64MathMinMaxFloatOp minmaxop) {
+    protected Value emitMathMinMax(Value a, Value b, AMD64MathMinMaxFloatOp minmaxop) {
         assert supportAVX();
         AMD64Kind kind = (AMD64Kind) a.getPlatformKind();
 

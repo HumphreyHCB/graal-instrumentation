@@ -29,41 +29,29 @@ package com.oracle.svm.hosted.jdk;
 import java.util.Arrays;
 
 import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.hosted.RuntimeSerialization;
 
-import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.svm.core.VMInspectionOptions;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.SingleLayer;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
-import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
-import com.oracle.svm.hosted.jdk.management.ManagementFeature;
-import com.oracle.svm.hosted.reflect.proxy.ProxyRegistry;
-import com.oracle.svm.util.JVMCIReflectionUtil;
-import com.oracle.svm.util.dynamicaccess.JVMCIRuntimeJNIAccess;
-import com.oracle.svm.util.dynamicaccess.JVMCIRuntimeReflection;
-
-import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaType;
+import com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry;
+import com.oracle.svm.core.jni.JNIRuntimeAccess;
+import com.oracle.svm.util.ReflectionUtil;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = SingleLayer.class, layeredInstallationKind = Independent.class)
 public class JmxCommonFeature implements InternalFeature {
     @Override
     public boolean isInConfiguration(IsInConfigurationAccess access) {
-        return ImageLayerBuildingSupport.firstImageBuild() && (VMInspectionOptions.hasJmxServerSupport() || VMInspectionOptions.hasJmxClientSupport());
+        return VMInspectionOptions.hasJmxServerSupport() || VMInspectionOptions.hasJmxClientSupport();
     }
 
     /**
      * This method adds JMX-specific initialization policies when JMX support is enabled.
      * <p>
      * Note that
-     * {@link ManagementFeature#duringSetup(org.graalvm.nativeimage.hosted.Feature.DuringSetupAccess)
+     * {@link com.oracle.svm.core.jdk.management.ManagementFeature#duringSetup(org.graalvm.nativeimage.hosted.Feature.DuringSetupAccess)
      * ManagementFeature#duringSetup()} adds additional JMX-related initialization policies
      * unconditionally.
      */
@@ -137,11 +125,10 @@ public class JmxCommonFeature implements InternalFeature {
 
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
-        BeforeAnalysisAccessImpl accessImpl = (BeforeAnalysisAccessImpl) access;
-        configureJNI(accessImpl);
-        configureSerialization(accessImpl);
-        configureReflection(accessImpl);
-        configureProxy(accessImpl);
+        configureJNI();
+        configureSerialization(access);
+        configureReflection(access);
+        configureProxy(access);
     }
 
     /**
@@ -169,37 +156,35 @@ public class JmxCommonFeature implements InternalFeature {
      * </ul>
      * </p>
      */
-    private static void configureProxy(BeforeAnalysisAccessImpl access) {
-        ProxyRegistry proxyRegistry = ImageSingletons.lookup(ProxyRegistry.class);
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("com.sun.management.GarbageCollectorMXBean"),
+    private static void configureProxy(BeforeAnalysisAccess access) {
+        DynamicProxyRegistry dynamicProxySupport = ImageSingletons.lookup(DynamicProxyRegistry.class);
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("com.sun.management.GarbageCollectorMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("com.sun.management.OperatingSystemMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("com.sun.management.ThreadMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("com.sun.management.UnixOperatingSystemMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.BufferPoolMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.ClassLoadingMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.CompilationMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.GarbageCollectorMXBean"),
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("com.sun.management.OperatingSystemMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("com.sun.management.ThreadMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("com.sun.management.UnixOperatingSystemMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.BufferPoolMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.ClassLoadingMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.CompilationMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.GarbageCollectorMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.MemoryManagerMXBean"),
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.MemoryManagerMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.MemoryManagerMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.MemoryPoolMXBean"),
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.MemoryManagerMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.MemoryPoolMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.MemoryMXBean"),
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.MemoryMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.OperatingSystemMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.RuntimeMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("java.lang.management.ThreadMXBean"));
-        proxyRegistry.registerProxy(AccessCondition.unconditional(), false, access.findClassByName("jdk.management.jfr.FlightRecorderMXBean"),
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.OperatingSystemMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.RuntimeMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("java.lang.management.ThreadMXBean"));
+        dynamicProxySupport.addProxyClass(ConfigurationCondition.alwaysTrue(), access.findClassByName("jdk.management.jfr.FlightRecorderMXBean"),
                         access.findClassByName("javax.management.NotificationEmitter"));
     }
 
-    private static void configureJNI(BeforeAnalysisAccessImpl access) {
-        AnalysisMetaAccess metaAccess = access.getMetaAccess();
-        ResolvedJavaType type = metaAccess.lookupJavaType(Arrays.class);
-        JVMCIRuntimeJNIAccess.register(type);
-        JVMCIRuntimeJNIAccess.register(JVMCIReflectionUtil.getDeclaredMethod(metaAccess, type, "asList", Object[].class));
+    private static void configureJNI() {
+        JNIRuntimeAccess.register(Arrays.class);
+        JNIRuntimeAccess.register(ReflectionUtil.lookupMethod(Arrays.class, "asList", Object[].class));
     }
 
     /**
@@ -217,7 +202,7 @@ public class JmxCommonFeature implements InternalFeature {
      * the remote JMX infrastructure (See {@code sun.management.MappedMXBeanType},
      * {@code com.sun.jmx.mbeanserver.MXBeanMapping#makeOpenClass(Type, javax.management.openmbean.OpenType)})
      */
-    private static void configureSerialization(BeforeAnalysisAccessImpl access) {
+    private static void configureSerialization(BeforeAnalysisAccess access) {
         String[] classes = {
                         "[B", "com.oracle.svm.core.jdk.UnsupportedFeatureError",
                         "java.io.IOException", "java.lang.Boolean", "java.lang.ClassCastException", "java.lang.Error",
@@ -296,7 +281,7 @@ public class JmxCommonFeature implements InternalFeature {
      * {@code javax.management.remote.rmi.RMIConnectionImpl_Stub}.</li>
      * </ul>
      */
-    private static void configureReflection(BeforeAnalysisAccessImpl access) {
+    private static void configureReflection(BeforeAnalysisAccess access) {
         String[] classes = {
                         "com.sun.management.internal.OperatingSystemImpl",
                         "javax.management.remote.rmi.RMIConnectionImpl_Stub",
@@ -326,49 +311,13 @@ public class JmxCommonFeature implements InternalFeature {
         };
 
         for (String clazz : classes) {
-            JVMCIRuntimeReflection.register(access.findTypeByName(clazz));
+            RuntimeReflection.register(access.findClassByName(clazz));
         }
         for (String clazz : methods) {
-            registerMethods(access.findTypeByName(clazz));
+            RuntimeReflection.register(access.findClassByName(clazz).getMethods());
         }
         for (String clazz : constructors) {
-            JVMCIRuntimeReflection.register(JVMCIReflectionUtil.getConstructors(access.findTypeByName(clazz)));
-        }
-    }
-
-    /**
-     * Registers all public methods from the {@code declaringClass} and its super classes and
-     * interfaces for runtime reflection.
-     * <p>
-     * Note: this code originally used {@link Class#getMethods()}, which has slightly different
-     * semantics. For methods with the same signature, it only returns the most specific one. This
-     * code registers all of them. This trades-off registering more methods than really needed for a
-     * much simpler algorithm. Should at some point {@link JVMCIReflectionUtil} or
-     * {@link ResolvedJavaType} get an implementation that behaves as {@link Class#getMethods()}, we
-     * might want to use it.
-     */
-    private static void registerMethods(ResolvedJavaType declaringClass) {
-        if ("java.lang.Object".equals(declaringClass.toClassName())) {
-            /*
-             * Don't register java.lang.Object methods since those are not reflectively needed by
-             * JMX. This a deviation from Class#getMethods().
-             */
-            return;
-        }
-        // Start by fetching public declared methods...
-        for (ResolvedJavaMethod m : declaringClass.getDeclaredMethods(false)) {
-            if (m.isPublic()) {
-                JVMCIRuntimeReflection.register(m);
-            }
-        }
-        // ...then recur over superclass methods...
-        ResolvedJavaType sc = declaringClass.getSuperclass();
-        if (sc != null) {
-            registerMethods(sc);
-        }
-        // ...and finally over direct superinterfaces.
-        for (ResolvedJavaType intf : declaringClass.getInterfaces()) {
-            registerMethods(intf);
+            RuntimeReflection.register(access.findClassByName(clazz).getConstructors());
         }
     }
 }

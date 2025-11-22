@@ -130,12 +130,13 @@ public final class MonitorPEATest extends HotSpotGraalCompilerTest {
         test("snippet3", new Object(), true);
     }
 
-    record A(Object o) {
+    static class A {
+        Object o = new Object();
     }
 
     @SuppressWarnings("unused")
     public static void snippet4(Object external, boolean flag, boolean flag1) {
-        A escaped = new A(new Object());
+        A escaped = new A();
 
         synchronized (escaped) {
             synchronized (external) {
@@ -463,40 +464,5 @@ public final class MonitorPEATest extends HotSpotGraalCompilerTest {
     @Test
     public void testSnippet20() {
         test("snippet20", new Object());
-    }
-
-    public static void snippet21() {
-        Object l1 = new Object();
-        Object l2 = new Object();
-        synchronized (l1) {
-            synchronized (l2) {
-                staticObj = new Object[]{l2};
-                synchronized (A.class) {
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testSnippet21() {
-        test("snippet21");
-    }
-
-    public static void snippet22() {
-        Object l2 = new Object();
-        Object l1 = new A(l2);
-
-        synchronized (l1) {
-            synchronized (l2) {
-                staticObj = new Object[]{l2};
-                synchronized (A.class) {
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testSnippet22() {
-        test("snippet22");
     }
 }

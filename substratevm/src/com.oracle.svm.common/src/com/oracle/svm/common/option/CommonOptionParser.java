@@ -32,7 +32,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -68,13 +70,13 @@ public class CommonOptionParser {
      */
     public static final class OptionParseResult {
         private final EnumSet<OptionType> printFlags;
-        private final EconomicSet<String> optionNameFilter;
+        private final Set<String> optionNameFilter;
         private final String error;
         private final OptionKey<?> optionKey;
         private final boolean optionUnrecognized;
         private static final String EXTRA_HELP_OPTIONS_WILDCARD = "*";
 
-        OptionParseResult(EnumSet<OptionType> printFlags, String error, EconomicSet<String> optionNameFilter, OptionKey<?> optionKey, boolean optionUnrecognized) {
+        OptionParseResult(EnumSet<OptionType> printFlags, String error, Set<String> optionNameFilter, OptionKey<?> optionKey, boolean optionUnrecognized) {
             this.printFlags = printFlags;
             this.error = error;
             this.optionNameFilter = optionNameFilter;
@@ -83,7 +85,7 @@ public class CommonOptionParser {
         }
 
         private OptionParseResult(EnumSet<OptionType> printFlags, String error, OptionKey<?> optionKey) {
-            this(printFlags, error, EconomicSet.create(), optionKey, false);
+            this(printFlags, error, new HashSet<>(), optionKey, false);
         }
 
         static OptionParseResult error(String message) {
@@ -91,7 +93,7 @@ public class CommonOptionParser {
         }
 
         static OptionParseResult optionUnrecognizedError(String message) {
-            return new OptionParseResult(EnumSet.noneOf(OptionType.class), message, EconomicSet.create(), null, true);
+            return new OptionParseResult(EnumSet.noneOf(OptionType.class), message, new HashSet<>(), null, true);
         }
 
         static OptionParseResult correct(OptionKey<?> optionKey) {
@@ -102,10 +104,10 @@ public class CommonOptionParser {
             return new OptionParseResult(selectedOptionTypes, null, null);
         }
 
-        static OptionParseResult printFlagsWithExtraHelp(EconomicSet<String> optionNameFilter) {
-            EconomicSet<String> optionNames = optionNameFilter;
+        static OptionParseResult printFlagsWithExtraHelp(Set<String> optionNameFilter) {
+            Set<String> optionNames = optionNameFilter;
             if (optionNames.contains(EXTRA_HELP_OPTIONS_WILDCARD)) {
-                optionNames = EconomicSet.create();
+                optionNames = new HashSet<>();
                 optionNames.add(EXTRA_HELP_OPTIONS_WILDCARD);
             }
             return new OptionParseResult(EnumSet.noneOf(OptionType.class), null, optionNames, null, false);
@@ -290,8 +292,7 @@ public class CommonOptionParser {
         if (CommonOptions.PrintFlagsWithExtraHelp.getName().equals(optionName)) {
             String optionValue = (String) value;
             String[] optionNames = StringUtil.split(optionValue, ",");
-            EconomicSet<String> selectedOptionNames = EconomicSet.create();
-            selectedOptionNames.addAll(Arrays.asList(optionNames));
+            HashSet<String> selectedOptionNames = new HashSet<>(Arrays.asList(optionNames));
             return OptionParseResult.printFlagsWithExtraHelp(selectedOptionNames);
         }
         return OptionParseResult.correct(optionKey);
@@ -356,15 +357,15 @@ public class CommonOptionParser {
     }
 
     public static long parseLong(String v) {
-        String valueString = v.trim();
+        String valueString = v.trim().toLowerCase();
         long scale = 1;
-        if (valueString.endsWith("k") || valueString.endsWith("K")) {
+        if (valueString.endsWith("k")) {
             scale = 1024L;
-        } else if (valueString.endsWith("m") || valueString.endsWith("M")) {
+        } else if (valueString.endsWith("m")) {
             scale = 1024L * 1024L;
-        } else if (valueString.endsWith("g") || valueString.endsWith("G")) {
+        } else if (valueString.endsWith("g")) {
             scale = 1024L * 1024L * 1024L;
-        } else if (valueString.endsWith("t") || valueString.endsWith("T")) {
+        } else if (valueString.endsWith("t")) {
             scale = 1024L * 1024L * 1024L * 1024L;
         }
 

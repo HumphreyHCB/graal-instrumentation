@@ -46,15 +46,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
-
-import org.graalvm.polyglot.SandboxPolicy;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.instrumentation.TruffleInstrument;
@@ -62,10 +61,11 @@ import com.oracle.truffle.api.instrumentation.TruffleInstrument.Registration;
 import com.oracle.truffle.api.instrumentation.provider.TruffleInstrumentProvider;
 import com.oracle.truffle.polyglot.EngineAccessor.AbstractClassLoaderSupplier;
 import com.oracle.truffle.polyglot.EngineAccessor.StrongClassLoaderSupplier;
+import org.graalvm.polyglot.SandboxPolicy;
 
 final class InstrumentCache {
-    private static final Map<String, InstrumentCache> nativeImageCache = TruffleOptions.AOT ? new LinkedHashMap<>() : null;
-    private static Map<List<AbstractClassLoaderSupplier>, Map<String, InstrumentCache>> runtimeCaches = new HashMap<>();
+    private static final List<InstrumentCache> nativeImageCache = TruffleOptions.AOT ? new ArrayList<>() : null;
+    private static Map<List<AbstractClassLoaderSupplier>, List<InstrumentCache>> runtimeCaches = new HashMap<>();
 
     private final String className;
     private final String id;
@@ -87,7 +87,7 @@ final class InstrumentCache {
      */
     @SuppressWarnings("unused")
     private static void initializeNativeImageState(ClassLoader imageClassLoader) {
-        nativeImageCache.putAll(doLoad(List.of(new StrongClassLoaderSupplier(imageClassLoader))));
+        nativeImageCache.addAll(doLoad(List.of(new StrongClassLoaderSupplier(imageClassLoader))));
     }
 
     /**
@@ -98,7 +98,11 @@ final class InstrumentCache {
     @SuppressWarnings("unused")
     private static Set<String> collectInstruments() {
         assert TruffleOptions.AOT : "Only supported during image generation";
-        return nativeImageCache.keySet();
+        Set<String> res = new HashSet<>();
+        for (InstrumentCache instrumentCache : nativeImageCache) {
+            res.add(instrumentCache.id);
+        }
+        return res;
     }
 
     /**
@@ -130,13 +134,13 @@ final class InstrumentCache {
         return internal;
     }
 
-    static Map<String, InstrumentCache> load() {
+    static List<InstrumentCache> load() {
         if (TruffleOptions.AOT) {
             return nativeImageCache;
         }
         synchronized (InstrumentCache.class) {
             List<AbstractClassLoaderSupplier> classLoaders = EngineAccessor.locatorOrDefaultLoaders();
-            Map<String, InstrumentCache> cache = runtimeCaches.get(classLoaders);
+            List<InstrumentCache> cache = runtimeCaches.get(classLoaders);
             if (cache == null) {
                 cache = doLoad(classLoaders);
                 runtimeCaches.put(classLoaders, cache);
@@ -147,7 +151,7 @@ final class InstrumentCache {
 
     static Collection<InstrumentCache> internalInstruments() {
         Set<InstrumentCache> result = new HashSet<>();
-        for (InstrumentCache i : load().values()) {
+        for (InstrumentCache i : load()) {
             if (i.isInternal()) {
                 result.add(i);
             }
@@ -155,7 +159,7 @@ final class InstrumentCache {
         return result;
     }
 
-    static Map<String, InstrumentCache> doLoad(List<AbstractClassLoaderSupplier> suppliers) {
+    static List<InstrumentCache> doLoad(List<AbstractClassLoaderSupplier> suppliers) {
         List<InstrumentCache> list = new ArrayList<>();
         Set<String> classNamesUsed = new HashSet<>();
         ClassLoader truffleClassLoader = InstrumentCache.class.getClassLoader();
@@ -167,12 +171,7 @@ final class InstrumentCache {
                 continue;
             }
             usesTruffleClassLoader |= truffleClassLoader == loader;
-
-            for (TruffleInstrumentProvider p : loadProviders(loader)) {
-                if (supplier.accepts(p.getClass())) {
-                    loadInstrumentImpl(p, list, classNamesUsed, optionalResources);
-                }
-            }
+            loadProviders(loader).filter((p) -> supplier.accepts(p.getClass())).forEach((p) -> loadInstrumentImpl(p, list, classNamesUsed, optionalResources));
         }
         /*
          * Resolves a missing debugger instrument when the GuestLangToolsClassLoader does not define
@@ -182,22 +181,16 @@ final class InstrumentCache {
          */
         if (!usesTruffleClassLoader) {
             Module truffleModule = InstrumentCache.class.getModule();
-            for (TruffleInstrumentProvider p : loadProviders(truffleClassLoader)) {
-                if (p.getClass().getModule().equals(truffleModule)) {
-                    loadInstrumentImpl(p, list, classNamesUsed, optionalResources);
-                }
-            }
+            loadProviders(truffleClassLoader).//
+                            filter((p) -> p.getClass().getModule().equals(truffleModule)).//
+                            forEach((p) -> loadInstrumentImpl(p, list, classNamesUsed, optionalResources));
         }
         list.sort(Comparator.comparing(InstrumentCache::getId));
-        Map<String, InstrumentCache> result = new LinkedHashMap<>();
-        for (InstrumentCache cache : list) {
-            result.put(cache.getId(), cache);
-        }
-        return result;
+        return list;
     }
 
-    private static ServiceLoader<TruffleInstrumentProvider> loadProviders(ClassLoader loader) {
-        return ServiceLoader.load(TruffleInstrumentProvider.class, loader);
+    private static Stream<? extends TruffleInstrumentProvider> loadProviders(ClassLoader loader) {
+        return StreamSupport.stream(ServiceLoader.load(TruffleInstrumentProvider.class, loader).spliterator(), false);
     }
 
     private static void loadInstrumentImpl(TruffleInstrumentProvider provider, List<? super InstrumentCache> list, Set<? super String> classNamesUsed,

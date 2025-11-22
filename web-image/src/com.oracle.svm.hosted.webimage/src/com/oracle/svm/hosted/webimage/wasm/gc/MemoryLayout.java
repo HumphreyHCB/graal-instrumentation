@@ -35,6 +35,7 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.UnsignedWord;
 
+import com.oracle.svm.webimage.wasm.types.WasmUtil;
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.Isolates;
 import com.oracle.svm.core.Uninterruptible;
@@ -46,7 +47,6 @@ import com.oracle.svm.core.util.UnsignedUtils;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmMemoryGrowNode;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmMemorySizeNode;
-import com.oracle.svm.webimage.wasm.types.WasmUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.graph.Node.NodeIntrinsic;

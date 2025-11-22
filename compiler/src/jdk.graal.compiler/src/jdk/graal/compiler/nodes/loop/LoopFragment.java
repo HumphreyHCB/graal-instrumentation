@@ -62,7 +62,6 @@ import jdk.graal.compiler.nodes.VirtualState;
 import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
 import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.nodes.java.MonitorEnterNode;
-import jdk.graal.compiler.nodes.java.MonitorIdNode;
 import jdk.graal.compiler.nodes.spi.NodeWithState;
 import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.nodes.virtual.CommitAllocationNode;
@@ -297,7 +296,6 @@ public abstract class LoopFragment {
 
         final NodeBitMap nonLoopNodes = graph.createNodeBitMap();
         WorkQueue worklist = new WorkQueue(graph);
-        ArrayList<MonitorIdNode> ids = new ArrayList<>();
         for (AbstractBeginNode b : blocks) {
             if (b.isDeleted()) {
                 continue;
@@ -310,7 +308,7 @@ public abstract class LoopFragment {
                     }
                 }
                 if (n instanceof MonitorEnterNode) {
-                    ids.add(((MonitorEnterNode) n).getMonitorId());
+                    markFloating(worklist, loop, ((MonitorEnterNode) n).getMonitorId(), nodes, nonLoopNodes);
                 }
                 if (n instanceof AbstractMergeNode) {
                     /*
@@ -326,26 +324,6 @@ public abstract class LoopFragment {
                 for (Node usage : n.usages()) {
                     markFloating(worklist, loop, usage, nodes, nonLoopNodes);
                 }
-            }
-        }
-        /*
-         * Mark the MonitorIdNodes as part of the loop if all uses are within the loop. This will
-         * cause them to be duplicated when the body is cloned. This makes it possible for lock
-         * optimizations to identify independent lock regions since it relies on visiting the users
-         * of a MonitorIdNode to find the monitor nodes for a lock region.
-         */
-        boolean mark = true;
-        outer: for (MonitorIdNode id : ids) {
-            for (Node use : id.usages()) {
-                if (!nodes.contains(use)) {
-                    mark = false;
-                    break outer;
-                }
-            }
-        }
-        if (mark) {
-            for (MonitorIdNode id : ids) {
-                markFloating(worklist, loop, id, nodes, nonLoopNodes);
             }
         }
     }

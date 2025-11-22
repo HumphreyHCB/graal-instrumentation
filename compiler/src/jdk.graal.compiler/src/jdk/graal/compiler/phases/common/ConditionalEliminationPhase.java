@@ -27,7 +27,6 @@ package jdk.graal.compiler.phases.common;
 import static jdk.graal.compiler.nodes.StaticDeoptimizingNode.mergeActions;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +35,6 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.EconomicSet;
 import org.graalvm.collections.Equivalence;
 import org.graalvm.collections.MapCursor;
-import org.graalvm.collections.Pair;
 
 import jdk.graal.compiler.core.common.cfg.BlockMap;
 import jdk.graal.compiler.core.common.type.AbstractObjectStamp;
@@ -187,7 +185,7 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
             ControlFlowGraph cfg = null;
             if (fullSchedule) {
                 trySkippingGuardPis(graph);
-                cfg = ControlFlowGraph.newBuilder(graph).modifiableBlocks(true).connectBlocks(true).computeFrequency(true).computeLoops(true).computeDominators(true).computePostdominators(
+                cfg = ControlFlowGraph.newBuilder(graph).backendBlocks(true).connectBlocks(true).computeFrequency(true).computeLoops(true).computeDominators(true).computePostdominators(
                                 true).build();
                 graph.getDebug().dump(DebugContext.VERY_DETAILED_LEVEL, graph, "Conditional elimination after computing CFG");
                 if (moveGuards && Options.MoveGuardsUpwards.getValue(graph.getOptions())) {
@@ -430,9 +428,6 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
         private final ConditionalEliminationUtil.GuardFolding guardFolding;
         protected final ArrayDeque<ConditionalEliminationUtil.GuardedCondition> conditions;
         private final boolean processFieldAccess;
-        private final List<RebuildPiData> piCache = new ArrayList<>(8);
-        private final EconomicSet<Pair<Stamp, Stamp>> joinedStamps = EconomicSet.create();
-        protected EconomicMap<AbstractBeginNode, Stamp> successorStampCache;
 
         /**
          * Tests which may be eliminated because post dominating tests to prove a broader condition.
@@ -630,54 +625,28 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
             }
         }
 
-        record RebuildPiData(PiNode piNode, boolean differentCheckedStamp,
-                        boolean differentObject) {
-        }
-
         private void rebuildPiNodes(GuardingNode guard, LogicNode condition) {
-            piCache.clear();
             LogicNode newCondition = condition;
             if (newCondition instanceof InstanceOfNode) {
                 InstanceOfNode inst = (InstanceOfNode) newCondition;
                 ValueNode originalValue = GraphUtil.skipPi(inst.getValue());
                 PiNode pi = null;
-
-                for (PiNode existing : guard.asNode().usages().filter(PiNode.class)) {
+                // Ensure that any Pi that's weaker than what the instanceof proves is
+                // replaced by one derived from the instanceof itself.
+                for (PiNode existing : guard.asNode().usages().filter(PiNode.class).snapshot()) {
                     if (!existing.isAlive()) {
                         continue;
                     }
-                    boolean differentCheckedStamp = !existing.piStamp().equals(inst.getCheckedStamp());
-                    boolean differentObject = existing.object() != inst.getValue();
-                    if (differentObject || differentCheckedStamp) {
-                        // only call out to skipPi which can be expensive if we would try to
-                        // optimize this pi
-                        if (originalValue != GraphUtil.skipPi(existing.object())) {
-                            // Somehow these are unrelated values so leave it alone
-                            continue;
-                        }
-                        piCache.add(new RebuildPiData(existing, differentCheckedStamp, differentObject));
+                    if (originalValue != GraphUtil.skipPi(existing.object())) {
+                        // Somehow these are unrelated values so leave it alone
+                        continue;
                     }
-                }
-                if (piCache.isEmpty()) {
-                    return;
-                }
-                // Ensure that any Pi that's weaker than what the instanceof proves is
-                // replaced by one derived from the instanceof itself.
-                for (RebuildPiData piData : piCache) {
-                    PiNode existing = piData.piNode;
-
-                    Pair<Stamp, Stamp> strongerStampPairKey = Pair.create(existing.piStamp(), inst.getCheckedStamp());
-
                     // If the pi has a weaker stamp or the same stamp but a different input
                     // then replace it.
-                    final boolean previouslyJoined = joinedStamps.contains(strongerStampPairKey);
-                    boolean weakerOrSame = previouslyJoined;
-                    if (!previouslyJoined) {
-                        weakerOrSame = existing.piStamp().join(inst.getCheckedStamp()).equals(inst.getCheckedStamp());
-                    }
-                    if (weakerOrSame) {
-                        assert piData.differentCheckedStamp || piData.differentObject : Assertions.errorMessage("Cache should only be filled if we have a reason ", piData);
-                        joinedStamps.add(strongerStampPairKey);
+                    boolean strongerStamp = !existing.piStamp().join(inst.getCheckedStamp()).equals(inst.getCheckedStamp());
+                    boolean differentCheckedStamp = !existing.piStamp().equals(inst.getCheckedStamp());
+                    boolean differentObject = existing.object() != inst.getValue();
+                    if (!strongerStamp && (differentCheckedStamp || differentObject)) {
                         if (pi == null) {
                             pi = graph.unique(new PiNode(inst.getValue(), inst.getCheckedStamp(), (ValueNode) guard));
                         }
@@ -689,7 +658,7 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
                              * but consuming the output Pi from the type check check. In this case
                              * we should still canonicalize the checked stamp for consistency.
                              */
-                            if (piData.differentCheckedStamp) {
+                            if (differentCheckedStamp) {
                                 PiNode alternatePi = graph.unique(new PiNode(existing.object(), inst.getCheckedStamp(), (ValueNode) guard));
                                 /*
                                  * If the resulting stamp is as good or better then do the
@@ -835,18 +804,6 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
 
                 if (node instanceof MergeNode) {
                     introducePisForPhis((MergeNode) node);
-                }
-
-                if (node instanceof SwitchNode switchNode) {
-                    /*
-                     * Since later in this phase we will be visiting all control split successors
-                     * the operation of computing successor stamps for switch nodes can be quite
-                     * costly. Thus, we already compute and cache all eagerly here.
-                     */
-                    if (successorStampCache == null) {
-                        successorStampCache = EconomicMap.create();
-                    }
-                    switchNode.getAllSuccessorValueStamps(successorStampCache);
                 }
 
                 if (node instanceof AbstractBeginNode) {
@@ -1293,10 +1250,7 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
         protected void processIntegerSwitch(AbstractBeginNode beginNode, IntegerSwitchNode integerSwitchNode) {
             ValueNode value = integerSwitchNode.value();
             if (maybeMultipleUsages(value)) {
-                if (successorStampCache == null) {
-                    successorStampCache = EconomicMap.create();
-                }
-                Stamp stamp = integerSwitchNode.getValueStampForSuccessor(beginNode, successorStampCache);
+                Stamp stamp = integerSwitchNode.getValueStampForSuccessor(beginNode);
                 if (stamp != null) {
                     registerNewStamp(value, stamp, beginNode);
                 }
@@ -1309,10 +1263,7 @@ public class ConditionalEliminationPhase extends PostRunCanonicalizationPhase<Co
                 LoadHubNode loadHub = (LoadHubNode) hub;
                 ValueNode value = loadHub.getValue();
                 if (maybeMultipleUsages(value)) {
-                    if (successorStampCache == null) {
-                        successorStampCache = EconomicMap.create();
-                    }
-                    Stamp stamp = typeSwitch.getValueStampForSuccessor(beginNode, successorStampCache);
+                    Stamp stamp = typeSwitch.getValueStampForSuccessor(beginNode);
                     if (stamp != null) {
                         registerNewStamp(value, stamp, beginNode);
                     }

@@ -32,8 +32,7 @@ public class EconomyHighTier extends BaseTier<HighTierContext> {
 
     @SuppressWarnings("this-escape")
     public EconomyHighTier() {
-        appendPhase(EconomyMarkFixReadsPhase.SINGLETON);
-        CanonicalizerPhase canonicalizer = CanonicalizerPhase.createSingleShot();
+        CanonicalizerPhase canonicalizer = CanonicalizerPhase.create();
         appendPhase(canonicalizer);
         appendPhase(new HighTierLoweringPhase(canonicalizer, true));
     }

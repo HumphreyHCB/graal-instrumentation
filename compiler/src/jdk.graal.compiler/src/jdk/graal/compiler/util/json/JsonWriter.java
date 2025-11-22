@@ -357,27 +357,19 @@ public class JsonWriter implements AutoCloseable {
      * @see #unindent()
      */
     public JsonWriter newline() throws IOException {
-        writer.write('\n');
-        appendIndentation();
-        return this;
-    }
-
-    /**
-     * Appends <code>2 * indentation</code> whitespaces. This call is used to print objects that
-     * start indented.
-     *
-     * @see #indent()
-     * @see #unindent()
-     */
-    public JsonWriter appendIndentation() throws IOException {
-        writer.write("  ".repeat(indentation));
+        StringBuilder builder = new StringBuilder(1 + 2 * indentation);
+        builder.append("\n");
+        for (int i = 0; i < indentation; ++i) {
+            builder.append("  ");
+        }
+        writer.write(builder.toString());
         return this;
     }
 
     /**
      * Increases the current indentation level by one. This does not print any character to the
      * writer directly, but modifies how many indents will be printed at the next call to
-     * {@link #newline()} or {@link #appendIndentation()}.
+     * {@link #newline()}.
      */
     public JsonWriter indent() {
         indentation++;
@@ -387,7 +379,7 @@ public class JsonWriter implements AutoCloseable {
     /**
      * Decreases the current indentation level by one. This does not print any character to the
      * writer directly, but modifies how many indents will be printed at the next call to
-     * {@link #newline()} or {@link #appendIndentation()}.
+     * {@link #newline()}.
      */
     public JsonWriter unindent() {
         assert indentation > 0 : "Json indentation underflowed";

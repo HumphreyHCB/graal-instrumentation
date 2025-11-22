@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -75,7 +75,7 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
 
     private static final byte FLAGS_NONE = 0;
     private static final byte FLAG_HAS_PREFIX_STATES = 1 << N_FLAGS;
-    private static final byte FLAG_MUST_ADVANCE = (byte) (1 << N_FLAGS + 1);
+    private static final byte FLAG_MUST_ADVANCE = 1 << N_FLAGS + 1;
 
     private static final NFAStateTransition[] EMPTY_TRANSITIONS = new NFAStateTransition[0];
 
@@ -84,8 +84,6 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
     @CompilationFinal private short transitionToUnAnchoredFinalState = -1;
     @CompilationFinal private short revTransitionToAnchoredFinalState = -1;
     @CompilationFinal private short revTransitionToUnAnchoredFinalState = -1;
-    @CompilationFinal private int numberOfGuardedUnAnchoredFinalTransitions = 0;
-    @CompilationFinal private int numberOfGuardedAnchoredFinalTransitions = 0;
     private TBitSet possibleResults;
     private final Set<LookBehindAssertion> finishedLookBehinds;
     private final EconomicMap<Integer, TBitSet> matchedConditionGroupsMap;
@@ -195,38 +193,8 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
         return matchedConditionGroups;
     }
 
-    public boolean hasUnGuardedTransitionToAnchoredFinalState(boolean forward) {
+    public boolean hasTransitionToAnchoredFinalState(boolean forward) {
         return getTransitionToAnchoredFinalStateId(forward) >= 0;
-    }
-
-    public boolean hasGuardedTransitionToAnchoredFinalState() {
-        return getTransitionToAnchoredFinalStateId(true) == -1 && numberOfGuardedAnchoredFinalTransitions > 0;
-    }
-
-    public long[][] getAnchoredFinalTransitionConstraints() {
-        long[][] result = new long[numberOfGuardedAnchoredFinalTransitions][];
-        int i = 0;
-        NFAStateTransition[] successors = getSuccessors();
-        for (NFAStateTransition transition : successors) {
-            if (transition.getTarget().isAnchoredFinalState() && transition.hasConstraints()) {
-                result[i] = transition.getConstraints();
-                i++;
-            }
-        }
-        return result;
-    }
-
-    public long[][] getUnAnchoredFinalTransitionConstraints() {
-        long[][] result = new long[numberOfGuardedUnAnchoredFinalTransitions][];
-        int i = 0;
-        NFAStateTransition[] successors = getSuccessors();
-        for (NFAStateTransition transition : successors) {
-            if (transition.getTarget().isUnAnchoredFinalState() && transition.hasConstraints()) {
-                result[i] = transition.getConstraints();
-                i++;
-            }
-        }
-        return result;
     }
 
     public short getTransitionToAnchoredFinalStateId(boolean forward) {
@@ -234,21 +202,17 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
     }
 
     public NFAStateTransition getTransitionToAnchoredFinalState(boolean forward) {
-        assert hasUnGuardedTransitionToAnchoredFinalState(forward);
+        assert hasTransitionToAnchoredFinalState(forward);
         return getSuccessors(forward)[getTransitionToAnchoredFinalStateId(forward)];
     }
 
     @Override
-    public boolean hasUnGuardedTransitionToUnAnchoredFinalState(boolean forward) {
+    public boolean hasTransitionToUnAnchoredFinalState(boolean forward) {
         return getTransitionToUnAnchoredFinalStateId(forward) >= 0;
     }
 
-    public boolean hasGuardedTransitionToUnAnchoredFinalState() {
-        return getTransitionToUnAnchoredFinalStateId(true) == -1 && numberOfGuardedUnAnchoredFinalTransitions > 0;
-    }
-
     public NFAStateTransition getTransitionToUnAnchoredFinalState(boolean forward) {
-        assert hasUnGuardedTransitionToUnAnchoredFinalState(forward);
+        assert hasTransitionToUnAnchoredFinalState(forward);
         return getSuccessors(forward)[getTransitionToUnAnchoredFinalStateId(forward)];
     }
 
@@ -256,12 +220,12 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
         return forward ? transitionToUnAnchoredFinalState : revTransitionToUnAnchoredFinalState;
     }
 
-    public boolean hasUnGuardedTransitionToFinalState(boolean forward) {
-        return hasUnGuardedTransitionToAnchoredFinalState(forward) || hasUnGuardedTransitionToUnAnchoredFinalState(forward);
+    public boolean hasTransitionToFinalState(boolean forward) {
+        return hasTransitionToAnchoredFinalState(forward) || hasTransitionToUnAnchoredFinalState(forward);
     }
 
     public int getFirstTransitionToFinalStateIndex(boolean forward) {
-        assert hasUnGuardedTransitionToFinalState(forward);
+        assert hasTransitionToFinalState(forward);
         return Math.min(Short.toUnsignedInt(getTransitionToAnchoredFinalStateId(forward)), Short.toUnsignedInt(getTransitionToUnAnchoredFinalStateId(forward)));
     }
 
@@ -298,22 +262,11 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
     }
 
     private void updateFinalStateTransitions(NFAStateTransition transition, short i) {
-        boolean hasConstraints = transition.hasConstraints();
-        if (transition.getTarget().isAnchoredFinalState()) {
-            if (transitionToAnchoredFinalState == -1 && !hasConstraints) {
-                transitionToAnchoredFinalState = i;
-            }
-            if (hasConstraints) {
-                numberOfGuardedAnchoredFinalTransitions++;
-            }
+        if (transitionToAnchoredFinalState == -1 && transition.getTarget().isAnchoredFinalState()) {
+            transitionToAnchoredFinalState = i;
         }
-        if (transition.getTarget().isUnAnchoredFinalState()) {
-            if (transitionToUnAnchoredFinalState == -1 && !hasConstraints) {
-                transitionToUnAnchoredFinalState = i;
-            }
-            if (hasConstraints) {
-                numberOfGuardedUnAnchoredFinalTransitions++;
-            }
+        if (transitionToUnAnchoredFinalState == -1 && transition.getTarget().isUnAnchoredFinalState()) {
+            transitionToUnAnchoredFinalState = i;
         }
     }
 
@@ -330,21 +283,12 @@ public final class NFAState extends BasicState<NFAState, NFAStateTransition> imp
         NFAStateTransition[] newNext = new NFAStateTransition[getSuccessors().length - toRemove];
         short iNew = 0;
         for (short i = 0; i < getSuccessors().length; i++) {
-            var successor = getSuccessors()[i];
-            if (successor.getTarget() == state) {
+            if (getSuccessors()[i].getTarget() == state) {
                 if (i == transitionToAnchoredFinalState) {
                     transitionToAnchoredFinalState = -1;
                 }
                 if (i == transitionToUnAnchoredFinalState) {
                     transitionToUnAnchoredFinalState = -1;
-                }
-                if (successor.hasConstraints()) {
-                    if (state.isFinalState()) {
-                        numberOfGuardedUnAnchoredFinalTransitions--;
-                    }
-                    if (state.isAnchoredFinalState()) {
-                        numberOfGuardedAnchoredFinalTransitions--;
-                    }
                 }
             } else {
                 if (i == transitionToAnchoredFinalState) {

@@ -646,21 +646,21 @@ final class Analysis implements LanguageAccess {
 
     Symbol<Name> getFieldName(int bci) {
         int cpi = bs.readCPI(bci);
-        return m.getConstantPool().fieldName(cpi);
+        return m.getConstantPool().fieldAt(cpi).getName(m.getConstantPool());
     }
 
     Symbol<Type> getFieldType(int bci) {
         int cpi = bs.readCPI(bci);
-        return m.getConstantPool().fieldType(cpi);
+        return m.getConstantPool().fieldAt(cpi).getType(m.getConstantPool());
     }
 
     Symbol<Name> getInvokeName(int bci, int opcode) {
         assert Bytecodes.isInvoke(opcode);
         int cpi = bs.readCPI(bci);
         if (opcode == INVOKEDYNAMIC) {
-            return m.getConstantPool().invokeDynamicName(cpi);
+            return m.getConstantPool().indyAt(cpi).getName(m.getConstantPool());
         } else {
-            return m.getConstantPool().methodName(cpi);
+            return m.getConstantPool().methodAt(cpi).getName(m.getConstantPool());
         }
     }
 
@@ -669,9 +669,9 @@ final class Analysis implements LanguageAccess {
         int cpi = bs.readCPI(bci);
         Symbol<Signature> sig;
         if (opcode == INVOKEDYNAMIC) {
-            sig = m.getConstantPool().invokeDynamicSignature(cpi);
+            sig = m.getConstantPool().indyAt(cpi).getSignature(m.getConstantPool());
         } else {
-            sig = m.getConstantPool().methodSignature(cpi);
+            sig = m.getConstantPool().methodAt(cpi).getSignature(m.getConstantPool());
         }
         return getSignatures().parsed(sig);
     }

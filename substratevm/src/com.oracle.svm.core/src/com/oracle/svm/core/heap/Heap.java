@@ -36,7 +36,6 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.UnsignedWord;
 
-import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.PredefinedClassesSupport;
@@ -48,6 +47,8 @@ import com.oracle.svm.core.snippets.KnownIntrinsics;
 import jdk.graal.compiler.api.replacements.Fold;
 
 public abstract class Heap {
+    protected long startOffset;
+
     @Fold
     public static Heap getHeap() {
         return ImageSingletons.lookup(Heap.class);
@@ -91,19 +92,19 @@ public abstract class Heap {
      * Walk all the objects in the heap. Must only be executed as part of a VM operation that causes
      * a safepoint.
      */
-    public abstract void walkObjects(ObjectVisitor visitor);
+    public abstract boolean walkObjects(ObjectVisitor visitor);
 
     /**
      * Walk all native image heap objects. Must only be executed as part of a VM operation that
      * causes a safepoint.
      */
-    public abstract void walkImageHeapObjects(ObjectVisitor visitor);
+    public abstract boolean walkImageHeapObjects(ObjectVisitor visitor);
 
     /**
      * Walk all heap objects except the native image heap objects. Must only be executed as part of
      * a VM operation that causes a safepoint.
      */
-    public abstract void walkCollectedHeapObjects(ObjectVisitor visitor);
+    public abstract boolean walkCollectedHeapObjects(ObjectVisitor visitor);
 
     /** Returns the number of classes in the heap (initialized as well as uninitialized). */
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
@@ -111,7 +112,7 @@ public abstract class Heap {
 
     /** Visits all loaded classes in the heap (see {@link PredefinedClassesSupport}). */
     public void visitLoadedClasses(Consumer<Class<?>> visitor) {
-        for (Class<?> clazz : getClassesInImageHeap()) {
+        for (Class<?> clazz : getAllClasses()) {
             if (DynamicHub.fromClass(clazz).isLoaded()) {
                 visitor.accept(clazz);
             }
@@ -119,10 +120,10 @@ public abstract class Heap {
     }
 
     /**
-     * Returns all class objects that live in the image heap. Intentionally protected to prevent
-     * access to classes that have not been loaded yet, see {@link PredefinedClassesSupport}.
+     * Get all known classes. Intentionally protected to prevent access to classes that have not
+     * been "loaded" yet, see {@link PredefinedClassesSupport}.
      */
-    protected abstract List<Class<?>> getClassesInImageHeap();
+    protected abstract List<Class<?>> getAllClasses();
 
     /**
      * Get the ObjectHeader implementation that this Heap uses.
@@ -140,20 +141,9 @@ public abstract class Heap {
     /** Reset the heap to the normal execution state. */
     public abstract void endSafepoint();
 
-    /**
-     * Returns the alignment in bytes that the heap base must adhere to at runtime. Note that this
-     * alignment is not enforced if {@link SubstrateOptions#SpawnIsolates} is disabled.
-     */
+    /** Returns a multiple to which the heap address space should be aligned to at runtime. */
     @Fold
-    public abstract int getHeapBaseAlignment();
-
-    /**
-     * Returns the alignment in bytes that each image heap and any auxiliary images must adhere to
-     * at runtime. Note that this alignment is not enforced if
-     * {@link SubstrateOptions#SpawnIsolates} is disabled.
-     */
-    @Fold
-    public abstract int getImageHeapAlignment();
+    public abstract int getPreferredAddressSpaceAlignment();
 
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public Pointer getImageHeapStart() {
@@ -162,7 +152,7 @@ public abstract class Heap {
 
     /**
      * Returns an offset relative to the heap base, at which the image heap should be mapped into
-     * the address space. The offset is a multiple of {@link #getImageHeapAlignment}.
+     * the address space.
      */
     @Fold
     public abstract int getImageHeapOffsetInAddressSpace();
@@ -245,6 +235,10 @@ public abstract class Heap {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     public abstract UnsignedWord getUsedMemoryAfterLastGC();
 
+    public abstract UnsignedWord getImageHeapReservedBytes();
+
+    public abstract UnsignedWord getImageHeapCommittedBytes();
+
     /** Consider all references in the given object as needing remembered set entries. */
     @Uninterruptible(reason = "Ensure that no GC can occur between modification of the object and this call.", callerMustBe = true)
     public abstract void dirtyAllReferencesOf(Object obj);
@@ -264,4 +258,11 @@ public abstract class Heap {
      */
     @Uninterruptible(reason = "Ensure that no GC can occur between this call and usage of the salt.", callerMustBe = true)
     public abstract long getIdentityHashSalt(Object obj);
+
+    /**
+     * Sets the start offset of the heap.
+     */
+    public void setStartOffset(long startOffset) {
+        this.startOffset = startOffset;
+    }
 }

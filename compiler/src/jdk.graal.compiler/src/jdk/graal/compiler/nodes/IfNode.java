@@ -26,7 +26,6 @@ package jdk.graal.compiler.nodes;
 
 import static jdk.graal.compiler.nodeinfo.NodeCycles.CYCLES_1;
 import static jdk.graal.compiler.nodeinfo.NodeSize.SIZE_2;
-import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.VERY_FAST_PATH_PROBABILITY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +41,7 @@ import jdk.graal.compiler.core.common.type.IntegerStamp;
 import jdk.graal.compiler.core.common.type.PrimitiveStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
+import jdk.graal.compiler.core.common.util.CompilationAlarm;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.CounterKey;
 import jdk.graal.compiler.debug.DebugCloseable;
@@ -71,10 +71,12 @@ import jdk.graal.compiler.nodes.calc.IsNullNode;
 import jdk.graal.compiler.nodes.calc.ObjectEqualsNode;
 import jdk.graal.compiler.nodes.calc.SubNode;
 import jdk.graal.compiler.nodes.cfg.HIRBlock;
+import jdk.graal.compiler.nodes.debug.ControlFlowAnchored;
 import jdk.graal.compiler.nodes.extended.BranchProbabilityNode;
 import jdk.graal.compiler.nodes.extended.UnboxNode;
 import jdk.graal.compiler.nodes.java.InstanceOfNode;
 import jdk.graal.compiler.nodes.java.LoadFieldNode;
+import jdk.graal.compiler.nodes.memory.MemoryAnchorNode;
 import jdk.graal.compiler.nodes.spi.Canonicalizable;
 import jdk.graal.compiler.nodes.spi.LIRLowerable;
 import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
@@ -258,7 +260,7 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
         }
         if (tool.allUsagesAvailable() && trueSuccessor().hasNoUsages() && falseSuccessor().hasNoUsages()) {
 
-            pullNodesThroughIf(tool);
+            pushNodesThroughIf(tool);
 
             if (checkForUnsignedCompare(tool) || removeOrMaterializeIf(tool)) {
                 return;
@@ -1155,10 +1157,54 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
         return false;
     }
 
-    private void pullNodesThroughIf(SimplifierTool tool) {
+    private void pushNodesThroughIf(SimplifierTool tool) {
         assert trueSuccessor().hasNoUsages() : Assertions.errorMessageContext("this", this, "trueSucc", trueSuccessor(), "trueSuccUsages", trueSuccessor().usages());
         assert falseSuccessor().hasNoUsages() : Assertions.errorMessageContext("this", this, "falseSucc", falseSuccessor(), "falseSuccUsages", falseSuccessor().usages());
-        GraphUtil.tryDeDuplicateSplitSuccessors(this, tool);
+        // push similar nodes upwards through the if, thereby deduplicating them
+        do {
+            CompilationAlarm.checkProgress(graph());
+            AbstractBeginNode trueSucc = trueSuccessor();
+            AbstractBeginNode falseSucc = falseSuccessor();
+            if (trueSucc instanceof BeginNode && falseSucc instanceof BeginNode && trueSucc.next() instanceof FixedWithNextNode && falseSucc.next() instanceof FixedWithNextNode) {
+                FixedWithNextNode trueNext = (FixedWithNextNode) trueSucc.next();
+                FixedWithNextNode falseNext = (FixedWithNextNode) falseSucc.next();
+                NodeClass<?> nodeClass = trueNext.getNodeClass();
+                if (trueNext.getClass() == falseNext.getClass()) {
+                    if (trueNext instanceof AbstractBeginNode || trueNext instanceof ControlFlowAnchored || trueNext instanceof MemoryAnchorNode) {
+                        /*
+                         * Cannot do this optimization for begin nodes, because it could move guards
+                         * above the if that need to stay below a branch.
+                         *
+                         * Cannot do this optimization for ControlFlowAnchored nodes, because these
+                         * are anchored in their control-flow position, and should not be moved
+                         * upwards.
+                         */
+                    } else if (nodeClass.equalInputs(trueNext, falseNext) && trueNext.valueEquals(falseNext)) {
+                        falseNext.replaceAtUsages(trueNext);
+                        graph().removeFixed(falseNext);
+                        GraphUtil.unlinkFixedNode(trueNext);
+                        graph().addBeforeFixed(this, trueNext);
+                        for (Node usage : trueNext.usages().snapshot()) {
+                            if (usage.isAlive()) {
+                                NodeClass<?> usageNodeClass = usage.getNodeClass();
+                                if (usageNodeClass.valueNumberable() && !usageNodeClass.isLeafNode()) {
+                                    Node newNode = graph().findDuplicate(usage);
+                                    if (newNode != null) {
+                                        usage.replaceAtUsagesAndDelete(newNode);
+                                    }
+                                }
+                                if (usage.isAlive()) {
+                                    tool.addToWorkList(usage);
+                                }
+                            }
+                        }
+                        continue;
+                    }
+                }
+            }
+            break;
+        } while (true); // TERMINATION ARGUMENT: processing fixed nodes until duplication is no
+                        // longer possible.
     }
 
     /**
@@ -1439,7 +1485,6 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
             if (merge == falseEnd.merge() && trueSuccessor().anchored().isEmpty() && falseSuccessor().anchored().isEmpty()) {
                 PhiNode singlePhi = null;
                 int distinct = 0;
-                boolean allConstant = true;
                 for (PhiNode phi : merge.phis()) {
                     ValueNode trueValue = phi.valueAt(trueEnd);
                     ValueNode falseValue = phi.valueAt(falseEnd);
@@ -1447,7 +1492,6 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
                         distinct++;
                         singlePhi = phi;
                     }
-                    allConstant &= (trueValue.isConstant() && falseValue.isConstant());
                 }
                 if (distinct == 0) {
                     /*
@@ -1460,57 +1504,14 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
                     // Fortify: Suppress Null Dereference false positive
                     assert singlePhi != null;
 
-                    boolean shouldTryToCanonicalizeConditional = true;
-                    if (!allConstant &&
-                                    predecessor() instanceof AbstractBeginNode prevBegin &&
-                                    predecessor().predecessor() instanceof IfNode precedingIf &&
-                                    precedingIf.probability(prevBegin) < VERY_FAST_PATH_PROBABILITY) {
-                        AbstractBeginNode otherSuccessor = precedingIf.successor(true) == prevBegin ? precedingIf.successor(false) : precedingIf.successor(true);
-                        if (otherSuccessor.next() instanceof AbstractEndNode otherEnd && otherEnd.merge() == merge) {
-                            /**
-                             * We have a shape like this (omitting begin/end pairs):
-                             *
-                             * <pre>
-                             *     If     // precedingIf
-                             *     | \
-                             *     | If   // this
-                             *     | | \
-                             *     | | |
-                             *     Merge
-                             * </pre>
-                             *
-                             * For example, fully unrolling a loop that has side exits can give this
-                             * shape, where all the unrolled iterations' side exits meet up at one
-                             * merge.
-                             * <p/>
-                             *
-                             * If we replace this node by a floating conditional, the preceding If
-                             * will then be in a shape where its ends meet up at the same merge, so
-                             * we will get here and turn it into a conditional too. If there are
-                             * more preceding ifs in the cascade, we would turn them into
-                             * conditionals too, and so on. Overall we would move all the code
-                             * controlled by a sequence of Ifs into one block where everything is
-                             * computed unconditionally and we then pick out the result we want.
-                             * This is unlikely to be worth it in general.
-                             * <p/>
-                             *
-                             * We only allow this transformation if all phi inputs are constants,
-                             * this allows us to cover some useful cases (see TrichotomyTest).
-                             */
-                            shouldTryToCanonicalizeConditional = false;
-                        }
-                    }
-
                     ValueNode trueValue = singlePhi.valueAt(trueEnd);
                     ValueNode falseValue = singlePhi.valueAt(falseEnd);
-                    if (shouldTryToCanonicalizeConditional) {
-                        ValueNode conditional = canonicalizeConditionalCascade(tool, trueValue, falseValue);
-                        if (conditional != null) {
-                            conditional = proxyReplacement(conditional);
-                            singlePhi.setValueAt(trueEnd, conditional);
-                            removeThroughFalseBranch(tool, merge);
-                            return true;
-                        }
+                    ValueNode conditional = canonicalizeConditionalCascade(tool, trueValue, falseValue);
+                    if (conditional != null) {
+                        conditional = proxyReplacement(conditional);
+                        singlePhi.setValueAt(trueEnd, conditional);
+                        removeThroughFalseBranch(tool, merge);
+                        return true;
                     }
                     /*-
                      * Remove this pattern:
@@ -1672,9 +1673,12 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
         if (schedule == null) {
             return null;
         }
-        HIRBlock block = schedule.blockFor(successor, true);
-        if (block == null) {
+        if (schedule.getCFG().getNodeToBlock().isNew(successor)) {
             // This can occur when nodes were created after the last schedule.
+            return null;
+        }
+        HIRBlock block = schedule.getCFG().blockFor(successor);
+        if (block == null) {
             return null;
         }
         return schedule.nodesFor(block);

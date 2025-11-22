@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,12 +40,11 @@
  */
 package org.graalvm.wasm.api;
 
-import org.graalvm.wasm.SymbolTable;
 import org.graalvm.wasm.WasmType;
-
-import com.oracle.truffle.api.CompilerAsserts;
 import org.graalvm.wasm.exception.Failure;
 import org.graalvm.wasm.exception.WasmException;
+
+import com.oracle.truffle.api.CompilerAsserts;
 
 public enum ValueType {
     i32(WasmType.I32_TYPE),
@@ -54,40 +53,38 @@ public enum ValueType {
     f64(WasmType.F64_TYPE),
     v128(WasmType.V128_TYPE),
     anyfunc(WasmType.FUNCREF_TYPE),
-    externref(WasmType.EXTERNREF_TYPE),
-    exnref(WasmType.EXNREF_TYPE);
+    externref(WasmType.EXTERNREF_TYPE);
 
-    private final int value;
+    private final byte byteValue;
 
-    ValueType(int value) {
-        this.value = value;
+    ValueType(byte byteValue) {
+        this.byteValue = byteValue;
     }
 
-    public static ValueType fromValue(int value) {
+    public static ValueType fromByteValue(byte value) {
         CompilerAsserts.neverPartOfCompilation();
-        return switch (value) {
-            case WasmType.I32_TYPE -> i32;
-            case WasmType.I64_TYPE -> i64;
-            case WasmType.F32_TYPE -> f32;
-            case WasmType.F64_TYPE -> f64;
-            case WasmType.V128_TYPE -> v128;
-            default -> {
-                assert WasmType.isReferenceType(value);
-                yield switch (WasmType.getAbstractHeapType(value)) {
-                    case WasmType.FUNC_HEAPTYPE -> anyfunc;
-                    case WasmType.EXTERN_HEAPTYPE -> externref;
-                    case WasmType.EXN_HEAPTYPE -> exnref;
-                    default -> {
-                        assert WasmType.isConcreteReferenceType(value);
-                        yield anyfunc;
-                    }
-                };
-            }
-        };
+        switch (value) {
+            case WasmType.I32_TYPE:
+                return i32;
+            case WasmType.I64_TYPE:
+                return i64;
+            case WasmType.F32_TYPE:
+                return f32;
+            case WasmType.F64_TYPE:
+                return f64;
+            case WasmType.V128_TYPE:
+                return v128;
+            case WasmType.FUNCREF_TYPE:
+                return anyfunc;
+            case WasmType.EXTERNREF_TYPE:
+                return externref;
+            default:
+                throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, null, "Unknown value type: 0x" + Integer.toHexString(value));
+        }
     }
 
-    public int value() {
-        return value;
+    public byte byteValue() {
+        return byteValue;
     }
 
     public static boolean isNumberType(ValueType valueType) {
@@ -99,40 +96,6 @@ public enum ValueType {
     }
 
     public static boolean isReferenceType(ValueType valueType) {
-        return valueType == anyfunc || valueType == externref || valueType == exnref;
-    }
-
-    public SymbolTable.ClosedValueType asClosedValueType() {
-        return switch (this) {
-            case i32 -> SymbolTable.NumberType.I32;
-            case i64 -> SymbolTable.NumberType.I64;
-            case f32 -> SymbolTable.NumberType.F32;
-            case f64 -> SymbolTable.NumberType.F64;
-            case v128 -> SymbolTable.VectorType.V128;
-            case anyfunc -> SymbolTable.ClosedReferenceType.FUNCREF;
-            case externref -> SymbolTable.ClosedReferenceType.EXTERNREF;
-            case exnref -> SymbolTable.ClosedReferenceType.EXNREF;
-        };
-    }
-
-    public static ValueType fromClosedValueType(SymbolTable.ClosedValueType closedValueType) {
-        return switch (closedValueType.kind()) {
-            case Number -> fromValue(((SymbolTable.NumberType) closedValueType).value());
-            case Vector -> fromValue(((SymbolTable.VectorType) closedValueType).value());
-            case Reference -> {
-                SymbolTable.ClosedReferenceType referenceType = (SymbolTable.ClosedReferenceType) closedValueType;
-                yield switch (referenceType.heapType().kind()) {
-                    case Abstract -> {
-                        SymbolTable.AbstractHeapType abstractHeapType = (SymbolTable.AbstractHeapType) referenceType.heapType();
-                        yield switch (abstractHeapType.value()) {
-                            case WasmType.FUNC_HEAPTYPE -> anyfunc;
-                            case WasmType.EXTERNREF_TYPE -> externref;
-                            default -> throw WasmException.create(Failure.UNSPECIFIED_INTERNAL, null, "Unknown value type: 0x" + Integer.toHexString(abstractHeapType.value()));
-                        };
-                    }
-                    case Function -> anyfunc;
-                };
-            }
-        };
+        return valueType == anyfunc || valueType == externref;
     }
 }

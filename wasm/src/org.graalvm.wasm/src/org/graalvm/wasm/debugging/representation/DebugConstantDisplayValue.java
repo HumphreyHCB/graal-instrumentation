@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -45,7 +45,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import org.graalvm.wasm.WasmLanguage;
 
 /**
  * Represents a constant value in the debug environment.
@@ -61,16 +60,6 @@ public class DebugConstantDisplayValue implements TruffleObject {
     public DebugConstantDisplayValue(String value) {
         assert value != null : "the value of a debug constant display value must not be null";
         this.value = value;
-    }
-
-    @ExportMessage
-    public boolean hasLanguageId() {
-        return true;
-    }
-
-    @ExportMessage
-    public String getLanguageId() {
-        return WasmLanguage.ID;
     }
 
     @ExportMessage

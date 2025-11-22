@@ -27,6 +27,8 @@ package com.oracle.svm.hosted.webimage.wasmgc.substitute;
 
 import org.graalvm.nativeimage.Platforms;
 
+import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
+import com.oracle.svm.webimage.substitute.system.Target_java_lang_Throwable_Web;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -34,8 +36,6 @@ import com.oracle.svm.core.jdk.UnsupportedFeatureError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.webimage.wasm.debug.WasmDebug;
 import com.oracle.svm.hosted.webimage.wasm.nodes.WasmTrapNode;
-import com.oracle.svm.webimage.platform.WebImageWasmGCPlatform;
-import com.oracle.svm.webimage.substitute.system.Target_java_lang_Throwable_Web;
 
 import jdk.graal.compiler.nodes.UnreachableNode;
 

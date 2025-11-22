@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.nodes.methodhandle;
 
-import static com.oracle.truffle.espresso.threads.ThreadState.IN_NATIVE;
-
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.espresso.classfile.descriptors.SignatureSymbols;
@@ -34,7 +32,6 @@ import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.panama.DowncallStubNode;
 import com.oracle.truffle.espresso.runtime.panama.DowncallStubs;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
-import com.oracle.truffle.espresso.threads.Transition;
 
 public abstract class MHLinkToNativeNode extends MethodHandleIntrinsicNode {
     protected static final int LIMIT = 3;
@@ -54,12 +51,7 @@ public abstract class MHLinkToNativeNode extends MethodHandleIntrinsicNode {
 
     @Override
     public Object call(Object[] args) {
-        Transition transition = Transition.transition(IN_NATIVE, this);
-        try {
-            return execute(args);
-        } finally {
-            transition.restore(this);
-        }
+        return execute(args);
     }
 
     protected abstract Object execute(Object[] args);
@@ -77,13 +69,13 @@ public abstract class MHLinkToNativeNode extends MethodHandleIntrinsicNode {
         assert args.length == argCount;
         long downcallStubId = getDowncallStubId(args);
         EspressoContext context = getContext();
-        DowncallStubs.DowncallStub stub = context.getDowncallStubs().getStub(downcallStubId, context);
+        DowncallStubs.DowncallStub stub = context.getDowncallStubs().getStub(downcallStubId);
         return stub.uncachedCall(args, context);
     }
 
     protected DowncallStubNode createDowncallStubNode(long downcallStubId) {
         EspressoContext context = getContext();
-        DowncallStubs.DowncallStub stub = context.getDowncallStubs().getStub(downcallStubId, context);
+        DowncallStubs.DowncallStub stub = context.getDowncallStubs().getStub(downcallStubId);
         return DowncallStubNode.create(stub, context.getNativeAccess());
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -38,11 +38,13 @@ public class DbgValueInstruction extends VoidInstruction {
 
     private final SymbolImpl value;
     private final SourceVariable variable;
+    private final long index;
     private final MDExpression expression;
 
-    public DbgValueInstruction(SymbolImpl value, SourceVariable variable, MDExpression expression) {
+    public DbgValueInstruction(SymbolImpl value, SourceVariable variable, long index, MDExpression expression) {
         this.value = value;
         this.variable = variable;
+        this.index = index;
         this.expression = expression;
     }
 
@@ -52,6 +54,10 @@ public class DbgValueInstruction extends VoidInstruction {
 
     public SourceVariable getVariable() {
         return variable;
+    }
+
+    public long getIndex() {
+        return index;
     }
 
     public MDExpression getExpression() {
@@ -87,13 +93,14 @@ public class DbgValueInstruction extends VoidInstruction {
         if (!getExpression().equals(that.getExpression())) {
             return false;
         }
-        return true;
+        return getIndex() == that.getIndex();
     }
 
     @Override
     public int hashCode() {
         int result = getValue().hashCode();
         result = 31 * result + getVariable().hashCode();
+        result = 31 * result + (int) (getIndex() ^ (getIndex() >>> 32));
         result = 31 * result + getExpression().hashCode();
         return result;
     }

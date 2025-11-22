@@ -84,13 +84,10 @@ public final class LibEspresso {
         builder.option("java.EnableSignals", "true");
         builder.option("java.ExposeNativeJavaVM", "true");
         builder.option("java.GuestFieldOffsetStrategy", "graal"); // most "hotspot-like"
-        Context context = null;
-        boolean entered = false;
+        Context context = builder.build();
+        context.enter();
         Value bindings;
         try {
-            context = builder.build();
-            context.enter();
-            entered = true;
             bindings = context.getBindings("java");
         } catch (PolyglotException e) {
             if (e.isExit()) {
@@ -104,17 +101,8 @@ public final class LibEspresso {
             System.exit(1);
             // this is dead code
             // it's what we should do if we supported cleanly tearing down the context in this state
-            if (entered) {
-                context.leave();
-            }
-            if (context != null) {
-                context.close(true);
-            }
-            return JNIErrors.JNI_ERR();
-        } catch (IllegalArgumentException e) {
-            // This can happen during option processing (build call above)
-            // OptionType converters can throw IllegalArgumentException
-            STDERR.println(e.getMessage());
+            context.leave();
+            context.close(true);
             return JNIErrors.JNI_ERR();
         }
         Value java = bindings.getMember("<JavaVM>");
@@ -166,12 +154,7 @@ public final class LibEspresso {
             STDERR.println("Cannot enter context: no context found");
             return JNIErrors.JNI_ERR();
         }
-        try {
-            context.enter();
-        } catch (PolyglotException | IllegalStateException e) {
-            STDERR.println("Cannot enter context: " + e.getMessage());
-            return JNIErrors.JNI_ERR();
-        }
+        context.enter();
         return JNIErrors.JNI_OK();
     }
 
@@ -183,12 +166,7 @@ public final class LibEspresso {
             STDERR.println("Cannot leave context: no context found");
             return JNIErrors.JNI_ERR();
         }
-        try {
-            context.leave();
-        } catch (IllegalStateException e) {
-            STDERR.println("Cannot leave context: " + e.getMessage());
-            return JNIErrors.JNI_ERR();
-        }
+        context.leave();
         return JNIErrors.JNI_OK();
     }
 
@@ -204,13 +182,8 @@ public final class LibEspresso {
         ObjectHandle contextHandle = javaVM.getFunctions().getContext();
         Context context = ObjectHandles.getGlobal().get(contextHandle);
         ObjectHandles.getGlobal().destroy(contextHandle);
-        try {
-            context.leave();
-            context.close();
-        } catch (PolyglotException | IllegalStateException e) {
-            STDERR.println("Cannot close context: " + e.getMessage());
-            return JNIErrors.JNI_ERR();
-        }
+        context.leave();
+        context.close();
         return JNIErrors.JNI_OK();
     }
 

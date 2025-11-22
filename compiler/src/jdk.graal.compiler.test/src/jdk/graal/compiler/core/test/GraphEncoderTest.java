@@ -26,12 +26,11 @@ package jdk.graal.compiler.core.test;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.graalvm.collections.EconomicSet;
-import org.junit.Test;
-
 import jdk.graal.compiler.debug.DebugOptions;
 import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.graal.compiler.nodes.GraphEncoder;
@@ -39,7 +38,8 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.util.EconomicHashMap;
+import org.junit.Test;
+
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public class GraphEncoderTest extends GraalCompilerTest {
@@ -82,7 +82,7 @@ public class GraphEncoderTest extends GraalCompilerTest {
             encoder.prepare(originalGraph);
         }
         encoder.finishPrepare();
-        Map<StructuredGraph, Integer> startOffsets = new EconomicHashMap<>();
+        Map<StructuredGraph, Integer> startOffsets = new HashMap<>();
         for (StructuredGraph originalGraph : originalGraphs) {
             startOffsets.put(originalGraph, encoder.encode(originalGraph));
         }

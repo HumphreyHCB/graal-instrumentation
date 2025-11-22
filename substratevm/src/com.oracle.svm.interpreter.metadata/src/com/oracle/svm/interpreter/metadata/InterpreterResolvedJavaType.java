@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,38 +24,31 @@
  */
 package com.oracle.svm.interpreter.metadata;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
-import java.util.List;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.WordBase;
 
-import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.hub.RuntimeClassLoading;
-import com.oracle.svm.core.hub.crema.CremaResolvedJavaRecordComponent;
-import com.oracle.svm.core.hub.registry.SymbolsSupport;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.espresso.classfile.descriptors.Name;
-import com.oracle.svm.espresso.classfile.descriptors.Symbol;
-import com.oracle.svm.espresso.classfile.descriptors.Type;
-import com.oracle.svm.espresso.classfile.descriptors.TypeSymbols;
 
 import jdk.vm.ci.meta.Assumptions;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.UnresolvedJavaType;
 
 /**
  * Represents a primitive or reference resolved Java type, including additional capabilities of the
  * closed world e.g. instantiable, instantiated, effectively final ...
  */
-public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated implements ResolvedJavaType, CremaTypeAccess {
-    public static final InterpreterResolvedJavaType[] EMPTY_ARRAY = new InterpreterResolvedJavaType[0];
+public abstract class InterpreterResolvedJavaType implements ResolvedJavaType {
+    public static final ResolvedJavaMethod[] NO_METHODS = new ResolvedJavaMethod[0];
 
-    private final Symbol<Type> type;
-    protected final Class<?> clazz;
+    private final String name;
+    private final Class<?> clazz;
     private final JavaConstant clazzConstant;
     private final boolean isWordType;
     private volatile boolean methodEnterEventEnabled;
@@ -63,23 +56,23 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
 
     // Only called at build time universe creation.
     @Platforms(Platform.HOSTED_ONLY.class)
-    protected InterpreterResolvedJavaType(Symbol<Type> type, Class<?> javaClass) {
-        this.type = MetadataUtil.requireNonNull(type);
+    protected InterpreterResolvedJavaType(String name, Class<?> javaClass) {
+        this.name = MetadataUtil.requireNonNull(name);
         this.clazzConstant = null;
         this.clazz = MetadataUtil.requireNonNull(javaClass);
         this.isWordType = WordBase.class.isAssignableFrom(javaClass);
     }
 
     // Called by the interpreter.
-    protected InterpreterResolvedJavaType(Symbol<Type> type, Class<?> javaClass, boolean isWordType) {
-        this.type = MetadataUtil.requireNonNull(type);
+    protected InterpreterResolvedJavaType(String name, Class<?> javaClass, boolean isWordType) {
+        this.name = MetadataUtil.requireNonNull(name);
         this.clazzConstant = null;
         this.clazz = MetadataUtil.requireNonNull(javaClass);
         this.isWordType = isWordType;
     }
 
-    protected InterpreterResolvedJavaType(Symbol<Type> type, JavaConstant clazzConstant, boolean isWordType) {
-        this.type = MetadataUtil.requireNonNull(type);
+    protected InterpreterResolvedJavaType(String name, JavaConstant clazzConstant, boolean isWordType) {
+        this.name = MetadataUtil.requireNonNull(name);
         this.clazzConstant = MetadataUtil.requireNonNull(clazzConstant);
         this.clazz = null;
         this.isWordType = isWordType;
@@ -87,7 +80,7 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
 
     @Override
     public final String getName() {
-        return type.toString();
+        return name;
     }
 
     // This is only here for performance, otherwise the clazzConstant must be unwrapped every time.
@@ -155,45 +148,6 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
         return methodExitEventEnabled;
     }
 
-    @Override
-    public boolean isJavaLangObject() {
-        return ResolvedJavaType.super.isJavaLangObject();
-    }
-
-    @Override
-    public Symbol<Name> getSymbolicName() {
-        // This is assumed to be low-traffic
-        return SymbolsSupport.getNames().getOrCreate(TypeSymbols.toClassNameEntry(type));
-    }
-
-    @Override
-    public Symbol<Type> getSymbolicType() {
-        return type;
-    }
-
-    @Override
-    public final boolean isAssignableFrom(InterpreterResolvedJavaType other) {
-        return clazz.isAssignableFrom(other.clazz);
-    }
-
-    @Override
-    public final boolean hasSameDefiningClassLoader(InterpreterResolvedJavaType other) {
-        return this.clazz.getClassLoader() == other.clazz.getClassLoader();
-    }
-
-    @Override
-    public abstract InterpreterResolvedJavaMethod[] getDeclaredMethods(boolean forceLink);
-
-    @Override
-    public final boolean isMagicAccessor() {
-        return false;
-    }
-
-    @Override
-    public final boolean isConcrete() {
-        return ResolvedJavaType.super.isConcrete();
-    }
-
     // region Unimplemented methods
 
     @Override
@@ -217,16 +171,6 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
     }
 
     @Override
-    public final boolean isRecord() {
-        throw VMError.intentionallyUnimplemented();
-    }
-
-    @Override
-    public List<? extends CremaResolvedJavaRecordComponent> getRecordComponents() {
-        throw VMError.intentionallyUnimplemented();
-    }
-
-    @Override
     public final boolean isInitialized() {
         throw VMError.intentionallyUnimplemented();
     }
@@ -239,11 +183,6 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
     @Override
     public final boolean isLinked() {
         throw VMError.intentionallyUnimplemented();
-    }
-
-    @Override
-    public void link() {
-        RuntimeClassLoading.ensureLinked(DynamicHub.fromClass(clazz));
     }
 
     @Override
@@ -282,7 +221,17 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
     }
 
     @Override
-    public ResolvedJavaType lookupType(UnresolvedJavaType unresolvedJavaType, boolean resolve) {
+    public final ResolvedJavaField[] getInstanceFields(boolean includeSuperclasses) {
+        throw VMError.intentionallyUnimplemented();
+    }
+
+    @Override
+    public final ResolvedJavaField[] getStaticFields() {
+        throw VMError.intentionallyUnimplemented();
+    }
+
+    @Override
+    public final ResolvedJavaField findInstanceFieldWithOffset(long offset, JavaKind expectedKind) {
         throw VMError.intentionallyUnimplemented();
     }
 
@@ -307,29 +256,17 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
     }
 
     @Override
-    public ResolvedJavaMethod getEnclosingMethod() {
+    public final ResolvedJavaMethod[] getDeclaredConstructors() {
         throw VMError.intentionallyUnimplemented();
     }
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredConstructors() {
-        throw VMError.intentionallyUnimplemented();
+    public ResolvedJavaMethod[] getDeclaredMethods() {
+        return NO_METHODS;
     }
 
     @Override
-    public InterpreterResolvedJavaMethod[] getDeclaredMethods() {
-        return getDeclaredMethods(true);
-    }
-
-    @Override
-    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
-        throw VMError.intentionallyUnimplemented();
-    }
-
-    @Override
-    public ResolvedJavaMethod getClassInitializer() {
-        // We currently do not expect this to be called for any other type than
-        // CremaResolvedObjectType.
+    public final ResolvedJavaMethod getClassInitializer() {
         throw VMError.intentionallyUnimplemented();
     }
 
@@ -339,7 +276,17 @@ public abstract class InterpreterResolvedJavaType extends InterpreterAnnotated i
     }
 
     @Override
-    public ResolvedJavaType[] getDeclaredTypes() {
+    public final <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
+        throw VMError.intentionallyUnimplemented();
+    }
+
+    @Override
+    public final Annotation[] getAnnotations() {
+        throw VMError.intentionallyUnimplemented();
+    }
+
+    @Override
+    public final Annotation[] getDeclaredAnnotations() {
         throw VMError.intentionallyUnimplemented();
     }
 

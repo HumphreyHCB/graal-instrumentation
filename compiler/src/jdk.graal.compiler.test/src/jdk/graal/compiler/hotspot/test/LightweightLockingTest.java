@@ -26,10 +26,12 @@ package jdk.graal.compiler.hotspot.test;
 
 import java.io.IOException;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import jdk.graal.compiler.core.test.SubprocessTest;
 import jdk.graal.compiler.replacements.test.MonitorTest;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 
 public class LightweightLockingTest extends SubprocessTest {
 
@@ -52,6 +54,7 @@ public class LightweightLockingTest extends SubprocessTest {
 
     @Test
     public void testInSubprocess() throws InterruptedException, IOException {
+        Assume.assumeTrue("LockingMode is supported after JDK22)", JavaVersionUtil.JAVA_SPEC >= 22);
         launchSubprocess(this::testMonitor, "-XX:LockingMode=2");
     }
 

@@ -43,10 +43,8 @@ import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.heap.RestrictHeapAccess.Access;
 import com.oracle.svm.core.heap.RestrictHeapAccessCallees;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.DeadlockWatchdog;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 import com.oracle.svm.hosted.meta.HostedMethod;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -109,17 +107,14 @@ public class RestrictHeapAccessCalleesImpl implements RestrictHeapAccessCallees 
     public void aggregateMethods(Collection<AnalysisMethod> methods) {
         assert !initialized : "RestrictHeapAccessCallees.aggregateMethods: Should only initialize once.";
         Map<AnalysisMethod, RestrictionInfo> aggregation = new HashMap<>();
-        DeadlockWatchdog watchdog = DeadlockWatchdog.singleton();
-        watchdog.recordActivity();
         for (AnalysisMethod method : methods) {
-            if (AnnotationUtil.isAnnotationPresent(method, RestrictHeapAccess.class)) {
+            if (method.isAnnotationPresent(RestrictHeapAccess.class)) {
                 setMethodRestrictionInfo(method, aggregation);
             }
         }
         MethodAggregator visitor = new MethodAggregator(aggregation, assertionErrorConstructorList);
         AnalysisMethodCalleeWalker walker = new AnalysisMethodCalleeWalker();
-        watchdog.recordActivity();
-        for (AnalysisMethod method : aggregation.keySet().toArray(AnalysisMethod.EMPTY_ARRAY)) {
+        for (AnalysisMethod method : aggregation.keySet().toArray(new AnalysisMethod[0])) {
             walker.walkMethod(method, visitor);
         }
         calleeToCallerMap = Collections.unmodifiableMap(aggregation);
@@ -133,19 +128,19 @@ public class RestrictHeapAccessCalleesImpl implements RestrictHeapAccessCallees 
      * same annotation as the method.
      */
     private static void setMethodRestrictionInfo(AnalysisMethod method, Map<AnalysisMethod, RestrictionInfo> aggregation) {
-        assert AnnotationUtil.isAnnotationPresent(method, RestrictHeapAccess.class);
+        assert method.isAnnotationPresent(RestrictHeapAccess.class);
         if (aggregation.get(method) != null) {
             return;
         }
         Set<AnalysisMethod> implementations = method.collectMethodImplementations(false);
         for (AnalysisMethod impl : implementations) {
-            if (AnnotationUtil.isAnnotationPresent(impl, RestrictHeapAccess.class) && !impl.equals(method)) {
+            if (impl.isAnnotationPresent(RestrictHeapAccess.class) && !impl.equals(method)) {
                 /* Annotated overrides take precedence, so process them first. */
                 setMethodRestrictionInfo(impl, aggregation);
             }
         }
         assert aggregation.get(method) == null;
-        Access access = AnnotationUtil.getAnnotation(method, RestrictHeapAccess.class).access();
+        Access access = method.getAnnotation(RestrictHeapAccess.class).access();
         aggregation.put(method, new RestrictionInfo(access, null, null, method));
         for (AnalysisMethod impl : implementations) {
             aggregation.putIfAbsent(impl, new RestrictionInfo(access, null, null, impl));

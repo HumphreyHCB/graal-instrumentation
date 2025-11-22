@@ -24,6 +24,12 @@
  */
 package com.oracle.svm.core.graal.phases;
 
+import jdk.graal.compiler.nodes.ReturnNode;
+import jdk.graal.compiler.nodes.SafepointNode;
+import jdk.graal.compiler.nodes.StructuredGraph;
+import jdk.graal.compiler.phases.common.LoopSafepointInsertionPhase;
+import jdk.graal.compiler.phases.tiers.MidTierContext;
+import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.function.CFunction;
@@ -32,13 +38,7 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.graal.code.SubstrateBackend;
 import com.oracle.svm.core.meta.SharedMethod;
-import com.oracle.svm.util.AnnotationUtil;
 
-import jdk.graal.compiler.nodes.ReturnNode;
-import jdk.graal.compiler.nodes.SafepointNode;
-import jdk.graal.compiler.nodes.StructuredGraph;
-import jdk.graal.compiler.phases.common.LoopSafepointInsertionPhase;
-import jdk.graal.compiler.phases.tiers.MidTierContext;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
@@ -52,7 +52,7 @@ public class SubstrateSafepointInsertionPhase extends LoopSafepointInsertionPhas
             /* Uninterruptible methods must not have a safepoint inserted. */
             return false;
         }
-        if (AnnotationUtil.isAnnotationPresent(method, CFunction.class) || AnnotationUtil.isAnnotationPresent(method, InvokeCFunctionPointer.class)) {
+        if (AnnotationAccess.isAnnotationPresent(method, CFunction.class) || AnnotationAccess.isAnnotationPresent(method, InvokeCFunctionPointer.class)) {
             /*
              * Methods transferring from Java to C have an implicit safepoint check as part of the
              * transition from C back to Java. So no explicit end-of-method safepoint check needs to

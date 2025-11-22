@@ -26,14 +26,13 @@ package jdk.graal.compiler.core.test;
 
 import java.util.List;
 
-import org.junit.Assert;
-
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.NodeMap;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.StructuredGraph.ScheduleResult;
 import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.phases.schedule.SchedulePhase;
+import org.junit.Assert;
 
 public class GraphScheduleTest extends GraalCompilerTest {
 
@@ -51,7 +50,7 @@ public class GraphScheduleTest extends GraalCompilerTest {
     }
 
     protected void assertOrderedAfterSchedule(ScheduleResult ibp, Node a, Node b) {
-        NodeMap<HIRBlock> nodeToBlock = ibp.getNodeToBlockMap();
+        NodeMap<HIRBlock> nodeToBlock = ibp.getCFG().getNodeToBlock();
         HIRBlock bBlock = nodeToBlock.get(b);
         HIRBlock aBlock = nodeToBlock.get(a);
 

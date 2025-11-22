@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -82,7 +82,6 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.SandboxPolicy;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.APIAccess;
-import org.graalvm.polyglot.impl.AbstractPolyglotImpl.AbstractValueDispatch;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.LogHandler;
 import org.graalvm.polyglot.io.FileSystem;
 import org.graalvm.polyglot.io.MessageEndpoint;
@@ -97,7 +96,6 @@ import com.oracle.truffle.api.ContextLocal;
 import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.InternalResource;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleContext;
@@ -132,7 +130,6 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.polyglot.FileSystems.ResetablePath;
 import com.oracle.truffle.polyglot.PolyglotContextConfig.FileSystemConfig;
-import com.oracle.truffle.polyglot.PolyglotEngineImpl.FinalizationResult;
 import com.oracle.truffle.polyglot.PolyglotImpl.EmbedderFileSystemContext;
 import com.oracle.truffle.polyglot.PolyglotImpl.VMObject;
 import com.oracle.truffle.polyglot.PolyglotLocals.InstrumentContextLocal;
@@ -158,9 +155,9 @@ final class EngineAccessor extends Accessor {
     static final ExceptionSupport EXCEPTION = ACCESSOR.exceptionSupport();
     static final RuntimeSupport RUNTIME = ACCESSOR.runtimeSupport();
     static final HostSupport HOST = ACCESSOR.hostSupport();
-    static final BytecodeSupport BYTECODE = ACCESSOR.bytecodeSupport();
     static final LanguageProviderSupport LANGUAGE_PROVIDER = ACCESSOR.languageProviderSupport();
     static final InstrumentProviderSupport INSTRUMENT_PROVIDER = ACCESSOR.instrumentProviderSupport();
+    static final DynamicObjectSupport DYNAMIC_OBJECT = ACCESSOR.dynamicObjectSupport();
 
     private static List<AbstractClassLoaderSupplier> locatorLoaders() {
         if (ImageInfo.inImageRuntimeCode()) {
@@ -266,48 +263,8 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public Object getDefaultLanguageView(Object polyglotLanguageContext, Object value) {
-            return new DefaultLanguageView<>(((PolyglotLanguageContext) polyglotLanguageContext).language.getId(), value);
-        }
-
-        @Override
-        public String getLanguageId(Node anchor, Class<? extends TruffleLanguage<?>> languageClass) {
-            PolyglotEngineImpl e = PolyglotFastThreadLocals.getEngine(anchor);
-            if (e == null) {
-                return null;
-            }
-            PolyglotLanguage l = e.getLanguage(languageClass, false);
-            if (l == null) {
-                // not in this isolate
-                return null;
-            }
-            return l.info.getId();
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public Class<? extends TruffleLanguage<?>> getLanguageClass(Node anchor, String languageId) {
-            PolyglotEngineImpl e = PolyglotFastThreadLocals.getEngine(anchor);
-            if (e == null) {
-                return null;
-            }
-            PolyglotLanguage l = e.getLanguage(languageId, false);
-            if (l == null) {
-                // not in this isolate
-                return null;
-            }
-            PolyglotContextImpl context = PolyglotFastThreadLocals.getContextWithEngine(e);
-            if (context == null) {
-                return null;
-            }
-
-            PolyglotLanguageContext lc = context.contexts[l.engineIndex];
-            if (!lc.isCreated()) {
-                // language is available on the host, but not initialized
-                // we must not return the language class to avoid loading it
-                return null;
-            }
-            return (Class<? extends TruffleLanguage<?>>) lc.getLanguageInstance().spi.getClass();
+        public Object getDefaultLanguageView(TruffleLanguage<?> truffleLanguage, Object value) {
+            return new DefaultLanguageView<>(truffleLanguage, value);
         }
 
         @TruffleBoundary
@@ -391,10 +348,12 @@ final class EngineAccessor extends Accessor {
         @SuppressWarnings("deprecation")
         public <T> Iterable<T> loadServices(Class<T> type) {
             Map<Class<?>, T> found = new LinkedHashMap<>();
+            // 1) Add known Truffle DynamicObjectLibraryProvider service.
+            DYNAMIC_OBJECT.lookupTruffleService(type).forEach((s) -> found.putIfAbsent(s.getClass(), s));
             for (AbstractClassLoaderSupplier loaderSupplier : EngineAccessor.locatorOrDefaultLoaders()) {
                 ClassLoader loader = loaderSupplier.get();
                 if (loader != null) {
-                    // Lookup implementations of a module aware interface
+                    // 2) Lookup implementations of a module aware interface
                     for (T service : ServiceLoader.load(type, loader)) {
                         if (loaderSupplier.accepts(service.getClass())) {
                             JDKSupport.exportTransitivelyTo(service.getClass().getModule());
@@ -522,8 +481,8 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public LanguageInfo getHostLanguage(Object vmObject) {
-            return ((VMObject) vmObject).getEngine().hostLanguage.info;
+        public LanguageInfo getHostLanguage(Object polyglotLanguageContext) {
+            return ((PolyglotLanguageContext) polyglotLanguageContext).context.engine.hostLanguage.info;
         }
 
         @Override
@@ -571,9 +530,9 @@ final class EngineAccessor extends Accessor {
 
         static PolyglotLanguage findObjectLanguage(PolyglotEngineImpl engine, Object value) {
             InteropLibrary lib = InteropLibrary.getFactory().getUncached(value);
-            if (lib.hasLanguageId(value)) {
+            if (lib.hasLanguage(value)) {
                 try {
-                    return engine.getLanguage(lib.getLanguageId(value), false);
+                    return engine.getLanguage(lib.getLanguage(value), false);
                 } catch (UnsupportedMessageException e) {
                     throw shouldNotReachHere(e);
                 }
@@ -584,9 +543,9 @@ final class EngineAccessor extends Accessor {
 
         static PolyglotLanguage getLanguageView(PolyglotEngineImpl engine, Object value) {
             InteropLibrary lib = InteropLibrary.getFactory().getUncached(value);
-            if (lib.hasLanguageId(value)) {
+            if (lib.hasLanguage(value)) {
                 try {
-                    return engine.getLanguage(lib.getLanguageId(value), false);
+                    return engine.getLanguage(lib.getLanguage(value), false);
                 } catch (UnsupportedMessageException e) {
                     throw shouldNotReachHere(e);
                 }
@@ -840,8 +799,9 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public Object toGuestValue(Node node, Object obj) {
-            return PolyglotContextImpl.toGuestValue(node, obj, false);
+        public Object toGuestValue(Node node, Object obj, Object languageContext) {
+            PolyglotContextImpl context = ((PolyglotLanguageContext) languageContext).context;
+            return context.toGuestValue(node, obj, false);
         }
 
         @Override
@@ -1366,13 +1326,8 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public Object finalizeStore(Object polyglotEngine) {
-            return ((PolyglotEngineImpl) polyglotEngine).finalizeStore();
-        }
-
-        @Override
-        public void restoreStore(Object polyglotEngine, Object finalizationResult) {
-            ((PolyglotEngineImpl) polyglotEngine).restoreStore((FinalizationResult) finalizationResult);
+        public void finalizeStore(Object polyglotEngine) {
+            ((PolyglotEngineImpl) polyglotEngine).finalizeStore();
         }
 
         @Override
@@ -1477,42 +1432,6 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public boolean isKnownLoggerId(Object loggerCache, String id) {
-            if (PolyglotLoggers.getInternalIds().contains(id)) {
-                return true;
-            }
-            if (loggerCache == PolyglotLoggers.LoggerCache.DEFAULT) {
-                /*
-                 * TruffleLogger#getLogger() is invoked from a static initializer, no vmObject
-                 * anchor is available at this point.
-                 */
-                return LanguageCache.languages().containsKey(id) || InstrumentCache.load().containsKey(id);
-            } else {
-                PolyglotEngineImpl polyglotEngine = ((PolyglotLoggers.LoggerCache) loggerCache).getOwner().getEngine();
-                return polyglotEngine.idToLanguage.containsKey(id) || polyglotEngine.idToInstrument.containsKey(id);
-            }
-        }
-
-        @Override
-        public Collection<String> getKnownLoggerIds(Object loggerCache) {
-            List<String> ids = new ArrayList<>(PolyglotLoggers.getInternalIds());
-            if (loggerCache == PolyglotLoggers.LoggerCache.DEFAULT) {
-                /*
-                 * TruffleLogger#getLogger() is invoked from a static initializer, no vmObject
-                 * anchor is available at this point.
-                 */
-                ids.addAll(LanguageCache.languages().keySet());
-                ids.addAll(InstrumentCache.load().keySet());
-            } else {
-                PolyglotEngineImpl polyglotEngine = ((PolyglotLoggers.LoggerCache) loggerCache).getOwner().getEngine();
-                ids.addAll(polyglotEngine.idToLanguage.keySet());
-                ids.addAll(polyglotEngine.idToInstrument.keySet());
-            }
-            Collections.sort(ids);
-            return ids;
-        }
-
-        @Override
         public boolean isContextBoundLogger(Object loggerCache) {
             return ((PolyglotLoggers.LoggerCache) loggerCache).isContextBoundLogger();
         }
@@ -1540,6 +1459,25 @@ final class EngineAccessor extends Accessor {
         @Override
         public Object getLoggerOwner(Object loggerCache) {
             return ((PolyglotLoggers.LoggerCache) loggerCache).getOwner();
+        }
+
+        @Override
+        public Set<String> getLanguageIds() {
+            return LanguageCache.languages().keySet();
+        }
+
+        @Override
+        public Set<String> getInstrumentIds() {
+            Set<String> ids = new HashSet<>();
+            for (InstrumentCache cache : InstrumentCache.load()) {
+                ids.add(cache.getId());
+            }
+            return ids;
+        }
+
+        @Override
+        public Set<String> getInternalIds() {
+            return PolyglotLoggers.getInternalIds();
         }
 
         @Override
@@ -2178,12 +2116,8 @@ final class EngineAccessor extends Accessor {
         @Override
         public Thread createLanguageSystemThread(Object polyglotLanguageContext, Runnable runnable, ThreadGroup threadGroup) {
             PolyglotLanguageContext languageContext = (PolyglotLanguageContext) polyglotLanguageContext;
-            PolyglotContextImpl currentContext = PolyglotFastThreadLocals.getContext(null);
-            if (currentContext == null && Thread.currentThread() instanceof LanguageSystemThread systemThread) {
-                currentContext = systemThread.polyglotContext;
-            }
             // Ensure that thread is entered in correct context
-            if (currentContext != languageContext.context) {
+            if (PolyglotContextImpl.requireContext() != languageContext.context) {
                 throw new IllegalStateException("Not entered in an Env's context.");
             }
             return new LanguageSystemThread(languageContext, runnable, threadGroup);
@@ -2255,15 +2189,6 @@ final class EngineAccessor extends Accessor {
         }
 
         @Override
-        public Map<String, InternalResource> getEngineInternalResources() {
-            Map<String, InternalResource> result = new HashMap<>();
-            for (InternalResourceCache cache : InternalResourceCache.getEngineResources()) {
-                result.put(cache.getResourceId(), cache.getInternalResource());
-            }
-            return result;
-        }
-
-        @Override
         public Path getEngineResource(Object polyglotEngine, String resourceId) throws IOException {
             InternalResourceCache resourceCache = InternalResourceCache.getEngineResource(resourceId);
             if (resourceCache != null) {
@@ -2282,9 +2207,9 @@ final class EngineAccessor extends Accessor {
             if (languageCache != null) {
                 return languageCache.getResourceIds();
             }
-            for (Map.Entry<String, InstrumentCache> entry : InstrumentCache.load().entrySet()) {
-                if (entry.getKey().equals(componentId)) {
-                    return entry.getValue().getResourceIds();
+            for (InstrumentCache instrumentCache : InstrumentCache.load()) {
+                if (instrumentCache.getId().equals(componentId)) {
+                    return instrumentCache.getResourceIds();
                 }
             }
             throw new IllegalArgumentException(componentId);
@@ -2342,52 +2267,6 @@ final class EngineAccessor extends Accessor {
         @Override
         public DispatchOutputStream getEngineOut(Object engine) {
             return ((PolyglotEngineImpl) engine).out;
-        }
-
-        @Override
-        public <T> T getOrCreateBytecodeData(Object languageInstance, Function<Object, T> create) {
-            PolyglotSharingLayer layer = (PolyglotSharingLayer) languageInstance;
-            if (layer == null) {
-                layer = (PolyglotSharingLayer) getCurrentSharingLayer();
-                if (layer == null) {
-                    // we can't support engine instruction tracers for disconnected code
-                    return null;
-                }
-            }
-            return layer.getOrCreateBytecodeData(create);
-        }
-
-        @Override
-        public void forEachLoadedRootNode(Object sharingLayer, Consumer<RootNode> rootNodeUpdater) {
-            PolyglotSharingLayer layer = (PolyglotSharingLayer) sharingLayer;
-            for (CallTarget target : EngineAccessor.INSTRUMENT.getLoadedCallTargets(layer.engine.instrumentationHandler)) {
-                rootNodeUpdater.accept(((RootCallTarget) target).getRootNode());
-            }
-        }
-
-        @Override
-        public Object getSharingLayer(Object languageInstance) {
-            if (languageInstance == null) {
-                return null;
-            }
-            return ((PolyglotLanguageInstance) languageInstance).sharing;
-        }
-
-        @Override
-        public Context getContextAPI(Object polyglotContextImpl) {
-            return ((PolyglotContextImpl) polyglotContextImpl).getContextAPI();
-        }
-
-        @Override
-        public AbstractValueDispatch lookupValueCache(Object polyglotContextImpl, Object value) {
-            PolyglotContextImpl context = ((PolyglotContextImpl) polyglotContextImpl);
-            return context.layer.hostLanguage.lookupValueCache(context, value);
-        }
-
-        @Override
-        public Object getHostLanguageContext(Object polyglotContextImpl) {
-            PolyglotContextImpl context = ((PolyglotContextImpl) polyglotContextImpl);
-            return context.getHostContext();
         }
 
     }

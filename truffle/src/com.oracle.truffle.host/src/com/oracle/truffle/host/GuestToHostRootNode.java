@@ -41,8 +41,6 @@
 package com.oracle.truffle.host;
 
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
@@ -51,10 +49,9 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 abstract class GuestToHostRootNode extends RootNode {
 
-    protected static final int ARGUMENT_OFFSET = 1;
+    protected static final int ARGUMENT_OFFSET = 2;
 
     private final String boundaryName;
-    @CompilationFinal private boolean seenError;
 
     protected GuestToHostRootNode(Class<?> targetType, String methodName) {
         super(null);
@@ -80,15 +77,11 @@ abstract class GuestToHostRootNode extends RootNode {
     public Object execute(VirtualFrame frame) {
         Object[] arguments = frame.getArguments();
         try {
-            return executeImpl(arguments[0], arguments);
+            return executeImpl(arguments[1], arguments);
         } catch (InteropException e) {
             throw silenceException(RuntimeException.class, e);
         } catch (Throwable e) {
-            if (!seenError) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                seenError = true;
-            }
-            throw HostContext.get(this).hostToGuestException(e);
+            throw ((HostContext) arguments[0]).hostToGuestException(e);
         }
     }
 

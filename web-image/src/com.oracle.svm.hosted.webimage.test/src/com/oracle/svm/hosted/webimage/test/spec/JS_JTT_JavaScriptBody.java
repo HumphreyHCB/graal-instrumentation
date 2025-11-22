@@ -28,8 +28,6 @@ package com.oracle.svm.hosted.webimage.test.spec;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.oracle.svm.hosted.webimage.codegen.long64.Long64Lowerer;
-import com.oracle.svm.hosted.webimage.test.util.JTTTestSuite;
 import com.oracle.svm.webimage.jtt.javascriptbody.BoolArgTest;
 import com.oracle.svm.webimage.jtt.javascriptbody.BoolReturnTest;
 import com.oracle.svm.webimage.jtt.javascriptbody.ByteReturnTest;
@@ -52,6 +50,8 @@ import com.oracle.svm.webimage.jtt.javascriptbody.StaticCallTest;
 import com.oracle.svm.webimage.jtt.javascriptbody.StringArgTest;
 import com.oracle.svm.webimage.jtt.javascriptbody.StringReturnTest;
 import com.oracle.svm.webimage.jtt.testdispatcher.JavaScriptBodyTests;
+import com.oracle.svm.hosted.webimage.codegen.long64.Long64Lowerer;
+import com.oracle.svm.hosted.webimage.test.util.JTTTestSuite;
 
 /**
  * Tests for the JavaScriptBody annotation.

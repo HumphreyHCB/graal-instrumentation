@@ -37,6 +37,7 @@ import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URI;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,37 +51,33 @@ import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.RuntimeForeignAccessSupport;
 
+import com.oracle.svm.configure.ConfigurationParser;
 import com.oracle.svm.configure.ConfigurationParserOption;
-import com.oracle.svm.configure.ForeignConfigurationParser;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.hosted.ImageClassLoader;
-import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 import com.oracle.svm.hosted.foreign.MemoryLayoutParser.MemoryLayoutParserException;
-import com.oracle.svm.hosted.reflect.NativeImageConditionResolver;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
-import com.oracle.svm.util.TypeResult;
 
 import jdk.graal.compiler.util.json.JsonFormatter;
 import jdk.graal.compiler.util.json.JsonParserException;
+import jdk.internal.foreign.abi.CapturableState;
 import jdk.internal.foreign.layout.ValueLayouts;
 
-@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+22/src/java.base/share/classes/jdk/internal/foreign/abi/LinkerOptions.java")
+@BasedOnJDKFile("https://github.com/openjdk/jdk/blob/jdk-25+18/src/java.base/share/classes/jdk/internal/foreign/abi/LinkerOptions.java")
 @Platforms(Platform.HOSTED_ONLY.class)
-public class ForeignFunctionsConfigurationParser extends ForeignConfigurationParser<FunctionDescriptor, Linker.Option[]> {
+public class ForeignFunctionsConfigurationParser extends ConfigurationParser {
     private static final String DOWNCALL_OPTION_CAPTURE_CALL_STATE = "captureCallState";
     private static final String DOWNCALL_OPTION_FIRST_VARIADIC_ARG = "firstVariadicArg";
     private static final String DOWNCALL_OPTION_CRITICAL = "critical";
     private static final String DOWNCALL_OPTION_ALLOW_HEAP_ACCESS = "allowHeapAccess";
-
-    private static final Linker.Option[] EMPTY_OPTIONS = new Linker.Option[0];
+    private static final String PARAMETER_TYPES = "parameterTypes";
+    private static final String RETURN_TYPE = "returnType";
 
     private final ImageClassLoader imageClassLoader;
-    private final NativeImageConditionResolver conditionResolver;
     private final RuntimeForeignAccessSupport accessSupport;
     private final Map<String, MemoryLayout> canonicalLayouts;
 
@@ -89,7 +86,6 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
     public ForeignFunctionsConfigurationParser(ImageClassLoader imageClassLoader, RuntimeForeignAccessSupport access, Map<String, MemoryLayout> canonicalLayouts) {
         super(EnumSet.of(ConfigurationParserOption.STRICT_CONFIGURATION));
         this.imageClassLoader = imageClassLoader;
-        this.conditionResolver = new NativeImageConditionResolver(imageClassLoader, ClassInitializationSupport.singleton());
         this.accessSupport = access;
         this.canonicalLayouts = canonicalLayouts;
     }
@@ -102,30 +98,50 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
     }
 
     @Override
-    protected void registerDowncall(UnresolvedAccessCondition condition, FunctionDescriptor descriptor, Option[] options) {
-        TypeResult<AccessCondition> typeResult = conditionResolver.resolveCondition(condition);
-        if (!typeResult.isPresent()) {
-            return;
+    public void parseAndRegister(Object json, URI origin) {
+        var topLevel = asMap(json, "first level of document must be a map");
+        checkAttributes(topLevel, "foreign methods categories", List.of(), List.of("downcalls", "upcalls", "directUpcalls"));
+
+        var downcalls = asList(topLevel.get("downcalls", List.of()), "downcalls must be an array of function descriptor and linker options");
+        for (Object downcall : downcalls) {
+            parseAndRegisterForeignCall(downcall, false);
         }
-        accessSupport.registerForDowncall(typeResult.get(), descriptor, (Object[]) options);
+
+        var upcalls = asList(topLevel.get("upcalls", List.of()), "upcalls must be an array of function descriptor and linker options");
+        for (Object upcall : upcalls) {
+            parseAndRegisterForeignCall(upcall, true);
+        }
+
+        var directUpcalls = asList(topLevel.get("directUpcalls", List.of()), "direct upcalls must be an array of method references, function descriptors, and linker options");
+        for (Object upcall : directUpcalls) {
+            parseAndRegisterDirectUpcall(upcall);
+        }
     }
 
-    @Override
-    protected void registerUpcall(UnresolvedAccessCondition condition, FunctionDescriptor descriptor, Option[] options) {
-        TypeResult<AccessCondition> typeResult = conditionResolver.resolveCondition(condition);
-        if (!typeResult.isPresent()) {
-            return;
+    private void parseAndRegisterForeignCall(Object call, boolean forUpcall) {
+        var map = asMap(call, "a foreign call must be a map");
+        checkAttributes(map, "foreign call", List.of(RETURN_TYPE, PARAMETER_TYPES), List.of("options"));
+        var descriptor = parseDescriptor(map);
+        var optionsMap = asMap(map.get("options", EconomicMap.emptyMap()), "options must be a map");
+        try {
+            if (forUpcall) {
+                var options = parseUpcallOptions(optionsMap);
+                accessSupport.registerForUpcall(ConfigurationCondition.alwaysTrue(), descriptor, options.toArray());
+            } else {
+                var options = parseDowncallOptions(optionsMap, descriptor);
+                accessSupport.registerForDowncall(ConfigurationCondition.alwaysTrue(), descriptor, options.toArray());
+            }
+        } catch (IllegalArgumentException e) {
+            handleRegistrationError(e, map);
         }
-        accessSupport.registerForUpcall(typeResult.get(), descriptor, (Object[]) options);
     }
 
-    @Override
-    protected void registerDirectUpcallWithDescriptor(UnresolvedAccessCondition condition, String className, String methodName, FunctionDescriptor descriptor, Option[] options) {
-        TypeResult<AccessCondition> typeResult = conditionResolver.resolveCondition(condition);
-        if (!typeResult.isPresent()) {
-            return;
-        }
+    private void parseAndRegisterDirectUpcall(Object call) {
+        var map = asMap(call, "a foreign call must be a map");
+        checkAttributes(map, "foreign call", List.of("class", "method"), List.of(RETURN_TYPE, PARAMETER_TYPES, "options"));
 
+        String className = asString(map.get("class"), "class");
+        String methodName = asString(map.get("method"), "method");
         Class<?> aClass;
         try {
             aClass = imageClassLoader.forName(className);
@@ -134,66 +150,54 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
             return;
         }
 
-        /*
-         * A FunctionDescriptor was provided, so we use it to create the MethodType and to lookup
-         * the method. Since we have a MethodType, there should be exactly one method.
-         */
-        MethodType methodType = descriptor.toMethodType();
-        MethodHandle target;
-        try {
-            target = getImplLookup().findStatic(aClass, methodName, methodType);
-        } catch (NoSuchMethodException | IllegalAccessException e) {
-            handleMissingElement(e, "Method '%s.%s(%s)' could not be registered as an upcall target method. " +
-                            "Please verify that the method is static and that the parameter types match.",
-                            className, methodName, methodType);
-            return;
-        }
-        accessSupport.registerForDirectUpcall(typeResult.get(), target, descriptor, (Object[]) options);
-    }
-
-    @Override
-    protected void registerDirectUpcallWithoutDescriptor(UnresolvedAccessCondition condition, String className, String methodName, EconomicMap<String, Object> optionsMap) {
-        TypeResult<AccessCondition> typeResult = conditionResolver.resolveCondition(condition);
-        if (!typeResult.isPresent()) {
-            return;
-        }
-
-        Class<?> aClass;
-        try {
-            aClass = imageClassLoader.forName(className);
-        } catch (ClassNotFoundException e) {
-            handleMissingElement(e, "Cannot find class '%s' used to register method(s) '%s' for a direct upcall. ", className, methodName);
-            return;
-        }
-
         List<Pair<FunctionDescriptor, MethodHandle>> descriptors;
-        // FunctionDescriptor was not provided; derive from method signature(s)
-        try {
-            descriptors = new LinkedList<>();
-            for (Method method : findStaticMethods(aClass, methodName)) {
-                try {
-                    descriptors.add(Pair.create(deriveFunctionDescriptor(method), getImplLookup().unreflect(method)));
-                } catch (AmbiguousParameterType | InvalidCarrierType e) {
-                    handleMissingElement(e);
-                } catch (IllegalAccessException e) {
-                    handleMissingElement(e, "Method '%s.%s' and all its possible overloads could not be registered as upcall target methods. " +
-                                    "Please verify that all overloads of the method are static.",
-                                    className, methodName);
-                }
+        Object returnTypeInput = map.get(RETURN_TYPE);
+        Object parameterTypesInput = map.get(PARAMETER_TYPES);
+        if (returnTypeInput != null || parameterTypesInput != null) {
+            /*
+             * A FunctionDescriptor was provided, so we use it to create the MethodType and to
+             * lookup the method. Since we have a MethodType, there should be exactly one method.
+             */
+            FunctionDescriptor descriptor = parseDescriptor(map);
+            MethodType methodType = descriptor.toMethodType();
+            try {
+                descriptors = List.of(Pair.create(descriptor, getImplLookup().findStatic(aClass, methodName, methodType)));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                handleMissingElement(e, "Method '%s.%s(%s)' could not be registered as an upcall target method. " +
+                                "Please verify that the method is static and that the parameter types match.",
+                                className, methodName, methodType);
+                return;
             }
-        } catch (NoSuchMethodException e) {
-            handleMissingElement(e, "Method '%s.%s' and all its possible overloads could not be registered as upcall target methods. " +
-                            "Please verify that all overloads of the method are static.",
-                            className, methodName);
-            return;
+        } else {
+            // FunctionDescriptor was not provided; derive from method signature(s)
+            try {
+                descriptors = new LinkedList<>();
+                for (Method method : findStaticMethods(aClass, methodName)) {
+                    try {
+                        descriptors.add(Pair.create(deriveFunctionDescriptor(method), getImplLookup().unreflect(method)));
+                    } catch (AmbiguousParameterType | InvalidCarrierType e) {
+                        handleMissingElement(e);
+                    } catch (IllegalAccessException e) {
+                        handleMissingElement(e, "Method '%s.%s' and all its possible overloads could not be registered as upcall target methods. " +
+                                        "Please verify that all overloads of the method are static.",
+                                        className, methodName);
+                    }
+                }
+            } catch (NoSuchMethodException e) {
+                handleMissingElement(e, "Method '%s.%s' and all its possible overloads could not be registered as upcall target methods. " +
+                                "Please verify that all overloads of the method are static.",
+                                className, methodName);
+                return;
+            }
         }
 
         for (Pair<FunctionDescriptor, MethodHandle> pair : descriptors) {
-            var options = createUpcallOptions(optionsMap, pair.getLeft());
+            var optionsMap = asMap(map.get("options", EconomicMap.emptyMap()), "options must be a map");
             try {
-                accessSupport.registerForDirectUpcall(typeResult.get(), pair.getRight(), pair.getLeft(), (Object[]) options);
+                var options = parseUpcallOptions(optionsMap);
+                accessSupport.registerForDirectUpcall(ConfigurationCondition.alwaysTrue(), pair.getRight(), pair.getLeft(), options.toArray());
             } catch (IllegalArgumentException e) {
-                handleMissingElement(e, "Could not register direct upcall stub '%s.%s%s'", className, methodName, pair.getLeft().toMethodType());
+                handleRegistrationError(e, map);
             }
         }
     }
@@ -246,31 +250,40 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
         return parameterName != null ? "Parameter \"" + parameterName + "\" with" : "Return";
     }
 
-    @Override
-    protected FunctionDescriptor createFunctionDescriptor(String returnType, List<String> parameterTypes) {
+    private Optional<MemoryLayout> parseReturnType(Object signature) throws MemoryLayoutParserException {
+        String input = asString(signature, RETURN_TYPE);
+        return MemoryLayoutParser.parseAllowVoid(input, canonicalLayouts);
+    }
+
+    private MemoryLayout[] parseParameterTypes(Object parameterTypesObject) throws MemoryLayoutParserException {
+        List<?> parameterTypesList = asList(parameterTypesObject, "Element '" + PARAMETER_TYPES + "' must be a list");
+        MemoryLayout[] parameterTypes = new MemoryLayout[parameterTypesList.size()];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            String parameterTypeString = asString(parameterTypesList.get(i), String.format("%s[%d]", PARAMETER_TYPES, i));
+            parameterTypes[i] = MemoryLayoutParser.parse(parameterTypeString, canonicalLayouts);
+        }
+        return parameterTypes;
+    }
+
+    private FunctionDescriptor parseDescriptor(EconomicMap<String, Object> map) {
+        return parseDescriptor(map.get(RETURN_TYPE), map.get(PARAMETER_TYPES));
+    }
+
+    private FunctionDescriptor parseDescriptor(Object returnTypeInput, Object parameterTypeInput) {
         try {
-            Optional<MemoryLayout> returnLayout = MemoryLayoutParser.parseAllowVoid(returnType, canonicalLayouts);
-            MemoryLayout[] parameterLayouts = parseParameterTypes(parameterTypes);
-            return returnLayout.map(memoryLayout -> FunctionDescriptor.of(memoryLayout, parameterLayouts)).orElseGet(() -> FunctionDescriptor.ofVoid(parameterLayouts));
+            Optional<MemoryLayout> returnType = parseReturnType(returnTypeInput);
+            MemoryLayout[] parameterTypes = parseParameterTypes(parameterTypeInput);
+            return returnType.map(memoryLayout -> FunctionDescriptor.of(memoryLayout, parameterTypes)).orElseGet(() -> FunctionDescriptor.ofVoid(parameterTypes));
         } catch (MemoryLayoutParserException e) {
             throw new JsonParserException(e.getMessage());
         }
     }
 
-    private MemoryLayout[] parseParameterTypes(List<String> parameterTypes) throws MemoryLayoutParserException {
-        MemoryLayout[] parameterLayouts = new MemoryLayout[parameterTypes.size()];
-        for (int i = 0; i < parameterLayouts.length; i++) {
-            parameterLayouts[i] = MemoryLayoutParser.parse(parameterTypes.get(i), canonicalLayouts);
-        }
-        return parameterLayouts;
-    }
-
     /**
      * Parses the options allowed for downcalls. This needs to be consistent with
-     * {@link jdk.internal.foreign.abi.LinkerOptions#forDowncall}.
+     * 'jdk.internal.foreign.abi.LinkerOptions.forDowncall'.
      */
-    @Override
-    protected Option[] createDowncallOptions(EconomicMap<String, Object> map, FunctionDescriptor desc) {
+    private List<Linker.Option> parseDowncallOptions(EconomicMap<String, Object> map, FunctionDescriptor desc) {
         checkAttributes(map, "options", List.of(), List.of(DOWNCALL_OPTION_FIRST_VARIADIC_ARG, DOWNCALL_OPTION_CAPTURE_CALL_STATE, DOWNCALL_OPTION_CRITICAL));
 
         ArrayList<Option> res = new ArrayList<>();
@@ -289,7 +302,7 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
                  * information from the run-time NativeEntryPoint object. So, we always use
                  * 'Linker.Option.captureCallState("errno")' here.
                  */
-                res.add(Linker.Option.captureCallState("errno"));
+                res.add(Linker.Option.captureCallState(CapturableState.ERRNO.stateName()));
             }
         }
         if (map.containsKey(DOWNCALL_OPTION_CRITICAL)) {
@@ -308,17 +321,16 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
             }
         }
 
-        return res.toArray(Linker.Option[]::new);
+        return res;
     }
 
     /**
      * Parses the options allowed for upcalls (currently, no options are allowed). This needs to be
-     * consistent with {@link jdk.internal.foreign.abi.LinkerOptions#forUpcall}.
+     * consistent with 'jdk.internal.foreign.abi.LinkerOptions.forUpcall'.
      */
-    @Override
-    protected Option[] createUpcallOptions(EconomicMap<String, Object> map, FunctionDescriptor desc) {
+    private List<Linker.Option> parseUpcallOptions(EconomicMap<String, Object> map) {
         checkAttributes(map, "options", List.of(), List.of());
-        return EMPTY_OPTIONS;
+        return List.of();
     }
 
     private Lookup getImplLookup() {
@@ -328,8 +340,7 @@ public class ForeignFunctionsConfigurationParser extends ForeignConfigurationPar
         return implLookup;
     }
 
-    @Override
-    protected void handleRegistrationError(Exception cause, EconomicMap<String, Object> map) {
+    protected void handleRegistrationError(Throwable cause, EconomicMap<String, Object> map) {
         handleMissingElement(cause, "Could not register foreign stub '%s'", JsonFormatter.formatJson(map));
     }
 

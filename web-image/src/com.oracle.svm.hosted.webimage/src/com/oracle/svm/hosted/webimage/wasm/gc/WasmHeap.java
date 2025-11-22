@@ -138,34 +138,30 @@ public class WasmHeap extends Heap {
     }
 
     @Override
-    public void walkObjects(ObjectVisitor visitor) {
+    public boolean walkObjects(ObjectVisitor visitor) {
         VMOperation.guaranteeInProgressAtSafepoint("must only be executed at a safepoint");
-        walkImageHeapObjects(visitor);
-        walkCollectedHeapObjects(visitor);
+        return walkImageHeapObjects(visitor) && walkCollectedHeapObjects(visitor);
     }
 
     @Override
-    public void walkImageHeapObjects(ObjectVisitor visitor) {
+    public boolean walkImageHeapObjects(ObjectVisitor visitor) {
         VMOperation.guaranteeInProgressAtSafepoint("Must only be called at a safepoint");
         if (visitor != null) {
-            ImageHeapWalker.walkImageHeapObjects(imageHeapInfo, visitor);
-            if (AuxiliaryImageHeap.isPresent()) {
-                AuxiliaryImageHeap.singleton().walkObjects(visitor);
-            }
+            return ImageHeapWalker.walkImageHeapObjects(imageHeapInfo, visitor) &&
+                            (!AuxiliaryImageHeap.isPresent() || AuxiliaryImageHeap.singleton().walkObjects(visitor));
         }
+        return true;
     }
 
     @Override
-    public void walkCollectedHeapObjects(ObjectVisitor visitor) {
+    public boolean walkCollectedHeapObjects(ObjectVisitor visitor) {
         VMOperation.guaranteeInProgressAtSafepoint("Must only be called at a safepoint");
-        WasmAllocation.walkObjects(visitor);
+        return WasmAllocation.walkObjects(visitor);
     }
 
-    public void walkNativeImageHeapRegions(MemoryWalker.ImageHeapRegionVisitor visitor) {
-        ImageHeapWalker.walkRegions(imageHeapInfo, visitor);
-        if (AuxiliaryImageHeap.isPresent()) {
-            AuxiliaryImageHeap.singleton().walkRegions(visitor);
-        }
+    public boolean walkNativeImageHeapRegions(MemoryWalker.ImageHeapRegionVisitor visitor) {
+        return ImageHeapWalker.walkRegions(imageHeapInfo, visitor) &&
+                        (!AuxiliaryImageHeap.isPresent() || AuxiliaryImageHeap.singleton().walkRegions(visitor));
     }
 
     @Override
@@ -175,7 +171,7 @@ public class WasmHeap extends Heap {
     }
 
     @Override
-    protected List<Class<?>> getClassesInImageHeap() {
+    protected List<Class<?>> getAllClasses() {
         /* Two threads might race to set classList, but they compute the same result. */
         if (classList == null) {
             ArrayList<Class<?>> list = new ArrayList<>(imageHeapInfo.dynamicHubCount);
@@ -192,6 +188,16 @@ public class WasmHeap extends Heap {
         return Word.unsigned(WasmAllocation.getObjectSize());
     }
 
+    @Override
+    public UnsignedWord getImageHeapReservedBytes() {
+        throw VMError.shouldNotReachHere("Native Memory Tracking is not supported");
+    }
+
+    @Override
+    public UnsignedWord getImageHeapCommittedBytes() {
+        throw VMError.shouldNotReachHere("Native Memory Tracking is not supported");
+    }
+
     private static final class ClassListBuilderVisitor implements MemoryWalker.ImageHeapRegionVisitor, ObjectVisitor {
         private final List<Class<?>> list;
 
@@ -200,18 +206,20 @@ public class WasmHeap extends Heap {
         }
 
         @Override
-        public <T> void visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access) {
-            if (!access.isWritable(region) && !access.usesUnalignedChunks(region)) {
+        public <T> boolean visitNativeImageHeapRegion(T region, MemoryWalker.NativeImageHeapRegionAccess<T> access) {
+            if (!access.isWritable(region) && !access.consistsOfHugeObjects(region)) {
                 access.visitObjects(region, this);
             }
+            return true;
         }
 
         @Override
         @RestrictHeapAccess(access = RestrictHeapAccess.Access.UNRESTRICTED, reason = "Allocation is fine: this method traverses only the image heap.")
-        public void visitObject(Object o) {
+        public boolean visitObject(Object o) {
             if (o instanceof Class<?>) {
                 list.add((Class<?>) o);
             }
+            return true;
         }
 
     }
@@ -243,13 +251,8 @@ public class WasmHeap extends Heap {
     }
 
     @Override
-    public int getHeapBaseAlignment() {
-        return 1;
-    }
-
-    @Override
-    public int getImageHeapAlignment() {
-        return 1;
+    public int getPreferredAddressSpaceAlignment() {
+        throw VMError.shouldNotReachHere("WasmHeap.getPreferredAddressSpaceAlignment");
     }
 
     @Override

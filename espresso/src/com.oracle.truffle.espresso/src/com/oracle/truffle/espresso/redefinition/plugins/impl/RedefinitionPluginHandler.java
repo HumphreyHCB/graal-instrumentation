@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.logging.Level;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
@@ -144,7 +143,6 @@ public final class RedefinitionPluginHandler implements RedefineListener, Define
             } catch (Throwable t) {
                 // don't let individual plugin errors cause failure
                 // to run other post redefinition plugins
-                context.getLogger().log(Level.WARNING, "Suppressing exception during postClassRedefinition.", t);
             }
         }
         // external plugins

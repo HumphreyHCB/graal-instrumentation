@@ -31,6 +31,8 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platforms;
 
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
+import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
+import com.oracle.svm.webimage.wasm.code.WasmCodeInfoQueryResult;
 import com.oracle.svm.core.GCRelatedMXBeans;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
@@ -41,8 +43,6 @@ import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
 import com.oracle.svm.core.graal.snippets.SubstrateAllocationSnippets;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.webimage.WebImageFeature;
-import com.oracle.svm.webimage.platform.WebImageWasmLMPlatform;
-import com.oracle.svm.webimage.wasm.code.WasmCodeInfoQueryResult;
 
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.options.OptionValues;

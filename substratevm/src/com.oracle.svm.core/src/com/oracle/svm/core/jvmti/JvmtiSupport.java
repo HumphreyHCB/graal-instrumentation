@@ -55,7 +55,7 @@ public final class JvmtiSupport {
     }
 
     public static RuntimeSupport.Hook initializationHook() {
-        return _ -> {
+        return (firstIsolate) -> {
             JvmtiAgents.singleton().load();
             JvmtiEvents.postVMInit();
             JvmtiEvents.postVMStart();
@@ -63,7 +63,7 @@ public final class JvmtiSupport {
     }
 
     public static RuntimeSupport.Hook teardownHook() {
-        return _ -> {
+        return (firstIsolate) -> {
             JvmtiEvents.postVMDeath();
             JvmtiSupport.singleton().setPhase(JvmtiPhase.JVMTI_PHASE_DEAD);
             JvmtiAgents.singleton().unload();

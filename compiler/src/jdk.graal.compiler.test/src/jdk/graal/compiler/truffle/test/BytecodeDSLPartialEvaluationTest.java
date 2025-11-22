@@ -26,7 +26,6 @@ package jdk.graal.compiler.truffle.test;
 
 import static com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest.parseNode;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -44,8 +43,6 @@ import com.oracle.truffle.api.bytecode.test.BytecodeDSLTestLanguage;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreter;
 import com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterBuilder;
-import com.oracle.truffle.api.bytecode.test.basic_interpreter.AbstractBasicInterpreterTest.TestRun;
-import com.oracle.truffle.api.bytecode.test.basic_interpreter.BasicInterpreterBuilder.BytecodeVariant;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.EventContext;
 import com.oracle.truffle.api.instrumentation.ExecutionEventListener;
@@ -61,21 +58,17 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
     protected static final BytecodeDSLTestLanguage LANGUAGE = null;
 
     @Parameters(name = "{0}")
-    public static List<TestRun> getParameters() {
-        List<TestRun> result = new ArrayList<>();
-        for (BytecodeVariant bc : AbstractBasicInterpreterTest.allVariants()) {
-            result.add(new TestRun(bc, false, false));
-        }
-        return result;
+    public static List<Class<? extends BasicInterpreter>> getInterpreterClasses() {
+        return AbstractBasicInterpreterTest.allInterpreters();
     }
 
-    @Parameter(0) public TestRun run;
+    @Parameter(0) public Class<? extends BasicInterpreter> interpreterClass;
 
     @Test
     public void testAddTwoConstants() {
         // return 20 + 22;
 
-        BasicInterpreter root = parseNodeForPE(run, "addTwoConstants", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "addTwoConstants", b -> {
             b.beginRoot();
 
             b.beginReturn();
@@ -95,7 +88,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
     public void testAddThreeConstants() {
         // return 40 + 22 + - 20;
 
-        BasicInterpreter root = parseNodeForPE(run, "addThreeConstants", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "addThreeConstants", b -> {
             b.beginRoot();
 
             b.beginReturn();
@@ -122,7 +115,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
     public void testAddThreeConstantsWithConstantOperands() {
         // return 40 + 22 + - 20;
 
-        BasicInterpreter root = parseNodeForPE(run, "addThreeConstantsWithConstantOperands", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "addThreeConstantsWithConstantOperands", b -> {
             b.beginRoot();
 
             b.beginReturn();
@@ -154,7 +147,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
 
         long endValue = 10L;
 
-        BasicInterpreter root = parseNodeForPE(run, "sum", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "sum", b -> {
             b.beginRoot();
 
             BytecodeLocal i = b.createLocal();
@@ -215,7 +208,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
         // return 3;
         // @formatter:on
 
-        BasicInterpreter root = parseNodeForPE(run, "sum", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "sum", b -> {
             b.beginRoot();
 
             b.beginTryCatch();
@@ -263,7 +256,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
         // return 42;
         // @formatter:on
 
-        BasicInterpreter root = parseNodeForPE(run, "sum", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "sum", b -> {
             b.beginRoot();
 
             b.beginTryCatch();
@@ -313,7 +306,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
     public void testConditionalTrue() {
         // return true ? 42 : 21;
 
-        BasicInterpreter root = parseNodeForPE(run, "conditionalTrue", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "conditionalTrue", b -> {
             b.beginRoot();
             b.beginReturn();
             b.beginConditional();
@@ -335,7 +328,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
     public void testConditionalFalse() {
         // return false ? 21 : 42;
 
-        BasicInterpreter root = parseNodeForPE(run, "conditionalFalse", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "conditionalFalse", b -> {
             b.beginRoot();
 
             b.beginReturn();
@@ -361,7 +354,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
         // earlyReturn(42)  // throws exception caught by intercept hook
         // return 123
         // @formatter:on
-        BasicInterpreter root = parseNodeForPE(run, "earlyReturn", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "earlyReturn", b -> {
             b.beginRoot();
             b.beginBlock();
 
@@ -386,7 +379,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
 
         // Note: the variadic array length is not PE constant beyond 8 arguments.
         final int numVariadic = 8;
-        BasicInterpreter root = parseNodeForPE(run, "variadicLength", b -> {
+        BasicInterpreter root = parseNodeForPE(interpreterClass, "variadicLength", b -> {
             b.beginRoot();
             b.beginBlock();
 
@@ -412,7 +405,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
         try (Context c = Context.create()) {
             c.enter();
 
-            BasicInterpreter root = parseNodeForPE(run, "testEmptyTagInstrumentation", b -> {
+            BasicInterpreter root = parseNodeForPE(interpreterClass, "testEmptyTagInstrumentation", b -> {
                 b.beginRoot();
 
                 b.beginTag(ExpressionTag.class);
@@ -447,7 +440,7 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
 
             String text = "return 20 + 22";
             Source s = Source.newBuilder("test", text, "testUnwindTagInstrumentation").build();
-            BasicInterpreter root = parseNodeForPE(BytecodeDSLTestLanguage.REF.get(null), run, "testUnwindTagInstrumentation", b -> {
+            BasicInterpreter root = parseNodeForPE(BytecodeDSLTestLanguage.REF.get(null), interpreterClass, "testUnwindTagInstrumentation", b -> {
                 b.beginSource(s);
                 b.beginSourceSection(0, text.length());
                 b.beginRoot();
@@ -514,15 +507,13 @@ public class BytecodeDSLPartialEvaluationTest extends PartialEvaluationTest {
         return () -> result;
     }
 
-    private static BasicInterpreter parseNodeForPE(TestRun run,
-                    String rootName, BytecodeParser<BasicInterpreterBuilder> builder) {
-        return parseNodeForPE(LANGUAGE, run, rootName, builder);
+    private static <T extends BasicInterpreterBuilder> BasicInterpreter parseNodeForPE(Class<? extends BasicInterpreter> interpreterClass, String rootName, BytecodeParser<T> builder) {
+        return parseNodeForPE(LANGUAGE, interpreterClass, rootName, builder);
     }
 
-    private static <T extends BasicInterpreterBuilder> BasicInterpreter parseNodeForPE(BytecodeDSLTestLanguage language,
-                    TestRun run, String rootName,
-                    BytecodeParser<BasicInterpreterBuilder> builder) {
-        BasicInterpreter result = parseNode(run, language, rootName, builder);
+    private static <T extends BasicInterpreterBuilder> BasicInterpreter parseNodeForPE(BytecodeDSLTestLanguage language, Class<? extends BasicInterpreter> interpreterClass, String rootName,
+                    BytecodeParser<T> builder) {
+        BasicInterpreter result = parseNode(interpreterClass, language, false, rootName, builder);
         result.getBytecodeNode().setUncachedThreshold(0); // force interpreter to skip tier 0
         return result;
     }

@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.runtime;
 
-import static java.util.zip.ZipFile.OPEN_READ;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +31,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -70,7 +67,7 @@ public final class Classpath {
                 }
             }
             try {
-                ZipFile zipFile = new JarFile(pathFile, false, OPEN_READ, context.getJavaVersion().toRunTimeVersion());
+                ZipFile zipFile = new ZipFile(pathFile);
                 return new Archive(pathFile, zipFile);
             } catch (IOException ignored) {
             }

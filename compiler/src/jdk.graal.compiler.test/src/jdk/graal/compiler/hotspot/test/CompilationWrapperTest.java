@@ -26,7 +26,6 @@ package jdk.graal.compiler.hotspot.test;
 
 import static jdk.graal.compiler.debug.StandardPathUtilitiesProvider.DIAGNOSTIC_OUTPUT_DIRECTORY_MESSAGE_FORMAT;
 import static jdk.graal.compiler.debug.StandardPathUtilitiesProvider.DIAGNOSTIC_OUTPUT_DIRECTORY_MESSAGE_REGEXP;
-import static jdk.graal.compiler.test.SubprocessUtil.getProcessCommandLine;
 import static jdk.graal.compiler.test.SubprocessUtil.getVMCommandLine;
 import static jdk.graal.compiler.test.SubprocessUtil.withoutDebuggerArguments;
 
@@ -63,6 +62,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
      */
     @Test
     public void testVMCompilation1() throws IOException, InterruptedException {
+        assumeNotImpactedByJDK8316453();
         assumeManagementLibraryIsLoadable();
         testHelper(Collections.emptyList(), Arrays.asList("-XX:-TieredCompilation",
                         "-XX:+UseJVMCICompiler",
@@ -73,6 +73,15 @@ public class CompilationWrapperTest extends GraalCompilerTest {
                         "-Xcomp",
                         "-XX:CompileCommand=compileonly,*/TestProgram.print*",
                         TestProgram.class.getName()));
+    }
+
+    /**
+     * Assumes the current JDK does not contain the bug resolved by JDK-8316453.
+     */
+    private static void assumeNotImpactedByJDK8316453() {
+        Runtime.Version version = Runtime.version();
+        Runtime.Version jdk8316453 = Runtime.Version.parse("22+17");
+        Assume.assumeTrue("-Xcomp broken", version.feature() < 22 || version.compareTo(jdk8316453) >= 0);
     }
 
     public static class Probe {
@@ -152,6 +161,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
      */
     @Test
     public void testVMCompilation3() throws IOException, InterruptedException {
+        assumeNotImpactedByJDK8316453();
         assumeManagementLibraryIsLoadable();
         final int maxProblems = 2;
         Probe failurePatternProbe = new Probe("[[[Graal compilation failure]]]", 1, maxProblems);
@@ -222,7 +232,7 @@ public class CompilationWrapperTest extends GraalCompilerTest {
                         SLCompileASTTestSuite.class.getName(), "test");
     }
 
-    private static final boolean VERBOSE = Boolean.getBoolean("CompilationWrapperTest.verbose") || String.valueOf(getProcessCommandLine()).contains("-JUnitVerbose");
+    private static final boolean VERBOSE = Boolean.getBoolean("CompilationWrapperTest.verbose");
 
     public static void testHelper(List<Probe> initialProbes,
                     List<String> extraVmArgs,
@@ -234,8 +244,6 @@ public class CompilationWrapperTest extends GraalCompilerTest {
                     List<ZipProbe> initialZipProbes,
                     List<String> extraVmArgs,
                     String... mainClassAndArgs) throws IOException, InterruptedException {
-        boolean isWindows = System.getProperty("os.name", "").startsWith("Windows");
-        Assume.assumeFalse("JaCoCo on Windows found -> skipping (GR-65076)", isWindows && SubprocessUtil.isJaCoCoAttached());
         final Path dumpPath = getOutputDirectory().resolve(CompilationWrapperTest.class.getSimpleName() + "_" + nowAsFileName());
         List<String> vmArgs = withoutDebuggerArguments(getVMCommandLine());
         vmArgs.removeIf(a -> a.startsWith("-Djdk.graal."));

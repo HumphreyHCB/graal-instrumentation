@@ -22,8 +22,6 @@
  */
 package com.oracle.truffle.espresso.runtime.panama;
 
-import static com.oracle.truffle.espresso.threads.ThreadState.IN_ESPRESSO;
-
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,25 +36,20 @@ import com.oracle.truffle.espresso.ffi.Callback;
 import com.oracle.truffle.espresso.ffi.NativeAccess;
 import com.oracle.truffle.espresso.ffi.NativeSignature;
 import com.oracle.truffle.espresso.ffi.NativeType;
-import com.oracle.truffle.espresso.impl.ContextAccessImpl;
 import com.oracle.truffle.espresso.impl.Klass;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.meta.EspressoError;
-import com.oracle.truffle.espresso.runtime.EspressoContext;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
-import com.oracle.truffle.espresso.threads.Transition;
 
 public class UpcallStubs {
     private final ConcurrentHashMap<Long, UpcallStub> upcallRoots; // keeps upcalls alive
     private final Platform platform;
     private final NativeAccess nativeAccess;
-    private final EspressoContext context;
     private final EspressoLanguage language;
 
-    public UpcallStubs(Platform platform, NativeAccess nativeAccess, EspressoContext context, EspressoLanguage language) {
+    public UpcallStubs(Platform platform, NativeAccess nativeAccess, EspressoLanguage language) {
         this.platform = platform;
         this.nativeAccess = nativeAccess;
-        this.context = context;
         this.language = language;
         upcallRoots = new ConcurrentHashMap<>();
     }
@@ -126,7 +119,7 @@ public class UpcallStubs {
 
         NativeSignature nativeSignature = NativeSignature.create(nativeReturnType, Arrays.copyOf(nativeParamTypes, nativeIndex));
         CallTarget callTarget = target.getCallTarget();
-        return new UpcallStub(callTarget, mh, shuffle, context, language, nativeArgsCount, nativeSignature, nativeAccess);
+        return new UpcallStub(callTarget, mh, shuffle, language, nativeArgsCount, nativeSignature, nativeAccess);
     }
 
     @TruffleBoundary
@@ -134,7 +127,7 @@ public class UpcallStubs {
         return upcallRoots.remove(addr) != null;
     }
 
-    public static class UpcallStub extends ContextAccessImpl implements Callback.Function {
+    public static class UpcallStub implements Callback.Function {
         private final TruffleObject nativeClosure;
         private final CallTarget callTarget;
         private final StaticObject mh;
@@ -142,11 +135,7 @@ public class UpcallStubs {
         private final EspressoLanguage language;
 
         @SuppressWarnings("this-escape")
-        public UpcallStub(CallTarget callTarget, StaticObject mh, int[] shuffle,
-                        EspressoContext context, EspressoLanguage language,
-                        int nativeArgsCount, NativeSignature nativeSignature,
-                        NativeAccess nativeAccess) {
-            super(context);
+        public UpcallStub(CallTarget callTarget, StaticObject mh, int[] shuffle, EspressoLanguage language, int nativeArgsCount, NativeSignature nativeSignature, NativeAccess nativeAccess) {
             this.callTarget = callTarget;
             this.mh = mh;
             this.shuffle = shuffle;
@@ -165,12 +154,7 @@ public class UpcallStubs {
         @Override
         public Object call(Object... args) {
             language.getThreadLocalState().clearPendingException();
-            Transition transition = Transition.transition(IN_ESPRESSO, this);
-            try {
-                return callTarget.call(processArgs(args));
-            } finally {
-                transition.restore(this);
-            }
+            return callTarget.call(processArgs(args));
         }
 
         @ExplodeLoop

@@ -26,6 +26,7 @@
 
 package com.oracle.svm.core.jfr.events;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.StackValue;
 
 import com.oracle.svm.core.Uninterruptible;
@@ -36,8 +37,6 @@ import com.oracle.svm.core.jfr.JfrNativeEventWriterData;
 import com.oracle.svm.core.jfr.JfrNativeEventWriterDataAccess;
 import com.oracle.svm.core.jfr.JfrTicks;
 import com.oracle.svm.core.jfr.SubstrateJVM;
-
-import jdk.graal.compiler.word.Word;
 
 public class JavaMonitorEnterEvent {
     public static void emit(Object obj, long previousOwnerTid, long startTicks) {
@@ -57,9 +56,9 @@ public class JavaMonitorEnterEvent {
             JfrNativeEventWriter.putLong(data, startTicks);
             JfrNativeEventWriter.putLong(data, duration);
             JfrNativeEventWriter.putEventThread(data);
-            JfrNativeEventWriter.putLong(data, SubstrateJVM.get().getStackTraceId(JfrEvent.JavaMonitorEnter));
+            JfrNativeEventWriter.putLong(data, SubstrateJVM.get().getStackTraceId(JfrEvent.JavaMonitorEnter, 0));
             JfrNativeEventWriter.putClass(data, obj.getClass());
-            JfrNativeEventWriter.putThread(data, previousOwnerTid);
+            JfrNativeEventWriter.putLong(data, previousOwnerTid);
             JfrNativeEventWriter.putLong(data, Word.objectToUntrackedPointer(obj).rawValue());
             JfrNativeEventWriter.endSmallEvent(data);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,9 +29,9 @@ import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 import org.graalvm.collections.EconomicMap;
 import org.junit.Assert;
@@ -48,7 +48,6 @@ import jdk.graal.compiler.hotspot.phases.OnStackReplacementPhase;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.serviceprovider.GraalServices;
-import jdk.graal.compiler.util.EconomicHashMap;
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
@@ -177,6 +176,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     // @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterImmediateDeoptAfter() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockDeopt());
@@ -195,7 +195,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
         }
     }
 
-    Map<String, HashSet<A>> listeners = new EconomicHashMap<>();
+    HashMap<String, HashSet<A>> listeners = new HashMap<>();
 
     public synchronized ReturnValue synchronizedSnippet() {
         /*
@@ -210,6 +210,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testSynchronizedSnippet() {
         GraalOSRLockTest instance = new GraalOSRLockTest();
         // enough entries to trigger OSR
@@ -221,6 +222,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testOSRTrivialLoop() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockDeopt());
@@ -233,6 +235,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerImmediateDeoptAfter() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockDeopt());
@@ -241,6 +244,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterCompileRestOfMethod() {
         run(() -> {
             EconomicMap<OptionKey<?>, Object> overrides = osrLockNoDeopt();
@@ -251,6 +255,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerCompileRestOfMethod() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -259,6 +264,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerLockDepthCompileRestOfMethod() {
         run(() -> {
             EconomicMap<OptionKey<?>, Object> overrides = osrLockNoDeopt();
@@ -269,6 +275,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerLockDepthDeopt() {
         run(() -> {
             EconomicMap<OptionKey<?>, Object> overrides = osrLockNoDeopt();
@@ -279,6 +286,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerLockDepthRecursiveCompileRestOfMethod0() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -287,6 +295,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerLockDepthRecursiveCompileRestOfMethod1() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -295,6 +304,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterCompileRestOfMethodSubsequentLock() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -303,6 +313,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSROuterInnerSameLockCompileRestOfMethod() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -311,6 +322,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testOuterLockDeoptDoesNotFloatAboveMonitor() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockNoDeopt());
@@ -319,6 +331,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSRRecursive() {
         run(() -> {
             // call it
@@ -337,6 +350,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLockOSRRecursiveLeafOSR() {
         run(() -> {
             testRecursiveRootNoOSR();
@@ -717,6 +731,7 @@ public class GraalOSRLockTest extends GraalOSRTestBase {
     }
 
     @Test
+    @SuppressWarnings("try")
     public void testLocksAtOSREntry() {
         run(() -> {
             OptionValues options = new OptionValues(getInitialOptions(), osrLockDeopt());

@@ -64,14 +64,10 @@ final class ProportionateSpacesPolicy extends AbstractCollectionPolicy {
     }
 
     @Override
-    public boolean shouldCollectCompletely(boolean followingIncrementalCollection, boolean forcedCompleteCollection) {
+    public boolean shouldCollectCompletely(boolean followingIncrementalCollection) {
         guaranteeSizeParametersInitialized();
 
-        boolean collectYoungSeparately = shouldCollectYoungGenSeparately(false);
-        if (forcedCompleteCollection && !collectYoungSeparately) {
-            return true;
-        }
-        if (!followingIncrementalCollection && collectYoungSeparately) {
+        if (!followingIncrementalCollection && shouldCollectYoungGenSeparately(false)) {
             // Note that for non-ParallelGC, HotSpot resets the default of ScavengeBeforeFullGC to
             // false, see GCArguments::initialize.
             return false;
@@ -89,7 +85,7 @@ final class ProportionateSpacesPolicy extends AbstractCollectionPolicy {
     }
 
     @Override
-    public void onCollectionBegin(boolean completeCollection, long beginNanoTime) {
+    public void onCollectionBegin(boolean completeCollection, long requestingNanoTime) {
     }
 
     @Override

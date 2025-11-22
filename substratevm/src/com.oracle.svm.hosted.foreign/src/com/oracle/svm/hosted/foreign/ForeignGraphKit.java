@@ -30,6 +30,7 @@ import java.util.List;
 
 import org.graalvm.collections.Pair;
 
+import com.oracle.graal.pointsto.infrastructure.GraphProvider;
 import com.oracle.graal.pointsto.meta.HostedProviders;
 import com.oracle.svm.hosted.phases.HostedGraphKit;
 
@@ -46,7 +47,7 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 class ForeignGraphKit extends HostedGraphKit {
-    ForeignGraphKit(DebugContext debug, HostedProviders providers, ResolvedJavaMethod method) {
+    ForeignGraphKit(DebugContext debug, HostedProviders providers, ResolvedJavaMethod method, GraphProvider.Purpose purpose) {
         super(debug, providers, method);
     }
 

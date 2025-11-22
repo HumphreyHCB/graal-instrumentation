@@ -44,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NeverDefault;
@@ -98,13 +99,14 @@ final class DefaultBytecodeScope implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
-    String getLanguageId(@Shared @Cached("this.node") TagTreeNode cachedNode) {
-        return cachedNode.getLanguageId();
+    Class<? extends TruffleLanguage<?>> getLanguage(
+                    @Shared @Cached("this.node") TagTreeNode cachedNode) {
+        return cachedNode.getLanguage();
     }
 
     @ExportMessage

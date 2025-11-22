@@ -27,15 +27,15 @@ package com.oracle.svm.hosted.substitute;
 import static com.oracle.svm.core.util.VMError.intentionallyUnimplemented;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHereAtRuntime;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Type;
 
 import com.oracle.graal.pointsto.infrastructure.GraphProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.HostedProviders;
-import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.annotation.AnnotationWrapper;
-import com.oracle.svm.util.AnnotatedWrapper;
-import com.oracle.svm.util.OriginalMethodProvider;
 
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.nodes.StructuredGraph;
@@ -50,10 +50,8 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
-import jdk.vm.ci.meta.annotation.Annotated;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
-public class SubstitutionMethod implements ResolvedJavaMethod, GraphProvider, OriginalMethodProvider, AnnotationWrapper, AnnotatedWrapper {
+public class SubstitutionMethod implements ResolvedJavaMethod, GraphProvider, OriginalMethodProvider, AnnotationWrapper {
 
     private final ResolvedJavaMethod original;
     private final ResolvedJavaMethod annotated;
@@ -180,11 +178,6 @@ public class SubstitutionMethod implements ResolvedJavaMethod, GraphProvider, Or
     }
 
     @Override
-    public boolean isDeclared() {
-        return original.isDeclared();
-    }
-
-    @Override
     public boolean isClassInitializer() {
         return original.isClassInitializer();
     }
@@ -220,8 +213,13 @@ public class SubstitutionMethod implements ResolvedJavaMethod, GraphProvider, Or
     }
 
     @Override
-    public Annotated getWrappedAnnotated() {
+    public AnnotatedElement getAnnotationRoot() {
         return annotated;
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
+        return annotated.getParameterAnnotations();
     }
 
     @Override
@@ -287,15 +285,5 @@ public class SubstitutionMethod implements ResolvedJavaMethod, GraphProvider, Or
     @Override
     public SpeculationLog getSpeculationLog() {
         throw shouldNotReachHereAtRuntime(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
-        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
-    }
-
-    @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
-        throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 }

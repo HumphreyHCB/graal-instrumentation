@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.graalvm.collections.Pair;
+import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
-import org.graalvm.nativeimage.impl.InternalPlatform;
 
 import com.oracle.objectfile.BasicProgbitsSectionImpl;
 import com.oracle.objectfile.ObjectFile;
@@ -92,7 +92,7 @@ import jdk.graal.compiler.core.common.NumUtil;
  *      x64 exception handling</a>
  */
 @AutomaticallyRegisteredFeature
-@Platforms(InternalPlatform.WINDOWS_BASE.class)
+@Platforms(Platform.WINDOWS.class)
 public class WindowsUnwindInfoFeature implements InternalFeature {
     @Override
     public void beforeImageWrite(BeforeImageWriteAccess access) {
@@ -103,7 +103,7 @@ public class WindowsUnwindInfoFeature implements InternalFeature {
         AtomicInteger xdataSize = new AtomicInteger();
         AtomicInteger pdataSize = new AtomicInteger();
         image.getCodeCache().getOrderedCompilations().stream().parallel()
-                        .forEach(entry -> visitRanges(entry.getRight(), (range, startMark, _) -> {
+                        .forEach(entry -> visitRanges(entry.getRight(), (range, startMark, end) -> {
                             var compilation = (SharedCompilationResult) entry.getRight();
                             int countOfCodes = switch (startMark.id) {
                                 case PROLOGUE_START -> {
@@ -221,8 +221,8 @@ public class WindowsUnwindInfoFeature implements InternalFeature {
             return; /* No frame, no unwind info needed. */
         }
 
-        SharedCompilationResult cr = (SharedCompilationResult) compilation;
-        if (!cr.hasFramePointerSaveAreaOffset()) {
+        int framePointerSaveAreaOffset = ((SharedCompilationResult) compilation).getFramePointerSaveAreaOffset();
+        if (framePointerSaveAreaOffset < 0) {
             /* There is no frame pointer, so there is only the primary range. */
             visitor.visit(RUNTIME_FUNCTION.PRIMARY_RANGE, START_MARK, compilation.getTargetCodeSize());
             return;

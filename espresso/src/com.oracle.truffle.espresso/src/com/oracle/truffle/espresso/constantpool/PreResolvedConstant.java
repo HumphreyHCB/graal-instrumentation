@@ -22,16 +22,17 @@
  */
 package com.oracle.truffle.espresso.constantpool;
 
-import com.oracle.truffle.espresso.classfile.ConstantPool.Tag;
+import com.oracle.truffle.espresso.classfile.ConstantPool;
+import com.oracle.truffle.espresso.classfile.constantpool.Resolvable;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
 
-public final class PreResolvedConstant implements ResolvedConstant {
+public final class PreResolvedConstant implements Resolvable.ResolvedConstant {
 
-    private final Tag tag;
+    private final ConstantPool.Tag tag;
     private final StaticObject resolved;
 
-    public PreResolvedConstant(@JavaType(Object.class) StaticObject resolved, Tag tag) {
+    public PreResolvedConstant(@JavaType(Object.class) StaticObject resolved, ConstantPool.Tag tag) {
         this.resolved = resolved;
         this.tag = tag;
     }
@@ -42,7 +43,7 @@ public final class PreResolvedConstant implements ResolvedConstant {
     }
 
     @Override
-    public Tag tag() {
+    public ConstantPool.Tag tag() {
         return tag;
     }
 }

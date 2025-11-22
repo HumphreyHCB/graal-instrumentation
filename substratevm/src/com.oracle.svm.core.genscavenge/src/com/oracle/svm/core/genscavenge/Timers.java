@@ -44,7 +44,6 @@ final class Timers {
     final Timer oldFixup = new Timer("oldFixup");
     final Timer oldFixupAlignedChunks = new Timer("oldFixupAlignedChunks");
     final Timer oldFixupImageHeap = new Timer("oldFixupImageHeap");
-    final Timer oldFixupMetaspace = new Timer("oldFixupMetspace");
     final Timer oldFixupThreadLocals = new Timer("oldFixupThreadLocals");
     final Timer oldFixupRuntimeCodeCache = new Timer("oldFixupRuntimeCodeCache");
     final Timer oldFixupStack = new Timer("oldFixupStack");
@@ -78,7 +77,6 @@ final class Timers {
             oldFixup.reset();
             oldFixupAlignedChunks.reset();
             oldFixupImageHeap.reset();
-            oldFixupMetaspace.reset();
             oldFixupThreadLocals.reset();
             oldFixupRuntimeCodeCache.reset();
             oldFixupStack.reset();
@@ -113,7 +111,6 @@ final class Timers {
                 logOneTimer(log, "      ", oldFixup);
                 logOneTimer(log, "          ", oldFixupAlignedChunks);
                 logOneTimer(log, "          ", oldFixupImageHeap);
-                logOneTimer(log, "          ", oldFixupMetaspace);
                 logOneTimer(log, "          ", oldFixupThreadLocals);
                 logOneTimer(log, "          ", oldFixupRuntimeCodeCache);
                 logOneTimer(log, "          ", oldFixupStack);

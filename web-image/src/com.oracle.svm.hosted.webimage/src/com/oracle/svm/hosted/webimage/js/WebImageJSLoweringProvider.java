@@ -26,7 +26,6 @@
 package com.oracle.svm.hosted.webimage.js;
 
 import com.oracle.svm.core.classinitialization.EnsureClassInitializedNode;
-import com.oracle.svm.core.graal.nodes.LoadMethodByIndexNode;
 import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
 import com.oracle.svm.hosted.webimage.WebImageLoweringProvider;
 import com.oracle.svm.hosted.webimage.snippets.WebImageIdentityHashCodeSnippets;
@@ -62,7 +61,7 @@ public class WebImageJSLoweringProvider extends WebImageLoweringProvider {
     @SuppressWarnings("unchecked")
     @Override
     public void lower(Node n, LoweringTool tool) {
-        if (n instanceof EnsureClassInitializedNode || n instanceof ValidateNewInstanceClassNode || n instanceof LoadMethodByIndexNode) {
+        if (n instanceof EnsureClassInitializedNode || n instanceof ValidateNewInstanceClassNode) {
             @SuppressWarnings("rawtypes")
             NodeLoweringProvider nodeLoweringProvider = getLowerings().get(n.getClass());
 
@@ -88,6 +87,11 @@ public class WebImageJSLoweringProvider extends WebImageLoweringProvider {
 
     @Override
     public boolean supportsBulkZeroingOfEden() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsRounding() {
         return false;
     }
 

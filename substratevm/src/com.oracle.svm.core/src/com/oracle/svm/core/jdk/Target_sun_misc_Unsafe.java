@@ -30,7 +30,6 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.util.ResolvedJavaModuleLayer;
 
 /**
  * These substitutions are necessary because the static initializations of these fields are copies
@@ -102,6 +101,6 @@ final class Target_sun_misc_Unsafe {
 class JdkUnsupportedIsEnabled implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
-        return ResolvedJavaModuleLayer.boot().findModule("jdk.unsupported").isPresent();
+        return ModuleLayer.boot().findModule("jdk.unsupported").isPresent();
     }
 }

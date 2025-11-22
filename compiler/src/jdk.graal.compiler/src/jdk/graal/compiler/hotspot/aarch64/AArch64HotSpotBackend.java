@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,17 +75,9 @@ import jdk.graal.compiler.lir.framemap.FrameMap;
 import jdk.graal.compiler.lir.framemap.FrameMapBuilder;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
-import jdk.graal.compiler.lir.gen.MoveFactory;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
-import jdk.graal.compiler.vector.lir.VectorLIRGeneratorTool;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorArithmeticLIRGenerator;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorMoveFactory;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorNodeMatchRules;
-import jdk.graal.compiler.vector.lir.hotspot.aarch64.AArch64HotSpotSimdLIRKindTool;
-import jdk.graal.compiler.vector.lir.hotspot.aarch64.AArch64HotSpotVectorLIRGenerator;
 import jdk.internal.misc.Unsafe;
-import jdk.vm.ci.aarch64.AArch64;
 import jdk.vm.ci.aarch64.AArch64Kind;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CompilationRequest;
@@ -104,11 +96,9 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
  * HotSpot AArch64 specific backend.
  */
 public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGenerationProvider {
-    protected final boolean neonSupported;
 
     public AArch64HotSpotBackend(GraalHotSpotVMConfig config, HotSpotGraalRuntimeProvider runtime, HotSpotProviders providers) {
         super(config, runtime, providers);
-        neonSupported = ((AArch64) providers.getCodeCache().getTarget().arch).getFeatures().contains(AArch64.CPUFeature.ASIMD);
     }
 
     @Override
@@ -120,26 +110,12 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
 
     @Override
     public LIRGeneratorTool newLIRGenerator(LIRGenerationResult lirGenRes) {
-        if (neonSupported) {
-            return new AArch64HotSpotVectorLIRGenerator(
-                            new AArch64HotSpotSimdLIRKindTool(),
-                            new AArch64VectorArithmeticLIRGenerator(null),
-                            new AArch64VectorMoveFactory(new AArch64HotSpotMoveFactory(), new MoveFactory.BackupSlotProvider(lirGenRes.getFrameMapBuilder())),
-                            getProviders(),
-                            config,
-                            lirGenRes);
-        } else {
-            return new AArch64HotSpotLIRGenerator(getProviders(), config, lirGenRes);
-        }
+        return new AArch64HotSpotLIRGenerator(getProviders(), config, lirGenRes);
     }
 
     @Override
     public NodeLIRBuilderTool newNodeLIRBuilder(StructuredGraph graph, LIRGeneratorTool lirGen) {
-        if (lirGen.getArithmetic() instanceof VectorLIRGeneratorTool) {
-            return new AArch64HotSpotNodeLIRBuilder(graph, lirGen, new AArch64VectorNodeMatchRules(lirGen));
-        } else {
-            return new AArch64HotSpotNodeLIRBuilder(graph, lirGen, new AArch64NodeMatchRules(lirGen));
-        }
+        return new AArch64HotSpotNodeLIRBuilder(graph, lirGen, new AArch64NodeMatchRules(lirGen));
     }
 
     @Override
@@ -159,7 +135,6 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                     CompilationResult compilationResult,
                     InstalledCode predefinedInstalledCode,
                     boolean isDefault,
-                    boolean profileDeopt,
                     Object[] context) {
         boolean isStub = (method == null);
         if (!isStub) {
@@ -171,7 +146,7 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
             // in manually assembled code in CodeGenTest cases.
             assert hasInvalidatePlaceholder(compilationResult);
         }
-        return super.createInstalledCode(debug, method, compilationRequest, compilationResult, predefinedInstalledCode, isDefault, profileDeopt, context);
+        return super.createInstalledCode(debug, method, compilationRequest, compilationResult, predefinedInstalledCode, isDefault, context);
     }
 
     private boolean hasInvalidatePlaceholder(CompilationResult compilationResult) {
@@ -351,7 +326,7 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                 crb.getLIR().addSlowPath(null, () -> {
                     masm.bind(entryPoint);
                     int beforeCall = masm.position();
-                    if (AArch64Call.isNearCall(callTarget, getCodeCache())) {
+                    if (AArch64Call.isNearCall(callTarget)) {
                         // Address is fixed up by the runtime.
                         masm.bl();
                     } else {
@@ -471,7 +446,7 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                 ForeignCallLinkage icMissHandler = getForeignCalls().lookupForeignCall(IC_MISS_HANDLER);
 
                 // Size of IC check sequence checked with a guarantee below.
-                int inlineCacheCheckSize = AArch64Call.isNearCall(icMissHandler, getCodeCache()) ? 20 : 32;
+                int inlineCacheCheckSize = AArch64Call.isNearCall(icMissHandler) ? 20 : 32;
                 if (config.useCompactObjectHeaders) {
                     // Extra instruction for shifting
                     inlineCacheCheckSize += 4;
@@ -542,27 +517,27 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                         // Store deoptimization reason and action into thread local storage.
                         int dwordSizeInBits = AArch64Kind.DWORD.getSizeInBytes() * Byte.SIZE;
                         AArch64Address pendingDeoptimization = AArch64Address.createImmediateAddress(dwordSizeInBits, IMMEDIATE_UNSIGNED_SCALED, thread, config.pendingDeoptimizationOffset);
-                        masm.mov(scratch, pendingImplicitException.state().deoptReasonAndAction.asInt());
+                        masm.mov(scratch, pendingImplicitException.state.deoptReasonAndAction.asInt());
                         masm.str(dwordSizeInBits, scratch, pendingDeoptimization);
 
                         // Store speculation into thread local storage
-                        JavaConstant deoptSpeculation = pendingImplicitException.state().deoptSpeculation;
+                        JavaConstant deoptSpeculation = pendingImplicitException.state.deoptSpeculation;
                         if (deoptSpeculation.getJavaKind() == JavaKind.Long) {
                             int qwordSizeInBits = AArch64Kind.QWORD.getSizeInBytes() * Byte.SIZE;
                             AArch64Address pendingSpeculation = AArch64Address.createImmediateAddress(qwordSizeInBits, IMMEDIATE_UNSIGNED_SCALED, thread, config.pendingFailedSpeculationOffset);
-                            masm.mov(scratch, pendingImplicitException.state().deoptSpeculation.asLong());
+                            masm.mov(scratch, pendingImplicitException.state.deoptSpeculation.asLong());
                             masm.str(qwordSizeInBits, scratch, pendingSpeculation);
                         } else {
                             assert deoptSpeculation.getJavaKind() == JavaKind.Int : deoptSpeculation;
                             AArch64Address pendingSpeculation = AArch64Address.createImmediateAddress(dwordSizeInBits, IMMEDIATE_UNSIGNED_SCALED, thread, config.pendingFailedSpeculationOffset);
-                            masm.mov(scratch, pendingImplicitException.state().deoptSpeculation.asInt());
+                            masm.mov(scratch, pendingImplicitException.state.deoptSpeculation.asInt());
                             masm.str(dwordSizeInBits, scratch, pendingSpeculation);
                         }
 
                         ForeignCallLinkage uncommonTrapBlob = foreignCalls.lookupForeignCall(DEOPT_BLOB_UNCOMMON_TRAP);
-                        Register helper = AArch64Call.isNearCall(uncommonTrapBlob, getCodeCache()) ? null : scratch;
-                        AArch64Call.directCall(crb, masm, uncommonTrapBlob, helper, pendingImplicitException.state());
-                        crb.recordImplicitException(pendingImplicitException.codeOffset(), pos, pendingImplicitException.state());
+                        Register helper = AArch64Call.isNearCall(uncommonTrapBlob) ? null : scratch;
+                        AArch64Call.directCall(crb, masm, uncommonTrapBlob, helper, pendingImplicitException.state);
+                        crb.recordImplicitException(pendingImplicitException.codeOffset, pos, pendingImplicitException.state);
                     }
                 }
             }
@@ -570,7 +545,7 @@ public class AArch64HotSpotBackend extends HotSpotHostBackend implements LIRGene
                 Register scratch = sc.getRegister();
                 crb.recordMark(HotSpotMarkId.EXCEPTION_HANDLER_ENTRY);
                 ForeignCallLinkage linkage = foreignCalls.lookupForeignCall(EXCEPTION_HANDLER);
-                Register helper = AArch64Call.isNearCall(linkage, getCodeCache()) ? null : scratch;
+                Register helper = AArch64Call.isNearCall(linkage) ? null : scratch;
                 AArch64Call.directCall(crb, masm, linkage, helper, null);
                 // Ensure the return location is a unique pc and that control flow doesn't return
                 // here

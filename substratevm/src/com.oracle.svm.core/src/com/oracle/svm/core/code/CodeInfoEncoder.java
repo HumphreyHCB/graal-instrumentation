@@ -28,6 +28,7 @@ import static com.oracle.svm.core.deopt.Deoptimizer.Options.LazyDeoptimization;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHereUnexpectedInput;
 
 import java.util.BitSet;
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
@@ -68,19 +69,13 @@ import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.jfr.HasJfrSupport;
 import com.oracle.svm.core.layeredimagesingleton.ImageSingletonLoader;
 import com.oracle.svm.core.layeredimagesingleton.ImageSingletonWriter;
-import com.oracle.svm.core.layeredimagesingleton.LayeredPersistFlags;
+import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingleton;
+import com.oracle.svm.core.layeredimagesingleton.LayeredImageSingletonBuilderFlags;
 import com.oracle.svm.core.meta.SharedField;
 import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.meta.SharedType;
 import com.oracle.svm.core.nmt.NmtCategory;
 import com.oracle.svm.core.option.HostedOptionKey;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredCallbacksSupplier;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTrait;
-import com.oracle.svm.core.traits.SingletonTraitKind;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.ByteArrayReader;
 import com.oracle.svm.core.util.Counter;
 import com.oracle.svm.core.util.VMError;
@@ -135,17 +130,6 @@ public class CodeInfoEncoder {
         }
     }
 
-    public record Encodings(
-                    JavaConstant[] objectConstantsArray,
-                    Class<?>[] classesArray,
-                    String[] memberNamesArray,
-                    String[] otherStringsArray) {
-    }
-
-    /**
-     * Encapsulates {@link FrequencyEncoder}s for values that are referenced by an index, just like
-     * Java bytecode instructions reference entries in a constant pool via their index.
-     */
     public static final class Encoders {
         static final Class<?> INVALID_CLASS = null;
         static final String INVALID_METHOD_NAME = "";
@@ -158,11 +142,11 @@ public class CodeInfoEncoder {
         public final FrequencyEncoder<JavaConstant> objectConstants;
         public final FrequencyEncoder<Class<?>> classes;
         /**
-         * Dedicated encoder for method and field name strings because they have different
-         * characteristics than most {@linkplain #otherStrings other strings} and can be separated
-         * from them without much duplication, which results in lower indexes for both kinds of
-         * strings that can in turn be {@linkplain TypeWriter#putUV encoded in fewer bytes}, also in
-         * the {@linkplain #encodeMethodTable() method table}.
+         * Own encoder for method and field name strings because they have different characteristics
+         * than most {@linkplain #otherStrings other strings} and can be separated from them without
+         * much duplication, which results in lower indexes for both kinds of strings that can in
+         * turn be {@linkplain TypeWriter#putUV encoded in fewer bytes}, also in the
+         * {@linkplain #encodeMethodTable() method table}.
          */
         public final FrequencyEncoder<String> memberNames;
         /**
@@ -174,7 +158,7 @@ public class CodeInfoEncoder {
         private final FrequencyEncoder<Member> methods;
         private Member[] encodedMethods;
 
-        public Encoders(boolean imageCode, Consumer<Class<?>> classVerifier, boolean forceEncodeAllMethodMetadata) {
+        public Encoders(boolean imageCode, Consumer<Class<?>> classVerifier) {
             this.objectConstants = FrequencyEncoder.createEqualityEncoder();
 
             /*
@@ -191,7 +175,7 @@ public class CodeInfoEncoder {
                 this.methods.addObject(null);
                 this.classes.addObject(INVALID_CLASS);
                 this.memberNames.addObject(INVALID_METHOD_NAME);
-                if (forceEncodeAllMethodMetadata || shouldEncodeAllMethodMetadata()) {
+                if (shouldEncodeAllMethodMetadata()) {
                     this.otherStrings.addObject(INVALID_METHOD_SIGNATURE);
                 }
             }
@@ -222,16 +206,11 @@ public class CodeInfoEncoder {
             return Stream.of(encodedMethods).map(m -> (m != null) ? m.method() : null).toArray(ResolvedJavaMethod[]::new);
         }
 
-        public Encodings encodeAll() {
-            return new Encodings(
-                            encodeArray(objectConstants, JavaConstant[]::new),
-                            encodeArray(classes, Class[]::new),
-                            encodeArray(memberNames, String[]::new),
-                            encodeArray(otherStrings, String[]::new));
-        }
-
         private void encodeAllAndInstall(CodeInfo target, ReferenceAdjuster adjuster) {
-            Encodings encodings = encodeAll();
+            JavaConstant[] objectConstantsArray = encodeArray(objectConstants, JavaConstant[]::new);
+            Class<?>[] classesArray = encodeArray(classes, Class[]::new);
+            String[] memberNamesArray = encodeArray(memberNames, String[]::new);
+            String[] otherStringsArray = encodeArray(otherStrings, String[]::new);
 
             int methodTableFirstId;
             if (ImageLayerBuildingSupport.buildingImageLayer()) {
@@ -243,7 +222,7 @@ public class CodeInfoEncoder {
             }
             NonmovableArray<Byte> methodTable = encodeMethodTable();
 
-            install(target, encodings, methodTable, methodTableFirstId, adjuster);
+            install(target, objectConstantsArray, classesArray, memberNamesArray, otherStringsArray, methodTable, methodTableFirstId, adjuster);
         }
 
         private static <T> T[] encodeArray(FrequencyEncoder<T> encoder, IntFunction<T[]> allocator) {
@@ -310,13 +289,13 @@ public class CodeInfoEncoder {
         }
 
         @Uninterruptible(reason = "Nonmovable object arrays are not visible to GC until installed in target.")
-        private static void install(CodeInfo target, Encodings encodings, NonmovableArray<Byte> methodTable, int methodTableFirstId, ReferenceAdjuster adjuster) {
+        private static void install(CodeInfo target, JavaConstant[] objectConstantsArray, Class<?>[] classesArray, String[] memberNamesArray,
+                        String[] otherStringsArray, NonmovableArray<Byte> methodTable, int methodTableFirstId, ReferenceAdjuster adjuster) {
 
-            NonmovableObjectArray<Object> objectConstants = adjuster.copyOfObjectConstantArray(encodings.objectConstantsArray, NmtCategory.Code);
-            NonmovableObjectArray<Class<?>> classes = (encodings.classesArray != null) ? adjuster.copyOfObjectArray(encodings.classesArray, NmtCategory.Code) : NonmovableArrays.nullArray();
-            NonmovableObjectArray<String> memberNames = (encodings.memberNamesArray != null) ? adjuster.copyOfObjectArray(encodings.memberNamesArray, NmtCategory.Code) : NonmovableArrays.nullArray();
-            NonmovableObjectArray<String> otherStrings = (encodings.otherStringsArray != null) ? adjuster.copyOfObjectArray(encodings.otherStringsArray, NmtCategory.Code)
-                            : NonmovableArrays.nullArray();
+            NonmovableObjectArray<Object> objectConstants = adjuster.copyOfObjectConstantArray(objectConstantsArray, NmtCategory.Code);
+            NonmovableObjectArray<Class<?>> classes = (classesArray != null) ? adjuster.copyOfObjectArray(classesArray, NmtCategory.Code) : NonmovableArrays.nullArray();
+            NonmovableObjectArray<String> memberNames = (memberNamesArray != null) ? adjuster.copyOfObjectArray(memberNamesArray, NmtCategory.Code) : NonmovableArrays.nullArray();
+            NonmovableObjectArray<String> otherStrings = (otherStringsArray != null) ? adjuster.copyOfObjectArray(otherStringsArray, NmtCategory.Code) : NonmovableArrays.nullArray();
 
             CodeInfoAccess.setEncodings(target, objectConstants, classes, memberNames, otherStrings, methodTable, methodTableFirstId);
         }
@@ -710,10 +689,8 @@ class CodeInfoVerifier {
                     assert offset < compilationSize : infopoint;
                     CodeInfoAccess.lookupCodeInfo(info, offset + compilationOffset, queryResult, constantAccess);
 
-                    /* Use a non-zero base to avoid negative addresses. */
-                    Pointer base = Word.pointer(1024L * 1024L * 1024L);
-                    CollectingObjectReferenceVisitor visitor = new CollectingObjectReferenceVisitor(base);
-                    CodeReferenceMapDecoder.walkOffsetsFromPointer(base, CodeInfoAccess.getStackReferenceMapEncoding(info), queryResult.getReferenceMapIndex(), visitor, null);
+                    CollectingObjectReferenceVisitor visitor = new CollectingObjectReferenceVisitor();
+                    CodeReferenceMapDecoder.walkOffsetsFromPointer(Word.zero(), CodeInfoAccess.getStackReferenceMapEncoding(info), queryResult.getReferenceMapIndex(), visitor, null);
                     ReferenceMapEncoder.Input expected = (ReferenceMapEncoder.Input) infopoint.debugInfo.getReferenceMap();
                     visitor.result.verify();
                     assert expected.equals(visitor.result) : infopoint;
@@ -914,8 +891,7 @@ class CodeInfoVerifier {
 }
 
 @AutomaticallyRegisteredImageSingleton(onlyWith = BuildingImageLayerPredicate.class)
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = MethodTableFirstIDTracker.LayeredCallbacks.class, layeredInstallationKind = Independent.class)
-class MethodTableFirstIDTracker {
+class MethodTableFirstIDTracker implements LayeredImageSingleton {
     public final int startingID;
     public int nextStartingId = -1;
 
@@ -931,54 +907,36 @@ class MethodTableFirstIDTracker {
         startingID = id;
     }
 
-    static class LayeredCallbacks extends SingletonLayeredCallbacksSupplier {
-        @Override
-        public SingletonTrait getLayeredCallbacksTrait() {
-            return new SingletonTrait(SingletonTraitKind.LAYERED_CALLBACKS, new SingletonLayeredCallbacks<MethodTableFirstIDTracker>() {
-                @Override
-                public LayeredPersistFlags doPersist(ImageSingletonWriter writer, MethodTableFirstIDTracker singleton) {
-                    int nextStartingId = singleton.nextStartingId;
-                    assert nextStartingId > 0 : nextStartingId;
-                    writer.writeInt("startingID", nextStartingId);
-                    return LayeredPersistFlags.CREATE;
-                }
-
-                @Override
-                public Class<? extends SingletonLayeredCallbacks.LayeredSingletonInstantiator<?>> getSingletonInstantiator() {
-                    return SingletonInstantiator.class;
-                }
-            });
-        }
+    @Override
+    public EnumSet<LayeredImageSingletonBuilderFlags> getImageBuilderFlags() {
+        return LayeredImageSingletonBuilderFlags.BUILDTIME_ACCESS_ONLY;
     }
 
-    static class SingletonInstantiator implements SingletonLayeredCallbacks.LayeredSingletonInstantiator<MethodTableFirstIDTracker> {
-        @Override
-        public MethodTableFirstIDTracker createFromLoader(ImageSingletonLoader loader) {
-            return new MethodTableFirstIDTracker(loader.readInt("startingID"));
-        }
+    @Override
+    public PersistFlags preparePersist(ImageSingletonWriter writer) {
+        assert nextStartingId > 0 : nextStartingId;
+        writer.writeInt("startingID", nextStartingId);
+        return PersistFlags.CREATE;
+    }
+
+    @SuppressWarnings("unused")
+    public static Object createFromLoader(ImageSingletonLoader loader) {
+        return new MethodTableFirstIDTracker(loader.readInt("startingID"));
     }
 }
 
 class CollectingObjectReferenceVisitor implements ObjectReferenceVisitor {
-    private final Pointer base;
     protected final SubstrateReferenceMap result = new SubstrateReferenceMap();
 
-    CollectingObjectReferenceVisitor(Pointer base) {
-        this.base = base;
+    @Override
+    public boolean visitObjectReference(Pointer objRef, boolean compressed, Object holderObject) {
+        return visitObjectReferenceInline(objRef, 0, compressed, holderObject);
     }
 
     @Override
-    public void visitObjectReferences(Pointer firstObjRef, boolean compressed, int referenceSize, Object holderObject, int count) {
-        Pointer pos = firstObjRef;
-        Pointer end = firstObjRef.add(Word.unsigned(count).multiply(referenceSize));
-        while (pos.belowThan(end)) {
-            visitObjectReference(pos, compressed);
-            pos = pos.add(referenceSize);
-        }
-    }
-
-    private void visitObjectReference(Pointer objRef, boolean compressed) {
-        int offset = NumUtil.safeToInt(objRef.subtract(base).rawValue());
-        result.markReferenceAtOffset(offset, compressed);
+    public boolean visitObjectReferenceInline(Pointer objRef, int innerOffset, boolean compressed, Object holderObject) {
+        int derivedOffset = NumUtil.safeToInt(objRef.rawValue());
+        result.markReferenceAtOffset(derivedOffset, derivedOffset - innerOffset, compressed);
+        return true;
     }
 }

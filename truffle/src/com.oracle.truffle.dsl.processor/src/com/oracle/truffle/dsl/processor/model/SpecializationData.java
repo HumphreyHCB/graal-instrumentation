@@ -96,8 +96,6 @@ public final class SpecializationData extends TemplateMethod {
     private final boolean reportPolymorphism;
     private final boolean reportMegamorphism;
 
-    private boolean excludeForUncached;
-
     private Double localActivationProbability;
 
     private boolean aotReachable;
@@ -160,14 +158,6 @@ public final class SpecializationData extends TemplateMethod {
         return copy;
     }
 
-    public void setExcludeForUncached(Boolean value) {
-        this.excludeForUncached = value;
-    }
-
-    public boolean isExcludeForUncached() {
-        return excludeForUncached;
-    }
-
     public List<TypeGuard> getImplicitTypeGuards() {
         TypeSystemData typeSystem = getNode().getTypeSystem();
         if (typeSystem.getImplicitCasts().isEmpty()) {
@@ -175,17 +165,13 @@ public final class SpecializationData extends TemplateMethod {
         }
         int signatureIndex = 0;
         List<TypeGuard> implicitTypeChecks = new ArrayList<>();
-        for (Parameter p : getSignatureParameters()) {
+        for (Parameter p : getDynamicParameters()) {
             if (typeSystem.hasImplicitSourceTypes(p.getType())) {
                 implicitTypeChecks.add(new TypeGuard(typeSystem, p.getType(), signatureIndex));
             }
             signatureIndex++;
         }
         return implicitTypeChecks;
-    }
-
-    public boolean isImplicitTypeGuard(TypeGuard typeGuard) {
-        return getNode().getTypeSystem().hasImplicitSourceTypes(typeGuard.getType());
     }
 
     public boolean isNodeReceiverVariable(VariableElement var) {
@@ -444,15 +430,6 @@ public final class SpecializationData extends TemplateMethod {
         return reachesFallback;
     }
 
-    public boolean isAnyGuardBoundWithCache() {
-        for (GuardExpression guard : guards) {
-            if (isGuardBoundWithCache(guard)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean isGuardBoundWithCache(GuardExpression guardExpression) {
         for (CacheExpression cache : getBoundCaches(guardExpression.getExpression(), false)) {
             if (cache.isAlwaysInitialized()) {
@@ -695,105 +672,79 @@ public final class SpecializationData extends TemplateMethod {
         return sinks;
     }
 
-    /**
-     * Returns <code>true</code> if this specialization needs lazy initialization of cached fields.
-     */
-    boolean needsSpecialize() {
+    public boolean needsState(ProcessorContext context) {
+        if (needsRewrite(context)) {
+            /*
+             * If there is a rewrite we need at least one state bit. This covers most cases for
+             * state.
+             */
+            return true;
+        }
+        if (!getCaches().isEmpty()) {
+            for (CacheExpression cache : getCaches()) {
+                if (!cache.isAlwaysInitialized()) { // @Bind
+                    return true;
+                }
+                /*
+                 * This is reachable typically for inlined cached values. They do not require a
+                 * rewrite, but need state.
+                 */
+            }
+        }
+        return false;
+    }
+
+    public boolean needsRewrite(ProcessorContext context) {
+        if (!getExceptions().isEmpty()) {
+            return true;
+        }
+        if (!getGuards().isEmpty()) {
+            return true;
+        }
         if (!getAssumptionExpressions().isEmpty()) {
             return true;
         }
-
         if (!getCaches().isEmpty()) {
             for (CacheExpression cache : getCaches()) {
-                if (cache.isAlwaysInitialized()) {
-                    continue; // @Bind
+                if (cache.isEagerInitialize()) {
+                    continue;
                 }
                 if (cache.getInlinedNode() != null) {
-                    continue; // @Cached but inlined so no init state needed
+                    continue;
                 }
-                return true;
-            }
-        }
-
-        if (hasMultipleInstances()) {
-            // guard needs initialization
-            return true;
-        }
-
-        List<TypeGuard> implicitTypeGuards = getImplicitTypeGuards();
-        if (!implicitTypeGuards.isEmpty()) {
-            for (TypeGuard guard : implicitTypeGuards) {
-                if (isImplicitTypeGuardUsed(guard)) {
+                if (!cache.isAlwaysInitialized()) {
                     return true;
                 }
             }
         }
 
-        return FlatNodeGenFactory.useSpecializationClass(this);
-    }
-
-    boolean needsState() {
-        if (!getAssumptionExpressions().isEmpty()) {
-            return true;
-        }
-
-        if (!getCaches().isEmpty()) {
-            for (CacheExpression cache : getCaches()) {
-                if (cache.isAlwaysInitialized()) {
-                    continue; // @Bind
+        int signatureIndex = 0;
+        for (Parameter parameter : getSignatureParameters()) {
+            for (ExecutableTypeData executableType : node.getExecutableTypes()) {
+                List<TypeMirror> evaluatedParameters = executableType.getEvaluatedParameters();
+                if (signatureIndex < evaluatedParameters.size()) {
+                    TypeMirror evaluatedParameterType = evaluatedParameters.get(signatureIndex);
+                    if (ElementUtils.needsCastTo(evaluatedParameterType, parameter.getType())) {
+                        return true;
+                    }
                 }
-                return true;
             }
-        }
 
-        if (hasMultipleInstances()) {
-            // guard needs initialization
-            return true;
-        }
-
-        List<TypeGuard> implicitTypeGuards = getImplicitTypeGuards();
-        if (!implicitTypeGuards.isEmpty()) {
-            for (TypeGuard guard : implicitTypeGuards) {
-                if (isImplicitTypeGuardUsed(guard)) {
+            NodeChildData child = parameter.getSpecification().getExecution().getChild();
+            if (child != null) {
+                ExecutableTypeData type = child.findExecutableType(parameter.getType());
+                if (type == null) {
+                    type = child.findAnyGenericExecutableType(context);
+                }
+                if (type.hasUnexpectedValue()) {
+                    return true;
+                }
+                if (ElementUtils.needsCastTo(type.getReturnType(), parameter.getType())) {
                     return true;
                 }
             }
-        }
 
-        return FlatNodeGenFactory.useSpecializationClass(this);
-    }
-
-    public boolean isImplicitTypeGuardUsed(TypeGuard guard, ExecutableTypeData inExecutable) {
-        if (!isImplicitTypeGuard(guard)) {
-            return false;
-        }
-        int signatureIndex = guard.getSignatureIndex();
-        List<Parameter> specializationSignature = getSignatureParameters();
-        if (signatureIndex >= specializationSignature.size()) {
-            return false;
-        }
-
-        TypeMirror specializationType = specializationSignature.get(signatureIndex).getType();
-        if (!ElementUtils.typeEquals(guard.getType(), specializationType)) {
-            return false;
-        }
-
-        List<TypeMirror> parameters = inExecutable.getSignatureParameters();
-        if (signatureIndex >= parameters.size()) {
-            return true;
-        }
-        TypeMirror evaluatedParameter = parameters.get(signatureIndex);
-        if (ElementUtils.typeEquals(evaluatedParameter, specializationType)) {
-            return false;
-        }
-        return true;
-    }
-
-    public boolean isImplicitTypeGuardUsed(TypeGuard guard) {
-        for (ExecutableTypeData executable : node.getExecutableTypes()) {
-            if (isImplicitTypeGuardUsed(guard, executable)) {
-                return true;
-            }
+            signatureIndex++;
         }
         return false;
     }
@@ -893,11 +844,6 @@ public final class SpecializationData extends TemplateMethod {
                 if (cache.getDefaultExpression() != null && cache.getDefaultExpression().findBoundVariableElements().contains(frame.getVariableElement())) {
                     return true;
                 }
-            }
-        }
-        for (CacheExpression cache : getCaches()) {
-            if (cache.isRequiresFrame()) {
-                return true;
             }
         }
         return false;

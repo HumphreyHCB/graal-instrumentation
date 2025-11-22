@@ -25,7 +25,6 @@
 package jdk.graal.compiler.core.common;
 
 import jdk.vm.ci.code.CompilationRequest;
-import jdk.vm.ci.meta.JavaMethod;
 
 /**
  * A unique identifier for a compilation. Compiled code can be mapped to a single compilation id.
@@ -78,12 +77,4 @@ public interface CompilationIdentifier {
      * {@link Verbosity}.
      */
     String toString(Verbosity verbosity);
-
-    /**
-     * Get a JavaMethod representation of the current compilation.
-     */
-    default JavaMethod asJavaMethod() {
-        return null;
-    }
-
 }

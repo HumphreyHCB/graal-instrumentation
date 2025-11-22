@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -63,41 +63,33 @@ public class UnicodeProperties {
         OTHER_PROPERTIES_NAMES_SET.addAll(List.of(OTHER_PROPERTIES_NAMES));
     }
 
-    public enum NameMatchingMode {
-        exact,
-        ignoreCase,
-        ruby;
-
-        public String normalize(String name) {
-            return switch (this) {
-                case exact -> name;
-                case ignoreCase -> name.toLowerCase();
-                case ruby -> name.replaceAll("[-_ ]", "").toLowerCase();
-            };
-        }
-    }
-
+    /**
+     * Match all unicode property names in case-insensitive mode.
+     */
+    public static final int CASE_INSENSITIVE = 1;
     /**
      * Expose {@code blk=} unicode block ranges.
      */
-    public static final int BLOCKS = 1;
+    public static final int BLOCKS = 1 << 1;
     /**
      * Expose "Other" unicode properties, see {@code OTHER_PROPERTIES_NAMES}.
      */
-    public static final int OTHER_PROPERTIES = 1 << 1;
+    public static final int OTHER_PROPERTIES = 1 << 2;
 
     private final UnicodePropertyData data;
     private final int flags;
-    private final NameMatchingMode nameMatchingMode;
 
-    public UnicodeProperties(UnicodePropertyData data, int flags, NameMatchingMode nameMatchingMode) {
+    public UnicodeProperties(UnicodePropertyData data, int flags) {
         this.data = data;
         this.flags = flags;
-        this.nameMatchingMode = nameMatchingMode;
     }
 
     private boolean isFlagSet(int flag) {
         return (flags & flag) != 0;
+    }
+
+    private boolean isCaseInsensitive() {
+        return isFlagSet(CASE_INSENSITIVE);
     }
 
     private boolean withBlocks() {
@@ -169,7 +161,7 @@ public class UnicodeProperties {
     }
 
     private String normalizePropertyName(String propertyName) {
-        String name = returnOrThrow(propertyName, "character property", data.lookupPropertyAlias(propertyName, nameMatchingMode));
+        String name = returnOrThrow(propertyName, "character property", data.lookupPropertyAlias(propertyName, isCaseInsensitive()));
         if (!withOtherProperties() && OTHER_PROPERTIES_NAMES_SET.contains(name)) {
             throw new IllegalArgumentException(String.format("Unsupported Unicode character property '%s'", propertyName));
         }
@@ -177,35 +169,35 @@ public class UnicodeProperties {
     }
 
     private String normalizeGeneralCategoryName(String generalCategoryName) {
-        return returnOrThrow(generalCategoryName, "character general category", data.lookupGeneralCategoryAlias(generalCategoryName, nameMatchingMode));
+        return returnOrThrow(generalCategoryName, "character general category", data.lookupGeneralCategoryAlias(generalCategoryName, isCaseInsensitive()));
     }
 
     private String normalizeScriptName(String scriptName) {
-        return returnOrThrow(scriptName, "script name", data.lookupScriptAlias(scriptName, nameMatchingMode));
+        return returnOrThrow(scriptName, "script name", data.lookupScriptAlias(scriptName, isCaseInsensitive()));
     }
 
     private String normalizeBlockName(String blockName) {
         if (!withBlocks()) {
             throw new IllegalArgumentException("Unsupported Unicode character property escape");
         }
-        return returnOrThrow(blockName, "block name", data.lookupBlockAlias(blockName, nameMatchingMode));
+        return returnOrThrow(blockName, "block name", data.lookupBlockAlias(blockName, isCaseInsensitive()));
     }
 
     public boolean isSupportedProperty(String propertyName) {
-        return data.lookupPropertyAlias(propertyName, nameMatchingMode) != null;
+        return data.lookupPropertyAlias(propertyName, isCaseInsensitive()) != null;
     }
 
     public boolean isSupportedGeneralCategory(String generalCategoryName) {
-        return data.lookupGeneralCategoryAlias(generalCategoryName, nameMatchingMode) != null;
+        return data.lookupGeneralCategoryAlias(generalCategoryName, isCaseInsensitive()) != null;
     }
 
     public boolean isSupportedScript(String scriptName) {
-        return data.lookupScriptAlias(scriptName, nameMatchingMode) != null;
+        return data.lookupScriptAlias(scriptName, isCaseInsensitive()) != null;
     }
 
     public boolean isSupportedBlock(String blockName) {
         assert withBlocks();
-        return data.lookupBlockAlias(blockName, nameMatchingMode) != null;
+        return data.lookupBlockAlias(blockName, isCaseInsensitive()) != null;
     }
 
     private static String returnOrThrow(String propertyName, String errorName, String name) {

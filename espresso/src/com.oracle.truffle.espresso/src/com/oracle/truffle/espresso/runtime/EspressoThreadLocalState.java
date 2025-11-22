@@ -22,11 +22,8 @@
  */
 package com.oracle.truffle.espresso.runtime;
 
-import java.lang.ref.WeakReference;
-
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.espresso.impl.ClassRegistry;
-import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.vm.VM;
 
@@ -50,13 +47,10 @@ public class EspressoThreadLocalState {
 
     private boolean inTransformer;
 
-    private WeakReference<Thread> hostThread;
-
     @SuppressWarnings("unused")
-    public EspressoThreadLocalState(EspressoContext context, Thread t) {
+    public EspressoThreadLocalState(EspressoContext context) {
         typeStack = new ClassRegistry.TypeStack();
         privilegedStack = new VM.PrivilegedStack(context);
-        assert ((hostThread = new WeakReference<>(t)) != null);
     }
 
     public StaticObject getPendingExceptionObject() {
@@ -82,7 +76,8 @@ public class EspressoThreadLocalState {
 
     public void setCurrentPlatformThread(StaticObject t) {
         assert t != null && StaticObject.notNull(t);
-        assert diagnose(t);
+        assert t.getKlass().getContext().getThreadAccess().getHost(t) == Thread.currentThread() : "Current thread fast access set by non-current thread";
+        assert currentPlatformThread == null || currentPlatformThread == t : currentPlatformThread + " vs " + t;
         currentPlatformThread = t;
     }
 
@@ -92,7 +87,6 @@ public class EspressoThreadLocalState {
     }
 
     public void initializeCurrentThread(StaticObject t) {
-        assert diagnose(t);
         setCurrentPlatformThread(t);
         setCurrentVirtualThread(t);
     }
@@ -136,10 +130,6 @@ public class EspressoThreadLocalState {
 
     public void setSteppingInProgress(boolean value) {
         stepInProgress = value;
-    }
-
-    public boolean isSteppingInProgress() {
-        return stepInProgress;
     }
 
     public boolean disableSingleStepping(boolean forceDisable) {
@@ -222,59 +212,5 @@ public class EspressoThreadLocalState {
         public void close() {
             inTransformer = false;
         }
-    }
-
-    // Helper methods for assertions
-    private boolean diagnose(StaticObject t) {
-        // @formatter:off
-        // Ensure we work from the thread used for this local creation.
-        assert Thread.currentThread() == hostThread.get() : //
-                "Initializing current thread in EspressoThreadLocalState for a different thread than current:\n" +
-                "    Current: " + Thread.currentThread() + "\n" +
-                "    Registered: " + hostThread.get();
-
-        // Ensure the registered guest thread is and stays linked to the corresponding host thread.
-        if (currentPlatformThread != null) {
-            assert getHost(currentPlatformThread) == Thread.currentThread() : //
-                    "Registered platform thread not associated with current host thread.";
-        }
-
-        // Ensure we are consistently registering guest threads.
-        if (t != null) {
-            // The thread we are registering is linked to the current thread.
-            assert getHost(t) == Thread.currentThread() : //
-                    "Current thread fast access set by non-current thread";
-
-            EspressoContext ctx = EspressoContext.get(null);
-            Field managedBit = ctx.getMeta().HIDDEN_ESPRESSO_MANAGED;
-
-            // Ensure we are not registering multiple guest threads for the same host thread.
-            assert currentPlatformThread == null || currentPlatformThread == t : //
-                    /*- Report these threads names */
-                    getHost(currentPlatformThread).getName() + " vs " + getHost(t).getName() + "\n" +
-                    /*- Report these threads identities */
-                    "Guest identities: " + System.identityHashCode(currentPlatformThread) + " vs " + System.identityHashCode(t) + "\n" +
-                    /*- Checks if our host threads are actually different, or if it is simply a renamed one. */
-                    "Host identities: " + System.identityHashCode(getHost(currentPlatformThread)) + " vs " + System.identityHashCode(getHost(t)) + "/n" +
-                    /*- Obtain the `managed` bits to know the origin of these threads */
-                    "Managed by espresso: " + managedBit.getBoolean(currentPlatformThread) + " vs " + managedBit.getBoolean(t);
-        }
-        // @formatter:on
-        /*
-         * Current theory for GR-50089:
-         *
-         * Lack of synchronization in `ThreadAccess.createJavaThread()` makes it so the polyglot
-         * thread is started and can reach `EspressoLanguage.initializeThread()` before the store to
-         * the thread registry can be observed.
-         *
-         * Now that a `synchronize` block has been added to `EspressoThreadRegistry`, this assertion
-         * should no longer trigger.
-         */
-        return true;
-    }
-
-    private static Thread getHost(StaticObject t) {
-        assert t != null && StaticObject.notNull(t);
-        return t.getKlass().getContext().getThreadAccess().getHost(t);
     }
 }

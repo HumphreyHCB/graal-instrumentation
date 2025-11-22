@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,8 +40,6 @@
  */
 package com.oracle.truffle.sl;
 
-import static com.oracle.truffle.sl.bytecode.SLBytecodeRootNodeGen.BYTECODE;
-
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -66,7 +64,6 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextPolicy;
 import com.oracle.truffle.api.bytecode.BytecodeConfig;
 import com.oracle.truffle.api.bytecode.BytecodeNode;
-import com.oracle.truffle.api.bytecode.BytecodeRootNode;
 import com.oracle.truffle.api.bytecode.BytecodeTier;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Bind;
@@ -82,9 +79,9 @@ import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
@@ -96,6 +93,7 @@ import com.oracle.truffle.sl.builtins.SLPrintlnBuiltin;
 import com.oracle.truffle.sl.builtins.SLReadlnBuiltin;
 import com.oracle.truffle.sl.builtins.SLStackTraceBuiltin;
 import com.oracle.truffle.sl.bytecode.SLBytecodeRootNode;
+import com.oracle.truffle.sl.bytecode.SLBytecodeRootNodeGen;
 import com.oracle.truffle.sl.nodes.SLAstRootNode;
 import com.oracle.truffle.sl.nodes.SLBuiltinAstNode;
 import com.oracle.truffle.sl.nodes.SLBuiltinAstNodeGen;
@@ -187,8 +185,8 @@ import com.oracle.truffle.sl.runtime.SLStrings;
  * <li>Function calls: {@link SLInvokeNode invocations} are efficiently implemented with
  * {@link SLFunction polymorphic inline caches}.
  * <li>Object access: {@link SLReadPropertyNode} and {@link SLWritePropertyNode} use a cached
- * {@link DynamicObject.GetNode} and {@link DynamicObject.PutNode} as the polymorphic inline cache
- * for property reads and writes, respectively.
+ * {@link DynamicObjectLibrary} as the polymorphic inline cache for property reads and writes,
+ * respectively.
  * </ul>
  *
  * <p>
@@ -249,9 +247,6 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     @Option(help = "Use the SL interpreter implemented using the Truffle Bytecode DSL", category = OptionCategory.EXPERT, stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<Boolean> UseBytecode = new OptionKey<>(false);
 
-    @Option(help = "Prints the AST or bytecode after parsing.", category = OptionCategory.EXPERT, stability = OptionStability.EXPERIMENTAL) //
-    public static final OptionKey<Boolean> PrintParsed = new OptionKey<>(false);
-
     @Option(help = "Forces the bytecode interpreter to only use the CACHED or UNCACHED tier. Useful for testing and reproducing bugs.", category = OptionCategory.INTERNAL, stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<BytecodeTier> ForceBytecodeTier = new OptionKey<>(null,
                     new OptionType<>("bytecodeTier", (s) -> {
@@ -268,7 +263,6 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
                     }));
 
     private boolean useBytecode;
-    private boolean printParsed;
     private BytecodeTier forceBytecodeTier;
 
     public SLLanguage() {
@@ -278,7 +272,6 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
 
     @Override
     protected SLContext createContext(Env env) {
-        printParsed = PrintParsed.getValue(env.getOptions());
         useBytecode = UseBytecode.getValue(env.getOptions());
         forceBytecodeTier = ForceBytecodeTier.getValue(env.getOptions());
         return new SLContext(this, env, new ArrayList<>(EXTERNAL_BUILTINS));
@@ -355,7 +348,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     }
 
     private SLBytecodeRootNode createBytecodeBuiltin(TruffleString name, int argumentCount, NodeFactory<? extends SLBuiltinNode> factory) {
-        SLBytecodeRootNode node = BYTECODE.create(this, BytecodeConfig.DEFAULT, (b) -> {
+        SLBytecodeRootNode node = SLBytecodeRootNodeGen.create(this, BytecodeConfig.DEFAULT, (b) -> {
             b.beginSource(BUILTIN_SOURCE);
             b.beginSourceSectionUnavailable();
             b.beginRoot();
@@ -425,24 +418,8 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
         Map<TruffleString, RootCallTarget> targets;
         if (useBytecode) {
             targets = SLBytecodeParser.parseSL(this, source);
-
         } else {
             targets = SLNodeParser.parseSL(this, source);
-        }
-
-        if (printParsed) {
-            for (var entry : targets.entrySet()) {
-                RootNode rootNode = entry.getValue().getRootNode();
-                String dump;
-                if (useBytecode) {
-                    dump = ((BytecodeRootNode) rootNode).dump();
-                } else {
-                    dump = NodeUtil.printCompactTreeToString(rootNode);
-                }
-                PrintStream out = new PrintStream(SLContext.get(null).getEnv().out());
-                out.println(dump);
-                out.flush();
-            }
         }
 
         if (TRACE_INSTRUMENTATION_TREE) {

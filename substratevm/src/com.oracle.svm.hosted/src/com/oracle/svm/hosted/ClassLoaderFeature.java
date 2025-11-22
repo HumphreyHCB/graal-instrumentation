@@ -25,25 +25,26 @@
 package com.oracle.svm.hosted;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
-import org.graalvm.nativeimage.hosted.FieldValueTransformer;
-
-import com.oracle.graal.pointsto.ObjectScanner.OtherReason;
-import com.oracle.graal.pointsto.ObjectScanner.ScanReason;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.fieldvaluetransformer.FieldValueTransformerWithAvailability;
-import com.oracle.svm.core.fieldvaluetransformer.JavaConstantWrapper;
+import com.oracle.svm.core.hub.ClassForNameSupport;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
 import com.oracle.svm.hosted.imagelayer.CrossLayerConstantRegistry;
+import com.oracle.svm.core.fieldvaluetransformer.ObjectToConstantFieldValueTransformer;
 import com.oracle.svm.hosted.jdk.HostedClassLoaderPackageManagement;
 import com.oracle.svm.util.ReflectionUtil;
 
+import org.graalvm.nativeimage.libgraal.hosted.LibGraalLoader;
 import jdk.internal.loader.ClassLoaders;
 import jdk.vm.ci.meta.JavaConstant;
+import jdk.vm.ci.meta.ResolvedJavaField;
 
 @AutomaticallyRegisteredFeature
 public class ClassLoaderFeature implements InternalFeature {
@@ -93,7 +94,7 @@ public class ClassLoaderFeature implements InternalFeature {
         return replaceCandidate;
     }
 
-    JavaConstant replaceClassLoadersWithLayerConstant(CrossLayerConstantRegistry registry, Object object) {
+    ImageHeapConstant replaceClassLoadersWithLayerConstant(CrossLayerConstantRegistry registry, Object object) {
         if (object instanceof ClassLoader loader) {
             if (replaceWithAppClassLoader(loader) || loader == nativeImageSystemClassLoader.defaultSystemClassLoader) {
                 return registry.getConstant(APP_KEY_NAME);
@@ -121,16 +122,21 @@ public class ClassLoaderFeature implements InternalFeature {
 
         var config = (FeatureImpl.DuringSetupAccessImpl) access;
         if (ImageLayerBuildingSupport.firstImageBuild()) {
+            LibGraalLoader libGraalLoader = ((DuringSetupAccessImpl) access).imageClassLoader.classLoaderSupport.getLibGraalLoader();
+            if (libGraalLoader != null) {
+                ClassLoader libGraalClassLoader = (ClassLoader) libGraalLoader;
+                ClassForNameSupport.currentLayer().setLibGraalLoader(libGraalClassLoader);
+            }
             access.registerObjectReplacer(this::runtimeClassLoaderObjectReplacer);
             if (ImageLayerBuildingSupport.buildingInitialLayer()) {
-                config.registerObjectReachableCallback(ClassLoader.class, (_, classLoader, _) -> {
+                config.registerObjectReachableCallback(ClassLoader.class, (a1, classLoader, reason) -> {
                     if (HostedClassLoaderPackageManagement.isGeneratedSerializationClassLoader(classLoader)) {
                         registry.registerHeapConstant(HostedClassLoaderPackageManagement.getClassLoaderSerializationLookupKey(classLoader), classLoader);
                     }
                 });
             }
         } else {
-            config.registerObjectToConstantReplacer(obj -> (ImageHeapConstant) replaceClassLoadersWithLayerConstant(registry, obj));
+            config.registerObjectToConstantReplacer(obj -> replaceClassLoadersWithLayerConstant(registry, obj));
             // relink packages defined in the prior layers
             config.registerObjectToConstantReplacer(packageManager::replaceWithPriorLayerPackage);
         }
@@ -169,8 +175,7 @@ public class ClassLoaderFeature implements InternalFeature {
              * We need to scan this because the final package info cannot be installed until after
              * analysis has completed.
              */
-            ScanReason reason = new OtherReason("Manual rescan triggered from " + ClassLoaderFeature.class);
-            config.rescanObject(HostedClassLoaderPackageManagement.singleton().getPriorAppClassLoaderPackages(), reason);
+            config.rescanObject(HostedClassLoaderPackageManagement.singleton().getPriorAppClassLoaderPackages());
         }
     }
 
@@ -201,7 +206,7 @@ public class ClassLoaderFeature implements InternalFeature {
         }
     }
 
-    static final class TraditionalPackageMapTransformer extends PackageMapTransformer {
+    static class TraditionalPackageMapTransformer extends PackageMapTransformer {
 
         @Override
         public Object transform(Object receiver, Object originalValue) {
@@ -209,24 +214,30 @@ public class ClassLoaderFeature implements InternalFeature {
         }
     }
 
-    static final class InitialLayerPackageMapTransformer extends PackageMapTransformer {
+    static class InitialLayerPackageMapTransformer extends PackageMapTransformer implements ObjectToConstantFieldValueTransformer {
         final CrossLayerConstantRegistry registry = CrossLayerConstantRegistry.singletonOrNull();
 
         @Override
-        public Object transform(Object receiver, Object originalValue) {
+        public JavaConstant transformToConstant(ResolvedJavaField field, Object receiver, Object originalValue, Function<Object, JavaConstant> toConstant) {
             if (receiver == nativeImageSystemClassLoader.defaultSystemClassLoader) {
                 /*
                  * This map will be assigned within the application layer. Within this layer we
                  * register a relocatable constant.
                  */
-                return new JavaConstantWrapper(registry.getConstant(APP_PACKAGE_KEY_NAME));
+                return registry.getConstant(APP_PACKAGE_KEY_NAME);
+
             }
 
-            return doTransform(receiver, originalValue);
+            return toConstant.apply(doTransform(receiver, originalValue));
         }
     }
 
-    static class ExtensionLayerPackageMapTransformer implements FieldValueTransformer {
+    static class ExtensionLayerPackageMapTransformer implements FieldValueTransformerWithAvailability {
+
+        @Override
+        public boolean isAvailable() {
+            return true;
+        }
 
         @Override
         public Object transform(Object receiver, Object originalValue) {

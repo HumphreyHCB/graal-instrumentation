@@ -56,10 +56,6 @@ import com.oracle.svm.core.graal.code.SubstrateMetaAccessExtensionProvider;
 import com.oracle.svm.core.graal.meta.RuntimeConfiguration;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.monitor.MultiThreadedMonitorSupport;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.analysis.Inflation;
 import com.oracle.svm.hosted.analysis.flow.SVMMethodTypeFlowBuilder;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
@@ -82,7 +78,6 @@ import com.oracle.svm.hosted.meta.HostedMetaAccess;
 import com.oracle.svm.hosted.meta.HostedType;
 import com.oracle.svm.hosted.meta.HostedUniverse;
 import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
-import com.oracle.svm.util.AnnotationUtil;
 import com.oracle.svm.util.ReflectionUtil;
 
 import jdk.graal.compiler.core.common.CompressEncoding;
@@ -94,7 +89,6 @@ import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaField;
 
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 public class HostedConfiguration {
 
     public HostedConfiguration() {
@@ -116,10 +110,8 @@ public class HostedConfiguration {
             CompressEncoding compressEncoding = new CompressEncoding(SubstrateOptions.SpawnIsolates.getValue() ? 1 : 0, 0);
             ImageSingletons.add(CompressEncoding.class, compressEncoding);
 
-            if (!ImageSingletons.contains(ObjectLayout.class)) {
-                ObjectLayout objectLayout = createObjectLayout(IdentityHashMode.TYPE_SPECIFIC);
-                ImageSingletons.add(ObjectLayout.class, objectLayout);
-            }
+            ObjectLayout objectLayout = createObjectLayout(IdentityHashMode.TYPE_SPECIFIC);
+            ImageSingletons.add(ObjectLayout.class, objectLayout);
 
             ImageSingletons.add(HybridLayoutSupport.class, new HybridLayoutSupport());
         }
@@ -212,10 +204,8 @@ public class HostedConfiguration {
                             vtableField,
                             hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "typeIDDepth")),
                             hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "numClassTypes")),
-                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "numIterableInterfaceTypes")),
-                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldTypeCheckSlots")),
-                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldInterfaceHashParam")),
-                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldInterfaceHashTable")));
+                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "numInterfaceTypes")),
+                            hMetaAccess.lookupJavaField(ReflectionUtil.lookupField(DynamicHub.class, "openTypeWorldTypeCheckSlots")));
         } else {
             closedTypeWorldTypeCheckSlotsOffset = -1;
             closedTypeWorldTypeCheckSlotSize = -1;
@@ -353,7 +343,7 @@ public class HostedConfiguration {
      * Types that must be immutable cannot have a monitor field.
      */
     protected static void maybeSetMonitorField(HostedUniverse hUniverse, Set<AnalysisType> immutableTypes, AnalysisType type) {
-        if (!type.isArray() && !immutableTypes.contains(type) && !AnnotationUtil.isAnnotationPresent(type, ValueBased.class)) {
+        if (!type.isArray() && !immutableTypes.contains(type) && !type.isAnnotationPresent(ValueBased.class)) {
             setMonitorField(hUniverse, type);
         }
     }
@@ -364,30 +354,24 @@ public class HostedConfiguration {
     }
 
     public NativeImageCodeCacheFactory newCodeCacheFactory() {
-        return new DefaultNativeImageCodeCacheFactory();
+        return new NativeImageCodeCacheFactory() {
+            @Override
+            public NativeImageCodeCache newCodeCache(CompileQueue compileQueue, NativeImageHeap heap, Platform targetPlatform, Path tempDir) {
+                return new LIRNativeImageCodeCache(compileQueue.getCompilationResults(), heap);
+            }
+        };
     }
 
     public ObjectFileFactory newObjectFileFactory() {
-        return new DefaultObjectFileFactory();
+        return new ObjectFileFactory() {
+            @Override
+            public ObjectFile newObjectFile(int pageSize, Path tempDir, BigBang bb) {
+                return ObjectFile.getNativeObjectFile(pageSize);
+            }
+        };
     }
 
     public HeapBreakdownProvider createHeapBreakdownProvider() {
         return new HeapBreakdownProvider();
-    }
-
-    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
-    private static final class DefaultNativeImageCodeCacheFactory extends NativeImageCodeCacheFactory {
-        @Override
-        public NativeImageCodeCache newCodeCache(CompileQueue compileQueue, NativeImageHeap heap, Platform targetPlatform, Path tempDir) {
-            return new LIRNativeImageCodeCache(compileQueue.getCompilationResults(), heap);
-        }
-    }
-
-    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
-    private static final class DefaultObjectFileFactory implements ObjectFileFactory {
-        @Override
-        public ObjectFile newObjectFile(int pageSize, Path tempDir, BigBang bb) {
-            return ObjectFile.getNativeObjectFile(pageSize);
-        }
     }
 }

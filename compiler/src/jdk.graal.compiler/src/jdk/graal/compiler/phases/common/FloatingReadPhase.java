@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2011, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,7 +86,6 @@ import jdk.graal.compiler.phases.graph.ReentrantNodeIterator;
 public class FloatingReadPhase extends PostRunCanonicalizationPhase<CoreProviders> implements RecursivePhase {
 
     private final boolean createMemoryMapNodes;
-    private final boolean createFloatingReads;
 
     public static class MemoryMapImpl implements MemoryMap {
 
@@ -131,18 +130,16 @@ public class FloatingReadPhase extends PostRunCanonicalizationPhase<CoreProvider
     }
 
     public FloatingReadPhase(CanonicalizerPhase canonicalizer) {
-        this(false, true, canonicalizer);
+        this(false, canonicalizer);
     }
 
     /**
-     * @param createMemoryMapNodes a {@link MemoryMapNode} will be created for each return if true
-     * @param createFloatingReads attempt to float {@link FloatableAccessNode}
+     * @param createMemoryMapNodes a {@link MemoryMapNode} will be created for each return if this
      * @param canonicalizer
      */
-    public FloatingReadPhase(boolean createMemoryMapNodes, boolean createFloatingReads, CanonicalizerPhase canonicalizer) {
+    public FloatingReadPhase(boolean createMemoryMapNodes, CanonicalizerPhase canonicalizer) {
         super(canonicalizer);
         this.createMemoryMapNodes = createMemoryMapNodes;
-        this.createFloatingReads = createFloatingReads;
     }
 
     @Override
@@ -229,14 +226,6 @@ public class FloatingReadPhase extends PostRunCanonicalizationPhase<CoreProvider
     @Override
     @SuppressWarnings("try")
     protected void run(StructuredGraph graph, CoreProviders context) {
-        if (createFloatingReads) {
-            /*
-             * This is required so that FloatingReadNode.create can check it's ok to introduce
-             * FloatingReadNodes.
-             */
-            graph.getGraphState().setDuringStage(StageFlag.FLOATING_READS);
-        }
-
         EconomicSet<ValueNode> initMemory = EconomicSet.create(Equivalence.IDENTITY);
 
         EconomicMap<LoopBeginNode, EconomicSet<LocationIdentity>> modifiedInLoops = null;
@@ -251,7 +240,7 @@ public class FloatingReadPhase extends PostRunCanonicalizationPhase<CoreProvider
 
         EconomicSetNodeEventListener listener = new EconomicSetNodeEventListener(EnumSet.of(NODE_ADDED, ZERO_USAGES));
         try (NodeEventScope nes = graph.trackNodeEvents(listener)) {
-            ReentrantNodeIterator.apply(new FloatingReadClosure(modifiedInLoops, createFloatingReads, createMemoryMapNodes, initMemory), graph.start(), new MemoryMapImpl(graph.start()));
+            ReentrantNodeIterator.apply(new FloatingReadClosure(modifiedInLoops, true, createMemoryMapNodes, initMemory), graph.start(), new MemoryMapImpl(graph.start()));
         }
 
         for (Node n : removeExternallyUsedNodes(listener.getNodes())) {
@@ -265,10 +254,7 @@ public class FloatingReadPhase extends PostRunCanonicalizationPhase<CoreProvider
     @Override
     public void updateGraphState(GraphState graphState) {
         super.updateGraphState(graphState);
-        if (createFloatingReads) {
-            graphState.setAfterStage(StageFlag.FLOATING_READS);
-            graphState.addFutureStageRequirement(StageFlag.FIXED_READS);
-        }
+        graphState.setAfterStage(StageFlag.FLOATING_READS);
     }
 
     @SuppressWarnings("try")

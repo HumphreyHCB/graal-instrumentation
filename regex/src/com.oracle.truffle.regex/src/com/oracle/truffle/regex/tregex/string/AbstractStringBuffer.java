@@ -40,13 +40,11 @@
  */
 package com.oracle.truffle.regex.tregex.string;
 
-import com.oracle.truffle.api.strings.TruffleString;
+import com.oracle.truffle.regex.tregex.string.Encodings.Encoding;
 
 public interface AbstractStringBuffer {
 
     Encoding getEncoding();
-
-    int length();
 
     void append(int codepoint);
 
@@ -56,7 +54,5 @@ public interface AbstractStringBuffer {
 
     void clear();
 
-    TruffleString asTString();
-
-    TruffleString.WithMask asTStringMask(TruffleString pattern);
+    AbstractString materialize();
 }

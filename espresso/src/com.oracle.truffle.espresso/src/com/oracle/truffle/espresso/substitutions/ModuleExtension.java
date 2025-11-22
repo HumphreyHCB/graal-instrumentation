@@ -37,7 +37,7 @@ import com.oracle.truffle.espresso.runtime.EspressoContext;
  */
 public final class ModuleExtension {
     private static final ModuleExtension[] ESPRESSO_EXTENSION_MODULES = {
-                    new Builder("org.graalvm.continuations", "continuations.jar", (context) -> context.getLanguage().isContinuumEnabled()).build(),
+                    new Builder("org.graalvm.continuations", "continuations.jar", (context) -> context.getEspressoEnv().Continuum).build(),
                     new Builder("espresso.hotswap", "hotswap.jar", (context) -> context.getEspressoEnv().JDWPOptions != null).build(),
                     new Builder("espresso.polyglot", "espresso-polyglot.jar", (context) -> context.getEspressoEnv().Polyglot).build(),
                     new Builder("jdk.graal.compiler.espresso", "espresso-graal.jar", (context) -> context.getLanguage().isInternalJVMCIEnabled())  //
@@ -71,16 +71,14 @@ public final class ModuleExtension {
                                     .build(),
                     new Builder("jdk.internal.vm.ci.espresso", "espresso-jvmci.jar", (context) -> context.getLanguage().isInternalJVMCIEnabled())  //
                                     .setAutoAdd(true)  //
-                                    .setRequiresConcealed(Map.of(
-                                                    "jdk.internal.vm.ci", List.of(
-                                                                    "jdk.vm.ci.amd64",
-                                                                    "jdk.vm.ci.aarch64",
-                                                                    "jdk.vm.ci.code",
-                                                                    "jdk.vm.ci.code.stack",
-                                                                    "jdk.vm.ci.common",
-                                                                    "jdk.vm.ci.meta",
-                                                                    "jdk.vm.ci.meta.annotation",
-                                                                    "jdk.vm.ci.runtime")))  //
+                                    .setRequiresConcealed(Map.of("jdk.internal.vm.ci", List.of(
+                                                    "jdk.vm.ci.amd64",
+                                                    "jdk.vm.ci.aarch64",
+                                                    "jdk.vm.ci.code",
+                                                    "jdk.vm.ci.code.stack",
+                                                    "jdk.vm.ci.common",
+                                                    "jdk.vm.ci.meta",
+                                                    "jdk.vm.ci.runtime")))  //
                                     .build(),
     };
 

@@ -43,7 +43,6 @@ package com.oracle.truffle.api.test.wrapper;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.Reference;
-import java.nio.file.Path;
 import java.time.ZoneId;
 import java.util.Map;
 import java.util.Set;
@@ -189,10 +188,4 @@ public class HostEngineDispatch extends AbstractEngineDispatch {
         dispatch.onEngineCollected(engineReceiver);
         hostToGuest.shutdown(engine.remoteEngine);
     }
-
-    @Override
-    public boolean storeCache(Object engineReceiver, Path targetFile, long cancelledWord) {
-        throw new UnsupportedOperationException();
-    }
-
 }

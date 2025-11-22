@@ -24,16 +24,15 @@
  */
 package jdk.graal.compiler.core.test;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
 
 import jdk.graal.compiler.nodes.Invoke;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.StructuredGraph.AllowAssumptions;
 import jdk.graal.compiler.phases.common.DeadCodeEliminationPhase;
 import jdk.graal.compiler.phases.tiers.HighTierContext;
-import jdk.graal.compiler.util.EconomicHashMap;
+import org.junit.Test;
 
 public class InvokeHintsTest extends GraalCompilerTest {
 
@@ -74,7 +73,7 @@ public class InvokeHintsTest extends GraalCompilerTest {
 
     private void test(String snippet) {
         StructuredGraph graph = parseEager(snippet, AllowAssumptions.NO);
-        Map<Invoke, Double> hints = new EconomicHashMap<>();
+        Map<Invoke, Double> hints = new HashMap<>();
         for (Invoke invoke : graph.getInvokes()) {
             hints.put(invoke, 1000d);
         }

@@ -33,15 +33,11 @@ import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordBase;
 
 import com.oracle.objectfile.ObjectFile;
+import com.oracle.svm.webimage.wasm.types.WasmUtil;
 import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.graal.code.CGlobalDataReference;
 import com.oracle.svm.core.image.ImageHeapLayoutInfo;
-import com.oracle.svm.core.image.ImageHeapLayouter.ImageHeapLayouterCallback;
 import com.oracle.svm.core.meta.MethodPointer;
-import com.oracle.svm.hosted.image.NativeImageHeap;
-import com.oracle.svm.hosted.image.NativeImageHeapWriter;
-import com.oracle.svm.hosted.image.RelocatableBuffer;
-import com.oracle.svm.hosted.meta.HostedMethod;
 import com.oracle.svm.hosted.webimage.WebImageCodeCache;
 import com.oracle.svm.hosted.webimage.WebImageHostedConfiguration;
 import com.oracle.svm.hosted.webimage.codegen.WebImageProviders;
@@ -57,7 +53,10 @@ import com.oracle.svm.hosted.webimage.wasm.ast.id.WasmId;
 import com.oracle.svm.hosted.webimage.wasm.ast.visitors.WasmRelocationVisitor;
 import com.oracle.svm.hosted.webimage.wasm.gc.MemoryLayout;
 import com.oracle.svm.hosted.webimage.wasm.stack.InitialStackPointerConstant;
-import com.oracle.svm.webimage.wasm.types.WasmUtil;
+import com.oracle.svm.hosted.image.NativeImageHeap;
+import com.oracle.svm.hosted.image.NativeImageHeapWriter;
+import com.oracle.svm.hosted.image.RelocatableBuffer;
+import com.oracle.svm.hosted.meta.HostedMethod;
 
 import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.debug.DebugContext;
@@ -91,19 +90,19 @@ public class WebImageWasmLMCodeGen extends WebImageWasmCodeGen {
      */
     @Override
     protected void writeImageHeap() {
-        ImageHeapLayoutInfo layout = codeCache.nativeImageHeap.getLayouter().layout(codeCache.nativeImageHeap, WasmUtil.PAGE_SIZE, ImageHeapLayouterCallback.NONE);
+        ImageHeapLayoutInfo layout = codeCache.nativeImageHeap.getLayouter().layout(codeCache.nativeImageHeap, WasmUtil.PAGE_SIZE);
         setLayout(layout);
 
         afterHeapLayout();
 
         NativeImageHeapWriter writer = new NativeImageHeapWriter(codeCache.nativeImageHeap, layout);
 
-        RelocatableBuffer heapSectionBuffer = new RelocatableBuffer(layout.getSize(), WasmUtil.BYTE_ORDER);
+        RelocatableBuffer heapSectionBuffer = new RelocatableBuffer(layout.getImageHeapSize(), WasmUtil.BYTE_ORDER);
         codeCache.writeConstants(writer, heapSectionBuffer);
         writer.writeHeap(debug, heapSectionBuffer);
         long heapStart = MemoryLayout.HEAP_BASE.rawValue();
         assert heapStart % 8 == 0 : heapStart;
-        int imageHeapSize = (int) layout.getSize();
+        int imageHeapSize = (int) layout.getImageHeapSize();
 
         EconomicMap<CGlobalData<?>, UnsignedWord> globalData = EconomicMap.create();
         int memorySize = MemoryLayout.constructLayout(globalData, imageHeapSize, WebImageWasmOptions.StackSize.getValue());

@@ -27,8 +27,6 @@ package com.oracle.svm.hosted.c.info;
 import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.struct.RawStructure;
 
-import com.oracle.svm.util.AnnotationUtil;
-
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 public class StructInfo extends SizableInfo {
@@ -36,14 +34,14 @@ public class StructInfo extends SizableInfo {
     private final ResolvedJavaType annotatedType;
 
     private final boolean isIncomplete;
-    private final String typedefName;
+    private String typedefName;
 
     public static StructInfo create(String typeName, ResolvedJavaType annotatedType) {
         String typedefAnnotation = InfoTreeBuilder.getTypedefName(annotatedType);
-        if (AnnotationUtil.getAnnotation(annotatedType, RawStructure.class) != null) {
+        if (annotatedType.getAnnotation(RawStructure.class) != null) {
             return new RawStructureInfo(typeName, typedefAnnotation, annotatedType);
         } else {
-            return new StructInfo(typeName, typedefAnnotation, annotatedType, AnnotationUtil.getAnnotation(annotatedType, CStruct.class).isIncomplete());
+            return new StructInfo(typeName, typedefAnnotation, annotatedType, annotatedType.getAnnotation(CStruct.class).isIncomplete());
         }
     }
 

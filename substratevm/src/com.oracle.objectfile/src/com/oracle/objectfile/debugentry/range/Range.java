@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2020, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2020, 2020, Red Hat Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -26,21 +26,15 @@
 
 package com.oracle.objectfile.debugentry.range;
 
+import com.oracle.objectfile.debugentry.FileEntry;
+import com.oracle.objectfile.debugentry.MethodEntry;
+import com.oracle.objectfile.debugentry.TypeEntry;
+import com.oracle.objectfile.debuginfo.DebugInfoProvider.DebugLocalInfo;
+import com.oracle.objectfile.debuginfo.DebugInfoProvider.DebugLocalValueInfo;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import com.oracle.objectfile.debugentry.ConstantValueEntry;
-import com.oracle.objectfile.debugentry.FileEntry;
-import com.oracle.objectfile.debugentry.LocalEntry;
-import com.oracle.objectfile.debugentry.LocalValueEntry;
-import com.oracle.objectfile.debugentry.MethodEntry;
-
-import jdk.vm.ci.meta.JavaConstant;
-import jdk.vm.ci.meta.JavaKind;
-import jdk.vm.ci.meta.PrimitiveConstant;
 
 /**
  * Details of a specific address range in a compiled method either a primary range identifying a
@@ -75,29 +69,13 @@ import jdk.vm.ci.meta.PrimitiveConstant;
  * parameter values for separate sub-extents of an inline called method whose full extent is
  * represented by the parent call range at level N.
  */
-public abstract class Range implements Comparable<Range> {
-    private final MethodEntry methodEntry;
-    private final int loOffset;
-    private int hiOffset;
-    private final int line;
-    private final int depth;
-
-    /**
-     * The range for the caller or the primary range when this range is for top level method code.
-     */
-    private final CallRange caller;
-
-    private final PrimaryRange primary;
-
-    /**
-     * Values for the associated method's local and parameter variables that are available or,
-     * alternatively, marked as invalid in this range.
-     */
-    private final Map<LocalEntry, LocalValueEntry> localValueInfos;
-    /**
-     * Mapping of local entries to subranges they occur in.
-     */
-    private Map<LocalEntry, List<Range>> varRangeMap = null;
+public abstract class Range {
+    private static final String CLASS_DELIMITER = ".";
+    protected final MethodEntry methodEntry;
+    protected final int lo;
+    protected int hi;
+    protected final int line;
+    protected final int depth;
 
     /**
      * Create a primary range representing the root of the subrange tree for a top level compiled
@@ -109,8 +87,8 @@ public abstract class Range implements Comparable<Range> {
      * @param line the line number associated with the range
      * @return a new primary range to serve as the root of the subrange tree.
      */
-    public static PrimaryRange createPrimary(MethodEntry methodEntry, int lo, int hi, int line, long codeOffset) {
-        return new PrimaryRange(methodEntry, lo, hi, line, codeOffset);
+    public static PrimaryRange createPrimary(MethodEntry methodEntry, int lo, int hi, int line) {
+        return new PrimaryRange(methodEntry, lo, hi, line);
     }
 
     /**
@@ -121,104 +99,57 @@ public abstract class Range implements Comparable<Range> {
      * @param lo the lowest address included in the range.
      * @param hi the first address above the highest address in the range.
      * @param line the line number associated with the range
+     * @param primary the primary range to which this subrange belongs
      * @param caller the range for which this is a subrange, either an inlined call range or the
      *            primary range.
      * @param isLeaf true if this is a leaf range with no subranges
      * @return a new subrange to be linked into the range tree below the primary range.
      */
-    public static Range createSubrange(PrimaryRange primary, MethodEntry methodEntry, Map<LocalEntry, LocalValueEntry> localValueInfos, int lo, int hi, int line, CallRange caller, boolean isLeaf) {
-        assert caller != null;
-        if (caller != primary) {
-            methodEntry.setInlined();
-        }
-        Range callee;
+    public static SubRange createSubrange(MethodEntry methodEntry, int lo, int hi, int line, PrimaryRange primary, Range caller, boolean isLeaf) {
+        assert primary != null;
+        assert primary.isPrimary();
         if (isLeaf) {
-            callee = new LeafRange(primary, methodEntry, localValueInfos, lo, hi, line, caller, caller.getDepth() + 1);
+            return new LeafRange(methodEntry, lo, hi, line, primary, caller);
         } else {
-            callee = new CallRange(primary, methodEntry, localValueInfos, lo, hi, line, caller, caller.getDepth() + 1);
+            return new CallRange(methodEntry, lo, hi, line, primary, caller);
         }
-
-        caller.addCallee(callee);
-        return callee;
     }
 
-    protected Range(PrimaryRange primary, MethodEntry methodEntry, Map<LocalEntry, LocalValueEntry> localValueInfos, int loOffset, int hiOffset, int line, CallRange caller, int depth) {
+    protected Range(MethodEntry methodEntry, int lo, int hi, int line, int depth) {
         assert methodEntry != null;
-        this.primary = primary;
         this.methodEntry = methodEntry;
-        this.loOffset = loOffset;
-        this.hiOffset = hiOffset;
+        this.lo = lo;
+        this.hi = hi;
         this.line = line;
-        this.caller = caller;
         this.depth = depth;
-        this.localValueInfos = localValueInfos;
     }
 
-    public void seal() {
-        // nothing to do here
-    }
-
-    /**
-     * Splits an initial range at the given stack decrement point. The lower split will stay as is
-     * with its high offset reduced to the stack decrement point. The higher split starts at the
-     * stack decrement point and has updated local value entries for the parameters in the then
-     * extended stack.
-     *
-     * @param splitLocalValueInfos the localValueInfos for the split off range
-     * @param stackDecrement the offset to split the range at
-     * @return the higher split, that has been split off the original {@code Range}
-     */
-    public Range split(Map<LocalEntry, LocalValueEntry> splitLocalValueInfos, int stackDecrement) {
-        // This should be for an initial range extending beyond the stack decrement.
-        assert loOffset == 0 && loOffset < stackDecrement && stackDecrement < hiOffset : "invalid split request";
-
-        int splitHiOffset = hiOffset;
-        hiOffset = stackDecrement;
-        return Range.createSubrange(primary, methodEntry, splitLocalValueInfos, stackDecrement, splitHiOffset, line, caller, isLeaf());
-    }
+    protected abstract void addCallee(SubRange callee);
 
     public boolean contains(Range other) {
-        return (loOffset <= other.loOffset && hiOffset >= other.hiOffset);
+        return (lo <= other.lo && hi >= other.hi);
     }
 
-    public boolean isPrimary() {
-        return false;
-    }
+    public abstract boolean isPrimary();
 
-    public String getTypeName() {
-        return methodEntry.getOwnerType().getTypeName();
+    public String getClassName() {
+        return methodEntry.ownerType().getTypeName();
     }
 
     public String getMethodName() {
-        return methodEntry.getMethodName();
+        return methodEntry.methodName();
     }
 
     public String getSymbolName() {
         return methodEntry.getSymbolName();
     }
 
-    public int getHiOffset() {
-        return hiOffset;
+    public int getHi() {
+        return hi;
     }
 
-    public int getLoOffset() {
-        return loOffset;
-    }
-
-    public long getCodeOffset() {
-        return primary.getCodeOffset();
-    }
-
-    public long getLo() {
-        return getCodeOffset() + loOffset;
-    }
-
-    public long getHi() {
-        return getCodeOffset() + hiOffset;
-    }
-
-    public PrimaryRange getPrimary() {
-        return primary;
+    public int getLo() {
+        return lo;
     }
 
     public int getLine() {
@@ -226,35 +157,54 @@ public abstract class Range implements Comparable<Range> {
     }
 
     public String getFullMethodName() {
-        return getExtendedMethodName(false);
+        return constructClassAndMethodName();
     }
 
     public String getFullMethodNameWithParams() {
-        return getExtendedMethodName(true);
+        return constructClassAndMethodNameWithParams();
     }
 
     public boolean isDeoptTarget() {
         return methodEntry.isDeopt();
     }
 
-    private String getExtendedMethodName(boolean includeParams) {
+    private String getExtendedMethodName(boolean includeClass, boolean includeParams, boolean includeReturnType) {
         StringBuilder builder = new StringBuilder();
-        if (getTypeName() != null) {
-            builder.append(getTypeName());
-            builder.append(".");
+        if (includeReturnType && methodEntry.getValueType().getTypeName().length() > 0) {
+            builder.append(methodEntry.getValueType().getTypeName());
+            builder.append(' ');
+        }
+        if (includeClass && getClassName() != null) {
+            builder.append(getClassName());
+            builder.append(CLASS_DELIMITER);
         }
         builder.append(getMethodName());
         if (includeParams) {
-            methodEntry.getParamTypes().forEach(t -> {
-                if (!builder.isEmpty()) {
-                    builder.append(", ");
+            builder.append("(");
+            TypeEntry[] paramTypes = methodEntry.getParamTypes();
+            if (paramTypes != null) {
+                String prefix = "";
+                for (TypeEntry t : paramTypes) {
+                    builder.append(prefix);
+                    builder.append(t.getTypeName());
+                    prefix = ", ";
                 }
-                builder.append(t.getTypeName());
-            });
-            builder.insert(0, '(');
+            }
             builder.append(')');
         }
+        if (includeReturnType) {
+            builder.append(" ");
+            builder.append(methodEntry.getValueType().getTypeName());
+        }
         return builder.toString();
+    }
+
+    private String constructClassAndMethodName() {
+        return getExtendedMethodName(true, false, false);
+    }
+
+    private String constructClassAndMethodNameWithParams() {
+        return getExtendedMethodName(true, true, false);
     }
 
     public FileEntry getFileEntry() {
@@ -267,19 +217,7 @@ public abstract class Range implements Comparable<Range> {
 
     @Override
     public String toString() {
-        return String.format("Range(lo=0x%05x hi=0x%05x %s %s:%d)", getLo(), getHi(), getFullMethodNameWithParams(), methodEntry.getFullFileName(), line);
-    }
-
-    @Override
-    public int compareTo(Range other) {
-        int cmp = Long.compare(getLo(), other.getLo());
-        if (cmp == 0) {
-            cmp = Long.compare(getHi(), other.getHi());
-        }
-        if (cmp == 0) {
-            return Integer.compare(line, other.line);
-        }
-        return cmp;
+        return String.format("Range(lo=0x%05x hi=0x%05x %s %s:%d)", lo, hi, constructClassAndMethodNameWithParams(), methodEntry.getFullFileName(), line);
     }
 
     public String getFileName() {
@@ -290,107 +228,74 @@ public abstract class Range implements Comparable<Range> {
         return methodEntry;
     }
 
+    public abstract SubRange getFirstCallee();
+
     public abstract boolean isLeaf();
 
     public boolean includesInlineRanges() {
-        for (Range callee : getCallees()) {
-            if (!callee.isLeaf()) {
-                return true;
-            }
+        SubRange child = getFirstCallee();
+        while (child != null && child.isLeaf()) {
+            child = child.getSiblingCallee();
         }
-        return false;
-    }
-
-    public List<Range> getCallees() {
-        return List.of();
-    }
-
-    public Stream<Range> rangeStream() {
-        return Stream.of(this);
+        return child != null;
     }
 
     public int getDepth() {
         return depth;
     }
 
-    public Map<LocalEntry, LocalValueEntry> getLocalValueInfos() {
-        return localValueInfos;
+    public HashMap<DebugLocalInfo, List<SubRange>> getVarRangeMap() {
+        MethodEntry calleeMethod;
+        if (isPrimary()) {
+            calleeMethod = getMethodEntry();
+        } else {
+            assert !isLeaf() : "should only be looking up var ranges for inlined calls";
+            calleeMethod = getFirstCallee().getMethodEntry();
+        }
+        HashMap<DebugLocalInfo, List<SubRange>> varRangeMap = new HashMap<>();
+        if (calleeMethod.getThisParam() != null) {
+            varRangeMap.put(calleeMethod.getThisParam(), new ArrayList<>());
+        }
+        for (int i = 0; i < calleeMethod.getParamCount(); i++) {
+            varRangeMap.put(calleeMethod.getParam(i), new ArrayList<>());
+        }
+        for (int i = 0; i < calleeMethod.getLocalCount(); i++) {
+            varRangeMap.put(calleeMethod.getLocal(i), new ArrayList<>());
+        }
+        return updateVarRangeMap(varRangeMap);
     }
 
-    /**
-     * Returns the subranges grouped by local entries in the subranges. If the map is empty, it
-     * first tries to populate the map with its callees {@link #localValueInfos}.
-     * 
-     * @return a mapping from local entries to subranges
-     */
-    public Map<LocalEntry, List<Range>> getVarRangeMap() {
-        if (varRangeMap == null) {
-            varRangeMap = new HashMap<>();
-            for (Range callee : getCallees()) {
-                for (LocalEntry local : callee.localValueInfos.keySet()) {
-                    varRangeMap.computeIfAbsent(local, l -> new ArrayList<>()).add(callee);
-                }
-            }
-            // Trim var range map.
-            varRangeMap = Map.copyOf(varRangeMap);
+    public HashMap<DebugLocalInfo, List<SubRange>> updateVarRangeMap(HashMap<DebugLocalInfo, List<SubRange>> varRangeMap) {
+        // leaf subranges of the current range may provide values for param or local vars
+        // of this range's method. find them and index the range so that we can identify
+        // both the local/param and the associated range.
+        SubRange subRange = this.getFirstCallee();
+        while (subRange != null) {
+            addVarRanges(subRange, varRangeMap);
+            subRange = subRange.siblingCallee;
         }
-
         return varRangeMap;
     }
 
-    /**
-     * Returns whether subranges contain a value in {@link #localValueInfos} for a given local
-     * entry. A value is valid if it exists, and it can be represented as local values in the debug
-     * info.
-     * 
-     * @param local the local entry to check for
-     * @return whether a local entry has a value in any of this range's subranges
-     */
-    public boolean hasLocalValues(LocalEntry local) {
-        for (Range callee : getVarRangeMap().getOrDefault(local, List.of())) {
-            LocalValueEntry localValue = callee.lookupValue(local);
-            if (localValue != null) {
-                if (localValue instanceof ConstantValueEntry constantValueEntry) {
-                    JavaConstant constant = constantValueEntry.constant();
-                    // can only handle primitive or null constants just now
-                    return constant instanceof PrimitiveConstant || constant.getJavaKind() == JavaKind.Object;
-                } else {
-                    // register or stack value
-                    return true;
+    public void addVarRanges(SubRange subRange, HashMap<DebugLocalInfo, List<SubRange>> varRangeMap) {
+        int localValueCount = subRange.getLocalValueCount();
+        for (int i = 0; i < localValueCount; i++) {
+            DebugLocalValueInfo localValueInfo = subRange.getLocalValue(i);
+            DebugLocalInfo local = subRange.getLocal(i);
+            if (local != null) {
+                switch (localValueInfo.localKind()) {
+                    case REGISTER:
+                    case STACKSLOT:
+                    case CONSTANT:
+                        List<SubRange> varRanges = varRangeMap.get(local);
+                        assert varRanges != null : "local not present in var to ranges map!";
+                        varRanges.add(subRange);
+                        break;
+                    case UNDEFINED:
+                        break;
                 }
             }
         }
-        return false;
     }
 
-    public Range getCaller() {
-        return caller;
-    }
-
-    public LocalValueEntry lookupValue(LocalEntry local) {
-        return localValueInfos.getOrDefault(local, null);
-    }
-
-    public boolean tryMerge(Range that) {
-        assert this.caller == that.caller;
-        assert this.isLeaf() == that.isLeaf();
-        assert this.depth == that.depth : "should only compare sibling ranges";
-        assert this.hiOffset <= that.loOffset : "later nodes should not overlap earlier ones";
-        if (this.hiOffset != that.loOffset) {
-            return false;
-        }
-        if (this.methodEntry != that.methodEntry) {
-            return false;
-        }
-        if (this.line != that.line) {
-            return false;
-        }
-        if (!this.localValueInfos.equals(that.localValueInfos)) {
-            return false;
-        }
-        // merging just requires updating lo and hi range as everything else is equal
-        this.hiOffset = that.hiOffset;
-        caller.removeCallee(that);
-        return true;
-    }
 }

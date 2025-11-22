@@ -66,13 +66,8 @@ import com.oracle.truffle.espresso.classfile.descriptors.ParserSymbols;
 import com.oracle.truffle.espresso.classfile.descriptors.SignatureSymbols;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbols;
 import com.oracle.truffle.espresso.classfile.descriptors.TypeSymbols;
-import com.oracle.truffle.espresso.classfile.descriptors.Utf8Symbols;
+import com.oracle.truffle.espresso.classfile.descriptors.Utf8ConstantTable;
 import com.oracle.truffle.espresso.descriptors.EspressoSymbols;
-import com.oracle.truffle.espresso.ffi.NoNativeAccess;
-import com.oracle.truffle.espresso.ffi.nfi.NFIIsolatedNativeAccess;
-import com.oracle.truffle.espresso.ffi.nfi.NFINativeAccess;
-import com.oracle.truffle.espresso.ffi.nfi.NFIStaticLibNativeAccess;
-import com.oracle.truffle.espresso.ffi.nfi.NFISulongNativeAccess;
 import com.oracle.truffle.espresso.impl.EspressoType;
 import com.oracle.truffle.espresso.impl.SuppressFBWarnings;
 import com.oracle.truffle.espresso.meta.EspressoError;
@@ -105,6 +100,7 @@ import com.oracle.truffle.espresso.substitutions.standard.Target_sun_misc_Unsafe
                 website = "https://www.graalvm.org/dev/reference-manual/java-on-truffle/")
 @ProvidedTags({StandardTags.RootTag.class, StandardTags.RootBodyTag.class, StandardTags.StatementTag.class})
 public final class EspressoLanguage extends TruffleLanguage<EspressoContext> implements SymbolPool {
+
     public static final String ID = "java";
     public static final String NAME = "Java";
     public static final String IMPLEMENTATION_NAME = "Espresso";
@@ -116,15 +112,15 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
     public static final String VM_VENDOR = "Oracle Corporation";
     public static final String VM_NAME = "Espresso 64-Bit VM";
     public static final String VM_INFO = "mixed mode";
+
     public static final String FILE_EXTENSION = ".class";
 
-    @CompilationFinal private Utf8Symbols utf8Symbols;
+    @CompilationFinal private Utf8ConstantTable utf8Constants;
     @CompilationFinal private NameSymbols nameSymbols;
     @CompilationFinal private TypeSymbols typeSymbols;
     @CompilationFinal private SignatureSymbols signatureSymbols;
 
     private final StaticProperty arrayProperty = new DefaultStaticProperty("array");
-    private final StaticProperty arrayHashCodeProperty = new DefaultStaticProperty("ihashcode");
     // This field should be final, but creating a shape requires a fully-initialized instance of
     // TruffleLanguage.
     @CompilationFinal //
@@ -149,12 +145,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
     @CompilationFinal private boolean whiteBoxEnabled;
     @CompilationFinal private boolean eagerFrameAnalysis;
     @CompilationFinal private boolean internalJvmciEnabled;
-    @CompilationFinal private boolean useEspressoLibs;
-    @CompilationFinal private boolean enableNetworking;
-    @CompilationFinal private boolean continuum;
-    @CompilationFinal private String nativeBackendId;
-    @CompilationFinal private boolean useTRegex;
-    @CompilationFinal private int maxStackTraceDepth;
     // endregion Options
 
     // region Allocation
@@ -174,7 +164,7 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
 
     @CompilationFinal private GuestFieldOffsetStrategy guestFieldOffsetStrategy;
 
-    private final ContextThreadLocal<EspressoThreadLocalState> threadLocalState = locals.createContextThreadLocal(EspressoThreadLocalState::new);
+    private final ContextThreadLocal<EspressoThreadLocalState> threadLocalState = locals.createContextThreadLocal((context, thread) -> new EspressoThreadLocalState(context));
 
     public EspressoLanguage() {
         // Initialize statically defined symbols and substitutions.
@@ -189,7 +179,7 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
         // during startup.
         int initialSymbolTableCapacity = 1 << 16;
         Symbols symbols = Symbols.fromExisting(EspressoSymbols.SYMBOLS.freeze(), initialSymbolTableCapacity);
-        this.utf8Symbols = new Utf8Symbols(symbols);
+        this.utf8Constants = new Utf8ConstantTable(symbols, initialSymbolTableCapacity);
         this.nameSymbols = new NameSymbols(symbols);
         this.typeSymbols = new TypeSymbols(symbols);
         this.signatureSymbols = new SignatureSymbols(symbols, typeSymbols);
@@ -253,13 +243,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
         previewEnabled = env.getOptions().get(EspressoOptions.EnablePreview);
         whiteBoxEnabled = env.getOptions().get(EspressoOptions.WhiteBoxAPI);
         internalJvmciEnabled = env.getOptions().get(EspressoOptions.EnableJVMCI);
-        continuum = env.getOptions().get(EspressoOptions.Continuum);
-        maxStackTraceDepth = env.getOptions().get(EspressoOptions.MaxJavaStackTraceDepth);
-
-        useTRegex = env.getOptions().get(EspressoOptions.UseTRegex);
-        if (useTRegex && !env.getInternalLanguages().containsKey("regex")) {
-            throw EspressoError.fatal("UseTRegex is set to true but the 'regex' language is not available.");
-        }
 
         EspressoOptions.GuestFieldOffsetStrategyEnum strategy = env.getOptions().get(EspressoOptions.GuestFieldOffsetStrategy);
         guestFieldOffsetStrategy = switch (strategy) {
@@ -267,8 +250,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
             case compact -> new CompactGuestFieldOffsetStrategy();
             case graal -> new GraalGuestFieldOffsetStrategy();
         };
-        this.nativeBackendId = setNativeBackendId(env);
-        this.useEspressoLibs = setUseEspressoLibs(env);
         assert guestFieldOffsetStrategy.name().equals(strategy.name());
     }
 
@@ -322,54 +303,11 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
 
     private void extractDataFrom(EspressoLanguage other) {
         javaVersion = other.javaVersion;
-        utf8Symbols = other.getUtf8Symbols();
+        utf8Constants = other.getUtf8ConstantTable();
         nameSymbols = other.getNames();
         typeSymbols = other.getTypes();
         signatureSymbols = other.getSignatures();
         languageCache.importFrom(other.getLanguageCache());
-    }
-
-    private static String setNativeBackendId(final TruffleLanguage.Env env) {
-        boolean isAllowed = env.isNativeAccessAllowed();
-        // if the Env allows, this might be overwritten.
-        String nativeBackend = NoNativeAccess.Provider.ID;
-        if (env.getOptions().hasBeenSet(EspressoOptions.NativeBackend)) {
-            String userNativeBackend = env.getOptions().get(EspressoOptions.NativeBackend);
-            if (!isAllowed && !userNativeBackend.equals(nativeBackend)) {
-                throw EspressoError.fatal("trying to set NativeBackend even though NativeAccess is disabled");
-            }
-            return userNativeBackend;
-
-        } else if (isAllowed) {
-            // Pick a sane "default" native backend depending on the platform.
-            boolean isInPreInit = (boolean) env.getConfig().getOrDefault("preinit", false);
-            if (isInPreInit || !EspressoOptions.RUNNING_ON_SVM) {
-                if (OS.getCurrent() == OS.Linux) {
-                    nativeBackend = NFIIsolatedNativeAccess.Provider.ID;
-                } else if (OS.getCurrent() == OS.Darwin) {
-                    nativeBackend = NFIStaticLibNativeAccess.Provider.ID;
-                } else {
-                    nativeBackend = NFISulongNativeAccess.Provider.ID;
-                }
-            } else {
-                nativeBackend = NFINativeAccess.Provider.ID;
-            }
-        }
-        return nativeBackend;
-    }
-
-    private boolean setUseEspressoLibs(final TruffleLanguage.Env env) {
-        // For no-native we turn on espressoLibs by default
-        boolean flagSet = env.getOptions().hasBeenSet(EspressoOptions.UseEspressoLibs);
-        boolean userFlag = env.getOptions().get(EspressoOptions.UseEspressoLibs);
-        if (nativeBackendId.equals(NoNativeAccess.Provider.ID)) {
-            if (flagSet && !userFlag) {
-                throw EspressoError.fatal("You should not set UseEspressoLibs to false with no-native backend!");
-            }
-            return true;
-        } else {
-            return userFlag;
-        }
     }
 
     @Override
@@ -401,12 +339,7 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
                         isOptionCompatible(newOptions, oldOptions, EspressoOptions.EnablePreview) &&
                         isOptionCompatible(newOptions, oldOptions, EspressoOptions.WhiteBoxAPI) &&
                         isOptionCompatible(newOptions, oldOptions, EspressoOptions.EnableJVMCI) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.Continuum) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.UseTRegex) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.GuestFieldOffsetStrategy) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.UseEspressoLibs) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.NativeBackend) &&
-                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.MaxJavaStackTraceDepth);
+                        isOptionCompatible(newOptions, oldOptions, EspressoOptions.GuestFieldOffsetStrategy);
     }
 
     private static boolean isOptionCompatible(OptionValues oldOptions, OptionValues newOptions, OptionKey<?> option) {
@@ -496,13 +429,13 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
                                         "Use the \"" + ID + "\" language bindings to load guest Java classes e.g. context.getBindings(\"" + ID + "\").getMember(\"java.lang.Integer\")");
     }
 
+    public Utf8ConstantTable getUtf8ConstantTable() {
+        return utf8Constants;
+    }
+
     @Override
     public NameSymbols getNames() {
         return nameSymbols;
-    }
-
-    public Utf8Symbols getUtf8Symbols() {
-        return utf8Symbols;
     }
 
     @Override
@@ -547,14 +480,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
         return arrayProperty;
     }
 
-    public StaticProperty getArrayHashCodeProperty() {
-        if (!continuum) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw EspressoError.shouldNotReachHere("Accessing array hash code property without continuum set up.");
-        }
-        return arrayHashCodeProperty;
-    }
-
     public StaticShape<StaticObjectFactory> getArrayShape() {
         assert fullyInitialized : "Array shape accessed before language is fully initialized";
         return arrayShape;
@@ -563,11 +488,7 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
     @TruffleBoundary
     private StaticShape<StaticObjectFactory> createArrayShape() {
         assert arrayShape == null;
-        StaticShape.Builder builder = StaticShape.newBuilder(this).property(arrayProperty, Object.class, true);
-        if (continuum) {
-            builder.property(arrayHashCodeProperty, int.class, false);
-        }
-        return builder.build(StaticObject.class, StaticObjectFactory.class);
+        return StaticShape.newBuilder(this).property(arrayProperty, Object.class, true).build(StaticObject.class, StaticObjectFactory.class);
     }
 
     public StaticProperty getForeignProperty() {
@@ -644,26 +565,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
         return internalJvmciEnabled;
     }
 
-    public boolean useTRegex() {
-        return useTRegex;
-    }
-
-    public boolean useEspressoLibs() {
-        return useEspressoLibs;
-    }
-
-    public String nativeBackendId() {
-        return nativeBackendId;
-    }
-
-    public boolean isNativeAvailable() {
-        return !nativeBackendId.equals("no-native");
-    }
-
-    public boolean isContinuumEnabled() {
-        return continuum;
-    }
-
     public EspressoLanguageCache getLanguageCache() {
         return languageCache;
     }
@@ -693,12 +594,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
                     if (!getGuestFieldOffsetStrategy().isAllowed(version)) {
                         throw EspressoError.fatal("This guest field offset strategy (" + getGuestFieldOffsetStrategy().name() + ") is not allowed with this Java version (" + version + ")");
                     }
-                    if (useTRegex && !version.java21OrLater()) {
-                        throw EspressoError.fatal("UseTRegex is not available for a context running Java version < 21.");
-                    }
-                    if (internalJvmciEnabled && !version.java21OrLater()) {
-                        throw EspressoError.fatal("EnableJVMCI is not available for a context running Java version < 21.");
-                    }
                     this.javaVersion = ref = version;
                 }
             }
@@ -719,7 +614,6 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
         if (espressoHome != null) {
             Path libs = espressoHome.resolve("lib");
             if (Files.isDirectory(libs)) {
-                env.getLogger(EspressoContext.class).config(() -> "Using espresso libs from language home at " + libs);
                 return libs;
             }
         }
@@ -727,25 +621,42 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
             String resources = env.getInternalResource("espresso-libs").getAbsoluteFile().toString();
             Path libs = Path.of(resources, "lib");
             assert Files.isDirectory(libs);
-            env.getLogger(EspressoContext.class).config(() -> "Using espresso libs from resources at " + libs);
             return libs;
         } catch (IOException e) {
             throw EspressoError.shouldNotReachHere(e);
         }
     }
 
-    private static final String[] KNOWN_ESPRESSO_RUNTIMES = {"jdk25", "openjdk25", "jdk21", "openjdk21", "jdk" + JavaVersion.HOST_VERSION, "openjdk" + JavaVersion.HOST_VERSION};
+    private static final String[] KNOWN_ESPRESSO_RUNTIMES = {"jdk21", "openjdk21"};
     private static final Pattern VALID_RESOURCE_ID = Pattern.compile("[0-9a-z\\-]+");
 
     public static Path getEspressoRuntime(TruffleLanguage.Env env) {
-        if (env.getOptions().hasBeenSet(EspressoOptions.JavaHome)) {
-            if (env.getOptions().hasBeenSet(EspressoOptions.RuntimeResourceId)) {
-                env.getLogger(EspressoContext.class).warning("Both java.JavaHome and java.RuntimeResourceId are set. RuntimeResourceId will be ignored.");
+        // If --java.JavaHome is not specified, Espresso tries to use the same (jars and native)
+        // libraries bundled with GraalVM.
+        // Try to figure out if we are running in the GraalVM
+        Path espressoHome = HomeFinder.getInstance().getLanguageHomes().get(EspressoLanguage.ID);
+        if (espressoHome != null && Files.isDirectory(espressoHome)) {
+            // ESPRESSO_HOME = GRAALVM_JAVA_HOME/languages/java
+            Path graalvmHome = HomeFinder.getInstance().getHomeFolder();
+            if (graalvmHome != null) {
+                try {
+                    Path expectedLanguageHome = graalvmHome.resolve("languages").resolve("java");
+                    if (Files.isDirectory(expectedLanguageHome) && Files.isSameFile(espressoHome, expectedLanguageHome)) {
+                        return graalvmHome;
+                    }
+                } catch (IOException e) {
+                    env.getLogger(EspressoContext.class).log(Level.WARNING, "Error while probing espresso and graalvm home", e);
+                }
             }
-            // This option's value will be used, no need to guess
-            return null;
         }
         try {
+            if (env.getOptions().hasBeenSet(EspressoOptions.JavaHome)) {
+                // This option's value will be used, no need to guess
+                if (env.getOptions().hasBeenSet(EspressoOptions.RuntimeResourceId)) {
+                    env.getLogger(EspressoContext.class).warning("Both java.JavaHome and java.RuntimeResourceId are set. RuntimeResourceId will be ignored.");
+                }
+                return null;
+            }
             if (env.getOptions().hasBeenSet(EspressoOptions.RuntimeResourceId)) {
                 String runtimeName = env.getOptions().get(EspressoOptions.RuntimeResourceId);
                 if (!VALID_RESOURCE_ID.matcher(runtimeName).matches()) {
@@ -758,69 +669,34 @@ public final class EspressoLanguage extends TruffleLanguage<EspressoContext> imp
                 }
                 Path resources = Path.of(resource.getAbsoluteFile().toString());
                 assert Files.isDirectory(resources);
-                env.getLogger(EspressoContext.class).config(() -> "Using " + runtimeName + " runtime at " + resources);
                 return resources;
             }
             for (String runtimeName : KNOWN_ESPRESSO_RUNTIMES) {
                 TruffleFile resource = env.getInternalResource("espresso-runtime-" + runtimeName);
                 if (resource != null) {
                     Path resources = Path.of(resource.getAbsoluteFile().toString());
-                    if (Files.isDirectory(resources)) {
-                        env.getLogger(EspressoContext.class).config(() -> "Selected " + runtimeName + " runtime at " + resources);
-                        return resources;
-                    }
+                    assert Files.isDirectory(resources);
+                    env.getLogger(EspressoContext.class).info(() -> "Selected " + runtimeName + " runtime");
+                    return resources;
                 }
             }
+            if (OS.getCurrent() == OS.Linux && JavaVersion.HOST_VERSION.compareTo(JavaVersion.latestSupported()) <= 0) {
+                if (!EspressoOptions.RUNNING_ON_SVM || (boolean) env.getConfig().getOrDefault("preinit", false)) {
+                    // we might be able to use the host runtime libraries
+                    env.getLogger(EspressoContext.class).info("Trying to use the host's runtime libraries");
+                    return Paths.get(System.getProperty("java.home"));
+                }
+            }
+            throw EspressoError.fatal("Couldn't find suitable runtime libraries for espresso. You can try to\n" +
+                            "add a jar with the necessary resources such as org.graalvm.espresso:espresso-runtime-resources-*,\n" +
+                            "or set java.JavaHome explicitly.");
         } catch (IOException e) {
             throw EspressoError.shouldNotReachHere(e);
         }
-        // Try to figure out if we are running in a legacy GraalVM or standalone
-        Path espressoHome = HomeFinder.getInstance().getLanguageHomes().get(EspressoLanguage.ID);
-        if (espressoHome != null && Files.isDirectory(espressoHome)) {
-            // ESPRESSO_HOME = GRAALVM_JAVA_HOME/languages/java
-            Path graalvmHome = HomeFinder.getInstance().getHomeFolder();
-            try {
-                if (graalvmHome != null) {
-                    Path expectedLanguageHome = graalvmHome.resolve("languages").resolve("java");
-                    if (Files.isDirectory(expectedLanguageHome) && Files.isSameFile(espressoHome, expectedLanguageHome)) {
-                        env.getLogger(EspressoContext.class).config(() -> "Using graalvm home at " + graalvmHome);
-                        return graalvmHome;
-                    }
-                }
-                Path tentativeHome = espressoHome.resolve("..").resolve("..");
-                Path expectedReleaseFile = tentativeHome.resolve("release");
-                if (Files.isRegularFile(expectedReleaseFile)) {
-                    Path normalized = tentativeHome.normalize();
-                    env.getLogger(EspressoContext.class).config(() -> "Using graalvm-like home at " + normalized);
-                    return normalized;
-                }
-            } catch (IOException e) {
-                env.getLogger(EspressoContext.class).log(Level.WARNING, "Error while probing espresso and graalvm home", e);
-            }
-        }
-        if (OS.getCurrent() == OS.Linux && JavaVersion.HOST_VERSION.compareTo(JavaVersion.latestSupported()) <= 0) {
-            if (!EspressoOptions.RUNNING_ON_SVM || (boolean) env.getConfig().getOrDefault("preinit", false)) {
-                // we might be able to use the host runtime libraries
-                env.getLogger(EspressoContext.class).config("Trying to use the host's runtime libraries");
-                return Paths.get(System.getProperty("java.home"));
-            }
-        }
-        throw EspressoError.fatal("Couldn't find suitable runtime libraries for espresso. You can try to\n" +
-                        "add a jar with the necessary resources such as org.graalvm.espresso:espresso-runtime-resources-*,\n" +
-                        "or set java.JavaHome explicitly.");
     }
 
     public DisableSingleStepping disableStepping() {
         return new DisableSingleStepping();
-    }
-
-    public int getMaxStackTraceDepth() {
-        return maxStackTraceDepth;
-    }
-
-    @SuppressWarnings("static-method")
-    public boolean needsInterruptedEvent() {
-        return OS.getCurrent() == OS.Windows;
     }
 
     public final class DisableSingleStepping implements AutoCloseable {

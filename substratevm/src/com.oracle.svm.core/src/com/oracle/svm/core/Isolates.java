@@ -36,9 +36,7 @@ import org.graalvm.word.WordBase;
 import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.c.CGlobalDataFactory;
 import com.oracle.svm.core.c.function.CEntryPointErrors;
-import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.os.CommittedMemoryProvider;
-import com.oracle.svm.core.util.PointerUtils;
 import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.core.util.VMError;
 
@@ -76,7 +74,6 @@ public class Isolates {
     /* Only used if SpawnIsolates is disabled. */
     private static final CGlobalData<Pointer> SINGLE_ISOLATE_ALREADY_CREATED = CGlobalDataFactory.createWord();
 
-    private static boolean startTimesAssigned;
     private static long startTimeNanos;
     private static long initDoneTimeMillis;
     private static long isolateId = -1;
@@ -111,33 +108,29 @@ public class Isolates {
     }
 
     public static void assignStartTime() {
-        assert !startTimesAssigned;
+        assert startTimeNanos == 0 : startTimeNanos;
+        assert initDoneTimeMillis == 0 : initDoneTimeMillis;
         startTimeNanos = System.nanoTime();
         initDoneTimeMillis = TimeUtils.currentTimeMillis();
-        startTimesAssigned = true;
     }
 
     /** Epoch-based timestamp. If possible, {@link #getStartTimeNanos()} should be used instead. */
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public static long getInitDoneTimeMillis() {
-        assert startTimesAssigned;
+        assert initDoneTimeMillis != 0;
         return initDoneTimeMillis;
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public static long getUptimeMillis() {
-        return TimeUtils.millisSinceNanos(getStartTimeNanos());
+        assert startTimeNanos != 0;
+        return TimeUtils.millisSinceNanos(startTimeNanos);
     }
 
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public static long getStartTimeNanos() {
-        assert startTimesAssigned;
+        assert startTimeNanos != 0;
         return startTimeNanos;
-    }
-
-    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-    public static boolean isStartTimeAssigned() {
-        return startTimesAssigned;
     }
 
     /**
@@ -152,17 +145,7 @@ public class Isolates {
 
     @Uninterruptible(reason = "Thread state not yet set up.")
     public static int checkIsolate(Isolate isolate) {
-        if (isolate.isNull()) {
-            return CEntryPointErrors.NULL_ARGUMENT;
-        } else if (SubstrateOptions.SpawnIsolates.getValue() && !PointerUtils.isAMultiple(isolate, Word.signed(Heap.getHeap().getHeapBaseAlignment()))) {
-            /*
-             * The Isolate pointer is currently the same as the heap base, so we can check if the
-             * alignment matches the one that is expected for the heap base. This will detect most
-             * (but not all) invalid isolates.
-             */
-            return CEntryPointErrors.INVALID_ISOLATE_ARGUMENT;
-        }
-        return CEntryPointErrors.NO_ERROR;
+        return isolate.isNull() ? CEntryPointErrors.NULL_ARGUMENT : CEntryPointErrors.NO_ERROR;
     }
 
     @Uninterruptible(reason = "Thread state not yet set up.")

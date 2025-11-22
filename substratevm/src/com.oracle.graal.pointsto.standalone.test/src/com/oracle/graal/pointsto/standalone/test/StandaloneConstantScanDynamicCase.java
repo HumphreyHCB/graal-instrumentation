@@ -50,5 +50,9 @@ public class StandaloneConstantScanDynamicCase {
 
     public void run() {
         STATUS.compareAndSet(this, status, 1);
+        doSomething();
+    }
+
+    private void doSomething() {
     }
 }

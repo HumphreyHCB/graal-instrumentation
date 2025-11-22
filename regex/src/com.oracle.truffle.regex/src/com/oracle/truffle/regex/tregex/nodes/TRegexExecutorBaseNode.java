@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -49,7 +49,7 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.strings.TruffleString;
 import com.oracle.truffle.regex.RegexSource;
 import com.oracle.truffle.regex.tregex.TRegexOptions;
-import com.oracle.truffle.regex.tregex.string.Encoding;
+import com.oracle.truffle.regex.tregex.string.Encodings;
 
 @GenerateWrapper
 public abstract class TRegexExecutorBaseNode extends Node implements InstrumentableNode {
@@ -74,20 +74,20 @@ public abstract class TRegexExecutorBaseNode extends Node implements Instrumenta
 
     public abstract RegexSource getSource();
 
-    public final Encoding getEncoding() {
+    public final Encodings.Encoding getEncoding() {
         return getSource().getEncoding();
     }
 
     public final boolean isUTF8() {
-        return getEncoding() == Encoding.UTF_8;
+        return getEncoding() == Encodings.UTF_8;
     }
 
     public final boolean isUTF16() {
-        return getEncoding().isUTF16();
+        return getEncoding() == Encodings.UTF_16;
     }
 
     public final boolean isUTF32() {
-        return getEncoding().isUTF32();
+        return getEncoding() == Encodings.UTF_32;
     }
 
     public final boolean isBooleanMatch() {

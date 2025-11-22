@@ -30,21 +30,15 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 
-import com.oracle.svm.core.code.RuntimeMetadataDecoderImpl;
 import org.graalvm.nativeimage.ImageSingletons;
 
-import com.oracle.svm.configure.config.ConfigurationMemberInfo;
-import com.oracle.svm.configure.config.SignatureUtil;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.Inject;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
-import com.oracle.svm.core.configure.RuntimeDynamicAccessMetadata;
-import com.oracle.svm.core.metadata.MetadataTracer;
 import com.oracle.svm.core.reflect.MissingReflectionRegistrationUtils;
 
 import sun.reflect.generics.repository.ConstructorRepository;
@@ -61,24 +55,9 @@ public final class Target_java_lang_reflect_Constructor {
     @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = ParameterAnnotationsComputer.class)//
     byte[] parameterAnnotations;
 
-    @Alias @RecomputeFieldValue(isFinal = true, kind = Kind.None) //
-    public int modifiers;
-
-    /**
-     * Value of the accessor when `this` is in the image heap. `null` for run-time constructed
-     * constructors.
-     */
     @Alias //
     @RecomputeFieldValue(kind = Kind.Custom, declClass = ExecutableAccessorComputer.class) //
-    public Target_jdk_internal_reflect_ConstructorAccessor constructorAccessor;
-
-    /**
-     * We need this indirection to use {@link #acquireConstructorAccessor()} for checking if
-     * run-time conditions for this method are satisfied.
-     */
-    @Inject //
-    @RecomputeFieldValue(kind = Kind.Reset) //
-    Target_jdk_internal_reflect_ConstructorAccessor constructorAccessorFromMetadata;
+    Target_jdk_internal_reflect_ConstructorAccessor constructorAccessor;
 
     @Alias
     @TargetElement(name = CONSTRUCTOR_NAME)
@@ -91,21 +70,10 @@ public final class Target_java_lang_reflect_Constructor {
 
     @Substitute
     public Target_jdk_internal_reflect_ConstructorAccessor acquireConstructorAccessor() {
-        if (MetadataTracer.enabled()) {
-            ConstructorUtil.traceConstructorAccess(SubstrateUtil.cast(this, Executable.class));
+        if (constructorAccessor == null) {
+            throw MissingReflectionRegistrationUtils.errorForQueriedOnlyExecutable(SubstrateUtil.cast(this, Executable.class));
         }
-
-        RuntimeDynamicAccessMetadata dynamicAccessMetadata = SubstrateUtil.cast(this, Target_java_lang_reflect_AccessibleObject.class).dynamicAccessMetadata;
-        assert constructorAccessor == null : "acquireConstructorAccessor() method must not be called if instance is in image heap.";
-        if (constructorAccessorFromMetadata == null || !dynamicAccessMetadata.satisfied()) {
-            throw MissingReflectionRegistrationUtils.reportInvokedExecutable(SubstrateUtil.cast(this, Executable.class));
-        }
-        return constructorAccessorFromMetadata;
-    }
-
-    @Substitute
-    public int getModifiers() {
-        return RuntimeMetadataDecoderImpl.clearInternalModifiers(modifiers);
+        return constructorAccessor;
     }
 
     static class AnnotationsComputer extends ReflectionMetadataComputer {
@@ -120,13 +88,5 @@ public final class Target_java_lang_reflect_Constructor {
         public Object transform(Object receiver, Object originalValue) {
             return ImageSingletons.lookup(EncodedRuntimeMetadataSupplier.class).getParameterAnnotationsEncoding((Executable) receiver);
         }
-    }
-}
-
-class ConstructorUtil {
-
-    static void traceConstructorAccess(Executable ctor) {
-        MetadataTracer.singleton().traceMethodAccess(ctor.getDeclaringClass(), CONSTRUCTOR_NAME, SignatureUtil.toInternalSignature(ctor.getParameterTypes()),
-                        ConfigurationMemberInfo.ConfigurationMemberDeclaration.DECLARED);
     }
 }

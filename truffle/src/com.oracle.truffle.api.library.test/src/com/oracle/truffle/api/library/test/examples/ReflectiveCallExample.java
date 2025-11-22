@@ -89,7 +89,7 @@ public class ReflectiveCallExample {
 
         // reflective lookup of the message.
         // might be a good idea to cache in a singleton.
-        Message targetMessage = Message.resolveExact(ReflectiveCallTestLibrary.class, "message", Object.class);
+        Message targetMessage = Message.resolve(ReflectiveCallTestLibrary.class, "message");
 
         assertEquals("result", reflection.send(value, targetMessage));
     }

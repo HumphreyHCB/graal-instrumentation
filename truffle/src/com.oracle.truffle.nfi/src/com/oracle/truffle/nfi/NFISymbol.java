@@ -40,6 +40,7 @@
  */
 package com.oracle.truffle.nfi;
 
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.ArityException;
@@ -119,14 +120,14 @@ final class NFISymbol implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    String getLanguageId() {
-        return NFILanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return NFILanguage.class;
     }
 
     @ExportMessage

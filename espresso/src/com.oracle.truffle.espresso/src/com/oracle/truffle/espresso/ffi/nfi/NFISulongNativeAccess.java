@@ -64,8 +64,8 @@ public final class NFISulongNativeAccess extends NFINativeAccess {
     }
 
     @TruffleBoundary
-    private static boolean isSulongLanguage(String languageId) {
-        return "llvm".equals(languageId);
+    private static boolean isSulongSymbolClass(Object symbolClass) {
+        return "LLVMLanguage".equals(((Class<?>) symbolClass).getSimpleName());
     }
 
     @Override
@@ -85,16 +85,16 @@ public final class NFISulongNativeAccess extends NFINativeAccess {
     }
 
     static boolean isFallbackSymbol(TruffleObject symbol, InteropLibrary interop) {
-        String languageId = getSymbolClass(symbol, interop);
-        return languageId == null || !isSulongLanguage(languageId);
+        Object symbolClass = getSymbolClass(symbol, interop);
+        return symbolClass == null || !isSulongSymbolClass(symbolClass);
     }
 
-    private static String getSymbolClass(TruffleObject symbol, InteropLibrary interop) {
-        if (!interop.hasLanguageId(symbol)) {
+    private static Object getSymbolClass(TruffleObject symbol, InteropLibrary interop) {
+        if (!interop.hasLanguage(symbol)) {
             return null;
         }
         try {
-            return interop.getLanguageId(symbol);
+            return interop.getLanguage(symbol);
         } catch (UnsupportedMessageException e) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw EspressoError.shouldNotReachHere(e);
@@ -158,7 +158,11 @@ public final class NFISulongNativeAccess extends NFINativeAccess {
     private static Path legacyGraalvmllvmBootLibraryPath(String javaVersion, Path llvmRoot) {
         // Try $ESPRESSO_HOME/lib/llvm/default first.
         Path llvmDefault = llvmRoot.resolve("default");
+        if (!Files.exists(llvmDefault)) {
+            LOGGER.warning(() -> "espresso-llvm (default) component not found. Install it, if available for your platform.");
+        }
         String llvmDefaultVersion = getJavaVersion(llvmDefault);
+        LOGGER.fine(() -> "Check " + llvmDefault + " with Java version: " + llvmDefaultVersion);
         if (javaVersion.equals(llvmDefaultVersion)) {
             return llvmDefault;
         }

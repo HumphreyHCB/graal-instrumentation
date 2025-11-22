@@ -30,7 +30,6 @@ import org.graalvm.webimage.api.JSObject;
 
 public class JSObjectSubclassTest {
     public static final String[] OUTPUT = {
-                    // jsObjectSubclass
                     "Declared(made in Java)",
                     "made in Java",
                     "Declared(made in JavaScript)",
@@ -57,15 +56,12 @@ public class JSObjectSubclassTest {
                     "inner imported in Java",
                     "InnerImported(inner exported from JavaScript)",
                     "inner exported from JavaScript",
-                    // exportedReturningObject
                     "non-exported subclass",
                     "non-exported",
                     "non-exported subclass",
                     "non-exported",
-                    // heapGeneratedObjects
                     "5",
                     "8",
-                    // nonInstantiatedImported
                     "7.0",
     };
 
@@ -166,7 +162,6 @@ public class JSObjectSubclassTest {
         inspectHeapOnlyPoint("dummy");
     }
 
-    // TODO GR-65036 This will have to be updated since the x and y values will be JS primitives
     @JS("const { x, y } = dummy.$vm.exports.com.oracle.svm.webimage.jtt.api.HeapOnlyPointStatics.getPoint(); console.log(x.$as('number')); console.log(y.$as('number'));")
     private static native void inspectHeapOnlyPoint(String dummy);
 }
@@ -217,7 +212,7 @@ class ImportedJSObject extends JSObject {
 
 @JS.Export
 class SubclassOfImportedJSObject extends ImportedJSObject {
-    protected int index;
+    protected final int index;
 
     SubclassOfImportedJSObject(String importDeclaration, int index) {
         super(importDeclaration);

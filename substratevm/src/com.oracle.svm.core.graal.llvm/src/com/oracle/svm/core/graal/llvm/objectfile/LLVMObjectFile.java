@@ -165,7 +165,7 @@ public class LLVMObjectFile extends ObjectFile {
     }
 
     @Override
-    public Symbol createUndefinedSymbol(String name, boolean isCode) {
+    public Symbol createUndefinedSymbol(String name, int size, boolean isCode) {
         SymbolTable symtab = getOrCreateSymbolTable();
         return symtab.newUndefinedEntry(name, isCode);
     }
@@ -181,6 +181,7 @@ public class LLVMObjectFile extends ObjectFile {
     }
 
     @Override
+    @SuppressWarnings("try")
     public final void write(DebugContext context, Path outputFile) throws IOException {
         List<Element> sortedObjectFileElements = new ArrayList<>();
         bake(sortedObjectFileElements);
@@ -257,7 +258,7 @@ public class LLVMObjectFile extends ObjectFile {
     }
 
     private void compileBitcodeBatches(BatchExecutor executor, DebugContext context, int numBatches) {
-        executor.forEach(numBatches, batchId -> _ -> {
+        executor.forEach(numBatches, batchId -> (debugContextInner) -> {
             llvmCompile(context, getCompiledBitcodeFilename(batchId), getBitcodeFilename(batchId), basePath, (s -> s));
         });
     }

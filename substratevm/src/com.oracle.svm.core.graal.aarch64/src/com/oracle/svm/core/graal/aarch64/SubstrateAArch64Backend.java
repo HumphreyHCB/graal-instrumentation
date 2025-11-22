@@ -49,13 +49,10 @@ import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.aarch64.SubstrateAArch64MacroAssembler;
 import com.oracle.svm.core.config.ConfigurationValues;
-import com.oracle.svm.core.deopt.DeoptimizationRuntime;
-import com.oracle.svm.core.deopt.DeoptimizationSupport;
 import com.oracle.svm.core.deopt.Deoptimizer;
 import com.oracle.svm.core.graal.code.AssignedLocation;
 import com.oracle.svm.core.graal.code.PatchConsumerFactory;
-import com.oracle.svm.core.graal.code.SharedCompilationResult;
-import com.oracle.svm.core.graal.code.SubstrateBackendWithAssembler;
+import com.oracle.svm.core.graal.code.SubstrateBackend;
 import com.oracle.svm.core.graal.code.SubstrateCallingConvention;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionKind;
 import com.oracle.svm.core.graal.code.SubstrateCallingConventionType;
@@ -105,7 +102,6 @@ import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompressEncoding;
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.alloc.RegisterAllocationConfig;
-import jdk.graal.compiler.core.common.calc.Condition;
 import jdk.graal.compiler.core.common.memory.MemoryExtendKind;
 import jdk.graal.compiler.core.common.memory.MemoryOrderMode;
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
@@ -167,11 +163,6 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.common.AddressLoweringByUsePhase;
 import jdk.graal.compiler.phases.util.Providers;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64SimdLIRKindTool;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorArithmeticLIRGenerator;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorMoveFactory;
-import jdk.graal.compiler.vector.lir.aarch64.AArch64VectorNodeMatchRules;
-import jdk.graal.compiler.vector.nodes.simd.SimdConstant;
 import jdk.vm.ci.aarch64.AArch64;
 import jdk.vm.ci.aarch64.AArch64Kind;
 import jdk.vm.ci.code.CallingConvention;
@@ -190,11 +181,10 @@ import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
-import jdk.vm.ci.meta.PlatformKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.Value;
 
-public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<SubstrateAArch64MacroAssembler> implements LIRGenerationProvider {
+public class SubstrateAArch64Backend extends SubstrateBackend implements LIRGenerationProvider {
 
     protected static CompressEncoding getCompressEncoding() {
         return ImageSingletons.lookup(CompressEncoding.class);
@@ -487,19 +477,27 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
             super(compilationId, lir, frameMapBuilder, registerAllocationConfig, callingConvention);
             this.method = method;
 
-            if (method.hasCalleeSavedRegisters()) {
+            /*
+             * Besides for methods with callee saved registers, we reserve additional stack space
+             * for lazyDeoptStub too. This is necessary because the lazy deopt stub might read
+             * callee-saved register values in the callee of the function to be deoptimized, thus
+             * that stack space must not be overwritten by the lazy deopt stub.
+             */
+            if (method.hasCalleeSavedRegisters() || method.getDeoptStubType() == Deoptimizer.StubType.LazyEntryStub) {
                 AArch64CalleeSavedRegisters calleeSavedRegisters = AArch64CalleeSavedRegisters.singleton();
                 FrameMap frameMap = ((FrameMapBuilderTool) frameMapBuilder).getFrameMap();
                 int registerSaveAreaSizeInBytes = calleeSavedRegisters.getSaveAreaSize();
                 StackSlot calleeSaveArea = frameMap.allocateStackMemory(registerSaveAreaSizeInBytes, frameMap.getTarget().wordSize);
 
-                /*
-                 * The offset of the callee save area must be fixed early during image generation.
-                 * It is accessed when compiling methods that have a call with callee-saved calling
-                 * convention. Here we verify that offset computed earlier is the same as the offset
-                 * actually reserved.
-                 */
-                calleeSavedRegisters.verifySaveAreaOffsetInFrame(calleeSaveArea.getRawOffset());
+                if (method.hasCalleeSavedRegisters()) {
+                    /*
+                     * The offset of the callee save area must be fixed early during image
+                     * generation. It is accessed when compiling methods that have a call with
+                     * callee-saved calling convention. Here we verify that offset computed earlier
+                     * is the same as the offset actually reserved.
+                     */
+                    calleeSavedRegisters.verifySaveAreaOffsetInFrame(calleeSaveArea.getRawOffset());
+                }
             }
 
             if (method.canDeoptimize() || method.isDeoptTarget()) {
@@ -601,13 +599,7 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
 
         @Override
         public void emitDeoptimize(Value actionAndReason, Value failedSpeculation, LIRFrameState state) {
-            if (!SubstrateUtil.HOSTED && DeoptimizationSupport.enabled()) {
-                ForeignCallLinkage linkage = getForeignCalls().lookupForeignCall(DeoptimizationRuntime.DEOPTIMIZE);
-                emitForeignCall(linkage, state, actionAndReason, failedSpeculation);
-                append(new DeadEndOp());
-            } else {
-                throw shouldNotReachHere("Substrate VM does not use deoptimization");
-            }
+            throw shouldNotReachHere("Substrate VM does not use deoptimization");
         }
 
         @Override
@@ -686,8 +678,8 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
         }
 
         @Override
-        public boolean isReservedRegister(Register r) {
-            return ReservedRegisters.singleton().isReservedRegister(r);
+        public Register getHeapBaseRegister() {
+            return ReservedRegisters.singleton().getHeapBaseRegister();
         }
 
         @Override
@@ -1034,8 +1026,8 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
     }
 
     /**
-     * Generates the prologue of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EntryStub}
-     * method.
+     * Generates the prolog of a
+     * {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#EagerEntryStub} method.
      */
     protected static class DeoptEntryStubContext extends SubstrateAArch64FrameContext {
         protected final CallingConvention callingConvention;
@@ -1049,17 +1041,8 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
         public void enter(CompilationResultBuilder crb) {
             AArch64MacroAssembler masm = (AArch64MacroAssembler) crb.asm;
             RegisterConfig registerConfig = crb.frameMap.getRegisterConfig();
-            Register frameRegister = registerConfig.getFrameRegister();
             Register gpReturnReg = registerConfig.getReturnRegister(JavaKind.Object);
             Register fpReturnReg = registerConfig.getReturnRegister(JavaKind.Double);
-
-            /* Create the frame. */
-            super.enter(crb);
-
-            /*
-             * Synthesize the parameters for the deopt stub. This needs to be done after enter() to
-             * avoid overwriting register values that it might save to the stack.
-             */
 
             /* Pass the general purpose and floating point registers to the deopt stub. */
             Register secondParameter = ValueUtil.asRegister(callingConvention.getArgument(1));
@@ -1069,16 +1052,18 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
             masm.fmov(64, thirdParameter, fpReturnReg);
 
             /*
-             * Pass the address of the frame to deoptimize as first argument. Do this last, because
-             * the first argument register may overlap with the object return register.
+             * Load DeoptimizedFrame. Perform this operation last, because the first argument
+             * register may overlap with the object return register.
              */
             Register firstParameter = ValueUtil.asRegister(callingConvention.getArgument(0));
-            masm.add(64, firstParameter, frameRegister, crb.frameMap.totalFrameSize());
+            masm.mov(64, firstParameter, registerConfig.getFrameRegister());
+
+            super.enter(crb);
         }
     }
 
     /**
-     * Generates the epilogue of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#ExitStub}
+     * Generates the epilog of a {@link com.oracle.svm.core.deopt.Deoptimizer.StubType#ExitStub}
      * method.
      */
     protected static class DeoptExitStubContext extends SubstrateAArch64FrameContext {
@@ -1333,15 +1318,11 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
         CompilationResultBuilder crb = factory.createBuilder(getProviders(), lirGenResult.getFrameMap(), masm, dataBuilder, frameContext, options, debug, compilationResult,
                         uncompressedNullRegister, lir);
         crb.setTotalFrameSize(lirGenResult.getFrameMap().totalFrameSize());
-        if (SubstrateUtil.HOSTED) {
-            var sharedCompilationResult = (SharedCompilationResult) compilationResult;
-            sharedCompilationResult.setCodeAlignment(SubstrateOptions.buildTimeCodeAlignment(options));
-        }
         return crb;
     }
 
     protected FrameContext createFrameContext(SharedMethod method, Deoptimizer.StubType stubType, CallingConvention callingConvention) {
-        if (stubType == Deoptimizer.StubType.EntryStub) {
+        if (stubType == Deoptimizer.StubType.EagerEntryStub || stubType == Deoptimizer.StubType.LazyEntryStub) {
             return new DeoptEntryStubContext(method, callingConvention);
         } else if (stubType == Deoptimizer.StubType.ExitStub) {
             return new DeoptExitStubContext(method, callingConvention);
@@ -1356,28 +1337,16 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
         return new SubstrateAArch64FrameContext(method);
     }
 
-    protected static boolean isVectorizationTarget() {
-        return ((AArch64) ConfigurationValues.getTarget().arch).getFeatures().contains(AArch64.CPUFeature.ASIMD);
-    }
-
     protected AArch64ArithmeticLIRGenerator createArithmeticLIRGen(AllocatableValue nullRegisterValue) {
-        if (isVectorizationTarget()) {
-            return new AArch64VectorArithmeticLIRGenerator(nullRegisterValue);
-        } else {
-            return new AArch64ArithmeticLIRGenerator(nullRegisterValue);
-        }
+        return new AArch64ArithmeticLIRGenerator(nullRegisterValue);
     }
 
     protected AArch64MoveFactory createMoveFactory(LIRGenerationResult lirGenRes) {
         SharedMethod method = ((SubstrateLIRGenerationResult) lirGenRes).getMethod();
-        AArch64MoveFactory factory = new SubstrateAArch64MoveFactory(method, createLirKindTool());
-        if (isVectorizationTarget()) {
-            factory = new AArch64VectorMoveFactory(factory, new MoveFactory.BackupSlotProvider(lirGenRes.getFrameMapBuilder()));
-        }
-        return factory;
+        return new SubstrateAArch64MoveFactory(method, createLirKindTool());
     }
 
-    protected static class SubstrateAArch64LIRKindTool extends AArch64LIRKindTool implements AArch64SimdLIRKindTool {
+    protected static class SubstrateAArch64LIRKindTool extends AArch64LIRKindTool {
         @Override
         public LIRKind getNarrowOopKind() {
             return LIRKind.compressedReference(AArch64Kind.QWORD);
@@ -1393,75 +1362,16 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
         return new SubstrateAArch64LIRKindTool();
     }
 
-    protected class SubstrateAArch64VectorLIRGenerator extends SubstrateAArch64LIRGenerator {
-        public SubstrateAArch64VectorLIRGenerator(LIRKindTool lirKindTool, AArch64ArithmeticLIRGenerator arithmeticLIRGen, MoveFactory moveFactory, Providers providers,
-                        LIRGenerationResult lirGenRes) {
-            super(lirKindTool, arithmeticLIRGen, moveFactory, providers, lirGenRes);
-        }
-
-        @Override
-        public Variable emitIntegerTestMove(Value left, Value right, Value trueValue, Value falseValue) {
-            AArch64VectorArithmeticLIRGenerator vectorGen = (AArch64VectorArithmeticLIRGenerator) arithmeticLIRGen;
-            Variable vectorResult = vectorGen.emitVectorIntegerTestMove(left, right, trueValue, falseValue);
-            if (vectorResult != null) {
-                return vectorResult;
-            }
-            return super.emitIntegerTestMove(left, right, trueValue, falseValue);
-        }
-
-        @Override
-        public Variable emitConditionalMove(PlatformKind cmpKind, Value left, Value right, Condition cond, boolean unorderedIsTrue, Value trueValue, Value falseValue) {
-            AArch64VectorArithmeticLIRGenerator vectorGen = (AArch64VectorArithmeticLIRGenerator) arithmeticLIRGen;
-            Variable vectorResult = vectorGen.emitVectorConditionalMove(cmpKind, left, right, cond, unorderedIsTrue, trueValue, falseValue);
-            if (vectorResult != null) {
-                return vectorResult;
-            }
-            return super.emitConditionalMove(cmpKind, left, right, cond, unorderedIsTrue, trueValue, falseValue);
-        }
-
-        @Override
-        public Value emitConstant(LIRKind kind, Constant constant) {
-            int length = kind.getPlatformKind().getVectorLength();
-            if (length == 1) {
-                return super.emitConstant(kind, constant);
-            } else if (constant instanceof SimdConstant) {
-                assert ((SimdConstant) constant).getVectorLength() == length;
-                return super.emitConstant(kind, constant);
-            } else {
-                return super.emitConstant(kind, SimdConstant.broadcast(constant, length));
-            }
-        }
-
-        @Override
-        public Variable emitReverseBytes(Value input) {
-            AArch64VectorArithmeticLIRGenerator vectorGen = (AArch64VectorArithmeticLIRGenerator) arithmeticLIRGen;
-            Variable vectorResult = vectorGen.emitVectorByteSwap(input);
-            if (vectorResult != null) {
-                return vectorResult;
-            }
-            return super.emitReverseBytes(input);
-        }
-
-    }
-
     @Override
     public LIRGeneratorTool newLIRGenerator(LIRGenerationResult lirGenRes) {
         RegisterValue nullRegisterValue = useLinearPointerCompression() ? ReservedRegisters.singleton().getHeapBaseRegister().asValue(LIRKind.unknownReference(AArch64Kind.QWORD)) : null;
         AArch64ArithmeticLIRGenerator arithmeticLIRGen = createArithmeticLIRGen(nullRegisterValue);
         AArch64MoveFactory moveFactory = createMoveFactory(lirGenRes);
-        if (isVectorizationTarget()) {
-            return new SubstrateAArch64VectorLIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
-        } else {
-            return new SubstrateAArch64LIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
-        }
+        return new SubstrateAArch64LIRGenerator(createLirKindTool(), arithmeticLIRGen, moveFactory, getProviders(), lirGenRes);
     }
 
     protected AArch64NodeMatchRules createMatchRules(LIRGeneratorTool lirGen) {
-        if (isVectorizationTarget()) {
-            return new AArch64VectorNodeMatchRules(lirGen);
-        } else {
-            return new AArch64NodeMatchRules(lirGen);
-        }
+        return new AArch64NodeMatchRules(lirGen);
     }
 
     @Override
@@ -1563,10 +1473,5 @@ public class SubstrateAArch64Backend extends SubstrateBackendWithAssembler<Subst
     @Override
     public BasePhase<CoreProviders> newAddressLoweringPhase(CodeCacheProvider codeCache) {
         return new AddressLoweringByUsePhase(new AArch64AddressLoweringByUse(createLirKindTool(), false));
-    }
-
-    @Override
-    public SubstrateAArch64MacroAssembler createAssembler(OptionValues options) {
-        return new SubstrateAArch64MacroAssembler(getTarget());
     }
 }

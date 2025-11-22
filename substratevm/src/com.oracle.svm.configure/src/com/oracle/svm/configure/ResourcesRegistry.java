@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,13 +28,13 @@ import java.util.Collection;
 import java.util.Locale;
 
 import org.graalvm.nativeimage.ImageSingletons;
-import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
+import org.graalvm.nativeimage.impl.ConfigurationCondition;
 import org.graalvm.nativeimage.impl.RuntimeResourceSupport;
 
 public interface ResourcesRegistry<C> extends RuntimeResourceSupport<C> {
 
     @SuppressWarnings("unchecked")
-    static ResourcesRegistry<AccessCondition> singleton() {
+    static ResourcesRegistry<ConfigurationCondition> singleton() {
         return ImageSingletons.lookup(ResourcesRegistry.class);
     }
 
@@ -51,10 +51,10 @@ public interface ResourcesRegistry<C> extends RuntimeResourceSupport<C> {
     }
 
     @Override
-    void ignoreResources(C condition, String pattern, Object origin);
+    void ignoreResources(C condition, String pattern);
 
     @Override
-    void addResourceBundles(C condition, boolean preserved, String name);
+    void addResourceBundles(C condition, String name);
 
     @Override
     void addResourceBundles(C condition, String basename, Collection<Locale> locales);

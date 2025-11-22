@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,12 +32,10 @@ import static jdk.graal.compiler.nodeinfo.NodeSize.SIZE_IGNORED;
 
 import java.util.function.Consumer;
 
-import org.junit.Test;
-
 import jdk.graal.compiler.code.CompilationResult;
+import jdk.graal.compiler.core.test.GraalCompilerTest;
 import jdk.graal.compiler.core.common.LIRKind;
 import jdk.graal.compiler.core.common.type.StampFactory;
-import jdk.graal.compiler.core.test.GraalCompilerTest;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.DebugContext.Builder;
 import jdk.graal.compiler.debug.DebugContext.Scope;
@@ -56,6 +54,8 @@ import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.spi.LIRLowerable;
 import jdk.graal.compiler.nodes.spi.NodeLIRBuilderTool;
 import jdk.graal.compiler.options.OptionValues;
+import org.junit.Test;
+
 import jdk.vm.ci.code.BytecodeFrame;
 import jdk.vm.ci.code.CodeCacheProvider;
 import jdk.vm.ci.code.VirtualObject;
@@ -159,7 +159,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
         CompilationResult compResult = compile(method, graph);
         CodeCacheProvider codeCache = getCodeCache();
         HotSpotCompiledCode compiledCode = HotSpotCompiledCodeBuilder.createCompiledCode(codeCache, method, null, compResult, getInitialOptions());
-        codeCache.addCode(method, compiledCode, null, null, true);
+        codeCache.addCode(method, compiledCode, null, null);
     }
 
     @Test(expected = Error.class)
@@ -203,7 +203,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testUnexpectedScopeValuesLength() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.FALSE}, new JavaKind[0], 0, 0, 0);
             safepoint.accept(newState);
         });
@@ -211,7 +211,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testUnexpectedScopeSlotKindsLength() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[0], new JavaKind[]{JavaKind.Boolean}, 0, 0, 0);
             safepoint.accept(newState);
         });
@@ -219,7 +219,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testWrongMonitorType() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.INT_0}, new JavaKind[]{}, 0, 0, 1);
             safepoint.accept(newState);
         });
@@ -227,7 +227,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testUnexpectedIllegalValue() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{Value.ILLEGAL}, new JavaKind[]{JavaKind.Int}, 1, 0, 0);
             safepoint.accept(newState);
         });
@@ -245,7 +245,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testWrongConstantType() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.INT_0}, new JavaKind[]{JavaKind.Object}, 1, 0, 0);
             safepoint.accept(newState);
         });
@@ -253,7 +253,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testUnsupportedConstantType() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.forShort((short) 0)}, new JavaKind[]{JavaKind.Short}, 1, 0, 0);
             safepoint.accept(newState);
         });
@@ -261,7 +261,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
 
     @Test(expected = JVMCIError.class)
     public void testUnexpectedNull() {
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.NULL_POINTER}, new JavaKind[]{JavaKind.Int}, 1, 0, 0);
             safepoint.accept(newState);
         });
@@ -270,7 +270,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     @Test(expected = JVMCIError.class)
     public void testUnexpectedObject() {
         JavaValue wrapped = getSnippetReflection().forObject(this);
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{wrapped}, new JavaKind[]{JavaKind.Int}, 1, 0, 0);
             safepoint.accept(newState);
         });
@@ -279,15 +279,16 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     private static final class UnknownJavaValue implements JavaValue {
     }
 
+    @SuppressWarnings("try")
     @Test(expected = Error.class)
     public void testUnknownJavaValue() {
         DebugContext debug = new Builder(getInitialOptions()).build();
-        try (Scope _ = debug.disable()) {
+        try (Scope s = debug.disable()) {
             /*
              * Expected: either AssertionError or GraalError, depending on whether the unit test run
              * is with assertions enabled or disabled.
              */
-            test(debug, (_, state, safepoint) -> {
+            test(debug, (tool, state, safepoint) -> {
                 LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{new UnknownJavaValue()}, new JavaKind[]{JavaKind.Int}, 1, 0, 0);
                 safepoint.accept(newState);
             });
@@ -300,7 +301,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
          * Expected: either AssertionError or GraalError, depending on whether the unit test run is
          * with assertions enabled or disabled.
          */
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             LIRFrameState newState = modifyTopFrame(state, new JavaValue[]{JavaConstant.DOUBLE_0, JavaConstant.INT_0}, new JavaKind[]{JavaKind.Double, JavaKind.Int}, 2, 0, 0);
             safepoint.accept(newState);
         });
@@ -309,7 +310,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     @Test(expected = JVMCIError.class)
     public void testInvalidVirtualObjectId() {
         ResolvedJavaType obj = getMetaAccess().lookupJavaType(Object.class);
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             VirtualObject o = VirtualObject.get(obj, 5);
             o.setValues(new JavaValue[0], new JavaKind[0]);
 
@@ -320,7 +321,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     @Test(expected = JVMCIError.class)
     public void testDuplicateVirtualObject() {
         ResolvedJavaType obj = getMetaAccess().lookupJavaType(Object.class);
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             VirtualObject o1 = VirtualObject.get(obj, 0);
             o1.setValues(new JavaValue[0], new JavaKind[0]);
 
@@ -334,7 +335,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     @Test(expected = JVMCIError.class)
     public void testUnexpectedVirtualObject() {
         ResolvedJavaType obj = getMetaAccess().lookupJavaType(Object.class);
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             VirtualObject o = VirtualObject.get(obj, 0);
             o.setValues(new JavaValue[0], new JavaKind[0]);
 
@@ -346,7 +347,7 @@ public class JVMCIInfopointErrorTest extends GraalCompilerTest {
     @Test(expected = JVMCIError.class)
     public void testUndefinedVirtualObject() {
         ResolvedJavaType obj = getMetaAccess().lookupJavaType(Object.class);
-        test((_, state, safepoint) -> {
+        test((tool, state, safepoint) -> {
             VirtualObject o0 = VirtualObject.get(obj, 0);
             o0.setValues(new JavaValue[0], new JavaKind[0]);
 

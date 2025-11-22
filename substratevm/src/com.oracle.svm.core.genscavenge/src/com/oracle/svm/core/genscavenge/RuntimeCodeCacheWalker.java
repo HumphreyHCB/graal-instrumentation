@@ -33,7 +33,7 @@ import com.oracle.svm.core.code.CodeInfoAccess;
 import com.oracle.svm.core.code.RuntimeCodeCache.CodeInfoVisitor;
 import com.oracle.svm.core.code.RuntimeCodeInfoAccess;
 import com.oracle.svm.core.code.UntetheredCodeInfoAccess;
-import com.oracle.svm.core.genscavenge.RuntimeCodeCacheReachabilityAnalyzer.UnreachableObjectsException;
+import com.oracle.svm.core.heap.ObjectReferenceVisitor;
 import com.oracle.svm.core.util.DuplicatedInNativeCode;
 
 import jdk.graal.compiler.word.Word;
@@ -49,19 +49,19 @@ import jdk.graal.compiler.word.Word;
  */
 final class RuntimeCodeCacheWalker implements CodeInfoVisitor {
     private final RuntimeCodeCacheReachabilityAnalyzer checkForUnreachableObjectsVisitor;
-    private final GreyToBlackObjRefVisitor greyToBlackObjectVisitor;
+    private final ObjectReferenceVisitor greyToBlackObjectVisitor;
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    RuntimeCodeCacheWalker(GreyToBlackObjRefVisitor greyToBlackObjectVisitor) {
+    RuntimeCodeCacheWalker(ObjectReferenceVisitor greyToBlackObjectVisitor) {
         this.checkForUnreachableObjectsVisitor = new RuntimeCodeCacheReachabilityAnalyzer();
         this.greyToBlackObjectVisitor = greyToBlackObjectVisitor;
     }
 
     @Override
     @DuplicatedInNativeCode
-    public void visitCode(CodeInfo codeInfo) {
+    public boolean visitCode(CodeInfo codeInfo) {
         if (RuntimeCodeInfoAccess.areAllObjectsOnImageHeap(codeInfo)) {
-            return;
+            return true;
         }
 
         /*
@@ -84,7 +84,7 @@ final class RuntimeCodeCacheWalker implements CodeInfoVisitor {
                  */
                 RuntimeCodeInfoAccess.walkObjectFields(codeInfo, greyToBlackObjectVisitor);
                 CodeInfoAccess.setState(codeInfo, CodeInfo.STATE_PENDING_FREE);
-                return;
+                return true;
             }
 
             /*
@@ -98,7 +98,7 @@ final class RuntimeCodeCacheWalker implements CodeInfoVisitor {
             if (state == CodeInfo.STATE_NON_ENTRANT || invalidateCodeThatReferencesUnreachableObjects && state == CodeInfo.STATE_CODE_CONSTANTS_LIVE && hasWeakReferenceToUnreachableObject(codeInfo)) {
                 RuntimeCodeInfoAccess.walkObjectFields(codeInfo, greyToBlackObjectVisitor);
                 CodeInfoAccess.setState(codeInfo, CodeInfo.STATE_PENDING_REMOVAL_FROM_CODE_CACHE);
-                return;
+                return true;
             }
         }
 
@@ -112,6 +112,7 @@ final class RuntimeCodeCacheWalker implements CodeInfoVisitor {
          */
         RuntimeCodeInfoAccess.walkStrongReferences(codeInfo, greyToBlackObjectVisitor);
         RuntimeCodeInfoAccess.walkWeakReferences(codeInfo, greyToBlackObjectVisitor);
+        return true;
     }
 
     private static boolean isReachable(Object possiblyForwardedObject) {
@@ -119,11 +120,8 @@ final class RuntimeCodeCacheWalker implements CodeInfoVisitor {
     }
 
     private boolean hasWeakReferenceToUnreachableObject(CodeInfo codeInfo) {
-        try {
-            RuntimeCodeInfoAccess.walkWeakReferences(codeInfo, checkForUnreachableObjectsVisitor);
-            return false;
-        } catch (UnreachableObjectsException e) {
-            return true;
-        }
+        checkForUnreachableObjectsVisitor.initialize();
+        RuntimeCodeInfoAccess.walkWeakReferences(codeInfo, checkForUnreachableObjectsVisitor);
+        return checkForUnreachableObjectsVisitor.hasUnreachableObjects();
     }
 }

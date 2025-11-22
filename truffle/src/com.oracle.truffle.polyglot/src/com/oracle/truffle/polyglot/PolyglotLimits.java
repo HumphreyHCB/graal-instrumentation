@@ -93,7 +93,6 @@ final class PolyglotLimits {
         final EventContext eventContext;
         final PolyglotEngineImpl engine;
         @CompilationFinal private boolean seenInnerContext;
-        @CompilationFinal private boolean seenOverflow;
 
         StatementIncrementNode(EventContext context, EngineLimits limits) {
             this.limits = limits;
@@ -111,18 +110,7 @@ final class PolyglotLimits {
                 count = currentContext.volatileStatementCounter.decrementAndGet();
             }
             if (count < 0) { // overflowed
-                /*
-                 * The following if statement could be replaced by just
-                 * CompilerDirectives.transferToInterpreterAndInvalidate(), but that would cause a
-                 * deoptimization loop if the same code hit the statement limit at the same spot
-                 * repeatedly.
-                 */
-                if (!seenOverflow) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    seenOverflow = true;
-                } else {
-                    CompilerDirectives.transferToInterpreter();
-                }
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 notifyStatementLimitReached(currentContext, currentContext.statementLimit - count, currentContext.statementLimit);
             }
         }

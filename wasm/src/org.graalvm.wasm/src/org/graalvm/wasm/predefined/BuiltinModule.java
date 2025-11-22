@@ -58,6 +58,8 @@ import org.graalvm.wasm.predefined.spectest.SpectestModule;
 import org.graalvm.wasm.predefined.testutil.TestutilModule;
 import org.graalvm.wasm.predefined.wasi.WasiModule;
 
+import com.oracle.truffle.api.CompilerAsserts;
+
 public abstract class BuiltinModule {
     private static final Map<String, BuiltinModule> predefinedModules = Map.of(
                     "emscripten", new EmscriptenModule(),
@@ -66,12 +68,13 @@ public abstract class BuiltinModule {
                     "spectest", new SpectestModule(),
                     "go", new GoModule());
 
-    public static BuiltinModule requireBuiltinModule(String predefinedModuleName) {
+    public static WasmInstance createBuiltinInstance(WasmLanguage language, WasmStore store, String name, String predefinedModuleName) {
+        CompilerAsserts.neverPartOfCompilation();
         final BuiltinModule builtinModule = predefinedModules.get(predefinedModuleName);
         if (builtinModule == null) {
             throw WasmException.create(Failure.UNSPECIFIED_INVALID, "Unknown predefined module: " + predefinedModuleName);
         }
-        return builtinModule;
+        return builtinModule.createInstance(language, store, name);
     }
 
     protected BuiltinModule() {
@@ -79,12 +82,8 @@ public abstract class BuiltinModule {
 
     protected abstract WasmModule createModule(WasmLanguage language, WasmContext context, String name);
 
-    public WasmInstance createInstance(WasmLanguage language, WasmStore store, String name) {
-        final WasmModule module = language.getOrCreateBuiltinModule(this, bm -> {
-            WasmModule newModule = createModule(language, store.context(), name);
-            newModule.finishSymbolTable();
-            return newModule;
-        });
+    protected WasmInstance createInstance(WasmLanguage language, WasmStore store, String name) {
+        final WasmModule module = language.getOrCreateBuiltinModule(this, bm -> createModule(language, store.context(), name));
 
         final WasmInstance instance = new WasmInstance(store, module);
         instance.createLinkActions();
@@ -97,7 +96,7 @@ public abstract class BuiltinModule {
         return instance;
     }
 
-    protected WasmFunction defineFunction(WasmContext context, WasmModule module, String name, int[] paramTypes, int[] retTypes, WasmRootNode rootNode) {
+    protected WasmFunction defineFunction(WasmContext context, WasmModule module, String name, byte[] paramTypes, byte[] retTypes, WasmRootNode rootNode) {
         // Must instantiate RootNode in the right language / sharing layer.
         assert context.language() == rootNode.getLanguage(WasmLanguage.class);
         // We could check if the same function type had already been allocated,
@@ -109,23 +108,27 @@ public abstract class BuiltinModule {
         return function;
     }
 
-    protected int defineGlobal(WasmModule module, String name, int valueType, byte mutability, Object value) {
+    protected int defineGlobal(WasmModule module, String name, byte valueType, byte mutability, Object value) {
         int index = module.symbolTable().numGlobals();
         module.symbolTable().declareExportedGlobalWithValue(name, index, valueType, mutability, value);
         return index;
     }
 
-    protected int defineTable(WasmContext context, WasmModule module, String tableName, int initSize, int maxSize, int type) {
+    protected int defineTable(WasmContext context, WasmModule module, String tableName, int initSize, int maxSize, byte type) {
         final boolean referenceTypes = context.getContextOptions().supportBulkMemoryAndRefTypes();
-        if (!WasmType.isReferenceType(type)) {
-            throw WasmException.create(Failure.MALFORMED_REFERENCE_TYPE, "Only reference types supported in tables.");
-        } else if (!referenceTypes && type != WasmType.FUNCREF_TYPE) {
-            throw WasmException.create(Failure.UNSPECIFIED_MALFORMED, "Only function types are currently supported in tables.");
-        } else if (!WasmType.isNullable(type)) {
-            throw WasmException.create(Failure.TYPE_MISMATCH, "Tables of built-in modules must be nullable.");
+        switch (type) {
+            case WasmType.FUNCREF_TYPE:
+                break;
+            case WasmType.EXTERNREF_TYPE:
+                if (!referenceTypes) {
+                    throw WasmException.create(Failure.UNSPECIFIED_MALFORMED, "Only function types are currently supported in tables.");
+                }
+                break;
+            default:
+                throw WasmException.create(Failure.MALFORMED_REFERENCE_TYPE, "Only reference types supported in tables.");
         }
         int index = module.symbolTable().tableCount();
-        module.symbolTable().declareTable(index, initSize, maxSize, type, null, null, referenceTypes);
+        module.symbolTable().allocateTable(index, initSize, maxSize, type, referenceTypes);
         module.symbolTable().exportTable(index, tableName);
         return index;
     }
@@ -139,7 +142,7 @@ public abstract class BuiltinModule {
         module.symbolTable().exportMemory(index, memoryName);
     }
 
-    protected void importFunction(WasmContext context, WasmModule module, String importModuleName, String importFunctionName, int[] paramTypes, int[] retTypes, String exportName) {
+    protected void importFunction(WasmContext context, WasmModule module, String importModuleName, String importFunctionName, byte[] paramTypes, byte[] retTypes, String exportName) {
         final int typeIdx = module.symbolTable().allocateFunctionType(paramTypes, retTypes, context.getContextOptions().supportMultiValue());
         final WasmFunction function = module.symbolTable().importFunction(importModuleName, importFunctionName, typeIdx);
         module.symbolTable().exportFunction(function.index(), exportName);
@@ -151,7 +154,7 @@ public abstract class BuiltinModule {
         module.symbolTable().importMemory(importModuleName, memoryName, index, initSize, maxSize, is64Bit, isShared, multiMemory);
     }
 
-    protected static int[] types(int... args) {
+    protected static byte[] types(byte... args) {
         return args;
     }
 }

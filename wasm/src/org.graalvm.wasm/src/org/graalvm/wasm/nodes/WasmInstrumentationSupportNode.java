@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,9 +41,13 @@
 
 package org.graalvm.wasm.nodes;
 
-import org.graalvm.collections.EconomicSet;
+import java.util.SortedSet;
+
+import org.graalvm.collections.EconomicMap;
 import org.graalvm.wasm.WasmConstant;
-import org.graalvm.wasm.debugging.DebugLineSection;
+import org.graalvm.wasm.WasmModule;
+import org.graalvm.wasm.collection.IntArrayList;
+import org.graalvm.wasm.debugging.DebugLineMap;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -53,46 +57,72 @@ import com.oracle.truffle.api.instrumentation.InstrumentableNode;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
+import org.graalvm.wasm.debugging.data.DebugFunction;
 
 /**
  * Represents the statements in the source file of a wasm binary. Provides some helper methods to
  * interact with the instrumentation system.
  */
-public final class WasmInstrumentationSupportNode extends Node implements WasmNotifyFunction {
+public final class WasmInstrumentationSupportNode extends Node {
     @Children private final WasmBaseStatementNode[] statementNodes;
 
+    private final EconomicMap<Integer, Integer> lineToIndexMap;
     private int sourceLocation;
 
     @TruffleBoundary
-    public WasmInstrumentationSupportNode(DebugLineSection lineSection, Source source) {
-        if (!lineSection.isEmpty()) {
-            // the nodes in the set appear in index order
-            final EconomicSet<Integer> lines = lineSection.uniqueLines();
-            statementNodes = new WasmBaseStatementNode[lines.size()];
-            int i = 0;
-            for (int line : lines) {
-                statementNodes[i++] = new WasmStatementNode(line, source);
+    public WasmInstrumentationSupportNode(DebugFunction debugFunction, WasmModule module, int functionIndex) {
+        final DebugLineMap sourceLineMap = debugFunction.lineMap();
+        final Source source = debugFunction.sourceSection().getSource();
+        final int startOffset = module.functionSourceCodeStartOffset(functionIndex);
+        if (sourceLineMap != null && startOffset != -1) {
+            IntArrayList functionLines = new IntArrayList();
+            int endOffset = module.functionSourceCodeEndOffset(functionIndex);
+
+            int startElement = sourceLineMap.getLine(startOffset);
+            SortedSet<Integer> lineSet = sourceLineMap.lines().tailSet(startElement);
+            lineToIndexMap = EconomicMap.create(lineSet.size());
+            // start of the function, calculate sub array offset and length of all lines
+            for (int line : lineSet) {
+                int pc = sourceLineMap.getSourceLocation(line);
+                if (pc > endOffset) {
+                    break;
+                }
+                lineToIndexMap.put(line, functionLines.size());
+                functionLines.add(line);
+            }
+
+            // create statement nodes for every source code line
+            int length = functionLines.size();
+            statementNodes = length == 0 ? null : new WasmBaseStatementNode[length];
+            for (int i = 0; i < length; i++) {
+                statementNodes[i] = new WasmStatementNode(functionLines.get(i), source);
             }
         } else {
             statementNodes = null;
+            lineToIndexMap = null;
         }
     }
 
-    @Override
-    public void notifyLine(VirtualFrame frame, int currentLineIndex, int nextLineIndex, int currentSourceLocation) {
-        CompilerAsserts.partialEvaluationConstant(currentLineIndex);
-        CompilerAsserts.partialEvaluationConstant(nextLineIndex);
-        final InstrumentableNode.WrapperNode currentLineWrapper = getWrapperAt(currentLineIndex);
-        final InstrumentableNode.WrapperNode nextLineWrapper = getWrapperAt(nextLineIndex);
-        if (currentLineWrapper == nextLineWrapper) {
+    public void notifyLine(VirtualFrame frame, int currentLine, int nextLine, int currentSourceLocation) {
+        CompilerAsserts.partialEvaluationConstant(currentLine);
+        CompilerAsserts.partialEvaluationConstant(nextLine);
+        final int currentLineIndex = lineIndexOrDefault(currentLine);
+        final int nextLineIndex = lineIndexOrDefault(nextLine);
+        if (currentLineIndex == nextLineIndex) {
             return;
         }
         this.sourceLocation = currentSourceLocation;
-        WasmInstrumentationSupportNode.exitAt(frame, currentLineWrapper);
-        WasmInstrumentationSupportNode.enterAt(frame, nextLineWrapper);
+        exitAt(frame, currentLineIndex);
+        enterAt(frame, nextLineIndex);
     }
 
-    private static void enterAt(VirtualFrame frame, InstrumentableNode.WrapperNode wrapperNode) {
+    @TruffleBoundary
+    private int lineIndexOrDefault(int line) {
+        return lineToIndexMap.get(line, -1);
+    }
+
+    private void enterAt(VirtualFrame frame, int lineIndex) {
+        InstrumentableNode.WrapperNode wrapperNode = getWrapperAt(lineIndex);
         if (wrapperNode == null) {
             return;
         }
@@ -111,7 +141,8 @@ public final class WasmInstrumentationSupportNode extends Node implements WasmNo
         }
     }
 
-    private static void exitAt(VirtualFrame frame, InstrumentableNode.WrapperNode wrapperNode) {
+    private void exitAt(VirtualFrame frame, int lineIndex) {
+        InstrumentableNode.WrapperNode wrapperNode = getWrapperAt(lineIndex);
         if (wrapperNode == null) {
             return;
         }
@@ -130,8 +161,9 @@ public final class WasmInstrumentationSupportNode extends Node implements WasmNo
         }
     }
 
+    @TruffleBoundary
     private InstrumentableNode.WrapperNode getWrapperAt(int lineIndex) {
-        if (statementNodes == null || lineIndex < 0 || lineIndex >= statementNodes.length) {
+        if (statementNodes == null || lineIndex < 0 || lineIndex > statementNodes.length) {
             return null;
         }
         WasmBaseStatementNode node = statementNodes[lineIndex];

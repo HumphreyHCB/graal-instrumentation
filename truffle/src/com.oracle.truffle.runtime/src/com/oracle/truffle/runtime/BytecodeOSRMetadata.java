@@ -67,7 +67,7 @@ import com.oracle.truffle.api.nodes.Node;
  * <p>
  * Performance note: We do not require the metadata field to be {@code volatile}. As long as the
  * field is initialized under double-checked locking (as is done in
- * {@link OptimizedRuntimeSupport#pollBytecodeOSRBackEdge}), all threads will observe the same
+ * {@link OptimizedRuntimeSupport#pollBytecodeOSRBackEdge}, all threads will observe the same
  * metadata instance. The JMM guarantees that the instance's final fields will be safely initialized
  * before it is published; the non-final + non-volatile fields (e.g., the back edge counter) may not
  * be, but we tolerate this inaccuracy in order to avoid volatile accesses in the hot path.
@@ -78,9 +78,6 @@ public final class BytecodeOSRMetadata {
     // Must be a power of 2 (polling uses bit masks). OSRCompilationThreshold is a multiple of this
     // interval.
     public static final int OSR_POLL_INTERVAL = 1024;
-
-    // Biggest index of 2 used for OSR_POLL_INTERVAL
-    public static final int OSR_POLL_SHIFT = 10;
 
     /**
      * Default original stage for bytecode OSR compilation. In this stage,
@@ -139,7 +136,9 @@ public final class BytecodeOSRMetadata {
 
     // Lazily initialized state. Most nodes with back-edges will not trigger compilation, so we
     // defer initialization of some fields until they're actually used.
-    static final class LazyState {
+    static final class LazyState //
+                    // Support for deprecated frame transfer: GR-38296
+                    extends FinalCompilationListMap {
 
         private final Map<Long, OptimizedCallTarget> compilationMap;
         @CompilationFinal private FrameDescriptor frameDescriptor;
@@ -151,14 +150,19 @@ public final class BytecodeOSRMetadata {
             this.frameDescriptor = null;
         }
 
-        private void push(long target, OptimizedCallTarget callTarget) {
+        private void push(long target, OptimizedCallTarget callTarget, OsrEntryDescription entry) {
             compilationMap.put(target, callTarget);
+            // Support for deprecated frame transfer: GR-38296
+            put(target, entry);
         }
 
         private void doClear() {
             compilationMap.clear();
-            // We might be disabling OSR while doing an OSR call. Do not clear the frame descriptor,
-            // in case we need it to transfer from and restore the parent frame.
+            // We might be disabling OSR while doing an OSR call. Keep around the data necessary to
+            // transfer from and restore the parent frame.
+            // In particular, we must keep alive:
+            // - The frame descriptor
+            // - (GR-38296) The map from target to entry description.
         }
     }
 
@@ -188,7 +192,8 @@ public final class BytecodeOSRMetadata {
         LazyState state = getLazyState();
         ((Node) osrNode).atomic(() -> {
             if (state.frameDescriptor == null) {
-                state.frameDescriptor = frame.getFrameDescriptor();
+                FrameDescriptor frameDescriptor = frame.getFrameDescriptor();
+                state.frameDescriptor = frameDescriptor;
             }
             if (osrEntry != null) {
                 // The concrete frame can have different tags from the descriptor (e.g., when a slot
@@ -251,8 +256,9 @@ public final class BytecodeOSRMetadata {
             callTarget = ((Node) osrNode).atomic(() -> {
                 OptimizedCallTarget lockedTarget = state.compilationMap.get(target);
                 if (lockedTarget == null) {
-                    lockedTarget = createOSRTarget(target, interpreterState, parentFrame.getFrameDescriptor());
-                    state.push(target, lockedTarget);
+                    OsrEntryDescription entryDescription = new OsrEntryDescription();
+                    lockedTarget = createOSRTarget(target, interpreterState, parentFrame.getFrameDescriptor(), entryDescription);
+                    state.push(target, lockedTarget, entryDescription);
                     if (stage == FRESH_STAGE) {
                         // First attempt at compilation gets a free pass
                         requestOSRCompilation(target, lockedTarget, (FrameWithoutBoxing) parentFrame);
@@ -312,15 +318,6 @@ public final class BytecodeOSRMetadata {
         return (newBackEdgeCount >= osrThreshold && (newBackEdgeCount & (OSR_POLL_INTERVAL - 1)) == 0);
     }
 
-    public boolean incrementAndPoll(int loopCountIncrement) {
-        int oldBackEdgeCount = this.backEdgeCount;
-        // with custom loop increments we need to expect overflows
-        int newBackEdgeCount = Math.max(1, oldBackEdgeCount + loopCountIncrement);
-        this.backEdgeCount = newBackEdgeCount;
-        return newBackEdgeCount >= osrThreshold && //
-                        (oldBackEdgeCount >>> OSR_POLL_SHIFT) < (newBackEdgeCount >>> OSR_POLL_SHIFT);
-    }
-
     /**
      * Returns whether OSR compilation is disabled for the current unit.
      */
@@ -363,9 +360,10 @@ public final class BytecodeOSRMetadata {
      * Creates an OSR call target at the given dispatch target and requests compilation. The node's
      * AST lock should be held when this is invoked.
      */
-    private OptimizedCallTarget createOSRTarget(long target, Object interpreterState, FrameDescriptor frameDescriptor) {
+    private OptimizedCallTarget createOSRTarget(long target, Object interpreterState, FrameDescriptor frameDescriptor, Object frameEntryState) {
         TruffleLanguage<?> language = OptimizedRuntimeAccessor.NODES.getLanguage(((Node) osrNode).getRootNode());
-        return (OptimizedCallTarget) new BytecodeOSRRootNode(language, frameDescriptor, osrNode, target, interpreterState, new OsrEntryDescription()).getCallTarget();
+        return (OptimizedCallTarget) new BytecodeOSRRootNode(language, frameDescriptor, osrNode, target, interpreterState, frameEntryState).getCallTarget();
+
     }
 
     private void requestOSRCompilation(long target, OptimizedCallTarget callTarget, FrameWithoutBoxing frame) {
@@ -421,7 +419,7 @@ public final class BytecodeOSRMetadata {
      * Transfer state from {@code source} to {@code target}. Can be used to transfer state into an
      * OSR frame.
      */
-    public void transferFrame(FrameWithoutBoxing source, FrameWithoutBoxing target, Object targetMetadata) {
+    public void transferFrame(FrameWithoutBoxing source, FrameWithoutBoxing target, long bytecodeTarget, Object targetMetadata) {
         LazyState state = getLazyState();
         CompilerAsserts.partialEvaluationConstant(state);
         // The frames should use the same descriptor.
@@ -435,6 +433,7 @@ public final class BytecodeOSRMetadata {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalArgumentException("Wrong usage of targetMetadata during OSR frame transfer.");
         }
+        assert targetMetadata == state.get(bytecodeTarget); // GR-38296
 
         OsrEntryDescription description = (OsrEntryDescription) targetMetadata;
         CompilerAsserts.partialEvaluationConstant(description);
@@ -449,9 +448,9 @@ public final class BytecodeOSRMetadata {
     /**
      * Transfer state from {@code source} to {@code target}. Can be used to transfer state from an
      * OSR frame to a parent frame. Overall less efficient than its
-     * {@link #transferFrame(FrameWithoutBoxing, FrameWithoutBoxing, Object) counterpart}, mainly
-     * due to not being able to speculate on the source tags: While entering bytecode OSR is done
-     * through specific entry points (likely back edges), returning could be done from anywhere
+     * {@link #transferFrame(FrameWithoutBoxing, FrameWithoutBoxing, long, Object) counterpart},
+     * mainly due to not being able to speculate on the source tags: While entering bytecode OSR is
+     * done through specific entry points (likely back edges), returning could be done from anywhere
      * within a method body (through regular returns, or exception thrown).
      *
      * While we could theoretically have the same mechanism as on entries (caching encountered
@@ -700,5 +699,50 @@ public final class BytecodeOSRMetadata {
      */
     static final class OsrEntryDescription {
         @CompilationFinal(dimensions = 1) private byte[] indexedFrameTags;
+    }
+
+    // Support for deprecated frame transfer: GR-38296
+    private abstract static class FinalCompilationListMap {
+        private static final class Cell {
+            final Cell next;
+            final long target;
+            final OsrEntryDescription entry;
+
+            Cell(long target, OsrEntryDescription entry, Cell next) {
+                this.next = next;
+                this.target = target;
+                this.entry = entry;
+            }
+        }
+
+        @CompilationFinal //
+        volatile Cell head = null;
+
+        @ExplodeLoop
+        public final OsrEntryDescription get(long target) {
+            Cell cur = head;
+            while (cur != null) {
+                if (cur.target == target) {
+                    return cur.entry;
+                }
+                cur = cur.next;
+            }
+            return null;
+        }
+
+        public final void put(long target, OsrEntryDescription value) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            synchronized (this) {
+                assert get(target) == null;
+                head = new Cell(target, value, head);
+            }
+        }
+
+        public final void clear() {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            synchronized (this) {
+                head = null;
+            }
+        }
     }
 }

@@ -58,13 +58,7 @@ public class StandaloneObjectScanner extends ObjectScanner {
     @Override
     protected final void scanField(AnalysisField field, JavaConstant receiver, ScanReason prevReason) {
         if (shouldScanField.test(field)) {
-            if (field.isStatic()) {
-                if (field.getDeclaringClass().isInitialized()) {
-                    super.scanField(field, receiver, prevReason);
-                }
-            } else {
-                super.scanField(field, receiver, prevReason);
-            }
+            super.scanField(field, receiver, prevReason);
         }
     }
 

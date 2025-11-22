@@ -67,8 +67,9 @@ public class InstrumentAPITest extends AbstractPolyglotTest {
         setupEnv();
 
         Object hostObject = languageEnv.lookupHostSymbol(InstrumentAPITest.class.getName());
-        String languageId = INTEROP.getLanguageId(hostObject);
-        assertEquals("host", languageId);
+        Class<? extends TruffleLanguage<?>> lang = INTEROP.getLanguage(hostObject);
+        LanguageInfo host = instrumentEnv.getLanguageInfo(lang);
+        assertEquals("host", host.getId());
 
         assertFails(() -> instrumentEnv.getLanguageInfo(InvalidLanguageClass.class), IllegalArgumentException.class);
 

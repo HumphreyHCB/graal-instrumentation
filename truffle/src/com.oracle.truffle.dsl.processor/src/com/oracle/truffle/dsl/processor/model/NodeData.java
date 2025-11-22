@@ -321,6 +321,19 @@ public class NodeData extends Template implements Comparable<NodeData> {
         return getChildExecutions().size();
     }
 
+    public boolean isFrameUsedByAnyGuard() {
+        for (SpecializationData specialization : specializations) {
+            if (!specialization.isReachable()) {
+                continue;
+            }
+
+            if (specialization.isFrameUsedByGuard()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<CreateCastData> getCasts() {
         return casts;
     }
@@ -500,61 +513,39 @@ public class NodeData extends Template implements Comparable<NodeData> {
         return null;
     }
 
-    private boolean forceSpecialize;
-
-    /**
-     * Enables force specialization even if node has a single specialization that would
-     * theoretically not require specialization. This is currently used if we generate boxing
-     * elimination quickenings that often have a single specialization but multiple boxing variants
-     * and we need to generate an executeAndSpecialize() method to integrate quickening.
-     */
-    public void setForceSpecialize(boolean enabled) {
-        this.forceSpecialize = enabled;
-    }
-
-    public boolean isForceSpecialize() {
-        return forceSpecialize;
-    }
-
-    /**
-     * Returns <code>true</code> if this node needs its own specialization routine. In other words
-     * whether we need to generate an executeAndSpecialize() method. Returns <code>false</code>
-     * otherwise.
-     */
-    public boolean needsSpecialize() {
-        List<SpecializationData> s = getReachableSpecializations();
-        if (s.isEmpty()) {
-            return false;
-        } else if (s.size() == 1) {
-            if (isForceSpecialize()) {
+    public boolean needsState(ProcessorContext context) {
+        int count = 0;
+        for (SpecializationData specialization : getSpecializations()) {
+            if (specialization.getMethod() == null) {
+                continue;
+            }
+            if (count == 1) {
                 return true;
             }
-            return s.get(0).needsSpecialize();
-        } else {
-            // if a node has more than one specialization
-            // we always require a specialize
-            return true;
+            if (specialization.needsState(context)) {
+                return true;
+            }
+            count++;
         }
+
+        return false;
     }
 
-    /**
-     * Returns <code>true</code> if this node requires any profiling state, else <code>false</code>.
-     */
-    public boolean needsState() {
-        List<SpecializationData> s = getReachableSpecializations();
-        if (s.isEmpty()) {
-            // just for robustness, does not happen in practice
-            return false;
-        } else if (s.size() == 1) {
-            // even single specialization nodes may need state
-            // if they e.g. have use a @Cached annotation.
-            return s.get(0).needsState() || s.get(0).needsSpecialize();
-        } else {
-            // if a node has more than one specialization
-            // we always require state as we need to track
-            // the specialization active bits
-            return true;
+    public boolean needsRewrites(ProcessorContext context) {
+        int count = 0;
+        for (SpecializationData specialization : getSpecializations()) {
+            if (specialization.getMethod() == null) {
+                continue;
+            }
+            if (count == 1) {
+                return true;
+            }
+            if (specialization.needsRewrite(context)) {
+                return true;
+            }
+            count++;
         }
+        return false;
     }
 
     public SpecializationData getFallbackSpecialization() {
@@ -656,12 +647,11 @@ public class NodeData extends Template implements Comparable<NodeData> {
         return children;
     }
 
-    public Collection<SpecializationData> computeUncachedSpecializations(List<SpecializationData> allSpecializations) {
-        Set<SpecializationData> uncached = new LinkedHashSet<>(allSpecializations);
-        for (SpecializationData current : allSpecializations) {
-            if (current.isExcludeForUncached()) {
-                uncached.remove(current);
-            }
+    public Collection<SpecializationData> computeUncachedSpecializations(List<SpecializationData> s) {
+        Set<SpecializationData> uncached = new LinkedHashSet<>(s);
+        // remove all replacable specializations
+        for (SpecializationData specialization : s) {
+            uncached.removeAll(specialization.getReplaces());
         }
         return uncached;
     }

@@ -42,12 +42,18 @@ package org.graalvm.wasm;
 
 import java.util.Map;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.InlinedBranchProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @SuppressWarnings({"static-method"})
@@ -59,13 +65,13 @@ public final class WasmScope implements TruffleObject {
     }
 
     @ExportMessage
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
-    String getLanguageId() {
-        return WasmLanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return WasmLanguage.class;
     }
 
     @ExportMessage
@@ -78,7 +84,7 @@ public final class WasmScope implements TruffleObject {
     }
 
     @ExportMessage
-    @TruffleBoundary
+    @CompilerDirectives.TruffleBoundary
     Object readMember(String member) throws UnknownIdentifierException {
         var instances = instances();
         Object value = instances.get(member);
@@ -89,18 +95,18 @@ public final class WasmScope implements TruffleObject {
     }
 
     @ExportMessage
-    @TruffleBoundary
+    @CompilerDirectives.TruffleBoundary
     boolean isMemberReadable(String member) {
         var instances = instances();
         return instances.containsKey(member);
     }
 
     @ExportMessage
-    @TruffleBoundary
+    @CompilerDirectives.TruffleBoundary
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         var instances = instances();
-        final String[] keys = instances.keySet().toArray(new String[instances.size()]);
-        return new WasmNamesObject(keys);
+        String[] keys = instances.keySet().toArray(new String[instances.size()]);
+        return new InstanceNamesObject(keys);
     }
 
     @ExportMessage
@@ -109,8 +115,44 @@ public final class WasmScope implements TruffleObject {
     }
 
     @ExportMessage
-    @TruffleBoundary
+    @CompilerDirectives.TruffleBoundary
     Object toDisplayString(@SuppressWarnings("unused") boolean allowSideEffects) {
         return "wasm-global-scope" + instances().keySet();
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static final class InstanceNamesObject implements TruffleObject {
+
+        private final String[] names;
+
+        InstanceNamesObject(String[] names) {
+            this.names = names;
+        }
+
+        @ExportMessage
+        boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        boolean isArrayElementReadable(long index) {
+            return index >= 0 && index < names.length;
+        }
+
+        @ExportMessage
+        long getArraySize() {
+            return names.length;
+        }
+
+        @ExportMessage
+        Object readArrayElement(long index,
+                        @Bind Node node,
+                        @Cached InlinedBranchProfile error) throws InvalidArrayIndexException {
+            if (!isArrayElementReadable(index)) {
+                error.enter(node);
+                throw InvalidArrayIndexException.create(index);
+            }
+            return names[(int) index];
+        }
     }
 }

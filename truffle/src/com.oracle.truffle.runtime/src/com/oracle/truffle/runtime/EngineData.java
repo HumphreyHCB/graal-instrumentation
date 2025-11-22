@@ -80,11 +80,9 @@ import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueue
 import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueueFirstTierPriority;
 import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueueInvalidatedBonus;
 import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueueOSRBonus;
-import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueueRateHalfLife;
 import static com.oracle.truffle.runtime.OptimizedRuntimeOptions.TraversingQueueWeightingBothTiers;
 import static com.oracle.truffle.runtime.OptimizedTruffleRuntime.getRuntime;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -92,7 +90,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.logging.Level;
 
@@ -165,7 +162,6 @@ public final class EngineData {
     @CompilationFinal public double traversingFirstTierBonus;
     @CompilationFinal public double traversingInvalidatedBonus;
     @CompilationFinal public double traversingOSRBonus;
-    @CompilationFinal public long traversingRateHalfLifeNs;
     @CompilationFinal public boolean propagateCallAndLoopCount;
     @CompilationFinal public int propagateCallAndLoopCountMaxDepth;
     @CompilationFinal public int maximumCompilations;
@@ -177,14 +173,11 @@ public final class EngineData {
     @CompilationFinal public int callAndLoopThresholdInFirstTier;
     @CompilationFinal public long interpreterCallStackHeadRoom;
 
-    public BooleanSupplier cancelledPredicate;
-
     // Cached parsed CompileOnly includes and excludes
     private volatile Pair<List<String>, List<String>> parsedCompileOnly;
     private Map<String, String> compilerOptions;
 
     private volatile Object polyglotEngine;
-    private volatile boolean closed;
 
     /*
      * Extension data for dynamically bound engine extensions.
@@ -201,14 +194,6 @@ public final class EngineData {
 
         // the splittingStatistics requires options to be initialized
         this.splittingStatistics = new TruffleSplittingStrategy.SplitStatisticsData();
-    }
-
-    public void ensureClosed() {
-        this.closed = true;
-    }
-
-    public boolean isClosed() {
-        return this.closed;
     }
 
     public static IllegalArgumentException sandboxPolicyException(SandboxPolicy sandboxPolicy, String reason, String fix) {
@@ -230,12 +215,8 @@ public final class EngineData {
         OptimizedRuntimeAccessor.ENGINE.preinitializeContext(this.polyglotEngine);
     }
 
-    public Object finalizeStore() {
-        return OptimizedRuntimeAccessor.ENGINE.finalizeStore(this.polyglotEngine);
-    }
-
-    public void restoreStore(Object finalizationResult) {
-        OptimizedRuntimeAccessor.ENGINE.restoreStore(this.polyglotEngine, finalizationResult);
+    public void finalizeStore() {
+        OptimizedRuntimeAccessor.ENGINE.finalizeStore(this.polyglotEngine);
     }
 
     public Object getEngineLock() {
@@ -310,10 +291,6 @@ public final class EngineData {
         this.polyglotEngine = null;
     }
 
-    public boolean onStoreCache(Path targetPath, long cancelledWord) {
-        return getRuntime().getEngineCacheSupport().onStoreCache(this, targetPath, cancelledWord);
-    }
-
     private void loadOptions(OptionValues options, SandboxPolicy sandboxPolicy) {
         this.engineOptions = options;
 
@@ -348,7 +325,6 @@ public final class EngineData {
         maximumCompilations = options.get(MaximumCompilations);
         traversingInvalidatedBonus = options.get(TraversingQueueInvalidatedBonus);
         traversingOSRBonus = options.get(TraversingQueueOSRBonus);
-        traversingRateHalfLifeNs = options.get(TraversingQueueRateHalfLife) * 1_000_000;
 
         this.returnTypeSpeculation = options.get(ReturnTypeSpeculation);
         this.argumentTypeSpeculation = options.get(ArgumentTypeSpeculation);

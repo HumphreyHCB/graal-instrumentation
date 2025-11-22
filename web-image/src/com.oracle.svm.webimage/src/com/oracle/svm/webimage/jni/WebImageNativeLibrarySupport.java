@@ -28,17 +28,16 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import org.graalvm.collections.EconomicMap;
+import jdk.graal.compiler.word.Word;
 import org.graalvm.webimage.api.JS;
 import org.graalvm.webimage.api.JSObject;
 import org.graalvm.webimage.api.JSString;
 import org.graalvm.webimage.api.JSUndefined;
+import org.graalvm.collections.EconomicMap;
 import org.graalvm.word.PointerBase;
 
 import com.oracle.svm.core.jdk.PlatformNativeLibrarySupport;
 import com.oracle.svm.core.util.VMError;
-
-import jdk.graal.compiler.word.Word;
 
 public class WebImageNativeLibrarySupport extends PlatformNativeLibrarySupport {
     @Override

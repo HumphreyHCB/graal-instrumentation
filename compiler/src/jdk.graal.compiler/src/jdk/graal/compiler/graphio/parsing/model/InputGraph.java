@@ -31,6 +31,8 @@ import static jdk.graal.compiler.graphio.parsing.model.KnownPropertyNames.PROPNA
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -215,12 +217,12 @@ public class InputGraph extends AbstractMutableDocumentItem<InputGraph> implemen
         if (nodeIds != null) {
             return nodeIds;
         }
-        return nodeIds = Collections.unmodifiableSet(new LinkedHashSet<>(data().nodes.keySet()));
+        return nodeIds = Collections.unmodifiableSet(new HashSet<>(data().nodes.keySet()));
     }
 
     public List<InputNode> findRootNodes() {
         List<InputNode> result = new ArrayList<>();
-        Set<Integer> nonRoot = new LinkedHashSet<>();
+        Set<Integer> nonRoot = new HashSet<>();
         GraphData d = data();
         for (InputEdge curEdges : d.edges) {
             nonRoot.add(curEdges.getTo());
@@ -236,7 +238,7 @@ public class InputGraph extends AbstractMutableDocumentItem<InputGraph> implemen
     }
 
     public Map<InputNode, List<InputEdge>> findAllOutgoingEdges() {
-        Map<InputNode, List<InputEdge>> result = new LinkedHashMap<>(getNodes().size());
+        Map<InputNode, List<InputEdge>> result = new HashMap<>(getNodes().size());
         for (InputNode n : this.getNodes()) {
             result.put(n, new ArrayList<>());
         }
@@ -258,7 +260,7 @@ public class InputGraph extends AbstractMutableDocumentItem<InputGraph> implemen
     }
 
     public Map<InputNode, List<InputEdge>> findAllIngoingEdges() {
-        Map<InputNode, List<InputEdge>> result = new LinkedHashMap<>(getNodes().size());
+        Map<InputNode, List<InputEdge>> result = new HashMap<>(getNodes().size());
         GraphData d = data();
         for (InputNode n : d.getNodes()) {
             result.put(n, new ArrayList<>());

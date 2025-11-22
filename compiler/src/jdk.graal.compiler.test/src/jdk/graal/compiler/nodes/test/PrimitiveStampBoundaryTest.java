@@ -25,9 +25,7 @@
 package jdk.graal.compiler.nodes.test;
 
 import java.util.EnumSet;
-import java.util.Set;
-
-import org.junit.Test;
+import java.util.HashSet;
 
 import jdk.graal.compiler.core.common.calc.FloatConvert;
 import jdk.graal.compiler.core.common.calc.FloatConvertCategory;
@@ -41,7 +39,8 @@ import jdk.graal.compiler.core.common.type.PrimitiveStamp;
 import jdk.graal.compiler.core.common.type.Stamp;
 import jdk.graal.compiler.core.common.type.StampFactory;
 import jdk.graal.compiler.test.GraalTest;
-import jdk.graal.compiler.util.EconomicHashSet;
+import org.junit.Test;
+
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
@@ -57,12 +56,12 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
 
     static int[] shiftBoundaryValues = {-128, -1, 0, 1, 4, 8, 16, 31, 63, 128};
 
-    static Set<IntegerStamp> shiftStamps;
-    static Set<PrimitiveStamp> integerTestStamps;
-    static Set<PrimitiveStamp> floatTestStamps;
+    static HashSet<IntegerStamp> shiftStamps;
+    static HashSet<PrimitiveStamp> integerTestStamps;
+    static HashSet<PrimitiveStamp> floatTestStamps;
 
     static {
-        shiftStamps = new EconomicHashSet<>();
+        shiftStamps = new HashSet<>();
         for (long v1 : shiftBoundaryValues) {
             for (long v2 : shiftBoundaryValues) {
                 shiftStamps.add(IntegerStamp.create(32, Math.min(v1, v2), Math.max(v1, v2)));
@@ -70,7 +69,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         }
         shiftStamps.add((IntegerStamp) StampFactory.empty(JavaKind.Int));
 
-        integerTestStamps = new EconomicHashSet<>();
+        integerTestStamps = new HashSet<>();
         for (long v1 : longBoundaryValues) {
             for (long v2 : longBoundaryValues) {
                 if (v2 == (int) v2 && v1 == (int) v1) {
@@ -91,7 +90,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
     static double[] doubleSpecialValues = {Double.NaN, -0.0, -0.0F, Float.NaN};
 
     static {
-        floatTestStamps = new EconomicHashSet<>();
+        floatTestStamps = new HashSet<>();
 
         for (double d1 : doubleBoundaryValues) {
             for (double d2 : doubleBoundaryValues) {
@@ -128,7 +127,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         testConvertBoundaryValues(IntegerStamp.OPS.getNarrow(), 64, 32, integerTestStamps);
     }
 
-    private static void testConvertBoundaryValues(IntegerConvertOp<?> op, int inputBits, int resultBits, Set<PrimitiveStamp> stamps) {
+    private static void testConvertBoundaryValues(IntegerConvertOp<?> op, int inputBits, int resultBits, HashSet<PrimitiveStamp> stamps) {
         for (PrimitiveStamp stamp : stamps) {
             if (inputBits == stamp.getBits()) {
                 Stamp lower = boundaryStamp(stamp, false);
@@ -165,7 +164,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         }
     }
 
-    private static void testConvertBoundaryValues(ArithmeticOpTable.FloatConvertOp op, int bits, Set<PrimitiveStamp> stamps) {
+    private static void testConvertBoundaryValues(ArithmeticOpTable.FloatConvertOp op, int bits, HashSet<PrimitiveStamp> stamps) {
         for (PrimitiveStamp stamp : stamps) {
             if (bits == stamp.getBits()) {
                 Stamp lower = boundaryStamp(stamp, false);
@@ -201,7 +200,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         }
     }
 
-    private static void testShiftBoundaryValues(ShiftOp<?> shiftOp, Set<PrimitiveStamp> stamps, Set<IntegerStamp> shifts) {
+    private static void testShiftBoundaryValues(ShiftOp<?> shiftOp, HashSet<PrimitiveStamp> stamps, HashSet<IntegerStamp> shifts) {
         for (PrimitiveStamp testStamp : stamps) {
             if (testStamp instanceof IntegerStamp) {
                 IntegerStamp stamp = (IntegerStamp) testStamp;
@@ -297,7 +296,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         }
     }
 
-    private static void testBinaryBoundaryValues(ArithmeticOpTable.BinaryOp<?> op, Set<PrimitiveStamp> stamps) {
+    private static void testBinaryBoundaryValues(ArithmeticOpTable.BinaryOp<?> op, HashSet<PrimitiveStamp> stamps) {
         for (PrimitiveStamp v1 : stamps) {
             for (PrimitiveStamp v2 : stamps) {
                 if (v1.getBits() == v2.getBits() && v1.getClass() == v2.getClass()) {
@@ -329,7 +328,7 @@ public class PrimitiveStampBoundaryTest extends GraalTest {
         }
     }
 
-    private static void testUnaryBoundaryValues(ArithmeticOpTable.UnaryOp<?> op, Set<PrimitiveStamp> stamps) {
+    private static void testUnaryBoundaryValues(ArithmeticOpTable.UnaryOp<?> op, HashSet<PrimitiveStamp> stamps) {
         for (PrimitiveStamp v1 : stamps) {
             Stamp result = op.foldStamp(v1);
             checkUnaryOperation(op, result, boundaryStamp(v1, false));

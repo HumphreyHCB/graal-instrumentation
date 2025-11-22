@@ -40,8 +40,6 @@
  */
 package org.graalvm.wasm.collection;
 
-import java.util.NoSuchElementException;
-
 public final class IntArrayList {
     public static final int[] EMPTY_INT_ARRAY = new int[0];
 
@@ -59,20 +57,9 @@ public final class IntArrayList {
         offset++;
     }
 
-    public void push(int b) {
-        add(b);
-    }
-
     public int popBack() {
-        if (size() == 0) {
-            throw new NoSuchElementException("Cannot pop from an empty IntArrayList.");
-        }
         offset--;
         return array[offset];
-    }
-
-    public int top() {
-        return array[offset - 1];
     }
 
     public int get(int index) {

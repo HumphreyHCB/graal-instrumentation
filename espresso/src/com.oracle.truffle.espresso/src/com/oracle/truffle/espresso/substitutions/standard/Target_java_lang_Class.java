@@ -33,7 +33,6 @@ import com.oracle.truffle.espresso.substitutions.Inject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
 import com.oracle.truffle.espresso.substitutions.Substitution;
 import com.oracle.truffle.espresso.substitutions.SubstitutionNode;
-import com.oracle.truffle.espresso.substitutions.VersionFilter;
 
 /**
  * These substitutions are provided for performance concerns.
@@ -108,6 +107,24 @@ public final class Target_java_lang_Class {
     }
 
     @Substitution(hasReceiver = true)
+    public static boolean isInterface(@JavaType(Class.class) StaticObject self,
+                    @Inject Meta meta) {
+        return meta.getVM().JVM_IsInterface(self);
+    }
+
+    @Substitution(hasReceiver = true)
+    public static boolean isPrimitive(@JavaType(Class.class) StaticObject self,
+                    @Inject Meta meta) {
+        return meta.getVM().JVM_IsPrimitiveClass(self);
+    }
+
+    @Substitution(hasReceiver = true)
+    public static boolean isArray(@JavaType(Class.class) StaticObject self,
+                    @Inject Meta meta) {
+        return meta.getVM().JVM_IsArrayClass(self);
+    }
+
+    @Substitution(hasReceiver = true)
     public static boolean isHidden(@JavaType(Class.class) StaticObject self,
                     @Inject Meta meta) {
         return meta.getVM().JVM_IsHiddenClass(self);
@@ -127,29 +144,11 @@ public final class Target_java_lang_Class {
         return superclass.mirror();
     }
 
-    // These methods are implemented in the guest in 25+
-
-    @Substitution(hasReceiver = true, languageFilter = VersionFilter.Java24OrEarlier.class)
-    public static boolean isInterface(@JavaType(Class.class) StaticObject self,
-                    @Inject Meta meta) {
-        return meta.getVM().JVM_IsInterface(self);
-    }
-
-    @Substitution(hasReceiver = true, languageFilter = VersionFilter.Java24OrEarlier.class)
-    public static boolean isPrimitive(@JavaType(Class.class) StaticObject self,
-                    @Inject Meta meta) {
-        return meta.getVM().JVM_IsPrimitiveClass(self);
-    }
-
-    @Substitution(hasReceiver = true, languageFilter = VersionFilter.Java24OrEarlier.class)
-    public static boolean isArray(@JavaType(Class.class) StaticObject self,
-                    @Inject Meta meta) {
-        return meta.getVM().JVM_IsArrayClass(self);
-    }
-
-    @Substitution(hasReceiver = true, languageFilter = VersionFilter.Java24OrEarlier.class)
+    @Substitution(hasReceiver = true)
     public static int getModifiers(@JavaType(Class.class) StaticObject self,
                     @Inject Meta meta) {
         return meta.getVM().JVM_GetClassModifiers(self);
     }
+
+    // endregion perf substitutions
 }

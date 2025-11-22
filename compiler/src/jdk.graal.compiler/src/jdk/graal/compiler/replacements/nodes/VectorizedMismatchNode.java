@@ -116,10 +116,11 @@ public class VectorizedMismatchNode extends PureFunctionStubIntrinsicNode {
     }
 
     public static boolean isSupported(Architecture arch) {
-        return switch (arch) {
-            case AMD64 amd64 -> true;
-            case AArch64 aarch64 -> true;
-            default -> false;
-        };
+        if (arch instanceof AMD64) {
+            return true;
+        } else if (arch instanceof AArch64) {
+            return true;
+        }
+        return false;
     }
 }

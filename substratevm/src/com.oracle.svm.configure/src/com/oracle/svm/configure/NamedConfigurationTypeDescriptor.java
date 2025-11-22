@@ -27,30 +27,13 @@ package com.oracle.svm.configure;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 
 import jdk.graal.compiler.util.json.JsonWriter;
 
 public record NamedConfigurationTypeDescriptor(String name) implements ConfigurationTypeDescriptor {
 
-    public static NamedConfigurationTypeDescriptor fromJSONName(String jsonName) {
-        if (!ClassNameSupport.isValidTypeName(jsonName) && ClassNameSupport.isValidReflectionName(jsonName)) {
-            return fromReflectionName(jsonName);
-        }
-        return fromTypeName(jsonName);
-    }
-
-    public static NamedConfigurationTypeDescriptor fromTypeName(String typeName) {
-        Objects.requireNonNull(typeName);
-        return new NamedConfigurationTypeDescriptor(typeName);
-    }
-
-    public static NamedConfigurationTypeDescriptor fromReflectionName(String reflectionName) {
-        return fromTypeName(ClassNameSupport.reflectionNameToTypeName(reflectionName));
-    }
-
-    public static NamedConfigurationTypeDescriptor fromJNIName(String jniName) {
-        return fromTypeName(ClassNameSupport.jniNameToTypeName(jniName));
+    public NamedConfigurationTypeDescriptor(String name) {
+        this.name = ConfigurationTypeDescriptor.checkQualifiedJavaName(name);
     }
 
     @Override
@@ -75,22 +58,6 @@ public record NamedConfigurationTypeDescriptor(String name) implements Configura
         } else {
             return getDescriptorType().compareTo(other.getDescriptorType());
         }
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-        if (!(object instanceof NamedConfigurationTypeDescriptor that)) {
-            return false;
-        }
-        return Objects.equals(name, that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(name);
     }
 
     @Override

@@ -26,9 +26,9 @@ package com.oracle.svm.core.heap;
 
 import java.lang.management.ManagementFactory;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platform;
-import org.graalvm.nativeimage.impl.InternalPlatform;
 import org.graalvm.word.UnsignedWord;
 
 import com.oracle.svm.core.IsolateArgumentParser;
@@ -36,11 +36,10 @@ import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.container.Container;
 import com.oracle.svm.core.container.OperatingSystem;
+import com.oracle.svm.core.layeredimagesingleton.RuntimeOnlyImageSingleton;
 import com.oracle.svm.core.util.UnsignedUtils;
 import com.oracle.svm.core.util.VMError;
 import com.sun.management.OperatingSystemMXBean;
-
-import jdk.graal.compiler.word.Word;
 
 /**
  * Contains static methods to get configuration of physical memory.
@@ -48,7 +47,7 @@ import jdk.graal.compiler.word.Word;
 public class PhysicalMemory {
 
     /** Implemented by operating-system specific code. */
-    public interface PhysicalMemorySupport {
+    public interface PhysicalMemorySupport extends RuntimeOnlyImageSingleton {
         /** Get the size of physical memory from the OS. */
         UnsignedWord size();
 
@@ -95,7 +94,7 @@ public class PhysicalMemory {
     /** Returns the amount of used physical memory in bytes, or -1 if not supported. */
     public static long usedSize() {
         // Windows, macOS, and containerized Linux use the OS bean.
-        if (Platform.includedIn(InternalPlatform.WINDOWS_BASE.class) ||
+        if (Platform.includedIn(Platform.WINDOWS.class) ||
                         Platform.includedIn(Platform.MACOS.class) ||
                         (Container.singleton().isContainerized() && Container.singleton().getMemoryLimitInBytes() > 0)) {
             OperatingSystemMXBean osBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();

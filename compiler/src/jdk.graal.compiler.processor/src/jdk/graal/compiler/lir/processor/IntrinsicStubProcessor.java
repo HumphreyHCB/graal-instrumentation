@@ -29,11 +29,8 @@ import static javax.lang.model.type.TypeKind.VOID;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -79,7 +76,7 @@ public class IntrinsicStubProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(GENERATE_STUB_CLASS_NAME, GENERATE_STUBS_CLASS_NAME, GENERATED_STUBS_HOLDER_CLASS_NAME)));
+        return Set.of(GENERATE_STUB_CLASS_NAME, GENERATE_STUBS_CLASS_NAME, GENERATED_STUBS_HOLDER_CLASS_NAME);
     }
 
     private static final class GenerateStubClass {
@@ -172,7 +169,7 @@ public class IntrinsicStubProcessor extends AbstractProcessor {
                 for (TypeMirror sourceType : getAnnotationValueList(generatedStubsHolderAnnotation, "sources", TypeMirror.class)) {
                     TypeElement source = asTypeElement(sourceType);
                     ArrayList<GenerateStub> stubs = new ArrayList<>();
-                    HashMap<MinimumFeaturesGetter, MinimumFeaturesGetter> minimumFeatureGetters = new LinkedHashMap<>();
+                    HashMap<MinimumFeaturesGetter, MinimumFeaturesGetter> minimumFeatureGetters = new HashMap<>();
                     for (Element e : source.getEnclosedElements()) {
                         AnnotationMirror generateStubAnnotation = getAnnotation(e, generateStub.asType());
                         if (generateStubAnnotation != null) {
@@ -275,7 +272,7 @@ public class IntrinsicStubProcessor extends AbstractProcessor {
         String genClassName = holder.getSimpleName() + "Gen";
         String pkgQualifiedName = pkg.getQualifiedName().toString();
         String qualifiedGenClassName = pkgQualifiedName + "." + genClassName;
-        Set<String> uniqueNames = new LinkedHashSet<>();
+        Set<String> uniqueNames = new HashSet<>();
         try {
             JavaFileObject factory = processor.env().getFiler().createSourceFile(qualifiedGenClassName, holder);
             try (PrintWriter out = new PrintWriter(factory.openWriter())) {
@@ -285,7 +282,7 @@ public class IntrinsicStubProcessor extends AbstractProcessor {
                 out.printf("// GENERATOR: %s\n", getClass().getName());
                 out.printf("package %s;\n", pkgQualifiedName);
                 out.printf("\n");
-                Set<String> imports = new LinkedHashSet<>();
+                Set<String> imports = new HashSet<>();
                 switch (targetVM) {
                     case hotspot:
                         imports.addAll(List.of(

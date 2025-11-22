@@ -112,12 +112,7 @@ public class TStringOpsIndexOfTableTest extends TStringOpsTest<ArrayIndexOfNode>
     }
 
     @Test
-    public void testIndexOfTable() {
+    public void testIndexOfAny() {
         test(getIndexOfTableIntl(), null, DUMMY_LOCATION, arrayA, offsetA, lengthA, strideA, fromIndexA, table);
-    }
-
-    @Test
-    public void testIndexOfTableForeignEndian() {
-        test(getIndexOfTableForeignEndianIntl(), null, DUMMY_LOCATION, byteSwapArray(arrayA, strideA), offsetA, lengthA, strideA, fromIndexA, table);
     }
 }

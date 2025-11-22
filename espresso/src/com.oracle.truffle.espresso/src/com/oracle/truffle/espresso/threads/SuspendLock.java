@@ -94,12 +94,11 @@ public final class SuspendLock {
         boolean wasInterrupted = false;
         shouldSuspend = true;
         access.getContext().getEnv().submitThreadLocal(new Thread[]{access.getHost(thread)}, new SuspendAction(this));
-        while (access.isResponsive(thread) && // Don't bother waiting on unresponsive threads.
-                        !isSuspended()) {
+        while (!isSuspended()) {
             shouldSuspend = true;
             try {
                 synchronized (handshakeLock) {
-                    if (access.isAlive(thread)) {
+                    if (!access.isAlive(thread)) {
                         // If thread terminates, we don't want to wait forever
                         handshakeLock.wait(100);
                     } else {

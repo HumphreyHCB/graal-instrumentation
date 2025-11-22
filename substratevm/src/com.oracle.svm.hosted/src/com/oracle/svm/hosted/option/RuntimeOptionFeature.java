@@ -24,25 +24,13 @@
  */
 package com.oracle.svm.hosted.option;
 
-import java.lang.reflect.Field;
-
-import org.graalvm.collections.UnmodifiableEconomicMap;
 import org.graalvm.nativeimage.ImageSingletons;
 
 import com.oracle.graal.pointsto.ObjectScanner;
-import com.oracle.graal.pointsto.meta.AnalysisField;
-import com.oracle.svm.core.IsolateArgumentParser;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
-import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.option.HostedOptionKey;
-import com.oracle.svm.core.option.HostedOptionValues;
-import com.oracle.svm.core.option.RuntimeOptionKey;
 import com.oracle.svm.core.option.RuntimeOptionParser;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl;
 
@@ -50,7 +38,6 @@ import jdk.graal.compiler.options.OptionDescriptor;
 import jdk.graal.compiler.options.OptionKey;
 
 @AutomaticallyRegisteredFeature
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 public class RuntimeOptionFeature implements InternalFeature {
 
     private RuntimeOptionParser runtimeOptionParser;
@@ -67,37 +54,6 @@ public class RuntimeOptionFeature implements InternalFeature {
         access.registerObjectReachableCallback(OptionKey.class, this::collectOptionKeys);
     }
 
-    @Override
-    public void beforeAnalysis(BeforeAnalysisAccess access) {
-        FeatureImpl.BeforeAnalysisAccessImpl accessImpl = (FeatureImpl.BeforeAnalysisAccessImpl) access;
-
-        boolean extensionLayer = ImageLayerBuildingSupport.buildingExtensionLayer();
-        UnmodifiableEconomicMap<OptionKey<?>, Object> map = HostedOptionValues.singleton().getMap();
-        for (OptionKey<?> key : map.getKeys()) {
-            if (key instanceof RuntimeOptionKey<?> runtimeOptionKey && runtimeOptionKey.shouldRegisterForIsolateArgumentParser()) {
-                if (!extensionLayer) {
-                    /*
-                     * The list of options IsolateArgumentParser has to parse, is built dynamically,
-                     * to include only options of the current configuration. Here, all options that
-                     * should get parsed by the IsolateArgumentParser are added to this list.
-                     */
-                    IsolateArgumentParser.singleton().register(runtimeOptionKey);
-                    registerOptionAsRead(accessImpl, runtimeOptionKey.getDescriptor().getDeclaringClass(), runtimeOptionKey.getName());
-                } else {
-                    /*
-                     * All runtime options must have already been installed within the base layer.
-                     * Within the extension layer we only confirm they are present.
-                     */
-                    assert IsolateArgumentParser.getOptionIndex(runtimeOptionKey) >= 0;
-                }
-            }
-        }
-
-        if (!extensionLayer) {
-            IsolateArgumentParser.singleton().sealOptions();
-        }
-    }
-
     @SuppressWarnings("unused")
     private void collectOptionKeys(DuringAnalysisAccess access, OptionKey<?> optionKey, ObjectScanner.ScanReason reason) {
         if (optionKey instanceof HostedOptionKey<?>) {
@@ -112,16 +68,6 @@ public class RuntimeOptionFeature implements InternalFeature {
 
         if (optionDescriptor.getContainer().optionsAreDiscoverable()) {
             runtimeOptionParser.addDescriptor(optionDescriptor);
-        }
-    }
-
-    public static void registerOptionAsRead(FeatureImpl.BeforeAnalysisAccessImpl accessImpl, Class<?> clazz, String fieldName) {
-        try {
-            Field javaField = clazz.getField(fieldName);
-            AnalysisField analysisField = accessImpl.getMetaAccess().lookupJavaField(javaField);
-            accessImpl.registerAsRead(analysisField, "it is a runtime option field");
-        } catch (NoSuchFieldException | SecurityException e) {
-            throw VMError.shouldNotReachHere(e);
         }
     }
 }

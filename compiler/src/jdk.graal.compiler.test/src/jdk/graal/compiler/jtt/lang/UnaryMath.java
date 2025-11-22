@@ -26,6 +26,7 @@ package jdk.graal.compiler.jtt.lang;
 
 import jdk.graal.compiler.jtt.JTTTest;
 import jdk.graal.compiler.options.OptionValues;
+
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public abstract class UnaryMath extends JTTTest {
@@ -59,7 +60,7 @@ public abstract class UnaryMath extends JTTTest {
             double d = Double.longBitsToDouble(l);
             Result expect = executeExpected(method, receiver, d);
             try {
-                testAgainstExpected(options, method, expect, receiver, d);
+                testAgainstExpected(options, method, expect, EMPTY, receiver, d);
                 testIteration++;
             } catch (AssertionError e) {
                 throw new AssertionError(String.format("%d: While testing %g [long: %d, hex: %x]", testIteration, d, l, l), e);

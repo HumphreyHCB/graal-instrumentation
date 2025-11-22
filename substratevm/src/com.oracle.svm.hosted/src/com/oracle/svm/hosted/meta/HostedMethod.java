@@ -27,15 +27,16 @@ package com.oracle.svm.hosted.meta;
 import static com.oracle.svm.core.util.VMError.intentionallyUnimplemented;
 import static com.oracle.svm.core.util.VMError.shouldNotReachHereAtRuntime;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
+import com.oracle.graal.pointsto.infrastructure.OriginalMethodProvider;
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
 import com.oracle.graal.pointsto.infrastructure.WrappedJavaMethod;
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
@@ -56,14 +57,10 @@ import com.oracle.svm.core.meta.SharedMethod;
 import com.oracle.svm.core.meta.SubstrateMethodPointerConstant;
 import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.OpenTypeWorldFeature;
 import com.oracle.svm.hosted.code.CompilationInfo;
 import com.oracle.svm.hosted.code.SubstrateCompilationDirectives;
-import com.oracle.svm.util.AnnotationUtil;
-import com.oracle.svm.util.OriginalMethodProvider;
 
 import jdk.graal.compiler.api.replacements.Snippet;
-import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.JavaMethodContext;
 import jdk.graal.compiler.java.StableMethodNameFormatter;
 import jdk.internal.vm.annotation.ForceInline;
@@ -85,9 +82,6 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     public static final String METHOD_NAME_COLLISION_SEPARATOR = "%";
 
-    public static final int MISSING_VTABLE_IDX = -1;
-    public static final int INVALID_CODE_ADDRESS_OFFSET = -1;
-
     public final AnalysisMethod wrapped;
 
     private final HostedType holder;
@@ -95,34 +89,20 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     private final ConstantPool constantPool;
     private final ExceptionHandler[] handlers;
     /**
-     * Contains the index of the method computed by {@link VTableBuilder}.
+     * Contains the index of the method within the appropriate table.
      *
      * Within the closed type world, there exists a single table which describes all methods.
      * However, within the open type world, each type and interface has a unique table, so this
      * index is relative to the start of the appropriate table.
      */
-    int computedVTableIndex = MISSING_VTABLE_IDX;
-
-    /**
-     * When using the open type world we must differentiate between the vtable index computed by
-     * {@link VTableBuilder} for this method and the vtable index used for virtual calls.
-     *
-     * Note normally {@code indirectCallTarget == this}. Only for special HotSpot methods such as
-     * miranda and overpass methods will the indirectCallTarget be a different method. The logic for
-     * setting the indirectCallTarget can be found in
-     * {@link OpenTypeWorldFeature#calculateIndirectCallTarget}.
-     *
-     * For additional information, see {@link SharedMethod#getIndirectCallTarget}.
-     */
-    private int indirectCallVTableIndex = MISSING_VTABLE_IDX;
-    private HostedMethod indirectCallTarget = null;
+    int vtableIndex = -1;
 
     /**
      * The address offset of the compiled code relative to the code of the first method in the
      * buffer.
      */
-    private int codeAddressOffset = INVALID_CODE_ADDRESS_OFFSET;
-    /** Note that {@link #compiledInPriorLayer} does not imply {@link #compiled}. */
+    private int codeAddressOffset;
+    private boolean codeAddressOffsetValid;
     private boolean compiled;
     private boolean compiledInPriorLayer;
 
@@ -246,10 +226,11 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     }
 
     public void setCodeAddressOffset(int address) {
-        assert isCompiled() || isCompiledInPriorLayer();
-        assert codeAddressOffset == INVALID_CODE_ADDRESS_OFFSET && address != INVALID_CODE_ADDRESS_OFFSET : Assertions.errorMessage(codeAddressOffset, address);
+        assert isCompiled();
+        assert !codeAddressOffsetValid;
 
         codeAddressOffset = address;
+        codeAddressOffsetValid = true;
     }
 
     /**
@@ -257,24 +238,20 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
      * the buffer.
      */
     public int getCodeAddressOffset() {
-        if (!isCodeAddressOffsetValid()) {
+        if (!codeAddressOffsetValid) {
             throw VMError.shouldNotReachHere(format("%H.%n(%p)") + ": has no code address offset set.");
         }
         return codeAddressOffset;
     }
 
     public boolean isCodeAddressOffsetValid() {
-        return codeAddressOffset != INVALID_CODE_ADDRESS_OFFSET;
+        return codeAddressOffsetValid;
     }
 
     public void setCompiled() {
         this.compiled = true;
     }
 
-    /**
-     * Whether the method has been compiled in the current build or layer, but {@code false} if it
-     * was only {@linkplain #isCompiledInPriorLayer() compiled in a prior layer}.
-     */
     public boolean isCompiled() {
         return compiled;
     }
@@ -283,10 +260,6 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
         this.compiledInPriorLayer = true;
     }
 
-    /**
-     * Whether the method has been compiled in a prior layer, but if so, that does not imply
-     * {@link #isCompiled}.
-     */
     public boolean isCompiledInPriorLayer() {
         return compiledInPriorLayer;
     }
@@ -309,11 +282,7 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     @Override
     public boolean forceIndirectCall() {
-        /*
-         * Methods delayed to the application layer need to be called indirectly as they are not
-         * available in the current layer.
-         */
-        return isCompiledInPriorLayer() || wrapped.isDelayed();
+        return isCompiledInPriorLayer();
     }
 
     @Override
@@ -369,52 +338,27 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     @Override
     public boolean isForeignCallTarget() {
-        return AnnotationUtil.isAnnotationPresent(this, SubstrateForeignCallTarget.class);
+        return isAnnotationPresent(SubstrateForeignCallTarget.class);
     }
 
     @Override
     public boolean isSnippet() {
-        return AnnotationUtil.isAnnotationPresent(this, Snippet.class);
+        return isAnnotationPresent(Snippet.class);
     }
 
     public boolean hasVTableIndex() {
-        return indirectCallVTableIndex != MISSING_VTABLE_IDX;
+        return vtableIndex != -1;
     }
 
     @Override
     public int getVTableIndex() {
-        assert hasVTableIndex() : "Missing vtable index for method " + this.format("%H.%n(%p)");
-        return indirectCallVTableIndex;
-    }
-
-    public void setIndirectCallTarget(HostedMethod alias) {
-        assert indirectCallTarget == null : indirectCallTarget;
-        if (!alias.equals(this)) {
-            /*
-             * When there is an indirectCallTarget installed which is not the original method, we
-             * currently expect the target method to either have an interface as its declaring class
-             * or for the declaring class to be unchanged. If the declaring class is different, then
-             * we must ensure that the layout of the vtable matches for all relevant indexes between
-             * the original and alias methods' declaring classes.
-             */
-            VMError.guarantee(alias.getDeclaringClass().isInterface() || alias.getDeclaringClass().equals(getDeclaringClass()), "Invalid indirect call target for %s: %s", this, alias);
-        }
-        indirectCallTarget = alias;
-    }
-
-    @Override
-    public HostedMethod getIndirectCallTarget() {
-        Objects.requireNonNull(indirectCallTarget);
-        return indirectCallTarget;
-    }
-
-    void finalizeIndirectCallVTableIndex() {
-        indirectCallVTableIndex = indirectCallTarget.computedVTableIndex;
+        assert vtableIndex != -1 : "Missing vtable index for method " + this.format("%H.%n(%p)");
+        return vtableIndex;
     }
 
     @Override
     public Deoptimizer.StubType getDeoptStubType() {
-        Deoptimizer.DeoptStub stubAnnotation = AnnotationUtil.getAnnotation(this, Deoptimizer.DeoptStub.class);
+        Deoptimizer.DeoptStub stubAnnotation = getAnnotation(Deoptimizer.DeoptStub.class);
         if (stubAnnotation != null) {
             return stubAnnotation.stubType();
         }
@@ -450,15 +394,6 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     @Override
     public String getName() {
         return name;
-    }
-
-    /**
-     * Returns the original name of the method, without any suffix that might have been added by
-     * {@link HostedMethodNameFactory}.
-     */
-    public String getReflectionName() {
-        VMError.guarantee(this.isOriginalMethod());
-        return wrapped.getName();
     }
 
     @Override
@@ -517,11 +452,6 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     }
 
     @Override
-    public boolean isDeclared() {
-        return wrapped.isDeclared();
-    }
-
-    @Override
     public boolean isClassInitializer() {
         return wrapped.isClassInitializer();
     }
@@ -564,6 +494,11 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
     }
 
     @Override
+    public Annotation[][] getParameterAnnotations() {
+        return wrapped.getParameterAnnotations();
+    }
+
+    @Override
     public Type[] getGenericParameterTypes() {
         return wrapped.getGenericParameterTypes();
     }
@@ -580,7 +515,7 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
 
     @Override
     public boolean shouldBeInlined() {
-        return AnnotationUtil.getAnnotation(this, AlwaysInline.class) != null || AnnotationUtil.getAnnotation(this, ForceInline.class) != null;
+        return getAnnotation(AlwaysInline.class) != null || getAnnotation(ForceInline.class) != null;
     }
 
     private LineNumberTable lineNumberTable;
@@ -670,9 +605,7 @@ public final class HostedMethod extends HostedElement implements SharedMethod, W
         return (HostedMethod) multiMethodMap.computeIfAbsent(key, (k) -> {
             HostedMethod newMultiMethod = create0(wrapped, holder, signature, constantPool, handlers, k, multiMethodMap, localVariableTable);
             newMultiMethod.implementations = implementations;
-            newMultiMethod.computedVTableIndex = computedVTableIndex;
-            newMultiMethod.indirectCallTarget = indirectCallTarget;
-            newMultiMethod.indirectCallVTableIndex = indirectCallVTableIndex;
+            newMultiMethod.vtableIndex = vtableIndex;
             return newMultiMethod;
         });
     }

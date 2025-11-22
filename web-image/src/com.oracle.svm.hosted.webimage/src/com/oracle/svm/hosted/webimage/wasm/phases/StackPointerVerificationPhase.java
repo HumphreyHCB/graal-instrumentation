@@ -25,11 +25,6 @@
 
 package com.oracle.svm.hosted.webimage.wasm.phases;
 
-import com.oracle.svm.core.snippets.KnownIntrinsics;
-import com.oracle.svm.hosted.webimage.wasm.debug.NoStackVerification;
-import com.oracle.svm.hosted.webimage.wasm.debug.WasmDebug;
-import com.oracle.svm.util.AnnotationUtil;
-
 import jdk.graal.compiler.nodes.ControlSinkNode;
 import jdk.graal.compiler.nodes.FixedNode;
 import jdk.graal.compiler.nodes.FixedWithNextNode;
@@ -40,6 +35,11 @@ import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.extended.ForeignCallNode;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.phases.BasePhase;
+import org.graalvm.nativeimage.AnnotationAccess;
+
+import com.oracle.svm.core.snippets.KnownIntrinsics;
+import com.oracle.svm.hosted.webimage.wasm.debug.NoStackVerification;
+import com.oracle.svm.hosted.webimage.wasm.debug.WasmDebug;
 
 /**
  * Inserts instrumentation into each method graph to verify that the stack pointer isn't changed
@@ -53,7 +53,7 @@ import jdk.graal.compiler.phases.BasePhase;
 public class StackPointerVerificationPhase extends BasePhase<CoreProviders> {
     @Override
     protected void run(StructuredGraph graph, CoreProviders context) {
-        if (AnnotationUtil.isAnnotationPresent(graph.method(), NoStackVerification.class)) {
+        if (AnnotationAccess.isAnnotationPresent(graph.method(), NoStackVerification.class)) {
             return;
         }
 

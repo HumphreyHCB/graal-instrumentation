@@ -406,7 +406,6 @@ public final class SpecializationStatistics {
             }
             combinationSumStat.accept(combinationSum, sourceSection);
 
-            // Parfait_ALLOW impossible-redundant-condition
             if (nodeSum != 0) {
                 nodeStat.accept(nodeSum, sourceSection);
             }

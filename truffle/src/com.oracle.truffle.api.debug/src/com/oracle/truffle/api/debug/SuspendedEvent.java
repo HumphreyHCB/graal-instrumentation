@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -118,19 +118,12 @@ import com.oracle.truffle.api.source.SourceSection;
  * resumed.
  * <ul>
  * <li>{@link #prepareStepInto(int)}</li>
- * <li>{@link #prepareStepInto(StepConfig)}</li>
  * <li>{@link #prepareStepOut(int)}</li>
- * <li>{@link #prepareStepOut(StepConfig)}</li>
  * <li>{@link #prepareStepOver(int)}</li>
- * <li>{@link #prepareStepOver(StepConfig)}</li>
- * <li>{@link #prepareUnwindFrame(DebugStackFrame)}</li>
- * <li>{@link #prepareUnwindFrame(DebugStackFrame, DebugValue)}</li>
  * <li>{@link #prepareKill()}</li>
  * <li>{@link #prepareContinue()}</li>
  * </ul>
- * If no debugging action is requested, the thread resumes, and any pending steps prepared by
- * previous events remain active. An excplicit {@link #prepareContinue() continue} cancels those
- * pending steps.
+ * If no debugging action is requested then {@link #prepareContinue() continue} is assumed.
  * </p>
  *
  * @since 0.9
@@ -216,7 +209,11 @@ public final class SuspendedEvent {
     }
 
     SteppingStrategy getNextStrategy() {
-        return nextStrategy;
+        SteppingStrategy strategy = nextStrategy;
+        if (strategy == null) {
+            return SteppingStrategy.createContinue();
+        }
+        return strategy;
     }
 
     private synchronized void setNextStrategy(SteppingStrategy nextStrategy) {
@@ -225,7 +222,7 @@ public final class SuspendedEvent {
             this.nextStrategy = nextStrategy;
         } else if (this.nextStrategy.isKill()) {
             throw new IllegalStateException("Calls to prepareKill() cannot be followed by any other preparation call.");
-        } else if (this.nextStrategy.isContinue()) {
+        } else if (this.nextStrategy.isDone()) {
             throw new IllegalStateException("Calls to prepareContinue() cannot be followed by any other preparation call.");
         } else if (this.nextStrategy.isComposable()) {
             this.nextStrategy.add(nextStrategy);

@@ -25,16 +25,16 @@
  */
 package com.oracle.svm.test;
 
-import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
-
+import com.oracle.svm.hosted.FeatureImpl;
+import com.oracle.svm.hosted.substitute.SubstitutionReflectivityFilter;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeReflectionSupport;
 import org.junit.Test;
 
-import com.oracle.svm.hosted.substitute.SubstitutionReflectivityFilter;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Field;
 
 /**
  * Tests the {@link RuntimeReflection}.
@@ -77,34 +77,34 @@ public class ReflectionRegistrationTest {
             }
 
             try {
-                ImageSingletons.lookup(RuntimeReflectionSupport.class).register(null, true, false, this.getClass().getMethods());
+                ImageSingletons.lookup(RuntimeReflectionSupport.class).register(null, true, this.getClass().getMethods());
                 assert false;
             } catch (NullPointerException e) {
                 assert e.getMessage().startsWith("Cannot use null value");
             }
 
             try {
-                ImageSingletons.lookup(RuntimeReflectionSupport.class).register(null, true, false, this.getClass().getFields());
+                ImageSingletons.lookup(RuntimeReflectionSupport.class).register(null, true, this.getClass().getFields());
                 assert false;
             } catch (NullPointerException e) {
                 assert e.getMessage().startsWith("Cannot use null value");
             }
 
-            var reflectivityFilter = SubstitutionReflectivityFilter.singleton();
+            FeatureImpl.BeforeAnalysisAccessImpl impl = (FeatureImpl.BeforeAnalysisAccessImpl) access;
             try {
-                reflectivityFilter.shouldExclude((Class<?>) null);
+                SubstitutionReflectivityFilter.shouldExclude((Class<?>) null, impl.getMetaAccess(), impl.getUniverse());
                 assert false;
             } catch (NullPointerException e) {
                 // expected
             }
             try {
-                reflectivityFilter.shouldExclude((Executable) null);
+                SubstitutionReflectivityFilter.shouldExclude((Executable) null, impl.getMetaAccess(), impl.getUniverse());
                 assert false;
             } catch (NullPointerException e) {
                 // expected
             }
             try {
-                reflectivityFilter.shouldExclude((Field) null);
+                SubstitutionReflectivityFilter.shouldExclude((Field) null, impl.getMetaAccess(), impl.getUniverse());
                 assert false;
             } catch (NullPointerException e) {
                 // expected

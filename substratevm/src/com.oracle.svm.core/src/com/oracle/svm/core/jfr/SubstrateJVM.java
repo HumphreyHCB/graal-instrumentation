@@ -53,6 +53,7 @@ import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.core.common.NumUtil;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.graal.compiler.word.Word;
 import jdk.internal.event.Event;
 import jdk.jfr.Configuration;
@@ -293,8 +294,8 @@ public class SubstrateJVM {
     }
 
     @Uninterruptible(reason = "Result is only valid until epoch changes.", callerMustBe = true)
-    public long getStackTraceId(JfrEvent eventType) {
-        return getStackTraceId(eventType.getId(), eventType.getSkipCount());
+    public long getStackTraceId(JfrEvent eventType, int skipCount) {
+        return getStackTraceId(eventType.getId(), skipCount);
     }
 
     /**
@@ -596,7 +597,11 @@ public class SubstrateJVM {
      */
     public String getDumpPath() {
         if (dumpPath == null) {
-            dumpPath = Target_jdk_jfr_internal_util_Utils.getPathInProperty("user.home", null).toString();
+            if (JavaVersionUtil.JAVA_SPEC == 21) {
+                dumpPath = Target_jdk_jfr_internal_SecuritySupport_JDK21.getPathInProperty("user.home", null).toString();
+            } else {
+                dumpPath = Target_jdk_jfr_internal_util_Utils.getPathInProperty("user.home", null).toString();
+            }
         }
         return dumpPath;
     }

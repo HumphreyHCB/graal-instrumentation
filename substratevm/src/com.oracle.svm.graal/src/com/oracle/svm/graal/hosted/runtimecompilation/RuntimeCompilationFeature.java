@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,7 +31,6 @@ import static com.oracle.svm.hosted.code.SubstrateCompilationDirectives.RUNTIME_
 import static jdk.graal.compiler.java.BytecodeParserOptions.InlineDuringParsingMaxDepth;
 
 import java.lang.reflect.Executable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -105,7 +104,6 @@ import com.oracle.svm.hosted.NativeImageGenerator;
 import com.oracle.svm.hosted.ProgressReporter;
 import com.oracle.svm.hosted.RuntimeCompilationCallbacks;
 import com.oracle.svm.hosted.SVMHost;
-import com.oracle.svm.hosted.SharedArenaSupport;
 import com.oracle.svm.hosted.analysis.Inflation;
 import com.oracle.svm.hosted.analysis.SVMParsingSupport;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
@@ -133,7 +131,6 @@ import jdk.graal.compiler.loop.phases.ConvertDeoptimizeToGuardPhase;
 import jdk.graal.compiler.nodes.CallTargetNode;
 import jdk.graal.compiler.nodes.FixedWithNextNode;
 import jdk.graal.compiler.nodes.GraphEncoder;
-import jdk.graal.compiler.nodes.NodeClassMap;
 import jdk.graal.compiler.nodes.StructuredGraph;
 import jdk.graal.compiler.nodes.ValueNode;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
@@ -141,8 +138,6 @@ import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.Bytec
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration.ExplicitOOMEExceptionEdges;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
 import jdk.graal.compiler.nodes.graphbuilderconf.InlineInvokePlugin;
-import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin;
-import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
 import jdk.graal.compiler.nodes.graphbuilderconf.NodePlugin;
 import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.options.Option;
@@ -152,7 +147,6 @@ import jdk.graal.compiler.phases.common.CanonicalizerPhase;
 import jdk.graal.compiler.phases.tiers.Suites;
 import jdk.graal.compiler.phases.util.Providers;
 import jdk.graal.compiler.truffle.phases.DeoptimizeOnExceptionPhase;
-import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.JavaType;
@@ -232,12 +226,11 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
     private final Set<AnalysisMethod> runtimeCompilationsFailedDuringParsing = ConcurrentHashMap.newKeySet();
     private CallTreeInfo callTreeMetadata = null;
     private HostedProviders analysisProviders = null;
-    private AllowInliningPredicate allowInliningPredicate = (_, _) -> AllowInliningPredicate.InlineDecision.INLINING_DISALLOWED;
+    private AllowInliningPredicate allowInliningPredicate = (builder, target) -> AllowInliningPredicate.InlineDecision.INLINING_DISALLOWED;
     private boolean allowInliningPredicateUpdated = false;
     private Function<ConstantFieldProvider, ConstantFieldProvider> constantFieldProviderWrapper = Function.identity();
-    private Consumer<CallTreeInfo> blocklistChecker = _ -> {
+    private Consumer<CallTreeInfo> blocklistChecker = (ignore) -> {
     };
-    private final List<Runnable> afterInstallRuntimeConfigCallbacks = new ArrayList<>();
 
     public HostedProviders getHostedProviders() {
         return hostedProviders;
@@ -249,24 +242,6 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
     public void setUniverseFactory(SubstrateUniverseFactory universeFactory) {
         this.universeFactory = universeFactory;
-    }
-
-    /**
-     * Registers a {@code callback} to be invoked after
-     * {@link #beforeAnalysis(BeforeAnalysisAccess)} completes the
-     * {@link #installRuntimeConfig(BeforeAnalysisAccessImpl) runtime configuration setup}.
-     *
-     * <p>
-     * This hook is used by {@code TruffleFeature} to initialize {@code KnownTruffleTypes}, which
-     * are required by {@code SubstrateTruffleUniverseFactory}. The {@code KnownTruffleTypes} must
-     * be initialized after {@link #installRuntimeConfig(BeforeAnalysisAccessImpl)} has executed,
-     * but before the remaining logic in {@link #beforeAnalysis(BeforeAnalysisAccess)}, since that
-     * phase already relies on {@link SubstrateUniverseFactory} to create {@link SubstrateMethod}
-     * instances.
-     * </p>
-     */
-    public void addAfterInstallRuntimeConfigCallback(Runnable callback) {
-        afterInstallRuntimeConfigCallbacks.add(callback);
     }
 
     @SuppressWarnings("unused")
@@ -435,15 +410,7 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
         Suites firstTierSuites = NativeImageGenerator.createFirstTierSuites(featureHandler, runtimeConfig, false);
         LIRSuites firstTierLirSuites = NativeImageGenerator.createFirstTierLIRSuites(featureHandler, runtimeConfig.getProviders(), false);
 
-        TruffleRuntimeCompilationSupport.setRuntimeConfig(runtimeConfig, suites, lirSuites, firstTierSuites, firstTierLirSuites,
-                        createRuntimeInvocationPlugins(hostedProviders.getGraphBuilderPlugins().getInvocationPlugins(), ConfigurationValues.getTarget().arch));
-    }
-
-    private static InvocationPlugins createRuntimeInvocationPlugins(InvocationPlugins hostedInvocationPlugins, Architecture arch) {
-        InvocationPlugins plugins = new InvocationPlugins();
-        hostedInvocationPlugins.collectRuntimeCheckedPlugins(plugins, arch);
-        plugins.closeRegistration();
-        return plugins;
+        TruffleRuntimeCompilationSupport.setRuntimeConfig(runtimeConfig, suites, lirSuites, firstTierSuites, firstTierLirSuites);
     }
 
     @Override
@@ -451,10 +418,6 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         BeforeAnalysisAccessImpl config = (BeforeAnalysisAccessImpl) c;
         installRuntimeConfig(config);
-
-        for (Runnable callback : afterInstallRuntimeConfigCallbacks) {
-            callback.run();
-        }
 
         SubstrateGraalRuntime graalRuntime = new SubstrateGraalRuntime();
         objectReplacer.setGraalRuntime(graalRuntime);
@@ -464,7 +427,6 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         /* Initialize configuration with reasonable default values. */
         graphBuilderConfig = GraphBuilderConfiguration.getDefault(hostedProviders.getGraphBuilderPlugins()).withBytecodeExceptionMode(BytecodeExceptionMode.ExplicitOnly);
-
         runtimeCompilationCandidatePredicate = RuntimeCompilationFeature::defaultAllowRuntimeCompilation;
         optimisticOpts = OptimisticOptimizations.ALL.remove(OptimisticOptimizations.Optimization.UseLoopLimitChecks);
         graphEncoder = new RuntimeCompiledMethodSupport.RuntimeCompilationGraphEncoder(ConfigurationValues.getTarget().arch, config.getUniverse().getHeapScanner());
@@ -500,13 +462,6 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
         for (ResolvedJavaMethod method : replacements.getSnippetMethods()) {
             objectReplacer.apply(method);
         }
-
-        /*
-         * Register the same allow list as for hosted compiles also for runtime compiles.
-         */
-        if (SharedArenaSupport.isAvailable()) {
-            SharedArenaSupport.singleton().registerSafeArenaAccessorsForRuntimeCompilation(objectReplacer::createMethod, objectReplacer::createType);
-        }
     }
 
     boolean newRuntimeMethodsSeen = false;
@@ -528,7 +483,7 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         graphEncoder.finishPrepare();
         AnalysisMetaAccess metaAccess = config.getMetaAccess();
-        NodeClassMap nodeClasses = graphEncoder.getNodeClasses();
+        NodeClass<?>[] nodeClasses = graphEncoder.getNodeClasses();
         for (NodeClass<?> nodeClass : nodeClasses) {
             metaAccess.lookupJavaType(nodeClass.getClazz()).registerAsInstantiated("All " + NodeClass.class.getName() + " classes are marked as instantiated eagerly.");
         }
@@ -713,6 +668,7 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
             return config;
         }
 
+        @SuppressWarnings("try")
         private Object parseRuntimeCompiledMethod(BigBang bb, DebugContext debug, AnalysisMethod method) {
 
             boolean parsed = false;
@@ -734,10 +690,10 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
                                  */
                                 .recordInlinedMethods(true).build();
             }
-            try (DebugContext.Scope _ = debug.scope("RuntimeCompile", graph, method)) {
+            try (DebugContext.Scope scope = debug.scope("RuntimeCompile", graph, method)) {
                 if (parsed) {
                     // enable this logging to get log output in compilation passes
-                    try (Indent _ = debug.logAndIndent("parse graph phases")) {
+                    try (Indent indent2 = debug.logAndIndent("parse graph phases")) {
                         RuntimeCompiledMethodSupport.RuntimeGraphBuilderPhase.createRuntimeGraphBuilderPhase(bb, analysisProviders, graphBuilderConfig, optimisticOpts).apply(graph);
                     } catch (PermanentBailoutException ex) {
                         bb.getUnsupportedFeatures().addMessage(method.format("%H.%n(%p)"), method, ex.getLocalizedMessage(), null, ex);
@@ -763,7 +719,7 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
 
         private void recordFailed(AnalysisMethod method) {
             // Will need to create post to invalidate other MethodTypeFlows (if they exist)
-            invalidForRuntimeCompilation.computeIfAbsent(method, _ -> "generic failure");
+            invalidForRuntimeCompilation.computeIfAbsent(method, (m) -> "generic failure");
         }
 
         @Override
@@ -848,15 +804,15 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
         }
 
         @Override
-        public Predicate<AnalysisType> getStrengthenGraphsTypePredicate(MultiMethod.MultiMethodKey key) {
+        public Function<AnalysisType, ResolvedJavaType> getStrengthenGraphsToTargetFunction(MultiMethod.MultiMethodKey key) {
             if (key == RUNTIME_COMPILED_METHOD) {
                 /*
                  * For runtime compiled methods, we must be careful to ensure new SubstrateTypes are
                  * not created during the AnalysisStrengthenGraphsPhase. If the type does not
                  * already exist at this point (which is after the analysis phase), then we must
-                 * return false.
+                 * return null.
                  */
-                return (t) -> objectReplacer.typeCreated(t);
+                return (t) -> objectReplacer.typeCreated(t) ? t : null;
             }
             return null;
         }
@@ -916,23 +872,12 @@ public final class RuntimeCompilationFeature implements Feature, RuntimeCompilat
             return newNode;
         }
 
-        private boolean isRuntimeCheckedInvocationPlugin(GraphBuilderContext b, AnalysisMethod method) {
-            InvocationPlugin plugin = hostedProviders.getGraphBuilderPlugins().getInvocationPlugins().lookupInvocation(method, false, false, b.getOptions());
-            if (plugin instanceof InvocationPlugin.ConditionalInvocationPlugin conditionalInvocationPlugin) {
-                return conditionalInvocationPlugin.isRuntimeChecked(hostedProviders.getLowerer().getTarget().arch);
-            }
-            return false;
-        }
-
         @Override
         protected boolean shouldInlineInvoke(GraphBuilderContext b, AbstractPolicyScope policyScope, AnalysisMethod method, ValueNode[] args) {
             if (allowInliningPredicate.allowInlining(b, method) != AllowInliningPredicate.InlineDecision.INLINE) {
                 return false;
             }
-            if (isRuntimeCheckedInvocationPlugin(b, method)) {
-                // postpone the inlining till runtime compilation
-                return false;
-            }
+
             InlineBeforeAnalysisPolicyUtils.AccumulativeInlineScope accScope;
             if (policyScope instanceof RuntimeCompilationAlwaysInlineScope) {
                 /*

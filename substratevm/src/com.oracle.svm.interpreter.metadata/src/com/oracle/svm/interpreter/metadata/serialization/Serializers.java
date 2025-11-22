@@ -25,7 +25,6 @@
 package com.oracle.svm.interpreter.metadata.serialization;
 
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
@@ -37,13 +36,8 @@ import org.graalvm.nativeimage.Platforms;
 import org.graalvm.word.Pointer;
 
 import com.oracle.svm.core.FunctionPointerHolder;
-import com.oracle.svm.core.hub.registry.SymbolsSupport;
-import com.oracle.svm.core.layeredimagesingleton.MultiLayeredImageSingleton;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.espresso.classfile.ParserConstantPool;
-import com.oracle.svm.espresso.classfile.descriptors.ModifiedUTF8;
-import com.oracle.svm.espresso.classfile.descriptors.Symbol;
 import com.oracle.svm.interpreter.metadata.InterpreterConstantPool;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaField;
 import com.oracle.svm.interpreter.metadata.InterpreterResolvedJavaMethod;
@@ -77,13 +71,13 @@ public final class Serializers {
     }
 
     public static final ValueSerializer<byte[]> BYTE_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         byte[] bytes = new byte[length];
                         in.readFully(bytes);
                         return bytes;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         out.write(value);
                     });
@@ -122,7 +116,7 @@ public final class Serializers {
                         }
                     });
     static final ValueSerializer<boolean[]> BOOLEAN_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         boolean[] array = new boolean[length];
                         for (int i = 0; i < length; ++i) {
@@ -130,7 +124,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (boolean e : value) {
                             out.writeBoolean(e);
@@ -138,7 +132,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<int[]> INT_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         int[] array = new int[length];
                         for (int i = 0; i < length; ++i) {
@@ -146,7 +140,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (int e : value) {
                             out.writeInt(e);
@@ -154,7 +148,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<short[]> SHORT_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         short[] array = new short[length];
                         for (int i = 0; i < length; ++i) {
@@ -162,7 +156,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (short e : value) {
                             out.writeShort(e);
@@ -170,7 +164,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<char[]> CHAR_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         char[] array = new char[length];
                         for (int i = 0; i < length; ++i) {
@@ -178,7 +172,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (char e : value) {
                             out.writeChar(e);
@@ -186,7 +180,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<float[]> FLOAT_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         float[] array = new float[length];
                         for (int i = 0; i < length; ++i) {
@@ -194,7 +188,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (float e : value) {
                             out.writeFloat(e);
@@ -202,7 +196,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<double[]> DOUBLE_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         double[] array = new double[length];
                         for (int i = 0; i < length; ++i) {
@@ -210,7 +204,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (double e : value) {
                             out.writeDouble(e);
@@ -218,7 +212,7 @@ public final class Serializers {
                     });
 
     static final ValueSerializer<long[]> LONG_ARRAY = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         long[] array = new long[length];
                         for (int i = 0; i < length; ++i) {
@@ -226,7 +220,7 @@ public final class Serializers {
                         }
                         return array;
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         LEB128.writeUnsignedInt(out, value.length);
                         for (long e : value) {
                             out.writeLong(e);
@@ -465,7 +459,7 @@ public final class Serializers {
     static final int[] EMPTY_INT_ARRAY = new int[0];
 
     static final ValueSerializer<LineNumberTable> LINE_NUMBER_TABLE = createSerializer(
-                    (_, in) -> {
+                    (context, in) -> {
                         int length = LEB128.readUnsignedInt(in);
                         if (length == 0) {
                             return new LineNumberTable(EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
@@ -487,7 +481,7 @@ public final class Serializers {
 
                         return new LineNumberTable(lineNumbers, bcis);
                     },
-                    (_, out, value) -> {
+                    (context, out, value) -> {
                         int[] lines = value.getLineNumbers();
                         int[] bcis = value.getBcis();
                         VMError.guarantee(lines.length == bcis.length);
@@ -519,43 +513,33 @@ public final class Serializers {
 
     // Register this serializer for JavaConstant.NULL_POINTER.getClass().
     static final ValueSerializer<? extends JavaConstant> NULL_CONSTANT = createSerializer(
-                    (_, _) -> {
+                    (context, in) -> {
                         return JavaConstant.NULL_POINTER;
                     },
-                    (_, _, _) -> {
+                    (context, out, value) -> {
                         // nop
                     });
 
     static final ValueSerializer<InterpreterConstantPool> CONSTANT_POOL = createSerializer(
                     (context, in) -> {
                         InterpreterResolvedObjectType holder = context.readReference(in);
-                        byte[] parserConstantPoolBytes = context.readerFor(byte[].class).read(context, in);
-
-                        @SuppressWarnings("unchecked")
-                        ParserConstantPool parserConstantPool = ParserConstantPool.fromBytesForSerialization(parserConstantPoolBytes,
-                                        byteSequence -> {
-                                            return (Symbol<ModifiedUTF8>) SymbolsSupport.getUtf8().getOrCreateValidUtf8(byteSequence);
-                                        });
-                        Object[] cachedEntries = context.readerFor(Object[].class).read(context, in);
-                        return InterpreterConstantPool.create(holder, parserConstantPool, cachedEntries);
+                        Object[] entries = context.readerFor(Object[].class).read(context, in);
+                        return InterpreterConstantPool.create(holder, entries);
                     },
                     (context, out, value) -> {
                         context.writeReference(out, value.getHolder());
-                        context.writerFor(byte[].class).write(context, out, value.getParserConstantPool().toBytesForSerialization());
-                        context.writerFor(Object[].class).write(context, out, value.getCachedEntries());
+                        context.writerFor(Object[].class).write(context, out, value.getEntries());
                     });
 
     static final ValueSerializer<InterpreterResolvedJavaField> RESOLVED_FIELD = createSerializer(
                     (context, in) -> {
                         String name = context.readReference(in);
-                        JavaType type = context.readReference(in);
+                        InterpreterResolvedJavaType type = context.readReference(in);
                         InterpreterResolvedObjectType declaringClass = context.readReference(in);
                         int modifiers = LEB128.readUnsignedInt(in);
                         int offset = LEB128.readUnsignedInt(in);
                         JavaConstant constant = context.readReference(in);
-                        boolean isWordStorage = in.readBoolean();
-                        int layerNum = Modifier.isStatic(modifiers) ? in.readByte() : MultiLayeredImageSingleton.NONSTATIC_FIELD_LAYER_NUMBER;
-                        return InterpreterResolvedJavaField.createForInterpreter(name, modifiers, type, declaringClass, offset, constant, isWordStorage, layerNum);
+                        return InterpreterResolvedJavaField.create(name, modifiers, type, declaringClass, offset, constant);
                     },
                     (context, out, value) -> {
                         context.writeReference(out, value.getName());
@@ -569,11 +553,6 @@ public final class Serializers {
                         } else {
                             context.writeReference(out, null);
                         }
-                        out.writeBoolean(value.isWordStorage());
-                        if (value.isStatic()) {
-                            out.writeByte(value.getInstalledLayerNum());
-                        }
-
                     });
 
     static final ValueSerializer<InterpreterResolvedObjectType> OBJECT_TYPE = createSerializer(
@@ -640,7 +619,7 @@ public final class Serializers {
                         String name = context.readReference(in);
                         int maxLocals = LEB128.readUnsignedInt(in);
                         int maxStackSize = LEB128.readUnsignedInt(in);
-                        int flags = LEB128.readUnsignedInt(in);
+                        int modifiers = LEB128.readUnsignedInt(in);
                         InterpreterResolvedObjectType declaringClass = context.readReference(in);
                         InterpreterUnresolvedSignature signature = context.readReference(in);
                         byte[] code = context.readReference(in);
@@ -654,14 +633,14 @@ public final class Serializers {
                         int enterStubOffset = LEB128.readUnsignedInt(in);
                         int methodId = LEB128.readUnsignedInt(in);
 
-                        return InterpreterResolvedJavaMethod.createForDeserialization(name, maxLocals, maxStackSize, flags, declaringClass, signature, code, exceptionHandlers, lineNumberTable,
-                                        localVariableTable, nativeEntryPoint, vtableIndex, gotOffset, enterStubOffset, methodId);
+                        return InterpreterResolvedJavaMethod.create(name, maxLocals, maxStackSize, modifiers, declaringClass, signature, code, exceptionHandlers, lineNumberTable, localVariableTable,
+                                        nativeEntryPoint, vtableIndex, gotOffset, enterStubOffset, methodId);
                     },
                     (context, out, value) -> {
                         String name = value.getName();
                         int maxLocals = value.getMaxLocals();
                         int maxStackSize = value.getMaxStackSize();
-                        int flags = value.getFlags();
+                        int modifiers = value.getModifiers();
                         InterpreterResolvedObjectType declaringClass = value.getDeclaringClass();
                         InterpreterUnresolvedSignature signature = value.getSignature();
                         byte[] code = value.getInterpretedCode();
@@ -682,7 +661,7 @@ public final class Serializers {
                         context.writeReference(out, name);
                         LEB128.writeUnsignedInt(out, maxLocals);
                         LEB128.writeUnsignedInt(out, maxStackSize);
-                        LEB128.writeUnsignedInt(out, flags);
+                        LEB128.writeUnsignedInt(out, modifiers);
                         context.writeReference(out, declaringClass);
                         context.writeReference(out, signature);
                         context.writeReference(out, code);
@@ -785,7 +764,7 @@ public final class Serializers {
                         .registerSerializer(InterpreterResolvedJavaMethod.InlinedBy.class, INLINED_BY)
                         .registerReader(ReferenceConstant.class, REFERENCE_CONSTANT_READER)
                         // The ReferenceConstant writer must be patched at build time.
-                        .registerWriter(ReferenceConstant.class, (_, _, _) -> {
+                        .registerWriter(ReferenceConstant.class, (context, out, value) -> {
                             throw VMError.shouldNotReachHereAtRuntime();
                         });
     }

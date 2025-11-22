@@ -25,10 +25,11 @@
 
 package com.oracle.svm.hosted.webimage.wasm.ast;
 
+import jdk.graal.compiler.debug.GraalError;
+
 import com.oracle.svm.webimage.wasm.types.WasmPrimitiveType;
 import com.oracle.svm.webimage.wasm.types.WasmUtil;
 
-import jdk.graal.compiler.debug.GraalError;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.PrimitiveConstant;

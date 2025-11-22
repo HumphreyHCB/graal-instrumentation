@@ -26,8 +26,9 @@ import java.util.Arrays;
 
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.espresso.classfile.ConstantPool.Tag;
 import com.oracle.truffle.espresso.classfile.attributes.BootstrapMethodsAttribute;
+import com.oracle.truffle.espresso.classfile.constantpool.InvokeDynamicConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.Resolvable;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
@@ -38,7 +39,7 @@ import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.runtime.EspressoException;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 
-public final class ResolvedInvokeDynamicConstant implements ResolvedConstant {
+public final class ResolvedInvokeDynamicConstant implements InvokeDynamicConstant, Resolvable.ResolvedConstant {
     private final BootstrapMethodsAttribute.Entry bootstrapMethod;
     private final Symbol<Type>[] parsedInvokeSignature;
     private final Symbol<Name> nameSymbol;
@@ -54,6 +55,11 @@ public final class ResolvedInvokeDynamicConstant implements ResolvedConstant {
     public Object value() {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw EspressoError.shouldNotReachHere("Use indy.link() rather than Resolved.value()");
+    }
+
+    @Override
+    public boolean isResolved() {
+        return true;
     }
 
     /**
@@ -140,7 +146,7 @@ public final class ResolvedInvokeDynamicConstant implements ResolvedConstant {
             StaticObject[] args = pool.getStaticArguments(bootstrapMethod, accessingKlass);
 
             StaticObject name = meta.toGuestString(nameSymbol);
-            StaticObject methodType = RuntimeConstantPool.signatureToMethodType(parsedInvokeSignature, accessingKlass, meta.getContext().getJavaVersion().java8OrEarlier(), meta);
+            StaticObject methodType = Resolution.signatureToMethodType(parsedInvokeSignature, accessingKlass, meta.getContext().getJavaVersion().java8OrEarlier(), meta);
             /*
              * the 4 objects resolved above are not actually call-site specific. We don't cache them
              * to minimize footprint since most indy constant are only used by one call-site
@@ -177,10 +183,5 @@ public final class ResolvedInvokeDynamicConstant implements ResolvedConstant {
 
     public Symbol<Type>[] getParsedSignature() {
         return parsedInvokeSignature;
-    }
-
-    @Override
-    public Tag tag() {
-        return Tag.INVOKEDYNAMIC;
     }
 }

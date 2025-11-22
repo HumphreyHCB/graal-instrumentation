@@ -241,6 +241,7 @@ import com.oracle.truffle.espresso.classfile.attributes.StackMapTableAttribute;
 import com.oracle.truffle.espresso.classfile.bytecode.BytecodeStream;
 import com.oracle.truffle.espresso.classfile.bytecode.BytecodeSwitch;
 import com.oracle.truffle.espresso.classfile.bytecode.Bytecodes;
+import com.oracle.truffle.espresso.classfile.constantpool.DynamicConstant;
 import com.oracle.truffle.espresso.classfile.descriptors.SignatureSymbols;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
 import com.oracle.truffle.espresso.classfile.descriptors.Type;
@@ -403,7 +404,7 @@ public final class FrameAnalysis implements StackMapFrameParser.FrameBuilder<Bui
         assert frame.isRecord();
         states[0] = frame;
         StackMapTableAttribute stackMapFrame = m.getCodeAttribute().getStackMapFrame();
-        if (m.getPool().getMajorVersion() == ClassfileParser.JAVA_6_VERSION ||
+        if (m.getCodeAttribute().getMajorVersion() == ClassfileParser.JAVA_6_VERSION ||
                         stackMapFrame == null || stackMapFrame == StackMapTableAttribute.EMPTY) {
             // No stack maps: older class files, or classes that skips verification
             // Note, we do not trust classfile ver == 50, as they can have wrong maps, but pass
@@ -876,7 +877,7 @@ public final class FrameAnalysis implements StackMapFrameParser.FrameBuilder<Bui
                 frame.push(FrameType.forType(Types.java_lang_invoke_MethodType));
                 break;
             case DYNAMIC: {
-                Symbol<Type> t = pool.dynamicType(cpi);
+                Symbol<Type> t = ((DynamicConstant.Indexes) pool.at(cpi)).getTypeSymbol(pool);
                 frame.push(FrameType.forType(t));
                 break;
             }
@@ -974,18 +975,16 @@ public final class FrameAnalysis implements StackMapFrameParser.FrameBuilder<Bui
 
     private Symbol<Type> queryPoolType(int cpi, ConstantPool.Tag tag) {
         switch (tag) {
-            case CLASS: {
+            case CLASS:
                 if (pool.isResolutionSuccessAt(cpi)) {
                     return pool.resolvedKlassAt(m.getDeclaringKlass(), cpi).getType();
                 }
-                return lang.getTypes().fromClassNameEntry(pool.className(cpi));
-            }
-            case FIELD_REF: {
+                return lang.getTypes().fromClassNameEntry(pool.classAt(cpi).getName(pool));
+            case FIELD_REF:
                 if (pool.isResolutionSuccessAt(cpi)) {
                     return pool.resolvedFieldAt(m.getDeclaringKlass(), cpi).getType();
                 }
-                return pool.fieldType(cpi);
-            }
+                return pool.fieldAt(cpi).getType(pool);
             default:
                 throw EspressoError.shouldNotReachHere();
         }
@@ -993,18 +992,16 @@ public final class FrameAnalysis implements StackMapFrameParser.FrameBuilder<Bui
 
     private Symbol<Type>[] queryPoolSignature(int cpi, ConstantPool.Tag tag) {
         switch (tag) {
-            case METHOD_REF: {
+            case METHOD_REF:
                 if (pool.isResolutionSuccessAt(cpi)) {
                     return pool.resolvedMethodAt(m.getDeclaringKlass(), cpi).getParsedSignature();
                 }
-                return lang.getSignatures().parsed(pool.methodSignature(cpi));
-            }
-            case INVOKEDYNAMIC: {
+                return lang.getSignatures().parsed(pool.methodAt(cpi).getSignature(pool));
+            case INVOKEDYNAMIC:
                 if (pool.isResolutionSuccessAt(cpi)) {
                     return pool.peekResolvedInvokeDynamic(cpi).getParsedSignature();
                 }
-                return lang.getSignatures().parsed(pool.invokeDynamicSignature(cpi));
-            }
+                return lang.getSignatures().parsed(pool.indyAt(cpi).getSignature(pool));
             default:
                 throw EspressoError.shouldNotReachHere();
         }

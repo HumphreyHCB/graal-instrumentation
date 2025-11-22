@@ -38,6 +38,8 @@ from mx_gate import Task, add_gate_runner, add_gate_argument
 import mx_sulong_suite_constituents
 import mx_sulong_unittest
 
+import mx_sdk_vm
+
 _suite = mx.suite('sulong')
 
 def _sulong_gate_unittest(title, test_suite, tasks, args, tags=None, testClasses=None, unittestArgs=None):
@@ -158,21 +160,20 @@ def _sulong_gate_runner(args, tasks):
     else:
         slowStandalone = standaloneMode == "jvm"
 
-    if mx.suite('compiler', fatalIfMissing=False):
-        with Task('Build GraalJDK', tasks, tags=['standalone']) as t:
-            # building GraalJDK to work around a bug in the mx support code of the compiler suite
-            # `mx unittest` doesn't work if compiler is imported and this is not built, and we want to avoid doing a full `mx build` in the standalone jobs
-            if t:
-                import mx_compiler
-                mx.command_function('build')(['--dependencies', mx_compiler._graaljdk_dist(edition='ce').name])
+    with Task('Build GraalJDK', tasks, tags=['standalone']) as t:
+        # building GraalJDK to work around a bug in the mx support code of the compiler suite
+        # `mx unittest` doesn't work if this is not built, and we want to avoid doing a full `mx build` in the standalone jobs
+        if t:
+            import mx_compiler
+            mx.command_function('build')(['--dependencies', mx_compiler._graaljdk_dist(edition='ce').name])
 
     if standaloneMode == "native":
         with Task('Build Native LLVM Standalone', tasks, tags=['standalone']) as t:
-            if t: mx.command_function('build')(['--dependencies', f'SULONG_NATIVE_STANDALONE'])
+            if t: mx.command_function('build')(['--dependencies', f'LLVM_NATIVE_STANDALONE_SVM_JAVA{mx_sdk_vm.base_jdk_version()}'])
 
     if standaloneMode == "jvm":
         with Task('Build Java LLVM Standalone', tasks, tags=['standalone']) as t:
-            if t: mx.command_function('build')(['--dependencies', f'SULONG_JVM_STANDALONE'])
+            if t: mx.command_function('build')(['--dependencies', f'LLVM_JAVA_STANDALONE_SVM_JAVA{mx_sdk_vm.base_jdk_version()}'])
 
     # Folders not containing tests: options, services, util
     _unittest('Benchmarks', 'SULONG_SHOOTOUT_TEST_SUITE', description="Language Benchmark game tests", testClasses=['ShootoutsSuite'], tags=['benchmarks', 'sulongMisc'])

@@ -203,12 +203,13 @@ public final class ExportsLibrary extends Template {
     }
 
     public boolean needsState() {
+        ProcessorContext c = ProcessorContext.getInstance();
         for (ExportMessageData message : exportedMessages.values()) {
             NodeData node = message.getSpecializedNode();
             if (node == null) {
                 continue;
             }
-            if (node.needsState()) {
+            if (node.needsState(c)) {
                 return true;
             }
         }

@@ -51,9 +51,6 @@ public final class Target_jdk_internal_foreign_abi_NativeEntryPoint {
                     int capturedStateMask,
                     boolean needsTransition,
                     @Inject EspressoContext context, @Inject Meta meta) {
-        if (StaticObject.isNull(methodType) || StaticObject.isNull(encArgMoves) || StaticObject.isNull(encRetMoves)) {
-            throw meta.throwNullPointerException();
-        }
         Klass[] pTypes = getPTypes(methodType, meta);
         Klass rType = meta.java_lang_invoke_MethodType_rtype.getObject(methodType).getMirrorKlass(meta);
 

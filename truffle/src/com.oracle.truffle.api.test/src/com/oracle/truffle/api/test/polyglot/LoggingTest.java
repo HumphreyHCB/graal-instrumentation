@@ -47,7 +47,6 @@ import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,7 +63,6 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
@@ -1389,7 +1387,6 @@ public class LoggingTest {
 
     @Test
     public void testGR49739() {
-        Assume.assumeTrue(GCUtils.isSupported());
         AtomicReference<TruffleLogger> loggerHolder = new AtomicReference<>();
         AbstractLoggingLanguage.action = (ctx, defaultLoggers) -> {
             loggerHolder.set(ctx.env.getLogger("after.close"));
@@ -1409,71 +1406,6 @@ public class LoggingTest {
         TruffleLogger closedLogger = loggerHolder.getAndSet(null);
         Assert.assertNotNull(closedLogger);
         AbstractPolyglotTest.assertFails(() -> closedLogger.config("Should fail"), AssertionError.class, (e) -> Assert.assertTrue(e.getMessage().contains("Invalid sharing of bound TruffleLogger")));
-    }
-
-    @Test
-    public void testContextOverridesErrorStream() {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        try (Engine engine = newEngineBuilder().build()) {
-            try (Context ctx = Context.newBuilder().engine(engine).err(err).build()) {
-                ctx.eval(LoggingLanguageFirst.ID, "");
-            }
-        }
-        List<Map.Entry<Level, String>> expected = createExpectedLog(LoggingLanguageFirst.ID, Level.INFO, Collections.emptyMap());
-        // Remove trailing '\r' on Windows
-        List<String> lines = Arrays.stream(err.toString().split("\n")).map(String::trim).collect(Collectors.toList());
-        List<Map.Entry<Level, String>> actual = parseLog(lines);
-        Assert.assertEquals(expected, actual);
-    }
-
-    private static List<Map.Entry<Level, String>> parseLog(List<String> lines) {
-        List<Map.Entry<Level, String>> content = new ArrayList<>();
-        Pattern pattern = Pattern.compile("\\[(.*)] (.*): (.*)");
-        for (String line : lines) {
-            Matcher m = pattern.matcher(line);
-            if (m.matches()) {
-                content.add(new AbstractMap.SimpleImmutableEntry<>(Level.parse(m.group(2)), m.group(3)));
-            }
-        }
-        return content;
-    }
-
-    @Test
-    public void testLogFileOnEngine() throws IOException {
-        Path logFile = Files.createTempFile("test", ".log").toAbsolutePath();
-        try {
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            try (Engine engine = newEngineBuilder().option("log.file", logFile.toString()).build()) {
-                try (Context ctx = Context.newBuilder().engine(engine).err(err).build()) {
-                    ctx.eval(LoggingLanguageFirst.ID, "");
-                }
-            }
-            List<Map.Entry<Level, String>> expected = createExpectedLog(LoggingLanguageFirst.ID, Level.INFO, Collections.emptyMap());
-            List<Map.Entry<Level, String>> actual = parseLog(Files.readAllLines(logFile));
-            Assert.assertTrue(err.toString().isEmpty());    // Context error stream must be empty
-            Assert.assertEquals(expected, actual);          // Log witten to engine's log.file
-        } finally {
-            Files.delete(logFile);
-        }
-    }
-
-    @Test
-    public void testLogFileOnContext() throws IOException {
-        Path logFile = Files.createTempFile("test", ".log").toAbsolutePath();
-        try {
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            try (Engine engine = newEngineBuilder().logHandler(err).build()) {
-                try (Context ctx = Context.newBuilder().engine(engine).option("log.file", logFile.toString()).build()) {
-                    ctx.eval(LoggingLanguageFirst.ID, "");
-                }
-            }
-            List<Map.Entry<Level, String>> expected = createExpectedLog(LoggingLanguageFirst.ID, Level.INFO, Collections.emptyMap());
-            List<Map.Entry<Level, String>> actual = parseLog(Files.readAllLines(logFile));
-            Assert.assertTrue(err.toString().isEmpty());    // Engine log must be empty
-            Assert.assertEquals(expected, actual);          // Log written to context's log.file
-        } finally {
-            Files.delete(logFile);
-        }
     }
 
     private static boolean hasInterpreterOnlyWarning(Iterable<Map.Entry<Level, String>> log) {
@@ -1779,13 +1711,13 @@ public class LoggingTest {
         }
 
         @ExportMessage
-        boolean hasLanguageId() {
+        boolean hasLanguage() {
             return true;
         }
 
         @ExportMessage
-        String getLanguageId() {
-            return LoggingLanguageFirst.ID;
+        Class<? extends TruffleLanguage<?>> getLanguage() {
+            return LoggingLanguageFirst.class;
         }
 
     }

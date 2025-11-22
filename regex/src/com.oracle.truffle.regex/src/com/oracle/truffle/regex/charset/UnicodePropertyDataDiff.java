@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -41,8 +41,6 @@
 package com.oracle.truffle.regex.charset;
 
 import org.graalvm.collections.EconomicMap;
-
-import com.oracle.truffle.regex.charset.UnicodeProperties.NameMatchingMode;
 
 final class UnicodePropertyDataDiff extends UnicodePropertyData {
 
@@ -117,37 +115,37 @@ final class UnicodePropertyDataDiff extends UnicodePropertyData {
     }
 
     @Override
-    String lookupPropertyAlias(String alias, NameMatchingMode nameMatchingMode) {
-        String name = super.lookupPropertyAlias(alias, nameMatchingMode);
+    String lookupPropertyAlias(String alias, boolean caseInsensitive) {
+        String name = super.lookupPropertyAlias(alias, caseInsensitive);
         if (name == null) {
-            return parent.lookupPropertyAlias(alias, nameMatchingMode);
+            return parent.lookupPropertyAlias(alias, caseInsensitive);
         }
         return name;
     }
 
     @Override
-    String lookupGeneralCategoryAlias(String alias, NameMatchingMode nameMatchingMode) {
-        String name = super.lookupGeneralCategoryAlias(alias, nameMatchingMode);
+    String lookupGeneralCategoryAlias(String alias, boolean caseInsensitive) {
+        String name = super.lookupGeneralCategoryAlias(alias, caseInsensitive);
         if (name == null) {
-            return parent.lookupGeneralCategoryAlias(alias, nameMatchingMode);
+            return parent.lookupGeneralCategoryAlias(alias, caseInsensitive);
         }
         return name;
     }
 
     @Override
-    String lookupScriptAlias(String alias, NameMatchingMode nameMatchingMode) {
-        String name = super.lookupScriptAlias(alias, nameMatchingMode);
+    String lookupScriptAlias(String alias, boolean caseInsensitive) {
+        String name = super.lookupScriptAlias(alias, caseInsensitive);
         if (name == null) {
-            return parent.lookupScriptAlias(alias, nameMatchingMode);
+            return parent.lookupScriptAlias(alias, caseInsensitive);
         }
         return name;
     }
 
     @Override
-    String lookupBlockAlias(String alias, NameMatchingMode nameMatchingMode) {
-        String name = super.lookupBlockAlias(alias, nameMatchingMode);
+    String lookupBlockAlias(String alias, boolean caseInsensitive) {
+        String name = super.lookupBlockAlias(alias, caseInsensitive);
         if (name == null) {
-            return parent.lookupBlockAlias(alias, nameMatchingMode);
+            return parent.lookupBlockAlias(alias, caseInsensitive);
         }
         return name;
     }

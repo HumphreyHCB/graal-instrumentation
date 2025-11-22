@@ -24,8 +24,6 @@
  */
 package com.oracle.svm.hosted.meta;
 
-import java.util.List;
-
 import com.oracle.graal.pointsto.meta.AnalysisType;
 
 import jdk.vm.ci.meta.JavaKind;
@@ -72,11 +70,6 @@ public class HostedArrayClass extends HostedClass {
     }
 
     @Override
-    public List<? extends HostedType> getPermittedSubclasses() {
-        return null;
-    }
-
-    @Override
     public HostedType getBaseType() {
         return baseType;
     }
@@ -88,7 +81,7 @@ public class HostedArrayClass extends HostedClass {
 
     @Override
     public HostedField[] getInstanceFields(boolean includeSuperclasses) {
-        return HostedField.EMPTY_ARRAY;
+        return new HostedField[0];
     }
 
     @Override

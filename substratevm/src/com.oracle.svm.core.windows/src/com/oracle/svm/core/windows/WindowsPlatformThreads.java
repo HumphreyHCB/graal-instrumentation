@@ -24,6 +24,8 @@
  */
 package com.oracle.svm.core.windows;
 
+import jdk.graal.compiler.word.Word;
+import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platform.HOSTED_ONLY;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -41,10 +43,6 @@ import com.oracle.svm.core.thread.Parker;
 import com.oracle.svm.core.thread.Parker.ParkerFactory;
 import com.oracle.svm.core.thread.PlatformThreads;
 import com.oracle.svm.core.thread.VMThreads.OSThreadHandle;
-import com.oracle.svm.core.traits.BuiltinTraits.AllAccess;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Disallowed;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.core.util.VMError;
@@ -53,9 +51,9 @@ import com.oracle.svm.core.windows.headers.SynchAPI;
 import com.oracle.svm.core.windows.headers.WinBase;
 
 import jdk.graal.compiler.core.common.NumUtil;
-import jdk.graal.compiler.word.Word;
 
 @AutomaticallyRegisteredImageSingleton(PlatformThreads.class)
+@Platforms(Platform.WINDOWS.class)
 public final class WindowsPlatformThreads extends PlatformThreads {
     @Platforms(HOSTED_ONLY.class)
     WindowsPlatformThreads() {
@@ -182,6 +180,7 @@ public final class WindowsPlatformThreads extends PlatformThreads {
     }
 }
 
+@Platforms(Platform.WINDOWS.class)
 class WindowsParker extends Parker {
     private static final long MAX_DWORD = (1L << 32) - 1;
 
@@ -276,8 +275,8 @@ class WindowsParker extends Parker {
     }
 }
 
-@SingletonTraits(access = AllAccess.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Disallowed.class)
 @AutomaticallyRegisteredImageSingleton(ParkerFactory.class)
+@Platforms(Platform.WINDOWS.class)
 class WindowsParkerFactory implements ParkerFactory {
     @Override
     public Parker acquire() {

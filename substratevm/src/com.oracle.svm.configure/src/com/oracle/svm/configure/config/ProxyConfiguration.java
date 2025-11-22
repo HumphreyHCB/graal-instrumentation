@@ -32,13 +32,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
+
 import com.oracle.svm.configure.ConditionalElement;
 import com.oracle.svm.configure.ConfigurationBase;
 import com.oracle.svm.configure.ConfigurationParser;
 import com.oracle.svm.configure.ConfigurationParserOption;
 import com.oracle.svm.configure.ProxyConfigurationParser;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
-import com.oracle.svm.configure.config.conditional.AccessConditionResolver;
+import com.oracle.svm.configure.config.conditional.ConfigurationConditionResolver;
 
 import jdk.graal.compiler.util.json.JsonWriter;
 
@@ -82,21 +83,21 @@ public final class ProxyConfiguration extends ConfigurationBase<ProxyConfigurati
     }
 
     @Override
-    public void mergeConditional(UnresolvedAccessCondition condition, ProxyConfiguration other) {
+    public void mergeConditional(UnresolvedConfigurationCondition condition, ProxyConfiguration other) {
         for (ConditionalElement<List<String>> interfaceList : other.interfaceLists) {
             add(condition, new ArrayList<>(interfaceList.element()));
         }
     }
 
-    public void add(UnresolvedAccessCondition condition, List<String> interfaceList) {
+    public void add(UnresolvedConfigurationCondition condition, List<String> interfaceList) {
         interfaceLists.add(new ConditionalElement<>(condition, interfaceList));
     }
 
-    public boolean contains(UnresolvedAccessCondition condition, List<String> interfaceList) {
+    public boolean contains(UnresolvedConfigurationCondition condition, List<String> interfaceList) {
         return interfaceLists.contains(new ConditionalElement<>(condition, interfaceList));
     }
 
-    public boolean contains(UnresolvedAccessCondition condition, String... interfaces) {
+    public boolean contains(UnresolvedConfigurationCondition condition, String... interfaces) {
         return contains(condition, Arrays.asList(interfaces));
     }
 
@@ -119,7 +120,7 @@ public final class ProxyConfiguration extends ConfigurationBase<ProxyConfigurati
                 writer.appendSeparator();
             }
             writer.appendObjectStart();
-            AccessConditionPrintable.printConditionAttribute(list.condition(), writer, false);
+            ConfigurationConditionPrintable.printConditionAttribute(list.condition(), writer, false);
             writer.quote("interfaces").appendFieldSeparator().appendArrayStart();
             boolean firstType = true;
             for (String type : list.element()) {
@@ -141,7 +142,7 @@ public final class ProxyConfiguration extends ConfigurationBase<ProxyConfigurati
         if (combinedFileSchema) {
             throw new IllegalArgumentException("Independent proxy configuration is only supported with the legacy metadata schema");
         }
-        return new ProxyConfigurationParser<>(AccessConditionResolver.identityResolver(), parserOptions,
+        return new ProxyConfigurationParser<>(ConfigurationConditionResolver.identityResolver(), parserOptions,
                         (cond, interfaces) -> interfaceLists.add(new ConditionalElement<>(cond, interfaces)));
     }
 

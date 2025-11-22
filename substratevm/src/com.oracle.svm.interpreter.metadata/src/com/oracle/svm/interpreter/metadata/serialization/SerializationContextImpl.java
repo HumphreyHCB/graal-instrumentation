@@ -25,18 +25,13 @@
 package com.oracle.svm.interpreter.metadata.serialization;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 abstract class SerializationContextImpl implements SerializationContext {
-    // The following three objects represent a bidirectional map between references and indices.
+    // The following two objects represent a bidirectional map between references and indices.
     protected final List<Object> indexToReference;
-    // Records and maintains a mapping from identity-based objects to their index;
     protected final IdentityHashMap<Object, Integer> referenceToIndex;
-    // Records and maintains a mapping from equality-based objects (such as Strings) to their index;
-    protected final HashMap<Object, Integer> stringToIndex;
 
     protected final List<Class<?>> knownClasses;
 
@@ -47,7 +42,6 @@ abstract class SerializationContextImpl implements SerializationContext {
 
         this.knownClasses = knownClasses;
         this.referenceToIndex = new IdentityHashMap<>();
-        this.stringToIndex = new HashMap<>();
         this.indexToReference = new ArrayList<>();
 
         indexToReference.add(null); // index 0 == null
@@ -62,25 +56,15 @@ abstract class SerializationContextImpl implements SerializationContext {
 
     @Override
     public <T> int recordReference(T value) {
-        Map<Object, Integer> map;
-        if (value instanceof String) {
-            map = stringToIndex;
-        } else {
-            map = referenceToIndex;
-        }
-        return record(value, map);
-    }
-
-    private <T> int record(T value, Map<Object, Integer> map) {
         if (value == null) {
             return NULL_REFERENCE_INDEX;
         }
-        if (map.containsKey(value)) {
+        if (referenceToIndex.containsKey(value)) {
             throw new IllegalStateException("Duplicated reference: " + value);
         }
         int refIndex = indexToReference.size();
         indexToReference.add(value);
-        map.put(value, refIndex);
+        referenceToIndex.put(value, refIndex);
         return refIndex;
     }
 }

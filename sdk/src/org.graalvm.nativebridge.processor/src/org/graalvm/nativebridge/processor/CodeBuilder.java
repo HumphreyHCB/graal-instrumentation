@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -43,6 +43,7 @@ package org.graalvm.nativebridge.processor;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -68,32 +69,30 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.type.WildcardType;
 import javax.lang.model.util.Types;
 
-import org.graalvm.nativebridge.processor.AbstractBridgeParser.AbstractTypeCache;
-
-final class CodeBuilder {
+public final class CodeBuilder {
 
     private static final int INDENT_SIZE = 4;
     private static final Comparator<TypeElement> FQN_COMPARATOR = Comparator.comparing(a -> a.getQualifiedName().toString());
 
     private final CodeBuilder parent;
     private final PackageElement pkg;
-    final Types types;
-    final AbstractTypeCache typeCache;
+    public final Types types;
+    public final BaseTypeCache typeCache;
     private final Collection<TypeElement> toImport;
     private final Map<String, TypeElement> importedTypeNames;
     private final StringBuilder body;
     private int indentLevel;
     private Scope scope;
 
-    CodeBuilder(PackageElement pkg, Types types, AbstractTypeCache typeCache) {
+    public CodeBuilder(PackageElement pkg, Types types, BaseTypeCache typeCache) {
         this(null, pkg, types, typeCache, new TreeSet<>(FQN_COMPARATOR), new StringBuilder(), null);
     }
 
-    CodeBuilder(CodeBuilder parent) {
+    public CodeBuilder(CodeBuilder parent) {
         this(parent, parent.pkg, parent.types, parent.typeCache, parent.toImport, new StringBuilder(), parent.scope);
     }
 
-    CodeBuilder(CodeBuilder parent, PackageElement pkg, Types types, AbstractTypeCache typeCache, Collection<TypeElement> toImport, StringBuilder body, Scope scope) {
+    public CodeBuilder(CodeBuilder parent, PackageElement pkg, Types types, BaseTypeCache typeCache, Collection<TypeElement> toImport, StringBuilder body, Scope scope) {
         this.parent = parent;
         this.pkg = pkg;
         this.types = types;
@@ -104,21 +103,21 @@ final class CodeBuilder {
         this.scope = scope;
     }
 
-    int position() {
+    public int position() {
         return body.length();
     }
 
-    CodeBuilder indent() {
+    public CodeBuilder indent() {
         indentLevel++;
         return this;
     }
 
-    CodeBuilder dedent() {
+    public CodeBuilder dedent() {
         indentLevel--;
         return this;
     }
 
-    CodeBuilder classStart(Set<Modifier> modifiers, CharSequence name, DeclaredType superClass, List<DeclaredType> superInterfaces) {
+    public CodeBuilder classStart(Set<Modifier> modifiers, CharSequence name, DeclaredType superClass, List<DeclaredType> superInterfaces) {
         scope = new Scope(superClass != null ? superClass : typeCache.object, superInterfaces, scope);
         lineStart();
         writeModifiers(modifiers).spaceIfNeeded().write("class ").write(name);
@@ -138,12 +137,12 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder classEnd() {
+    public CodeBuilder classEnd() {
         scope = scope.parent;
         return line("}");
     }
 
-    CodeBuilder methodStart(Set<Modifier> modifiers, CharSequence name, TypeMirror returnType,
+    public CodeBuilder methodStart(Set<Modifier> modifiers, CharSequence name, TypeMirror returnType,
                     List<? extends Parameter> params, List<? extends TypeMirror> exceptions,
                     List<? extends TypeParameterElement> typeParams) {
         lineStart();
@@ -231,12 +230,12 @@ final class CodeBuilder {
         };
     }
 
-    CodeBuilder methodStart(Set<Modifier> modifiers, CharSequence name, TypeMirror returnType,
+    public CodeBuilder methodStart(Set<Modifier> modifiers, CharSequence name, TypeMirror returnType,
                     List<? extends Parameter> params, List<? extends TypeMirror> exceptions) {
         return methodStart(modifiers, name, returnType, params, exceptions, List.of());
     }
 
-    CodeBuilder call(CharSequence methodName, CharSequence... args) {
+    public CodeBuilder call(CharSequence methodName, CharSequence... args) {
         write(methodName).write("(");
         for (int i = 0; i < args.length; i++) {
             write(args[i]);
@@ -247,25 +246,25 @@ final class CodeBuilder {
         return write(")");
     }
 
-    CodeBuilder newArray(TypeMirror componentType, CharSequence length) {
+    public CodeBuilder newArray(TypeMirror componentType, CharSequence length) {
         return write("new ").write(componentType).write("[").write(length).write("]");
     }
 
-    CodeBuilder newInstance(DeclaredType type, CharSequence... args) {
-        return newInstance(new CodeBuilder(this).write(type).build(), null, args);
+    public CodeBuilder newInstance(DeclaredType type, CharSequence... args) {
+        return newInstance(new CodeBuilder(this).write(type).build(), Collections.emptyList(), args);
     }
 
-    CodeBuilder newInstance(DeclaredType type, List<TypeMirror> actualTypeParameters, CharSequence... args) {
+    public CodeBuilder newInstance(DeclaredType type, List<TypeMirror> actualTypeParameters, CharSequence... args) {
         return newInstance(new CodeBuilder(this).write(type).build(), actualTypeParameters, args);
     }
 
-    CodeBuilder newInstance(CharSequence type, CharSequence... args) {
-        return newInstance(type, null, args);
+    public CodeBuilder newInstance(CharSequence type, CharSequence... args) {
+        return newInstance(type, Collections.emptyList(), args);
     }
 
-    private CodeBuilder newInstance(CharSequence type, List<TypeMirror> actualTypeParameters, CharSequence... args) {
+    public CodeBuilder newInstance(CharSequence type, List<TypeMirror> actualTypeParameters, CharSequence... args) {
         write("new ").write(type);
-        if (actualTypeParameters != null) {
+        if (!actualTypeParameters.isEmpty()) {
             write("<");
             for (Iterator<TypeMirror> it = actualTypeParameters.iterator(); it.hasNext();) {
                 write(it.next());
@@ -285,18 +284,18 @@ final class CodeBuilder {
         return write(")");
     }
 
-    CodeBuilder invoke(CharSequence receiver, CharSequence methodName, CharSequence... args) {
+    public CodeBuilder invoke(CharSequence receiver, CharSequence methodName, CharSequence... args) {
         if (receiver != null) {
             write(receiver).write(".");
         }
         return call(methodName, args);
     }
 
-    CodeBuilder invokeStatic(DeclaredType receiver, CharSequence methodName, CharSequence... args) {
+    public CodeBuilder invokeStatic(DeclaredType receiver, CharSequence methodName, CharSequence... args) {
         return write(types.erasure(receiver)).write(".").call(methodName, args);
     }
 
-    CodeBuilder memberSelect(CharSequence receiver, CharSequence memberName, boolean brackets) {
+    public CodeBuilder memberSelect(CharSequence receiver, CharSequence memberName, boolean brackets) {
         if (receiver != null) {
             if (brackets) {
                 write("(");
@@ -310,11 +309,11 @@ final class CodeBuilder {
         return write(memberName);
     }
 
-    CodeBuilder memberSelect(TypeMirror clazz, CharSequence memberName, boolean brackets) {
+    public CodeBuilder memberSelect(TypeMirror clazz, CharSequence memberName, boolean brackets) {
         return memberSelect(new CodeBuilder(this).write(clazz).build(), memberName, brackets);
     }
 
-    CodeBuilder parameterizedType(DeclaredType parameterizedType, TypeMirror... actualTypeParameters) {
+    public CodeBuilder parameterizedType(DeclaredType parameterizedType, TypeMirror... actualTypeParameters) {
         write(types.erasure(parameterizedType));
         write("<");
 
@@ -327,7 +326,7 @@ final class CodeBuilder {
         return write(">");
     }
 
-    CodeBuilder annotation(DeclaredType type, Object value) {
+    public CodeBuilder annotation(DeclaredType type, Object value) {
         write("@").write(type);
         if (value != null) {
             write("(").writeAnnotationAttributeValue(value).write(")");
@@ -335,7 +334,7 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder annotationWithAttributes(DeclaredType type, Map<? extends CharSequence, Object> attributes) {
+    public CodeBuilder annotationWithAttributes(DeclaredType type, Map<? extends CharSequence, Object> attributes) {
         write("@").write(type);
         if (!attributes.isEmpty()) {
             write("(");
@@ -351,22 +350,15 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder stringLiteral(CharSequence value) {
-        write("\"");
-        write(value);
-        write("\"");
-        return this;
-    }
-
-    CodeBuilder classLiteral(TypeMirror type) {
+    public CodeBuilder classLiteral(TypeMirror type) {
         return write(types.erasure(type)).write(".class");
     }
 
-    CodeBuilder cast(TypeMirror type, CharSequence value) {
+    public CodeBuilder cast(TypeMirror type, CharSequence value) {
         return cast(type, value, false);
     }
 
-    CodeBuilder cast(TypeMirror type, CharSequence value, boolean brackets) {
+    public CodeBuilder cast(TypeMirror type, CharSequence value, boolean brackets) {
         if (brackets) {
             write("(");
         }
@@ -377,8 +369,8 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder forLoop(List<? extends CharSequence> init, CharSequence termination, List<? extends CharSequence> increment) {
-        write("for (");
+    public CodeBuilder forLoop(List<? extends CharSequence> init, CharSequence termination, List<? extends CharSequence> increment) {
+        write("for(");
         boolean firstStm = true;
         for (CharSequence initStm : init) {
             if (firstStm) {
@@ -408,22 +400,20 @@ final class CodeBuilder {
         return write(")");
     }
 
-    CodeBuilder forEachLoop(TypeMirror componentType, CharSequence variable, CharSequence iterable) {
+    public CodeBuilder forEachLoop(TypeMirror componentType, CharSequence variable, CharSequence iterable) {
         write("for (").write(componentType).space().write(variable).write(" : ").write(iterable).write(")");
         return this;
     }
 
-    CodeBuilder arrayElement(CharSequence array, CharSequence index) {
+    public CodeBuilder arrayElement(CharSequence array, CharSequence index) {
         return write(array).write("[").write(index).write("]");
     }
 
-    CodeBuilder writeAnnotationAttributeValue(Object value) {
+    public CodeBuilder writeAnnotationAttributeValue(Object value) {
         if (value.getClass() == String.class) {
             write('"' + (String) value + '"');
         } else if (value instanceof DeclaredType) {
             classLiteral((DeclaredType) value);
-        } else if (value instanceof VariableElement enumConstant) {
-            memberSelect(new CodeBuilder(this).write(enumConstant.getEnclosingElement().asType()).build(), enumConstant.getSimpleName(), false);
         } else if (value.getClass().isArray()) {
             write("{");
             int len = Array.getLength(value);
@@ -440,7 +430,7 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder writeDefaultValue(TypeMirror type) {
+    public CodeBuilder writeDefaultValue(TypeMirror type) {
         switch (types.erasure(type).getKind()) {
             case VOID:
                 throw new IllegalArgumentException("The void type does not have default value.");
@@ -467,7 +457,7 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder writeModifiers(Set<Modifier> modifiers) {
+    public CodeBuilder writeModifiers(Set<Modifier> modifiers) {
         if (modifiers.contains(Modifier.ABSTRACT)) {
             write("abstract");
         }
@@ -506,32 +496,32 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder lineStart(CharSequence text) {
+    public CodeBuilder lineStart(CharSequence text) {
         return write(new String(new char[indentLevel * INDENT_SIZE]).replace('\0', ' ')).write(text);
     }
 
-    CodeBuilder emptyLine() {
+    public CodeBuilder emptyLine() {
         return lineEnd("");
     }
 
-    CodeBuilder lineStart() {
+    public CodeBuilder lineStart() {
         return lineStart("");
     }
 
-    CodeBuilder lineEnd(CharSequence text) {
+    public CodeBuilder lineEnd(CharSequence text) {
         return write(text).write("\n");
     }
 
-    CodeBuilder line(CharSequence line) {
+    public CodeBuilder line(CharSequence line) {
         return lineStart(line).lineEnd("");
     }
 
-    CodeBuilder write(CharSequence str) {
+    public CodeBuilder write(CharSequence str) {
         body.append(str);
         return this;
     }
 
-    <T> CodeBuilder writeJoined(Iterable<T> values, String separator, BiConsumer<CodeBuilder, T> consumer) {
+    public <T> CodeBuilder writeJoined(Iterable<T> values, String separator, BiConsumer<CodeBuilder, T> consumer) {
         Iterator<T> it = values.iterator();
         while (it.hasNext()) {
             consumer.accept(this, it.next());
@@ -542,11 +532,11 @@ final class CodeBuilder {
         return this;
     }
 
-    <T> CodeBuilder writeCommaList(Iterable<T> values, BiConsumer<CodeBuilder, T> consumer) {
+    public <T> CodeBuilder writeCommaList(Iterable<T> values, BiConsumer<CodeBuilder, T> consumer) {
         return writeJoined(values, ", ", consumer);
     }
 
-    CodeBuilder write(TypeElement te) {
+    public CodeBuilder write(TypeElement te) {
         Element teEnclosing = te.getEnclosingElement();
         String simpleName = te.getSimpleName().toString();
 
@@ -577,7 +567,7 @@ final class CodeBuilder {
         return element.getKind() == ElementKind.PACKAGE && ((PackageElement) element).getQualifiedName().contentEquals("java.lang");
     }
 
-    CodeBuilder write(TypeMirror type) {
+    public CodeBuilder write(TypeMirror type) {
         switch (type.getKind()) {
             case ARRAY:
                 write(((ArrayType) type).getComponentType()).write("[]");
@@ -637,18 +627,18 @@ final class CodeBuilder {
         return this;
     }
 
-    CodeBuilder space() {
+    public CodeBuilder space() {
         return write(" ");
     }
 
-    CodeBuilder spaceIfNeeded() {
+    public CodeBuilder spaceIfNeeded() {
         if (body.length() > 0 && !Character.isSpaceChar(body.charAt(body.length() - 1))) {
             write(" ");
         }
         return this;
     }
 
-    String build() {
+    public String build() {
         if (parent == null) {
             StringBuilder sb = new StringBuilder();
             sb.append("package ").append(pkg.getQualifiedName()).append(";\n\n");
@@ -663,19 +653,19 @@ final class CodeBuilder {
         }
     }
 
-    String buildBody() {
+    public String buildBody() {
         return body.toString();
     }
 
-    static Parameter newParameter(TypeMirror type, CharSequence name, CharSequence... annotations) {
+    public static Parameter newParameter(TypeMirror type, CharSequence name, CharSequence... annotations) {
         return newParameter(type, name, false, annotations);
     }
 
-    static Parameter newParameter(TypeMirror type, CharSequence name, boolean isVarArg, CharSequence... annotations) {
+    public static Parameter newParameter(TypeMirror type, CharSequence name, boolean isVarArg, CharSequence... annotations) {
         return new Parameter(type, name, isVarArg, annotations);
     }
 
-    static List<Parameter> newParameters(List<? extends VariableElement> params,
+    public static List<Parameter> newParameters(List<? extends VariableElement> params,
                     List<? extends TypeMirror> parameterTypes, boolean isVarArg) {
         if (params.size() != parameterTypes.size()) {
             throw new IllegalArgumentException(String.format("params.size(%d) != parameterTypes.size(%d)",
@@ -689,12 +679,12 @@ final class CodeBuilder {
         return result;
     }
 
-    static final class Parameter {
+    public static final class Parameter {
 
-        final TypeMirror type;
-        final CharSequence name;
-        final boolean isVarArg;
-        final CharSequence[] annotations;
+        public final TypeMirror type;
+        public final CharSequence name;
+        public final boolean isVarArg;
+        public final CharSequence[] annotations;
 
         private Parameter(TypeMirror type, CharSequence name, boolean isVarArg, CharSequence[] annotations) {
             this.type = type;

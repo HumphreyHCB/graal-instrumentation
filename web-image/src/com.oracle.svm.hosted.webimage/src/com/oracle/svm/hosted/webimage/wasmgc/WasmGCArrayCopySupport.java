@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.graalvm.word.LocationIdentity;
 
+import com.oracle.svm.webimage.wasm.WasmForeignCallDescriptor;
 import com.oracle.svm.core.JavaMemoryUtil;
 import com.oracle.svm.core.graal.meta.SubstrateForeignCallsProvider;
 import com.oracle.svm.core.graal.snippets.NodeLoweringProvider;
@@ -41,7 +42,6 @@ import com.oracle.svm.core.snippets.KnownIntrinsics;
 import com.oracle.svm.core.snippets.SnippetRuntime;
 import com.oracle.svm.core.snippets.SubstrateForeignCallTarget;
 import com.oracle.svm.core.util.ArrayUtil;
-import com.oracle.svm.webimage.wasm.WasmForeignCallDescriptor;
 
 import jdk.graal.compiler.core.common.spi.ForeignCallDescriptor;
 import jdk.graal.compiler.graph.Node;

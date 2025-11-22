@@ -31,39 +31,39 @@ import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
 
-public final class DiffVersionLoadHelper {
+final class DiffVersionLoadHelper {
 
     private final Meta meta;
     private Symbol<Name> name;
     private Symbol<Type> type;
     private Symbol<Signature> signature;
 
-    public DiffVersionLoadHelper(Meta meta) {
+    DiffVersionLoadHelper(Meta meta) {
         this.meta = meta;
     }
 
-    public DiffVersionLoadHelper klass(VersionRange range, Symbol<Type> t) {
+    DiffVersionLoadHelper klass(VersionRange range, Symbol<Type> t) {
         if (range.contains(meta.getJavaVersion())) {
             this.type = t;
         }
         return this;
     }
 
-    public ObjectKlass klass() {
+    ObjectKlass klass() {
         if (type == null) {
             throw EspressoError.shouldNotReachHere();
         }
         return meta.knownKlass(type);
     }
 
-    public ObjectKlass notRequiredKlass() {
+    ObjectKlass notRequiredKlass() {
         if (type == null) {
             return null;
         }
         return meta.loadKlassWithBootClassLoader(type);
     }
 
-    public DiffVersionLoadHelper method(VersionRange range, Symbol<Name> n, Symbol<Signature> s) {
+    DiffVersionLoadHelper method(VersionRange range, Symbol<Name> n, Symbol<Signature> s) {
         if (range.contains(meta.getJavaVersion())) {
             this.name = n;
             this.signature = s;
@@ -71,24 +71,24 @@ public final class DiffVersionLoadHelper {
         return this;
     }
 
-    public Method method(ObjectKlass klass) {
+    Method method(ObjectKlass klass) {
         if (name == null || signature == null) {
             throw EspressoError.shouldNotReachHere();
         }
         return klass.requireDeclaredMethod(name, signature);
     }
 
-    public Method notRequiredMethod(ObjectKlass klass) {
+    Method notRequiredMethod(ObjectKlass klass) {
         if (name == null || signature == null) {
             return null;
         }
         if (klass == null) {
-            throw EspressoError.shouldNotReachHere("Missing klass for method " + name + ":" + signature);
+            return null;
         }
-        return klass.requireDeclaredMethod(name, signature);
+        return klass.lookupDeclaredMethod(name, signature);
     }
 
-    public DiffVersionLoadHelper field(VersionRange range, Symbol<Name> n, Symbol<Type> t) {
+    DiffVersionLoadHelper field(VersionRange range, Symbol<Name> n, Symbol<Type> t) {
         if (range.contains(meta.getJavaVersion())) {
             this.name = n;
             this.type = t;
@@ -96,31 +96,32 @@ public final class DiffVersionLoadHelper {
         return this;
     }
 
-    public Field field(ObjectKlass klass) {
+    Field field(ObjectKlass klass) {
         if (name == null || type == null) {
             throw EspressoError.shouldNotReachHere();
         }
         return klass.requireDeclaredField(name, type);
     }
 
-    public Field notRequiredField(ObjectKlass klass) {
+    Field maybeHiddenfield(ObjectKlass klass) {
+        if (name == null || type == null) {
+            throw EspressoError.shouldNotReachHere();
+        }
+        Field f = klass.lookupDeclaredField(name, type);
+        if (f == null) {
+            return klass.requireHiddenField(name);
+        }
+        return f;
+    }
+
+    Field notRequiredField(ObjectKlass klass) {
         if (name == null || type == null) {
             return null;
         }
         if (klass == null) {
-            throw EspressoError.shouldNotReachHere("Missing klass for field " + name + ":" + type);
-        }
-        return klass.requireDeclaredField(name, type);
-    }
-
-    public Field maybeHiddenfield(ObjectKlass klass) {
-        if (name == null || type == null) {
             return null;
         }
-        Field f = klass.lookupDeclaredField(name, type);
-        if (f != null) {
-            return f;
-        }
-        return klass.requireHiddenField(name);
+        return klass.lookupDeclaredField(name, type);
     }
+
 }

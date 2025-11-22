@@ -32,7 +32,6 @@ import com.oracle.svm.core.hub.Hybrid;
 import com.oracle.svm.hosted.meta.HostedField;
 import com.oracle.svm.hosted.meta.HostedInstanceClass;
 import com.oracle.svm.hosted.meta.HostedType;
-import com.oracle.svm.util.AnnotationUtil;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.vm.ci.meta.MetaAccessProvider;
@@ -45,7 +44,7 @@ public class HybridLayoutSupport {
     }
 
     public boolean isHybrid(ResolvedJavaType clazz) {
-        return AnnotationUtil.isAnnotationPresent(clazz, Hybrid.class);
+        return clazz.isAnnotationPresent(Hybrid.class);
     }
 
     @SuppressWarnings("unused")
@@ -76,7 +75,7 @@ public class HybridLayoutSupport {
     protected HybridInfo inspectHybrid(HostedInstanceClass hybridClass, MetaAccessProvider metaAccess) {
         assert Modifier.isFinal(hybridClass.getModifiers()) : "Hybrid class must be final " + hybridClass;
 
-        Class<?> componentType = AnnotationUtil.getAnnotation(hybridClass, Hybrid.class).componentType();
+        Class<?> componentType = hybridClass.getAnnotation(Hybrid.class).componentType();
         assert componentType != void.class : "@Hybrid.componentType cannot be void";
         return new HybridInfo((HostedType) metaAccess.lookupJavaType(componentType), null);
     }

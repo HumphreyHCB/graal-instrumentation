@@ -34,7 +34,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +55,6 @@ import com.oracle.svm.util.ReflectionUtil;
 import com.oracle.svm.util.TypeResult;
 
 import jdk.graal.compiler.debug.GraalError;
-import jdk.jfr.FlightRecorder;
 
 public final class ImageClassLoader {
 
@@ -134,7 +132,7 @@ public final class ImageClassLoader {
 
     private boolean isInPlatform(AnnotatedElement element) {
         try {
-            Platforms platformAnnotation = classLoaderSupport.annotationExtractor.extractAnnotation(element, Platforms.class);
+            Platforms platformAnnotation = classLoaderSupport.annotationExtractor.extractAnnotation(element, Platforms.class, false);
             return NativeImageGenerator.includedIn(platform, platformAnnotation);
         } catch (Throwable t) {
             handleClassLoadingError(t);
@@ -167,7 +165,7 @@ public final class ImageClassLoader {
         do {
             Platforms platformsAnnotation;
             try {
-                platformsAnnotation = classLoaderSupport.annotationExtractor.extractAnnotation(cur, Platforms.class);
+                platformsAnnotation = classLoaderSupport.annotationExtractor.extractAnnotation(cur, Platforms.class, false);
             } catch (Throwable t) {
                 handleClassLoadingError(t);
                 return;
@@ -207,12 +205,9 @@ public final class ImageClassLoader {
         try {
             /*
              * Annotations should not be computed during the scanning of classes, to avoid issues
-             * with the Native Image module access setup. When JFR is initialized, it can trigger
-             * annotation parsing when it looks for JFR related annotations on classes as they are
-             * loaded.
+             * with the Native Image module access setup.
              */
-            assert classAnnotationData.get(clazz) == initialAnnotationData || FlightRecorder.isInitialized() : clazz + " initialAnnotationData=" + initialAnnotationData + ", declaredAnnotations=" +
-                            Arrays.asList(clazz.getDeclaredAnnotations());
+            assert classAnnotationData.get(clazz) == initialAnnotationData;
         } catch (IllegalAccessException e) {
             throw GraalError.shouldNotReachHere(e); // ExcludeFromJacocoGeneratedReport
         }
@@ -266,11 +261,6 @@ public final class ImageClassLoader {
 
     /** Find class, return result encoding class or failure reason. */
     public TypeResult<Class<?>> findClass(String name, boolean allowPrimitives) {
-        return findClass(name, allowPrimitives, getClassLoader());
-    }
-
-    /** Find class, return result encoding class or failure reason. */
-    public static TypeResult<Class<?>> findClass(String name, boolean allowPrimitives, ClassLoader loader) {
         try {
             if (allowPrimitives && name.indexOf('.') == -1) {
                 Class<?> primitive = forPrimitive(name);
@@ -278,7 +268,7 @@ public final class ImageClassLoader {
                     return TypeResult.forClass(primitive);
                 }
             }
-            return TypeResult.forClass(forName(name, false, loader));
+            return TypeResult.forClass(forName(name));
         } catch (ClassNotFoundException | LinkageError ex) {
             return TypeResult.forException(name, ex);
         }
@@ -304,11 +294,7 @@ public final class ImageClassLoader {
     }
 
     public Class<?> forName(String className, boolean initialize) throws ClassNotFoundException {
-        return forName(className, initialize, getClassLoader());
-    }
-
-    public static Class<?> forName(String className, boolean initialize, ClassLoader loader) throws ClassNotFoundException {
-        return Class.forName(className, initialize, loader);
+        return Class.forName(className, initialize, getClassLoader());
     }
 
     public Class<?> forName(String className, Module module) throws ClassNotFoundException {
@@ -462,9 +448,5 @@ public final class ImageClassLoader {
         Module m0 = ImageSingletons.lookup(VMFeature.class).getClass().getModule();
         Module m1 = SVMHost.class.getModule();
         builderModules = m0.equals(m1) ? Set.of(m0) : Set.of(m0, m1);
-    }
-
-    public EconomicSet<Class<?>> getApplicationClasses() {
-        return applicationClasses;
     }
 }

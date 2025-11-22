@@ -37,7 +37,6 @@ import org.junit.After;
 public abstract class TestWithPolyglotOptions {
 
     private Context activeContext;
-    protected boolean automaticCleanup = true;
 
     @After
     public final void cleanup() {
@@ -71,9 +70,7 @@ public abstract class TestWithPolyglotOptions {
     }
 
     protected final Context setupContext(Context.Builder builder) {
-        if (automaticCleanup) {
-            cleanup();
-        }
+        cleanup();
         Context newContext = builder.build();
         newContext.enter();
         activeContext = newContext;

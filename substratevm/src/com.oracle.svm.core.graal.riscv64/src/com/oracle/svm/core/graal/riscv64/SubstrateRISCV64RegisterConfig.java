@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,7 +74,6 @@ import static jdk.vm.ci.riscv64.RISCV64.x8;
 import static jdk.vm.ci.riscv64.RISCV64.x9;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.graalvm.nativeimage.Platform;
 
@@ -89,6 +88,7 @@ import com.oracle.svm.core.util.VMError;
 import jdk.vm.ci.code.CallingConvention;
 import jdk.vm.ci.code.CallingConvention.Type;
 import jdk.vm.ci.code.Register;
+import jdk.vm.ci.code.RegisterArray;
 import jdk.vm.ci.code.RegisterAttributes;
 import jdk.vm.ci.code.StackSlot;
 import jdk.vm.ci.code.TargetDescription;
@@ -105,11 +105,11 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
 
     private final TargetDescription target;
     private final int nativeParamsStackOffset;
-    private final List<Register> generalParameterRegs;
-    private final List<Register> fpParameterRegs;
-    private final List<Register> allocatableRegs;
-    private final List<Register> calleeSaveRegisters;
-    private final List<RegisterAttributes> attributesMap;
+    private final RegisterArray generalParameterRegs;
+    private final RegisterArray fpParameterRegs;
+    private final RegisterArray allocatableRegs;
+    private final RegisterArray calleeSaveRegisters;
+    private final RegisterAttributes[] attributesMap;
     private final MetaAccessProvider metaAccess;
 
     @SuppressWarnings("this-escape")
@@ -117,12 +117,12 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
         this.target = target;
         this.metaAccess = metaAccess;
 
-        generalParameterRegs = List.of(x10, x11, x12, x13, x14, x15, x16, x17);
-        fpParameterRegs = List.of(f10, f11, f12, f13, f14, f15, f16, f17);
+        generalParameterRegs = new RegisterArray(x10, x11, x12, x13, x14, x15, x16, x17);
+        fpParameterRegs = new RegisterArray(f10, f11, f12, f13, f14, f15, f16, f17);
 
         nativeParamsStackOffset = 0;
 
-        ArrayList<Register> regs = new ArrayList<>(allRegisters);
+        ArrayList<Register> regs = new ArrayList<>(allRegisters.asList());
         regs.remove(x2); // sp
         regs.remove(x0); // zero
         if (preserveFramePointer) {
@@ -134,18 +134,17 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
          */
         regs.remove(ReservedRegisters.singleton().getHeapBaseRegister());
         regs.remove(ReservedRegisters.singleton().getThreadRegister());
-        regs.remove(ReservedRegisters.singleton().getCodeBaseRegister());
         regs.remove(x1); // ra
         regs.remove(x3); // gp
-        allocatableRegs = List.copyOf(regs);
+        allocatableRegs = new RegisterArray(regs);
 
         switch (config) {
             case NORMAL:
-                calleeSaveRegisters = List.of();
+                calleeSaveRegisters = new RegisterArray();
                 break;
 
             case NATIVE_TO_JAVA:
-                calleeSaveRegisters = List.of(x2, x8, x9, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27,
+                calleeSaveRegisters = new RegisterArray(x2, x8, x9, x18, x19, x20, x21, x22, x23, x24, x25, x26, x27,
                                 f8, f9, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27);
                 break;
 
@@ -179,17 +178,17 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
     }
 
     @Override
-    public List<Register> getAllocatableRegisters() {
+    public RegisterArray getAllocatableRegisters() {
         return allocatableRegs;
     }
 
     @Override
-    public List<Register> getCalleeSaveRegisters() {
+    public RegisterArray getCalleeSaveRegisters() {
         return calleeSaveRegisters;
     }
 
     @Override
-    public List<Register> getCallerSaveRegisters() {
+    public RegisterArray getCallerSaveRegisters() {
         return getAllocatableRegisters();
     }
 
@@ -199,12 +198,12 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
     }
 
     @Override
-    public List<RegisterAttributes> getAttributesMap() {
+    public RegisterAttributes[] getAttributesMap() {
         return attributesMap;
     }
 
     @Override
-    public List<Register> getCallingConventionRegisters(Type t, JavaKind kind) {
+    public RegisterArray getCallingConventionRegisters(Type t, JavaKind kind) {
         throw VMError.intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 
@@ -295,7 +294,7 @@ public class SubstrateRISCV64RegisterConfig implements SubstrateRegisterConfig {
     }
 
     @Override
-    public List<Register> filterAllocatableRegisters(PlatformKind kind, List<Register> registers) {
+    public RegisterArray filterAllocatableRegisters(PlatformKind kind, RegisterArray registers) {
         throw intentionallyUnimplemented(); // ExcludeFromJacocoGeneratedReport
     }
 

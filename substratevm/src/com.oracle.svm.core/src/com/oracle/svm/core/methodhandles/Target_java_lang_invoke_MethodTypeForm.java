@@ -30,8 +30,10 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.RecomputeFieldValue.Kind;
 import com.oracle.svm.core.annotate.TargetClass;
+import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.fieldvaluetransformer.NewEmptyArrayFieldValueTransformer;
-import com.oracle.svm.core.invoke.Target_java_lang_invoke_MemberName;
+import com.oracle.svm.core.jdk.JDK21OrEarlier;
+import com.oracle.svm.core.jdk.JDKLatest;
 
 @TargetClass(className = "java.lang.invoke.MethodTypeForm")
 final class Target_java_lang_invoke_MethodTypeForm {
@@ -42,10 +44,16 @@ final class Target_java_lang_invoke_MethodTypeForm {
      * writing.
      */
     @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = NewEmptyArrayFieldValueTransformer.class, isFinal = true) //
-    private SoftReference<?>[] methodHandles;
+    @TargetElement(onlyWith = JDKLatest.class) //
+    private Object[] methodHandles;
     @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = NewEmptyArrayFieldValueTransformer.class, isFinal = true) //
-    private SoftReference<?>[] lambdaForms;
+    @TargetElement(onlyWith = JDKLatest.class) //
+    private Object[] lambdaForms;
 
-    @Alias @RecomputeFieldValue(kind = Kind.Reset) //
-    private SoftReference<Target_java_lang_invoke_MemberName> interpretEntry;
+    @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = NewEmptyArrayFieldValueTransformer.class, isFinal = true) //
+    @TargetElement(name = "methodHandles", onlyWith = JDK21OrEarlier.class) //
+    private SoftReference<?>[] methodHandlesJDK21;
+    @Alias @RecomputeFieldValue(kind = Kind.Custom, declClass = NewEmptyArrayFieldValueTransformer.class, isFinal = true) //
+    @TargetElement(name = "lambdaForms", onlyWith = JDK21OrEarlier.class) //
+    private SoftReference<?>[] lambdaFormsJDK21;
 }

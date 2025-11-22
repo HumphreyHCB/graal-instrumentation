@@ -30,6 +30,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import jdk.graal.compiler.core.common.NumUtil;
+
 import com.oracle.objectfile.BuildDependency;
 import com.oracle.objectfile.LayoutDecisionMap;
 import com.oracle.objectfile.ObjectFile;
@@ -43,8 +45,6 @@ import com.oracle.objectfile.io.AssemblyBuffer;
 import com.oracle.objectfile.io.OutputAssembler;
 import com.oracle.objectfile.macho.MachOObjectFile.MachOSection;
 import com.oracle.objectfile.macho.MachOObjectFile.Segment64Command;
-
-import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.debug.GraalError;
 
 class MachORelocationElement extends MachOObjectFile.LinkEditElement {
@@ -268,9 +268,7 @@ final class MachORelocationInfo implements RelocationRecord, RelocationMethod {
         // FIXME: also allow section numbers here, for non-extern symbols
         // FIXME: encode R_ABS symbol number
         this.sym = symtab.getSymbol(symbolName);
-        if (this.sym == null) {
-            throw new IllegalArgumentException("Could not find symbol " + symbolName);
-        }
+        assert this.sym != null : "could not find symbol " + symbolName;
         // if the symbol is defined in the same file, i.e. locally, we have a target section
         assert !asLocalReloc || this.sym.isDefined();
         this.targetSection = asLocalReloc ? (MachOSection) this.sym.getDefinedSection() : null;

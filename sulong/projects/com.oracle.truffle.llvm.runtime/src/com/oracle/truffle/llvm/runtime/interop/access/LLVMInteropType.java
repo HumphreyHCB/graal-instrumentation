@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates.
+ * Copyright (c) 2018, 2023, Oracle and/or its affiliates.
  *
  * All rights reserved.
  *
@@ -32,6 +32,7 @@ package com.oracle.truffle.llvm.runtime.interop.access;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Idempotent;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -135,14 +136,14 @@ public abstract class LLVMInteropType implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    final boolean hasLanguageId() {
+    final boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings({"static-method"})
-    final String getLanguageId() {
-        return LLVMLanguage.ID;
+    final Class<? extends TruffleLanguage<?>> getLanguage() {
+        return LLVMLanguage.class;
     }
 
     @ExportMessage

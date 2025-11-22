@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.graalvm.nativeimage.hosted.Feature.DuringAnalysisAccess;
@@ -48,11 +47,11 @@ import com.oracle.graal.pointsto.api.HostVM;
 import com.oracle.graal.pointsto.api.ImageLayerLoader;
 import com.oracle.graal.pointsto.api.ImageLayerWriter;
 import com.oracle.graal.pointsto.constraints.UnsupportedFeatureException;
-import com.oracle.graal.pointsto.constraints.UnsupportedPlatformException;
 import com.oracle.graal.pointsto.heap.HeapSnapshotVerifier;
 import com.oracle.graal.pointsto.heap.HostedValuesProvider;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapScanner;
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
 import com.oracle.graal.pointsto.infrastructure.SubstitutionProcessor;
 import com.oracle.graal.pointsto.infrastructure.Universe;
@@ -61,7 +60,6 @@ import com.oracle.graal.pointsto.infrastructure.WrappedJavaType;
 import com.oracle.graal.pointsto.meta.AnalysisElement.MethodOverrideReachableNotification;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.ConcurrentLightHashSet;
-import com.oracle.svm.util.OriginalClassProvider;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
@@ -108,7 +106,6 @@ public class AnalysisUniverse implements Universe {
 
     private Function<Object, Object>[] objectReplacers;
     private Function<Object, ImageHeapConstant>[] objectToConstantReplacers;
-    private Consumer<AnalysisType>[] onTypeCreatedCallbacks;
 
     private SubstitutionProcessor[] featureSubstitutions;
     private SubstitutionProcessor[] featureNativeSubstitutions;
@@ -150,7 +147,6 @@ public class AnalysisUniverse implements Universe {
         sealed = false;
         objectReplacers = (Function<Object, Object>[]) new Function<?, ?>[0];
         objectToConstantReplacers = (Function<Object, ImageHeapConstant>[]) new Function<?, ?>[0];
-        onTypeCreatedCallbacks = (Consumer<AnalysisType>[]) new Consumer<?>[0];
         featureSubstitutions = new SubstitutionProcessor[0];
         featureNativeSubstitutions = new SubstitutionProcessor[0];
         unsafeAccessedStaticFields = analysisPolicy.useConservativeUnsafeAccess() ? null : new ConcurrentHashMap<>();
@@ -220,7 +216,7 @@ public class AnalysisUniverse implements Universe {
         AnalysisType result = optionalLookup(type);
         if (result == null) {
             result = createType(type);
-            if (hostVM.buildingExtensionLayer() && result.isInBaseLayer()) {
+            if (hostVM.useBaseLayer()) {
                 imageLayerLoader.initializeBaseLayerType(result);
             }
         }
@@ -231,7 +227,7 @@ public class AnalysisUniverse implements Universe {
     @SuppressFBWarnings(value = {"ES_COMPARING_STRINGS_WITH_EQ"}, justification = "Bug in findbugs")
     private AnalysisType createType(ResolvedJavaType type) {
         if (!hostVM.platformSupported(type)) {
-            throw new UnsupportedPlatformException("Type is not available in this platform: " + type.toJavaName(true));
+            throw new UnsupportedFeatureException("Type is not available in this platform: " + type.toJavaName(true));
         }
         if (sealed && !type.isArray()) {
             /*
@@ -312,7 +308,7 @@ public class AnalysisUniverse implements Universe {
              * ensures that typesById doesn't contain any null values. This could happen since the
              * AnalysisType constructor increments the nextTypeId counter.
              */
-            if (hostVM.buildingExtensionLayer() && imageLayerLoader.hasDynamicHubIdentityHashCode(newValue.getId())) {
+            if (hostVM.useBaseLayer() && imageLayerLoader.hasDynamicHubIdentityHashCode(newValue.getId())) {
                 hostVM.registerType(newValue, imageLayerLoader.getDynamicHubIdentityHashCode(newValue.getId()));
             } else {
                 hostVM.registerType(newValue);
@@ -330,12 +326,6 @@ public class AnalysisUniverse implements Universe {
             Object oldValue = types.put(type, newValue);
             assert oldValue == claim : oldValue + " != " + claim;
             claim = null;
-
-            /*
-             * Trigger type creation callbacks. Note this will run in parallel with other threads
-             * being able to retrieve this AnalysisType from {@code types}.
-             */
-            runOnTypeCreatedCallbacks(newValue);
 
             return newValue;
 
@@ -380,7 +370,7 @@ public class AnalysisUniverse implements Universe {
 
     private AnalysisField createField(ResolvedJavaField field) {
         if (!hostVM.platformSupported(field)) {
-            throw new UnsupportedPlatformException("Field is not available in this platform: " + field.format("%H.%n"));
+            throw new UnsupportedFeatureException("Field is not available in this platform: " + field.format("%H.%n"));
         }
         if (sealed) {
             return null;
@@ -419,11 +409,12 @@ public class AnalysisUniverse implements Universe {
         if (rawMethod == null) {
             return null;
         }
-        if (!(rawMethod instanceof ResolvedJavaMethod method)) {
+        if (!(rawMethod instanceof ResolvedJavaMethod)) {
             return rawMethod;
         }
         assert !(rawMethod instanceof AnalysisMethod) : rawMethod;
 
+        ResolvedJavaMethod method = (ResolvedJavaMethod) rawMethod;
         method = substitutions.lookup(method);
         AnalysisMethod result = methods.get(method);
         if (result == null) {
@@ -434,7 +425,7 @@ public class AnalysisUniverse implements Universe {
 
     private AnalysisMethod createMethod(ResolvedJavaMethod method) {
         if (!hostVM.platformSupported(method)) {
-            throw new UnsupportedPlatformException("Method " + method.format("%H.%n(%p)" + " is not available in this platform."));
+            throw new UnsupportedFeatureException("Method " + method.format("%H.%n(%p)" + " is not available in this platform."));
         }
         if (sealed) {
             return null;
@@ -480,7 +471,7 @@ public class AnalysisUniverse implements Universe {
                 }
             }
         }
-        return result.toArray(AnalysisMethod.EMPTY_ARRAY);
+        return result.toArray(new AnalysisMethod[result.size()]);
     }
 
     @Override
@@ -630,13 +621,6 @@ public class AnalysisUniverse implements Universe {
         objectToConstantReplacers[objectToConstantReplacers.length - 1] = replacer;
     }
 
-    public void registerOnTypeCreatedCallback(Consumer<AnalysisType> consumer) {
-        assert consumer != null;
-        assert !bb.isInitialized() : "too late to add a callback";
-        onTypeCreatedCallbacks = Arrays.copyOf(onTypeCreatedCallbacks, onTypeCreatedCallbacks.length + 1);
-        onTypeCreatedCallbacks[onTypeCreatedCallbacks.length - 1] = consumer;
-    }
-
     public void registerFeatureSubstitution(SubstitutionProcessor substitution) {
         SubstitutionProcessor[] subs = featureSubstitutions;
         subs = Arrays.copyOf(subs, subs.length + 1);
@@ -679,7 +663,7 @@ public class AnalysisUniverse implements Universe {
     }
 
     /**
-     * Invokes all registered object replacers and "object to constant" replacers for an object.
+     * Invokes all registered object replacers and "object to constant" replacers for an object.>
      *
      * <p>
      * The "object to constant" replacer is allowed to successfully complete only when
@@ -713,40 +697,6 @@ public class AnalysisUniverse implements Universe {
         }
 
         return ihc == null ? destination : ihc;
-    }
-
-    public void notifyBigBangInitialized() {
-        assert bb.isInitialized();
-
-        /*
-         * It is possible for types to be created before all typeCreationCallbacks are installed.
-         * Hence, we trigger the typeCreationCallbacks for all types created prior to the completion
-         * of big bang initialization at this point.
-         */
-        for (var obj : types.values().toArray()) {
-            /*
-             * Nominally the map values are of type object and can hold a thread object while an
-             * AnalysisType is being created. However, this method is called when all values will be
-             * of type AnalysisType.
-             */
-            AnalysisType aType = (AnalysisType) obj;
-            runOnTypeCreatedCallbacks(aType);
-        }
-    }
-
-    private void runOnTypeCreatedCallbacks(AnalysisType type) {
-        if (bb == null || !bb.isInitialized()) {
-            /*
-             * Until the big bang is initialized, it is possible for more callbacks to be
-             * registered. Hence, these hooks are run on all types created before big bang
-             * initialization via {@code notifyBigBangInitialized}
-             */
-            return;
-        }
-
-        for (var callback : onTypeCreatedCallbacks) {
-            bb.postTask((t) -> callback.accept(type));
-        }
     }
 
     public void registerOverrideReachabilityNotification(AnalysisMethod declaredMethod, MethodOverrideReachableNotification notification) {
@@ -837,9 +787,6 @@ public class AnalysisUniverse implements Universe {
     }
 
     public DuringAnalysisAccess getConcurrentAnalysisAccess() {
-        AnalysisError.guarantee(concurrentAnalysisAccess != null, "The requested DuringAnalysisAccess object is not available. " +
-                        "This means that an analysis task is executed too eagerly, before analysis. " +
-                        "Make sure that all analysis tasks are posted to the analysis execution engine.");
         return concurrentAnalysisAccess;
     }
 

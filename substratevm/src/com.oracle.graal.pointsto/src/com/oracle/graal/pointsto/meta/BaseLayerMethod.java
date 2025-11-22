@@ -28,7 +28,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
 import com.oracle.graal.pointsto.infrastructure.ResolvedSignature;
-import com.oracle.svm.util.AnnotationsContainer;
 
 import jdk.graal.compiler.debug.GraalError;
 import jdk.vm.ci.meta.Constant;
@@ -42,7 +41,6 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 /**
  * This type is used in the context of Layered Image, when loading a base layer in another layer.
@@ -52,9 +50,7 @@ import jdk.vm.ci.meta.annotation.AnnotationsInfo;
  * {@link BaseLayerMethod} is created and put in an {@link AnalysisMethod} to represent this missing
  * method, using the information from the base layer.
  */
-public class BaseLayerMethod extends AnnotationsContainer implements ResolvedJavaMethod {
-    private static final String CLINIT = "<clinit>";
-
+public class BaseLayerMethod extends BaseLayerElement implements ResolvedJavaMethod {
     private final int id;
     private final ResolvedJavaType declaringClass;
     private final String name;
@@ -151,13 +147,8 @@ public class BaseLayerMethod extends AnnotationsContainer implements ResolvedJav
     }
 
     @Override
-    public boolean isDeclared() {
-        throw unimplemented();
-    }
-
-    @Override
     public boolean isClassInitializer() {
-        return name.equals(CLINIT);
+        throw unimplemented();
     }
 
     @Override
@@ -192,6 +183,11 @@ public class BaseLayerMethod extends AnnotationsContainer implements ResolvedJav
 
     @Override
     public ConstantPool getConstantPool() {
+        throw unimplemented();
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
         throw unimplemented();
     }
 
@@ -241,12 +237,17 @@ public class BaseLayerMethod extends AnnotationsContainer implements ResolvedJav
     }
 
     @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         throw unimplemented();
     }
 
     @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
+    public Annotation[] getAnnotations() {
+        throw unimplemented();
+    }
+
+    @Override
+    public Annotation[] getDeclaredAnnotations() {
         throw unimplemented();
     }
 

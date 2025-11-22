@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,8 +34,6 @@ import com.oracle.truffle.api.interop.NodeLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.espresso.impl.SuppressFBWarnings;
-
-import java.util.Set;
 
 /**
  * {@link RootTag} node that separates the Java method prolog e.g. copying arguments to the frame,
@@ -94,10 +92,5 @@ final class MethodWithBytecodeNode extends EspressoInstrumentableRootNodeImpl {
     @TruffleBoundary
     private Object getScopeSlowPath(MaterializedFrame frame, boolean nodeEnter) {
         return bytecodeNode.getScope(frame, nodeEnter);
-    }
-
-    @Override
-    public void prepareForInstrumentation(Set<Class<?>> tags) {
-        bytecodeNode.prepareForInstrumentation(tags);
     }
 }

@@ -59,7 +59,7 @@ import com.oracle.truffle.api.bytecode.Instruction;
 public interface BytecodeDebugListener {
 
     /**
-     * Invoked before a root is executed. This has a very significant performance cost. Only
+     * Invoked before an instruction is executed. This has a very significant performance cost. Only
      * override this method temporarily for debugging. This method may be called on partial
      * evaluated code paths.
      *
@@ -69,13 +69,9 @@ public interface BytecodeDebugListener {
     }
 
     /**
-     * Invoked before a root is left. This has a very significant performance cost. Only override
-     * this method temporarily for debugging. This method may be called on partial evaluated code
-     * paths.
-     *
-     * @param returnValue the value returned, or null if an exception was thrown. For yields,
-     *            returnValue is the continuation result or custom yield return value.
-     * @param t the exception thrown, or null if the root is exited normally.
+     * Invoked before an instruction is executed. This has a very significant performance cost. Only
+     * override this method temporarily for debugging. This method may be called on partial
+     * evaluated code paths.
      *
      * @since 24.2
      */

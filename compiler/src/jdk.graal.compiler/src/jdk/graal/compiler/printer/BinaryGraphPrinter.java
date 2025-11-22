@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
@@ -392,16 +391,7 @@ public class BinaryGraphPrinter implements
 
     @Override
     public void print(DebugContext debug, Graph graph, Map<Object, Object> properties, int id, String format, Object... args) throws IOException {
-        String theFormat = format;
-        Object[] theArgs = args;
-        if (args.length == 1 && args[0] instanceof GraalError graalError) {
-            theFormat = String.format(Locale.ENGLISH, format, graalError.getRawFormat());
-            theArgs = graalError.getArguments();
-            if (theArgs == null) {
-                theArgs = new Object[0];
-            }
-        }
-        output.print(new GraphInfo(debug, graph), properties, id, theFormat, theArgs);
+        output.print(new GraphInfo(debug, graph), properties, id, format, args);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,6 +51,8 @@ import static jdk.vm.ci.amd64.AMD64.rbp;
 import static jdk.vm.ci.amd64.AMD64.rsp;
 
 import java.util.EnumSet;
+
+import org.graalvm.collections.EconomicSet;
 
 import jdk.graal.compiler.asm.Assembler;
 import jdk.graal.compiler.core.common.Stride;
@@ -306,6 +308,35 @@ public abstract class AMD64BaseAssembler extends Assembler<CPUFeature> {
         return getFeatures().contains(feature);
     }
 
+    public final boolean supports(String feature) {
+        try {
+            return getFeatures().contains(AMD64.CPUFeature.valueOf(feature));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Mitigates exception throwing by recording unknown CPU feature names.
+     */
+    private final EconomicSet<String> unknownFeatures = EconomicSet.create();
+
+    /**
+     * Determines if the CPU feature denoted by {@code name} is supported. This name based look up
+     * is for features only available in later JVMCI releases.
+     */
+    public final boolean supportsCPUFeature(String name) {
+        if (unknownFeatures.contains(name)) {
+            return false;
+        }
+        try {
+            return supports(CPUFeature.valueOf(name));
+        } catch (IllegalArgumentException e) {
+            unknownFeatures.add(name);
+            return false;
+        }
+    }
+
     protected static boolean inRC(RegisterCategory rc, Register r) {
         return r.getRegisterCategory().equals(rc);
     }
@@ -553,9 +584,7 @@ public abstract class AMD64BaseAssembler extends Assembler<CPUFeature> {
      * There is an SIB byte: In that case, X extends SIB.index and B extends SIB.base.
      */
     protected static int getRXB(Register reg, AMD64Address rm) {
-        GraalError.guarantee(!isInvalidEncoding(reg), "invalid encoding %s", reg);
-        GraalError.guarantee(rm.getBase() == null || rm.getBase().encoding < 16, "APX register used in %s not yet supported", rm);
-        GraalError.guarantee(rm.getIndex() == null || rm.getIndex().encoding < 16, "APX register used in %s not yet supported", rm);
+        assert !isInvalidEncoding(reg);
         int rxb = (reg == null ? 0 : reg.encoding & 0x08) >> 1;
         if (!isInvalidEncoding(rm.getIndex())) {
             rxb |= (rm.getIndex().encoding & 0x08) >> 2;
@@ -667,7 +696,7 @@ public abstract class AMD64BaseAssembler extends Assembler<CPUFeature> {
                             int newDisp = disp / evexDisp8Scale;
                             if (isByte(newDisp)) {
                                 disp = newDisp;
-                                assert isByte(disp) : disp;
+                                assert isByte(disp) && !overriddenForce4Byte : disp;
                             }
                         } else {
                             overriddenForce4Byte = true;
@@ -703,7 +732,7 @@ public abstract class AMD64BaseAssembler extends Assembler<CPUFeature> {
                             int newDisp = disp / evexDisp8Scale;
                             if (isByte(newDisp)) {
                                 disp = newDisp;
-                                assert isByte(disp) : disp;
+                                assert isByte(disp) && !overriddenForce4Byte : disp;
                             }
                         } else {
                             overriddenForce4Byte = true;
@@ -737,7 +766,7 @@ public abstract class AMD64BaseAssembler extends Assembler<CPUFeature> {
                             int newDisp = disp / evexDisp8Scale;
                             if (isByte(newDisp)) {
                                 disp = newDisp;
-                                assert isByte(disp) : disp;
+                                assert isByte(disp) && !overriddenForce4Byte : disp;
                             }
                         } else {
                             overriddenForce4Byte = true;

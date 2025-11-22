@@ -25,9 +25,9 @@
 
 package com.oracle.svm.webimage.functionintrinsics;
 
-import com.oracle.svm.webimage.hightiercodegen.CodeBuffer;
-import com.oracle.svm.webimage.hightiercodegen.CodeGenTool;
-import com.oracle.svm.webimage.hightiercodegen.IEmitter;
+import jdk.graal.compiler.hightiercodegen.CodeBuffer;
+import jdk.graal.compiler.hightiercodegen.CodeGenTool;
+import jdk.graal.compiler.hightiercodegen.IEmitter;
 
 /**
  * Representation of a javascript function with signature.

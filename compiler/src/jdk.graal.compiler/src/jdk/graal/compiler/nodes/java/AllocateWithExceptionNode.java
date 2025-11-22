@@ -36,8 +36,6 @@ import jdk.graal.compiler.nodes.DeoptimizingNode;
 import jdk.graal.compiler.nodes.FrameState;
 import jdk.graal.compiler.nodes.StateSplit;
 import jdk.graal.compiler.nodes.WithExceptionNode;
-import jdk.graal.compiler.nodes.extended.MembarNode;
-import jdk.graal.compiler.nodes.extended.MembarNode.FenceKind;
 import jdk.graal.compiler.nodes.spi.Lowerable;
 
 /**
@@ -87,25 +85,6 @@ public abstract class AllocateWithExceptionNode extends WithExceptionNode implem
 
     @Override
     public boolean hasSideEffect() {
-        return true;
-    }
-
-    /**
-     * Return {@code true} if the object's contents should be initialized to zero/null.
-     * <p>
-     * For simplicity, returns {@code true}.
-     */
-    public boolean fillContents() {
-        return true;
-    }
-
-    /**
-     * Controls whether this allocation emits a {@link MembarNode} with
-     * {@link FenceKind#ALLOCATION_INIT} as part of the object initialization.
-     * <p>
-     * For simplicity, returns {@code true}.
-     */
-    public boolean emitMemoryBarrier() {
         return true;
     }
 }

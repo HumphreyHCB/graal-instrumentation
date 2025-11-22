@@ -67,15 +67,19 @@ public final class EnsureClassInitializedSnippets extends SubstrateTemplates imp
     @Snippet
     private static void ensureClassIsInitializedSnippet(@Snippet.NonNullParameter DynamicHub hub) {
         ClassInitializationInfo info = hub.getClassInitializationInfo();
-        /* The ClassInitializationInfo field is always non-null. */
+        /*
+         * The ClassInitializationInfo field is always initialized by the image generator. We can
+         * save the explicit null check.
+         */
         ClassInitializationInfo infoNonNull = (ClassInitializationInfo) PiNode.piCastNonNull(info, SnippetAnchorNode.anchor());
-        if (BranchProbabilityNode.probability(BranchProbabilityNode.EXTREMELY_SLOW_PATH_PROBABILITY, infoNonNull.isSlowPathRequired())) {
-            callSlowPath(SLOW_PATH, DynamicHub.toClass(hub));
+
+        if (BranchProbabilityNode.probability(BranchProbabilityNode.EXTREMELY_SLOW_PATH_PROBABILITY, infoNonNull.requiresSlowPath())) {
+            callSlowPath(SLOW_PATH, infoNonNull, DynamicHub.toClass(hub));
         }
     }
 
     @NodeIntrinsic(value = ForeignCallWithExceptionNode.class)
-    private static native void callSlowPath(@ConstantNodeParameter ForeignCallDescriptor descriptor, Class<?> hub);
+    private static native void callSlowPath(@ConstantNodeParameter ForeignCallDescriptor descriptor, ClassInitializationInfo info, Class<?> clazz);
 
     @SuppressWarnings("unused")
     public static void registerLowerings(OptionValues options, Providers providers, Map<Class<? extends Node>, NodeLoweringProvider<?>> lowerings) {
@@ -95,7 +99,7 @@ public final class EnsureClassInitializedSnippets extends SubstrateTemplates imp
     class EnsureClassInitializedNodeLowering implements NodeLoweringProvider<EnsureClassInitializedNode> {
         @Override
         public void lower(EnsureClassInitializedNode node, LoweringTool tool) {
-            Arguments args = new Arguments(ensureClassIsInitialized, node.graph(), tool.getLoweringStage());
+            Arguments args = new Arguments(ensureClassIsInitialized, node.graph().getGuardsStage(), tool.getLoweringStage());
             args.add("hub", node.getHub());
             template(tool, node, args).instantiate(tool.getMetaAccess(), node, SnippetTemplate.DEFAULT_REPLACER, args);
         }

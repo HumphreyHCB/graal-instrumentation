@@ -29,20 +29,34 @@ import static jdk.vm.ci.code.ValueUtil.isRegister;
 import java.util.ArrayList;
 
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.Indent;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.LIRValueUtil;
 import jdk.graal.compiler.lir.StandardOp;
-import jdk.graal.compiler.lir.alloc.lsra.Interval.SpillState;
-import jdk.graal.compiler.lir.alloc.lsra.LinearScan.IntervalPredicate;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.phases.AllocationPhase;
+import jdk.graal.compiler.lir.phases.LIRPhase;
+import jdk.graal.compiler.lir.alloc.lsra.Interval.SpillState;
+import jdk.graal.compiler.lir.alloc.lsra.LinearScan.IntervalPredicate;
+import jdk.graal.compiler.options.NestedBooleanOptionKey;
+import jdk.graal.compiler.options.Option;
+import jdk.graal.compiler.options.OptionKey;
+import jdk.graal.compiler.options.OptionType;
+
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.AllocatableValue;
 
 public class LinearScanEliminateSpillMovePhase extends LinearScanAllocationPhase {
+
+    public static class Options {
+        // @formatter:off
+        @Option(help = "Enable spill move elimination.", type = OptionType.Debug)
+        public static final OptionKey<Boolean> LIROptLSRAEliminateSpillMoves = new NestedBooleanOptionKey(LIRPhase.Options.LIROptimization, true);
+        // @formatter:on
+    }
 
     private static final IntervalPredicate mustStoreAtDefinition = new LinearScan.IntervalPredicate() {
 
@@ -84,7 +98,7 @@ public class LinearScanEliminateSpillMovePhase extends LinearScanAllocationPhase
              */
             Interval interval;
             interval = allocator.createUnhandledLists(mustStoreAtDefinition, null).getLeft();
-            if (allocator.isDetailedAsserts()) {
+            if (Assertions.detailedAssertionsEnabled(allocator.getOptions())) {
                 checkIntervals(debug, interval);
             }
 
@@ -103,11 +117,11 @@ public class LinearScanEliminateSpillMovePhase extends LinearScanAllocationPhase
                         if (opId == -1) {
                             StandardOp.MoveOp move = StandardOp.MoveOp.asMoveOp(op);
                             /*
-                             * Remove move from register/stack to stack if the stack slot is
-                             * guaranteed to be correct. Only moves that have been inserted by
-                             * LinearScan can be removed.
+                             * Remove move from register to stack if the stack slot is guaranteed to
+                             * be correct. Only moves that have been inserted by LinearScan can be
+                             * removed.
                              */
-                            if (canEliminateSpillMove(block, move)) {
+                            if (Options.LIROptLSRAEliminateSpillMoves.getValue(allocator.getOptions()) && canEliminateSpillMove(block, move)) {
                                 /*
                                  * Move target is a stack slot that is always correct, so eliminate
                                  * instruction.

@@ -130,7 +130,8 @@ public class HotSpotCompiledCodeBuilder {
         StackSlot customStackArea = compResult.getCustomStackArea();
         boolean isImmutablePIC = false; // Legacy API from jaotc that no longer does anything
 
-        if (method instanceof HotSpotResolvedJavaMethod hsMethod) {
+        if (method instanceof HotSpotResolvedJavaMethod) {
+            HotSpotResolvedJavaMethod hsMethod = (HotSpotResolvedJavaMethod) method;
             int entryBCI = compResult.getEntryBCI();
             boolean hasUnsafeAccess = compResult.hasUnsafeAccess();
 
@@ -154,7 +155,6 @@ public class HotSpotCompiledCodeBuilder {
             return new HotSpotCompiledNmethod(name, targetCode, targetCodeSize, sites, assumptions, methods, comments, dataSection, dataSectionAlignment, dataSectionPatches, isImmutablePIC,
                             totalFrameSize, customStackArea, hsMethod, entryBCI, id, jvmciCompileState, hasUnsafeAccess);
         } else {
-            GraalError.guarantee(patches.isEmpty(), "Non-nmethod %s must not have data patches: %s", name, patches);
             return new HotSpotCompiledCode(name, targetCode, targetCodeSize, sites, assumptions, methods, comments, dataSection, dataSectionAlignment, dataSectionPatches, isImmutablePIC,
                             totalFrameSize, customStackArea);
         }

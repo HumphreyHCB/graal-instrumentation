@@ -211,7 +211,7 @@ public class HeapSnapshotVerifier {
         }
 
         private void verifyInstanceFieldValue(AnalysisField field, JavaConstant receiver, ImageHeapInstance receiverObject, JavaConstant fieldSnapshot, JavaConstant fieldValue, ScanReason reason) {
-            if (fieldSnapshot instanceof ImageHeapConstant ihc && ihc.isInBaseLayer() && ihc.getHostedObject() == null && !(ihc instanceof ImageHeapRelocatableConstant)) {
+            if (fieldSnapshot instanceof ImageHeapConstant ihc && ihc.isInBaseLayer() && ihc.getHostedObject() == null) {
                 /*
                  * We cannot verify a base layer constant which doesn't have a backing hosted
                  * object. Since the hosted object is missing the constant would be replaced with
@@ -333,11 +333,11 @@ public class HeapSnapshotVerifier {
                 result = (ImageHeapConstant) constant;
             } else {
                 Object task = imageHeap.getSnapshot(constant);
-                if (task == null && bb.getUniverse().hostVM().buildingExtensionLayer() && bb.getUniverse().getImageLayerLoader().hasValueForConstant(constant)) {
+                if (task == null && bb.getUniverse().hostVM().useBaseLayer() && bb.getUniverse().getImageLayerLoader().hasValueForConstant(constant)) {
                     /* The constant might not have been accessed in the extension image yet */
                     task = bb.getUniverse().getImageLayerLoader().getValueForConstant(constant);
                 }
-                if (task == null && bb.getUniverse().hostVM().buildingExtensionLayer()) {
+                if (task == null && bb.getUniverse().hostVM().useBaseLayer()) {
                     /*
                      * This does not distinguish between base and extension layer constants at the
                      * moment. Doing so would require some refactoring to determine earlier if the

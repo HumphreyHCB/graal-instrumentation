@@ -35,39 +35,41 @@ import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import jdk.graal.compiler.nodes.graphbuilderconf.GraphBuilderContext;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugin;
 import jdk.graal.compiler.nodes.graphbuilderconf.InvocationPlugins;
+import jdk.graal.compiler.nodes.spi.Replacements;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.replacements.SnippetSubstitutionInvocationPlugin;
 import jdk.graal.compiler.replacements.SnippetTemplate;
 import jdk.graal.compiler.replacements.TargetGraphBuilderPlugins;
+import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 public class WasmGCGraphBuilderPlugins implements TargetGraphBuilderPlugins {
     @Override
-    public void registerPlugins(GraphBuilderConfiguration.Plugins plugins, OptionValues options) {
+    public void register(GraphBuilderConfiguration.Plugins plugins, Replacements replacements, Architecture arch, boolean registerForeignCallMath, OptionValues options) {
 
         InvocationPlugins invocationPlugins = plugins.getInvocationPlugins();
         invocationPlugins.defer(() -> {
-            JSGraphBuilderPlugins.registerStringPlugins(invocationPlugins);
-            JSGraphBuilderPlugins.registerCurrentIsolatePlugins(invocationPlugins);
-            JSGraphBuilderPlugins.registerThreadPlugins(invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerIntegerLongPlugins(invocationPlugins, JavaKind.Int);
-            WasmLMGraphBuilderPlugins.registerIntegerLongPlugins(invocationPlugins, JavaKind.Long);
-            WasmLMGraphBuilderPlugins.registerShortPlugins(invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerCharacterPlugins(invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerArraysPlugins(invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerBigIntegerPlugins(invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerMathPlugins(Math.class, invocationPlugins);
-            WasmLMGraphBuilderPlugins.registerMathPlugins(StrictMath.class, invocationPlugins);
+            JSGraphBuilderPlugins.registerStringPlugins(invocationPlugins, replacements);
+            JSGraphBuilderPlugins.registerCurrentIsolatePlugins(invocationPlugins, replacements);
+            JSGraphBuilderPlugins.registerThreadPlugins(invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerIntegerLongPlugins(invocationPlugins, JavaKind.Int, replacements);
+            WasmLMGraphBuilderPlugins.registerIntegerLongPlugins(invocationPlugins, JavaKind.Long, replacements);
+            WasmLMGraphBuilderPlugins.registerShortPlugins(invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerCharacterPlugins(invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerArraysPlugins(invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerBigIntegerPlugins(invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerMathPlugins(Math.class, invocationPlugins, replacements);
+            WasmLMGraphBuilderPlugins.registerMathPlugins(StrictMath.class, invocationPlugins, replacements);
             // TODO GR-61725 Support ArrayFillNodes
-            WasmLMGraphBuilderPlugins.unregisterArrayFillPlugins(invocationPlugins);
-            registerAllocationPlugins(invocationPlugins);
-            registerArraysSupportPlugins(invocationPlugins);
+            WasmLMGraphBuilderPlugins.unregisterArrayFillPlugins(invocationPlugins, replacements);
+            registerAllocationPlugins(invocationPlugins, replacements);
+            registerArraysSupportPlugins(invocationPlugins, replacements);
         });
     }
 
-    private static void registerAllocationPlugins(InvocationPlugins plugins) {
-        InvocationPlugins.Registration r = new InvocationPlugins.Registration(plugins, WasmGCAllocationSupport.class);
+    private static void registerAllocationPlugins(InvocationPlugins plugins, Replacements replacements) {
+        InvocationPlugins.Registration r = new InvocationPlugins.Registration(plugins, WasmGCAllocationSupport.class, replacements);
         r.register(new SnippetSubstitutionInvocationPlugin<>(WasmGCAllocationSnippets.Templates.class,
                         "dynamicNewArrayImpl", Class.class, int.class) {
             @Override
@@ -77,8 +79,8 @@ public class WasmGCGraphBuilderPlugins implements TargetGraphBuilderPlugins {
         });
     }
 
-    private static void registerArraysSupportPlugins(InvocationPlugins plugins) {
-        InvocationPlugins.Registration r = new InvocationPlugins.Registration(plugins, "jdk.internal.util.ArraysSupport").setAllowOverwrite(true);
+    private static void registerArraysSupportPlugins(InvocationPlugins plugins, Replacements replacements) {
+        InvocationPlugins.Registration r = new InvocationPlugins.Registration(plugins, "jdk.internal.util.ArraysSupport", replacements).setAllowOverwrite(true);
         /*
          * Under WasmGC, the vectorizedMismatch will be much slower than just element-wise checking
          * because there exists no efficient way to load large chunks of arbitrary primitive arrays

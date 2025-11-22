@@ -55,13 +55,6 @@ public final class ImageInfo {
     }
 
     /**
-     * Holds a name that is a prefix for all native-image properties.
-     *
-     * @since 25.0
-     */
-    public static final String PROPERTY_NATIVE_IMAGE_PREFIX = "org.graalvm.nativeimage.";
-
-    /**
      * Holds the string that is the name of the system property providing information about the
      * context in which code is currently executing. If the property returns the string given by
      * {@link #PROPERTY_IMAGE_CODE_VALUE_BUILDTIME} the code is executing in the context of image
@@ -71,7 +64,7 @@ public final class ImageInfo {
      *
      * @since 19.0
      */
-    public static final String PROPERTY_IMAGE_CODE_KEY = PROPERTY_NATIVE_IMAGE_PREFIX + "imagecode";
+    public static final String PROPERTY_IMAGE_CODE_KEY = "org.graalvm.nativeimage.imagecode";
 
     /**
      * Holds the string that will be returned by the system property for
@@ -98,7 +91,7 @@ public final class ImageInfo {
      *
      * @since 19.0
      */
-    public static final String PROPERTY_IMAGE_KIND_KEY = PROPERTY_NATIVE_IMAGE_PREFIX + "kind";
+    public static final String PROPERTY_IMAGE_KIND_KEY = "org.graalvm.nativeimage.kind";
 
     /**
      * Holds the string that will be returned by the system property for

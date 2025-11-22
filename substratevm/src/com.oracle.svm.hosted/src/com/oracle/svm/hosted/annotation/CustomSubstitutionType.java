@@ -24,26 +24,23 @@
  */
 package com.oracle.svm.hosted.annotation;
 
-import java.util.List;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.util.AnnotatedWrapper;
-import com.oracle.svm.util.OriginalClassProvider;
 
 import jdk.vm.ci.meta.Assumptions.AssumptionResult;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
-import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
-import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.UnresolvedJavaField;
 import jdk.vm.ci.meta.UnresolvedJavaType;
-import jdk.vm.ci.meta.annotation.Annotated;
 
-public abstract class CustomSubstitutionType implements ResolvedJavaType, OriginalClassProvider, AnnotationWrapper, AnnotatedWrapper {
+public abstract class CustomSubstitutionType implements ResolvedJavaType, OriginalClassProvider, AnnotationWrapper {
     private final ResolvedJavaType original;
 
     public CustomSubstitutionType(ResolvedJavaType original) {
@@ -61,7 +58,7 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     }
 
     @Override
-    public Annotated getWrappedAnnotated() {
+    public AnnotatedElement getAnnotationRoot() {
         return null;
     }
 
@@ -98,16 +95,6 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public boolean isEnum() {
         return original.isEnum();
-    }
-
-    @Override
-    public boolean isRecord() {
-        return original.isRecord();
-    }
-
-    @Override
-    public List<? extends ResolvedJavaRecordComponent> getRecordComponents() {
-        return original.getRecordComponents();
     }
 
     @Override
@@ -172,11 +159,6 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     }
 
     @Override
-    public ResolvedJavaType[] getDeclaredTypes() {
-        return original.getDeclaredTypes();
-    }
-
-    @Override
     public ResolvedJavaType getSingleImplementor() {
         return original.getSingleImplementor();
     }
@@ -204,16 +186,6 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public ResolvedJavaType getArrayClass() {
         return original.getArrayClass();
-    }
-
-    @Override
-    public boolean isHidden() {
-        return original.isHidden();
-    }
-
-    @Override
-    public List<? extends JavaType> getPermittedSubclasses() {
-        return original.getPermittedSubclasses();
     }
 
     @Override
@@ -267,11 +239,6 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     }
 
     @Override
-    public ResolvedJavaMethod getEnclosingMethod() {
-        return original.getEnclosingMethod();
-    }
-
-    @Override
     public ResolvedJavaMethod[] getDeclaredConstructors() {
         return getDeclaredConstructors(true);
     }
@@ -290,11 +257,6 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public ResolvedJavaMethod[] getDeclaredMethods(boolean forceLink) {
         return original.getDeclaredMethods(forceLink);
-    }
-
-    @Override
-    public List<ResolvedJavaMethod> getAllMethods(boolean forceLink) {
-        return original.getAllMethods(forceLink);
     }
 
     @Override
@@ -405,6 +367,16 @@ public abstract class CustomSubstitutionType implements ResolvedJavaType, Origin
     @Override
     public boolean isConcrete() {
         return original.isConcrete();
+    }
+
+    @Override
+    public <T extends Annotation> T[] getAnnotationsByType(Class<T> annotationClass) {
+        return original.getAnnotationsByType(annotationClass);
+    }
+
+    @Override
+    public <T extends Annotation> T[] getDeclaredAnnotationsByType(Class<T> annotationClass) {
+        return original.getDeclaredAnnotationsByType(annotationClass);
     }
 
     public ResolvedJavaType getOriginal() {

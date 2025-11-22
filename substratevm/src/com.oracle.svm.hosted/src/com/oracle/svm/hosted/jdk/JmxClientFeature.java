@@ -25,17 +25,15 @@
  */
 package com.oracle.svm.hosted.jdk;
 
-import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
-import com.oracle.graal.pointsto.meta.AnalysisType;
+import org.graalvm.nativeimage.hosted.RuntimeReflection;
+
 import com.oracle.svm.core.VMInspectionOptions;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.jdk.JNIRegistrationUtil;
+import com.oracle.svm.core.jni.JNIRuntimeAccess;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
-import com.oracle.svm.util.JVMCIReflectionUtil;
-import com.oracle.svm.util.dynamicaccess.JVMCIRuntimeJNIAccess;
-import com.oracle.svm.util.dynamicaccess.JVMCIRuntimeReflection;
+import com.oracle.svm.util.ReflectionUtil;
 
 @AutomaticallyRegisteredFeature
 public class JmxClientFeature extends JNIRegistrationUtil implements InternalFeature {
@@ -47,19 +45,16 @@ public class JmxClientFeature extends JNIRegistrationUtil implements InternalFea
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         try {
-            BeforeAnalysisAccessImpl accessImpl = (BeforeAnalysisAccessImpl) access;
-            configureJNI(accessImpl);
-            configureReflection(accessImpl);
+            configureJNI();
+            configureReflection(access);
         } catch (Exception e) {
             throw VMError.shouldNotReachHere("ManagementClientFeature configuration failed: " + e);
         }
     }
 
-    private static void configureJNI(BeforeAnalysisAccessImpl access) {
-        AnalysisMetaAccess metaAccess = access.getMetaAccess();
-        AnalysisType type = metaAccess.lookupJavaType(Boolean.class);
-        JVMCIRuntimeJNIAccess.register(type);
-        JVMCIRuntimeJNIAccess.register(JVMCIReflectionUtil.getDeclaredMethod(metaAccess, type, "getBoolean", String.class));
+    private static void configureJNI() {
+        JNIRuntimeAccess.register(Boolean.class);
+        JNIRuntimeAccess.register(ReflectionUtil.lookupMethod(Boolean.class, "getBoolean", String.class));
     }
 
     /**
@@ -74,14 +69,14 @@ public class JmxClientFeature extends JNIRegistrationUtil implements InternalFea
      * {@code sun.rmi.server.UnicastRef#getRefClass(ObjectOutput)}.</li>
      * </ul>
      */
-    private static void configureReflection(BeforeAnalysisAccessImpl access) {
-        JVMCIRuntimeReflection.register(access.findTypeByName("com.sun.jndi.url.rmi.rmiURLContextFactory"));
-        JVMCIRuntimeReflection.register(access.findTypeByName("sun.rmi.server.UnicastRef"));
+    private static void configureReflection(BeforeAnalysisAccess access) {
+        RuntimeReflection.register(access.findClassByName("com.sun.jndi.url.rmi.rmiURLContextFactory"));
+        RuntimeReflection.register(access.findClassByName("sun.rmi.server.UnicastRef"));
 
-        JVMCIRuntimeReflection.register(access.findTypeByName("com.sun.jmx.remote.protocol.rmi.ClientProvider"));
-        JVMCIRuntimeReflection.register(JVMCIReflectionUtil.getConstructors(access.findTypeByName("com.sun.jndi.url.rmi.rmiURLContextFactory")));
-        JVMCIRuntimeReflection.register(JVMCIReflectionUtil.getConstructors(access.findTypeByName("sun.rmi.server.UnicastRef")));
-        JVMCIRuntimeReflection.register(JVMCIReflectionUtil.getConstructors(access.findTypeByName("sun.rmi.server.UnicastRef2")));
-        JVMCIRuntimeReflection.register(JVMCIReflectionUtil.getConstructors(access.findTypeByName("com.sun.jmx.remote.protocol.rmi.ClientProvider")));
+        RuntimeReflection.register(access.findClassByName("com.sun.jmx.remote.protocol.rmi.ClientProvider"));
+        RuntimeReflection.register(access.findClassByName("com.sun.jndi.url.rmi.rmiURLContextFactory").getConstructors());
+        RuntimeReflection.register(access.findClassByName("sun.rmi.server.UnicastRef").getConstructors());
+        RuntimeReflection.register(access.findClassByName("sun.rmi.server.UnicastRef2").getConstructors());
+        RuntimeReflection.register(access.findClassByName("com.sun.jmx.remote.protocol.rmi.ClientProvider").getConstructors());
     }
 }

@@ -44,8 +44,6 @@ import com.oracle.svm.core.locks.VMCondition;
 import com.oracle.svm.core.locks.VMMutex;
 import com.oracle.svm.core.option.HostedOptionKey;
 import com.oracle.svm.core.option.RuntimeOptionKey;
-import com.oracle.svm.core.thread.RecurringCallbackSupport;
-import com.oracle.svm.core.util.ImageHeapMap;
 import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.options.Option;
@@ -66,7 +64,7 @@ public class PerfManager {
     public PerfManager() {
         perfDataHolders = new ArrayList<>();
         mutablePerfDataEntries = new ArrayList<>();
-        longEntries = ImageHeapMap.createNonLayeredMap();
+        longEntries = EconomicMap.create();
         perfDataThread = new PerfDataThread(this);
     }
 
@@ -146,7 +144,7 @@ public class PerfManager {
     }
 
     public RuntimeSupport.Hook initializationHook() {
-        return _ -> {
+        return isFirstIsolate -> {
             if (usePerfData()) {
                 startTime = System.nanoTime();
                 perfDataThread.start();
@@ -155,7 +153,7 @@ public class PerfManager {
     }
 
     public RuntimeSupport.Hook teardownHook() {
-        return _ -> {
+        return isFirstIsolate -> {
             if (usePerfData()) {
                 perfDataThread.shutdown();
 
@@ -186,9 +184,8 @@ public class PerfManager {
 
         @Override
         public void run() {
-            RecurringCallbackSupport.suspendCallbackTimer("Performance data thread must not execute recurring callbacks.");
-
             initializeMemory();
+
             try {
                 sampleData();
                 ImageSingletons.lookup(PerfMemory.class).setAccessible();
@@ -216,11 +213,8 @@ public class PerfManager {
 
                 initialized = true;
                 initializationCondition.broadcast();
-            } catch (OutOfMemoryError e) {
-                /* For now, we can only rethrow the error to terminate the thread (see GR-40601). */
-                throw e;
             } catch (Throwable e) {
-                throw VMError.shouldNotReachHere(ERROR_DURING_INITIALIZATION, e);
+                VMError.shouldNotReachHere(ERROR_DURING_INITIALIZATION, e);
             } finally {
                 initializationMutex.unlock();
             }

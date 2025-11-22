@@ -26,8 +26,6 @@ package jdk.graal.compiler.core.test;
 
 import java.util.List;
 
-import org.junit.Test;
-
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.graph.NodeMap;
 import jdk.graal.compiler.nodes.FrameState;
@@ -41,6 +39,7 @@ import jdk.graal.compiler.nodes.cfg.HIRBlock;
 import jdk.graal.compiler.nodes.util.GraphUtil;
 import jdk.graal.compiler.phases.schedule.SchedulePhase;
 import jdk.graal.compiler.phases.schedule.SchedulePhase.SchedulingStrategy;
+import org.junit.Test;
 
 public class SchedulingTest extends GraphScheduleTest {
 
@@ -66,7 +65,7 @@ public class SchedulingTest extends GraphScheduleTest {
         SchedulePhase schedulePhase = new SchedulePhase(SchedulingStrategy.LATEST);
         schedulePhase.apply(graph, getDefaultHighTierContext());
         ScheduleResult schedule = graph.getLastSchedule();
-        NodeMap<HIRBlock> nodeToBlock = schedule.getNodeToBlockMap();
+        NodeMap<HIRBlock> nodeToBlock = schedule.getCFG().getNodeToBlock();
         assertTrue(graph.getNodes().filter(LoopExitNode.class).count() == 1);
         LoopExitNode loopExit = graph.getNodes().filter(LoopExitNode.class).first();
         List<Node> list = schedule.nodesFor(nodeToBlock.get(loopExit));

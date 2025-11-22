@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 import jdk.graal.compiler.core.common.NativeImageSupport;
 import jdk.graal.compiler.debug.DebugOptions.PrintGraphTarget;
 import jdk.graal.compiler.options.OptionValues;
-import jdk.graal.compiler.serviceprovider.GlobalAtomicLong;
+
 import jdk.graal.compiler.serviceprovider.GraalServices;
 
 final class IgvDumpChannel implements WritableByteChannel {
@@ -92,10 +92,7 @@ final class IgvDumpChannel implements WritableByteChannel {
         }
     }
 
-    /**
-     * Guard for issuing warning about unsupported network dumping at most once per process.
-     */
-    private static final GlobalAtomicLong NETWORK_DUMPING_UNSUPPORTED_WARNED = new GlobalAtomicLong("NETWORK_DUMPING_UNSUPPORTED_WARNED", 0L);
+    private static boolean networkDumpingUnsupportedWarned;
 
     WritableByteChannel channel() throws IOException {
         if (closed) {
@@ -107,9 +104,9 @@ final class IgvDumpChannel implements WritableByteChannel {
                 sharedChannel = createFileChannel(pathProvider, null);
             } else if (target == PrintGraphTarget.Network) {
                 if (NativeImageSupport.inRuntimeCode() && !ENABLE_NETWORK_DUMPING) {
-                    if (NETWORK_DUMPING_UNSUPPORTED_WARNED.get() == 0) {
+                    if (!networkDumpingUnsupportedWarned) {
                         // Ignore races or multiple isolates - an extra warning is ok
-                        NETWORK_DUMPING_UNSUPPORTED_WARNED.compareAndSet(0, 1);
+                        networkDumpingUnsupportedWarned = true;
                         TTY.printf("WARNING: Graph dumping to network not supported as the %s system property was false when building - dumping to file instead.%n",
                                         ENABLE_NETWORK_DUMPING_PROP);
                     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,10 +73,11 @@ public class NestedExceptionHandlerTest extends GraalCompilerTest {
         test(new OptionValues(getInitialOptions(), HighTier.Options.Inline, false), "nestedExceptionHandler");
     }
 
+    @SuppressWarnings("try")
     public static String snippet1() {
         try {
             synchronized (String.class) {
-                try (AutoCloseable _ = null) {
+                try (AutoCloseable scope = null) {
                     return "RETURN";
                 } catch (Throwable t) {
                     return t.toString();
@@ -91,10 +92,11 @@ public class NestedExceptionHandlerTest extends GraalCompilerTest {
         throw new RuntimeException();
     }
 
+    @SuppressWarnings("try")
     public static String snippet2() {
         try {
             synchronized (String.class) {
-                try (AutoCloseable _ = null) {
+                try (AutoCloseable scope = null) {
                     return performCompilation();
                 } catch (Throwable t) {
                     return t.toString();

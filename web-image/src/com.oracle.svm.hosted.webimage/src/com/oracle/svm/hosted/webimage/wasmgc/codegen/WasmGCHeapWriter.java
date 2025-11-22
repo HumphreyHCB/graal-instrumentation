@@ -39,32 +39,21 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.graalvm.nativeimage.c.function.CFunctionPointer;
+
 import com.oracle.graal.pointsto.heap.ImageHeapArray;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapInstance;
 import com.oracle.graal.pointsto.heap.ImageHeapPrimitiveArray;
-import com.oracle.svm.util.OriginalClassProvider;
+import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
 import com.oracle.graal.pointsto.util.AnalysisError;
+import com.oracle.svm.webimage.wasm.types.WasmUtil;
+import com.oracle.svm.webimage.wasm.types.WasmValType;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.Hybrid;
-import com.oracle.svm.core.image.ImageHeapLayouter.ImageHeapLayouterCallback;
 import com.oracle.svm.core.meta.MethodPointer;
-import com.oracle.svm.core.meta.MethodRef;
 import com.oracle.svm.core.meta.SubstrateMethodPointerConstant;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.hosted.config.DynamicHubLayout;
-import com.oracle.svm.hosted.config.HybridLayout;
-import com.oracle.svm.hosted.image.NativeImageCodeCache;
-import com.oracle.svm.hosted.image.NativeImageHeap;
-import com.oracle.svm.hosted.image.NativeImageHeap.ObjectInfo;
-import com.oracle.svm.hosted.meta.HostedArrayClass;
-import com.oracle.svm.hosted.meta.HostedClass;
-import com.oracle.svm.hosted.meta.HostedField;
-import com.oracle.svm.hosted.meta.HostedInstanceClass;
-import com.oracle.svm.hosted.meta.HostedMetaAccess;
-import com.oracle.svm.hosted.meta.HostedType;
-import com.oracle.svm.hosted.meta.MaterializedConstantFields;
-import com.oracle.svm.hosted.meta.PatchedWordConstant;
 import com.oracle.svm.hosted.webimage.WebImageCodeCache;
 import com.oracle.svm.hosted.webimage.wasm.WebImageWasmOptions;
 import com.oracle.svm.hosted.webimage.wasm.ast.ActiveElements;
@@ -92,8 +81,19 @@ import com.oracle.svm.hosted.webimage.wasmgc.image.WasmGCImageHeapLayoutInfo;
 import com.oracle.svm.hosted.webimage.wasmgc.image.WasmGCPartition;
 import com.oracle.svm.hosted.webimage.wasmgc.types.WasmGCUtil;
 import com.oracle.svm.hosted.webimage.wasmgc.types.WasmRefType;
-import com.oracle.svm.webimage.wasm.types.WasmUtil;
-import com.oracle.svm.webimage.wasm.types.WasmValType;
+import com.oracle.svm.hosted.config.DynamicHubLayout;
+import com.oracle.svm.hosted.config.HybridLayout;
+import com.oracle.svm.hosted.image.NativeImageCodeCache;
+import com.oracle.svm.hosted.image.NativeImageHeap;
+import com.oracle.svm.hosted.image.NativeImageHeap.ObjectInfo;
+import com.oracle.svm.hosted.meta.HostedArrayClass;
+import com.oracle.svm.hosted.meta.HostedClass;
+import com.oracle.svm.hosted.meta.HostedField;
+import com.oracle.svm.hosted.meta.HostedInstanceClass;
+import com.oracle.svm.hosted.meta.HostedMetaAccess;
+import com.oracle.svm.hosted.meta.HostedType;
+import com.oracle.svm.hosted.meta.MaterializedConstantFields;
+import com.oracle.svm.hosted.meta.RelocatableConstant;
 
 import jdk.graal.compiler.core.common.NumUtil;
 import jdk.graal.compiler.nodes.ConstantNode;
@@ -273,7 +273,7 @@ public class WasmGCHeapWriter {
 
     public WasmGCImageHeapLayoutInfo layout() {
         collectObjectData();
-        return (WasmGCImageHeapLayoutInfo) heap.getLayouter().layout(heap, WasmUtil.PAGE_SIZE, ImageHeapLayouterCallback.NONE);
+        return (WasmGCImageHeapLayoutInfo) heap.getLayouter().layout(heap, WasmUtil.PAGE_SIZE);
     }
 
     public void write(WasmGCImageHeapLayoutInfo layout, WasmModule module) {
@@ -448,7 +448,7 @@ public class WasmGCHeapWriter {
 
         for (HostedField field : heap.hUniverse.getFields()) {
             if (shouldGenerateStaticField(field)) {
-                assert field.isWritten() || !field.isValueAvailable(null) || MaterializedConstantFields.singleton().contains(field.wrapped);
+                assert field.isWritten() || !field.isValueAvailable() || MaterializedConstantFields.singleton().contains(field.wrapped);
 
                 WasmValType fieldType = providers.util().typeForJavaType(field.getType());
                 WasmId.Global staticFieldId = providers.idFactory().forStaticField(fieldType, field);
@@ -739,8 +739,8 @@ public class WasmGCHeapWriter {
      */
     private Instruction getArgumentForValue(JavaConstant value) {
         Instruction arg;
-        if (value instanceof PatchedWordConstant patchedConstant) {
-            if (patchedConstant.getWord() instanceof MethodPointer methodPointer) {
+        if (value instanceof RelocatableConstant relocatableConstant) {
+            if (relocatableConstant.getPointer() instanceof MethodPointer methodPointer) {
                 arg = Instruction.Relocation.forConstant(new SubstrateMethodPointerConstant(methodPointer));
             } else {
                 throw VMError.shouldNotReachHere("Pointers to memory should not appear in the WasmGC image heap: " + value);
@@ -835,7 +835,7 @@ public class WasmGCHeapWriter {
     private Instruction createHubVtableArray(ImageHeapInstance instance) {
         WasmId.ArrayType vtableFieldType = providers.knownIds().vtableFieldType;
         DynamicHubLayout dynamicHubLayout = DynamicHubLayout.singleton();
-        MethodRef[] vtable = (MethodRef[]) heap.readInlinedField(dynamicHubLayout.vTableField, instance);
+        CFunctionPointer[] vtable = (CFunctionPointer[]) heap.readInlinedField(dynamicHubLayout.vTableField, instance);
 
         int vtableLength = vtable.length;
 

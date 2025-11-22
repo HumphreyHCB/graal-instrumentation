@@ -31,11 +31,9 @@ import com.oracle.svm.core.StaticFieldsSupport;
 import com.oracle.svm.core.SubstrateUtil;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.hub.RuntimeClassLoading;
-import com.oracle.svm.core.hub.crema.CremaSupport;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.layeredimagesingleton.MultiLayeredImageSingleton;
-import com.oracle.svm.core.reflect.UnsafeFieldUtil;
+import com.oracle.svm.core.reflect.MissingReflectionRegistrationUtils;
 
 @TargetClass(className = "jdk.internal.misc.Unsafe")
 @SuppressWarnings({"static-method"})
@@ -43,12 +41,12 @@ public final class Target_jdk_internal_misc_Unsafe_Reflection {
 
     @Substitute
     public long objectFieldOffset(Target_java_lang_reflect_Field field) {
-        return UnsafeFieldUtil.getFieldOffset(field);
+        return UnsafeUtil.getFieldOffset(field);
     }
 
     @Substitute
     public long staticFieldOffset(Target_java_lang_reflect_Field field) {
-        return UnsafeFieldUtil.getFieldOffset(field);
+        return UnsafeUtil.getFieldOffset(field);
     }
 
     @Substitute
@@ -57,10 +55,6 @@ public final class Target_jdk_internal_misc_Unsafe_Reflection {
             throw new NullPointerException();
         }
         int layerNumber = ImageLayerBuildingSupport.buildingImageLayer() ? field.installedLayerNumber : MultiLayeredImageSingleton.UNUSED_LAYER_NUMBER;
-        if (RuntimeClassLoading.isSupported()) {
-            Field reflectField = SubstrateUtil.cast(field, Field.class);
-            return CremaSupport.singleton().getStaticStorage(reflectField.getDeclaringClass(), reflectField.getType().isPrimitive(), field.installedLayerNumber);
-        }
         if (SubstrateUtil.cast(field, Field.class).getType().isPrimitive()) {
             return StaticFieldsSupport.getStaticPrimitiveFieldsAtRuntime(layerNumber);
         } else {
@@ -81,4 +75,19 @@ public final class Target_jdk_internal_misc_Unsafe_Reflection {
             throw new InternalError();
         }
     }
+}
+
+class UnsafeUtil {
+    static long getFieldOffset(Target_java_lang_reflect_Field field) {
+        if (field == null) {
+            throw new NullPointerException();
+        }
+        int offset = field.root == null ? field.offset : field.root.offset;
+        boolean conditionsSatisfied = SubstrateUtil.cast(field, Target_java_lang_reflect_AccessibleObject.class).conditions.satisfied();
+        if (offset <= 0 || !conditionsSatisfied) {
+            throw MissingReflectionRegistrationUtils.errorForQueriedOnlyField(SubstrateUtil.cast(field, Field.class));
+        }
+        return offset;
+    }
+
 }

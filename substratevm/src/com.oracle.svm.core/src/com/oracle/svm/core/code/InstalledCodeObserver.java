@@ -70,7 +70,6 @@ public interface InstalledCodeObserver {
         default void activate(InstalledCodeObserverHandle handle) {
         }
 
-        @Uninterruptible(reason = "Called during GC or teardown.")
         default void release(InstalledCodeObserverHandle handle) {
         }
 
@@ -78,6 +77,10 @@ public interface InstalledCodeObserver {
         }
 
         default void attachToCurrentIsolate(InstalledCodeObserverHandle handle) {
+        }
+
+        @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
+        default void releaseOnTearDown(InstalledCodeObserverHandle handle) {
         }
     }
 }

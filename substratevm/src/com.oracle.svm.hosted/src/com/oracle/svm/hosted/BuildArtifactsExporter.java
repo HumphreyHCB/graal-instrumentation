@@ -40,10 +40,6 @@ import com.oracle.svm.core.BuildArtifacts;
 import com.oracle.svm.core.BuildArtifacts.ArtifactType;
 import com.oracle.svm.core.SubstrateOptions;
 import com.oracle.svm.core.option.HostedOptionValues;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.util.LogUtils;
 
@@ -74,7 +70,7 @@ public class BuildArtifactsExporter {
         buildArtifacts.forEach((artifactType, paths) -> {
             String key = artifactType.getJsonKey();
             List<String> value = paths.stream().map(p -> buildPath.relativize(p.toAbsolutePath()).toString()).toList();
-            jsonMap.computeIfAbsent(key, _ -> new ArrayList<>()).addAll(value);
+            jsonMap.computeIfAbsent(key, k -> new ArrayList<>()).addAll(value);
         });
 
         try (JsonWriter writer = new JsonWriter(targetPath)) {
@@ -109,13 +105,12 @@ public class BuildArtifactsExporter {
         buildArtifacts.add(ArtifactType.BUILD_INFO, ReportUtils.report("build artifacts", buildDir.resolve(imageName + ".build_artifacts.txt"), writerConsumer, false));
     }
 
-    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
     static class BuildArtifactsImpl implements BuildArtifacts {
         private final Map<ArtifactType, List<Path>> buildArtifacts = new EnumMap<>(ArtifactType.class);
 
         @Override
         public void add(ArtifactType type, Path artifact) {
-            buildArtifacts.computeIfAbsent(type, _ -> new ArrayList<>()).add(artifact);
+            buildArtifacts.computeIfAbsent(type, t -> new ArrayList<>()).add(artifact);
         }
 
         @Override

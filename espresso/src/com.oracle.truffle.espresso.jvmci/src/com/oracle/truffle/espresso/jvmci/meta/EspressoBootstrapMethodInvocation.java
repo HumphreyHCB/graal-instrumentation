@@ -40,17 +40,13 @@ public final class EspressoBootstrapMethodInvocation implements ConstantPool.Boo
     private final String name;
     private final JavaConstant type;
     private final List<JavaConstant> staticArguments;
-    private final int cpi;
-    private final EspressoConstantPool constantPool;
 
-    EspressoBootstrapMethodInvocation(boolean indy, EspressoResolvedJavaMethod method, String name, JavaConstant type, JavaConstant[] staticArguments, int cpi, EspressoConstantPool constantPool) {
+    EspressoBootstrapMethodInvocation(boolean indy, EspressoResolvedJavaMethod method, String name, JavaConstant type, JavaConstant[] staticArguments) {
         this.indy = indy;
         this.method = method;
         this.name = name;
         this.type = type;
         this.staticArguments = Collections.unmodifiableList(Arrays.asList(staticArguments));
-        this.cpi = cpi;
-        this.constantPool = constantPool;
     }
 
     @Override
@@ -76,24 +72,6 @@ public final class EspressoBootstrapMethodInvocation implements ConstantPool.Boo
     @Override
     public List<JavaConstant> getStaticArguments() {
         return staticArguments;
-    }
-
-    @Override
-    public void resolve() {
-        if (isInvokeDynamic()) {
-            constantPool.loadReferencedType(cpi, EspressoConstantPool.INVOKEDYNAMIC);
-        } else {
-            constantPool.lookupConstant(cpi, true);
-        }
-    }
-
-    @Override
-    public JavaConstant lookup() {
-        if (isInvokeDynamic()) {
-            return constantPool.lookupAppendix(cpi, EspressoConstantPool.INVOKEDYNAMIC);
-        } else {
-            return (JavaConstant) constantPool.lookupConstant(cpi, false);
-        }
     }
 
     @Override

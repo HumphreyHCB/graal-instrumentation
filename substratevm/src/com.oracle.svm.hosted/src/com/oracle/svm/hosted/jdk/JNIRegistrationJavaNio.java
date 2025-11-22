@@ -37,18 +37,13 @@ import org.graalvm.nativeimage.impl.InternalPlatform;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.jdk.JNIRegistrationUtil;
-import com.oracle.svm.core.traits.BuiltinTraits.BuildtimeAccessOnly;
-import com.oracle.svm.core.traits.BuiltinTraits.NoLayeredCallbacks;
-import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.Independent;
-import com.oracle.svm.core.traits.SingletonTraits;
-import com.oracle.svm.util.HostModuleUtil;
-import com.oracle.svm.util.ResolvedJavaModuleLayer;
+
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 
 /**
  * Registration of classes, methods, and fields accessed via JNI by C code of the JDK.
  */
 @Platforms({InternalPlatform.PLATFORM_JNI.class})
-@SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = NoLayeredCallbacks.class, layeredInstallationKind = Independent.class)
 @AutomaticallyRegisteredFeature
 public class JNIRegistrationJavaNio extends JNIRegistrationUtil implements InternalFeature {
 
@@ -56,15 +51,16 @@ public class JNIRegistrationJavaNio extends JNIRegistrationUtil implements Inter
     private static final boolean isJavaNamingModulePresent;
 
     static {
-        var sctpModule = ResolvedJavaModuleLayer.boot().findModule("jdk.sctp");
+        Module thisModule = JNIRegistrationJavaNio.class.getModule();
+        var sctpModule = ModuleLayer.boot().findModule("jdk.sctp");
         if (sctpModule.isPresent()) {
-            HostModuleUtil.addReads(JNIRegistrationJavaNio.class, sctpModule.get());
+            thisModule.addReads(sctpModule.get());
         }
         isJdkSctpModulePresent = sctpModule.isPresent();
 
-        var namingModule = ResolvedJavaModuleLayer.boot().findModule("java.naming");
+        var namingModule = ModuleLayer.boot().findModule("java.naming");
         if (namingModule.isPresent()) {
-            HostModuleUtil.addReads(JNIRegistrationJavaNio.class, namingModule.get());
+            thisModule.addReads(namingModule.get());
         }
         isJavaNamingModulePresent = namingModule.isPresent();
     }
@@ -110,6 +106,9 @@ public class JNIRegistrationJavaNio extends JNIRegistrationUtil implements Inter
 
         // JDK-8220738
         a.registerReachabilityHandler(JNIRegistrationJavaNio::registerNetInitIDs, method(a, "sun.nio.ch.Net", "initIDs"));
+        if (JavaVersionUtil.JAVA_SPEC <= 21) {
+            a.registerReachabilityHandler(JNIRegistrationJavaNio::registerFileKeyInitIDs, method(a, "sun.nio.ch.FileKey", "initIDs"));
+        }
 
         if (isPosix()) {
             a.registerReachabilityHandler(JNIRegistrationJavaNio::registerUnixNativeDispatcherInit, method(a, "sun.nio.fs.UnixNativeDispatcher", "init"));
@@ -136,6 +135,14 @@ public class JNIRegistrationJavaNio extends JNIRegistrationUtil implements Inter
         RuntimeJNIAccess.register(constructor(a, "java.net.InetSocketAddress", InetAddress.class, int.class));
     }
 
+    private static void registerFileKeyInitIDs(DuringAnalysisAccess a) {
+        if (isPosix()) {
+            RuntimeJNIAccess.register(fields(a, "sun.nio.ch.FileKey", "st_dev", "st_ino"));
+        } else if (isWindows()) {
+            RuntimeJNIAccess.register(fields(a, "sun.nio.ch.FileKey", "dwVolumeSerialNumber", "nFileIndexHigh", "nFileIndexLow"));
+        }
+    }
+
     private static void registerUnixNativeDispatcherInit(DuringAnalysisAccess a) {
         RuntimeJNIAccess.register(clazz(a, "sun.nio.fs.UnixFileAttributes"));
         RuntimeJNIAccess.register(fields(a, "sun.nio.fs.UnixFileAttributes",
@@ -143,7 +150,9 @@ public class JNIRegistrationJavaNio extends JNIRegistrationUtil implements Inter
                         "st_atime_sec", "st_atime_nsec", "st_mtime_sec", "st_mtime_nsec", "st_ctime_sec", "st_ctime_nsec"));
         if (isDarwin() || isLinux()) {
             RuntimeJNIAccess.register(fields(a, "sun.nio.fs.UnixFileAttributes", "st_birthtime_sec"));
-            RuntimeJNIAccess.register(fields(a, "sun.nio.fs.UnixFileAttributes", "birthtime_available"));
+            if (JavaVersionUtil.JAVA_SPEC > 21) {
+                RuntimeJNIAccess.register(fields(a, "sun.nio.fs.UnixFileAttributes", "birthtime_available"));
+            }
         }
         if (isLinux()) {
             RuntimeJNIAccess.register(fields(a, "sun.nio.fs.UnixFileAttributes", "st_birthtime_nsec"));

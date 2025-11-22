@@ -74,6 +74,8 @@ import com.oracle.truffle.espresso.classfile.ConstantPool;
 import com.oracle.truffle.espresso.classfile.attributes.Local;
 import com.oracle.truffle.espresso.classfile.attributes.LocalVariableTable;
 import com.oracle.truffle.espresso.classfile.bytecode.Bytecodes;
+import com.oracle.truffle.espresso.classfile.constantpool.FieldRefConstant;
+import com.oracle.truffle.espresso.classfile.constantpool.MethodRefConstant;
 import com.oracle.truffle.espresso.classfile.descriptors.Name;
 import com.oracle.truffle.espresso.classfile.descriptors.Signature;
 import com.oracle.truffle.espresso.classfile.descriptors.SignatureSymbols;
@@ -265,9 +267,10 @@ final class MessageBuildHelper {
 
     private static void appendStaticField(Analysis analysis, StringBuilder sb, int bci) {
         ConstantPool pool = analysis.m.getConstantPool();
-        int fieldIndex = analysis.bs.readCPI(bci);
-        Symbol<Name> klassName = pool.memberClassName(fieldIndex);
-        Symbol<Name> fieldName = pool.fieldName(fieldIndex);
+        FieldRefConstant.Indexes ref = pool.fieldAt(analysis.bs.readCPI(bci));
+        Symbol<Name> klassName = ref.getHolderKlassName(pool);
+        Symbol<Name> fieldName = ref.getName(pool);
+
         appendClassName(sb, klassName);
         sb.append(".").append(fieldName);
 
@@ -275,11 +278,10 @@ final class MessageBuildHelper {
 
     private static void appendMethodCall(Analysis analysis, StringBuilder sb, int bci) {
         ConstantPool pool = analysis.m.getConstantPool();
-
-        int methodIndex = analysis.bs.readCPI(bci);
-        Symbol<Name> klassName = pool.memberClassName(methodIndex);
-        Symbol<Name> methodName = pool.methodName(methodIndex);
-        Symbol<Signature> signature = pool.methodSignature(methodIndex);
+        MethodRefConstant.Indexes ref = pool.methodAt(analysis.bs.readCPI(bci));
+        Symbol<Name> klassName = ref.getHolderKlassName(pool);
+        Symbol<Name> methodName = ref.getName(pool);
+        Symbol<Signature> signature = ref.getSignature(pool);
 
         appendClassName(sb, klassName);
         sb.append(".").append(methodName).append("(");

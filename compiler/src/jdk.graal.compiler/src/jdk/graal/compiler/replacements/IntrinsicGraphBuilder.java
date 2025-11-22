@@ -68,7 +68,6 @@ import jdk.graal.compiler.nodes.spi.CoreProviders;
 import jdk.graal.compiler.nodes.spi.CoreProvidersDelegate;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.vm.ci.code.BailoutException;
-import jdk.vm.ci.code.BytecodePosition;
 import jdk.vm.ci.meta.DeoptimizationAction;
 import jdk.vm.ci.meta.DeoptimizationReason;
 import jdk.vm.ci.meta.JavaKind;
@@ -324,11 +323,6 @@ public class IntrinsicGraphBuilder extends CoreProvidersDelegate implements Grap
     @Override
     public int getDepth() {
         return 0;
-    }
-
-    @Override
-    public BytecodePosition getInliningChain() {
-        return null;
     }
 
     @Override

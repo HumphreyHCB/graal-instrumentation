@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2025, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2025, 2025, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -44,7 +44,7 @@ import shutil
 import sys
 from abc import ABCMeta, abstractmethod
 from os import listdir, linesep
-from os.path import join, exists, isfile, basename, relpath, isdir, isabs, dirname, normpath
+from os.path import join, exists, isfile, basename, relpath, isdir, isabs, dirname
 from typing import Tuple
 
 import mx
@@ -126,16 +126,10 @@ def _get_dyn_attribute(dep, attr_name, default):
         raise mx.abort(f"Could not resolve {attr_name} '{attr}' in {suite.extensions.__file__}", context=dep)
     return func(), attr
 
+def _is_enterprise():
+    return mx.suite('graal-enterprise', fatalIfMissing=False) or mx.suite('truffle-enterprise', fatalIfMissing=False) or mx.suite('substratevm-enterprise', fatalIfMissing=False)
 
-def _has_suite(name):
-    return mx.suite(name, fatalIfMissing=False)
-
-# Whether any of truffle-enterprise, graal-enterprise or substratevm-enterprise are imported.
-def uses_enterprise_sources():
-    # Technically testing for truffle-enterprise might be enough currently, but unclear if graal-enterprise will always depend on truffle-enterprise.
-    return _has_suite('truffle-enterprise') or _has_suite('graal-enterprise') or _has_suite('substratevm-enterprise')
-
-def is_nativeimage_ee():
+def _is_nativeimage_ee():
     global _is_nativeimage_ee_cache
     if _is_nativeimage_ee_cache is None:
         if not _external_bootstrap_graalvm:
@@ -144,18 +138,13 @@ def is_nativeimage_ee():
             _is_nativeimage_ee_cache = exists(join(_external_bootstrap_graalvm, 'lib', 'svm', 'builder', 'svm-enterprise.jar'))
     return _is_nativeimage_ee_cache
 
-# Whether the produced standalone uses anything enterprise, either from source or prebuilt (i.e., a boostrap Oracle GraalVM)
-def is_enterprise():
-    return uses_enterprise_sources() or is_nativeimage_ee()
-
 class StandaloneLicenses(mx.Project):
     def __init__(self, suite, name, deps, workingSets, theLicense=None, **kw_args):
         self.community_license_file = _require(kw_args, 'community_license_file', suite, name)
         self.community_3rd_party_license_file = _require(kw_args, 'community_3rd_party_license_file', suite, name)
 
-        self.uses_enterprise_sources = uses_enterprise_sources()
-        self.enterprise = is_enterprise()
-        if self.uses_enterprise_sources:
+        self.enterprise = _is_enterprise()
+        if self.enterprise:
             deps.append('lium:LICENSE_INFORMATION_USER_MANUAL')
         super().__init__(suite, name, subDir=None, srcDirs=[], deps=deps, workingSets=workingSets, d=suite.dir, theLicense=theLicense, **kw_args)
 
@@ -167,17 +156,12 @@ class StandaloneLicenses(mx.Project):
             raise ValueError('single not supported')
 
         if self.enterprise:
-            if not _suite.is_release():
-                yield join(_suite.mxDir, 'DISCLAIMER_FOR_GFTC_SNAPSHOT_ARTIFACTS.txt'), 'DISCLAIMER.txt'
-            if self.uses_enterprise_sources:
-                lium_suite = mx.suite('lium', fatalIfMissing=True, context=self)
-                vm_enterprise_dir = join(dirname(lium_suite.dir), 'vm-enterprise')
-                yield join(vm_enterprise_dir, 'GraalVM_GFTC_License.txt'), 'LICENSE.txt'
-                yield from mx.distribution('lium:LICENSE_INFORMATION_USER_MANUAL').getArchivableResults(use_relpath, single=True)
-            else:
-                # If the only enterprise input is a bootstrap Oracle GraalVM then copy the license from there
-                yield join(_external_bootstrap_graalvm, 'LICENSE.txt'), 'LICENSE.txt'
-                yield join(_external_bootstrap_graalvm, 'license-information-user-manual.zip'), 'license-information-user-manual.zip'
+            truffle_enterprise = mx.suite('truffle-enterprise', fatalIfMissing=True, context=self)
+            vm_enterprise_dir = join(dirname(truffle_enterprise.dir), 'vm-enterprise')
+            yield join(vm_enterprise_dir, 'GraalVM_GFTC_License.txt'), 'LICENSE.txt'
+            yield from mx.distribution('lium:LICENSE_INFORMATION_USER_MANUAL').getArchivableResults(use_relpath, single=True)
+            if not mx.suite('sdk').is_release():
+                yield join(vm_enterprise_dir, 'DISCLAIMER_FOR_SNAPSHOT_ARTIFACTS.txt'), 'DISCLAIMER.txt'
         else:
             yield join(self.suite.dir, self.community_license_file), 'LICENSE.txt'
             yield join(self.suite.dir, self.community_3rd_party_license_file), '3rd_party_licenses.txt'
@@ -198,19 +182,14 @@ class StandaloneLicensesBuildTask(mx.BuildTask):
         else:
             contents = None
         if contents != self.witness_contents():
-            return True, f"{contents} => {self.witness_contents()}"
+            return True, 'CE<=>EE'
         return False, 'Files are already on disk'
 
     def witness_file(self):
         return join(self.subject.get_output_root(), 'witness')
 
     def witness_contents(self):
-        if self.subject.uses_enterprise_sources:
-            return 'ee sources'
-        elif self.subject.enterprise:
-            return _external_bootstrap_graalvm
-        else:
-            return 'ce'
+        return 'ee' if self.subject.enterprise else 'ce'
 
     def build(self):
         witness_file = self.witness_file()
@@ -287,21 +266,20 @@ class NativeImageProject(mx.Project, metaclass=ABCMeta):
                 with open(build_artifacts_file, 'r') as f:
                     build_artifacts = json.load(f)
 
-                def _yield_files(file_type, prefix=None):
+                def _yield_files(file_type):
                     if file_type not in build_artifacts:
                         return
-                    file_type_prefix = prefix or file_type
                     for build_artifact in build_artifacts[file_type]:
                         build_artifact_path = join(build_directory, build_artifact)
                         if isfile(build_artifact_path):
-                            yield build_artifact_path, join(file_type_prefix, build_artifact)
+                            yield build_artifact_path, join(file_type, build_artifact)
                         elif isdir(build_artifact_path):
                             for root, _, files in os.walk(build_artifact_path):
-                                relroot = join(file_type_prefix, relpath(root, build_directory))
+                                relroot = join(file_type, relpath(root, build_directory))
                                 for name in files:
                                     yield join(root, name), join(relroot, name)
                         else:
-                            mx.logv(f"Ignoring non-existent build artifact {build_artifact_path}', referred by '{build_artifacts_file}' produced while building '{self.output_file_name()}'")
+                            mx.abort("Could not find or understand build artifact '{}', referred by '{}' and produced while building '{}'".format(build_artifact_path, build_artifacts_file, self.native_image_name))
 
                 yield from _yield_files('shared_libraries')
                 yield from _yield_files('executables')
@@ -309,11 +287,6 @@ class NativeImageProject(mx.Project, metaclass=ABCMeta):
                 yield from _yield_files('c_headers')
                 yield from _yield_files('language_resources')
                 yield from _yield_files('debug_info')
-
-                yield from _yield_files('shared_libraries', 'standard-deliverables')
-                yield from _yield_files('executables', 'standard-deliverables')
-                if mx_sdk_vm_impl._debug_images():
-                    yield from _yield_files('debug_info', 'standard-deliverables')
 
 class NativeImageExecutableProject(NativeImageProject):
     def resolveDeps(self):
@@ -365,7 +338,7 @@ class NativeImageLibraryProject(NativeImageProject):
 
     def get_build_args(self):
         extra_build_args = ['--shared']
-        if is_nativeimage_ee():
+        if _is_nativeimage_ee():
             # PGO is supported
             extra_build_args += mx_sdk_vm_impl.svm_experimental_options(['-H:+ProfilingEnableProfileDumpHooks'])
         return super().get_build_args() + extra_build_args
@@ -376,21 +349,21 @@ class LanguageLibraryProject(NativeImageLibraryProject):
     def get_build_args(self):
         build_args = super().get_build_args()[:]
 
-        # Signals flags
+        # Signals flags, the first 2 are also set in AbstractLanguageLauncher but better to be explicit
         build_args += [
             '-R:+EnableSignalHandling',
             '-R:+InstallSegfaultHandler',
-        ] + mx_sdk_vm_impl.svm_experimental_options(['-H:+InstallExitHandlers'])
+            '--install-exit-handlers',
+        ]
 
         # Monitoring flags
         if get_bootstrap_graalvm_version() >= mx.VersionSpec("24.0"):
             build_args += ['--enable-monitoring=jvmstat,heapdump,jfr,threaddump']
         else:
             build_args += ['--enable-monitoring=jvmstat,heapdump,jfr']
-            build_args += mx_sdk_vm_impl.svm_experimental_options(['-H:+DumpThreadStacksOnSignal'])
-
-        build_args += mx_sdk_vm_impl.svm_experimental_options(['-H:+DumpRuntimeCompilationOnSignal'])
+            build_args += ['-H:+UnlockExperimentalVMOptions', '-H:+DumpThreadStacksOnSignal', '-H:-UnlockExperimentalVMOptions']
         build_args += [
+            '-H:+UnlockExperimentalVMOptions', '-H:+DumpRuntimeCompilationOnSignal', '-H:-UnlockExperimentalVMOptions',
             '-R:-UsePerfData', # See GR-25329, reduces startup instructions significantly
         ]
 
@@ -408,9 +381,6 @@ class NativeImageBuildTask(mx.BuildTask):
             max_parallelism = 12
         super().__init__(project, args, min(max_parallelism, mx.cpu_count()))
 
-    def newestOutput(self):
-        return mx.TimeStampFile.newest([_path for _path, _ in self.subject.getArchivableResults()])
-
     def get_build_args(self):
         experimental_build_args = [
             '-H:+GenerateBuildArtifactsFile',  # generate 'build-artifacts.json'
@@ -424,14 +394,10 @@ class NativeImageBuildTask(mx.BuildTask):
             experimental_build_args.append('-H:+VerifyRuntimeCompilationFrameStates')
         build_args = []
 
-        # GR-65661: we need to disable the check in GraalVM for 21 as it does not allow polyglot version 25.1.0-dev
-        if get_bootstrap_graalvm_version() < mx.VersionSpec("25"):
-            build_args += ['-Dpolyglotimpl.DisableVersionChecks=true']
-
         canonical_name = self.subject.base_file_name()
         profiles = mx_sdk_vm_impl._image_profiles(canonical_name)
         if profiles:
-            if not is_nativeimage_ee():
+            if not _is_nativeimage_ee():
                 raise mx.abort("Image profiles can not be used if PGO is not supported.")
             basenames = [basename(p) for p in profiles]
             if len(set(basenames)) != len(profiles):
@@ -453,8 +419,7 @@ class NativeImageBuildTask(mx.BuildTask):
             experimental_build_args += ['-H:CCompilerOption=' + e for e in self.args.alt_cflags.split()]
         if self.args.alt_ldflags is not None:
             experimental_build_args += ['-H:NativeLinkerOption=' + e for e in self.args.alt_ldflags.split()]
-        classpath_and_modulepath = mx.get_runtime_jvm_args(self.subject.deps, include_system_properties=False)
-        build_args += classpath_and_modulepath + [
+        build_args += mx.get_runtime_jvm_args(self.subject.deps) + [
             '--no-fallback',
             '-march=compatibility',  # Target maximum portability
             '--parallelism=' + str(self.parallelism),
@@ -462,18 +427,18 @@ class NativeImageBuildTask(mx.BuildTask):
             # we want "25.0.0-dev" and not "dev" (the default used in NativeImage#prepareImageBuildArgs)
             '-Dorg.graalvm.version={}'.format(_suite.release_version()),
         ] + mx_sdk_vm_impl.svm_experimental_options(experimental_build_args)
+        build_args += mx_sdk_vm_impl._extra_image_builder_args(canonical_name)
         if os.environ.get('JVMCI_VERSION_CHECK'):
             # Propagate this env var when running native image from mx
             build_args += ['-EJVMCI_VERSION_CHECK']
-        extra_build_args = mx_sdk_vm_impl._extra_image_builder_args(canonical_name)
 
-        return build_args + self.subject.get_build_args() + extra_build_args
+        return build_args + self.subject.get_build_args()
 
     def needsBuild(self, newestInput) -> Tuple[bool, str]:
         ts = TimeStampFile(self.subject.output_file())
         if not ts.exists():
             return True, f"{ts.path} does not exist"
-        if newestInput and ts.isOlderThan(newestInput):
+        if ts.isOlderThan(newestInput):
             return True, f"{ts} is older than {newestInput}"
         previous_build_args = []
         command_file = self._get_command_file()
@@ -565,14 +530,9 @@ class ThinLauncherProject(mx_native.DefaultNativeProject):
         self.relative_extracted_lib_paths = {k: v.replace('/', os.sep) for k, v in kw_args.pop('relative_extracted_lib_paths', {}).items()}
         self.liblang_relpath = _pop_path(kw_args, 'relative_liblang_path', None)
         self.setup_relative_resources = kw_args.pop('setup_relative_resources', None)
-
-        if not kw_args.get('multitarget'):
-            # We use our LLVM toolchain on Linux by default because we want to statically link the C++ standard library,
-            # and the system toolchain rarely has libstdc++.a installed (it would be an extra CI & dev dependency).
-            toolchain = 'sdk:LLVM_NINJA_TOOLCHAIN' if mx.is_linux() else 'mx:DEFAULT_NINJA_TOOLCHAIN'
-        else:
-            toolchain = None
-
+        # We use our LLVM toolchain on Linux because we want to statically link the C++ standard library,
+        # and the system toolchain rarely has libstdc++.a installed (it would be an extra CI & dev dependency).
+        toolchain = 'sdk:LLVM_NINJA_TOOLCHAIN' if mx.is_linux() else 'mx:DEFAULT_NINJA_TOOLCHAIN'
         super().__init__(
             suite,
             name,
@@ -604,19 +564,9 @@ class ThinLauncherProject(mx_native.DefaultNativeProject):
         return False
 
     @property
-    def uses_llvm_toolchain(self):
-        return len(self.toolchains) == 1 and mx.dependency('LLVM_NINJA_TOOLCHAIN', fatalIfMissing=False) == self.toolchains[0].toolchain_dist
-
-    @property
-    def uses_musl_swcfi_toolchain(self):
-        # once GR-67435 is fixed we can revisit if we can statically link just like in the branches guarded by uses_llvm_toolchain
-        return len(self.toolchains) == 1 and mx.dependency('BOOTSTRAP_MUSL_SWCFI_NINJA_TOOLCHAIN', fatalIfMissing=False) == self.toolchains[0].toolchain_dist
-
-    @property
     def cflags(self):
         _dynamic_cflags = [
             ('/std:c++17' if mx.is_windows() else '-std=c++17'),
-            '-O3', # Note: no -g to save 0.2MB on Linux
             '-DCP_SEP=' + os.pathsep,
             '-DDIR_SEP=' + ('\\\\' if mx.is_windows() else '/'),
             '-DGRAALVM_VERSION=' + _suite.release_version(),
@@ -624,7 +574,7 @@ class ThinLauncherProject(mx_native.DefaultNativeProject):
         if not mx.is_windows():
             _dynamic_cflags += ['-pthread']
             _dynamic_cflags += ['-Werror=undef'] # fail on undefined macro used in preprocessor
-        if mx.is_linux() and self.uses_llvm_toolchain:
+        if mx.is_linux():
             _dynamic_cflags += ['-stdlib=libc++'] # to link libc++ statically, see ldlibs
         if mx.is_darwin():
             _dynamic_cflags += ['-ObjC++']
@@ -733,18 +683,12 @@ class ThinLauncherProject(mx_native.DefaultNativeProject):
         _dynamic_ldflags = []
         if not mx.is_windows():
             _dynamic_ldflags += ['-pthread']
-        if self.uses_musl_swcfi_toolchain:
-            # Use $$ to escape the $ from expansion by mx. If we use musl swcfi
-            # and their libc, the libc++, libc++abi and libunwind must be
-            # either in the LD_LIBRARY_PATH (which takes precedence) or in the
-            # lib folder of the standalone.
-            _dynamic_ldflags.append(r"-Wl,-rpath,'$$ORIGIN/../lib'")
         return super().ldflags + _dynamic_ldflags
 
     @property
     def ldlibs(self):
         _dynamic_ldlibs = []
-        if mx.is_linux() and self.uses_llvm_toolchain:
+        if mx.is_linux():
             # Link libc++ statically
             _dynamic_ldlibs += [
                 '-stdlib=libc++',
@@ -771,7 +715,6 @@ class JavaHomeDependency(mx.BaseLibrary):
         self.is_ee_implementor = release_dict.get('IMPLEMENTOR') == 'Oracle Corporation'
         self.version = mx.VersionSpec(release_dict.get('JAVA_VERSION'))
         self.major_version = self.version.parts[1] if self.version.parts[0] == 1 else self.version.parts[0]
-        name = name.replace('<version>', str(self.major_version))
         if self.is_ee_implementor:
             the_license = "Oracle Proprietary"
         else:
@@ -808,10 +751,6 @@ class JavaHomeDependency(mx.BaseLibrary):
 
     def isJDKDependent(self):
         return False
-
-    # Needed when somesuite._output_root_includes_config() == False
-    def get_output_root(self):
-        return join(self.get_output_base(), self.name)
 
 
 class JavaHomeBuildTask(mx.BuildTask):
@@ -886,60 +825,6 @@ def mx_register_dynamic_suite_constituents(register_project, register_distributi
                 'tools:TRUFFLE_COVERAGE'
             ]
         register_distribution(mx_pomdistribution.POMDistribution(_suite, "TOOLS_FOR_STANDALONE", [], tools_dists, None, maven=False))
-
-
-        # register toolchains shipped by BOOTSTRAP_GRAALVM, if any
-        if _external_bootstrap_graalvm:
-            toolchain_dir = join(_external_bootstrap_graalvm, "lib", "toolchains")
-            if exists(toolchain_dir):
-                for e in listdir(toolchain_dir):
-                    if not (e == "musl" or e.startswith("musl-")):
-                        # currently only variants of musl are detected
-                        continue
-
-                    binpath = join(toolchain_dir, e, "bin")
-                    ninja_layout = {
-                        "toolchain.ninja" : {
-                            "source_type": "string",
-                            "value": f'''
-include <ninja-toolchain:GCC_NINJA_TOOLCHAIN>
-CC={binpath}/clang
-CXX={binpath}/clang++
-AR={binpath}/ar
-'''
-                        },
-                    }
-                    ninja_dependencies = ['mx:GCC_NINJA_TOOLCHAIN']
-                    ninja_native_toolchain = {
-                        'kind': 'ninja',
-                        'compiler': 'llvm',
-                        'target': {
-                            'os': mx.get_os(),
-                            'arch': mx.get_arch(),
-                            'libc': 'musl',
-                            'variant': e.split('-', 1)[1] if '-' in e else None
-                        }
-                    }
-                    ninja_name = 'BOOTSTRAP_' + e.upper().replace('-', '_') + '_NINJA_TOOLCHAIN'
-                    register_distribution(mx.LayoutDirDistribution(_suite, ninja_name, ninja_dependencies, ninja_layout, path=None, theLicense=None, platformDependent=True, native_toolchain=ninja_native_toolchain, native=True, maven=False))
-
-                    cmake_layout = {
-                        "toolchain.cmake" : {
-                            "source_type": "string",
-                            "value": f'''
-set(CMAKE_C_COMPILER {binpath}/clang)
-set(CMAKE_CXX_COMPILER {binpath}/clang++)
-set(CMAKE_AR {binpath}/ar)
-'''
-                        },
-                    }
-                    cmake_dependencies = []
-                    cmake_native_toolchain = dict(**ninja_native_toolchain)
-                    cmake_native_toolchain['kind'] = 'cmake'
-                    cmake_name = 'BOOTSTRAP_' + e.upper().replace('-', '_') + '_CMAKE_TOOLCHAIN'
-                    register_distribution(mx.LayoutDirDistribution(_suite, cmake_name, cmake_dependencies, cmake_layout, path=None, theLicense=None, platformDependent=True, native_toolchain=cmake_native_toolchain, native=True, maven=False))
-
-                    mx.logv(f'Registered toolchain for {e} from bootstrap GraalVM {_external_bootstrap_graalvm}')
 
 
 class DynamicPOMDistribution(mx_pomdistribution.POMDistribution):
@@ -1045,49 +930,6 @@ class ExtractedEngineResourcesBuildTask(mx.BuildTask):
         return f"roots: {', '.join(self.subject.root_components)}\nignored: {', '.join(self.subject.ignore_components)}"
 
 
-def _make_windows_link(link_target):
-    link_template_name = join(_suite.mxDir, 'vm', 'exe_link_template.cmd')
-    with open(link_template_name, 'r') as template:
-        _template_subst = mx_subst.SubstitutionEngine(mx_subst.string_substitutions)
-        _template_subst.register_no_arg('target', normpath(link_target))
-        return _template_subst.substitute(template.read())
-
-
-class ToolchainToolDistribution(mx.LayoutDirDistribution):
-    def __init__(self, suite, name=None, deps=None, excludedLibs=None, platformDependent=True, theLicense=None, defaultBuild=True, **kw_args):
-        self.tool_project = _require(kw_args, 'tool_project', suite, name)
-        self.tool_links = _require(kw_args, 'tool_links', suite, name)
-
-        layout = {
-            './': [{
-                "source_type": "dependency",
-                "dependency": self.tool_project,
-            }]
-        }
-
-        super().__init__(suite, name=name, deps=[], layout=layout, path=None, theLicense=theLicense, platformDependent=True, defaultBuild=defaultBuild)
-
-    def resolveDeps(self):
-        self.tool_project = mx.project(self.tool_project)
-        _, main_tool_name = next(self.tool_project.getArchivableResults(single=True))
-
-        def _add_link(name, target):
-            if mx.is_windows():
-                # ignore indirect symlinks on windows and link everything directly to the main tool
-                # otherwise we lose the original program name
-                self.layout[f'./{name}.cmd'] = f'string:{_make_windows_link(main_tool_name)}'
-            else:
-                self.layout[f'./{name}'] = f'link:{target}'
-
-        for tool in self.tool_links:
-            _add_link(tool, main_tool_name)
-            alt_names = self.tool_links[tool]
-            for alt_name in alt_names:
-                _add_link(alt_name, tool)
-
-        super().resolveDeps()
-
-
 if mx.is_windows():
     DeliverableArchiveSuper = mx.LayoutZIPDistribution
 else:
@@ -1095,83 +937,37 @@ else:
 
 
 class DeliverableStandaloneArchive(DeliverableArchiveSuper):
-    def __init__(self, suite, name=None, deps=None, excludedLibs=None, platformDependent=True, theLicense=None, defaultBuild=True, **kw_args):
-        # mx deploy-artifacts takes the version from the suite, we ensure it is the same version as SDK.
-        # This also checks the release field because release_version() is '...-dev' when release: False.
-        assert suite.release_version() == _suite.release_version(), f"version from {suite.name} ({suite.release_version()}) does not match version in sdk ({_suite.release_version()})"
-
-        # required
+    def __init__(self, suite, name=None, deps=None, excludedLibs=None, platformDependent=True, theLicense=None, **kw_args):
         standalone_dir_dist = _require(kw_args, 'standalone_dist', suite, name)
         community_archive_name = _require(kw_args, 'community_archive_name', suite, name)
         enterprise_archive_name = _require(kw_args, 'enterprise_archive_name', suite, name)
 
-        # required but optional for compatibility and when the default *_dist_name are not good enough
-        language_id = kw_args.pop('language_id', None)
-
-        # TODO: remove this when language_id is set in those suites
-        mapping = {
-            'graal-js': 'js',
-            'graal-nodejs': 'nodejs',
-            'truffleruby': 'ruby',
-            'graalpython': 'python',
-        }
-        if not language_id and suite.name in mapping:
-            language_id = mapping[suite.name]
-
-        # optional, derived from *_archive_name by default. Best left as default to avoid extra folder when extracting with some GUIs.
         community_dir_name = kw_args.pop('community_dir_name', None)
         enterprise_dir_name = kw_args.pop('enterprise_dir_name', None)
-
-        # optional, the internal legacy distribution names for uploading, prefer setting language_id where possible
-        community_dist_name = kw_args.pop('community_dist_name', None)
-        enterprise_dist_name = kw_args.pop('enterprise_dist_name', None)
-
-        if language_id:
-            # Example community dist names:
-            # JS_NATIVE_STANDALONE_SVM_JAVA25 (native standalone)
-            # JS_JAVA_STANDALONE_SVM_JAVA25 (jvm standalone)
-            assert '_NATIVE_' in standalone_dir_dist or '_JVM_' in standalone_dir_dist, f"Cannot find out whether {standalone_dir_dist} is a Native or JVM standalone, it should include _NATIVE_ or _JVM_"
-            is_jvm = '_JVM_' in standalone_dir_dist
-            jdk_version = get_bootstrap_graalvm_jdk_version().parts[0]
-            if not community_dist_name:
-                community_dist_name = f"{language_id.upper()}_{'JAVA' if is_jvm else 'NATIVE'}_STANDALONE_SVM_JAVA{jdk_version}"
-            if not enterprise_dist_name:
-                enterprise_dist_name = f"{language_id.upper()}_{'JAVA' if is_jvm else 'NATIVE'}_STANDALONE_SVM_SVMEE_JAVA{jdk_version}"
 
         path_substitutions = mx_subst.SubstitutionEngine(mx_subst.path_substitutions)
         path_substitutions.register_no_arg('version', _suite.release_version)
         path_substitutions.register_no_arg('graalvm_os', mx_sdk_vm_impl.get_graalvm_os())
         string_substitutions = mx_subst.SubstitutionEngine(path_substitutions)
 
-        if is_enterprise():
+        if _is_enterprise():
             dir_name = enterprise_dir_name or f'{enterprise_archive_name}-<version>-<graalvm_os>-<arch>'
-            dist_name = enterprise_dist_name or 'STANDALONE_' + enterprise_archive_name.upper().replace('-', '_')
+            dist_name = 'STANDALONE_' + enterprise_archive_name.upper().replace('-', '_')
         else:
             dir_name = community_dir_name or f'{community_archive_name}-<version>-<graalvm_os>-<arch>'
-            dist_name = community_dist_name or 'STANDALONE_' + community_archive_name.upper().replace('-', '_')
+            dist_name = 'STANDALONE_' + community_archive_name.upper().replace('-', '_')
 
         layout = {
-            f'{dir_name}/': {
-                "source_type": "dependency",
-                "dependency": standalone_dir_dist,
-                "path": "*",
-                "dereference": "never",
-            }
+            f'{dir_name}/': f'dependency:{standalone_dir_dist}/*'
         }
         self.standalone_dir_dist = standalone_dir_dist
-        maven = { 'groupId': 'org.graalvm', 'tag': 'standalone' } if suite.name != 'truffleruby' else {}
-
-        assert theLicense is None, "the 'license' attribute is ignored for DeliverableStandaloneArchive"
-        theLicense = ['GFTC' if is_enterprise() else 'UPL']
-        super().__init__(suite, name=dist_name, deps=[], layout=layout, path=None, theLicense=theLicense, platformDependent=True, path_substitutions=path_substitutions, string_substitutions=string_substitutions, maven=maven, defaultBuild=defaultBuild)
+        maven = { 'groupId': 'org.graalvm', 'tag': 'standalone' }
+        super().__init__(suite, name=dist_name, deps=[], layout=layout, path=None, theLicense=theLicense, platformDependent=True, path_substitutions=path_substitutions, string_substitutions=string_substitutions, maven=maven)
         self.buildDependencies.append(standalone_dir_dist)
-        self.reset_user_group = True
 
     def resolveDeps(self):
         super().resolveDeps()
         resolved = [self.standalone_dir_dist]
         self._resolveDepsHelper(resolved)
         self.standalone_dir_dist = resolved[0]
-
-    def get_artifact_metadata(self):
-        return {'edition': 'ee' if is_enterprise() else 'ce', 'type': 'standalone', 'project': 'graal'}
+        self.theLicense = self.standalone_dir_dist.theLicense

@@ -24,7 +24,6 @@
  */
 package com.oracle.svm.core.genscavenge;
 
-import static com.oracle.svm.core.heap.ReferenceInternals.getReferentFieldAddress;
 import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.SLOW_PATH_PROBABILITY;
 import static jdk.graal.compiler.nodes.extended.BranchProbabilityNode.probability;
 
@@ -37,7 +36,6 @@ import org.graalvm.word.UnsignedWord;
 
 import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.Uninterruptible;
-import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.genscavenge.remset.RememberedSet;
 import com.oracle.svm.core.heap.Heap;
 import com.oracle.svm.core.heap.ObjectHeader;
@@ -45,6 +43,7 @@ import com.oracle.svm.core.heap.ObjectReferenceVisitor;
 import com.oracle.svm.core.heap.ReferenceInternals;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.snippets.KnownIntrinsics;
+import com.oracle.svm.core.thread.VMOperation;
 import com.oracle.svm.core.util.UnsignedUtils;
 
 import jdk.graal.compiler.word.Word;
@@ -60,6 +59,9 @@ final class ReferenceObjectProcessing {
      */
     private static UnsignedWord maxSoftRefAccessIntervalMs = UnsignedUtils.MAX_VALUE;
 
+    /** Treat all soft references as weak, typically to reclaim space when low on memory. */
+    private static boolean softReferencesAreWeak = false;
+
     /**
      * The first timestamp that was set as {@link SoftReference} clock, for examining references
      * that were created earlier than that.
@@ -69,14 +71,13 @@ final class ReferenceObjectProcessing {
     private ReferenceObjectProcessing() { // all static
     }
 
-    /**
-     * Whether to treat all soft references as weak, typically as a last resort to reclaim extra
-     * objects when running out of memory.
+    /*
+     * Enables (or disables) reclaiming all objects that are softly reachable only, typically as a
+     * last resort to avoid running out of memory.
      */
-    @AlwaysInline("GC performance")
-    @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
-    private static boolean areAllSoftReferencesWeak() {
-        return GCImpl.getGCImpl().isOutOfMemoryCollection();
+    public static void setSoftReferencesAreWeak(boolean enabled) {
+        assert VMOperation.isGCInProgress();
+        softReferencesAreWeak = enabled;
     }
 
     @AlwaysInline("GC performance")
@@ -119,13 +120,13 @@ final class ReferenceObjectProcessing {
             // promoted object.
             return;
         }
-        Object refObject = referentAddr.toObjectNonNull();
+        Object refObject = referentAddr.toObject();
         if (willSurviveThisCollection(refObject)) {
             // Either an object that got promoted without being moved or an object in the old gen.
-            RememberedSet.get().dirtyCardIfNecessary(dr, refObject, getReferentFieldAddress(dr));
+            RememberedSet.get().dirtyCardIfNecessary(dr, refObject);
             return;
         }
-        if (!areAllSoftReferencesWeak() && dr instanceof SoftReference) {
+        if (!softReferencesAreWeak && dr instanceof SoftReference) {
             long clock = ReferenceInternals.getSoftReferenceClock();
             long timestamp = ReferenceInternals.getSoftReferenceTimestamp((SoftReference<?>) dr);
             if (timestamp == 0) { // created or last accessed before the clock was initialized
@@ -135,8 +136,7 @@ final class ReferenceObjectProcessing {
             if (elapsed.belowThan(maxSoftRefAccessIntervalMs)) {
                 // Important: we need to pass the reference object as holder so that the remembered
                 // set can be updated accordingly!
-                int referenceSize = ConfigurationValues.getObjectLayout().getReferenceSize();
-                refVisitor.visitObjectReferences(ReferenceInternals.getReferentFieldAddress(dr), true, referenceSize, dr, 1);
+                refVisitor.visitObjectReference(ReferenceInternals.getReferentFieldAddress(dr), true, dr);
                 return; // referent will survive
             }
         }
@@ -212,9 +212,9 @@ final class ReferenceObjectProcessing {
         if (maybeUpdateForwardedReference(dr, refPointer)) {
             return true;
         }
-        Object refObject = refPointer.toObjectNonNull();
+        Object refObject = refPointer.toObject();
         if (willSurviveThisCollection(refObject)) {
-            RememberedSet.get().dirtyCardIfNecessary(dr, refObject, getReferentFieldAddress(dr));
+            RememberedSet.get().dirtyCardIfNecessary(dr, refObject);
             return true;
         }
         /*
@@ -243,7 +243,6 @@ final class ReferenceObjectProcessing {
     @Uninterruptible(reason = "Called from uninterruptible code.", mayBeInlined = true)
     private static boolean willSurviveThisCollection(Object obj) {
         if (SerialGCOptions.useCompactingOldGen() && GCImpl.getGCImpl().isCompleteCollection()) {
-            // Only for discovery, during processing for enqueuing mark status is already cleared
             return ObjectHeaderImpl.isMarked(obj);
         }
         HeapChunk.Header<?> chunk = HeapChunk.getEnclosingHeapChunk(obj);

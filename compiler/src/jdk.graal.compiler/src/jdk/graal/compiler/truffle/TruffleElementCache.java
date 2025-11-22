@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import jdk.graal.compiler.core.common.util.MethodKey;
+
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 /**
@@ -36,18 +37,13 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
  */
 public abstract class TruffleElementCache<K, V> {
 
-    private final Map<Object, Object> elementCache;
-
-    /**
-     * Value representing a null value in the cache.
-     */
-    private static final Object NULL_VALUE = new Object();
+    private final Map<Object, V> elementCache;
 
     @SuppressWarnings("serial")
     protected TruffleElementCache(int maxSize) {
         this.elementCache = Collections.synchronizedMap(new LinkedHashMap<>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Object, Object> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Object, V> eldest) {
                 return size() > maxSize;
             }
         });
@@ -58,35 +54,18 @@ public abstract class TruffleElementCache<K, V> {
      */
     protected abstract Object createKey(K element);
 
-    Object maskNull(Object element) {
-        return element == null ? NULL_VALUE : element;
-    }
-
-    /**
-     * Gets internal representation of a null value as {@code null}.
-     */
-    Object unmaskNull(Object element) {
-        return element == NULL_VALUE ? null : element;
-    }
-
-    @SuppressWarnings("unchecked")
     public final V get(K element) {
         Object key = createKey(element);
 
-        /*
-         * Do not use Map#computeIfAbsent as Collections.SynchronizedMap#computeIfAbsent blocks
-         * readers during the creation of the cached value.
-         */
-        Object value = elementCache.get(key);
-        if (value != null) {
-            return (V) unmaskNull(value);
+        // It intentionally does not use Map#computeIfAbsent.
+        // Collections.SynchronizedMap#computeIfAbsent implementation blocks readers during the
+        // creation of the MethodCache.
+        V cache = elementCache.get(key);
+        if (cache == null) {
+            cache = computeValue(element);
+            elementCache.putIfAbsent(key, cache);
         }
-        value = computeValue(element);
-        Object existing = elementCache.putIfAbsent(key, maskNull(value));
-        if (existing != null) {
-            return (V) unmaskNull(existing);
-        }
-        return (V) value;
+        return cache;
     }
 
     protected abstract V computeValue(K element);

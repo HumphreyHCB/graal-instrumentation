@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
@@ -47,8 +48,6 @@ import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.c.CGlobalDataFactory;
 import com.oracle.svm.core.util.HostedByteBufferPointer;
 import com.oracle.svm.core.util.VMError;
-
-import jdk.graal.compiler.word.Word;
 
 /**
  * Errors returned by {@link CEntryPointActions} and {@link CEntryPointNativeFunctions} and their
@@ -113,7 +112,7 @@ public final class CEntryPointErrors {
     @Description("Some exception is not caught.") //
     public static final int UNCAUGHT_EXCEPTION = 12;
 
-    @Description("Initializing the isolate failed.") //
+    @Description("Initialization the isolate failed.") //
     public static final int ISOLATE_INITIALIZATION_FAILED = 13;
 
     @Description("Opening the located auxiliary image file failed.") //
@@ -175,9 +174,6 @@ public final class CEntryPointErrors {
 
     @Description("The isolate could not be created because only a single isolate is supported.") //
     public static final int SINGLE_ISOLATE_ALREADY_CREATED = 33;
-
-    @Description("An invalid isolate was passed as an argument.") //
-    public static final int INVALID_ISOLATE_ARGUMENT = 34;
 
     public static String getDescription(int code) {
         String result = null;

@@ -42,13 +42,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashMap;
 import java.util.Map;
 
+import jdk.graal.compiler.debug.Versions;
 import org.junit.After;
 import org.junit.Test;
-
-import jdk.graal.compiler.debug.Versions;
-import jdk.graal.compiler.util.EconomicHashMap;
 
 public class VersionsTest {
     private File temporaryDirectory;
@@ -105,7 +104,7 @@ public class VersionsTest {
 
         Versions v = new Versions(dir.getPath());
 
-        Map<Object, Object> prepared = new EconomicHashMap<>();
+        Map<Object, Object> prepared = new HashMap<>();
         prepared.put("test", "best");
 
         Map<Object, Object> map = v.withVersions(prepared);
@@ -134,7 +133,7 @@ public class VersionsTest {
 
         Versions v = new Versions(dir.getPath());
 
-        Map<Object, Object> prepared = new EconomicHashMap<>();
+        Map<Object, Object> prepared = new HashMap<>();
         prepared.put("test", "best");
 
         Map<Object, Object> map = v.withVersions(prepared);

@@ -108,21 +108,15 @@ public final class ExceptionDispatch extends ContextAccessImpl {
         } else {
             assert StaticObject.isNull(cause) || meta.java_lang_Throwable.isAssignableFrom(cause.getKlass());
             assert StaticObject.isNull(message) || meta.java_lang_String.isAssignableFrom(message.getKlass());
-            if (!doFullInit(ex, klass, message, cause)) {
-                doMessageInit(ex, klass, message);
-                meta.java_lang_Throwable_initCause.invokeDirectVirtual(ex, cause);
-            }
+            doFullInit(ex, klass, message, cause);
         }
     }
 
     @CompilerDirectives.TruffleBoundary
-    private static boolean doFullInit(StaticObject ex, ObjectKlass klass, StaticObject message, StaticObject cause) {
+    private static void doFullInit(StaticObject ex, ObjectKlass klass, StaticObject message, StaticObject cause) {
         Method method = klass.lookupDeclaredMethod(Names._init_, Signatures._void_String_Throwable);
-        if (method == null) {
-            return false;
-        }
+        assert method != null : "No (String, Throwable) constructor in " + klass;
         method.invokeDirectSpecial(ex, message, cause);
-        return true;
     }
 
     @CompilerDirectives.TruffleBoundary

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -23,6 +23,9 @@
  * questions.
  */
 package com.oracle.svm.configure.config;
+
+import static com.oracle.svm.configure.ConfigurationParser.JNI_KEY;
+import static com.oracle.svm.configure.ConfigurationParser.REFLECTION_KEY;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,12 +52,9 @@ import jdk.graal.compiler.phases.common.LazyValue;
 public class ConfigurationFileCollection {
 
     private final EnumSet<ConfigurationParserOption> parserOptions;
-    private final EnumSet<ConfigurationParserOption> jniParserOptions;
 
     public ConfigurationFileCollection() {
         this.parserOptions = EnumSet.of(ConfigurationParserOption.STRICT_CONFIGURATION, ConfigurationParserOption.TREAT_ALL_TYPE_REACHABLE_CONDITIONS_AS_TYPE_REACHED);
-        this.jniParserOptions = parserOptions.clone();
-        jniParserOptions.add(ConfigurationParserOption.JNI_PARSER);
     }
 
     public static final Function<IOException, Exception> FAIL_ON_EXCEPTION = e -> e;
@@ -158,10 +158,12 @@ public class ConfigurationFileCollection {
         return predefinedClassesConfigPaths;
     }
 
+    public TypeConfiguration loadJniConfig(Function<IOException, Exception> exceptionHandler) throws Exception {
+        return loadTypeConfig(JNI_KEY, jniConfigPaths, exceptionHandler);
+    }
+
     public TypeConfiguration loadReflectConfig(Function<IOException, Exception> exceptionHandler) throws Exception {
-        TypeConfiguration reflectConfig = loadTypeConfig(ConfigurationFile.REFLECTION, reflectConfigPaths, exceptionHandler);
-        TypeConfiguration jniConfig = loadTypeConfig(ConfigurationFile.JNI, jniConfigPaths, exceptionHandler);
-        return reflectConfig.copyAndMerge(jniConfig);
+        return loadTypeConfig(REFLECTION_KEY, reflectConfigPaths, exceptionHandler);
     }
 
     public ProxyConfiguration loadProxyConfig(Function<IOException, Exception> exceptionHandler) throws Exception {
@@ -175,12 +177,6 @@ public class ConfigurationFileCollection {
         PredefinedClassesConfiguration predefinedClassesConfiguration = new PredefinedClassesConfiguration(classDestinationDirs, shouldExcludeClassesWithHash);
         loadConfig(predefinedClassesConfigPaths, predefinedClassesConfiguration.createParser(false, parserOptions), exceptionHandler);
         return predefinedClassesConfiguration;
-    }
-
-    public ForeignConfiguration loadForeignConfig(Function<IOException, Exception> exceptionHandler) throws Exception {
-        ForeignConfiguration foreignConfiguration = new ForeignConfiguration();
-        loadConfig(reachabilityMetadataPaths, foreignConfiguration.createParser(true, parserOptions), exceptionHandler);
-        return foreignConfiguration;
     }
 
     public ResourceConfiguration loadResourceConfig(Function<IOException, Exception> exceptionHandler) throws Exception {
@@ -199,16 +195,15 @@ public class ConfigurationFileCollection {
 
     public ConfigurationSet loadConfigurationSet(Function<IOException, Exception> exceptionHandler, List<LazyValue<Path>> predefinedConfigClassDestinationDirs,
                     Predicate<String> predefinedConfigClassWithHashExclusionPredicate) throws Exception {
-        return new ConfigurationSet(loadReflectConfig(exceptionHandler), loadResourceConfig(exceptionHandler), loadProxyConfig(exceptionHandler),
+        return new ConfigurationSet(loadReflectConfig(exceptionHandler), loadJniConfig(exceptionHandler), loadResourceConfig(exceptionHandler), loadProxyConfig(exceptionHandler),
                         loadSerializationConfig(exceptionHandler),
-                        loadPredefinedClassesConfig(predefinedConfigClassDestinationDirs, predefinedConfigClassWithHashExclusionPredicate, exceptionHandler), loadForeignConfig(exceptionHandler));
+                        loadPredefinedClassesConfig(predefinedConfigClassDestinationDirs, predefinedConfigClassWithHashExclusionPredicate, exceptionHandler));
     }
 
-    private TypeConfiguration loadTypeConfig(ConfigurationFile configurationKind, Collection<URI> uris, Function<IOException, Exception> exceptionHandler) throws Exception {
-        TypeConfiguration configuration = new TypeConfiguration();
-        var specificParserOptions = configurationKind == ConfigurationFile.JNI ? jniParserOptions : parserOptions;
-        loadConfig(reachabilityMetadataPaths, configuration.createParser(true, specificParserOptions), exceptionHandler);
-        loadConfig(uris, configuration.createParser(false, specificParserOptions), exceptionHandler);
+    private TypeConfiguration loadTypeConfig(String combinedFileKey, Collection<URI> uris, Function<IOException, Exception> exceptionHandler) throws Exception {
+        TypeConfiguration configuration = new TypeConfiguration(combinedFileKey);
+        loadConfig(reachabilityMetadataPaths, configuration.createParser(true, parserOptions), exceptionHandler);
+        loadConfig(uris, configuration.createParser(false, parserOptions), exceptionHandler);
         return configuration;
     }
 

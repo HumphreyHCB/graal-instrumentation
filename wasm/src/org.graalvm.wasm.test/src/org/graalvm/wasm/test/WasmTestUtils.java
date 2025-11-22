@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -42,11 +42,6 @@
 package org.graalvm.wasm.test;
 
 import java.io.ByteArrayOutputStream;
-import java.util.function.Consumer;
-
-import org.graalvm.polyglot.Context;
-import org.graalvm.wasm.WasmContext;
-import org.graalvm.wasm.WasmLanguage;
 
 public final class WasmTestUtils {
     private WasmTestUtils() {
@@ -63,12 +58,5 @@ public final class WasmTestUtils {
 
         }
         return bytes.toByteArray();
-    }
-
-    public static void runInWasmContext(Context context, Consumer<WasmContext> testCase) {
-        context.initialize(WasmLanguage.ID);
-        context.enter();
-        testCase.accept(WasmContext.get(null));
-        context.leave();
     }
 }

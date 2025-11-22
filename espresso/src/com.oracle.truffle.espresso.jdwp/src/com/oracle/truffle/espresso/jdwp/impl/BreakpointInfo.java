@@ -43,6 +43,8 @@ public interface BreakpointInfo {
 
     boolean isUnCaught();
 
+    Object getThread();
+
     long getClassId();
 
     long getMethodId();

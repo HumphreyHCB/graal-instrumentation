@@ -103,7 +103,6 @@ class SubstrateTruffleOptions {
          */
         return SubstrateTruffleOptions.TruffleMultiThreaded.getValue();
     }
-
 }
 
 public final class SubstrateTruffleRuntime extends OptimizedTruffleRuntime {
@@ -129,6 +128,8 @@ public final class SubstrateTruffleRuntime extends OptimizedTruffleRuntime {
     @Platforms(Platform.HOSTED_ONLY.class)
     public SubstrateTruffleRuntime() {
         super(new SubstrateTruffleCompilationSupport(), List.of());
+        /* Ensure the factory class gets initialized. */
+        super.getLoopNodeFactory();
     }
 
     @Override
@@ -167,7 +168,7 @@ public final class SubstrateTruffleRuntime extends OptimizedTruffleRuntime {
             Deoptimizer.Options.TraceDeoptimization.update(true);
         }
         installDefaultListeners();
-        RuntimeSupport.getRuntimeSupport().addTearDownHook(_ -> teardownCompilerIsolate());
+        RuntimeSupport.getRuntimeSupport().addTearDownHook(isFirstIsolate -> teardown());
     }
 
     @Override
@@ -183,35 +184,32 @@ public final class SubstrateTruffleRuntime extends OptimizedTruffleRuntime {
 
     @Override
     @Platforms(Platform.HOSTED_ONLY.class)
-    @SuppressWarnings("deprecation")
     public PartialEvaluationMethodInfo getPartialEvaluationMethodInfo(ResolvedJavaMethod method) {
-        throw new UnsupportedOperationException();
+        return super.getPartialEvaluationMethodInfo(method);
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     @Platforms(Platform.HOSTED_ONLY.class)
     public HostMethodInfo getHostMethodInfo(ResolvedJavaMethod method) {
-        throw new UnsupportedOperationException();
+        return super.getHostMethodInfo(method);
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     @Platforms(Platform.HOSTED_ONLY.class)
     public ConstantFieldInfo getConstantFieldInfo(ResolvedJavaField field) {
-        throw new UnsupportedOperationException();
+        return super.getConstantFieldInfo(field);
     }
 
-    private void teardownCompilerIsolate() {
+    private void teardown() {
+        long timeout = SubstrateUtil.assertionsEnabled() ? DEBUG_TEAR_DOWN_TIMEOUT : PRODUCTION_TEAR_DOWN_TIMEOUT;
+        BackgroundCompileQueue queue = getCompileQueue();
+        if (queue != null) {
+            queue.shutdownAndAwaitTermination(timeout);
+        }
+
         TruffleCompiler tcp = truffleCompiler;
         if (tcp != null) {
-            ((SubstrateTruffleCompiler) tcp).teardown(() -> {
-                long timeout = SubstrateUtil.assertionsEnabled() ? DEBUG_TEAR_DOWN_TIMEOUT : PRODUCTION_TEAR_DOWN_TIMEOUT;
-                BackgroundCompileQueue queue = getCompileQueue();
-                if (queue != null) {
-                    queue.shutdownAndAwaitTermination(timeout);
-                }
-            });
+            ((SubstrateTruffleCompiler) tcp).teardown();
         }
     }
 

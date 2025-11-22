@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -56,11 +56,7 @@ public final class BitSets {
     }
 
     public static long[] createBitSetArray(int nbits) {
-        return new long[requiredArraySize(nbits)];
-    }
-
-    public static int requiredArraySize(int nbits) {
-        return wordIndex(nbits - 1) + 1;
+        return new long[wordIndex(nbits - 1) + 1];
     }
 
     public static int wordIndex(int i) {
@@ -130,40 +126,10 @@ public final class BitSets {
         bs[wordIndexHi] |= rangeHi;
     }
 
-    public static long getRange(int lo, int hi) {
-        assert lo <= 63;
-        assert hi <= 63;
-        long rangeLo = (~0L) << lo;
-        long rangeHi = (~0L) >>> (63 - hi);
-        return rangeLo & rangeHi;
-    }
-
-    public static long getRangeChunk(int chunkIndex, int lo, int hi) {
-        int wordIndexLo = wordIndex(lo);
-        int wordIndexHi = wordIndex(hi);
-        long rangeLo = (~0L) << lo;
-        long rangeHi = (~0L) >>> (63 - (hi & 0x3f));
-        if (chunkIndex == wordIndexLo) {
-            if (wordIndexLo == wordIndexHi) {
-                return rangeLo & rangeHi;
-            } else {
-                return rangeLo;
-            }
-        }
-        if (wordIndexLo < chunkIndex && chunkIndex < wordIndexHi) {
-            return ~0L;
-        }
-        if (chunkIndex == wordIndexHi) {
-            return rangeHi;
-        }
-        return 0;
-    }
-
     /**
      * Clear all bits from lo (inclusive) to hi (inclusive).
      */
     public static void clearRange(long[] bs, int lo, int hi) {
-        assert lo <= hi;
         int wordIndexLo = wordIndex(lo);
         int wordIndexHi = wordIndex(hi);
         long rangeLo = (~0L) << lo;
@@ -294,12 +260,12 @@ public final class BitSets {
             }
         }
         for (int i = bs1.length; i < bs2.length; i++) {
-            if (bs2[i] != 0) {
+            if (bs1[i] != 0) {
                 return false;
             }
         }
         for (int i = bs2.length; i < bs1.length; i++) {
-            if (bs1[i] != 0) {
+            if (bs2[i] != 0) {
                 return false;
             }
         }
@@ -421,16 +387,5 @@ public final class BitSets {
         if (last >= 0) {
             sb.append(String.format("0x%02x ", last));
         }
-    }
-
-    @TruffleBoundary
-    public static int[] valuesToArray(long[] bs) {
-        int[] values = new int[size(bs)];
-        PrimitiveIterator.OfInt it = iterator(bs);
-        for (int i = 0; i < values.length; i++) {
-            assert it.hasNext();
-            values[i] = it.nextInt();
-        }
-        return values;
     }
 }

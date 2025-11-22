@@ -183,28 +183,12 @@ final class Encodings {
         return (c >> 11) == 0x1b;
     }
 
-    static boolean isUTF16SurrogateUTF32FE(int c) {
-        return (c & 0x00f80000) == 0x00d80000;
-    }
-
     static boolean isUTF16HighSurrogate(int c) {
         return (c >> 10) == 0x36;
     }
 
     static boolean isUTF16LowSurrogate(int c) {
         return (c >> 10) == 0x37;
-    }
-
-    static boolean isUTF16FESurrogate(int c) {
-        return (c & 0x00f8) == 0x00d8;
-    }
-
-    static boolean isUTF16FEHighSurrogate(int c) {
-        return (c & 0x00fc) == 0x00d8;
-    }
-
-    static boolean isUTF16FELowSurrogate(int c) {
-        return (c & 0x00fc) == 0x00dc;
     }
 
     static boolean isUTF8ContinuationByte(int b) {
@@ -288,11 +272,12 @@ final class Encodings {
         // Checkstyle: resume FallThrough
     }
 
-    static int utf8CodePointToByteIndex(Node location, byte[] arrayA, long offsetA, int lengthA, int codePointIndex) {
+    static int utf8CodePointToByteIndex(Node location, AbstractTruffleString a, byte[] arrayA, long offsetA, int codePointIndex) {
         int iCP = 0;
         int iBytes = 0;
+        int lengthA = a.length();
         while (CompilerDirectives.injectBranchProbability(CompilerDirectives.LIKELY_PROBABILITY, iBytes < lengthA)) {
-            if ((readS0(arrayA, offsetA, lengthA, iBytes) & 0xc0) != 0x80) {
+            if ((readS0(a, arrayA, offsetA, iBytes) & 0xc0) != 0x80) {
                 if (CompilerDirectives.injectBranchProbability(0.01, !(iCP < codePointIndex))) {
                     break;
                 }
@@ -305,6 +290,10 @@ final class Encodings {
             throw InternalErrors.indexOutOfBounds(lengthA, iBytes);
         }
         return iBytes;
+    }
+
+    static int utf8DecodeValid(AbstractTruffleString a, byte[] arrayA, long offsetA, int i) {
+        return utf8DecodeValid(arrayA, offsetA, a.length(), i);
     }
 
     @SuppressWarnings("fallthrough")
@@ -332,6 +321,10 @@ final class Encodings {
         }
         // Checkstyle: resume FallThrough
         return codepoint;
+    }
+
+    static int utf8DecodeBroken(AbstractTruffleString a, byte[] arrayA, long offsetA, int i, ErrorHandling errorHandling) {
+        return utf8DecodeBroken(arrayA, offsetA, a.length(), i, errorHandling);
     }
 
     @InliningCutoff
@@ -372,11 +365,15 @@ final class Encodings {
         return codepoint;
     }
 
+    @InliningCutoff
+    static int utf8GetCodePointLength(AbstractTruffleString a, byte[] arrayA, long offsetA, int i, DecodingErrorHandler errorHandler) {
+        return utf8GetCodePointLength(arrayA, offsetA, a.length(), i, errorHandler);
+    }
+
     /**
      * Try to decode a codepoint at byte index {@code i}, and return the number of bytes consumed if
      * the codepoint is valid, otherwise return {@code 1}.
      */
-    @InliningCutoff
     static int utf8GetCodePointLength(byte[] arrayA, long offset, int length, int i, DecodingErrorHandler errorHandler) {
         assert TStringGuards.isBuiltin(errorHandler);
         int b = readS0(arrayA, offset, length, i);
@@ -440,6 +437,10 @@ final class Encodings {
     }
 
     @InliningCutoff
+    static int utf16BrokenGetCodePointByteLength(AbstractTruffleString a, byte[] arrayA, long offsetA, int i, ErrorHandling errorHandling) {
+        return utf16BrokenGetCodePointByteLength(arrayA, offsetA, a.length(), i, errorHandling);
+    }
+
     static int utf16BrokenGetCodePointByteLength(byte[] arrayA, long offsetA, int length, int i, ErrorHandling errorHandling) {
         char c = readS1(arrayA, offsetA, length, i);
         if (errorHandling == ErrorHandling.BEST_EFFORT) {
@@ -462,17 +463,17 @@ final class Encodings {
 
     @InliningCutoff
     static int utf16FEBrokenGetCodePointByteLength(byte[] arrayA, long offset, int length, int i, ErrorHandling errorHandling) {
-        char c = readS1(arrayA, offset, length, i);
+        char c = Character.reverseBytes(readS1(arrayA, offset, length, i));
         if (errorHandling == ErrorHandling.BEST_EFFORT) {
-            return isUTF16FEHighSurrogate(c) && i + 1 < length && isUTF16FELowSurrogate(readS1(arrayA, offset, length, i + 1)) ? 4 : 2;
+            return isUTF16HighSurrogate(c) && i + 1 < length && isUTF16LowSurrogate(Character.reverseBytes(readS1(arrayA, offset, length, i + 1))) ? 4 : 2;
         }
         assert errorHandling == ErrorHandling.RETURN_NEGATIVE;
-        if (isUTF16FESurrogate(c)) {
-            if (isUTF16FEHighSurrogate(c)) {
+        if (isUTF16Surrogate(c)) {
+            if (isUTF16HighSurrogate(c)) {
                 if (i + 1 == length) {
                     return -3;
                 }
-                if (isUTF16FELowSurrogate(readS1(arrayA, offset, length, i + 1))) {
+                if (isUTF16LowSurrogate(Character.reverseBytes(readS1(arrayA, offset, length, i + 1)))) {
                     return 4;
                 }
             }
@@ -505,12 +506,6 @@ final class Encodings {
         writeToByteArrayS1(bytes, index + 1, c2);
     }
 
-    static byte[] utf16FEEncode(int codepoint) {
-        byte[] bytes = new byte[codepoint < 0x10000 ? 2 : 4];
-        utf16FEEncode(codepoint, bytes, 0);
-        return bytes;
-    }
-
     static int utf16FEEncode(int codepoint, byte[] bytes, int index) {
         if (codepoint < 0x10000) {
             writeToByteArrayS1(bytes, index, Character.reverseBytes((char) codepoint));
@@ -529,12 +524,52 @@ final class Encodings {
         writeToByteArrayS1(bytes, index + 1, c2);
     }
 
-    @InliningCutoff
-    static int utf16BrokenCodePointToCharIndex(Node location, byte[] arrayA, long offsetA, int lengthA, int codePointIndex) {
+    static int utf16ValidCodePointToCharIndex(Node location, AbstractTruffleString a, byte[] arrayA, long offsetA, int codePointIndex) {
         int iCP = 0;
         int iChars = 0;
+        int lengthA = a.length();
+        while (CompilerDirectives.injectBranchProbability(CompilerDirectives.LIKELY_PROBABILITY, iChars < lengthA)) {
+            if ((readS1(a, arrayA, offsetA, iChars) & 0xfc00) != 0xdc00) {
+                if (CompilerDirectives.injectBranchProbability(0.01, !(iCP < codePointIndex))) {
+                    break;
+                }
+                iCP++;
+            }
+            iChars++;
+            TStringConstants.truffleSafePointPoll(location, iChars);
+        }
+        if (iChars >= lengthA) {
+            throw InternalErrors.indexOutOfBounds(lengthA, iChars);
+        }
+        return iChars;
+    }
+
+    static int utf16FEValidCodePointToCharIndex(Node location, byte[] arrayA, long offsetA, int lengthA, int codePointIndex) {
+        int iCP = 0;
+        int iChars = 0;
+        while (CompilerDirectives.injectBranchProbability(CompilerDirectives.LIKELY_PROBABILITY, iChars < lengthA)) {
+            if ((Character.reverseBytes(readS1(arrayA, offsetA, lengthA, iChars)) & 0xfc00) != 0xdc00) {
+                if (CompilerDirectives.injectBranchProbability(0.01, !(iCP < codePointIndex))) {
+                    break;
+                }
+                iCP++;
+            }
+            iChars++;
+            TStringConstants.truffleSafePointPoll(location, iChars);
+        }
+        if (iChars >= lengthA) {
+            throw InternalErrors.indexOutOfBounds(lengthA, iChars);
+        }
+        return iChars;
+    }
+
+    @InliningCutoff
+    static int utf16BrokenCodePointToCharIndex(Node location, AbstractTruffleString a, byte[] arrayA, long offsetA, int codePointIndex) {
+        int iCP = 0;
+        int iChars = 0;
+        int lengthA = a.length();
         while (iCP < codePointIndex) {
-            if (isUTF16HighSurrogate(readS1(arrayA, offsetA, lengthA, iChars)) && (iChars + 1) < lengthA && isUTF16LowSurrogate(readS1(arrayA, offsetA, lengthA, iChars + 1))) {
+            if (isUTF16HighSurrogate(readS1(a, arrayA, offsetA, iChars)) && (iChars + 1) < lengthA && isUTF16LowSurrogate(readS1(a, arrayA, offsetA, iChars + 1))) {
                 iChars++;
             }
             iChars++;
@@ -552,8 +587,8 @@ final class Encodings {
         int iCP = 0;
         int iChars = 0;
         while (iCP < codePointIndex) {
-            if (isUTF16FEHighSurrogate(readS1(arrayA, offsetA, lengthA, iChars)) && (iChars + 1) < lengthA &&
-                            isUTF16FELowSurrogate(readS1(arrayA, offsetA, lengthA, iChars + 1))) {
+            if (isUTF16HighSurrogate(Character.reverseBytes(readS1(arrayA, offsetA, lengthA, iChars))) && (iChars + 1) < lengthA &&
+                            isUTF16LowSurrogate(Character.reverseBytes(readS1(arrayA, offsetA, lengthA, iChars + 1)))) {
                 iChars++;
             }
             iChars++;
@@ -564,6 +599,10 @@ final class Encodings {
             throw InternalErrors.indexOutOfBounds(lengthA, iChars);
         }
         return iChars;
+    }
+
+    static int utf16DecodeValid(AbstractTruffleString a, byte[] arrayA, long offsetA, int i) {
+        return utf16DecodeValid(arrayA, offsetA, a.length(), i);
     }
 
     static int utf16DecodeValid(byte[] arrayA, long offsetA, int lengthA, int i) {
@@ -584,6 +623,10 @@ final class Encodings {
             return Character.toCodePoint(c, Character.reverseBytes(readS1(arrayA, offsetA, lengthA, i + 1)));
         }
         return c;
+    }
+
+    static int utf16DecodeBroken(AbstractTruffleString a, byte[] arrayA, long offsetA, int i, ErrorHandling errorHandling) {
+        return utf16DecodeBroken(arrayA, offsetA, a.length(), i, errorHandling);
     }
 
     @InliningCutoff
@@ -640,21 +683,6 @@ final class Encodings {
 
     static boolean isValidUnicodeCodepoint(int codepoint) {
         return !isUTF16Surrogate(codepoint) && Integer.toUnsignedLong(codepoint) <= Character.MAX_CODE_POINT;
-    }
-
-    static int reverseBytes(int value, int stride) {
-        switch (stride) {
-            case 0 -> {
-                return value;
-            }
-            case 1 -> {
-                return Character.reverseBytes((char) value);
-            }
-            default -> {
-                assert stride == 2;
-                return Integer.reverseBytes(value);
-            }
-        }
     }
 
     static int maxCodePoint(TruffleString.Encoding encoding) {

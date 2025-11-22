@@ -24,9 +24,9 @@
  */
 package jdk.graal.compiler.hotspot;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Objects;
-import java.util.function.Function;
 
 import jdk.vm.ci.meta.Constant;
 import jdk.vm.ci.meta.ConstantPool;
@@ -38,7 +38,6 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.Signature;
 import jdk.vm.ci.meta.SpeculationLog;
-import jdk.vm.ci.meta.annotation.AnnotationsInfo;
 
 /**
  * A minimal implementation of {@link ResolvedJavaMethod} for use by libgraal.
@@ -117,11 +116,6 @@ public final class SnippetResolvedJavaMethod implements ResolvedJavaMethod {
     }
 
     @Override
-    public boolean isDeclared() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean isClassInitializer() {
         throw new UnsupportedOperationException();
     }
@@ -158,6 +152,11 @@ public final class SnippetResolvedJavaMethod implements ResolvedJavaMethod {
 
     @Override
     public ConstantPool getConstantPool() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Annotation[][] getParameterAnnotations() {
         throw new UnsupportedOperationException();
     }
 
@@ -207,22 +206,17 @@ public final class SnippetResolvedJavaMethod implements ResolvedJavaMethod {
     }
 
     @Override
-    public <T> T getDeclaredAnnotationInfo(Function<AnnotationsInfo, T> parser) {
+    public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AnnotationsInfo getTypeAnnotationInfo() {
+    public Annotation[] getAnnotations() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AnnotationsInfo getAnnotationDefaultInfo() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public AnnotationsInfo getParameterAnnotationInfo() {
+    public Annotation[] getDeclaredAnnotations() {
         throw new UnsupportedOperationException();
     }
 

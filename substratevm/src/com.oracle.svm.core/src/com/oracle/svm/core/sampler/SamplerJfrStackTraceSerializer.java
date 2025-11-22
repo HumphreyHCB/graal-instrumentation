@@ -25,8 +25,7 @@
 
 package com.oracle.svm.core.sampler;
 
-import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
-
+import jdk.graal.compiler.word.Word;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.function.CodePointer;
 import org.graalvm.nativeimage.c.type.CIntPointer;
@@ -50,23 +49,18 @@ import com.oracle.svm.core.jfr.SubstrateJVM;
 import com.oracle.svm.core.jfr.events.ExecutionSampleEvent;
 import com.oracle.svm.core.util.VMError;
 
-import jdk.graal.compiler.word.Word;
-
 /**
  * A concrete implementation of {@link SamplerStackTraceSerializer} designed for JFR stack trace
  * serialization.
- *
- * All static mutable state in this class is preallocated and reused by multiple threads. This is
- * safe because only one thread at a time may serialize stack traces.
  */
 public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSerializer {
+    /** This value is used by multiple threads but only by a single thread at a time. */
     private static final CodeInfoDecoder.FrameInfoCursor FRAME_INFO_CURSOR = new CodeInfoDecoder.FrameInfoCursor();
-    private static final StackTraceVisitorData VISITOR_DATA = new StackTraceVisitorData();
 
     @Override
     @Uninterruptible(reason = "Prevent JFR recording and epoch change.")
     public Pointer serializeStackTrace(Pointer rawStackTrace, Pointer bufferEnd, int sampleSize, int sampleHash,
-                    boolean isTruncated, long sampleTick, long threadId, long threadState, int skipCount) {
+                    boolean isTruncated, long sampleTick, long threadId, long threadState) {
         Pointer current = rawStackTrace;
         CIntPointer statusPtr = StackValue.get(CIntPointer.class);
         JfrStackTraceRepository.JfrStackTraceTableEntry entry = SubstrateJVM.getStackTraceRepo().getOrPutStackTrace(current, Word.unsigned(sampleSize), sampleHash, statusPtr);
@@ -76,7 +70,7 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
         if (status == JfrStackTraceRepository.JfrStackTraceTableEntryStatus.INSERTED || status == JfrStackTraceRepository.JfrStackTraceTableEntryStatus.EXISTING_RAW) {
             /* Walk the IPs and serialize the stacktrace. */
             assert current.add(sampleSize).belowThan(bufferEnd);
-            boolean serialized = serializeStackTrace(current, sampleSize, isTruncated, stackTraceId, skipCount);
+            boolean serialized = serializeStackTrace(current, sampleSize, isTruncated, stackTraceId);
             if (serialized) {
                 SubstrateJVM.getStackTraceRepo().commitSerializedStackTrace(entry);
             }
@@ -106,7 +100,7 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
     }
 
     @Uninterruptible(reason = "Prevent JFR recording and epoch change.")
-    private static boolean serializeStackTrace(Pointer rawStackTrace, int sampleSize, boolean isTruncated, long stackTraceId, int skipCount) {
+    private static boolean serializeStackTrace(Pointer rawStackTrace, int sampleSize, boolean isTruncated, long stackTraceId) {
         assert sampleSize % Long.BYTES == 0;
 
         JfrBuffer targetBuffer = SubstrateJVM.getStackTraceRepo().getCurrentBuffer();
@@ -117,20 +111,19 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
         /*
          * One IP may correspond to multiple Java-level stack frames. We need to precompute the
          * number of stack trace elements because the count can't be patched later on
-         * (JfrNativeEventWriter.putInt() would not necessarily reserve enough bytes). We also
-         * precompute if the stack trace was truncated.
+         * (JfrNativeEventWriter.putInt() would not necessarily reserve enough bytes).
          */
-        visitRawStackTrace(rawStackTrace, sampleSize, Word.nullPointer(), skipCount);
-        if (VISITOR_DATA.getUsedFrames() == 0) {
+        int numStackTraceElements = visitRawStackTrace(rawStackTrace, sampleSize, Word.nullPointer());
+        if (numStackTraceElements == 0) {
             return false;
         }
 
         JfrNativeEventWriterData data = StackValue.get(JfrNativeEventWriterData.class);
         JfrNativeEventWriterDataAccess.initialize(data, targetBuffer);
         JfrNativeEventWriter.putLong(data, stackTraceId);
-        JfrNativeEventWriter.putBoolean(data, isTruncated || VISITOR_DATA.isTruncated());
-        JfrNativeEventWriter.putInt(data, VISITOR_DATA.getUsedFrames());
-        visitRawStackTrace(rawStackTrace, sampleSize, data, skipCount);
+        JfrNativeEventWriter.putBoolean(data, isTruncated);
+        JfrNativeEventWriter.putInt(data, numStackTraceElements);
+        visitRawStackTrace(rawStackTrace, sampleSize, data);
         boolean success = JfrNativeEventWriter.commit(data);
 
         /* Buffer can get replaced with a larger one. */
@@ -139,20 +132,20 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
     }
 
     @Uninterruptible(reason = "Prevent JFR recording and epoch change.")
-    private static void visitRawStackTrace(Pointer rawStackTrace, int sampleSize, JfrNativeEventWriterData data, int skipCount) {
-        VISITOR_DATA.reset(skipCount);
-
-        Pointer ipPtr = rawStackTrace;
+    private static int visitRawStackTrace(Pointer rawStackTrace, int sampleSize, JfrNativeEventWriterData data) {
+        int numStackTraceElements = 0;
         Pointer rawStackTraceEnd = rawStackTrace.add(sampleSize);
+        Pointer ipPtr = rawStackTrace;
         while (ipPtr.belowThan(rawStackTraceEnd)) {
             long ip = ipPtr.readLong(0);
-            visitFrame(data, ip);
+            numStackTraceElements += visitFrame(data, ip);
             ipPtr = ipPtr.add(Long.BYTES);
         }
+        return numStackTraceElements;
     }
 
     @Uninterruptible(reason = "Prevent JFR recording, epoch change, and that the GC frees the CodeInfo.")
-    private static void visitFrame(JfrNativeEventWriterData data, long address) {
+    private static int visitFrame(JfrNativeEventWriterData data, long address) {
         CodePointer ip = Word.pointer(address);
         UntetheredCodeInfo untetheredInfo = CodeInfoTable.lookupCodeInfo(ip);
         if (untetheredInfo.isNull()) {
@@ -163,30 +156,24 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
         Object tether = CodeInfoAccess.acquireTether(untetheredInfo);
         try {
             CodeInfo tetheredCodeInfo = CodeInfoAccess.convert(untetheredInfo, tether);
-            visitFrame(data, tetheredCodeInfo, ip);
+            return visitFrame(data, tetheredCodeInfo, ip);
         } finally {
             CodeInfoAccess.releaseTether(untetheredInfo, tether);
         }
     }
 
     @Uninterruptible(reason = "Prevent JFR recording and epoch change.")
-    private static void visitFrame(JfrNativeEventWriterData data, CodeInfo codeInfo, CodePointer ip) {
+    private static int visitFrame(JfrNativeEventWriterData data, CodeInfo codeInfo, CodePointer ip) {
+        int numStackTraceElements = 0;
         FRAME_INFO_CURSOR.initialize(codeInfo, ip, false);
         while (FRAME_INFO_CURSOR.advance()) {
-            if (VISITOR_DATA.shouldSkipFrame()) {
-                VISITOR_DATA.incrementSkippedFrames();
-                continue;
-            } else if (VISITOR_DATA.shouldTruncate()) {
-                VISITOR_DATA.setTruncated();
-                break;
-            }
-
-            VISITOR_DATA.incrementUsedFrames();
             if (data.isNonNull()) {
                 FrameInfoQueryResult frame = FRAME_INFO_CURSOR.get();
                 serializeStackTraceElement(data, frame);
             }
+            numStackTraceElements++;
         }
+        return numStackTraceElements;
     }
 
     @Uninterruptible(reason = "Prevent JFR recording and epoch change.")
@@ -197,55 +184,5 @@ public final class SamplerJfrStackTraceSerializer implements SamplerStackTraceSe
         JfrNativeEventWriter.putInt(data, stackTraceElement.getSourceLineNumber());
         JfrNativeEventWriter.putInt(data, stackTraceElement.getBci());
         JfrNativeEventWriter.putLong(data, JfrFrameType.FRAME_AOT_COMPILED.getId());
-    }
-
-    private static final class StackTraceVisitorData {
-        private int framesToSkip;
-        private int skippedFrames;
-        private int usedFrames;
-        private boolean truncated;
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public void reset(int skipCount) {
-            framesToSkip = skipCount;
-            skippedFrames = 0;
-            usedFrames = 0;
-            truncated = false;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true) //
-        public boolean shouldSkipFrame() {
-            return skippedFrames < framesToSkip;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public void incrementSkippedFrames() {
-            skippedFrames++;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true) //
-        public boolean shouldTruncate() {
-            return usedFrames >= SubstrateJVM.getStackTraceRepo().getStackTraceDepth();
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public void setTruncated() {
-            truncated = true;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public boolean isTruncated() {
-            return truncated;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public void incrementUsedFrames() {
-            usedFrames++;
-        }
-
-        @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
-        public int getUsedFrames() {
-            return usedFrames;
-        }
     }
 }

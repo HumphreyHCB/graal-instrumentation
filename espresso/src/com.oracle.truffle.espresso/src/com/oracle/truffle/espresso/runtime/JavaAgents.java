@@ -51,7 +51,6 @@ import com.oracle.truffle.espresso.impl.ModuleTable;
 import com.oracle.truffle.espresso.impl.SuppressFBWarnings;
 import com.oracle.truffle.espresso.jdwp.api.RedefineInfo;
 import com.oracle.truffle.espresso.meta.Meta;
-import com.oracle.truffle.espresso.redefinition.RedefinitionException;
 import com.oracle.truffle.espresso.runtime.staticobject.StaticObject;
 import com.oracle.truffle.espresso.substitutions.JavaType;
 import com.oracle.truffle.espresso.substitutions.standard.Target_sun_instrument_InstrumentationImpl;
@@ -103,13 +102,17 @@ public final class JavaAgents extends ContextAccessImpl {
 
     private void onLoad(String javaAgentName, String agentOptions, List<JavaAgent> addedAgents) {
         Path jarPath = Paths.get(javaAgentName);
-        try {
-            JavaAgent javaAgent = addAgent(jarPath, agentOptions);
-            if (javaAgent != null) {
-                addedAgents.add(javaAgent);
+        if (jarPath.isAbsolute()) {
+            try {
+                JavaAgent javaAgent = addAgent(jarPath, agentOptions);
+                if (javaAgent != null) {
+                    addedAgents.add(javaAgent);
+                }
+            } catch (IOException e) {
+                throw getContext().abort("Error opening zip file or JAR manifest missing : " + jarPath + " due to: " + e.getMessage());
             }
-        } catch (IOException e) {
-            throw getContext().abort("Error opening zip file or JAR manifest missing : " + jarPath + " due to: " + e.getMessage());
+        } else {
+            throw getContext().abort("Please use an absolute path for java agent: " + jarPath);
         }
     }
 
@@ -281,7 +284,7 @@ public final class JavaAgents extends ContextAccessImpl {
         return agents[agentId].canRetransform;
     }
 
-    public void retransformClasses(Klass[] klasses) throws RedefinitionException {
+    public void retransformClasses(Klass[] klasses) {
         RedefineInfo[] redefineInfos = new RedefineInfo[klasses.length];
         for (int i = 0; i < klasses.length; i++) {
             Klass klass = klasses[i];

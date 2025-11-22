@@ -36,12 +36,13 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.graalvm.nativeimage.impl.UnresolvedConfigurationCondition;
+
 import com.oracle.svm.configure.ConfigurationBase;
 import com.oracle.svm.configure.ConfigurationFile;
 import com.oracle.svm.configure.ConfigurationParser;
 import com.oracle.svm.configure.ConfigurationParserOption;
 import com.oracle.svm.configure.PredefinedClassesConfigurationParser;
-import com.oracle.svm.configure.UnresolvedAccessCondition;
 
 import jdk.graal.compiler.phases.common.LazyValue;
 import jdk.graal.compiler.util.Digest;
@@ -89,7 +90,7 @@ public final class PredefinedClassesConfiguration extends ConfigurationBase<Pred
     }
 
     @Override
-    public void mergeConditional(UnresolvedAccessCondition condition, PredefinedClassesConfiguration other) {
+    public void mergeConditional(UnresolvedConfigurationCondition condition, PredefinedClassesConfiguration other) {
         /* Not implemented with conditions yet */
         classes.putAll(other.classes);
     }

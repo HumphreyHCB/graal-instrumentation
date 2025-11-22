@@ -38,7 +38,6 @@ import com.oracle.svm.core.UnmanagedMemoryUtil;
 import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
 import com.oracle.svm.core.util.VMError;
 
-import jdk.graal.compiler.nodes.spi.LoweringProvider;
 import jdk.vm.ci.code.Architecture;
 import jdk.vm.ci.riscv64.RISCV64;
 
@@ -86,7 +85,7 @@ public class RISCV64CPUFeatureAccess extends CPUFeatureAccessImpl {
     }
 
     @Override
-    public void enableFeatures(Architecture runtimeArchitecture, LoweringProvider runtimeLowerer) {
+    public void enableFeatures(Architecture runtimeArchitecture) {
         RISCV64 architecture = (RISCV64) runtimeArchitecture;
         EnumSet<RISCV64.CPUFeature> features = determineHostCPUFeatures();
         architecture.getFeatures().addAll(features);

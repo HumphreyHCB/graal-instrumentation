@@ -24,6 +24,7 @@ package com.oracle.truffle.espresso.nodes;
 
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -33,6 +34,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.espresso.EspressoLanguage;
 import com.oracle.truffle.espresso.classfile.ConstantPool;
 import com.oracle.truffle.espresso.classfile.attributes.MethodParametersAttribute;
+import com.oracle.truffle.espresso.descriptors.EspressoSymbols.Names;
 import com.oracle.truffle.espresso.impl.Method;
 
 @ExportLibrary(InteropLibrary.class)
@@ -60,14 +62,14 @@ final class SubstitutionScope implements TruffleObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasLanguageId() {
+    boolean hasLanguage() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    String getLanguageId() {
-        return EspressoLanguage.ID;
+    Class<? extends TruffleLanguage<?>> getLanguage() {
+        return EspressoLanguage.class;
     }
 
     @ExportMessage
@@ -97,7 +99,7 @@ final class SubstitutionScope implements TruffleObject {
     }
 
     private String[] fetchNames() {
-        MethodParametersAttribute methodParameters = method.getAttribute(MethodParametersAttribute.NAME, MethodParametersAttribute.class);
+        MethodParametersAttribute methodParameters = (MethodParametersAttribute) method.getAttribute(Names.MethodParameters);
 
         if (methodParameters == null) {
             return new String[0];
@@ -120,7 +122,7 @@ final class SubstitutionScope implements TruffleObject {
             // For a 0 index, give an empty name.
             String name;
             if (entry.getNameIndex() != 0) {
-                name = method.getConstantPool().utf8At(entry.getNameIndex(), "parameter name").toString();
+                name = method.getConstantPool().symbolAtUnsafe(entry.getNameIndex(), "parameter name").toString();
             } else {
                 name = "";
             }

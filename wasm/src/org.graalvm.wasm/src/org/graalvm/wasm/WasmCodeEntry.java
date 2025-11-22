@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -47,16 +47,14 @@ public final class WasmCodeEntry {
 
     private final WasmFunction function;
     @CompilationFinal(dimensions = 1) private final byte[] bytecode;
-    @CompilationFinal(dimensions = 1) private final int[] localTypes;
-    @CompilationFinal(dimensions = 1) private final int[] resultTypes;
+    @CompilationFinal(dimensions = 1) private final byte[] localTypes;
+    @CompilationFinal(dimensions = 1) private final byte[] resultTypes;
     private final BranchProfile errorBranch = BranchProfile.create();
-    private final BranchProfile exceptionBranch = BranchProfile.create();
-    private final BranchProfile subtypingBranch = BranchProfile.create();
     private final int numLocals;
     private final int resultCount;
     private final boolean usesMemoryZero;
 
-    public WasmCodeEntry(WasmFunction function, byte[] bytecode, int[] localTypes, int[] resultTypes, boolean usesMemoryZero) {
+    public WasmCodeEntry(WasmFunction function, byte[] bytecode, byte[] localTypes, byte[] resultTypes, boolean usesMemoryZero) {
         this.function = function;
         this.bytecode = bytecode;
         this.localTypes = localTypes;
@@ -74,7 +72,7 @@ public final class WasmCodeEntry {
         return bytecode;
     }
 
-    public int localType(int index) {
+    public byte localType(int index) {
         return localTypes[index];
     }
 
@@ -90,20 +88,12 @@ public final class WasmCodeEntry {
         return resultCount;
     }
 
-    public int resultType(int index) {
+    public byte resultType(int index) {
         return resultTypes[index];
     }
 
     public void errorBranch() {
         errorBranch.enter();
-    }
-
-    public void exceptionBranch() {
-        exceptionBranch.enter();
-    }
-
-    public void subtypingBranch() {
-        subtypingBranch.enter();
     }
 
     public boolean usesMemoryZero() {

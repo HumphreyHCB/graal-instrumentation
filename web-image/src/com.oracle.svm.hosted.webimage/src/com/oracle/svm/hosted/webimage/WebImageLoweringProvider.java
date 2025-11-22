@@ -25,20 +25,21 @@
 
 package com.oracle.svm.hosted.webimage;
 
-import com.oracle.svm.core.graal.meta.SubstrateBasicLoweringProvider;
-
 import jdk.graal.compiler.core.common.spi.ForeignCallsProvider;
 import jdk.graal.compiler.core.common.spi.MetaAccessExtensionProvider;
 import jdk.graal.compiler.graph.Node;
 import jdk.graal.compiler.nodes.spi.LoweringTool;
 import jdk.graal.compiler.nodes.spi.PlatformConfigurationProvider;
+
+import com.oracle.svm.core.graal.meta.SubstrateBasicLoweringProvider;
+
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.MetaAccessProvider;
 
 public abstract class WebImageLoweringProvider extends SubstrateBasicLoweringProvider {
     public WebImageLoweringProvider(MetaAccessProvider metaAccess, ForeignCallsProvider foreignCalls, PlatformConfigurationProvider platformConfig,
                     MetaAccessExtensionProvider metaAccessExtensionProvider, TargetDescription target) {
-        super(metaAccess, foreignCalls, platformConfig, metaAccessExtensionProvider, target, null);
+        super(metaAccess, foreignCalls, platformConfig, metaAccessExtensionProvider, target);
     }
 
     @Override

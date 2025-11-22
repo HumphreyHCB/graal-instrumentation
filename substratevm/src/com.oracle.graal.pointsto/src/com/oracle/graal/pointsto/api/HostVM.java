@@ -27,15 +27,15 @@
 package com.oracle.graal.pointsto.api;
 
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import org.graalvm.nativeimage.hosted.Feature.DuringAnalysisAccess;
 
@@ -63,10 +63,8 @@ import jdk.graal.compiler.nodes.graphbuilderconf.IntrinsicContext;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.OptimisticOptimizations;
 import jdk.vm.ci.meta.JavaConstant;
-import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.annotation.Annotated;
 
 /**
  * This abstract class defines the functionality that the hosting VM must support.
@@ -98,7 +96,7 @@ public abstract class HostVM {
 
     /**
      * Check if the provided object is a relocated pointer.
-     *
+     * 
      * @param constant the constant to check
      */
     public boolean isRelocatedPointer(JavaConstant constant) {
@@ -107,7 +105,7 @@ public abstract class HostVM {
 
     /**
      * Hook for handling foreign calls.
-     *
+     * 
      * @param foreignCallDescriptor the foreign call descriptor
      * @param foreignCallsProvider the foreign calls provider
      * @return the {@link AnalysisMethod} modeling the foreign call, if supported
@@ -142,7 +140,7 @@ public abstract class HostVM {
 
     /**
      * Register newly created type.
-     *
+     * 
      * @param newValue the type to register
      */
     public void registerType(AnalysisType newValue) {
@@ -159,7 +157,7 @@ public abstract class HostVM {
 
     /**
      * Run additional checks on a type before the corresponding {@link AnalysisType} is created.
-     *
+     * 
      * @param type the hosted type
      * @param universe the analysis universe
      */
@@ -168,7 +166,7 @@ public abstract class HostVM {
 
     /**
      * Run initialization tasks for a newly created {@link AnalysisType}.
-     *
+     * 
      * @param newValue the type to initialize
      */
     public abstract void onTypeReachable(BigBang bb, AnalysisType newValue);
@@ -186,6 +184,10 @@ public abstract class HostVM {
         return false;
     }
 
+    public boolean useBaseLayer() {
+        return false;
+    }
+
     public boolean analyzedInPriorLayer(@SuppressWarnings("unused") AnalysisMethod method) {
         return false;
     }
@@ -198,7 +200,7 @@ public abstract class HostVM {
     /**
      * Hook to change the {@link GraphBuilderConfiguration} used for parsing a method during
      * analysis.
-     *
+     * 
      * @param config The default configuration used by the static analysis.
      * @param method The method that is going to be parsed with the returned configuration.
      * @return The updated configuration for the method.
@@ -286,16 +288,6 @@ public abstract class HostVM {
         return true;
     }
 
-    /**
-     * Check if the method has to be inlined.
-     *
-     * @param method the target method
-     */
-    public boolean hasAlwaysInlineDirective(ResolvedJavaMethod method) {
-        /* No force inlining by the static analysis unless explicitly overwritten by the VM. */
-        return false;
-    }
-
     public InlineBeforeAnalysisGraphDecoder createInlineBeforeAnalysisGraphDecoder(BigBang bb, AnalysisMethod method, StructuredGraph resultGraph) {
         /* No inlining by the static analysis unless explicitly overwritten by the VM. */
         return new InlineBeforeAnalysisGraphDecoder(bb, InlineBeforeAnalysisPolicy.NO_INLINING, resultGraph, bb.getProviders(method), null);
@@ -308,20 +300,15 @@ public abstract class HostVM {
 
     /**
      * Check if the element is supported on current platform.
-     *
+     * 
      * @param element the {@link AnnotatedElement} to check
      */
     public boolean platformSupported(AnnotatedElement element) {
         return true;
     }
 
-    /**
-     * Check if the element is supported on current platform.
-     *
-     * @param element the {@link Annotated} to check
-     */
-    public boolean platformSupported(Annotated element) {
-        return true;
+    public boolean sortFields() {
+        return false;
     }
 
     public void clearInThread() {
@@ -384,48 +371,19 @@ public abstract class HostVM {
     }
 
     /**
-     * Determine if the type is supported by the host VM and should be processed by the analysis.
+     * This method should only be used by the {@code ClassInclusionPolicy} to determine which fields
+     * should be included in the shared layer.
      */
     @SuppressWarnings("unused")
-    public boolean isSupportedOriginalType(BigBang bb, ResolvedJavaType type) {
+    public boolean isFieldIncluded(BigBang bb, Field field) {
         return true;
     }
 
     /**
-     * Determine if the method is supported by the host VM and should be processed by the analysis.
+     * See {@link HostVM#isFieldIncluded(BigBang, Field)}.
      */
     @SuppressWarnings("unused")
-    public boolean isSupportedAnalysisMethod(BigBang bb, AnalysisMethod method) {
-        return true;
-    }
-
-    /**
-     * Determine if the method is supported by the host VM and should be processed by the analysis.
-     */
-    @SuppressWarnings("unused")
-    public boolean isSupportedOriginalMethod(BigBang bb, ResolvedJavaMethod method) {
-        return true;
-    }
-
-    /**
-     * Determine if the field is supported by the host VM and should be processed by the analysis.
-     */
-    @SuppressWarnings("unused")
-    public boolean isSupportedAnalysisField(BigBang bb, AnalysisField field) {
-        return true;
-    }
-
-    /**
-     * Determine if the field is supported by the host VM and should be processed by the analysis.
-     */
-    @SuppressWarnings("unused")
-    public boolean isSupportedOriginalField(BigBang bb, ResolvedJavaField field) {
-        return true;
-    }
-
-    /** Determine if field should be included in the shared layer. */
-    @SuppressWarnings("unused")
-    public boolean isFieldIncludedInSharedLayer(ResolvedJavaField field) {
+    public boolean isFieldIncluded(BigBang bb, AnalysisField field) {
         return true;
     }
 
@@ -445,18 +403,6 @@ public abstract class HostVM {
         return false;
     }
 
-    public boolean buildingInitialLayer() {
-        return false;
-    }
-
-    public boolean buildingSharedLayer() {
-        return false;
-    }
-
-    public boolean buildingExtensionLayer() {
-        return false;
-    }
-
     @SuppressWarnings("unused")
     public boolean installableInLayer(AnalysisField aField) {
         return true;
@@ -465,10 +411,6 @@ public abstract class HostVM {
     @SuppressWarnings("unused")
     public boolean preventConstantFolding(AnalysisField aField) {
         return false;
-    }
-
-    public Set<Module> getForbiddenModules() {
-        return Set.of();
     }
 
     /**
@@ -565,8 +507,8 @@ public abstract class HostVM {
     /**
      * Returns the function Strengthen Graphs should use to improve types based on analysis results.
      */
-    public Predicate<AnalysisType> getStrengthenGraphsTypePredicate(@SuppressWarnings("unused") MultiMethod.MultiMethodKey key) {
-        return (t) -> true;
+    public Function<AnalysisType, ResolvedJavaType> getStrengthenGraphsToTargetFunction(@SuppressWarnings("unused") MultiMethod.MultiMethodKey key) {
+        return (t) -> t;
     }
 
     public boolean allowConstantFolding(AnalysisMethod method) {

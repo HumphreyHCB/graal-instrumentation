@@ -62,10 +62,8 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
-import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl;
 import org.graalvm.polyglot.impl.AbstractPolyglotImpl.APIAccess;
-import org.graalvm.polyglot.proxy.Proxy;
 
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -1026,18 +1024,18 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
     }
 
     @TruffleBoundary
-    Value asValue(Object guestValue) {
+    Object asValue(Object guestValue) {
         APIAccess api = context.getAPIAccess();
         assert lazy != null;
         assert guestValue != null;
         assert !(api.isValue(guestValue));
-        assert !(guestValue instanceof Proxy);
+        assert !(api.isProxy(guestValue));
         PolyglotValueDispatch cache = getLanguageInstance().lookupValueCache(context, guestValue);
         return api.newValue(cache, this, guestValue, context.getContextAPI());
     }
 
-    public static Object toGuestValue(Node node, Object receiver) {
-        return PolyglotContextImpl.toGuestValue(node, receiver, false);
+    public Object toGuestValue(Node node, Object receiver) {
+        return context.toGuestValue(node, receiver, false);
     }
 
     @GenerateInline(true)
@@ -1122,12 +1120,12 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
     public Object getLanguageView(Object receiver) {
         EngineAccessor.INTEROP.checkInteropType(receiver);
         InteropLibrary lib = InteropLibrary.getFactory().getUncached(receiver);
-        if (lib.hasLanguageId(receiver)) {
+        if (lib.hasLanguage(receiver)) {
             try {
                 if (!this.isCreated()) {
                     throw PolyglotEngineException.illegalState("Language not yet created. Initialize the language first to request a language view.");
                 }
-                if (this.lazy.languageInstance.language.getId().equals(lib.getLanguageId(receiver))) {
+                if (lib.getLanguage(receiver) == this.lazy.languageInstance.spi.getClass()) {
                     return receiver;
                 }
             } catch (UnsupportedMessageException e) {
@@ -1139,13 +1137,11 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
 
     private boolean validLanguageView(Object result) {
         InteropLibrary lib = InteropLibrary.getFactory().getUncached(result);
+        Class<?> languageClass = EngineAccessor.LANGUAGE.getLanguage(env).getClass();
         try {
-            Class<?> languageClass = EngineAccessor.LANGUAGE.getLanguage(env).getClass();
-            String languageId = language.getId();
-            assert lib.hasLanguageId(result) && languageId.equals(lib.getLanguageId(result)) : String.format(
-                            "The returned language view of language '%s' must return '%s' for InteropLibrary.getLanguageId." +
-                                            "Fix the implementation of %s.getLanguageView to resolve this.",
-                            languageId, languageId, languageClass.getTypeName());
+            assert lib.hasLanguage(result) &&
+                            lib.getLanguage(result) == languageClass : String.format("The returned language view of language '%s' must return the class '%s' for InteropLibrary.getLanguage." +
+                                            "Fix the implementation of %s.getLanguageView to resolve this.", languageClass.getTypeName(), languageClass.getTypeName(), languageClass.getTypeName());
         } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere(e);
         }
@@ -1154,12 +1150,11 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
 
     private boolean validScopedView(Object result, Node location) {
         InteropLibrary lib = InteropLibrary.getFactory().getUncached(result);
-        String languageId = language.getId();
+        Class<?> languageClass = EngineAccessor.LANGUAGE.getLanguage(env).getClass();
         try {
-            assert lib.hasLanguageId(result) && languageId.equals(lib.getLanguageId(result)) : String.format(
-                            "The returned scoped view of language '%s' must return '%s' for InteropLibrary.getLanguageId." +
-                                            "Fix the implementation of %s.getView to resolve this.",
-                            languageId, languageId, location.getClass().getTypeName());
+            assert lib.hasLanguage(result) &&
+                            lib.getLanguage(result) == languageClass : String.format("The returned scoped view of language '%s' must return the class '%s' for InteropLibrary.getLanguage." +
+                                            "Fix the implementation of %s.getView to resolve this.", languageClass.getTypeName(), languageClass.getTypeName(), location.getClass().getTypeName());
         } catch (UnsupportedMessageException e) {
             throw shouldNotReachHere(e);
         }
@@ -1205,22 +1200,22 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
     @GenerateInline
     abstract static class ToGuestValueNode extends Node {
 
-        abstract Object execute(Node node, Object receiver);
+        abstract Object execute(Node node, PolyglotLanguageContext context, Object receiver);
 
         @Specialization(guards = "receiver == null")
-        static Object doNull(Node node, @SuppressWarnings("unused") Object receiver) {
-            return PolyglotLanguageContext.toGuestValue(node, receiver);
+        static Object doNull(Node node, PolyglotLanguageContext context, @SuppressWarnings("unused") Object receiver) {
+            return context.toGuestValue(node, receiver);
         }
 
         @Specialization(guards = {"receiver != null", "receiver.getClass() == cachedReceiver"}, limit = "3")
-        static Object doCached(Node node, Object receiver, @Cached("receiver.getClass()") Class<?> cachedReceiver) {
-            return PolyglotLanguageContext.toGuestValue(node, cachedReceiver.cast(receiver));
+        static Object doCached(Node node, PolyglotLanguageContext context, Object receiver, @Cached("receiver.getClass()") Class<?> cachedReceiver) {
+            return context.toGuestValue(node, cachedReceiver.cast(receiver));
         }
 
         @Specialization(replaces = "doCached")
         @TruffleBoundary
-        static Object doUncached(Node node, Object receiver) {
-            return PolyglotLanguageContext.toGuestValue(node, receiver);
+        static Object doUncached(Node node, PolyglotLanguageContext context, Object receiver) {
+            return context.toGuestValue(node, receiver);
         }
     }
 
@@ -1228,11 +1223,11 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
     @GenerateCached(false)
     abstract static class ToGuestValuesNode extends Node {
 
-        abstract Object[] execute(Node node, Object[] args);
+        abstract Object[] execute(Node node, PolyglotLanguageContext context, Object[] args);
 
         @Specialization(guards = "args.length == 0")
         @SuppressWarnings("unused")
-        static Object[] doZero(Object[] args) {
+        static Object[] doZero(PolyglotLanguageContext context, Object[] args) {
             return args;
         }
 
@@ -1241,14 +1236,14 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
          */
         @ExplodeLoop
         @Specialization(replaces = {"doZero"}, guards = "args.length == toGuestValues.length", limit = "1")
-        static Object[] doCached(Node node, Object[] args,
+        static Object[] doCached(Node node, PolyglotLanguageContext context, Object[] args,
                         @Cached("createArray(args.length)") ToGuestValueNode[] toGuestValues,
                         @Shared("needsCopy") @Cached InlinedBranchProfile needsCopyProfile) {
             boolean needsCopy = needsCopyProfile.wasEntered(node);
             Object[] newArgs = needsCopy ? new Object[toGuestValues.length] : args;
             for (int i = 0; i < toGuestValues.length; i++) {
                 Object arg = args[i];
-                Object newArg = toGuestValues[i].execute(toGuestValues[i], arg);
+                Object newArg = toGuestValues[i].execute(toGuestValues[i], context, arg);
                 if (needsCopy) {
                     newArgs[i] = newArg;
                 } else if (arg != newArg) {
@@ -1266,7 +1261,7 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
          * Specialization for constant number of arguments. Uses a profile for each argument.
          */
         @Specialization(replaces = {"doZero", "doCached"})
-        static Object[] doGeneric(Node node, Object[] args,
+        static Object[] doGeneric(Node node, PolyglotLanguageContext context, Object[] args,
                         @Cached ToGuestValueNode toGuest,
                         @Shared("needsCopy") @Cached InlinedBranchProfile needsCopyProfile) {
 
@@ -1274,7 +1269,7 @@ final class PolyglotLanguageContext implements PolyglotImpl.VMObject {
             Object[] newArgs = needsCopy ? new Object[args.length] : args;
             for (int i = 0; i < args.length; i++) {
                 Object arg = args[i];
-                Object newArg = toGuest.execute(node, arg);
+                Object newArg = toGuest.execute(node, context, arg);
                 if (needsCopy) {
                     newArgs[i] = newArg;
                 } else if (arg != newArg) {

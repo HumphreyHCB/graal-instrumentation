@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,8 +72,7 @@ import com.oracle.svm.core.graal.stackvalue.UnsafeStackValue;
 import com.oracle.svm.core.handles.PrimitiveArrayView;
 import com.oracle.svm.core.heap.RestrictHeapAccess;
 import com.oracle.svm.core.hub.DynamicHub;
-import com.oracle.svm.core.hub.RuntimeClassLoading;
-import com.oracle.svm.core.hub.RuntimeClassLoading.ClassDefinitionInfo;
+import com.oracle.svm.core.hub.PredefinedClassesSupport;
 import com.oracle.svm.core.jdk.DirectByteBufferUtil;
 import com.oracle.svm.core.jni.JNIObjectFieldAccess;
 import com.oracle.svm.core.jni.JNIObjectHandles;
@@ -110,6 +109,7 @@ import com.oracle.svm.core.jni.headers.JNIObjectHandle;
 import com.oracle.svm.core.jni.headers.JNIObjectRefType;
 import com.oracle.svm.core.jni.headers.JNIValue;
 import com.oracle.svm.core.jni.headers.JNIVersion;
+import com.oracle.svm.core.jni.headers.JNIVersionJDKLatest;
 import com.oracle.svm.core.log.Log;
 import com.oracle.svm.core.monitor.MonitorInflationCause;
 import com.oracle.svm.core.monitor.MonitorSupport;
@@ -126,6 +126,7 @@ import com.oracle.svm.core.util.VMError;
 
 import jdk.graal.compiler.core.common.SuppressFBWarnings;
 import jdk.graal.compiler.nodes.java.ArrayLengthNode;
+import jdk.graal.compiler.serviceprovider.JavaVersionUtil;
 import jdk.graal.compiler.word.Word;
 import jdk.internal.misc.Unsafe;
 import jdk.vm.ci.meta.JavaKind;
@@ -168,7 +169,11 @@ public final class JNIFunctions {
     @CEntryPointOptions(prologue = CEntryPointOptions.NoPrologue.class, epilogue = CEntryPointOptions.NoEpilogue.class)
     @Uninterruptible(reason = "No need to enter the isolate and also no way to report errors if unable to.")
     static int GetVersion(JNIEnvironment env) {
-        return JNIVersion.JNI_VERSION_LATEST();
+        if (JavaVersionUtil.JAVA_SPEC == 21) {
+            return JNIVersion.JNI_VERSION_21();
+        } else {
+            return JNIVersionJDKLatest.JNI_VERSION_LATEST();
+        }
     }
 
     /*
@@ -379,7 +384,6 @@ public final class JNIFunctions {
     static int RegisterNatives(JNIEnvironment env, JNIObjectHandle hclazz, JNINativeMethod methods, int nmethods) {
         Class<?> clazz = JNIObjectHandles.getObject(hclazz);
         Pointer p = (Pointer) methods;
-        String declaringClass = MetaUtil.toInternalName(clazz.getName());
         for (int i = 0; i < nmethods; i++) {
             JNINativeMethod entry = (JNINativeMethod) p;
             CharSequence name = Utf8.wrapUtf8CString(entry.name());
@@ -394,6 +398,7 @@ public final class JNIFunctions {
 
             CFunctionPointer fnPtr = entry.fnPtr();
 
+            String declaringClass = MetaUtil.toInternalName(clazz.getName());
             JNINativeLinkage linkage = JNIReflectionDictionary.getLinkage(declaringClass, name, signature);
             if (linkage != null) {
                 linkage.setEntryPoint(fnPtr);
@@ -1111,10 +1116,13 @@ public final class JNIFunctions {
             throw new ClassFormatError();
         }
         String name = Utf8.utf8ToString(cname);
+        if (name != null) { // inverse to HotSpot fixClassname():
+            name = name.replace('/', '.');
+        }
         ClassLoader classLoader = JNIObjectHandles.getObject(loader);
         byte[] data = new byte[bufLen];
         CTypeConversion.asByteBuffer(buf, bufLen).get(data);
-        Class<?> clazz = RuntimeClassLoading.defineClass(classLoader, name, data, 0, data.length, ClassDefinitionInfo.EMPTY);
+        Class<?> clazz = PredefinedClassesSupport.loadClass(classLoader, name, data, 0, data.length, null);
         return JNIObjectHandles.createLocal(clazz);
     }
 
@@ -1621,17 +1629,6 @@ public final class JNIFunctions {
     static void SetStaticDoubleField(JNIEnvironment env, JNIObjectHandle clazz, JNIFieldId fieldId, double value) {
         long offset = JNIAccessibleField.getOffsetFromId(fieldId).rawValue();
         U.putDouble(JNIAccessibleField.getStaticPrimitiveFieldsAtRuntime(fieldId), offset, value);
-    }
-
-    /*
-     * jlong GetStringUTFLengthAsLong(JNIEnv *env, jstring string);
-     */
-
-    @CEntryPoint(exceptionHandler = JNIExceptionHandlerReturnMinusOne.class, include = CEntryPoint.NotIncludedAutomatically.class, publishAs = Publish.NotPublished)
-    @CEntryPointOptions(prologue = JNIEnvEnterPrologue.class, prologueBailout = ReturnMinusOneLong.class)
-    static long GetStringUTFLengthAsLong(JNIEnvironment env, JNIObjectHandle hstr) {
-        String str = JNIObjectHandles.getObject(hstr);
-        return Utf8.utf8LengthAsLong(str);
     }
 
     // Checkstyle: resume

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -104,6 +104,7 @@ public class CompilationWatchDogTest extends GraalCompilerTest {
         }
     }
 
+    @SuppressWarnings("try")
     private InstalledCode getCodeHelper(ResolvedJavaMethod installedCodeOwner, StructuredGraph graph, boolean forceCompile, boolean installAsDefault, OptionValues options) {
         CompilationIdentifier compilation = new CompilationIdentifier() {
             @Override
@@ -137,9 +138,9 @@ public class CompilationWatchDogTest extends GraalCompilerTest {
         };
 
         CompilationWatchDog watch = CompilationWatchDog.watch(compilation, options, false, longCompilationHandler, null);
-        try (CompilationWatchDog _ = watch) {
+        try (CompilationWatchDog watchScope = watch) {
             event("start compiling");
-            try (TTY.Filter _ = new TTY.Filter()) {
+            try (TTY.Filter f = new TTY.Filter()) {
                 return super.getCode(installedCodeOwner, graph, forceCompile, installAsDefault, options);
             }
         } finally {

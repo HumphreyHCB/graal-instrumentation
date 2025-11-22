@@ -24,17 +24,17 @@
  */
 package com.oracle.svm.hosted.substitute;
 
+import java.lang.reflect.AnnotatedElement;
+
+import com.oracle.graal.pointsto.infrastructure.OriginalFieldProvider;
 import com.oracle.svm.hosted.annotation.AnnotationWrapper;
-import com.oracle.svm.util.AnnotatedWrapper;
-import com.oracle.svm.util.OriginalFieldProvider;
 
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaType;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaType;
-import jdk.vm.ci.meta.annotation.Annotated;
 
-public class SubstitutionField implements ResolvedJavaField, OriginalFieldProvider, AnnotationWrapper, AnnotatedWrapper {
+public class SubstitutionField implements ResolvedJavaField, OriginalFieldProvider, AnnotationWrapper {
 
     private final ResolvedJavaField original;
     private final ResolvedJavaField annotated;
@@ -99,7 +99,7 @@ public class SubstitutionField implements ResolvedJavaField, OriginalFieldProvid
     }
 
     @Override
-    public Annotated getWrappedAnnotated() {
+    public AnnotatedElement getAnnotationRoot() {
         return annotated;
     }
 

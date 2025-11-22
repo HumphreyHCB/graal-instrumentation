@@ -68,9 +68,4 @@ public class HotSpotRegisters implements HotSpotRegistersProvider {
         }
         return Register.None;
     }
-
-    @Override
-    public boolean isReservedRegister(Register r) {
-        return !r.equals(Register.None) && (r.equals(threadRegister) || r.equals(heapBaseRegister) || r.equals(stackPointerRegister));
-    }
 }
