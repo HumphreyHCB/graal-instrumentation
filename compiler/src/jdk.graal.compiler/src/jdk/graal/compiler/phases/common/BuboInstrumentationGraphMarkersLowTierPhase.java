@@ -1,11 +1,9 @@
 package jdk.graal.compiler.phases.common;
 
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 import jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
@@ -23,6 +21,7 @@ import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
 import jdk.graal.compiler.options.OptionValues;
 import jdk.graal.compiler.phases.BasePhase;
 import jdk.graal.compiler.phases.tiers.LowTierContext;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopNestingCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeMethodCache;
 
@@ -59,11 +58,9 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
 
         Map<LoopBeginNode, Integer> beginToId = new IdentityHashMap<>();
 
-
         // find all begins and tag them , and their assocated Ends
         for (LoopBeginNode begin : begins) {
             beginToId.put(begin, ida);
-
 
             // sometimes there a if node so we want to find the only and last EndNode
             Node correctInput = null;
@@ -87,31 +84,35 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
             ida++;
         }
 
-        // store a map of child and parent loops
         storeLoopNestingToNative(graph, begins, beginToId);
 
     }
 
-    private static void storeLoopNestingToNative(StructuredGraph graph,
+    private void storeLoopNestingToNative(StructuredGraph graph,
             List<LoopBeginNode> begins,
             Map<LoopBeginNode, Integer> beginToId) {
 
         ControlFlowGraph cfg = graph.getLastCFG();
         List<? extends CFGLoop<?>> loops = cfg.getLoops();
-        if (loops == null || loops.isEmpty()) {return;}
+        if (loops == null || loops.isEmpty()) {
+            return;
+        }
 
         int compId = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
 
         IdentityHashMap<CFGLoop<?>, Integer> loopToIda = new IdentityHashMap<>();
 
-
-        // for each begin loop, find its ida, e.g the arbitrary id we gave it earlyer 
+        // for each begin loop, find its ida, e.g the arbitrary id we gave it earlyer
         for (LoopBeginNode begin : begins) {
             BasicBlock<?> block = cfg.blockFor(begin);
-            if (block == null) {continue;}
+            if (block == null) {
+                continue;
+            }
 
             CFGLoop<?> loop = block.getLoop();
-            if (loop == null) {continue;}
+            if (loop == null) {
+                continue;
+            }
 
             Integer ida = beginToId.get(begin);
             if (ida != null) {
@@ -121,8 +122,8 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
 
         // Build "child:parent,child:parent,..."
         StringBuilder sb = new StringBuilder();
-        
-        // for each loop construct the child:parent map, but we have the ida's for it 
+
+        // for each loop construct the child:parent map, but we have the ida's for it
         boolean first = true;
         for (CFGLoop<?> loop : loops) {
             Integer childId = loopToIda.get(loop);
@@ -144,6 +145,7 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
         String nestingEncoding = sb.toString();
 
         BuboNativeLoopNestingCache.putEncoding(compId, nestingEncoding);
+
     }
 
 }
