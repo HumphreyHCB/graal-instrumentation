@@ -88,11 +88,11 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (GraalOptions.LIRGTSlowDown.getValue(options)) {
             appendPhase(new LIRGTSlowdownPhasePost(options));
         }
-        if (GraalOptions.GTMarkBasicBlocks.getValue(options)) {
-            appendPhase(new LIRGTSlowdownMarkerPhase(options));
-        }
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
             appendPhase(new BuboVerifyPostAllocPhase() );
+        }
+        if (GraalOptions.GTAssignDebug.getValue(options)) {
+            appendPhase(new AssignDebugPostAllocPhase() );
         }
     }
 }

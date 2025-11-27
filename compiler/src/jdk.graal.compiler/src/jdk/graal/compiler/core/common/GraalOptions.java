@@ -395,4 +395,7 @@ public final class GraalOptions {
 
     @Option(help = "WHen we perform Slowdown, we attempet to mix the slowdown as much as psosible, this should reduce Skidding in the sampler", type = OptionType.Debug)
     public static final OptionKey<Integer> MixGTSlowdown = new OptionKey<Integer>(-1);
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> GTAssignDebug = new OptionKey<Boolean>( false);
 }

@@ -6,17 +6,18 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
 
 ./latest_graalvm_home/bin/java \
   --enable-native-access=ALL-UNNAMED \
-  -Djdk.graal.TrackNodeSourcePosition=true \
+  -Djdk.graal.TrackNodeSourcePosition=true -agentpath:/home/hb478/repos/are-we-fast-yet/Async/build/libasyncProfiler.so=start,event=cpu,interval=10,file=PureLirAssign2.txt  \
   -Djdk.graal.EnableProfiler=false \
-  -Djdk.graal.BuboLIRPhase=true \
+  -Djdk.graal.BuboLIRPhase=false \
+  -Djdk.graal.GTAssignDebug=true \
+  -Djdk.graal.StrictProfiles=false \
+  -Djdk.graal.LIRGTSlowDown=false \
   -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
   -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
-    --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
-    --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED \
-    --add-exports=jdk.graal.compiler/jdk.graal.compiler.serviceprovider=ALL-UNNAMED \
   -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
-  Harness Mandelbrot 20 750
+  -javaagent:"$AGENT" \
+  Harness Bounce 50 10000
   
 
 #   Harness Sieve 20 10000
@@ -25,5 +26,68 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
 
   # --add-exports=${MODULE}/jdk.graal.compiler.hotspot.meta.Bubo=ALL-UNNAMED \
   # --add-exports=${MODULE}/jdk.graal.compiler.phases.common=ALL-UNNAMED \
-  # -javaagent:"$AGENT" \
-  #    -javaagent:/home/hb478/repos/graal-instrumentation/Bubo-Agent/target/bubo-agent-1.0.jar \
+  # -javaagent:"$AGENT" -javaagent:/home/hb478/repos/graal-instrumentation/Bubo-Agent/target/bubo-agent-1.0.jar \
+
+
+
+
+#   {
+#     "AWFY Benchmarks": {
+#         "DeltaBlue": {
+#             "extra_args": 60000,
+#             "SingleFile": false
+#         },
+#         "Richards": {
+#             "extra_args": 100,
+#             "SingleFile": false
+#         },
+#         "Json": {
+#             "extra_args": 100,
+#             "SingleFile": false
+#         },
+#         "CD": {
+#             "extra_args": 1000,
+#             "SingleFile": false
+#         },
+#         "Havlak": {
+#             "extra_args": 15000,
+#             "SingleFile": false
+#         },
+#         "Bounce": {
+#             "extra_args": 10000,
+#             "SingleFile": true
+#         },
+#         "List": {
+#             "extra_args": 10000,
+#             "SingleFile": true
+#         },
+#         "Mandelbrot": {
+#             "extra_args": 750,
+#             "SingleFile": true
+#         },
+#         "NBody": {
+#             "extra_args": 1200000,
+#             "SingleFile": false
+#         },
+#         "Permute": {
+#             "extra_args": 3500,
+#             "SingleFile": true
+#         },
+#         "Queens": {
+#             "extra_args": 5000,
+#             "SingleFile": true
+#         },
+#         "Sieve": {
+#             "extra_args": 10000,
+#             "SingleFile": true
+#         },
+#         "Storage": {
+#             "extra_args": 1800,
+#             "SingleFile": false
+#         },
+#         "Towers": {
+#             "extra_args": 2500,
+#             "SingleFile": true
+#         }
+#     }
+# }

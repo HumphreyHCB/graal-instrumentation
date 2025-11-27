@@ -1,7 +1,10 @@
 #! /bin/bash
 
+# /home/hb478/repos/labs-openjdk-25-37-jvmci-b06/build/linux-x86_64-server-release/images/graal-builder-jdk
+JVMCI_VERSION_CHECK=ignore JDK_VERSION_CHECK=ignore
+mx  --java-home /home/hb478/repos/labs-openjdk-25-37-jvmci-b06/build/linux-x86_64-server-release/images/graal-builder-jdk  --env libgraal build
 
-mx --java-home /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06 --env libgraal build
+### the one i use /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06
 
 # old /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01
 
