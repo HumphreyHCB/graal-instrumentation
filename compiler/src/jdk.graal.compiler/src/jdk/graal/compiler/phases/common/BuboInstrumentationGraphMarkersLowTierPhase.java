@@ -61,7 +61,7 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
         // find all begins and tag them , and their assocated Ends
         for (LoopBeginNode begin : begins) {
             beginToId.put(begin, ida);
-
+            
             // sometimes there a if node so we want to find the only and last EndNode
             Node correctInput = null;
             for (Node in : begin.inputs()) {
@@ -70,7 +70,6 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
                     break;
                 }
             }
-
             // tags Starts
             StartofLoopNode start = graph.add(new StartofLoopNode(ida, correctInput.getNodeSourcePosition()));
             graph.addBeforeFixed((FixedNode) correctInput, start);
@@ -80,7 +79,6 @@ public class BuboInstrumentationGraphMarkersLowTierPhase extends BasePhase<LowTi
                 EndofLoopNode end = graph.add(new EndofLoopNode(ida, exit.getNodeSourcePosition()));
                 graph.addAfterFixed(exit, end);
             }
-
             ida++;
         }
 
