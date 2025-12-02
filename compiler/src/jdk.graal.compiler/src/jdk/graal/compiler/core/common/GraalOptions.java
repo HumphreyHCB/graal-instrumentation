@@ -398,4 +398,7 @@ public final class GraalOptions {
 
     @Option(help = "", type = OptionType.Debug)
     public static final OptionKey<Boolean> GTAssignDebug = new OptionKey<Boolean>( false);
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> HumphreysDebugData = new OptionKey<Boolean>( false);
 }
