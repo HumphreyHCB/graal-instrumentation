@@ -25,7 +25,6 @@
 package jdk.graal.compiler.lir.phases;
 
 import jdk.graal.compiler.lir.alloc.SaveCalleeSaveRegisters;
-import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 import jdk.graal.compiler.lir.constopt.ConstantLoadOptimization;
 import jdk.graal.compiler.options.OptionValues;
 
