@@ -102,7 +102,6 @@ public class GTBlockSlowDownLookUp {
         if (index != -1) {
             methodName = methodName.substring(0, index).trim();
         }
-
         if (METHOD_BLOCK_COST_MAP.containsKey(methodName)) {
             EconomicMap<Integer, Integer> blockCostMap = METHOD_BLOCK_COST_MAP.get(methodName);
             if (blockCostMap.containsKey(blockNumber)) {
