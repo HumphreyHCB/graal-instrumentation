@@ -29,7 +29,6 @@ import jdk.graal.compiler.lir.ControlFlowOptimizer;
 import jdk.graal.compiler.lir.EdgeMoveOptimizer;
 import jdk.graal.compiler.lir.NullCheckOptimizer;
 import jdk.graal.compiler.lir.RedundantMoveElimination;
-import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 import jdk.graal.compiler.lir.profiling.MethodProfilingPhase;
 import jdk.graal.compiler.lir.profiling.MoveProfilingPhase;
 import jdk.graal.compiler.lir.phases.PostAllocationOptimizationPhase.PostAllocationOptimizationContext;
@@ -88,11 +87,18 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (GraalOptions.LIRGTSlowDown.getValue(options)) {
             appendPhase(new LIRGTSlowdownPhasePost(options));
         }
+        if (GraalOptions.GTMarkBasicBlocks.getValue(options)) {
+            appendPhase(new LIRGTSlowdownMarkerPhase(options));
+        }
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
             appendPhase(new BuboVerifyPostAllocPhase() );
         }
         if (GraalOptions.GTAssignDebug.getValue(options)) {
             appendPhase(new AssignDebugPostAllocPhase() );
+        }
+
+        if (GraalOptions.HumphreysDebugData.getValue(options)) {
+            appendPhase(new HumphreysDebugDataPhase() );
         }
     }
 }
