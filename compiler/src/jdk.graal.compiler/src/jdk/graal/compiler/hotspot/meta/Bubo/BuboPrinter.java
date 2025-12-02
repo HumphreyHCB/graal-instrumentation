@@ -1,3 +1,4 @@
+
 package jdk.graal.compiler.hotspot.meta.Bubo;
 
 import java.io.FileWriter;
@@ -547,6 +548,7 @@ public class BuboPrinter {
         var methodMap = BuboNativeMethodCache.getBuffer();
 
         Map<Integer, Map<Integer, String>> loopsourceMap = BuboNativeLoopSourceCache.snapshot();
+        Map<Integer, Map<Integer, Integer>> loopcallMap = BuboNativeLoopLoopCallCountCache.snapshot();
 
         final int maxLoops = BuboNativeBuffers.MAX_LOOPS_PER_COMP;
         final int capacity = BuboNativeBuffers.capacity();
@@ -571,7 +573,7 @@ public class BuboPrinter {
 
                     // System.out.println(" loop " + loopId + " = " + val );
                     System.out.println(
-                            "  loop " + loopId + " Cycles: " + val + " || Activation Count:"+ BuboNativeBuffers.readActivationAt(flat)  + " Source: " + loopsourceMap.get(compId).get(loopId));
+                            "  loop " + loopId + " Cycles: " + val + " || Activation Count:"+ BuboNativeBuffers.readActivationAt(flat) + "| LoopCallCount: " + loopcallMap.get(compId).get(loopId)  + " |  Source: " + loopsourceMap.get(compId).get(loopId));
                 }
             }
         }

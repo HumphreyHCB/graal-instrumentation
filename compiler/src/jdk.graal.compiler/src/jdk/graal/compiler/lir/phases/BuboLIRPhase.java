@@ -1,21 +1,27 @@
-package jdk.graal.compiler.lir.constopt;
+package jdk.graal.compiler.lir.phases;
 
 import static jdk.graal.compiler.lir.phases.LIRPhase.Options.LIROptimization;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import jdk.graal.compiler.core.common.LIRKind;
+import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
+import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers;
+import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopLoopCallCountCache;
 import jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeLoopSourceCache;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInsertionBuffer;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.VirtualStackSlot;
+import jdk.graal.compiler.lir.amd64.AMD64Call.CallOp;
 import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
 import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboIncActivationOp;
@@ -23,7 +29,6 @@ import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
-import jdk.graal.compiler.lir.phases.PreAllocationOptimizationPhase;
 import jdk.graal.compiler.options.NestedBooleanOptionKey;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
@@ -104,6 +109,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
             }
         }
 
+        FindAllCallsInloop(lir, lirGen, lirGenRes, compilationId);
+
         // insert starts only
         for (MarkerPos marker : markers) {
             if (marker.LoopStart) {
@@ -117,6 +124,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 instrumentLoopEnds(lir, lirGen, loopSlots.get(marker.loopId), baseAddress, compilationId, marker);
             }
         }
+
+        
 
     }
 
@@ -179,11 +188,111 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
             endSrc = marker.pos.toString("-");
         }
 
-        String combined = startSrc + " | " + endSrc;
+        String combined = startSrc + " | " + endSrc ;
 
         BuboNativeLoopSourceCache.add(compilationId, marker.loopId, combined);
 
         buf.finish();
 
     }
+
+    static Map<Integer, Integer> loopCallCount = new HashMap<>();
+
+    private void FindAllCallsInloop(LIR lir,
+            LIRGeneratorTool lirGen, LIRGenerationResult lirGenRes,  int compilationId) {
+
+        AbstractControlFlowGraph<?> cfg = lir.getControlFlowGraph();
+
+        Map<Integer, CFGLoop<?>> loopIdMap = orderLoopsByNesting(mapLoopIdsToLoops(cfg, lir));
+        
+        for (Map.Entry<Integer, CFGLoop<?>> entry : loopIdMap.entrySet()) {
+            Integer LoopID = entry.getKey();
+            CFGLoop<?> loop = entry.getValue();
+            int callCount = 0;
+            List<BasicBlock<?>> loopBlocks = (List<BasicBlock<?>>) loop.getBlocks();
+
+            for (BasicBlock<?> block : loopBlocks) {
+                @SuppressWarnings("unchecked")
+                ArrayList<LIRInstruction> instructions =  (ArrayList<LIRInstruction>) lir.getLIRforBlock(block);
+
+                for (LIRInstruction instr : instructions) {
+                    if (instr instanceof CallOp) {
+                        callCount++;
+                        // CallOp op = (CallOp) instr;
+                        // System.out.println(lirGenRes.getCompilationUnitName() + " : Call found in loop " + LoopID + " : " + instr.getClass());
+                    }
+                }
+            }
+            BuboNativeLoopLoopCallCountCache.add(compilationId, LoopID, callCount);
+        }
+
+
+    }
+
+
+        private Map<Integer, CFGLoop<?>> orderLoopsByNesting(Map<Integer, CFGLoop<?>> loopIdMap) {
+        if (loopIdMap == null || loopIdMap.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        // Copy entries into a list for sorting
+        List<Map.Entry<Integer, CFGLoop<?>>> entries = new ArrayList<>(loopIdMap.entrySet());
+
+        // Sort by loop depth (outer → inner).
+        // Tie-breaker: loopId ascending to keep ordering stable.
+        entries.sort((e1, e2) -> {
+            int d1 = e1.getValue().getDepth();
+            int d2 = e2.getValue().getDepth();
+
+            if (d1 != d2) {
+                return Integer.compare(d1, d2);
+            }
+            return Integer.compare(e1.getKey(), e2.getKey());
+        });
+
+        // Build ordered map preserving sorted order
+        Map<Integer, CFGLoop<?>> ordered = new LinkedHashMap<>();
+        for (Map.Entry<Integer, CFGLoop<?>> e : entries) {
+            ordered.put(e.getKey(), e.getValue());
+        }
+
+        return ordered;
+    }
+
+    private Map<Integer, CFGLoop<?>> mapLoopIdsToLoops(AbstractControlFlowGraph<?> cfg, LIR lir) {
+        BasicBlock<?>[] blocks = cfg.getBlocks();
+
+        // loopId (from AMD64LoopStartOp) -> CFGLoop (from first successor)
+        Map<Integer, CFGLoop<?>> loopsFromStarts = new HashMap<>();
+
+        for (BasicBlock<?> block : blocks) {
+            @SuppressWarnings("unchecked")
+            List<LIRInstruction> lirList = (List<LIRInstruction>) lir.getLIRforBlock(block);
+            if (lirList == null || lirList.isEmpty()) {
+                continue;
+            }
+
+            AMD64LoopStartOp loopStart = null;
+            for (LIRInstruction instr : lirList) {
+                if (instr instanceof AMD64LoopStartOp) {
+                    loopStart = (AMD64LoopStartOp) instr;
+                    break;
+                }
+            }
+
+            if (loopStart == null) {
+                continue;
+            }
+
+            CFGLoop<?> succLoop = block.getSuccessorAt(0).getLoop();
+            if (succLoop == null) {
+                continue;
+            }
+
+            loopsFromStarts.put(loopStart.loopId, succLoop);
+        }
+
+        return loopsFromStarts;
+    }
+
 }

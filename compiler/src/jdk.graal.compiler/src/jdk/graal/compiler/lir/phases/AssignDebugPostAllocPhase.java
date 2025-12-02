@@ -18,6 +18,7 @@ import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
+import jdk.graal.compiler.lir.amd64.AMD64Call.CallOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
@@ -42,6 +43,7 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
             return;
         }
 
+
         LIR lir = lirGenRes.getLIR();
         AbstractControlFlowGraph<?> cfg = lir.getControlFlowGraph();
 
@@ -63,6 +65,10 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
                 ArrayList<LIRInstruction> instructions =  lir.getLIRforBlock(block);
 
                 for (LIRInstruction instr : instructions) {
+                    if (instr instanceof CallOp) {
+                        //System.out.println(lirGenRes.getCompilationUnitName() + " : Call found in loop " + LoopID + " : " + instr);
+                        
+                    }
                     if (instr.getPosition() != null) {
                         instr.setPosition(buildDebugPositionChain(instr.getPosition(), lirGenRes.getCompilationId(), LoopID));
                         
