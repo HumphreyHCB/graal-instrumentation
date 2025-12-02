@@ -63,10 +63,6 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
         outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
-            // if (lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED)
-            // .contains("moveDisks")) {
-            //     System.out.println("Found moveDisks");
-            // }
 
             BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
             if (b == null) {
