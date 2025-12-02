@@ -28,8 +28,8 @@ import static jdk.graal.compiler.phases.common.DeadCodeEliminationPhase.Optional
 
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.graph.Graph;
-import jdk.graal.compiler.lir.constopt.BuboLIRPhase;
 import jdk.graal.compiler.lir.phases.AssignDebugPostAllocPhase;
+import jdk.graal.compiler.lir.phases.BuboLIRPhase;
 import jdk.graal.compiler.nodes.GraphState;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
