@@ -27,7 +27,7 @@ public final class AMD64BuboWriteDeltaRDTSC extends AMD64LIRInstruction {
     // temps / clobbers
     @Temp({OperandFlag.REG}) private AllocatableValue raxTmp;   // save/restore RAX
     @Temp({OperandFlag.REG}) private AllocatableValue rdxTmp;   // save/restore RDX
-    @Temp({OperandFlag.REG}) private AllocatableValue end64;    // end timestamp (64-bit)
+    //@Temp({OperandFlag.REG}) private AllocatableValue end64;    // end timestamp (64-bit)
     @Temp({OperandFlag.REG}) private AllocatableValue start64;  // start timestamp (64-bit)
     @Temp({OperandFlag.REG}) private AllocatableValue delta;    // delta = end - start
     @Temp({OperandFlag.REG}) private AllocatableValue addrTmp;  // buffer address
@@ -37,7 +37,7 @@ public final class AMD64BuboWriteDeltaRDTSC extends AMD64LIRInstruction {
 
     private final JavaConstant addrConst;
     private final boolean atomic;
-    private final int loopId;
+    public final int loopId;
 
     public AMD64BuboWriteDeltaRDTSC(
             LIRGeneratorTool lirGen,
@@ -54,64 +54,53 @@ public final class AMD64BuboWriteDeltaRDTSC extends AMD64LIRInstruction {
         //long addr = baseAddress + ((long) compilationId) * 8L;
         this.addrConst = JavaConstant.forLong(addr);
 
+        LIRKind qword = LIRKind.value(AMD64Kind.QWORD);
         // allocate temps
         this.raxTmp = AMD64.rax.asValue(LIRKind.value(AMD64Kind.QWORD));
         this.rdxTmp = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.QWORD));
-        this.end64   = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.start64 = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.delta   = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
-        this.addrTmp = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
+        //this.end64   = lirGen.newVariable(LIRKind.value(AMD64Kind.QWORD));
+        this.start64 = AMD64.r9.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.delta   = AMD64.r10.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.addrTmp = AMD64.r11.asValue(LIRKind.value(AMD64Kind.QWORD));
     }
 
 @Override
 public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
-    // Save regs we clobber
-    masm.movq(asRegister(raxTmp), AMD64.rax);
-    masm.movq(asRegister(rdxTmp), AMD64.rdx);
+    // // Save regs we clobber
+
+
+
+    // end = rdtscp
+    masm.lfence();
+    masm.rdtsc();
+    masm.lfence();
 
      // load start from stack
     AMD64Address sAddr = (AMD64Address) crb.asAddress(startSlot);
     masm.movq(asRegister(start64), sAddr);
 
-    // end = rdtscp
-    masm.rdtsc();
-    masm.lfence();
-
-    // build 64-bit end
-    masm.movl(asRegister(end64), AMD64.rax);  // end = low
-    masm.movl(AMD64.rdx, AMD64.rdx);          // zero-extend high
+    // r10 = end64 (low in eax, high in edx)
+    masm.movl(AMD64.r10, AMD64.rax);   // r10 = zero-extended eax
     masm.shlq(AMD64.rdx, 32);
-    masm.orq(asRegister(end64), AMD64.rdx);
+    masm.orq(AMD64.r10, AMD64.rdx);    // r10 = end64
 
-    // delta = end - start
-    masm.movq(asRegister(delta), asRegister(end64));
-    masm.subq(asRegister(delta), asRegister(start64));
+    // validity check needs end vs start BEFORE we destroy end
+    // We'll set rdx=0 and use cmovb to later clear delta if end<start.
+    masm.xorq(AMD64.rdx, AMD64.rdx);           // rdx = 0 (also our cmov source)
+    masm.cmpq(AMD64.r10, AMD64.r9);            // compare end vs start
+    // Now compute delta = end - start
+    masm.subq(AMD64.r10, AMD64.r9);            // r10 = delta
+    // If end < start (Below), clear delta
+    masm.cmovq(ConditionFlag.Below, AMD64.r10, AMD64.rdx);
 
-    // ---- branchless validity check ----
-    // if (end < start)   delta = 0
-    // (this catches “garbage start”, “slot never set”, and genuine underflow)
-    masm.xorq(AMD64.rdx, AMD64.rdx);  // rdx = 0
-    masm.cmpq(asRegister(end64), asRegister(start64));
-    masm.cmovq(ConditionFlag.Below, asRegister(delta), AMD64.rdx);
-    // -----------------------------------
-
-    // load buffer address
+    // r11 = &counter
     AMD64Address literalAddr = (AMD64Address) crb.asLongConstRef(addrConst);
-    masm.movq(asRegister(addrTmp), literalAddr);
+    masm.movq(AMD64.r11, literalAddr);
 
-    AMD64Address mem = new AMD64Address(asRegister(addrTmp));
-    if (atomic) {
-        masm.lock();
-        masm.addq(mem, asRegister(delta));
-    } else {
-        masm.movq(AMD64.rax, mem);
-        masm.addq(AMD64.rax, asRegister(delta));
-        masm.movq(mem, AMD64.rax);
-    }
-
-    // restore
-    masm.movq(AMD64.rdx, asRegister(rdxTmp));
-    masm.movq(AMD64.rax, asRegister(raxTmp));
+    // atomic add [r11] += r10
+    AMD64Address mem = new AMD64Address(AMD64.r11);
+    masm.lock();
+    masm.addq(mem, AMD64.r10);
 }
 
 }

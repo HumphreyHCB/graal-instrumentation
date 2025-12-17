@@ -27,26 +27,28 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
     @Temp({OperandFlag.REG}) private AllocatableValue raxTmp;
     @Temp({OperandFlag.REG}) private AllocatableValue rdxTmp;
 
-    @Use({OperandFlag.STACK}) private AllocatableValue dstSlot;
+    @Def({OperandFlag.STACK}) private AllocatableValue dstSlot;
 
-    public AMD64BuboRDTSCToSlot(LIRGeneratorTool lirGen, VirtualStackSlot dstSlot) {
+    public final int loopID;
+
+    public AMD64BuboRDTSCToSlot(LIRGeneratorTool lirGen, VirtualStackSlot dstSlot, int loopID) {
         super(TYPE);
         this.dstSlot = dstSlot;
         this.raxTmp = AMD64.rax.asValue(LIRKind.value(AMD64Kind.QWORD));
         this.rdxTmp = AMD64.rdx.asValue(LIRKind.value(AMD64Kind.QWORD));
+        this.loopID = loopID;
     }
 
     @Override
     public void emitCode(CompilationResultBuilder crb, AMD64MacroAssembler masm) {
-        // Preserve method return in RAX (live across return paths)
-        masm.movq(asRegister(raxTmp), AMD64.rax);
-         masm.movq(asRegister(rdxTmp), AMD64.rdx);
 
-        // rdtsc -> EDX:EAX (low in EAX, high in EDX)
+        // // rdtsc -> EDX:EAX (low in EAX, high in EDX)
+        masm.lfence();
         masm.rdtsc();
+        masm.lfence();
 
-        // Zero-extend halves to 64-bit and combine into RAX:
-        // movl rax, eax  (zero-extend low 32 into RAX)
+        //Zero-extend halves to 64-bit and combine into RAX:
+       // movl rax, eax  (zero-extend low 32 into RAX)
         masm.movl(AMD64.rax, AMD64.rax);
         // movl rdx, edx  (zero-extend high 32 into RDX)
         masm.movl(AMD64.rdx, AMD64.rdx);
@@ -58,8 +60,5 @@ public final class AMD64BuboRDTSCToSlot extends AMD64LIRInstruction {
         AMD64Address addr = (AMD64Address) crb.asAddress(dstSlot);
         masm.movq(addr, AMD64.rax);
 
-        // Restore original return value to RAX
-        masm.movq(AMD64.rdx, asRegister(rdxTmp));
-        masm.movq(AMD64.rax, asRegister(raxTmp));
     }
 }
