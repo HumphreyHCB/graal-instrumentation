@@ -26,9 +26,13 @@ package jdk.graal.compiler.lir.phases;
 
 import java.util.ArrayList;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.StandardOp.JumpOp;
+import jdk.graal.compiler.lir.StandardOp.LabelOp;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
@@ -36,6 +40,8 @@ import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTMarkerOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotReturnOp;
@@ -60,6 +66,8 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                 .contains("HotSpotOSRCompilation")) {
             return;
         }
+        // System.out.println();
+        //System.out.println("CompName : " + lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED));
 
         outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
@@ -71,10 +79,17 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
 
             boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
-
-            if (ShouldWeSkipBlock) {
+            boolean ShouldWeSkipBlock2 = ShouldWeSkipBlockBuboOps(instructions);
+            if (ShouldWeSkipBlock || ShouldWeSkipBlock2) {
                 continue;
             }
+
+            // System.out.println();
+            // System.out.println("Block : " + blockId);
+
+            // for (LIRInstruction ins : instructions) {
+            //     System.out.println("LIRInstruction : " + ins.getClass());
+            // }
 
             AMD64GTMarkerOp markerOp = new AMD64GTMarkerOp(b.getId(), lirGenRes.getCompilationUnitName());
             instructions.add(1, markerOp);
@@ -180,5 +195,35 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
         return skip;
     }
+
+    private boolean ShouldWeSkipBlockBuboOps(ArrayList<LIRInstruction> instructions) {
+        boolean sawAllowedOp = false;
+
+        for (LIRInstruction instr : instructions) {
+            // Ignore structural ops
+            if (instr instanceof LabelOp) {
+                continue;
+            }
+            if (instr instanceof JumpOp) {
+                continue;
+            }
+
+            // Allowed "non-real" ops
+            if (instr instanceof AMD64LoopEndOp
+                    || instr instanceof AMD64BuboWriteDeltaRDTSC
+                    || instr instanceof AMD64LoopStartOp
+                    || instr instanceof AMD64BuboRDTSCToSlot) {
+                sawAllowedOp = true;
+                continue;
+            }
+
+            // Anything else makes this a real block
+            return false;
+        }
+
+        // Skip only if we saw at least one allowed op
+        return sawAllowedOp;
+    }
+
 
 }

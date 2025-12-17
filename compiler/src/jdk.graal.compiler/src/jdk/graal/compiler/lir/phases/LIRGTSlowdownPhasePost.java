@@ -32,10 +32,14 @@ import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 import jdk.graal.compiler.hotspot.amd64.GTBlockSlowDownLookUp;
 import jdk.graal.compiler.lir.amd64.AMD64Call.DirectCallOp;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.StandardOp;
+import jdk.graal.compiler.lir.StandardOp.JumpOp;
+import jdk.graal.compiler.lir.StandardOp.LabelOp;
 import jdk.graal.compiler.lir.amd64.AMD64PointLesss;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
 import jdk.graal.compiler.lir.amd64.AMD64PointLessReg;
@@ -49,6 +53,8 @@ import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
@@ -74,7 +80,8 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
 
             boolean ShouldWeSkipBlock = ShouldWeSkipBlock(instructions);
-            if (ShouldWeSkipBlock) {
+            boolean ShouldWeSkipBlock2 = ShouldWeSkipBlockBuboOps(instructions);
+            if (ShouldWeSkipBlock || ShouldWeSkipBlock2) {
                 continue;
             }
 
@@ -92,7 +99,8 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                         ins instanceof TestByteBranchOp ||
                         ins instanceof AMD64HotSpotSafepointOp ||
                         ins instanceof AMD64HotSpotReturnOp ||
-                        ins instanceof AMD64PrefetchOp) {
+                        ins instanceof AMD64PrefetchOp
+                    ) {
                     firstDelimiterIndex = idx;
                     break;
                 }
@@ -240,9 +248,120 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                 }
             }
 
+            // if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+            //     AdjustBuboProbes(b, lirGenRes);
+            // }
+
         }
 
     }
+
+    private void AdjustBuboProbes(BasicBlock<?> b, LIRGenerationResult lirGenRes) {
+        ArrayList<LIRInstruction> insns = lirGenRes.getLIR().getLIRforBlock(b);
+
+        // Find indices (first occurrences)
+        int rdtscIdx = -1;
+        int writeDeltaIdx = -1;
+        for (int i = 0; i < insns.size(); i++) {
+            LIRInstruction op = insns.get(i);
+            if (rdtscIdx < 0 && op instanceof AMD64BuboRDTSCToSlot) {
+                rdtscIdx = i;
+            } else if (writeDeltaIdx < 0 && op instanceof AMD64BuboWriteDeltaRDTSC) {
+                writeDeltaIdx = i;
+            }
+            if (rdtscIdx >= 0 && writeDeltaIdx >= 0) {
+                break;
+            }
+        }
+
+        boolean hasRdtsc = rdtscIdx >= 0;
+        boolean hasWriteDelta = writeDeltaIdx >= 0;
+
+        if (!hasRdtsc && !hasWriteDelta) {
+            return;
+        }
+
+        // Helper: is this a slowdown op?
+        // (Keep your types/names exactly as you use them)
+        java.util.function.Predicate<LIRInstruction> isSlowdown = op -> (op instanceof AMD64PointLesss)
+                || (op instanceof AMD64PointLessReg);
+
+        // ------------------------------------------------------------------
+        // Rule 1:
+        // Any slowdown AFTER AMD64BuboRDTSCToSlot should be placed BEFORE it.
+        // i.e. move slowdowns from (rdtscIdx+1 .. end) -> just before rdtscIdx
+        // ------------------------------------------------------------------
+        if (hasRdtsc) {
+            java.util.ArrayList<LIRInstruction> afterRdtsc = new java.util.ArrayList<>();
+
+            for (int i = rdtscIdx + 1; i < insns.size();) {
+                LIRInstruction op = insns.get(i);
+                if (isSlowdown.test(op)) {
+                    afterRdtsc.add(op);
+                    insns.remove(i); // don't increment i
+                    if (hasWriteDelta && i <= writeDeltaIdx) {
+                        writeDeltaIdx--; // shifted left
+                    }
+                } else {
+                    i++;
+                }
+            }
+
+            // Insert before RDTSC, preserving relative order of extracted ops
+            if (!afterRdtsc.isEmpty()) {
+                insns.addAll(rdtscIdx, afterRdtsc);
+                rdtscIdx += afterRdtsc.size();
+                if (hasWriteDelta && rdtscIdx <= writeDeltaIdx) {
+                    writeDeltaIdx += afterRdtsc.size(); // shifted right
+                }
+            }
+        }
+
+        // Re-find writeDeltaIdx if needed (safe if it shifted a lot)
+        if (hasWriteDelta) {
+            writeDeltaIdx = -1;
+            for (int i = 0; i < insns.size(); i++) {
+                if (insns.get(i) instanceof AMD64BuboWriteDeltaRDTSC) {
+                    writeDeltaIdx = i;
+                    break;
+                }
+            }
+            if (writeDeltaIdx < 0) {
+                return;
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Rule 2:
+        // Any slowdown BEFORE AMD64BuboWriteDeltaRDTSC should be placed AFTER it.
+        // i.e. move slowdowns from (0 .. writeDeltaIdx-1) -> just after writeDeltaIdx
+        // ------------------------------------------------------------------
+        if (hasWriteDelta) {
+            java.util.ArrayList<LIRInstruction> beforeWriteDelta = new java.util.ArrayList<>();
+
+            for (int i = 0; i < writeDeltaIdx;) {
+                LIRInstruction op = insns.get(i);
+                if (isSlowdown.test(op)) {
+                    beforeWriteDelta.add(op);
+                    insns.remove(i);
+                    writeDeltaIdx--; // marker shifts left when removing before it
+                    // rdtscIdx might shift too if it is after i
+                    if (hasRdtsc && i <= rdtscIdx) {
+                        rdtscIdx--;
+                    }
+                } else {
+                    i++;
+                }
+            }
+
+            // Insert after writeDelta, preserving relative order of extracted ops
+            if (!beforeWriteDelta.isEmpty()) {
+                insns.addAll(writeDeltaIdx + 1, beforeWriteDelta);
+            }
+        }
+    }
+
+
 
     private boolean ShouldWeSkipBlock(ArrayList<LIRInstruction> instructions) {
         boolean skip = false;
@@ -269,6 +388,35 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
         }
 
         return skip;
+    }
+
+        private boolean ShouldWeSkipBlockBuboOps(ArrayList<LIRInstruction> instructions) {
+        boolean sawAllowedOp = false;
+
+        for (LIRInstruction instr : instructions) {
+            // Ignore structural ops
+            if (instr instanceof LabelOp) {
+                continue;
+            }
+            if (instr instanceof JumpOp) {
+                continue;
+            }
+
+            // Allowed "non-real" ops
+            if (instr instanceof AMD64LoopEndOp
+                    || instr instanceof AMD64BuboWriteDeltaRDTSC
+                    || instr instanceof AMD64LoopStartOp
+                    || instr instanceof AMD64BuboRDTSCToSlot) {
+                sawAllowedOp = true;
+                continue;
+            }
+
+            // Anything else makes this a real block
+            return false;
+        }
+
+        // Skip only if we saw at least one allowed op
+        return sawAllowedOp;
     }
 
 }
