@@ -5926,6 +5926,10 @@ public class AMD64Assembler extends AMD64BaseAssembler implements MemoryReadInte
         SSEOp.SUB.emit(this, OperandSize.SS, dst, src);
     }
 
+    public final void subq(AMD64Address dst, Register src) {
+    AMD64BinaryArithmetic.SUB.mrOp.emit(this, OperandSize.QWORD, dst, src);
+    }
+
     public final void subss(Register dst, AMD64Address src) {
         SSEOp.SUB.emit(this, OperandSize.SS, dst, src);
     }
