@@ -11,8 +11,11 @@ import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInstruction;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
+import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.phases.PostAllocationOptimizationPhase;
+import jdk.vm.ci.amd64.AMD64;
 import jdk.vm.ci.code.TargetDescription;
 
 public final class HumphreysDebugDataPhase extends PostAllocationOptimizationPhase {
@@ -32,7 +35,7 @@ public final class HumphreysDebugDataPhase extends PostAllocationOptimizationPha
         AbstractControlFlowGraph<?> cfg = lir.getControlFlowGraph();
 
         System.out.println("=== HumphreysDebugDataPhase ===");
-        System.out.println("Compilation: " + compName);
+        System.out.println("Compilation: " + lirGenRes.getCompilationId()+"-"+ compName);
         System.out.println("Number of loops: " + cfg.getNumberOfLoops());
         System.out.println();
 
@@ -79,6 +82,25 @@ public final class HumphreysDebugDataPhase extends PostAllocationOptimizationPha
             } else {
                 for (String enc : srcEncodings) {
                     System.out.println("    " + enc);
+                }
+            }
+
+            System.out.println(" BuboLoopMakers: ");
+            for (LIRInstruction instr : instrs) {
+                if (instr instanceof AMD64BuboRDTSCToSlot || instr instanceof AMD64BuboWriteDeltaRDTSC) {
+                    System.out.println(" Found in this block : " + instr.getClass());
+                    if (instr instanceof AMD64BuboWriteDeltaRDTSC) {
+                        AMD64BuboWriteDeltaRDTSC a = (AMD64BuboWriteDeltaRDTSC) instr;
+                        System.out.print(" LoopID: " + a.loopId);
+                        
+                    }
+                    if (instr instanceof AMD64BuboRDTSCToSlot) {
+                        AMD64BuboRDTSCToSlot a = (AMD64BuboRDTSCToSlot) instr;
+                        System.out.print(" LoopID: " + a.loopID);
+                        
+                    }
+                    
+
                 }
             }
 
