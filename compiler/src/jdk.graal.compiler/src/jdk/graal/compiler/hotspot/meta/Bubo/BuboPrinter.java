@@ -571,9 +571,23 @@ public class BuboPrinter {
                         printedHeader = true;
                     }
 
-                    // System.out.println(" loop " + loopId + " = " + val );
+                    Integer loopCall = null;
+                    String source = null;
+
+                    if (loopcallMap != null && loopcallMap.get(compId) != null) {
+                        loopCall = loopcallMap.get(compId).get(loopId);
+                    }
+
+                    if (loopsourceMap != null && loopsourceMap.get(compId) != null) {
+                        source = loopsourceMap.get(compId).get(loopId);
+                    }
+
                     System.out.println(
-                            "  loop " + loopId + " Cycles: " + val + " || Activation Count:"+ BuboNativeBuffers.readActivationAt(flat) + "| LoopCallCount: " + loopcallMap.get(compId).get(loopId)  + " |  Source: " + loopsourceMap.get(compId).get(loopId));
+                            "  loop " + loopId +
+                                    " Cycles: " + val +
+                                    " || Activation Count:" + BuboNativeBuffers.readActivationAt(flat) +
+                                    " | LoopCallCount: " + (loopCall != null ? loopCall : "<none>") +
+                                    " |  Source: " + (source != null ? source : "<none>"));
                 }
             }
         }
