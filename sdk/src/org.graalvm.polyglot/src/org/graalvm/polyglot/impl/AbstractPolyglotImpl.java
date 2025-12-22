@@ -82,6 +82,7 @@ import org.graalvm.polyglot.HostAccess.MutableTargetMapping;
 import org.graalvm.polyglot.HostAccess.TargetMappingPrecedence;
 import org.graalvm.polyglot.Instrument;
 import org.graalvm.polyglot.Language;
+import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.SandboxPolicy;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.io.ByteSequence;
@@ -176,7 +177,7 @@ public abstract class AbstractPolyglotImpl {
 
         public abstract Object getSourceSectionSource(Object sourceSection);
 
-        public abstract RuntimeException newLanguageException(String message, AbstractExceptionDispatch dispatch, Object receiver, Object anchor);
+        public abstract PolyglotException newLanguageException(String message, AbstractExceptionDispatch dispatch, Object receiver, Object anchor);
 
         public abstract boolean isInstrument(Object instrument);
 
@@ -479,9 +480,9 @@ public abstract class AbstractPolyglotImpl {
 
     public Engine buildEngine(String[] permittedLanguages, SandboxPolicy sandboxPolicy, OutputStream out, OutputStream err, InputStream in, Map<String, String> options,
                     boolean allowExperimentalOptions, boolean boundEngine, MessageTransport messageInterceptor, Object logHandler, Object hostLanguage,
-                    boolean hostLanguageOnly, boolean registerInActiveEngines, Object polyglotHostService) {
+                    boolean hostLanguageOnly, boolean registerInActiveEngines, Object polyglotHostService, Consumer<PolyglotException> exceptionHandler) {
         return getNext().buildEngine(permittedLanguages, sandboxPolicy, out, err, in, options, allowExperimentalOptions, boundEngine, messageInterceptor, logHandler, hostLanguage,
-                        hostLanguageOnly, registerInActiveEngines, polyglotHostService);
+                        hostLanguageOnly, registerInActiveEngines, polyglotHostService, exceptionHandler);
     }
 
     public void onEngineCreated(Object polyglotEngine) {
@@ -772,8 +773,8 @@ public abstract class AbstractPolyglotImpl {
                         Predicate<String> classFilter,
                         Map<String, String> options,
                         Map<String, String[]> arguments, String[] onlyLanguages, Object ioAccess, Object logHandler, boolean allowCreateProcess, ProcessHandler processHandler,
-                        Object environmentAccess, Map<String, String> environment, ZoneId zone, Object limitsImpl, String currentWorkingDirectory, String tmpDir,
-                        ClassLoader hostClassLoader, boolean allowValueSharing, boolean useSystemExit, boolean registerInActiveContexts);
+                        Consumer<PolyglotException> exceptionHandler, Object environmentAccess, Map<String, String> environment, ZoneId zone, Object limitsImpl, String currentWorkingDirectory,
+                        String tmpDir, ClassLoader hostClassLoader, boolean allowValueSharing, boolean useSystemExit, boolean registerInActiveContexts);
 
         public abstract String getImplementationName(Object receiver);
 
@@ -1034,31 +1035,15 @@ public abstract class AbstractPolyglotImpl {
 
         public abstract <T> T toHostType(Object hostNode, Object targetNode, Object hostContext, Object value, Class<T> targetType, Type genericType);
 
-        public abstract boolean isHostValue(Object value);
-
-        public abstract Object unboxHostObject(Object hostValue);
-
         public abstract Object unboxProxyObject(Object hostValue);
-
-        public abstract Throwable unboxHostException(Throwable hostValue);
 
         public abstract Object toHostObject(Object context, Object value);
 
         public abstract RuntimeException toHostException(Object hostContext, Throwable exception);
 
-        public abstract boolean isHostException(Object exception);
-
-        public abstract boolean isHostFunction(Object obj);
-
-        public abstract boolean isHostObject(Object obj);
-
-        public abstract boolean isHostSymbol(Object obj);
-
         public abstract Object createHostAdapter(Object hostContextObject, Object[] types, Object classOverrides);
 
         public abstract boolean isHostProxy(Object value);
-
-        public abstract Error toHostResourceError(Throwable hostException);
 
         public abstract int findNextGuestToHostStackTraceElement(StackTraceElement firstElement, StackTraceElement[] hostStack, int nextElementIndex);
 
@@ -1152,6 +1137,12 @@ public abstract class AbstractPolyglotImpl {
         public abstract void putMember(Object context, Object receiver, String key, Object member);
 
         public abstract boolean removeMember(Object context, Object receiver, String key);
+
+        public boolean hasStaticScope(Object context, Object receiver) {
+            return false;
+        }
+
+        public abstract Object getStaticScope(Object context, Object receiver);
 
         public boolean canExecute(Object context, Object receiver) {
             return false;

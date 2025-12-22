@@ -91,8 +91,6 @@ import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.graal.pointsto.meta.AnalysisUniverse;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.graal.pointsto.util.AnalysisFuture;
-import com.oracle.svm.common.hosted.layeredimage.LayeredCompilationSupport;
-import com.oracle.svm.common.layeredimage.LayeredCompilationBehavior;
 import com.oracle.svm.core.FunctionPointerHolder;
 import com.oracle.svm.core.StaticFieldsSupport;
 import com.oracle.svm.core.SubstrateUtil;
@@ -161,6 +159,8 @@ import com.oracle.svm.hosted.reflect.proxy.ProxyRenamingSubstitutionProcessor;
 import com.oracle.svm.hosted.reflect.proxy.ProxySubstitutionType;
 import com.oracle.svm.hosted.substitute.PolymorphicSignatureWrapperMethod;
 import com.oracle.svm.hosted.substitute.SubstitutionMethod;
+import com.oracle.svm.sdk.staging.hosted.layeredimage.LayeredCompilationSupport;
+import com.oracle.svm.sdk.staging.layeredimage.LayeredCompilationBehavior;
 import com.oracle.svm.shaded.org.capnproto.ListBuilder;
 import com.oracle.svm.shaded.org.capnproto.MessageBuilder;
 import com.oracle.svm.shaded.org.capnproto.PrimitiveList;
@@ -187,8 +187,8 @@ import jdk.graal.compiler.java.LambdaUtils;
 import jdk.graal.compiler.nodes.EncodedGraph;
 import jdk.graal.compiler.nodes.GraphEncoder;
 import jdk.graal.compiler.nodes.NodeClassMap;
-import jdk.graal.compiler.nodes.spi.IdentityHashCodeProvider;
 import jdk.graal.compiler.util.ObjectCopier;
+import jdk.vm.ci.meta.ConstantReflectionProvider;
 import jdk.vm.ci.meta.JavaConstant;
 import jdk.vm.ci.meta.JavaKind;
 import jdk.vm.ci.meta.MethodHandleAccessProvider.IntrinsicMethod;
@@ -408,7 +408,7 @@ public class SVMImageLayerWriter extends ImageLayerWriter {
         Map.Entry<ImageHeapConstant, ConstantParent>[] constantsToPersist = (Map.Entry<ImageHeapConstant, ConstantParent>[]) constantsMap.entrySet().stream()
                         .sorted(Comparator.comparingInt(a -> ImageHeapConstant.getConstantID(a.getKey())))
                         .toArray(Map.Entry[]::new);
-        Set<Integer> constantsToRelink = new HashSet<>();
+        Set<Integer> constantsToRelink = new HashSet<>(); // noEconomicSet(streaming)
         initSortedArray(snapshotBuilder::initConstants, constantsToPersist,
                         (entry, bsupplier) -> persistConstant(entry.getKey(), entry.getValue(), bsupplier.get(), constantsToRelink));
         initInts(snapshotBuilder::initConstantsToRelink, constantsToRelink.stream().mapToInt(i -> i).sorted());
@@ -848,8 +848,8 @@ public class SVMImageLayerWriter extends ImageLayerWriter {
         AnalysisError.guarantee(type.isTrackedAcrossLayers(), "Type %s from constant %s should have been marked as trackedAcrossLayers, but was not", type, imageHeapConstant);
         builder.setTypeId(type.getId());
 
-        IdentityHashCodeProvider identityHashCodeProvider = (IdentityHashCodeProvider) aUniverse.getBigbang().getConstantReflectionProvider();
-        int identityHashCode = identityHashCodeProvider.identityHashCode(imageHeapConstant);
+        ConstantReflectionProvider constantReflection = aUniverse.getBigbang().getConstantReflectionProvider();
+        int identityHashCode = constantReflection.identityHashCode(imageHeapConstant);
         builder.setIdentityHashCode(identityHashCode);
 
         switch (imageHeapConstant) {

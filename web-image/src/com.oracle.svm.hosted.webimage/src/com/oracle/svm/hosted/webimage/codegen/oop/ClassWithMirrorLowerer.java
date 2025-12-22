@@ -357,7 +357,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
         // We use the ProxyHandler's overload resolution.
         buffer.emitConstDeclPrefix("handler");
         buffer.emitText("conversion.getOrCreateProxyHandler(");
-        tool.genTypeName(type);
+        buffer.emitText(codeGenTool.getJSProviders().typeControl().requestHubName(type));
         buffer.emitText(");");
         buffer.emitNewLine();
         buffer.emitText("handler._getJavaConstructorMethod()(this, ...args);");
@@ -417,7 +417,7 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
         buffer.emitScopeBegin();
         codeGenTool.genResolvedConstDeclPrefix("handler");
         buffer.emitText("conversion.getOrCreateProxyHandler(");
-        codeGenTool.genTypeName(type);
+        buffer.emitText(codeGenTool.getJSProviders().typeControl().requestHubName(type));
         buffer.emitText(");");
         buffer.emitNewLine();
         buffer.emitText("return handler.");
@@ -548,29 +548,6 @@ public class ClassWithMirrorLowerer extends ClassLowerer {
             return hub + "[" + RUNTIME_SYMBOL + ".box](" + p + ")";
         } else {
             return p;
-        }
-    }
-
-    @Override
-    protected void lowerClassEnd() {
-        super.lowerClassEnd();
-
-        JSCodeBuffer buffer = (JSCodeBuffer) codeGenTool.getCodeBuffer();
-
-        // Store the mapping from the imported JavaScript class constructor to the Java facade class
-        // under which the JavaScript class was imported.
-        if (isImportedClass) {
-            buffer.emitScopeBegin();
-            buffer.emitLetDeclPrefix("facades");
-            buffer.emitText("runtime.ensureFacadeSetFor(" + internalMirrorClassName(codeGenTool, type) + ");");
-            buffer.emitNewLine();
-            buffer.emitText("facades.add(");
-            buffer.emitText(codeGenTool.getJSProviders().typeControl().requestTypeName(type));
-            buffer.emitText(");");
-            buffer.emitNewLine();
-            buffer.emitScopeEnd();
-            buffer.emitNewLine();
-            buffer.emitNewLine();
         }
     }
 }

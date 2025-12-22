@@ -45,6 +45,7 @@ import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.impl.InternalPlatform;
 
+import com.oracle.graal.pointsto.meta.AnalysisType;
 import com.oracle.svm.core.BuildArtifacts;
 import com.oracle.svm.core.ParsingReason;
 import com.oracle.svm.core.SubstrateOptions;
@@ -68,12 +69,14 @@ import com.oracle.svm.core.traits.SingletonTraitKind;
 import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.InterruptImageBuilding;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.hosted.FeatureImpl.AfterAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.AfterImageWriteAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeImageWriteAccessImpl;
 import com.oracle.svm.hosted.c.NativeLibraries;
 import com.oracle.svm.hosted.c.codegen.CCompilerInvoker;
 import com.oracle.svm.hosted.c.util.FileUtils;
+import com.oracle.svm.hosted.image.AbstractImage.NativeImageKind;
 import com.oracle.svm.hosted.imagelayer.CapnProtoAdapters;
 import com.oracle.svm.hosted.imagelayer.SVMImageLayerSingletonLoader;
 import com.oracle.svm.hosted.imagelayer.SVMImageLayerWriter;
@@ -125,8 +128,9 @@ public final class JNIRegistrationSupport extends JNIRegistrationUtil implements
     @Override
     public void afterAnalysis(AfterAnalysisAccess access) {
         if (isWindows()) {
-            var optSunMSCAPIClass = optionalClazz(access, "sun.security.mscapi.SunMSCAPI");
-            isSunMSCAPIProviderReachable = optSunMSCAPIClass.isPresent() && access.isReachable(optSunMSCAPIClass.get());
+            AfterAnalysisAccessImpl afterAnalysisAccessImpl = (AfterAnalysisAccessImpl) access;
+            var optSunMSCAPIClass = optionalType(access, "sun.security.mscapi.SunMSCAPI").map(AnalysisType.class::cast);
+            isSunMSCAPIProviderReachable = optSunMSCAPIClass.isPresent() && afterAnalysisAccessImpl.isReachable(optSunMSCAPIClass.get());
         }
         if (ImageLayerBuildingSupport.buildingExtensionLayer()) {
             for (String library : jniRegistrationSupportSingleton.prevLayerRegisteredLibraries) {
@@ -322,6 +326,15 @@ public final class JNIRegistrationSupport extends JNIRegistrationUtil implements
         List<String> linkerCommand;
         Path image = accessImpl.getImagePath();
         Path shimLibrary = image.resolveSibling(System.mapLibraryName(shimName));
+        if (accessImpl.getImageKind() == NativeImageKind.SHARED_LIBRARY && shimLibrary.equals(image)) {
+            /*
+             * A shared library image gets built with the same name this shim-library would have.
+             * This is an advanced use-case, and we assume the user knows what they are doing. Thus,
+             * we will suppress producing a shim library in this case.
+             */
+            return;
+        }
+
         if (isWindows()) {
             /* Dependencies are the native image (so we can re-export from it) and C Runtime. */
             linkerCommand = ImageSingletons.lookup(CCompilerInvoker.class)

@@ -55,8 +55,6 @@ import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordBase;
 
-import com.oracle.svm.common.layeredimage.LayeredCompilationBehavior;
-import com.oracle.svm.common.layeredimage.LayeredCompilationBehavior.Behavior;
 import com.oracle.svm.core.c.CGlobalData;
 import com.oracle.svm.core.c.CGlobalDataFactory;
 import com.oracle.svm.core.c.function.CEntryPointActions;
@@ -84,6 +82,8 @@ import com.oracle.svm.core.traits.SingletonLayeredInstallationKind.ApplicationLa
 import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.sdk.staging.layeredimage.LayeredCompilationBehavior;
+import com.oracle.svm.sdk.staging.layeredimage.LayeredCompilationBehavior.Behavior;
 import com.oracle.svm.util.ClassUtil;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -206,7 +206,7 @@ public class JavaMainWrapper {
      */
     private static int runCore0() {
         try {
-            if (SubstrateOptions.ParseRuntimeOptions.getValue()) {
+            if (SubstrateOptions.InitializeVM.getValue()) {
                 /*
                  * When options are not parsed yet, it is also too early to run the startup hooks
                  * because they often depend on option values. The user is expected to manually run
@@ -326,6 +326,7 @@ public class JavaMainWrapper {
     private static int doRunInNewThread(int argc, CCharPointerPointer argv) {
         MAIN_ISOLATE_PARAMETERS.get().setArgc(argc);
         MAIN_ISOLATE_PARAMETERS.get().setArgv(argv);
+        // GR-71873 change to use runtime stack size value
         long stackSize = SubstrateOptions.StackSize.getHostedValue();
         OSThreadHandle osThreadHandle = PlatformThreads.singleton().startThreadUnmanaged(RUN_MAIN_ROUTINE.get(), Word.nullPointer(), (int) stackSize);
         if (osThreadHandle.isNull()) {

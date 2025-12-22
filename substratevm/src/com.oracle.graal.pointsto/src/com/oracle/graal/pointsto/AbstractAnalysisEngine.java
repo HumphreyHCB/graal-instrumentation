@@ -27,9 +27,9 @@ package com.oracle.graal.pointsto;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.nativeimage.hosted.Feature;
 
 import com.oracle.graal.pointsto.ClassInclusionPolicy.SharedLayerImageInclusionPolicy;
@@ -135,7 +135,9 @@ public abstract class AbstractAnalysisEngine implements BigBang {
         this.snippetReflectionProvider = snippetReflectionProvider;
         this.constantReflectionProvider = constantReflectionProvider;
         this.wordTypes = wordTypes;
-        classInclusionPolicy.setBigBang(this);
+        if (classInclusionPolicy != null) {
+            classInclusionPolicy.setBigBang(this);
+        }
         this.classInclusionPolicy = classInclusionPolicy;
     }
 
@@ -421,7 +423,7 @@ public abstract class AbstractAnalysisEngine implements BigBang {
          * Some modules contain native methods that should not be included in the image because they
          * are hosted only, or because they are currently unsupported.
          */
-        Set<Module> forbiddenModules = hostVM.getForbiddenModules();
+        EconomicSet<Module> forbiddenModules = hostVM.getSharedLayerForbiddenModules();
         if (forbiddenModules.contains(OriginalClassProvider.getJavaClass(type).getModule())) {
             return;
         }

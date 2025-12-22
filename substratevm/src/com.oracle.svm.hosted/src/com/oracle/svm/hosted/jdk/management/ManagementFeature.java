@@ -36,22 +36,20 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.management.MBeanServerBuilder;
 import javax.management.openmbean.OpenType;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeClassInitialization;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
-import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
@@ -74,10 +72,9 @@ import com.oracle.svm.core.traits.SingletonTraitKind;
 import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
+import com.oracle.svm.hosted.imagelayer.LayeredImageUtils;
 import com.oracle.svm.util.ReflectionUtil;
-
-import jdk.vm.ci.code.BytecodeFrame;
-import jdk.vm.ci.code.BytecodePosition;
+import com.oracle.svm.util.dynamicaccess.JVMCIRuntimeReflection;
 
 /** See {@link ManagementSupport} for documentation. */
 @AutomaticallyRegisteredFeature
@@ -186,7 +183,8 @@ public final class ManagementFeature extends JNIRegistrationUtil implements Inte
     @Override
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         access.registerReachabilityHandler(ManagementFeature::registerMBeanServerFactoryNewBuilder, method(access, "javax.management.MBeanServerFactory", "newBuilder", Class.class));
-        access.registerReachabilityHandler(ManagementFeature::registerMXBeanMappingMakeOpenClass, method(access, "com.sun.jmx.mbeanserver.MXBeanMapping", "makeOpenClass", Type.class, OpenType.class));
+        access.registerReachabilityHandler(ManagementFeature::registerMXBeanMappingMakeOpenClass,
+                        method(access, "com.sun.jmx.mbeanserver.MXBeanMapping", "makeOpenClass", Type.class, OpenType.class));
 
         if (ImageLayerBuildingSupport.firstImageBuild()) {
             assert verifyMemoryManagerBeans();
@@ -195,24 +193,18 @@ public final class ManagementFeature extends JNIRegistrationUtil implements Inte
             if (ImageLayerBuildingSupport.buildingInitialLayer()) {
                 /*
                  * When building an initial layer, we must ensure that all beans potentially
-                 * referred to by later layers are installed in the heap. Further, we must collect
-                 * their constant ids so that we can access them in later layers.
+                 * referred to by later layers are seen during heap scanning. In addition, we must
+                 * collect their constant ids so that we can access them in later layers.
                  */
                 var managementSupport = ManagementSupport.getSingleton();
-                var config = (FeatureImpl.BeforeAnalysisAccessImpl) access;
-                var universe = config.getUniverse();
-                var snippetReflection = universe.getSnippetReflection();
-                AnalysisMetaAccess metaAccess = config.getMetaAccess();
-                var method = metaAccess.lookupJavaMethod(ReflectionUtil.lookupMethod(ManagementSupport.class, "getPlatformMXBeans", Class.class));
+                var universe = ((FeatureImpl.BeforeAnalysisAccessImpl) access).getUniverse();
                 for (int i = 0; i < manageObjectReplacementConstantIds.length; i++) {
                     int objectId = manageObjectReplacementConstantIds[i];
                     if (objectId != EMPTY_ID) {
                         assert objectId == TO_PROCESS : objectId;
                         var clazz = MANAGED_OBJECT_REPLACEMENT_CANDIDATES[i];
                         PlatformManagedObject target = managementSupport.getPlatformMXBeanRaw(clazz);
-                        var ihc = (ImageHeapConstant) snippetReflection.forObject(target);
-                        universe.registerEmbeddedRoot(ihc, new BytecodePosition(null, method, BytecodeFrame.UNKNOWN_BCI));
-                        manageObjectReplacementConstantIds[i] = ImageHeapConstant.getConstantID(ihc);
+                        manageObjectReplacementConstantIds[i] = LayeredImageUtils.registerObjectAsEmbeddedRoot(universe, target);
                     }
                 }
             }
@@ -224,8 +216,8 @@ public final class ManagementFeature extends JNIRegistrationUtil implements Inte
         List<MemoryPoolMXBean> memoryPools = managementSupport.getPlatformMXBeans(MemoryPoolMXBean.class);
         List<MemoryManagerMXBean> memoryManagers = managementSupport.getPlatformMXBeans(MemoryManagerMXBean.class);
 
-        Set<String> memoryManagerNames = new HashSet<>();
-        Set<String> memoryPoolNames = new HashSet<>();
+        EconomicSet<String> memoryManagerNames = EconomicSet.create();
+        EconomicSet<String> memoryPoolNames = EconomicSet.create();
         for (MemoryPoolMXBean memoryPool : memoryPools) {
             String memoryPoolName = memoryPool.getName();
             assert verifyObjectName(memoryPoolName);
@@ -266,8 +258,8 @@ public final class ManagementFeature extends JNIRegistrationUtil implements Inte
          * Registering the one-dimensional array classes capture the common use cases.
          */
         for (String className : OpenType.ALLOWED_CLASSNAMES_LIST) {
-            RuntimeReflection.register(clazz(access, className));
-            RuntimeReflection.register(clazz(access, "[L" + className + ";"));
+            JVMCIRuntimeReflection.register(type(access, className));
+            JVMCIRuntimeReflection.register(type(access, "[L" + className + ";"));
         }
     }
 

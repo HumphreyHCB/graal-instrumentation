@@ -24,6 +24,8 @@
  */
 package com.oracle.svm.util;
 
+import jdk.graal.compiler.vmaccess.ResolvedJavaModule;
+
 /**
  * Utilities to access {@linkplain ResolvedJavaModule runtime modules} from hosted code.
  */

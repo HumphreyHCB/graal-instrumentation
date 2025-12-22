@@ -362,7 +362,7 @@ class NativeImageBenchmarkConfig:
         self.config_dir: Path = self.output_dir / "config"
         self.log_dir: Path = self.output_dir
         self.ml_log_dump_path: Path = self.output_dir / f"{base_image_name}.ml.log.csv"
-        base_image_build_args = ['--no-fallback']
+        base_image_build_args = []
         if not vm.pgo_use_perf:
             # Can only have debug info when not using perf, [GR-66850]
             base_image_build_args.append('-g')
@@ -431,6 +431,8 @@ class NativeImageBenchmarkConfig:
             base_image_build_args += ['--gc=' + vm.gc] + ['-H:+SpawnIsolates']
         if vm.native_architecture:
             base_image_build_args += ['-march=native']
+        if vm.crema:
+            base_image_build_args += ["-H:+RuntimeClassLoading", "-H:EnableURLProtocols=jar"]
         if vm.preserve_all:
             base_image_build_args += ['-H:Preserve=all']
         if vm.preserve_classpath:
@@ -868,6 +870,7 @@ class NativeImageVM(StageAwareGraalVm):
         self.is_llvm = False
         self.gc = None
         self.native_architecture = False
+        self.crema = False
         self.preserve_all = False
         self.preserve_classpath = False
         self.future_defaults_all = False
@@ -885,6 +888,7 @@ class NativeImageVM(StageAwareGraalVm):
         self.profile_inference_call_count = False
         self.force_profile_inference = False
         self.profile_inference_debug = False
+        self.ml_callcount_threshold = None
         self.analysis_context_sensitivity = None
         self.optimization_level = None
         self._configure_comma_separated_configs(config_name)
@@ -908,6 +912,8 @@ class NativeImageVM(StageAwareGraalVm):
         config = []
         if self.native_architecture is True:
             config += ["native-architecture"]
+        if self.crema is True:
+            config += ["crema"]
         if self.use_string_inlining is True:
             config += ["string-inlining"]
         if self.use_open_type_world is True:
@@ -967,7 +973,15 @@ class NativeImageVM(StageAwareGraalVm):
         if self.profile_inference_feature_extraction is True:
             config += ["profile-inference-feature-extraction"]
         if self.profile_inference_call_count is True:
-            config += ["profile-inference-call-count"]
+            if self.ml_callcount_threshold is not None:
+                if self.ml_callcount_threshold == 0.1:
+                    config += ["profile-inference-call-count", 'conservative']
+                elif self.ml_callcount_threshold == 0.7:
+                    config += ["profile-inference-call-count", 'aggressive']
+                else:
+                    mx.abort(f"Unsupported ml_callcount_threshold value: {self.ml_callcount_threshold}. Allowed values are 0.1 (conservative) or 0.7 (aggressive).")
+            else:
+                config += ["profile-inference-call-count"]
         if self.pgo_instrumentation is True and self.force_profile_inference is True:
             if self.pgo_exclude_conditional is True:
                 config += ["profile-inference-pgo"]
@@ -998,12 +1012,13 @@ class NativeImageVM(StageAwareGraalVm):
 
         # This defines the allowed config names for NativeImageVM. The ones registered will be available via --jvm-config
         # Note: the order of entries here must match the order of statements in NativeImageVM.config_name()
-        rule = r'^(?P<native_architecture>native-architecture-)?(?P<string_inlining>string-inlining-)?(?P<otw>otw-)?(?P<compacting_gc>compacting-gc-)?(?P<preserve_all>preserve-all-)?(?P<preserve_classpath>preserve-classpath-)?' \
+        rule = r'^(?P<native_architecture>native-architecture-)?(?P<string_inlining>string-inlining-)?(?P<otw>otw-)?(?P<compacting_gc>compacting-gc-)?(?P<crema>crema-)?(?P<preserve_all>preserve-all-)?(?P<preserve_classpath>preserve-classpath-)?' \
                r'(?P<graalos>graalos-)?(?P<graalhost_graalos>graalhost-graalos-)?(?P<pie>pie-)?(?P<layered>layered-)?' \
                r'(?P<future_defaults_all>future-defaults-all-)?(?P<gate>gate-)?(?P<upx>upx-)?(?P<quickbuild>quickbuild-)?(?P<gc>g1gc-)?' \
                r'(?P<llvm>llvm-)?(?P<pgo>pgo-|pgo-sampler-|pgo-perf-sampler-invoke-multiple-|pgo-perf-sampler-invoke-|pgo-perf-sampler-)?(?P<inliner>inline-)?' \
                r'(?P<analysis_context_sensitivity>insens-|allocsens-|1obj-|2obj1h-|3obj2h-|4obj3h-)?(?P<jdk_profiles>jdk-profiles-collect-|adopted-jdk-pgo-)?' \
-               r'(?P<profile_inference>profile-inference-feature-extraction-|profile-inference-call-count-|profile-inference-pgo-|profile-inference-debug-)?(?P<sampler>safepoint-sampler-|async-sampler-)?(?P<optimization_level>O0-|O1-|O2-|O3-|Os-)?(default-)?(?P<edition>ce-|ee-)?$'
+               r'(?P<profile_inference>profile-inference-feature-extraction-|profile-inference-call-count-|profile-inference-call-count-conservative-|profile-inference-call-count-aggressive-|profile-inference-pgo-|profile-inference-debug-)?' \
+               r'(?P<sampler>safepoint-sampler-|async-sampler-)?(?P<optimization_level>O0-|O1-|O2-|O3-|Os-)?(default-)?(?P<edition>ce-|ee-)?$'
 
         mx.logv(f"== Registering configuration: {config_name}")
         match_name = f"{config_name}-"  # adding trailing dash to simplify the regex
@@ -1014,6 +1029,10 @@ class NativeImageVM(StageAwareGraalVm):
         if matching.group("native_architecture") is not None:
             mx.logv(f"'native-architecture' is enabled for {config_name}")
             self.native_architecture = True
+
+        if matching.group("crema") is not None:
+            mx.logv(f"'crema' is enabled for {config_name}")
+            self.crema = True
 
         if matching.group("preserve_all") is not None:
             mx.logv(f"'preserve-all' is enabled for {config_name}")
@@ -1147,6 +1166,12 @@ class NativeImageVM(StageAwareGraalVm):
                 self.pgo_instrumentation = True  # extract code features
             elif profile_inference_config == 'profile-inference-call-count':
                 self.profile_inference_call_count = True
+            elif profile_inference_config == 'profile-inference-call-count-conservative':
+                self.profile_inference_call_count = True
+                self.ml_callcount_threshold = 0.1
+            elif profile_inference_config == 'profile-inference-call-count-aggressive':
+                self.profile_inference_call_count = True
+                self.ml_callcount_threshold = 0.7
             elif profile_inference_config == "profile-inference-pgo":
                 # We need to run instrumentation as the profile-inference-pgo JVM config requires dynamically collected
                 # profiles to combine with the ML-inferred branch probabilities.
@@ -1823,6 +1848,8 @@ class NativeImageVM(StageAwareGraalVm):
                         dump_file_flag))
         elif self.profile_inference_call_count:
             ml_args = svm_experimental_options(['-H:+MLCallCountProfileInference'])
+            if self.ml_callcount_threshold is not None:
+                ml_args += svm_experimental_options([f'-H:MLCallCountProfileInferenceClassificationThreshold={self.ml_callcount_threshold:.2f}'])
         elif self.force_profile_inference:
             ml_args = svm_experimental_options(['-H:+MLGraphFeaturesExtraction', '-H:+MLProfileInference'])
         else:
@@ -1956,6 +1983,9 @@ class PolyBenchStagingVm(StageAwareGraalVm):
             self.bmSuite.benchmark_output_dir(bm_exec_context().get("benchmark"), args),
             self.bmSuite.get_full_image_name(self.bmSuite.get_base_image_name(), bm_exec_context().get("vm").config_name())
         )
+        if self.language == "Python":
+            # C-extension-module micros would break if they did not have 'graalpython' somewhere in the path
+            output_dir = output_dir / "graalpython"
         self.staged_program_file_path = output_dir / file_name
         self.staged_program_file_path.parent.mkdir(parents=True, exist_ok=True)
         self.staging_args = args + [
@@ -2003,12 +2033,12 @@ def register_graalvm_vms():
     for short_name, config_suffix in [(None, ''), ('niee', '-ee'), ('ni', '-ce')]:
         if short_name is None or any(component.short_name == short_name for component in mx_sdk_vm_impl.registered_graalvm_components(stage1=False)):
             config_names = list()
-            for main_config in ['default', 'gate', 'llvm', 'native-architecture', 'future-defaults-all', 'preserve-all', 'preserve-classpath'] + analysis_context_sensitivity + (['g1gc', 'pgo', 'g1gc-pgo'] if config_suffix != '-ce' else []):
+            for main_config in ['default', 'gate', 'llvm', 'native-architecture', 'crema', 'future-defaults-all', 'preserve-all', 'preserve-classpath'] + analysis_context_sensitivity + (['g1gc', 'pgo', 'g1gc-pgo'] if config_suffix != '-ce' else []):
                 config_names.append(f'{main_config}{config_suffix}')
 
             for optimization_level in optimization_levels:
                 config_names.append(f'{optimization_level}{config_suffix}')
-                for main_config in ['llvm', 'native-architecture', 'g1gc', 'native-architecture-g1gc', 'preserve-all', 'preserve-classpath'] + analysis_context_sensitivity:
+                for main_config in ['llvm', 'native-architecture', 'crema', 'g1gc', 'native-architecture-g1gc', 'preserve-all', 'preserve-classpath'] + analysis_context_sensitivity:
                     config_names.append(f'{main_config}-{optimization_level}{config_suffix}')
 
             for config_name in config_names:
@@ -4120,7 +4150,8 @@ class StagesInfo:
 
 class StageAwareBenchmarkMixin():
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.stages_info: Optional[StagesInfo] = None
 
     def run_stage(self, vm, stage: Stage, command, out, err, cwd, nonZeroIsFatal):
@@ -5627,6 +5658,12 @@ class BasePetClinicBenchmarkSuite(BaseSpringBenchmarkSuite):
     def applicationDist(self):
         return mx.library("PETCLINIC_" + self.version(), True).get_path(True)
 
+    def extra_image_build_argument(self, benchmark, args):
+        additional_configuration = os.path.join(getattr(self, '.mxsuite').mxDir, "petclinic-config")
+        return [
+            f"-H:ConfigurationFileDirectories={additional_configuration}",
+        ] + super(BasePetClinicBenchmarkSuite, self).extra_image_build_argument(benchmark, args)
+
 
 class PetClinicWrkBenchmarkSuite(BasePetClinicBenchmarkSuite, BaseWrkBenchmarkSuite):
     """PetClinic benchmark suite that measures throughput using Wrk."""
@@ -5728,8 +5765,14 @@ class BaseTikaBenchmarkSuite(BaseQuarkusBundleBenchmarkSuite):
             "org.apache.xmlbeans.metadata.system.sXMLLANG.TypeSystemHolder",
             "org.apache.xmlbeans.metadata.system.sXMLSCHEMA.TypeSystemHolder"
         ]
+        tika_run_time_init = [
+            # Prevents build-time initialization of sun.awt.datatransfer.DesktopDatatransferServiceImpl through DefaultDesktopDatatransferService.INSTANCE
+            # This class is made reachable through DragSource.<init>, which is reachable because XToolkit.createDragGestureRecognizer is registered for reflective querying
+            "sun.datatransfer.DataFlavorUtil$DefaultDesktopDatatransferService"
+        ]
         return [
             f"--initialize-at-build-time={','.join(tika_build_time_init)}",
+            f"--initialize-at-run-time={','.join(tika_run_time_init)}",
         ] + super(BaseTikaBenchmarkSuite, self).extra_image_build_argument(benchmark, args)
 
 
@@ -5877,7 +5920,6 @@ class BaseQuarkusRegistryBenchmark(BaseQuarkusBenchmarkSuite, BaseMicroserviceBe
                 '-J--add-opens=java.base/java.util=ALL-UNNAMED',
                 '-H:+AllowFoldMethods',
                 '-J-Djava.awt.headless=true',
-                '--no-fallback',
                 '--link-at-build-time',
                 '-H:+ReportExceptionStackTraces',
                 '-H:-AddAllCharsets',

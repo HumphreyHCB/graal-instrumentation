@@ -37,6 +37,7 @@ import java.lang.reflect.Field;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.MissingReflectionRegistrationError;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
+import org.graalvm.nativeimage.impl.ClassLoading;
 import org.graalvm.word.Pointer;
 import org.graalvm.word.WordBase;
 
@@ -629,7 +630,9 @@ public final class InterpreterToVM {
         // StackOverflowError which are handled specially by the interpreter.
         // GR-55050: Hide/remove the Array.newInstance (and other intermediate) frames
         // e.g. use a DynamicNewArrayInstanceNode intrinsic.
-        return Array.newInstance(componentType.getJavaClass(), length);
+        try (var _ = ClassLoading.allowArbitraryClassLoading(RuntimeClassLoading.isSupported())) {
+            return Array.newInstance(componentType.getJavaClass(), length);
+        }
     }
 
     private static int getDimensions(ResolvedJavaType object) {
@@ -792,18 +795,20 @@ public final class InterpreterToVM {
 
                 /* arguments to Log methods might have side-effects */
                 if (InterpreterTraceSupport.getValue() && !quiet) {
-                    traceInterpreter("fall back to interp for compile entry ").string(seedMethod.toString()).string(" because it has not been compiled.").newline();
+                    traceInterpreter("fall back to interp for ").string(seedMethod.toString()).string(" because it has no entry point and has no vtable index.").newline();
                 }
             } else if (seedMethod.getVTableIndex() == VTBL_ONE_IMPL) {
                 callCompiledTarget = seedMethod.getOneImplementation().hasNativeEntryPoint();
-            } else if (!isVirtual && seedMethod.hasVTableIndex()) {
+            } else if (isVirtual) {
+                if (!seedMethod.hasVTableIndex()) {
+                    throw VMError.shouldNotReachHere("cannot do virtual dispatch without vtable index");
+                }
+            } else {
                 callCompiledTarget = false;
                 /* arguments to Log methods might have side-effects */
                 if (InterpreterTraceSupport.getValue() && !quiet) {
-                    traceInterpreter("invokespecial: ").string(seedMethod.toString()).newline();
+                    traceInterpreter("fall back to interp for ").string(seedMethod.toString()).string(" because it has no entry point.").newline();
                 }
-            } else if (isVirtual && !seedMethod.hasVTableIndex()) {
-                VMError.shouldNotReachHere("cannot do virtual dispatch without vtable index");
             }
         }
 
@@ -813,6 +818,16 @@ public final class InterpreterToVM {
             /* arguments to Log methods might have side-effects */
             if (InterpreterTraceSupport.getValue() && !quiet) {
                 traceInterpreter("reverting virtual call to invokespecial: ").string(seedMethod.toString()).newline();
+            }
+            if (callCompiledTarget && calleeFtnPtr.isNull()) {
+                /*
+                 * have not found compiled variant for it so far, and we won't look in vtables for
+                 * it anymore
+                 */
+                if (InterpreterTraceSupport.getValue() && !quiet) {
+                    traceInterpreter("fall back to interp for direct call of ").string(seedMethod.toString()).string(" because it has no entry point.").newline();
+                }
+                callCompiledTarget = false;
             }
         }
 
@@ -892,16 +907,18 @@ public final class InterpreterToVM {
         Object retObj = null;
         if (callCompiledTarget) {
             VMError.guarantee(!forceStayInInterpreter);
-            VMError.guarantee(calleeFtnPtr.isNonNull());
+            if (calleeFtnPtr.isNull()) {
+                throw VMError.shouldNotReachHere("Trying to dispatch to compiled code for method " + seedMethod + " but it has no available entry point");
+            }
 
             // Note: This won't work when PLTGOT is involved, because each method will have its
             // unique PLT stub address.
             if (calleeFtnPtr.equal(InterpreterMethodPointerHolder.getMethodNotCompiledHandler())) {
-                VMError.shouldNotReachHere("Trying to dispatch to compiled code for AOT method " + seedMethod + " but it was not compiled because it was not seen as reachable by analysis");
+                throw VMError.shouldNotReachHere("Trying to dispatch to compiled code for AOT method " + seedMethod + " but it was not compiled because it was not seen as reachable by analysis");
             }
 
             // wrapping of exceptions is done in leaveInterpreter
-            retObj = InterpreterStubSection.leaveInterpreter(calleeFtnPtr, targetMethod, targetMethod.getDeclaringClass(), calleeArgs);
+            retObj = InterpreterStubSection.leaveInterpreter(calleeFtnPtr, targetMethod, calleeArgs);
         } else {
             try {
                 retObj = Interpreter.execute(targetMethod, calleeArgs, forceStayInInterpreter);

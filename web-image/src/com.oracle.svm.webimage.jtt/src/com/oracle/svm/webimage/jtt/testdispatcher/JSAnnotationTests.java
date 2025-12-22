@@ -26,10 +26,12 @@ package com.oracle.svm.webimage.jtt.testdispatcher;
 
 import java.util.Arrays;
 
+import com.oracle.svm.webimage.jtt.api.ArrayProxyTest;
 import com.oracle.svm.webimage.jtt.api.CoercionConversionTest;
 import com.oracle.svm.webimage.jtt.api.HtmlApiExamplesTest;
 import com.oracle.svm.webimage.jtt.api.JSErrorsTest;
 import com.oracle.svm.webimage.jtt.api.JSNumberTest;
+import com.oracle.svm.webimage.jtt.api.JSObjectCoercionTest;
 import com.oracle.svm.webimage.jtt.api.JSObjectConversionTest;
 import com.oracle.svm.webimage.jtt.api.JSObjectSubclassTest;
 import com.oracle.svm.webimage.jtt.api.JSObjectTest;
@@ -73,6 +75,10 @@ public class JSAnnotationTests extends JTTTestDispatcher {
             JSSymbolTest.main(remainingArgs);
         } else if (checkClass(JSObjectTest.class, className)) {
             JSObjectTest.main(remainingArgs);
+        } else if (checkClass(JSObjectCoercionTest.class, className)) {
+            JSObjectCoercionTest.main(remainingArgs);
+        } else if (checkClass(ArrayProxyTest.class, className)) {
+            ArrayProxyTest.main(remainingArgs);
         } else {
             throw new IllegalArgumentException("unexpected class name");
         }

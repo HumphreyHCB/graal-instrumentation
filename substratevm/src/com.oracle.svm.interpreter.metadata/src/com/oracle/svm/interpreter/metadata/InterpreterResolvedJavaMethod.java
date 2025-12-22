@@ -24,6 +24,7 @@
  */
 package com.oracle.svm.interpreter.metadata;
 
+import static com.oracle.svm.core.Uninterruptible.CALLED_FROM_UNINTERRUPTIBLE_CODE;
 import static com.oracle.svm.espresso.classfile.Constants.ACC_CALLER_SENSITIVE;
 import static com.oracle.svm.espresso.classfile.Constants.ACC_FINAL;
 import static com.oracle.svm.espresso.classfile.Constants.ACC_NATIVE;
@@ -41,12 +42,18 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
+import com.oracle.svm.core.BuildPhaseProvider;
 import com.oracle.svm.core.FunctionPointerHolder;
+import com.oracle.svm.core.SubstrateMetadata;
+import com.oracle.svm.core.Uninterruptible;
+import com.oracle.svm.core.graal.code.PreparedSignature;
+import com.oracle.svm.core.heap.UnknownObjectField;
 import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.hub.crema.CremaSupport;
 import com.oracle.svm.core.hub.registry.SymbolsSupport;
@@ -54,6 +61,7 @@ import com.oracle.svm.core.invoke.ResolvedMember;
 import com.oracle.svm.core.invoke.Target_java_lang_invoke_MemberName;
 import com.oracle.svm.core.meta.MethodPointer;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.espresso.classfile.Constants;
 import com.oracle.svm.espresso.classfile.JavaVersion;
 import com.oracle.svm.espresso.classfile.ParserMethod;
 import com.oracle.svm.espresso.classfile.attributes.CodeAttribute;
@@ -84,7 +92,7 @@ import jdk.vm.ci.meta.annotation.AnnotationsInfo;
  * Encapsulates resolved methods used under close-world assumptions, compiled and interpretable, but
  * also abstract methods for vtable calls.
  */
-public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implements ResolvedJavaMethod, CremaMethodAccess, ResolvedMember {
+public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implements ResolvedJavaMethod, CremaMethodAccess, ResolvedMember, SubstrateMetadata {
     @Platforms(Platform.HOSTED_ONLY.class)//
     @SuppressWarnings("unchecked") //
     private static final Class<? extends Annotation> CALLER_SENSITIVE_CLASS = (Class<? extends Annotation>) ReflectionUtil.lookupClass("jdk.internal.reflect.CallerSensitive");
@@ -133,6 +141,14 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
     // Token set by the toggle of method enter/exit events.
     private volatile Object interpreterExecToken;
 
+    // TODO move to crema once GR-71517 is resolved
+    private volatile ResolvedJavaMethod ristrettoMethod;
+    private static final AtomicReferenceFieldUpdater<InterpreterResolvedJavaMethod, ResolvedJavaMethod> RISTRETTO_METHOD_UPDATER = AtomicReferenceFieldUpdater
+                    .newUpdater(InterpreterResolvedJavaMethod.class, ResolvedJavaMethod.class, "ristrettoMethod");
+
+    @UnknownObjectField(availability = BuildPhaseProvider.ReadyForCompilation.class) //
+    private PreparedSignature preparedSignature;
+
     public static class InlinedBy {
         public InterpreterResolvedJavaMethod holder;
         public Set<InterpreterResolvedJavaMethod> inliners;
@@ -172,7 +188,7 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
     // Only called during universe building
     @Platforms(Platform.HOSTED_ONLY.class)
     private InterpreterResolvedJavaMethod(ResolvedJavaMethod originalMethod, Symbol<Name> name, int maxLocals, int maxStackSize, int flags,
-                    InterpreterResolvedObjectType declaringClass, InterpreterUnresolvedSignature signature, Symbol<Signature> signatureSymbol,
+                    InterpreterResolvedObjectType declaringClass, InterpreterUnresolvedSignature signature, PreparedSignature preparedSignature, Symbol<Signature> signatureSymbol,
                     byte[] code, ExceptionHandler[] exceptionHandlers, LineNumberTable lineNumberTable, LocalVariableTable localVariableTable,
                     ReferenceConstant<FunctionPointerHolder> nativeEntryPoint, int vtableIndex, int gotOffset, int enterStubOffset, int methodId) {
         this.name = MetadataUtil.requireNonNull(name);
@@ -182,6 +198,7 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
         this.declaringClass = MetadataUtil.requireNonNull(declaringClass);
         this.signature = MetadataUtil.requireNonNull(signature);
         this.signatureSymbol = MetadataUtil.requireNonNull(signatureSymbol);
+        this.preparedSignature = preparedSignature;
         this.interpretedCode = code;
         this.exceptionHandlers = exceptionHandlers;
         this.lineNumberTable = lineNumberTable;
@@ -199,7 +216,7 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
 
     // Used at run-time for deserialization
     private InterpreterResolvedJavaMethod(Symbol<Name> name, int maxLocals, int maxStackSize, int flags,
-                    InterpreterResolvedObjectType declaringClass, InterpreterUnresolvedSignature signature, Symbol<Signature> signatureSymbol,
+                    InterpreterResolvedObjectType declaringClass, InterpreterUnresolvedSignature signature, PreparedSignature preparedSignature, Symbol<Signature> signatureSymbol,
                     byte[] code, ExceptionHandler[] exceptionHandlers, LineNumberTable lineNumberTable, LocalVariableTable localVariableTable,
                     ReferenceConstant<FunctionPointerHolder> nativeEntryPoint, int vtableIndex, int gotOffset, int enterStubOffset, int methodId) {
         this.name = MetadataUtil.requireNonNull(name);
@@ -208,6 +225,7 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
         this.flags = flags;
         this.declaringClass = MetadataUtil.requireNonNull(declaringClass);
         this.signature = MetadataUtil.requireNonNull(signature);
+        this.preparedSignature = preparedSignature;
         this.signatureSymbol = MetadataUtil.requireNonNull(signatureSymbol);
         this.interpretedCode = code;
         this.exceptionHandlers = exceptionHandlers;
@@ -281,12 +299,12 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
 
     @VisibleForSerialization
     public static InterpreterResolvedJavaMethod createForDeserialization(String name, int maxLocals, int maxStackSize, int flags, InterpreterResolvedObjectType declaringClass,
-                    InterpreterUnresolvedSignature signature,
+                    InterpreterUnresolvedSignature signature, PreparedSignature preparedSignature,
                     byte[] code, ExceptionHandler[] exceptionHandlers, LineNumberTable lineNumberTable, LocalVariableTable localVariableTable,
                     ReferenceConstant<FunctionPointerHolder> nativeEntryPoint, int vtableIndex, int gotOffset, int enterStubOffset, int methodId) {
         Symbol<Name> nameSymbol = SymbolsSupport.getNames().getOrCreate(name);
         Symbol<Signature> signatureSymbol = toSymbol(signature);
-        return new InterpreterResolvedJavaMethod(nameSymbol, maxLocals, maxStackSize, flags, declaringClass, signature, signatureSymbol, code,
+        return new InterpreterResolvedJavaMethod(nameSymbol, maxLocals, maxStackSize, flags, declaringClass, signature, preparedSignature, signatureSymbol, code,
                         exceptionHandlers, lineNumberTable, localVariableTable, nativeEntryPoint, vtableIndex, gotOffset, enterStubOffset, methodId);
     }
 
@@ -300,8 +318,34 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
         Symbol<Name> nameSymbol = SymbolsSupport.getNames().getOrCreate(name);
         Symbol<Signature> signatureSymbol = toSymbol(signature);
         int flags = createFlags(modifiers, declaringClass, signatureSymbol, isSubstitutedNative, originalMethod);
-        return new InterpreterResolvedJavaMethod(originalMethod, nameSymbol, maxLocals, maxStackSize, flags, declaringClass, signature, signatureSymbol, code,
+        PreparedSignature preparedSignature = null;
+        return new InterpreterResolvedJavaMethod(originalMethod, nameSymbol, maxLocals, maxStackSize, flags, declaringClass, signature, preparedSignature, signatureSymbol, code,
                         exceptionHandlers, lineNumberTable, localVariableTable, nativeEntryPoint, vtableIndex, gotOffset, enterStubOffset, methodId);
+    }
+
+    public ResolvedJavaMethod getRistrettoMethod() {
+        return this.ristrettoMethod;
+    }
+
+    public ResolvedJavaMethod getRistrettoMethod(Function<InterpreterResolvedJavaMethod, ResolvedJavaMethod> ristrettoMethodSupplier) {
+        if (this.ristrettoMethod != null) {
+            return this.ristrettoMethod;
+        }
+        /*
+         * We allow concurrent allocation of a ristretto method per interpreter method. Eventually
+         * however we CAS on the pointer in the interpreter representation, if another thread was
+         * faster return its method.
+         */
+        return getOrSetRistrettoMethod(ristrettoMethodSupplier.apply(this));
+    }
+
+    private ResolvedJavaMethod getOrSetRistrettoMethod(ResolvedJavaMethod newRistrettoMethod) {
+        if (RISTRETTO_METHOD_UPDATER.compareAndSet(this, null, newRistrettoMethod)) {
+            return newRistrettoMethod;
+        }
+        var method = this.ristrettoMethod;
+        assert method != null : "If CAS for null fails must have written a method already";
+        return method;
     }
 
     private static Symbol<Signature> toSymbol(InterpreterUnresolvedSignature jvmciSignature) {
@@ -467,11 +511,13 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
     }
 
     @Override
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public final int getMaxLocals() {
         return maxLocals;
     }
 
     @Override
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     public final int getMaxStackSize() {
         return maxStackSize;
     }
@@ -719,6 +765,15 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
         return this;
     }
 
+    public void setPreparedSignature(PreparedSignature preparedSignature) {
+        this.preparedSignature = preparedSignature;
+    }
+
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public PreparedSignature getPreparedSignature() {
+        return preparedSignature;
+    }
+
     // region Unimplemented methods
 
     @Override
@@ -803,7 +858,7 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
 
     @Override
     public final boolean isBridge() {
-        throw VMError.intentionallyUnimplemented();
+        return (Constants.ACC_BRIDGE & getModifiers()) != 0;
     }
 
     @Override
@@ -818,7 +873,8 @@ public class InterpreterResolvedJavaMethod extends InterpreterAnnotated implemen
 
     @Override
     public final StackTraceElement asStackTraceElement(int bci) {
-        throw VMError.intentionallyUnimplemented();
+        // TODO GR-71255
+        return new StackTraceElement(getDeclaringClass().getName(), getName(), null, bci);
     }
 
     @Override

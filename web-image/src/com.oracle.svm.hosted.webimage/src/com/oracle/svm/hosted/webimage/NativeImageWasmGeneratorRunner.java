@@ -29,8 +29,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.Pair;
+import org.graalvm.collections.UnmodifiableEconomicMap;
 import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CShortPointer;
 
@@ -82,7 +82,7 @@ public class NativeImageWasmGeneratorRunner extends NativeImageGeneratorRunner {
      * {@code svm-wasm} tool macro contains all option names.
      */
     private static void dumpProvidedHostedOptions(HostedOptionParser optionParser) {
-        EconomicMap<String, OptionDescriptor> allHostedOptions = optionParser.getAllHostedOptions();
+        UnmodifiableEconomicMap<String, OptionDescriptor> allHostedOptions = optionParser.getAllHostedOptions();
 
         List<String> names = new ArrayList<>();
 
@@ -124,9 +124,6 @@ public class NativeImageWasmGeneratorRunner extends NativeImageGeneratorRunner {
             dumpProvidedHostedOptions(optionProvider);
             return ExitStatus.OK.getValue();
         }
-
-        // Turn off fallback images, Web Image cannot be built as a fallback image.
-        optionProvider.getHostedValues().put(SubstrateOptions.FallbackThreshold, SubstrateOptions.NoFallback);
 
         // We do not need to compile a GC because the JavaScript environment provides one.
         optionProvider.getHostedValues().put(SubstrateOptions.SupportedGCs, ReplacingLocatableMultiOptionValue.DelimitedString.buildWithCommaDelimiter());

@@ -100,6 +100,7 @@ import java.util.function.ToLongBiFunction;
 import java.util.function.ToLongFunction;
 import java.util.function.UnaryOperator;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.collections.Pair;
 import org.graalvm.nativeimage.AnnotationAccess;
 import org.graalvm.nativeimage.ImageSingletons;
@@ -126,11 +127,12 @@ import com.oracle.svm.core.option.SubstrateOptionsParser;
 import com.oracle.svm.core.stack.JavaStackWalker;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
-import com.oracle.svm.graal.TruffleRuntimeCompilationSupport;
+import com.oracle.svm.graal.RuntimeCompilationSupport;
 import com.oracle.svm.graal.hosted.runtimecompilation.CallTreeInfo;
 import com.oracle.svm.graal.hosted.runtimecompilation.RuntimeCompilationCandidate;
 import com.oracle.svm.graal.hosted.runtimecompilation.RuntimeCompilationFeature;
 import com.oracle.svm.graal.hosted.runtimecompilation.RuntimeCompiledMethod;
+import com.oracle.svm.graal.hosted.runtimecompilation.RuntimeCompiledMethodSupport;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.FeatureImpl.AfterAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
@@ -230,16 +232,16 @@ public class TruffleFeature implements InternalFeature {
         }
     }
 
-    private final Set<ResolvedJavaMethod> blocklistMethods;
-    private final Set<ResolvedJavaMethod> tempTargetAllowlistMethods;
-    private final Set<ResolvedJavaMethod> warnMethods;
+    private final EconomicSet<ResolvedJavaMethod> blocklistMethods;
+    private final EconomicSet<ResolvedJavaMethod> tempTargetAllowlistMethods;
+    private final EconomicSet<ResolvedJavaMethod> warnMethods;
     private final Set<Pair<ResolvedJavaMethod, String>> neverPartOfCompilationViolations;
     Set<AnalysisMethod> runtimeCompiledMethods;
 
     public TruffleFeature() {
-        blocklistMethods = new HashSet<>();
-        tempTargetAllowlistMethods = new HashSet<>();
-        warnMethods = new HashSet<>();
+        blocklistMethods = EconomicSet.create();
+        tempTargetAllowlistMethods = EconomicSet.create();
+        warnMethods = EconomicSet.create();
         neverPartOfCompilationViolations = ConcurrentHashMap.newKeySet();
     }
 
@@ -280,6 +282,8 @@ public class TruffleFeature implements InternalFeature {
 
     @Override
     public void afterRegistration(AfterRegistrationAccess access) {
+        ImageSingletons.add(RuntimeCompiledMethodSupport.class, new TruffleRuntimeCompiledMethodSupport());
+
         TruffleRuntime runtime = Truffle.getRuntime();
         if (runtime instanceof DefaultTruffleRuntime defaultTruffleRuntime) {
             String errorMessage = defaultTruffleRuntime.getFallbackReason();
@@ -294,7 +298,7 @@ public class TruffleFeature implements InternalFeature {
         truffleRuntime.resetHosted();
         RuntimeCompilationFeature runtimeCompilationFeature = RuntimeCompilationFeature.singleton();
         runtimeCompilationFeature.addAfterInstallRuntimeConfigCallback(() -> {
-            Providers providers = TruffleRuntimeCompilationSupport.getRuntimeConfig().getProviders();
+            Providers providers = RuntimeCompilationSupport.getRuntimeConfig().getProviders();
             ImageSingletons.add(KnownTruffleTypes.class, new SubstrateKnownTruffleTypes(truffleRuntime, providers.getMetaAccess(), providers.getConstantReflection()));
         });
         runtimeCompilationFeature.setUniverseFactory(new SubstrateTruffleUniverseFactory(truffleRuntime));
@@ -415,8 +419,7 @@ public class TruffleFeature implements InternalFeature {
                         runtimeCompilationFeature.getHostedProviders().getWordTypes(),
                         runtimeCompilationFeature.getHostedProviders().getPlatformConfigurationProvider(),
                         runtimeCompilationFeature.getHostedProviders().getMetaAccessExtensionProvider(),
-                        runtimeCompilationFeature.getHostedProviders().getLoopsDataProvider(),
-                        runtimeCompilationFeature.getHostedProviders().getIdentityHashCodeProvider());
+                        runtimeCompilationFeature.getHostedProviders().getLoopsDataProvider());
         newHostedProviders.setGraphBuilderPlugins(graphBuilderConfig.getPlugins());
 
         runtimeCompilationFeature.initializeRuntimeCompilationConfiguration(newHostedProviders, graphBuilderConfig, this::allowRuntimeCompilation, this::deoptimizeOnException, this::checkBlockList);
@@ -836,9 +839,11 @@ public class TruffleFeature implements InternalFeature {
             } else {
                 method = clazz.getDeclaredMethod(name, parameterTypes);
             }
-            if (!blocklistMethods.remove(metaAccess.lookupJavaMethod(method))) {
+            ResolvedJavaMethod m = metaAccess.lookupJavaMethod(method);
+            if (!blocklistMethods.contains(m)) {
                 throw VMError.shouldNotReachHereUnexpectedInput(method); // ExcludeFromJacocoGeneratedReport
             }
+            blocklistMethods.remove(m);
         } catch (NoSuchMethodException ex) {
             throw VMError.shouldNotReachHere(ex);
         }
@@ -904,7 +909,7 @@ public class TruffleFeature implements InternalFeature {
             }
         }
 
-        Set<RuntimeCompilationCandidate> warnViolations = new HashSet<>();
+        EconomicSet<RuntimeCompilationCandidate> warnViolations = EconomicSet.create();
         for (RuntimeCompilationCandidate node : runtimeCompilation.getAllRuntimeCompilationCandidates()) {
             var method = node.getImplementationMethod();
             if (warnMethods.contains(method)) {
@@ -957,7 +962,7 @@ public class TruffleFeature implements InternalFeature {
             Optional<? extends ResolvedJavaType> optionalFrameType = ((FeatureImpl.BeforeCompilationAccessImpl) config).getMetaAccess().optionalLookupJavaType(Frame.class);
             if (optionalFrameType.isPresent()) {
                 HostedType frameType = (HostedType) optionalFrameType.get();
-                Set<HostedType> implementations = new HashSet<>();
+                Set<HostedType> implementations = new HashSet<>(); // noEconomicSet(streaming)
                 collectImplementations(frameType, implementations);
 
                 if (implementations.size() > 1) {
@@ -1056,7 +1061,7 @@ public class TruffleFeature implements InternalFeature {
     }
 
     private static void printStaticTruffleBoundaries(CallTreeInfo treeInfo) {
-        HashSet<ResolvedJavaMethod> foundBoundaries = new HashSet<>();
+        EconomicSet<ResolvedJavaMethod> foundBoundaries = EconomicSet.create();
         int callSiteCount = 0;
         int calleeCount = 0;
         for (RuntimeCompiledMethod runtimeCompiledMethod : treeInfo.runtimeCompilations()) {

@@ -34,12 +34,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 import com.oracle.graal.pointsto.ObjectScanner;
@@ -56,6 +55,7 @@ import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
+import com.oracle.svm.util.JVMCIReflectionUtil;
 import com.oracle.svm.util.ReflectionUtil;
 
 import sun.invoke.util.ValueConversions;
@@ -109,7 +109,7 @@ public class MethodHandleFeature implements InternalFeature {
 
     private MethodHandleInvokerRenamingSubstitutionProcessor substitutionProcessor;
 
-    private Set<Object> heapSpeciesData = new HashSet<>();
+    private EconomicSet<Object> heapSpeciesData = EconomicSet.create(); // concurrent access
 
     @Override
     public void duringSetup(DuringSetupAccess access) {
@@ -191,7 +191,7 @@ public class MethodHandleFeature implements InternalFeature {
                             }
                         });
         access.registerFieldValueTransformer(
-                        ReflectionUtil.lookupField(ReflectionUtil.lookupClass("java.lang.invoke.DirectMethodHandle"), "ACCESSOR_FORMS"),
+                        JVMCIReflectionUtil.getUniqueDeclaredField(access.findTypeByName("java.lang.invoke.DirectMethodHandle").unwrapTowardsOriginalType(), "ACCESSOR_FORMS"),
                         NewEmptyArrayFieldValueTransformer.INSTANCE);
         access.registerFieldValueTransformer(
                         ReflectionUtil.lookupField(ReflectionUtil.lookupClass("java.lang.invoke.MethodType"), "internTable"),
@@ -301,6 +301,17 @@ public class MethodHandleFeature implements InternalFeature {
         } catch (ReflectiveOperationException e) {
             VMError.shouldNotReachHere("Can not invoke createFormsForm method to register base types from the java.lang.invoke.LambdaForm$BasicType class.");
         }
+
+        /*
+         * Allocating PerfCounter objects at run-time is not supported. For more details see the
+         * Target_jdk_internal_perf_PerfCounter substitutions. Here we ensure that the @Stable field
+         * java.lang.invoke.LambdaForm.LF_FAILED is initialized and is allowed to be folded before
+         * analysis to eliminate any code paths that would try initializing it.
+         */
+        Method failedCompilationCounterMethod = ReflectionUtil.lookupMethod(lambdaFormClass, "failedCompilationCounter");
+        ReflectionUtil.invokeMethod(failedCompilationCounterMethod, null);
+        access.allowStableFieldFoldingBeforeAnalysis(access.findField(lambdaFormClass, "LF_FAILED"));
+
         // The following call sites produce side effects by generating BoundMethodHandle
         // species, which are subsequently referenced by java.lang.invoke.LambdaForm$Holder.
         MethodHandles.constant(long.class, 0L);
@@ -414,7 +425,9 @@ public class MethodHandleFeature implements InternalFeature {
 
     public void registerHeapSpeciesData(Object speciesData) {
         VMError.guarantee(heapSpeciesData != null, "The collected SpeciesData objects have already been processed.");
-        heapSpeciesData.add(speciesData);
+        synchronized (heapSpeciesData) {
+            heapSpeciesData.add(speciesData);
+        }
     }
 
     @Override

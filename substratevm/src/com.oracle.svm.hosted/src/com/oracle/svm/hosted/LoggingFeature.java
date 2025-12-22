@@ -39,18 +39,18 @@ import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.FeatureImpl.DuringAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
 import com.oracle.svm.util.HostModuleUtil;
+import com.oracle.svm.util.JVMCIReflectionUtil;
 import com.oracle.svm.util.ReflectionUtil;
-import com.oracle.svm.util.ResolvedJavaModule;
-import com.oracle.svm.util.ResolvedJavaModuleLayer;
 
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionType;
+import jdk.graal.compiler.vmaccess.ResolvedJavaModule;
 
 @AutomaticallyRegisteredFeature
 public class LoggingFeature implements InternalFeature {
 
     private static Optional<ResolvedJavaModule> requiredModule() {
-        return ResolvedJavaModuleLayer.boot().findModule("java.logging");
+        return JVMCIReflectionUtil.bootModuleLayer().findModule("java.logging");
     }
 
     public static class Options {

@@ -45,7 +45,6 @@ import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.hosted.HostedConfiguration;
 import com.oracle.svm.hosted.SVMHost;
 import com.oracle.svm.hosted.ameta.CustomTypeFieldHandler;
-import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
 import com.oracle.svm.hosted.code.IncompatibleClassChangeFallbackMethod;
 import com.oracle.svm.hosted.imagelayer.HostedImageLayerBuildingSupport;
 import com.oracle.svm.hosted.substitute.AnnotationSubstitutionProcessor;
@@ -131,7 +130,7 @@ public class NativeImagePointsToAnalysis extends PointsToAnalysis implements Inf
     public void onTypeReachable(AnalysisType type) {
         postTask(_ -> {
             type.getInitializeMetaDataTask().ensureDone();
-            if (type.isInBaseLayer()) {
+            if (type.isInSharedLayer()) {
                 /*
                  * Since the rescanning of the hub is skipped for constants from the base layer to
                  * avoid deadlocks, the hub needs to be rescanned manually after the metadata is
@@ -139,14 +138,15 @@ public class NativeImagePointsToAnalysis extends PointsToAnalysis implements Inf
                  */
                 HostedImageLayerBuildingSupport.singleton().getLoader().rescanHub(type, ((SVMHost) hostVM).dynamicHub(type));
             }
-            if (type.isArray() && type.getComponentType().isInBaseLayer()) {
+            if (type.isArray() && type.getComponentType().isInSharedLayer()) {
                 /* Rescan the component hub. This will be simplified by GR-60254. */
                 HostedImageLayerBuildingSupport.singleton().getLoader().rescanHub(type.getComponentType(), ((SVMHost) hostVM).dynamicHub(type).getComponentHub());
             }
             if (ImageLayerBuildingSupport.buildingSharedLayer()) {
                 /*
-                 * Register open-world fields as roots to prevent premature optimizations, i.e.,
-                 * like constant-folding their values in the shared layer.
+                 * To prevent premature optimizations of fields accesses in open world analysis,
+                 * i.e., like constant-folding their values in the base image, register all fields
+                 * of reachable types as roots, except some fields that should always be folded.
                  */
                 tryRegisterFieldsInBaseImage(type.getInstanceFields(true));
                 tryRegisterFieldsInBaseImage(type.getStaticFields());
@@ -155,7 +155,7 @@ public class NativeImagePointsToAnalysis extends PointsToAnalysis implements Inf
                  * Register run time executed class initializers as roots in the base layer.
                  */
                 AnalysisMethod classInitializer = type.getClassInitializer();
-                if (classInitializer != null && !ClassInitializationSupport.singleton().maybeInitializeAtBuildTime(type) && classInitializer.getCode() != null) {
+                if (classInitializer != null && !hostVM.isInitialized(type) && classInitializer.getCode() != null) {
                     classInclusionPolicy.includeMethod(classInitializer);
                 }
             }

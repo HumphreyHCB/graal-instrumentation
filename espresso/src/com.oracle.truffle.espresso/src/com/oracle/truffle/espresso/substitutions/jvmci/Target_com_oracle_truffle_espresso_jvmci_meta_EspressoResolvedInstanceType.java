@@ -31,7 +31,6 @@ import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.DirectCallNode;
-import com.oracle.truffle.espresso.classfile.attributes.Attribute;
 import com.oracle.truffle.espresso.classfile.attributes.AttributedElement;
 import com.oracle.truffle.espresso.classfile.attributes.RecordAttribute;
 import com.oracle.truffle.espresso.classfile.descriptors.Symbol;
@@ -39,6 +38,7 @@ import com.oracle.truffle.espresso.classfile.descriptors.Type;
 import com.oracle.truffle.espresso.impl.Field;
 import com.oracle.truffle.espresso.impl.Method;
 import com.oracle.truffle.espresso.impl.ObjectKlass;
+import com.oracle.truffle.espresso.impl.jvmci.JVMCIUtils;
 import com.oracle.truffle.espresso.meta.Meta;
 import com.oracle.truffle.espresso.meta.Meta.JVMCISupport;
 import com.oracle.truffle.espresso.nodes.bytecodes.InitCheck;
@@ -493,49 +493,20 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
     }
 
     @Substitution(hasReceiver = true)
-    abstract static class GetAllMethods0 extends SubstitutionNode {
-        abstract @JavaType(internalName = "[Lcom/oracle/truffle/espresso/jvmci/meta/EspressoResolvedJavaMethod;") StaticObject execute(StaticObject self);
-
-        @Specialization
-        static StaticObject doDefault(StaticObject self,
-                        @Bind("getContext()") EspressoContext context,
-                        @Cached("create(context.getMeta().jvmci.EspressoResolvedJavaMethod_init.getCallTarget())") DirectCallNode methodConstructor) {
-            assert context.getLanguage().isInternalJVMCIEnabled();
-            Meta meta = context.getMeta();
-
-            ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
-
-            Method.MethodVersion[] declaredMethodVersions = klass.getDeclaredMethodVersions();
-            Method.MethodVersion[] mirandaMethods = klass.getMirandaMethods();
-            int resultSize = declaredMethodVersions.length;
-            if (mirandaMethods != null) {
-                for (Method.MethodVersion mirandaMethod : mirandaMethods) {
-                    if (mirandaMethod.getMethod().hasPoisonPill()) {
-                        resultSize++;
-                    }
-                }
+    public static @JavaType(internalName = "[Lcom/oracle/truffle/espresso/jvmci/meta/EspressoResolvedJavaMethod;") StaticObject getAllMethods0(StaticObject self, @Inject EspressoContext context) {
+        assert context.getLanguage().isInternalJVMCIEnabled();
+        Meta meta = context.getMeta();
+        ObjectKlass klass = (ObjectKlass) meta.jvmci.HIDDEN_OBJECTKLASS_MIRROR.getHiddenObject(self);
+        return JVMCIUtils.getAllMethods(klass, meta.jvmci.EspressoResolvedJavaMethod::allocateReferenceArray, (array, i, m) -> {
+            StaticObject holder;
+            if (m.getDeclaringKlass() == klass) {
+                holder = self;
+            } else {
+                holder = toJVMCIInstanceType(m.getDeclaringKlass(), meta);
             }
-            StaticObject result = meta.jvmci.EspressoResolvedJavaMethod.allocateReferenceArray(resultSize);
-            StaticObject[] underlying = result.unwrap(context.getLanguage());
-            int i = 0;
-            for (Method.MethodVersion methodVersion : declaredMethodVersions) {
-                underlying[i++] = toJVMCIMethod(methodVersion.getMethod(), self, methodConstructor, context, meta);
-            }
-            if (resultSize != declaredMethodVersions.length) {
-                for (Method.MethodVersion mirandaMethod : mirandaMethods) {
-                    if (mirandaMethod.getMethod().hasPoisonPill()) {
-                        StaticObject holder;
-                        if (mirandaMethod.getDeclaringKlass() == klass) {
-                            holder = self;
-                        } else {
-                            holder = toJVMCIInstanceType(mirandaMethod.getDeclaringKlass(), meta);
-                        }
-                        underlying[i++] = toJVMCIMethod(mirandaMethod.getMethod(), holder, methodConstructor, context, meta);
-                    }
-                }
-            }
-            return result;
-        }
+            StaticObject[] underlying = array.unwrap(context.getLanguage());
+            underlying[i] = toJVMCIMethod(m, holder, meta);
+        });
     }
 
     @Substitution(hasReceiver = true)
@@ -600,22 +571,11 @@ final class Target_com_oracle_truffle_espresso_jvmci_meta_EspressoResolvedInstan
      *         for {@code attributed}
      */
     static StaticObject getRawAnnotationBytes(AttributedElement attributed, int category, Meta meta) {
-        Attribute annotations;
-        if (category == meta.jvmci.EspressoResolvedInstanceType_TYPE_ANNOTATIONS) {
-            annotations = attributed.getAttribute(Names.RuntimeVisibleTypeAnnotations);
-        } else if (category == meta.jvmci.EspressoResolvedInstanceType_DECLARED_ANNOTATIONS) {
-            annotations = attributed.getAttribute(Names.RuntimeVisibleAnnotations);
-        } else if (category == meta.jvmci.EspressoResolvedInstanceType_PARAMETER_ANNOTATIONS) {
-            annotations = attributed.getAttribute(Names.RuntimeVisibleParameterAnnotations);
-        } else if (category == meta.jvmci.EspressoResolvedInstanceType_ANNOTATION_DEFAULT_VALUE) {
-            annotations = attributed.getAttribute(Names.AnnotationDefault);
-        } else {
-            throw meta.throwIllegalArgumentExceptionBoundary();
-        }
-        if (annotations == null) {
+        byte[] bytes = JVMCIUtils.getRawAnnotationBytes(attributed, category, meta);
+        if (bytes == null) {
             return StaticObject.NULL;
         }
         // Defensively clone the byte array into case the caller mutates it
-        return StaticObject.wrap(annotations.getData().clone(), meta);
+        return StaticObject.wrap(bytes.clone(), meta);
     }
 }

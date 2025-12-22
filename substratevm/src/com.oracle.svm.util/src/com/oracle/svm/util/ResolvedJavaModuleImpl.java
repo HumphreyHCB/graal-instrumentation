@@ -28,6 +28,8 @@ import java.lang.module.ModuleDescriptor;
 import java.util.Objects;
 import java.util.Set;
 
+import jdk.graal.compiler.vmaccess.ResolvedJavaModule;
+
 /**
  * Fallback implementation of {@link ResolvedJavaModule} based on {@link Module}.
  */
@@ -102,5 +104,9 @@ final class ResolvedJavaModuleImpl implements ResolvedJavaModule {
 
     static void addReads(Module accessingModule, ResolvedJavaModule declaringModule) {
         ModuleSupport.accessModule(ModuleSupport.Access.OPEN, accessingModule, toImpl(declaringModule).module);
+    }
+
+    static Module getJavaModule(ResolvedJavaModule m) {
+        return toImpl(m).module;
     }
 }

@@ -81,8 +81,6 @@ import org.graalvm.nativeimage.ProcessProperties;
 import com.oracle.graal.pointsto.api.PointstoOptions;
 import com.oracle.graal.pointsto.reports.ReportUtils;
 import com.oracle.svm.common.option.CommonOptions;
-import com.oracle.svm.core.FallbackExecutor;
-import com.oracle.svm.core.FallbackExecutor.Options;
 import com.oracle.svm.core.JavaVersionUtil;
 import com.oracle.svm.core.NativeImageClassLoaderOptions;
 import com.oracle.svm.core.OS;
@@ -234,10 +232,6 @@ public class NativeImage {
         }
 
         abstract boolean consume(ArgumentQueue args);
-
-        void addFallbackBuildArgs(@SuppressWarnings("unused") List<String> buildArgs) {
-            /* Override to forward fallback relevant args */
-        }
     }
 
     final CmdLineOptionHandler cmdLineOptionHandler;
@@ -246,7 +240,6 @@ public class NativeImage {
 
     public static final String oH = "-H:";
     static final String oHEnabled = oH + "+";
-    static final String oHDisabled = oH + "-";
     static final String oR = "-R:";
 
     final String enablePrintFlags = CommonOptions.PrintFlags.getName();
@@ -269,14 +262,6 @@ public class NativeImage {
         return oHEnabled(option) + "@" + OptionOrigin.originDriver;
     }
 
-    private static String oHDisabled(OptionKey<Boolean> option) {
-        return oHDisabled + option.getName();
-    }
-
-    private static <T> String oR(OptionKey<T> option) {
-        return oR + option.getName() + "=";
-    }
-
     final String oHModule = oH(SubstrateOptions.Module);
     final String oHClass = oH(SubstrateOptions.Class);
     final String oHName = oH(SubstrateOptions.Name);
@@ -289,9 +274,6 @@ public class NativeImage {
     final String oHEnableBuildOutputProgress = oHEnabledByDriver(SubstrateOptions.BuildOutputProgress);
     final String oHEnableBuildOutputLinks = oHEnabledByDriver(SubstrateOptions.BuildOutputLinks);
     final String oHCLibraryPath = oH(SubstrateOptions.CLibraryPath);
-    final String oHFallbackThreshold = oH(SubstrateOptions.FallbackThreshold);
-    final String oHFallbackExecutorJavaArg = oH(FallbackExecutor.Options.FallbackExecutorJavaArg);
-    final String oRRuntimeJavaArg = oR(Options.FallbackExecutorRuntimeJavaArg);
     final String oHTraceClassInitialization = oH(SubstrateOptions.TraceClassInitialization);
     final String oHTraceObjectInstantiation = oH(SubstrateOptions.TraceObjectInstantiation);
     final String oHTargetPlatform = oH(SubstrateOptions.TargetPlatform);
@@ -392,15 +374,6 @@ public class NativeImage {
         private HostFlags hostFlags;
         private Path driverTempDir;
 
-        BuildConfiguration(BuildConfiguration original) {
-            workDir = original.workDir;
-            rootDir = original.rootDir;
-            libJvmciDir = original.libJvmciDir;
-            args = original.args;
-            hostFlags = original.hostFlags;
-            driverTempDir = original.driverTempDir;
-        }
-
         protected BuildConfiguration(List<String> args) {
             this(null, null, args);
         }
@@ -500,13 +473,6 @@ public class NativeImage {
                 return inspectPath;
             }
             return null;
-        }
-
-        /**
-         * @return base image classpath needed for every image (e.g. LIBRARY_SUPPORT)
-         */
-        public List<Path> getImageProvidedClasspath() {
-            return getImageProvidedJars();
         }
 
         /**
@@ -705,13 +671,6 @@ public class NativeImage {
         public List<String> getBuildArgs() {
             return args;
         }
-
-        /**
-         * @return true for fallback image building
-         */
-        public boolean buildFallbackImage() {
-            return false;
-        }
     }
 
     class DriverMetaInfProcessor implements NativeImageMetaInfResourceProcessor {
@@ -794,92 +753,6 @@ public class NativeImage {
             return excludedConfigs.stream()
                             .filter(e -> e.jarPattern.matcher(matchPath.toString()).find())
                             .anyMatch(e -> e.resourcePattern.matcher(resourcePath.toString()).find());
-        }
-    }
-
-    private ArrayList<String> createFallbackBuildArgs() {
-        ArrayList<String> buildArgs = new ArrayList<>();
-        buildArgs.add(oHEnabled(SubstrateOptions.UnlockExperimentalVMOptions));
-        Collection<String> fallbackSystemProperties = customJavaArgs.stream()
-                        .filter(s -> s.startsWith("-D"))
-                        .collect(Collectors.toCollection(LinkedHashSet::new));
-        String fallbackExecutorSystemPropertyOption = oH(FallbackExecutor.Options.FallbackExecutorSystemProperty);
-        for (String property : fallbackSystemProperties) {
-            buildArgs.add(injectHostedOptionOrigin(fallbackExecutorSystemPropertyOption + property, OptionOrigin.originDriver));
-        }
-
-        List<String> runtimeJavaArgs = imageBuilderArgs.stream()
-                        .filter(s -> s.startsWith(oRRuntimeJavaArg))
-                        .toList();
-        buildArgs.addAll(runtimeJavaArgs);
-
-        List<String> fallbackExecutorJavaArgs = imageBuilderArgs.stream()
-                        .filter(s -> s.startsWith(oHFallbackExecutorJavaArg))
-                        .toList();
-        buildArgs.addAll(fallbackExecutorJavaArgs);
-
-        buildArgs.add(oHEnabled(SubstrateOptions.BuildOutputSilent));
-        buildArgs.add(oHEnabled(SubstrateOptions.ParseRuntimeOptions));
-        Path imagePathPath;
-        try {
-            imagePathPath = canonicalize(imagePath);
-        } catch (NativeImage.NativeImageError | InvalidPathException e) {
-            throw showError("The given " + oHPath + imagePath + " argument does not specify a valid path", e);
-        }
-        boolean[] isPortable = {true};
-        String classpathString = imageClasspath.stream()
-                        .map(path -> {
-                            try {
-                                return imagePathPath.relativize(path);
-                            } catch (IllegalArgumentException e) {
-                                isPortable[0] = false;
-                                return path;
-                            }
-                        })
-                        .map(Path::toString)
-                        .collect(Collectors.joining(File.pathSeparator));
-        if (!isPortable[0]) {
-            LogUtils.warning("The produced fallback image will not be portable, because not all classpath entries" +
-                            " could be relativized (e.g., they are on another drive).");
-        }
-        buildArgs.add(oHPath + imagePathPath.toString());
-        buildArgs.add(oH(FallbackExecutor.Options.FallbackExecutorClasspath) + classpathString);
-        buildArgs.add(oH(FallbackExecutor.Options.FallbackExecutorMainClass) + mainClass);
-        buildArgs.add(oHDisabled(SubstrateOptions.UnlockExperimentalVMOptions));
-
-        /*
-         * The fallback image on purpose captures the Java home directory used for image generation,
-         * see field FallbackExecutor.buildTimeJavaHome
-         */
-        buildArgs.add(oHDisabled(SubstrateOptions.DetectUserDirectoriesInImageHeap));
-
-        buildArgs.add(FallbackExecutor.class.getName());
-        buildArgs.add(imageName);
-
-        defaultOptionHandler.addFallbackBuildArgs(buildArgs);
-        for (OptionHandler<? extends NativeImage> handler : optionHandlers) {
-            handler.addFallbackBuildArgs(buildArgs);
-        }
-        return buildArgs;
-    }
-
-    private static final class FallbackBuildConfiguration extends BuildConfiguration {
-
-        private final List<String> fallbackBuildArgs;
-
-        private FallbackBuildConfiguration(NativeImage original) {
-            super(original.config);
-            fallbackBuildArgs = original.createFallbackBuildArgs();
-        }
-
-        @Override
-        public List<String> getBuildArgs() {
-            return fallbackBuildArgs;
-        }
-
-        @Override
-        public boolean buildFallbackImage() {
-            return true;
         }
     }
 
@@ -1004,11 +877,6 @@ public class NativeImage {
     }
 
     private void completeOptionArgs() {
-        LinkedHashSet<EnabledOption> enabledOptions = optionRegistry.getEnabledOptions();
-        /* Any use of MacroOptions opts-out of auto-fallback and activates --no-fallback */
-        if (!enabledOptions.isEmpty()) {
-            addPlainImageBuilderArg(oHFallbackThreshold + SubstrateOptions.NoFallback, OptionOrigin.originDriver);
-        }
         consolidateListArgs(imageBuilderJavaArgs, "-Dpolyglot.engine.PreinitializeContexts=", ",", Function.identity()); // legacy
         consolidateListArgs(imageBuilderJavaArgs, "-Dpolyglot.image-build-time.PreinitializeContexts=", ",", Function.identity());
     }
@@ -1420,18 +1288,12 @@ public class NativeImage {
         LinkedHashSet<Path> finalImageClasspath = new LinkedHashSet<>(imageClasspath);
 
         LinkedHashSet<Path> finalImageProvidedJars = new LinkedHashSet<>(this.imageProvidedJars);
-        finalImageProvidedJars.addAll(config.getImageProvidedModulePath());
+        if (!finalImageModulePath.isEmpty() || !finalImageClasspath.isEmpty()) {
+            finalImageProvidedJars.addAll(config.getImageProvidedModulePath());
+        }
         finalImageModulePath.addAll(finalImageProvidedJars);
         finalImageProvidedJars.forEach(this::processClasspathNativeImageMetaInf);
         imageBuilderJavaArgs.add("-D" + SharedConstants.IMAGE_PROVIDED_JARS_ENV_VARIABLE + "=" + String.join(File.pathSeparator, finalImageProvidedJars.stream().map(Path::toString).toList()));
-
-        if (!config.buildFallbackImage()) {
-            Optional<ArgumentEntry> fallbackThresholdEntry = getHostedOptionArgument(imageBuilderArgs, oHFallbackThreshold);
-            if (fallbackThresholdEntry.isPresent() && fallbackThresholdEntry.get().value.equals("" + SubstrateOptions.ForceFallback)) {
-                /* Bypass regular build and proceed with fallback image building */
-                return ExitStatus.FALLBACK_IMAGE.getValue();
-            }
-        }
 
         if (!limitModules.isEmpty()) {
             imageBuilderJavaArgs.add("-D" + ModuleSupport.PROPERTY_IMAGE_EXPLICITLY_LIMITED_MODULES + "=" + String.join(",", limitModules));
@@ -1516,7 +1378,7 @@ public class NativeImage {
     }
 
     private boolean shouldAddCWDToCP() {
-        if (config.buildFallbackImage() || printFlagsOptionQuery != null || printFlagsWithExtraHelpOptionQuery != null) {
+        if (printFlagsOptionQuery != null || printFlagsWithExtraHelpOptionQuery != null) {
             return false;
         }
 
@@ -1921,17 +1783,15 @@ public class NativeImage {
     }
 
     private Set<String> getImplicitlyRequiredSystemModules(Collection<Path> modulePath) {
-        if (modulePath.isEmpty()) {
-            return Set.of();
+        ModuleFinder finder = ModuleFinder.ofSystem();
+        if (!modulePath.isEmpty()) {
+            ModuleFinder appModuleFinder = ModuleFinder.of(modulePath.toArray(Path[]::new));
+            finder = ModuleFinder.compose(appModuleFinder, finder);
         }
-
-        ModuleFinder systemModuleFinder = ModuleFinder.ofSystem();
-        ModuleFinder appModuleFinder = ModuleFinder.of(modulePath.toArray(Path[]::new));
-        ModuleFinder finder = ModuleFinder.compose(appModuleFinder, systemModuleFinder);
         Map<String, ModuleReference> modules = finder.findAll().stream()
                         .collect(Collectors.toMap(m -> m.descriptor().name(), m -> m));
 
-        Set<String> applicationModulePathRequiredModules = new HashSet<>();
+        Set<String> applicationModulePathRequiredModules = new HashSet<>(); // noEconomicSet(api)
         Queue<ModuleReference> discoveryQueue = new ArrayDeque<>(modules.values());
 
         while (!discoveryQueue.isEmpty()) {
@@ -2058,12 +1918,6 @@ public class NativeImage {
                     case BUILDER_ERROR:
                         /* Exit, builder has handled error reporting. */
                         throw showError(null, null, exitStatusCode);
-                    case FALLBACK_IMAGE:
-                        nativeImage.showMessage("Generating fallback image...");
-                        build(new FallbackBuildConfiguration(nativeImage), nativeImageProvider);
-                        LogUtils.warning("Image '" + nativeImage.imageName + "' is a fallback image that requires a JDK for execution (use --" + SubstrateOptions.OptionNameNoFallback +
-                                        " to suppress fallback image generation and to print more detailed information why a fallback image was necessary).");
-                        break;
                     case REBUILD_AFTER_ANALYSIS:
                         build(config, buildConfig -> {
                             NativeImage rebuildNativeImage = nativeImageProvider.apply(buildConfig);

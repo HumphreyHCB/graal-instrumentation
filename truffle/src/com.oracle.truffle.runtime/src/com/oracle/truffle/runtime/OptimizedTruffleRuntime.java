@@ -461,6 +461,8 @@ public abstract class OptimizedTruffleRuntime implements TruffleRuntime, Truffle
                         CompilerDirectives.CompilationFinal.class,
                         CompilerDirectives.TruffleBoundary.class,
                         CompilerDirectives.ValueType.class,
+                        CompilerDirectives.EarlyInline.class,
+                        CompilerDirectives.EarlyEscapeAnalysis.class,
                         HostCompilerDirectives.BytecodeInterpreterSwitch.class,
                         HostCompilerDirectives.BytecodeInterpreterSwitchBoundary.class,
                         HostCompilerDirectives.InliningCutoff.class,
@@ -543,6 +545,9 @@ public abstract class OptimizedTruffleRuntime implements TruffleRuntime, Truffle
         }
         for (String className : new String[]{
                         "com.oracle.truffle.api.strings.TStringOps",
+                        "java.util.concurrent.atomic.AtomicIntegerFieldUpdater$AtomicIntegerFieldUpdaterImpl",
+                        "java.util.concurrent.atomic.AtomicLongFieldUpdater$CASUpdater",
+                        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl",
                         "com.oracle.truffle.api.object.UnsafeAccess", // JDK 25+
                         // JDK < 25, remove after dropping JDK 21 compatibility (GR-64984):
                         "com.oracle.truffle.object.UnsafeAccess",

@@ -27,6 +27,9 @@ package com.oracle.svm.util;
 import java.util.Objects;
 import java.util.Optional;
 
+import jdk.graal.compiler.vmaccess.ResolvedJavaModule;
+import jdk.graal.compiler.vmaccess.ResolvedJavaModuleLayer;
+
 /**
  * Fallback implementation of {@link ResolvedJavaModuleLayer} based on {@link ModuleLayer}.
  */

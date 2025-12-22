@@ -52,7 +52,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +65,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.collections.Pair;
 import org.graalvm.home.HomeFinder;
 import org.graalvm.home.Version;
@@ -106,7 +106,7 @@ import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.graal.hosted.runtimecompilation.GraalGraphObjectReplacer;
 import com.oracle.svm.graal.hosted.runtimecompilation.SubstrateGraalCompilerSetup;
-import com.oracle.svm.graal.hosted.runtimecompilation.SubstrateProviders;
+import com.oracle.svm.graal.hosted.runtimecompilation.SubstrateRuntimeProviders;
 import com.oracle.svm.graal.meta.SubstrateUniverseFactory;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
@@ -249,7 +249,7 @@ public final class TruffleBaseFeature implements InternalFeature {
     private ClassLoader imageClassLoader;
     private AnalysisMetaAccess metaAccess;
     private GraalGraphObjectReplacer graalGraphObjectReplacer;
-    private final Set<Class<?>> registeredClasses = new HashSet<>();
+    private final EconomicSet<Class<?>> registeredClasses = EconomicSet.create();
     private final Map<Class<?>, PossibleReplaceCandidatesSubtypeHandler> subtypeChecks = new HashMap<>();
     private boolean profilingEnabled;
     private Field uncachedDispatchField;
@@ -671,7 +671,7 @@ public final class TruffleBaseFeature implements InternalFeature {
         if (graalGraphObjectReplacer == null) {
             BeforeAnalysisAccessImpl config = (BeforeAnalysisAccessImpl) access;
             SubstrateWordTypes wordTypes = new SubstrateWordTypes(config.getMetaAccess(), ConfigurationValues.getWordKind());
-            SubstrateProviders substrateProviders = ImageSingletons.lookup(SubstrateGraalCompilerSetup.class).getSubstrateProviders(metaAccess, wordTypes);
+            SubstrateRuntimeProviders substrateProviders = ImageSingletons.lookup(SubstrateGraalCompilerSetup.class).getSubstrateProviders(metaAccess, wordTypes);
             graalGraphObjectReplacer = new GraalGraphObjectReplacer(config.getUniverse(), substrateProviders, new SubstrateUniverseFactory());
             graalGraphObjectReplacer.setAnalysisAccess(config);
         }
@@ -974,7 +974,7 @@ public final class TruffleBaseFeature implements InternalFeature {
         }
     }
 
-    private final Set<Class<?>> dynamicObjectClasses = new HashSet<>();
+    private final EconomicSet<Class<?>> dynamicObjectClasses = EconomicSet.create();
 
     private void initializeDynamicObjectLayouts(AnalysisType type) {
         if (type.isInstantiated()) {

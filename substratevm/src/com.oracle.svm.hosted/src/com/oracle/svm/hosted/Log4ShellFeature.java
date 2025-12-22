@@ -33,11 +33,12 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import org.graalvm.collections.EconomicSet;
 
 import com.oracle.graal.pointsto.meta.AnalysisMethod;
 import com.oracle.graal.pointsto.meta.AnalysisType;
@@ -50,8 +51,8 @@ import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.hosted.FeatureImpl.AfterAnalysisAccessImpl;
 import com.oracle.svm.util.JVMCIReflectionUtil;
 import com.oracle.svm.util.LogUtils;
-import com.oracle.svm.util.ResolvedJavaPackage;
 
+import jdk.graal.compiler.vmaccess.ResolvedJavaPackage;
 import jdk.vm.ci.meta.ResolvedJavaType;
 
 /**
@@ -181,7 +182,7 @@ public class Log4ShellFeature implements InternalFeature {
             return log4jUnknownVersion;
         }
 
-        Set<String> vulnerableMethods = new HashSet<>();
+        EconomicSet<String> vulnerableMethods = EconomicSet.create();
 
         if (("1".equals(components[0]) && vulnerableLog4jOne(components)) || ("2".equals(components[0]) && vulnerableLog4jTwo(components))) {
             for (AnalysisMethod method : log4jClass.getDeclaredMethods(false)) {

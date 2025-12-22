@@ -54,7 +54,6 @@ import javax.lang.model.type.TypeMirror;
 
 import com.oracle.truffle.dsl.processor.ProcessorContext;
 import com.oracle.truffle.dsl.processor.TruffleTypes;
-import com.oracle.truffle.dsl.processor.bytecode.generator.BytecodeRootNodeElement.InterpreterTier;
 import com.oracle.truffle.dsl.processor.bytecode.model.BytecodeDSLModel;
 import com.oracle.truffle.dsl.processor.bytecode.model.ConstantOperandModel;
 import com.oracle.truffle.dsl.processor.bytecode.model.InstructionModel;
@@ -110,7 +109,7 @@ public class BytecodeDSLNodeGeneratorPlugs implements NodeGeneratorPlugs {
     public List<? extends VariableElement> additionalArguments() {
         List<CodeVariableElement> result = new ArrayList<>();
         if (model.hasYieldOperation()) {
-            result.add(new CodeVariableElement(context.getTypes().VirtualFrame, "$stackFrame"));
+            result.add(new CodeVariableElement(context.getTypes().FrameWithoutBoxing, "$stackFrame"));
         }
         result.add(new CodeVariableElement(nodeType, "$bytecode"));
         result.add(new CodeVariableElement(context.getType(byte[].class), "$bc"));

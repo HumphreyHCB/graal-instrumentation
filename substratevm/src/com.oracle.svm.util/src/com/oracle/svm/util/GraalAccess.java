@@ -24,32 +24,40 @@
  */
 package com.oracle.svm.util;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
+import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.Platform;
 import org.graalvm.nativeimage.Platforms;
 
 import jdk.graal.compiler.api.replacements.SnippetReflectionProvider;
-import jdk.graal.compiler.api.runtime.GraalJVMCICompiler;
-import jdk.graal.compiler.api.runtime.GraalRuntime;
-import jdk.graal.compiler.core.target.Backend;
+import jdk.graal.compiler.debug.GraalError;
 import jdk.graal.compiler.phases.util.Providers;
-import jdk.graal.compiler.runtime.RuntimeProvider;
+import jdk.graal.compiler.serviceprovider.GraalServices;
+import jdk.graal.compiler.vmaccess.ResolvedJavaModule;
+import jdk.graal.compiler.vmaccess.VMAccess;
+import jdk.graal.compiler.vmaccess.VMAccess.Builder;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.vm.ci.meta.ResolvedJavaField;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaRecordComponent;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.annotation.Annotated;
-import jdk.vm.ci.runtime.JVMCI;
 
 /**
  * This class provides methods for converting core reflection objects into their JVMCI counterparts
@@ -64,28 +72,117 @@ import jdk.vm.ci.runtime.JVMCI;
 @Platforms(Platform.HOSTED_ONLY.class)
 public final class GraalAccess {
 
-    private static final GraalRuntime graalRuntime;
-    private static final TargetDescription originalTarget;
-    private static final Providers originalProviders;
-    private static final SnippetReflectionProvider originalSnippetReflection;
+    /**
+     * The {@link VMAccess} used to implement the functionality in this class.
+     */
+    private static VMAccess vmAccess;
 
-    static {
-        graalRuntime = ((GraalJVMCICompiler) JVMCI.getRuntime().getCompiler()).getGraalRuntime();
-        Backend hostBackend = getGraalCapability(RuntimeProvider.class).getHostBackend();
-        originalTarget = Objects.requireNonNull(hostBackend.getTarget());
-        originalProviders = Objects.requireNonNull(hostBackend.getProviders());
-        originalSnippetReflection = Objects.requireNonNull(getGraalCapability(SnippetReflectionProvider.class));
-    }
+    /**
+     * Guards against multiple calls to {@link #plantConfiguration(VMAccess)}. The value is a stack
+     * trace of the first call.
+     */
+    private static volatile String providersInit;
 
     private GraalAccess() {
     }
 
+    public static final String PROPERTY_NAME = ImageInfo.PROPERTY_NATIVE_IMAGE_PREFIX + "vmaccessname";
+
+    /**
+     * Gets a {@link VMAccess} builder whose {@linkplain Builder#getVMAccessName() name} is
+     * specified by the {@value #PROPERTY_NAME} system property. If no name is specified, then
+     * {@code "host"} is used.
+     *
+     * @throws GraalError if the requested builder cannot be found
+     */
+    public static VMAccess.Builder getVmAccessBuilder() {
+        String requestedAccessName = GraalServices.getSavedProperty(PROPERTY_NAME);
+        String accessName = requestedAccessName == null ? "host" : requestedAccessName;
+        Module vmAccessModule = Builder.class.getModule();
+        ModuleLayer vmAccessLayer = vmAccessModule.getLayer();
+        ServiceLoader<VMAccess.Builder> loader;
+        if (vmAccessLayer == null) {
+            // VMAccess was loaded on the class path (as an unnamed module).
+            // In this context, it's expected that all VMAccess providers
+            // are also on the class path.
+            loader = ServiceLoader.load(VMAccess.Builder.class);
+        } else {
+            loader = ServiceLoader.load(vmAccessLayer, VMAccess.Builder.class);
+        }
+        VMAccess.Builder selected = null;
+        List<VMAccess.Builder> builders = new ArrayList<>();
+        for (VMAccess.Builder builder : loader) {
+            builders.add(builder);
+            if (accessName.equals(builder.getVMAccessName())) {
+                selected = builder;
+                break;
+            }
+        }
+        if (selected == null) {
+            if (builders.isEmpty()) {
+                throw new GraalError("No %s service providers found", VMAccess.Builder.class.getName());
+            }
+            String available = builders.stream().map(b -> "'" + b.getVMAccessName() + "'").collect(Collectors.joining(", "));
+            String origin = requestedAccessName == null ? "" : "specified by system property %s ".formatted(PROPERTY_NAME);
+            throw new GraalError("%s service provider '%s' %snot found. Available providers: %s",
+                            VMAccess.Builder.class.getName(),
+                            accessName,
+                            origin,
+                            available);
+        }
+        return selected;
+    }
+
+    /**
+     * Configures {@link GraalAccess} based on {@code vmAccess}. This method must be called before
+     * calling any other methods in this class and can only be called once to ensure the whole
+     * system uses a stable configuration.
+     *
+     * @param access the {@link VMAccess} value to use for configuring {@link GraalAccess}. If
+     *            {@code null}, then {@link #getVmAccessBuilder()} is used to create a VMAccess that
+     *            reflects the host configuration.
+     */
+    public static synchronized void plantConfiguration(VMAccess access) {
+        GraalError.guarantee(providersInit == null, "Providers have already been planted: %s", providersInit);
+        if (access == null) {
+            VMAccess.Builder builder = getVmAccessBuilder();
+            String cp = System.getProperty("java.class.path");
+            if (cp != null) {
+                builder.classPath(Arrays.asList(cp.split(File.pathSeparator)));
+            }
+            vmAccess = builder.build();
+        } else {
+            vmAccess = access;
+        }
+        StringWriter sw = new StringWriter();
+        new Exception("providers previously planted here:").printStackTrace(new PrintWriter(sw));
+        providersInit = sw.toString();
+    }
+
+    private static void ensureInitialized() {
+        if (providersInit == null) {
+            synchronized (GraalAccess.class) {
+                if (providersInit == null) {
+                    plantConfiguration(null);
+                }
+            }
+        }
+    }
+
     public static TargetDescription getOriginalTarget() {
-        return originalTarget;
+        return getOriginalProviders().getCodeCache().getTarget();
     }
 
     public static Providers getOriginalProviders() {
-        return originalProviders;
+        return getVMAccess().getProviders();
+    }
+
+    /**
+     * Gets the {@link VMAccess} used to configure this class.
+     */
+    public static VMAccess getVMAccess() {
+        ensureInitialized();
+        return vmAccess;
     }
 
     private static final Map<Class<?>, ResolvedJavaType> typeCache = new ConcurrentHashMap<>();
@@ -111,26 +208,26 @@ public final class GraalAccess {
     }
 
     public static ResolvedJavaType lookupType(Class<?> cls) {
-        return typeCache.computeIfAbsent(cls, c -> originalProviders.getMetaAccess().lookupJavaType(cls));
+        return typeCache.computeIfAbsent(cls, c -> getOriginalProviders().getMetaAccess().lookupJavaType(cls));
     }
 
     public static ResolvedJavaMethod lookupMethod(Executable exe) {
-        return methodCache.computeIfAbsent(exe, e -> originalProviders.getMetaAccess().lookupJavaMethod(e));
+        return methodCache.computeIfAbsent(exe, e -> getOriginalProviders().getMetaAccess().lookupJavaMethod(e));
     }
 
     public static ResolvedJavaField lookupField(Field field) {
-        return fieldCache.computeIfAbsent(field, f -> originalProviders.getMetaAccess().lookupJavaField(f));
+        return fieldCache.computeIfAbsent(field, f -> getOriginalProviders().getMetaAccess().lookupJavaField(f));
     }
 
     public static ResolvedJavaRecordComponent lookupRecordComponent(RecordComponent rc) {
-        return recordCache.computeIfAbsent(rc, r -> originalProviders.getMetaAccess().lookupJavaRecordComponent(rc));
+        return recordCache.computeIfAbsent(rc, r -> getOriginalProviders().getMetaAccess().lookupJavaRecordComponent(rc));
     }
 
     public static SnippetReflectionProvider getOriginalSnippetReflection() {
-        return originalSnippetReflection;
+        return getOriginalProviders().getSnippetReflection();
     }
 
-    public static <T> T getGraalCapability(Class<T> clazz) {
-        return graalRuntime.getCapability(clazz);
+    public static ResolvedJavaModule lookupModule(Module module) {
+        return new ResolvedJavaModuleImpl(module);
     }
 }

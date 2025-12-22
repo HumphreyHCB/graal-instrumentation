@@ -54,6 +54,7 @@ import com.oracle.svm.core.c.libc.MuslLibC;
 import com.oracle.svm.core.config.ConfigurationValues;
 import com.oracle.svm.core.graal.RuntimeCompilation;
 import com.oracle.svm.core.heap.ReferenceHandler;
+import com.oracle.svm.core.hub.RuntimeClassLoading;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.core.jdk.VectorAPIEnabled;
 import com.oracle.svm.core.option.APIOption;
@@ -79,8 +80,8 @@ import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.TimeUtils;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
+import com.oracle.svm.util.JVMCIReflectionUtil;
 import com.oracle.svm.util.LogUtils;
-import com.oracle.svm.util.ResolvedJavaModuleLayer;
 
 import jdk.graal.compiler.api.replacements.Fold;
 import jdk.graal.compiler.asm.amd64.AMD64Assembler;
@@ -188,20 +189,6 @@ public class SubstrateOptions {
 
     @Option(help = "Builds image with libstdc++ statically linked into the image (if needed)", type = Expert, stability = OptionStability.EXPERIMENTAL)//
     public static final HostedOptionKey<Boolean> StaticLibStdCpp = new HostedOptionKey<>(false);
-
-    public static final int ForceFallback = 10;
-    public static final int Automatic = 5;
-    public static final int NoFallback = 0;
-
-    public static final String OptionNameForceFallback = "force-fallback";
-    public static final String OptionNameAutoFallback = "auto-fallback";
-    public static final String OptionNameNoFallback = "no-fallback";
-
-    @APIOption(name = OptionNameForceFallback, fixedValue = "" + ForceFallback, customHelp = "force building of fallback image") //
-    @APIOption(name = OptionNameAutoFallback, fixedValue = "" + Automatic, customHelp = "build stand-alone image if possible") //
-    @APIOption(name = OptionNameNoFallback, fixedValue = "" + NoFallback, customHelp = "build stand-alone image or report failure") //
-    @Option(help = "Define when fallback-image generation should be used.")//
-    public static final HostedOptionKey<Integer> FallbackThreshold = new HostedOptionKey<>(Automatic);
 
     public static final String IMAGE_CLASSPATH_PREFIX = "-imagecp";
     public static final String IMAGE_MODULEPATH_PREFIX = "-imagemp";
@@ -607,6 +594,17 @@ public class SubstrateOptions {
         @Option(help = "The number of nanoseconds that the isolate teardown can take before a fatal error is thrown. Disabled if less or equal to 0.", //
                         deprecated = true, deprecationMessage = "Use -XX:TearDownFailureSeconds=<secs> instead")//
         public static final RuntimeOptionKey<Long> TearDownFailureNanos = new RuntimeOptionKey<>(0L, RelevantForCompilationIsolates);
+
+        public static final int Automatic = 5;
+        public static final int NoFallback = 0;
+
+        public static final String OptionNameAutoFallback = "auto-fallback";
+        public static final String OptionNameNoFallback = "no-fallback";
+
+        @APIOption(name = OptionNameAutoFallback, fixedValue = "" + Automatic, customHelp = "build stand-alone image if possible", deprecated = "No effect, no replacement available") //
+        @APIOption(name = OptionNameNoFallback, fixedValue = "" + NoFallback, customHelp = "build stand-alone image or report failure", deprecated = "No effect, no replacement available") //
+        @Option(help = "Deprecated, option no longer has any effect.", deprecated = true, deprecationMessage = "It no longer has any effect, and no replacement is available")//
+        public static final HostedOptionKey<Integer> FallbackThreshold = new HostedOptionKey<>(Automatic);
     }
 
     @LayerVerifiedOption(kind = Kind.Changed, severity = Severity.Error)//
@@ -650,6 +648,7 @@ public class SubstrateOptions {
     @Option(help = "Force no direct relocations to be present in the text section of the generated image", type = OptionType.Debug) //
     public static final HostedOptionKey<Boolean> NoDirectRelocationsInText = new HostedOptionKey<>(true);
 
+    @LayerVerifiedOption(kind = Kind.Changed, severity = Severity.Error)//
     @Option(help = "Support multiple isolates.", deprecated = true, deprecationMessage = "This option disables a major feature of GraalVM Native Image and will be removed in a future release") //
     public static final HostedOptionKey<Boolean> SpawnIsolates = new HostedOptionKey<>(true);
 
@@ -871,8 +870,11 @@ public class SubstrateOptions {
     @Option(help = "Deprecated, has no effect.", deprecated = true)//
     static final HostedOptionKey<Boolean> StackTrace = new HostedOptionKey<>(true);
 
-    @Option(help = "Parse and consume standard options and system properties from the command line arguments when the VM is created.")//
+    @Option(help = "Parse and consume standard options and system properties from the command line arguments when the VM is created.", stability = OptionStability.STABLE)//
     public static final HostedOptionKey<Boolean> ParseRuntimeOptions = new HostedOptionKey<>(true);
+
+    @Option(help = "Initialize the VM and run startup hooks.")//
+    public static final HostedOptionKey<Boolean> InitializeVM = new HostedOptionKey<>(true);
 
     @Option(help = "Enable wildcard expansion in command line arguments on Windows.")//
     public static final HostedOptionKey<Boolean> EnableWildcardExpansion = new HostedOptionKey<>(true);
@@ -926,7 +928,7 @@ public class SubstrateOptions {
         @Override
         protected void onValueUpdate(EconomicMap<OptionKey<?>, Object> values, String oldValue, String newValue) {
             if ("llvm".equals(newValue)) {
-                boolean isLLVMBackendMissing = ResolvedJavaModuleLayer.boot().findModule("org.graalvm.nativeimage.llvm").isEmpty();
+                boolean isLLVMBackendMissing = JVMCIReflectionUtil.bootModuleLayer().findModule("org.graalvm.nativeimage.llvm").isEmpty();
                 if (isLLVMBackendMissing) {
                     throw UserError.invalidOptionValue(CompilerBackend, newValue,
                                     "The LLVM backend for GraalVM Native Image is missing and needs to be built from source. " +
@@ -1277,6 +1279,16 @@ public class SubstrateOptions {
                                 SubstrateOptionsParser.commandArgument(ClosedTypeWorldHubLayout, "-"));
             }
         });
+
+        /** Use {@link SubstrateOptions#useRistretto()} instead. */
+        @Option(help = "Prepare native image to compile bytecodes at runtime.")//
+        public static final HostedOptionKey<Boolean> GraalJITCompileAtRuntime = new HostedOptionKey<>(false, actualValue -> {
+            if (actualValue.getValue()) {
+                if (!RuntimeClassLoading.Options.RuntimeClassLoading.getValue()) {
+                    throw UserError.abort("Cannot enable Ristretto compilation if RuntimeClassLoading is not enabled.");
+                }
+            }
+        });
     }
 
     @Option(help = "Overwrites the available number of processors provided by the OS. Any value <= 0 means using the processor count from the OS.")//
@@ -1485,12 +1497,7 @@ public class SubstrateOptions {
 
     @Fold
     public static boolean isForeignAPIEnabled() {
-        /*
-         * FFM API should be enabled by default only if running on a supported and tested platform.
-         * However, if the option is explicitly enabled, we still return 'true'.
-         */
-        return SubstrateOptions.ForeignAPISupport.getValue() &&
-                        (SubstrateOptions.ForeignAPISupport.hasBeenSet() || Platform.includedIn(PLATFORM_JNI.class) && Platform.includedIn(NATIVE_ONLY.class));
+        return SubstrateOptions.ForeignAPISupport.getValue();
     }
 
     @Option(help = "Support for intrinsics from the Java Vector API", type = Expert) //
@@ -1509,9 +1516,17 @@ public class SubstrateOptions {
 
     @Fold
     public static boolean isSharedArenaSupportEnabled() {
-        // GR-65162: Shared arenas cannot be used together with Vector API support
-        return isForeignAPIEnabled() && SubstrateOptions.SharedArenaSupport.getValue() &&
-                        (SubstrateOptions.SharedArenaSupport.hasBeenSet() || !VectorAPIEnabled.getValue());
+        if (!isForeignAPIEnabled() || !SubstrateOptions.SharedArenaSupport.getValue()) {
+            return false;
+        }
+        if (SubstrateOptions.SharedArenaSupport.hasBeenSet()) {
+            return true;
+        }
+        if (VectorAPIEnabled.getValue()) {
+            // GR-65162: Shared arenas cannot be used together with Vector API support
+            return false;
+        }
+        return Platform.includedIn(PLATFORM_JNI.class) && Platform.includedIn(NATIVE_ONLY.class);
     }
 
     @Option(help = "Assume new types cannot be added after analysis", type = OptionType.Expert) //
@@ -1678,5 +1693,13 @@ public class SubstrateOptions {
             }
         });
     });
+
+    /**
+     * Determine if Ristretto is enabled as the bytecode JIT at runtime.
+     */
+    @Fold
+    public static boolean useRistretto() {
+        return ConcealedOptions.GraalJITCompileAtRuntime.getValue();
+    }
 
 }

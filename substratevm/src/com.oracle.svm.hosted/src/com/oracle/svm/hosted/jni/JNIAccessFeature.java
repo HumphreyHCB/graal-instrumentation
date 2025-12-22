@@ -84,7 +84,6 @@ import com.oracle.svm.core.traits.SingletonTraits;
 import com.oracle.svm.core.util.UserError;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ConditionalConfigurationRegistry;
-import com.oracle.svm.hosted.FallbackFeature;
 import com.oracle.svm.hosted.FeatureImpl.AfterRegistrationAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.BeforeAnalysisAccessImpl;
 import com.oracle.svm.hosted.FeatureImpl.CompilationAccessImpl;
@@ -172,8 +171,6 @@ public class JNIAccessFeature implements Feature {
     private final Map<ResolvedSignature<ResolvedJavaType>, JNIJavaCallVariantWrapperGroup> nonvirtualCallVariantWrappers = new ConcurrentHashMap<>();
     private final List<JNICallableJavaMethod> calledJavaMethods = new ArrayList<>();
 
-    private int loadedConfigurations;
-
     private SubstitutionReflectivityFilter reflectivityFilter;
 
     /*
@@ -219,11 +216,11 @@ public class JNIAccessFeature implements Feature {
                         ClassInitializationSupport.singleton());
         ReflectionConfigurationParser<AccessCondition, Class<?>> parser = ConfigurationParserUtils.create(ConfigurationFile.JNI, true, conditionResolver, runtimeSupport, null, null, null,
                         access.getImageClassLoader());
-        loadedConfigurations = ConfigurationParserUtils.parseAndRegisterConfigurationsFromCombinedFile(parser, access.getImageClassLoader(), "JNI");
+        ConfigurationParserUtils.parseAndRegisterConfigurationsFromCombinedFile(parser, access.getImageClassLoader(), "JNI");
         ReflectionConfigurationParser<AccessCondition, Class<?>> legacyParser = ConfigurationParserUtils.create(ConfigurationFile.JNI, false, conditionResolver, runtimeSupport, null, null,
                         null,
                         access.getImageClassLoader());
-        loadedConfigurations += ConfigurationParserUtils.parseAndRegisterConfigurations(legacyParser, access.getImageClassLoader(), "JNI",
+        ConfigurationParserUtils.parseAndRegisterConfigurations(legacyParser, access.getImageClassLoader(), "JNI",
                         ConfigurationFiles.Options.JNIConfigurationFiles, ConfigurationFiles.Options.JNIConfigurationResources, ConfigurationFile.JNI.getFileName());
 
         reflectivityFilter = SubstitutionReflectivityFilter.singleton();
@@ -282,7 +279,7 @@ public class JNIAccessFeature implements Feature {
             try {
                 register(condition, false, preserved, declaringClass.getDeclaredField(fieldName));
             } catch (NoSuchFieldException e) {
-                newNegativeFieldLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(fieldName);
+                newNegativeFieldLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(fieldName); // noEconomicSet
             }
         }
 
@@ -291,7 +288,7 @@ public class JNIAccessFeature implements Feature {
             try {
                 register(condition, false, preserved, declaringClass.getDeclaredMethod(methodName, parameterTypes));
             } catch (NoSuchMethodException e) {
-                newNegativeMethodLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(Pair.create(methodName, parameterTypes));
+                newNegativeMethodLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(Pair.create(methodName, parameterTypes)); // noEconomicSet
             }
         }
 
@@ -300,7 +297,7 @@ public class JNIAccessFeature implements Feature {
             try {
                 register(condition, false, preserved, declaringClass.getDeclaredConstructor(parameterTypes));
             } catch (NoSuchMethodException e) {
-                newNegativeMethodLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(Pair.create("<init>", parameterTypes));
+                newNegativeMethodLookups.computeIfAbsent(declaringClass, _ -> new HashSet<>()).add(Pair.create("<init>", parameterTypes)); // noEconomicSet
             }
         }
     }
@@ -568,13 +565,6 @@ public class JNIAccessFeature implements Feature {
 
     @Override
     public void beforeCompilation(BeforeCompilationAccess a) {
-        if (ImageSingletons.contains(FallbackFeature.class)) {
-            FallbackFeature.FallbackImageRequest jniFallback = ImageSingletons.lookup(FallbackFeature.class).jniFallback;
-            if (jniFallback != null && loadedConfigurations == 0) {
-                throw jniFallback;
-            }
-        }
-
         CompilationAccessImpl access = (CompilationAccessImpl) a;
         DynamicHubLayout dynamicHubLayout = DynamicHubLayout.singleton();
         for (JNIAccessibleClass clazz : JNIReflectionDictionary.currentLayer().getClasses()) {

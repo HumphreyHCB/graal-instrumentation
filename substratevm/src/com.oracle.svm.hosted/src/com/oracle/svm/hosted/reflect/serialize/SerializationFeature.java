@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +51,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.graalvm.collections.EconomicSet;
 import org.graalvm.nativeimage.ImageSingletons;
 import org.graalvm.nativeimage.dynamicaccess.AccessCondition;
 import org.graalvm.nativeimage.hosted.Feature;
@@ -59,7 +59,6 @@ import org.graalvm.nativeimage.hosted.RuntimeReflection;
 import org.graalvm.nativeimage.impl.RuntimeReflectionSupport;
 import org.graalvm.nativeimage.impl.RuntimeSerializationSupport;
 
-import com.oracle.svm.util.GraalAccess;
 import com.oracle.svm.configure.ConfigurationFile;
 import com.oracle.svm.configure.ConfigurationParserOption;
 import com.oracle.svm.configure.SerializationConfigurationParser;
@@ -75,7 +74,6 @@ import com.oracle.svm.core.util.BasedOnJDKFile;
 import com.oracle.svm.core.util.VMError;
 import com.oracle.svm.hosted.ConditionalConfigurationRegistry;
 import com.oracle.svm.hosted.ConfigurationTypeResolver;
-import com.oracle.svm.hosted.FallbackFeature;
 import com.oracle.svm.hosted.FeatureImpl;
 import com.oracle.svm.hosted.ImageClassLoader;
 import com.oracle.svm.hosted.classinitialization.ClassInitializationSupport;
@@ -86,6 +84,7 @@ import com.oracle.svm.hosted.reflect.RecordUtils;
 import com.oracle.svm.hosted.reflect.ReflectionFeature;
 import com.oracle.svm.hosted.reflect.proxy.DynamicProxyFeature;
 import com.oracle.svm.hosted.reflect.proxy.ProxyRegistry;
+import com.oracle.svm.util.GraalAccess;
 import com.oracle.svm.util.LogUtils;
 import com.oracle.svm.util.ReflectionUtil;
 
@@ -105,7 +104,6 @@ public class SerializationFeature implements InternalFeature {
     final Set<Class<?>> capturingClasses = ConcurrentHashMap.newKeySet();
     private SerializationBuilder serializationBuilder;
     private SerializationDenyRegistry serializationDenyRegistry;
-    private int loadedConfigurations;
 
     @Override
     public List<Class<? extends Feature>> getRequiredFeatures() {
@@ -133,7 +131,7 @@ public class SerializationFeature implements InternalFeature {
         AccessConditionResolver<AccessCondition> conditionResolver = new NativeImageConditionResolver(imageClassLoader, ClassInitializationSupport.singleton());
         EnumSet<ConfigurationParserOption> parserOptions = ConfigurationFiles.Options.getConfigurationParserOptions();
         SerializationConfigurationParser<AccessCondition> parser = SerializationConfigurationParser.create(true, conditionResolver, serializationBuilder, parserOptions);
-        loadedConfigurations = ConfigurationParserUtils.parseAndRegisterConfigurationsFromCombinedFile(parser, imageClassLoader, "serialization");
+        ConfigurationParserUtils.parseAndRegisterConfigurationsFromCombinedFile(parser, imageClassLoader, "serialization");
 
         SerializationConfigurationParser<AccessCondition> denyCollectorParser = SerializationConfigurationParser.create(false, conditionResolver, serializationDenyRegistry, parserOptions);
         ConfigurationParserUtils.parseAndRegisterConfigurations(denyCollectorParser, imageClassLoader, "serialization",
@@ -141,10 +139,9 @@ public class SerializationFeature implements InternalFeature {
                         ConfigurationFile.SERIALIZATION_DENY.getFileName());
 
         SerializationConfigurationParser<AccessCondition> legacyParser = SerializationConfigurationParser.create(false, conditionResolver, serializationBuilder, parserOptions);
-        loadedConfigurations += ConfigurationParserUtils.parseAndRegisterConfigurations(legacyParser, imageClassLoader, "serialization",
+        ConfigurationParserUtils.parseAndRegisterConfigurations(legacyParser, imageClassLoader, "serialization",
                         ConfigurationFiles.Options.SerializationConfigurationFiles, ConfigurationFiles.Options.SerializationConfigurationResources,
                         ConfigurationFile.SERIALIZATION.getFileName());
-
     }
 
     private static void registerLambdasFromConstantNodesInGraph(StructuredGraph graph, SerializationBuilder serializationBuilder) {
@@ -199,12 +196,6 @@ public class SerializationFeature implements InternalFeature {
 
     @Override
     public void beforeCompilation(BeforeCompilationAccess access) {
-        if (ImageSingletons.contains(FallbackFeature.class)) {
-            FallbackFeature.FallbackImageRequest serializationFallback = ImageSingletons.lookup(FallbackFeature.class).serializationFallback;
-            if (serializationFallback != null && loadedConfigurations == 0) {
-                throw serializationFallback;
-            }
-        }
         serializationBuilder.serializationSupport.replaceHubKeyWithTypeID();
     }
 
@@ -306,10 +297,10 @@ final class SerializationBuilder extends ConditionalConfigurationRegistry implem
     public void registerIncludingAssociatedClasses(AccessCondition condition, Class<?> clazz) {
         abortIfSealed();
         Objects.requireNonNull(clazz, () -> nullErrorMessage("class", "serialization"));
-        registerIncludingAssociatedClasses(condition, clazz, new HashSet<>());
+        registerIncludingAssociatedClasses(condition, clazz, EconomicSet.create());
     }
 
-    private void registerIncludingAssociatedClasses(AccessCondition condition, Class<?> clazz, Set<Class<?>> alreadyVisited) {
+    private void registerIncludingAssociatedClasses(AccessCondition condition, Class<?> clazz, EconomicSet<Class<?>> alreadyVisited) {
         if (alreadyVisited.contains(clazz)) {
             return;
         }

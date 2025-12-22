@@ -94,7 +94,11 @@ public class IsolateArgumentParser {
     private static final CGlobalData<CCharPointer> OPTION_NAMES = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionNames);
     private static final CGlobalData<CIntPointer> OPTION_NAME_POSITIONS = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionNamePosition);
     private static final CGlobalData<CCharPointer> OPTION_TYPES = CGlobalDataFactory.createBytes(IsolateArgumentParser::createOptionTypes);
-    protected static final CGlobalData<CLongPointer> DEFAULT_VALUES = CGlobalDataFactory.createBytes(IsolateArgumentParser::createDefaultValues);
+
+    /** The default values are created in {@code RuntimeOptionsFeature}. */
+    public interface DefaultValuesProvider {
+        CGlobalData<CLongPointer> getDefaultValues();
+    }
 
     /**
      * All values (regardless of their type) are stored as 8 byte values. See
@@ -116,6 +120,15 @@ public class IsolateArgumentParser {
     @Fold
     public static IsolateArgumentParser singleton() {
         return ImageSingletons.lookup(IsolateArgumentParser.class);
+    }
+
+    /**
+     * Getter method for retrieving defaultValues. Note we fold this method to ensure the actual
+     * cglobal data object is seen at all call sites.
+     */
+    @Fold
+    public static CGlobalData<CLongPointer> getDefaultValues() {
+        return ImageSingletons.lookup(DefaultValuesProvider.class).getDefaultValues();
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
@@ -168,11 +181,17 @@ public class IsolateArgumentParser {
     }
 
     @Platforms(Platform.HOSTED_ONLY.class)
-    private static byte[] createDefaultValues() {
-        byte[] result = new byte[Long.BYTES * getOptionCount()];
+    public static byte[] createDefaultValues() {
+        assert !ImageLayerBuildingSupport.buildingImageLayer();
+        return createDefaultValuesArray(getOptions());
+    }
+
+    @Platforms(Platform.HOSTED_ONLY.class)
+    public static byte[] createDefaultValuesArray(List<RuntimeOptionKey<?>> options) {
+        assert options.size() == getOptionCount();
+        byte[] result = new byte[Long.BYTES * options.size()];
         ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.nativeOrder());
-        for (int i = 0; i < getOptionCount(); i++) {
-            RuntimeOptionKey<?> option = getOptions().get(i);
+        for (var option : options) {
             VMError.guarantee(option.isIsolateCreationOnly(), "Options parsed by IsolateArgumentParser should all have the IsolateCreationOnly flag. %s doesn't", option);
             long value = toLong(option.getHostedValue(), option.getDescriptor().getOptionValueType());
             buffer.putLong(value);
@@ -266,7 +285,7 @@ public class IsolateArgumentParser {
     public void copyToRuntimeOptions() {
         int index = getOptionIndex(SubstrateGCOptions.ReservedAddressSpaceSize);
         long value = getLongOptionValue(index);
-        if (DEFAULT_VALUES.get().read(index) != value) {
+        if (getDefaultValues().get().read(index) != value) {
             SubstrateGCOptions.ReservedAddressSpaceSize.update(value);
         }
     }
@@ -353,6 +372,11 @@ public class IsolateArgumentParser {
         return parsedOptionValues[index];
     }
 
+    @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
+    public void setLongOptionValue(int optionIndex, long newValue) {
+        parsedOptionValues[optionIndex] = newValue;
+    }
+
     protected CCharPointer getCCharPointerOptionValue(int index) {
         return Word.pointer(parsedOptionValues[index]);
     }
@@ -393,7 +417,7 @@ public class IsolateArgumentParser {
     @Uninterruptible(reason = CALLED_FROM_UNINTERRUPTIBLE_CODE, mayBeInlined = true)
     protected void initialize(IsolateArguments arguments, CEntryPointCreateIsolateParameters parameters) {
         for (int i = 0; i < getOptionCount(); i++) {
-            writeLong(arguments, i, DEFAULT_VALUES.get().read(i));
+            writeLong(arguments, i, getDefaultValues().get().read(i));
         }
 
         if (parameters.isNonNull() && parameters.version() >= 3) {
@@ -639,7 +663,7 @@ public class IsolateArgumentParser {
      */
     @Platforms(Platform.HOSTED_ONLY.class)
     @AutomaticallyRegisteredImageSingleton(onlyWith = BuildingImageLayerPredicate.class)
-    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = LayeredCallbacks.class, layeredInstallationKind = Independent.class)
+    @SingletonTraits(access = BuildtimeAccessOnly.class, layeredCallbacks = LayeredOptionInfo.LayeredCallbacks.class, layeredInstallationKind = Independent.class)
     static class LayeredOptionInfo {
         private static final int UNSET = -1;
         final int numOptions;
@@ -669,30 +693,30 @@ public class IsolateArgumentParser {
             Objects.requireNonNull(optionNames);
             return optionNames;
         }
-    }
 
-    static class LayeredCallbacks extends SingletonLayeredCallbacksSupplier {
+        static class LayeredCallbacks extends SingletonLayeredCallbacksSupplier {
 
-        @Override
-        public SingletonTrait getLayeredCallbacksTrait() {
-            return new SingletonTrait(SingletonTraitKind.LAYERED_CALLBACKS, new SingletonLayeredCallbacks<LayeredOptionInfo>() {
-                @Override
-                public LayeredPersistFlags doPersist(ImageSingletonWriter writer, LayeredOptionInfo singleton) {
-                    if (ImageLayerBuildingSupport.firstImageBuild()) {
-                        writer.writeInt("numOptions", IsolateArgumentParser.getOptionCount());
-                        writer.writeStringList("optionNames", IsolateArgumentParser.getOptions().stream().map(OptionKey::getName).toList());
-                    } else {
-                        writer.writeInt("numOptions", singleton.getNumOptions());
-                        writer.writeStringList("optionNames", singleton.optionNames);
+            @Override
+            public SingletonTrait getLayeredCallbacksTrait() {
+                return new SingletonTrait(SingletonTraitKind.LAYERED_CALLBACKS, new SingletonLayeredCallbacks<LayeredOptionInfo>() {
+                    @Override
+                    public LayeredPersistFlags doPersist(ImageSingletonWriter writer, LayeredOptionInfo singleton) {
+                        if (ImageLayerBuildingSupport.firstImageBuild()) {
+                            writer.writeInt("numOptions", IsolateArgumentParser.getOptionCount());
+                            writer.writeStringList("optionNames", IsolateArgumentParser.getOptions().stream().map(OptionKey::getName).toList());
+                        } else {
+                            writer.writeInt("numOptions", singleton.getNumOptions());
+                            writer.writeStringList("optionNames", singleton.optionNames);
+                        }
+                        return LayeredPersistFlags.CREATE;
                     }
-                    return LayeredPersistFlags.CREATE;
-                }
 
-                @Override
-                public Class<? extends SingletonLayeredCallbacks.LayeredSingletonInstantiator<?>> getSingletonInstantiator() {
-                    return SingletonInstantiator.class;
-                }
-            });
+                    @Override
+                    public Class<? extends SingletonLayeredCallbacks.LayeredSingletonInstantiator<?>> getSingletonInstantiator() {
+                        return SingletonInstantiator.class;
+                    }
+                });
+            }
         }
     }
 

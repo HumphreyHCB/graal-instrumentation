@@ -24,22 +24,24 @@
  */
 package com.oracle.svm.hosted.imagelayer;
 
-import static com.oracle.svm.common.layeredimage.LayeredCompilationBehavior.Behavior.PINNED_TO_INITIAL_LAYER;
+import static com.oracle.svm.sdk.staging.layeredimage.LayeredCompilationBehavior.Behavior.PINNED_TO_INITIAL_LAYER;
 
 import java.lang.reflect.Proxy;
 
+import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.hosted.Feature;
 
 import com.oracle.graal.pointsto.meta.AnalysisMetaAccess;
-import com.oracle.svm.common.hosted.layeredimage.LayeredCompilationSupport;
 import com.oracle.svm.core.Uninterruptible;
 import com.oracle.svm.core.bootstrap.BootstrapMethodInfo;
 import com.oracle.svm.core.feature.AutomaticallyRegisteredFeature;
 import com.oracle.svm.core.feature.InternalFeature;
 import com.oracle.svm.core.imagelayer.ImageLayerBuildingSupport;
 import com.oracle.svm.hosted.FeatureImpl.DuringSetupAccessImpl;
+import com.oracle.svm.sdk.staging.hosted.layeredimage.LayeredCompilationSupport;
 import com.oracle.svm.util.ReflectionUtil;
 
+import jdk.graal.compiler.options.ModifiableOptionValues;
 import jdk.internal.loader.ClassLoaders;
 import jdk.internal.misc.Unsafe;
 
@@ -72,6 +74,12 @@ public class InitialLayerFeature implements InternalFeature {
         metaAccess.lookupJavaType(Proxy.getProxyClass(ClassLoaders.appClassLoader(), Uninterruptible.class)).registerAsInstantiated("Core type");
         metaAccess.lookupJavaType(BootstrapMethodInfo.class).registerAsInstantiated("Core type");
         metaAccess.lookupJavaType(BootstrapMethodInfo.ExceptionWrapper.class).registerAsInstantiated("Core type");
+        metaAccess.lookupJavaType(UnmanagedMemory.class).registerAsReachable("Core type");
     }
 
+    @Override
+    public void beforeAnalysis(BeforeAnalysisAccess access) {
+        // GR-71504 automatically detect accesses to fields of application layer only singletons
+        access.registerAsUnsafeAccessed(ReflectionUtil.lookupField(ModifiableOptionValues.class, "v"));
+    }
 }
