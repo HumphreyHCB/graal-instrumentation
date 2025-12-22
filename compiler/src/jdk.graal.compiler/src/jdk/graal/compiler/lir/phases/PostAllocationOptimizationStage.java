@@ -84,6 +84,9 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
         }
+        // if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+        //     appendPhase(new BuboLIRPhaseFinal());
+        // }
         if (GraalOptions.LIRGTSlowDown.getValue(options)) {
             appendPhase(new LIRGTSlowdownPhasePost(options));
         }
@@ -91,7 +94,7 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
             appendPhase(new LIRGTSlowdownMarkerPhase(options));
         }
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
-            appendPhase(new BuboVerifyPostAllocPhase() );
+            //appendPhase(new BuboVerifyPostAllocPhase() );
         }
         if (GraalOptions.GTAssignDebug.getValue(options)) {
             appendPhase(new AssignDebugPostAllocPhase() );
