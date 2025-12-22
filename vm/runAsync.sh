@@ -1,27 +1,25 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-benchmark="List"
-file="${benchmark}Async2.txt"
-
-# build a separate var for the profile-replay subdirectory
-replay_subdir="${benchmark}_CompilerReplay"
-
-# full LoadProfiles path
-load_profiles="/home/hb478/repos/GTSlowdownSchedular/FinalDataRefined100/${benchmark}/${replay_subdir}"
+fileName="./LoopBenchmarks_noSlow_GTAssignDebug.txt"
 
 ./latest_graalvm_home/bin/java \
-  -Djdk.graal.AdditionalCompilerDebugInformation=true \
-  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions -XX:+EnableJVMCI \
-  -Djdk.graal.CompilationFailureAction=Diagnose \
-  -Djdk.graal.TrackNodeSourcePosition=true -Djdk.graal.TrackNodeInsertion=true \
-  -XX:+UseJVMCINativeLibrary -XX:+UseJVMCICompiler -XX:-TieredCompilation -XX:-BackgroundCompilation \
+  -Djdk.graal.TrackNodeSourcePosition=true \
+  -Djdk.graal.GTAssignDebug=true \
+  -XX:+UnlockExperimentalVMOptions \
+  -XX:+UnlockDiagnosticVMOptions \
+  -XX:+EnableJVMCI \
+  -XX:+UseJVMCICompiler \
+  -XX:+UseJVMCINativeLibrary \
+  -XX:+DebugNonSafepoints \
+  -XX:-TieredCompilation \
+  -XX:-BackgroundCompilation \
+  -javaagent:/home/hb478/repos/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
-  -agentpath:/home/hburchell/ProgramFiles/async-profiler-3.0-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=1ms,file="$file" \
   -Djdk.graal.StrictProfiles=false \
-  -Djdk.graal.LoadProfiles="$load_profiles" \
-  -Djdk.graal.WarnAboutGraphSignatureMismatch=false \
-  -Djdk.graal.WarnAboutCodeSignatureMismatch=false \
-  -Djdk.graal.WarnAboutNotCachedLoadedAccess=false \
-  Harness "$benchmark" 500 5000
+  -Djdk.graal.LIRGTSlowDown=false \
+  -Djdk.graal.BuboLIRPhase=false \
+  -agentpath:/home/hb478/repos/are-we-fast-yet/Async/async-profiler-4.2.1-linux-x64/lib/libasyncProfiler.so=start,event=cpu,interval=10,file=$fileName \
+  Harness LoopBenchmarks 12000
 
-echo "Wrote to here $file"
+echo $fileName

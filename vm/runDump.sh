@@ -9,7 +9,8 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
   -Dgraal.Dump=:2 -Dgraal.PrintGraph=Network \
   -Djdk.graal.TrackNodeSourcePosition=true \
   -Djdk.graal.EnableProfiler=false \
-  -Djdk.graal.BuboLIRPhase=true \
+  -Djdk.graal.BuboLIRPhase=false \
+  -Djdk.graal.GTAssignDebug=true \
   -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
   -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
     --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED \
@@ -17,6 +18,7 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
     --add-exports=jdk.graal.compiler/jdk.graal.compiler.serviceprovider=ALL-UNNAMED \
   -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
+  -javaagent:"$AGENT" \
   Harness Mandelbrot 20 750
   
 

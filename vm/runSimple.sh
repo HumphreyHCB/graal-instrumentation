@@ -5,28 +5,26 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
 
 
 ./latest_graalvm_home/bin/java \
-  -XX:+UnlockExperimentalVMOptions \
-  -XX:+UnlockDiagnosticVMOptions \
-  -XX:+EnableJVMCI \
-  -XX:+UseJVMCICompiler \
-  -XX:+UseJVMCINativeLibrary \
-  -XX:+DebugNonSafepoints \
+  --enable-native-access=ALL-UNNAMED \
+  -Djdk.graal.TrackNodeSourcePosition=true \
+  -Djdk.graal.BuboLIRPhase=true \
   -Djdk.graal.GTAssignDebug=false \
   -Djdk.graal.HumphreysDebugData=false \
+  -Djdk.graal.IsolatedLoopHeaderAlignment=0 \
+  -Djdk.graal.LoopHeaderAlignment=0 \
+  -Djdk.graal.DisableCodeEntryAlignment=true \
   -Djdk.graal.StrictProfiles=false \
-  -Djdk.graal.WarnAboutCodeSignatureMismatch=false \
-  -Djdk.graal.TrackNodeSourcePosition=true \
-  --enable-native-access=ALL-UNNAMED \
-  -XX:-TieredCompilation \
-  -XX:-BackgroundCompilation \
+  -Djdk.graal.LIRGTSlowDown=false \
+  -Djdk.graal.IsolatedLoopHeaderAlignment=0 \
+  -Djdk.graal.LoopHeaderAlignment=0 \
+  -Djdk.graal.DisableCodeEntryAlignment=true \
+  -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/FinalBuboTests/Permute/Final_Permute.json \
+  -XX:+UnlockExperimentalVMOptions -XX:+UnlockDiagnosticVMOptions \
+  -XX:+EnableJVMCI -Djdk.graal.CompilationFailureAction=Diagnose \
+  -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
-  -javaagent:/home/hb478/repos/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
-  -Djdk.graal.LIRGTSlowDown=true \
-  -Djdk.graal.BuboLIRPhase=true \
-  -Djdk.graal.GTMarkBasicBlocks=false \
-  -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/FinalBuboTests/LoopBenchmarks/Final_LoopBenchmarks.json \
-  Harness LoopBenchmarks 1200
-
+  -javaagent:"$AGENT" \
+  Harness Sieve 20 10000
   
 
 #   Harness Sieve 20 10000

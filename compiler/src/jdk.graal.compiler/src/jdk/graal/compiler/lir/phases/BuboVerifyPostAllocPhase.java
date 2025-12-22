@@ -15,8 +15,8 @@ public final class BuboVerifyPostAllocPhase extends PostAllocationOptimizationPh
 
     @Override
     protected void run(TargetDescription target,
-                       LIRGenerationResult lirGenRes,
-                       PostAllocationOptimizationContext context) {
+            LIRGenerationResult lirGenRes,
+            PostAllocationOptimizationContext context) {
 
         LIR lir = lirGenRes.getLIR();
 
@@ -28,24 +28,34 @@ public final class BuboVerifyPostAllocPhase extends PostAllocationOptimizationPh
             BasicBlock<?> block = blocks[b];
             List<LIRInstruction> insns = lir.getLIRforBlock(block);
 
+            int rdtscIdx = -1;
+            int writeDeltaIdx = -1;
+
             for (int i = 0; i < insns.size(); i++) {
                 LIRInstruction op = insns.get(i);
-
                 if (op instanceof AMD64BuboRDTSCToSlot) {
-                    sawStartInMethod = true;
+                    rdtscIdx = i;
                 } else if (op instanceof AMD64BuboWriteDeltaRDTSC) {
-                    if (!sawStartInMethod) {
-                        // this means some LIR phase reordered / deleted our start
-                        System.out.printf(
-                            "[BUBO VERIFY] write-before-start in %s: block=%d/%d insn=%d/%d op=%s%n",
-                            lirGenRes.getCompilationUnitName(),
-                            b + 1, blocks.length,
-                            i + 1, insns.size(),
-                            op
-                        );
-                    }
+                    writeDeltaIdx = i;
                 }
             }
+
+            // Move RDTSC to just before the last instruction
+            if (rdtscIdx != -1 && insns.size() >= 2) {
+                LIRInstruction rdtsc = insns.remove(rdtscIdx);
+                insns.add(insns.size() - 1, rdtsc);
+                // adjust writeDeltaIdx if it was after removed index
+                if (writeDeltaIdx > rdtscIdx) {
+                    writeDeltaIdx--;
+                }
+            }
+
+            // Move WriteDelta to index 1 (if possible)
+            if (writeDeltaIdx != -1 && insns.size() > 1) {
+                LIRInstruction wd = insns.remove(writeDeltaIdx);
+                insns.add(1, wd);
+            }
         }
+
     }
 }
