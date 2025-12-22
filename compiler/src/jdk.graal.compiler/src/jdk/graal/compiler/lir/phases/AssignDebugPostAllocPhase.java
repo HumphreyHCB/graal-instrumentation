@@ -1,5 +1,6 @@
 package jdk.graal.compiler.lir.phases;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,6 +16,7 @@ import jdk.graal.compiler.core.common.cfg.AbstractControlFlowGraph;
 import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.core.common.cfg.CFGLoop;
 import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.hotspot.SnippetResolvedJavaMethod;
 import jdk.graal.compiler.lir.LIR;
 import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
@@ -25,24 +27,69 @@ import jdk.graal.compiler.lir.gen.LIRGenerationResult;
 import jdk.graal.compiler.lir.phases.PostAllocationOptimizationPhase;
 import jdk.graal.compiler.nodes.StartofLoopNode;
 import jdk.vm.ci.code.TargetDescription;
+import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
+import jdk.vm.ci.hotspot.HotSpotResolvedJavaMethod;
+import jdk.vm.ci.hotspot.HotSpotResolvedObjectType;
+import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.graal.compiler.options.Option;
 import jdk.graal.compiler.options.OptionKey;
 import jdk.graal.compiler.phases.common.GTCollectCompilerMarkers;
 
 public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationPhase {
 
+    private static String compName;
+
+
+    // Cache is fine, BUT do not initialize it in <clinit>.
+    // It will be null at image-build time and filled at runtime.
+    private static volatile ResolvedJavaMethod STRING_HASHCODE;
+
+    private static ResolvedJavaMethod resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
+        ResolvedJavaMethod cached = STRING_HASHCODE;
+        if (cached != null) {
+            return cached;
+        }
+
+        // Everything here runs at *runtime* (inside the isolate), not at native-image build time.
+        HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
+        ResolvedJavaType stringType = (ResolvedJavaType) rt.lookupType("Ljava/lang/String;", accessingType, true);
+
+        ResolvedJavaMethod found = null;
+        for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
+            if (m.getName().equals("hashCode")
+                    && m.getSignature().getParameterCount(false) == 0
+                    && m.getSignature().getReturnType(null).getName().equals("I")) {
+                found = m;
+                break;
+            }
+        }
+
+        if (found == null) {
+            throw new IllegalStateException("Did not find java/lang/String.hashCode()I");
+        }
+
+        STRING_HASHCODE = found;
+        return found;
+    }
+
+
 
     @Override
     protected void run(TargetDescription target,
             LIRGenerationResult lirGenRes,
             PostAllocationOptimizationContext context) {
-
-        if (lirGenRes.getCompilationUnitName().contains("Stub")
-                || lirGenRes.getCompilationUnitName().contains("HotSpotOSRCompilation")) {
+        // || lirGenRes.getCompilationUnitName().contains("HotSpotOSRCompilation")
+        if (lirGenRes.getCompilationUnitName().contains("Stub")) {
             return;
         }
+        
+        // context.
+        compName = lirGenRes.getCompilationUnitName();
 
+        // System.out.println("In : " + compName + " Delmi is: " +
+        // GTCollectCompilerMarkers.Delimter);
 
         LIR lir = lirGenRes.getLIR();
         AbstractControlFlowGraph<?> cfg = lir.getControlFlowGraph();
@@ -56,32 +103,79 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
     private void assingDebugingInformation(Map<Integer, CFGLoop<?>> loopIdMap,
             LIR lir,
             LIRGenerationResult lirGenRes) {
-            
+
         for (Integer LoopID : loopIdMap.keySet()) {
             CFGLoop<?> loop = loopIdMap.get(LoopID);
-            
-            for (BasicBlock<?> block : loop.getBlocks())
-            {
-                ArrayList<LIRInstruction> instructions =  lir.getLIRforBlock(block);
+            HotSpotResolvedObjectType accessingType;
+            HotSpotResolvedObjectType lastaccessingType;
+            for (BasicBlock<?> block : loop.getBlocks()) {
+                ArrayList<LIRInstruction> instructions = lir.getLIRforBlock(block);
 
                 for (LIRInstruction instr : instructions) {
-                    if (instr instanceof CallOp) {
-                        //System.out.println(lirGenRes.getCompilationUnitName() + " : Call found in loop " + LoopID + " : " + instr);
-                        
-                    }
                     if (instr.getPosition() != null) {
-                        instr.setPosition(buildDebugPositionChain(instr.getPosition(), lirGenRes.getCompilationId(), LoopID));
-                        
+ NodeSourcePosition oldPos = instr.getPosition();
+                    if (oldPos == null) {
+                        continue;
                     }
-                }
 
+                    
+                    accessingType = findFirstNonSnippetHotSpotType(oldPos);
+
+                    ResolvedJavaMethod hashCode = resolveStringHashCode(accessingType);
+
+                    NodeSourcePosition pos = new NodeSourcePosition(
+                            null,   // or null, but keeping chain is usually nicer
+                            oldPos,
+                            hashCode,
+                            -1);
+
+                    instr.setPosition(pos);
+                    // instr.setPosition(buildDebugPositionChain(instr.getPosition(),
+                    // lirGenRes.getCompilationId(), LoopID));
+
+                }
             }
 
         }
 
+    }
 
     }
- 
+
+    private static HotSpotResolvedObjectType findFirstNonSnippetHotSpotType(NodeSourcePosition pos) {
+    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+        ResolvedJavaMethod m = p.getMethod();
+        if (m == null) {
+            continue;
+        }
+
+        // Skip snippet wrapper methods explicitly
+        if (m instanceof SnippetResolvedJavaMethod) {
+            continue;
+        }
+
+        // Only accept real HotSpot methods (safe for lookupType context)
+        if (m instanceof HotSpotResolvedJavaMethod) {
+            return (HotSpotResolvedObjectType) ((HotSpotResolvedJavaMethod) m).getDeclaringClass();
+        }
+
+        // Any other non-HotSpot method types (wrappers) are ignored.
+    }
+    return null;
+}
+
+    private static HotSpotResolvedObjectType findHotSpotAccessingType(NodeSourcePosition pos) {
+    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+        if (p.getMethod() == null) {
+            continue;
+        }
+        ResolvedJavaType t = p.getMethod().getDeclaringClass();
+        if (t instanceof HotSpotResolvedObjectType) {
+            return (HotSpotResolvedObjectType) t;
+        }
+    }
+    return null;
+}
 
     private Map<Integer, CFGLoop<?>> orderLoopsByNesting(Map<Integer, CFGLoop<?>> loopIdMap) {
         if (loopIdMap == null || loopIdMap.isEmpty()) {
@@ -151,41 +245,44 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
     private static NodeSourcePosition buildDebugPositionChain(NodeSourcePosition ogPos,
             int compID,
             int loopId) {
+        return null;
         // start from the original position
-        NodeSourcePosition pos = null;
-        if (GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS - 1] == null) {
-            return ogPos;
-        }
+        // NodeSourcePosition pos = null;
+        // if (GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS -
+        // 1] == null) {
+        // //System.out.println("Maxed out markers on : " + compName);
+        // return ogPos;
+        // }
 
-        // push each digit of compID as a marker
-        int[] digits = Integer.toString(compID).chars().map(c -> c - '0').toArray();
-        for (int d : digits) {
-            if (d >= 0 && d < GTCollectCompilerMarkers.MARKERS.length) {
-                pos = new NodeSourcePosition(
-                        null,
-                        pos,
-                        GTCollectCompilerMarkers.MARKERS[d],
-                        -1);
-            }
-        }
+        // // push each digit of compID as a marker
+        // int[] digits = Integer.toString(compID).chars().map(c -> c - '0').toArray();
+        // for (int d : digits) {
+        // if (d >= 0 && d < GTCollectCompilerMarkers.MARKERS.length) {
+        // pos = new NodeSourcePosition(
+        // null,
+        // pos,
+        // GTCollectCompilerMarkers.MARKERS[d],
+        // -1);
+        // }
+        // }
 
-        // delimiter
-        pos = new NodeSourcePosition(
-                null,
-                pos,
-                GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS - 1],
-                -1);
+        // // delimiter
+        // pos = new NodeSourcePosition(
+        // null,
+        // pos,
+        // GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS - 1],
+        // -1);
 
-        // push the loop marker
-        if (loopId >= 0 && loopId < GTCollectCompilerMarkers.MARKERS.length) {
-            pos = new NodeSourcePosition(
-                    null,
-                    pos,
-                    GTCollectCompilerMarkers.MARKERS[loopId],
-                    -1);
-        }
+        // // push the loop marker
+        // if (loopId >= 0 && loopId < GTCollectCompilerMarkers.MARKERS.length) {
+        // pos = new NodeSourcePosition(
+        // null,
+        // pos,
+        // GTCollectCompilerMarkers.MARKERS[loopId],
+        // -1);
+        // }
 
-        return pos;
+        // return pos;
     }
 
 }
