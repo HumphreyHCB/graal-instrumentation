@@ -24,6 +24,7 @@
  */
 package jdk.graal.compiler.lir.phases;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.ComputeCodeEmissionOrder;
 import jdk.graal.compiler.lir.ControlFlowOptimizer;
 import jdk.graal.compiler.lir.EdgeMoveOptimizer;
@@ -81,6 +82,9 @@ public class PostAllocationOptimizationStage extends LIRPhaseSuite<PostAllocatio
         if (Options.LIRProfileMethods.getValue(options)) {
             appendPhase(new MethodProfilingPhase());
         }
+        // if (GraalOptions.AdditionalCompilerDebugInformation.getValue(options)) {
+        //     appendPhase(new LIRCompilerDebugAssignmentPhase());
+        // }
         if (!ComputeCodeEmissionOrder.Options.EarlyCodeEmissionOrder.getValue(options)) {
             appendPhase(new ComputeCodeEmissionOrder());
         }

@@ -308,9 +308,6 @@ public final class GraalOptions {
     @Option(help = "Enable inlining decision tracing in stubs and snippets.", type = OptionType.Debug)
     public static final OptionKey<Boolean> TraceInliningForStubsAndSnippets = new OptionKey<>(false);
 
-    @Option(help = "Embeds all the emitted code for Graal-generated stubs.", type = OptionType.Expert)
-    public static final OptionKey<Boolean> InlineGraalStubs = new OptionKey<>(false);
-
     @Option(help = "If applicable, uses bulk zeroing instructions when the zeroing size in bytes exceeds this threshold.", type = OptionType.Expert)
     public static final OptionKey<Integer> MinimalBulkZeroingSize = new OptionKey<>(2048);
 
@@ -374,6 +371,9 @@ public final class GraalOptions {
 
     @Option(help = "Enables tracing of threaded switch optimization decisions.", type = OptionType.Debug)
     public static final OptionKey<Boolean> TraceThreadedSwitchOptimization = new OptionKey<>(false);
+    @Option(help = "The Compiler will generate addation Debug Information for IR that is gernetedted by the compiler ( Glue Code ) This" +
+    " may increase memory ussage and compile time", type = OptionType.Debug)
+    public static final OptionKey<Boolean> AdditionalCompilerDebugInformation = new OptionKey<>(false);
 
         @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
     public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);

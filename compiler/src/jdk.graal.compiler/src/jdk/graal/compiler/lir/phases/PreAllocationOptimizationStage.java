@@ -24,6 +24,7 @@
  */
 package jdk.graal.compiler.lir.phases;
 
+import jdk.graal.compiler.core.common.GraalOptions;
 import jdk.graal.compiler.lir.alloc.SaveCalleeSaveRegisters;
 import jdk.graal.compiler.lir.constopt.ConstantLoadOptimization;
 import jdk.graal.compiler.options.OptionValues;
@@ -31,6 +32,15 @@ import jdk.graal.compiler.options.OptionValues;
 public class PreAllocationOptimizationStage extends LIRPhaseSuite<PreAllocationOptimizationPhase.PreAllocationOptimizationContext> {
     @SuppressWarnings("this-escape")
     public PreAllocationOptimizationStage(OptionValues options) {
+
+
+        if (GraalOptions.AdditionalCompilerDebugInformation
+                .getValue(options)) {
+            appendPhase(new LIRCompilerDebugAssignmentPhase());
+
+        }
+
+
         if (ConstantLoadOptimization.Options.LIROptConstantLoadOptimization.getValue(options)) {
             appendPhase(new ConstantLoadOptimization());
         }

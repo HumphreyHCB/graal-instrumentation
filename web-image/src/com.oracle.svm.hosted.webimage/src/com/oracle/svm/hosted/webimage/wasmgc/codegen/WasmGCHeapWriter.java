@@ -43,7 +43,7 @@ import com.oracle.graal.pointsto.heap.ImageHeapArray;
 import com.oracle.graal.pointsto.heap.ImageHeapConstant;
 import com.oracle.graal.pointsto.heap.ImageHeapInstance;
 import com.oracle.graal.pointsto.heap.ImageHeapPrimitiveArray;
-import com.oracle.graal.pointsto.infrastructure.OriginalClassProvider;
+import com.oracle.svm.util.OriginalClassProvider;
 import com.oracle.graal.pointsto.util.AnalysisError;
 import com.oracle.svm.core.hub.DynamicHub;
 import com.oracle.svm.core.hub.Hybrid;
@@ -410,7 +410,7 @@ public class WasmGCHeapWriter {
      * object table for all indices and will correctly get {@code null} for index {@code 0}.
      */
     private void initializeObjects() {
-        int nullIndex = objectElements.addElement(new Instruction.RefNull(providers.util().getJavaLangObjectType()).setComment("Null Object"));
+        int nullIndex = objectElements.addElement(new Instruction.RefNull(WasmRefType.NONE).setComment("Null Object"));
         assert nullIndex == 0 : nullIndex + " image heap objects were added to image heap table before the null pointer";
 
         for (ObjectData data : getObjects()) {

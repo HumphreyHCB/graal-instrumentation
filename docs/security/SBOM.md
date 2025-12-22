@@ -24,74 +24,80 @@ The SBOM feature can be disabled with `--enable-sbom=false`.
 ## Extracting SBOM Contents
 
 After embedding the compressed SBOM into the image, there are two possible ways to extract the SBOM contents:
-- using the [Native Image Configure Tool](#native-image-configure-tool)
+- using the [Native Image Utils Tool](#native-image-utils-tool)
 - using [Syft](https://github.com/anchore/syft){:target="_blank"}
 
-### Native Image Configure Tool
+### Native Image Utils Tool
 
-The Native Image Configure Tool can extract the compressed SBOM using the `extract-sbom` command from executables and shared libraries.
+The Native Image Utils Tool can extract the compressed SBOM using the `extract-sbom` command from executables and shared libraries.
 ```bash
-$JAVA_HOME/bin/native-image-configure extract-sbom --image-path=<path_to_binary>
+$JAVA_HOME/bin/native-image-utils extract-sbom --image-path=<path_to_binary>
 ```
 
 It outputs the contents in the JSON format:
 ```json
 {
   "bomFormat": "CycloneDX",
-  "specVersion": "1.5",
+  "specVersion": "1.6",
   "version": 1,
   "serialNumber": "urn:uuid:51ec305f-616e-4139-a033-a094bb94a17c",
+  "metadata": {
+    "timestamp": "2025-10-06T15:46:50.593277+02:00",
+    "tools": {
+      "components": [
+        {
+          "type": "library",
+          "bom-ref": "Oracle:org.graalvm.sdk:nativeimage:25.0.0",
+          "supplier": {
+            "name": "Oracle"
+          },
+          "group": "org.graalvm.sdk",
+          "name": "nativeimage",
+          "version": "25.0.0",
+          "purl": "pkg:maven/org.graalvm.sdk/nativeimage@25.0.0"
+        }
+      ]
+    },
+    "component": {
+      "type": "library",
+      "bom-ref": "com.sbom:your-app:1.0.0",
+      "group": "com.sbom",
+      "name": "your-app",
+      "version": "1.0.0",
+      "purl": "pkg:maven/com.sbom/your-app@1.0.0"
+    }
+  },
   "components": [
     {
-      "bom-ref": "pkg:maven/io.netty/netty-codec-http2@4.1.104.Final",
       "type": "library",
-      "group": "io.netty",
-      "name": "netty-codec-http2",
-      "version": "4.1.104.Final",
-      "purl": "pkg:maven/io.netty/netty-codec-http2@4.1.104.Final",
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "fc03e6a2cc2d59f80fb1ec2957621e2630a952db36e069ccbbd72e0662796881"
-        },
-        {
-          "alg": "SHA-512",
-          "content": "d8dd3f31df4961b1ec6a9b047eaee3ba69c1363754b88afe29e2b4823e14f9c4efbe37632f6194110bb83053f1ecc178095ce63d0f1cbe075f36cae0e95d3c80"
-        }
-      ],
-      "properties": [
-        {
-          "name": "syft:cpe23",
-          "value": "cpe:2.3:a:codec:codec:4.1.76.Final:*:*:*:*:*:*:*"
-        },
-        {
-          "name": "syft:cpe23",
-          "value": "cpe:2.3:a:codec:netty-codec-http2:4.1.76.Final:*:*:*:*:*:*:*"
-        },
-        {
-          "name": "syft:cpe23",
-          "value": "cpe:2.3:a:codec:netty_codec_http2:4.1.76.Final:*:*:*:*:*:*:*"
-        },
-        ...
-      ]
+      "bom-ref": "org.json:json:20211205",
+      "group": "org.json",
+      "name": "json",
+      "version": "20211205",
+      "purl": "pkg:maven/org.json/json@20211205"
     },
     ...
   ],
   "dependencies": [
     {
-      "ref": "pkg:maven/io.netty/netty-codec-http2@4.1.104.Final",
-      "dependsOn": [
-        "pkg:maven/io.netty/netty-buffer@4.1.104.Final",
-        "pkg:maven/io.netty/netty-codec-http@4.1.104.Final",
-        "pkg:maven/io.netty/netty-codec@4.1.104.Final",
-        "pkg:maven/io.netty/netty-common@4.1.104.Final",
-        "pkg:maven/io.netty/netty-transport@4.1.104.Final"
-      ]
+      "ref": "com.sbom:your-app:1.0.0",
+      "dependsOn": ["org.json:json:20211205"]
+    },
+    {
+      "ref": "org.json:json:20211205",
+      "dependsOn": []
     },
     ...
   ]
 }
 ```
+
+A few notes about the SBOM structure:
+* The `metadata/tools` entry indicates that the SBOM was produced by Native Image. 
+* The `metadata/component` is the component of your application. This is included if the image is not built as a shared library and if the class containing the entry point of the image can be associated with exactly one component.
+* The `components` entry lists the inventory of first-party and third-party components of your application.
+
+See the [CycloneDX specification](https://cyclonedx.org/docs/1.6/json/) for more information about specific fields.
 
 ### Syft
 
@@ -131,14 +137,15 @@ It also integrates with GitHub Actions, GitLab, and Jenkins Pipelines.
 
 Another popular command-line scanner is `grype`, part of the [Anchore software supply chain management platform](https://anchore.com/){:target="_blank"}.
 With `grype`, you can check whether the libraries listed in your SBOMs have known vulnerabilities documented in Anchore's database.
-The output of the `native-image-configure` tool can be fed directly into `grype` to scan for vulnerable libraries using the following command:
+The output of the `native-image-utils` tool can be fed directly into `grype` to scan for vulnerable libraries using the following command:
 ```bash
-native-image-configure extract-sbom --image-path=<path_to_binary> | grype
+native-image-utils extract-sbom --image-path=<path_to_binary> | grype
 ```
 It produces the following output:
 ```shell
-NAME                 INSTALLED      VULNERABILITY   SEVERITY
-netty-codec-http2    4.1.76.Final   CVE-2022-24823  Medium
+NAME  INSTALLED  FIXED IN  TYPE          VULNERABILITY        SEVERITY  EPSS         RISK  
+json  20211205   20230227  java-archive  GHSA-3vqj-43w4-2q58  High      0.7% (71st)  0.5   
+json  20211205   20231013  java-archive  GHSA-4jq9-2xhw-jpx7  High      0.5% (66th)  0.4
 ```
 
 The generated report can then be used to update any vulnerable dependencies in your executable.
@@ -161,6 +168,28 @@ Verifying the component hashes can detect malicious tampering or substitutions i
 If a compromised dependency poses as a legitimate library, a hash mismatch against the trusted source would reveal tampering.
 
 > Verifying component hashes strengthens integrity verification, but does not provide complete end‑to‑end supply chain security. Use cryptographic signing and SLSA provenances to guarantee authenticity and integrity.
+
+Below is an example of a component that includes the `hashes` field:
+```json
+{
+  "type": "library",
+  "bom-ref": "io.micronaut:inject:4.2.3",
+  "group": "io.micronaut",
+  "name": "inject",
+  "version": "4.2.3",
+  "hashes": [
+    {
+      "alg": "SHA-256",
+      "content": "6f39a054d1c589248551c4519e892bf48f65cb9b2e16e8a9079393ecfd27e441"
+    },
+    {
+      "alg": "SHA-512",
+      "content": "05f1a81ea70e9fd0607b97bc62d8d210fd66fcc4e5aa6471ab5f278d2bfb41ab52ac013864d5d5529f0f365e677c15912c88ca51452f9419e8dbaee64efb0b03"
+    }
+  ],
+  "purl": "pkg:maven/io.micronaut/inject@4.2.3"
+}
+```
 
 Hashes are computed for applications JARs and GraalVM components, but not for classpath directories.
 The GraalVM components are associated with the hash of the runtime image file. 
@@ -219,7 +248,7 @@ This limitation affects only metadata visibility in extracted SBOMs; it does not
 
 ### Data Format
 
-The [CycloneDX specification](https://cyclonedx.org/docs/1.5/json/){:target="_blank"} allows the use of a hierarchical representation by nesting components that have a parent-child relationship.
+The [CycloneDX specification](https://cyclonedx.org/docs/1.6/json/){:target="_blank"} allows the use of a hierarchical representation by nesting components that have a parent-child relationship.
 It is used to embed class-level information in SBOM components in the following way:
 ```
 [component] SBOM Component
@@ -278,13 +307,12 @@ The class-level SBOM component would look like this:
 ```json
 {
     "type": "library",
+    "bom-ref": "com.sbom:your-app:1.0.0",
     "group": "com.sbom",
-    "name": "sbom-test-app",
+    "name": "your-app",
     "version": "1.0.0",
-    "purl": "pkg:maven/com.sbom/sbom-test-app@1.0.0",
-    "bom-ref": "pkg:maven/com.sbom/sbom-test-app@1.0.0",
-    "properties": [...],
     "hashes": [...],
+    "purl": "pkg:maven/com.sbom/your-app@1.0.0",
     "components": [
         {
             "type": "library",
@@ -334,7 +362,8 @@ The class-level SBOM component would look like this:
                 }
             ]
         }
-    ]
+    ],
+    "properties": [...]
 }
 ```
 

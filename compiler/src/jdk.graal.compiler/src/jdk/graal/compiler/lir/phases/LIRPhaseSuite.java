@@ -30,12 +30,24 @@ import java.util.List;
 import java.util.ListIterator;
 
 import jdk.graal.compiler.core.common.LibGraalSupport;
+import jdk.graal.compiler.core.common.cfg.BasicBlock;
 import jdk.graal.compiler.core.common.util.PhasePlan;
 import jdk.graal.compiler.debug.DebugCloseable;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.TimerKey;
+import jdk.graal.compiler.debug.Markers.CompilerMarkers;
+import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.graal.compiler.hotspot.HotSpotGraalCompiler;
+import jdk.graal.compiler.lir.LIR;
+import jdk.graal.compiler.lir.LIRInstruction;
 import jdk.graal.compiler.lir.gen.LIRGenerationResult;
+import jdk.graal.compiler.lir.gen.LIRGeneratorTool;
 import jdk.vm.ci.code.TargetDescription;
+import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
+import jdk.vm.ci.meta.MetaAccessProvider;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.graal.compiler.core.common.GraalOptions;
 
 public class LIRPhaseSuite<C> extends LIRPhase<C> implements PhasePlan<LIRPhase<C>> {
     private List<LIRPhase<C>> phases;
@@ -99,9 +111,10 @@ public class LIRPhaseSuite<C> extends LIRPhase<C> implements PhasePlan<LIRPhase<
     /**
      * Time spent in hinted GC in backend.
      */
-    public static final TimerKey LIRHintedGC = DebugContext.timer("LIRHintedGC").doc("Time spent in hinted GC performed before each LIR phase.");
+    public static final TimerKey LIRHintedGC = DebugContext.timer("LIRHintedGC")
+            .doc("Time spent in hinted GC performed before each LIR phase.");
 
-    @SuppressWarnings({"try"})
+    @SuppressWarnings({ "try" })
     @Override
     protected final void run(TargetDescription target, LIRGenerationResult lirGenRes, C context) {
         for (LIRPhase<C> phase : phases) {
@@ -109,7 +122,8 @@ public class LIRPhaseSuite<C> extends LIRPhase<C> implements PhasePlan<LIRPhase<
             if (libgraal != null) {
                 /*
                  * Notify libgraal runtime that most objects allocated in previous LIR phase are
-                 * dead and can be reclaimed. This will lower the chance of allocation failure in
+                 * dead and can be reclaimed. This will lower the chance of allocation failure
+                 * in
                  * the next LIR phase.
                  */
                 try (DebugCloseable timer = LIRHintedGC.start(lirGenRes.getLIR().getDebug())) {
@@ -118,7 +132,54 @@ public class LIRPhaseSuite<C> extends LIRPhase<C> implements PhasePlan<LIRPhase<
                 }
             }
             phase.apply(target, lirGenRes, context);
+            if (GraalOptions.AdditionalCompilerDebugInformation
+                    .getValue(lirGenRes.getLIR().getOptions())) {
+                addMissingDebug(lirGenRes, phase);
+
+            }
         }
+    }
+
+    protected void addMissingDebug(LIRGenerationResult lirGenRes, LIRPhase phase) {
+        HotSpotGraalCompiler compiler = (HotSpotGraalCompiler) HotSpotJVMCIRuntime.runtime().getCompiler();
+        ResolvedJavaType markerType = compiler.getGraalRuntime().getHostProviders().getMetaAccess()
+                .lookupJavaType(phase.getClass());
+        ResolvedJavaMethod[] methods = markerType.getDeclaredMethods();
+
+        ResolvedJavaMethod stubMethod = null;
+        for (ResolvedJavaMethod m : methods) {
+            if ("run".equals(m.getName())) {
+                stubMethod = m;
+                break;                 
+            }
+        }
+        
+        // default to the first method if “run” wasn’t present
+        if (stubMethod == null && methods.length > 0) {
+            stubMethod = methods[0];
+        }
+        //ResolvedJavaMethod stubMethod = markerType.getDeclaredMethods();
+
+
+        for (int blockId : lirGenRes.getLIR().getBlocks()) {
+            if (LIR.isBlockDeleted(blockId)) {
+                continue;
+            }
+            BasicBlock<?> b = lirGenRes.getLIR().getBlockById(blockId);
+            ArrayList<LIRInstruction> instructions = lirGenRes.getLIR().getLIRforBlock(b);
+
+            for (LIRInstruction instruction : instructions) {
+
+                if (instruction.getPosition() == null) {
+                    NodeSourcePosition position = new NodeSourcePosition(null, null, stubMethod, -1);
+                    instruction.setPosition(position);
+
+                }
+
+            }
+
+        }
+
     }
 
     public LIRPhaseSuite<C> copy() {

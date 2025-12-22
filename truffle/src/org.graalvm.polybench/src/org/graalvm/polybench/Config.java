@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,12 +46,17 @@ public class Config {
     Metric metric;
     boolean evalSourceOnlyDefault;
     Summary summary;
+    String[] dependencies;
+    Language stagingLanguage;
+    String stagingFilePath;
+    boolean logStagedProgram;
+    String stagedProgramLauncher;
 
     final List<String> unrecognizedArguments = new ArrayList<>();
 
     private static final int UNINITIALIZED_ITERATIONS = -1;
-    private static final int DEFAULT_WARMUP = 20;
-    private static final int DEFAULT_ITERATIONS = 30;
+    public static final int DEFAULT_WARMUP = 20;
+    public static final int DEFAULT_ITERATIONS = 30;
 
     /**
      * Multi-context runs related configuration.
@@ -99,6 +104,27 @@ public class Config {
             }
         }
         parseBenchSpecificSummary(benchmark);
+        parseBenchSpecificDependencies(benchmark);
+    }
+
+    private void parseBenchSpecificDependencies(Value benchmark) throws InvalidObjectException {
+        if (!benchmark.hasMember("dependencies")) {
+            // No 'dependencies' member provided in the benchmark
+            dependencies = new String[0];
+            return;
+        }
+        Value dependenciesMember = benchmark.getMember("dependencies");
+        if (dependenciesMember.canExecute()) {
+            dependenciesMember = dependenciesMember.execute();
+        }
+        if (!dependenciesMember.hasArrayElements()) {
+            throw new InvalidObjectException("Failed at parsing the 'dependencies' benchmark member due to it not being an array!");
+        }
+        int arraySize = (int) dependenciesMember.getArraySize();
+        dependencies = new String[arraySize];
+        for (int i = 0; i < arraySize; i++) {
+            dependencies[i] = dependenciesMember.getArrayElement(i).asString();
+        }
     }
 
     private void parseBenchSpecificSummary(Value benchmark) throws InvalidObjectException {

@@ -54,12 +54,12 @@ import sun.reflect.generics.repository.ClassRepository;
  * improve sharing between isolates and processes, but could increase image size.
  */
 public final class DynamicHubCompanion {
-
     /** Field used for module information access at run-time. */
     final Module module;
 
     /**
-     * The hub for the superclass, or null if an interface or primitive type.
+     * The hub for the superclass, or null if an interface, a primitive type, or
+     * {@link java.lang.Object}.
      *
      * @see Class#getSuperclass()
      */
@@ -72,8 +72,8 @@ public final class DynamicHubCompanion {
     final int modifiers;
 
     /**
-     * The class that serves as the host for the nest. All nestmates have the same host. Always
-     * encoded with null for Dynamic hubs allocated at runtime.
+     * The class that serves as the host for the nest. All nestmates have the same host. Initially
+     * set to {@code null} for runtime-loaded classes.
      */
     @Stable Class<?> nestHost;
 
@@ -84,7 +84,7 @@ public final class DynamicHubCompanion {
      * The class that declares this class, as returned by {@code Class.getDeclaringClass0} or an
      * exception that happened at image-build time.
      */
-    final Object declaringClass;
+    Object declaringClass;
 
     final String signature;
 
@@ -92,13 +92,13 @@ public final class DynamicHubCompanion {
     @UnknownPrimitiveField(availability = BuildPhaseProvider.AfterHostedUniverse.class) //
     @Stable byte additionalFlags;
 
+    //
     /**
      * The hub for an array of this type, or null if the array type has been determined as
      * uninstantiated by the static analysis. In layered builds, it is possible for this value to be
      * initially set to null and then updated in a subsequent layer.
      */
-    @LayeredFieldValue(transformer = ArrayHubTransformer.class) //
-    @Stable DynamicHub arrayHub;
+    @LayeredFieldValue(transformer = ArrayHubTransformer.class) @Stable DynamicHub arrayHub;
 
     /**
      * The interfaces that this class implements. Either null (no interfaces), a {@link DynamicHub}
@@ -158,17 +158,17 @@ public final class DynamicHubCompanion {
     @Platforms(Platform.HOSTED_ONLY.class)
     static DynamicHubCompanion createHosted(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
                     Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, Object classData) {
-        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, nestHost, simpleBinaryName, declaringClass, signature, classData);
+        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, nestHost, simpleBinaryName, declaringClass, signature, classData, null);
     }
 
     static DynamicHubCompanion createAtRuntime(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
                     ClassLoader classLoader, String simpleBinaryName, Object declaringClass, String signature, ClassDefinitionInfo info) {
         assert RuntimeClassLoading.isSupported();
-        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, info.dynamicNest, simpleBinaryName, declaringClass, signature, info.classData);
+        return new DynamicHubCompanion(module, superHub, sourceFileName, modifiers, classLoader, info.dynamicNest, simpleBinaryName, declaringClass, signature, info.classData, info.protectionDomain);
     }
 
     private DynamicHubCompanion(Module module, DynamicHub superHub, String sourceFileName, int modifiers,
-                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, Object classData) {
+                    Object classLoader, Class<?> nestHost, String simpleBinaryName, Object declaringClass, String signature, Object classData, ProtectionDomain protectionDomain) {
         this.module = module;
         this.superHub = superHub;
         this.sourceFileName = sourceFileName;
@@ -180,6 +180,7 @@ public final class DynamicHubCompanion {
 
         this.classLoader = classLoader;
         this.classData = classData;
+        this.protectionDomain = protectionDomain;
     }
 
     public void setHubMetadata(RuntimeDynamicHubMetadata hubMetadata) {
@@ -195,6 +196,7 @@ public final class DynamicHubCompanion {
      * reachable in a later layer than the layer in which the companion is installed in. When this
      * happens we must update the companion's field to point to the newly installed value.
      */
+    @Platforms(Platform.HOSTED_ONLY.class)
     static class ArrayHubTransformer extends LayeredFieldValueTransformer<DynamicHubCompanion> {
         boolean appLayer = ImageLayerBuildingSupport.buildingApplicationLayer();
 
