@@ -59,3 +59,7 @@ visualizer/C1Visualizer/*/target/
 *.interp
 *.tokens
 /vm/tests/gh_workflows/CDTInspectorTest/target/
+!compiler/MyJDKJarLib.jar
+!compiler/benchmarks.jar
+/compiler/BuboDumps/
+!compiler/VscodeRefLibs.jar

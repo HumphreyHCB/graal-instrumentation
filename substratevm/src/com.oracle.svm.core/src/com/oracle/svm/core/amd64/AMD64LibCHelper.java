@@ -261,6 +261,10 @@ public class AMD64LibCHelper {
 
         @AllowNarrowingCast
         @CField
+        boolean fRDTSC();
+
+        @AllowNarrowingCast
+        @CField
         boolean fRDPID();
 
         @AllowNarrowingCast

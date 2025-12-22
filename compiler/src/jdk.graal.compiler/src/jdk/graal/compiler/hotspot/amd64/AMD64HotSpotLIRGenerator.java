@@ -46,6 +46,7 @@ import jdk.graal.compiler.core.common.spi.LIRKindTool;
 import jdk.graal.compiler.debug.Assertions;
 import jdk.graal.compiler.debug.DebugContext;
 import jdk.graal.compiler.debug.GraalError;
+import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.hotspot.GraalHotSpotVMConfig;
 import jdk.graal.compiler.hotspot.HotSpotBackend;
 import jdk.graal.compiler.hotspot.HotSpotDebugInfoBuilder;
@@ -73,9 +74,15 @@ import jdk.graal.compiler.lir.Variable;
 import jdk.graal.compiler.lir.VirtualStackSlot;
 import jdk.graal.compiler.lir.amd64.AMD64AddressValue;
 import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.StrategySwitchOp;
+import jdk.graal.compiler.lir.amd64.AMD64GraphStartOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
+import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move;
 import jdk.graal.compiler.lir.amd64.AMD64Move.MoveFromRegOp;
 import jdk.graal.compiler.lir.amd64.AMD64PrefetchOp;
+
+import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounter;
+import jdk.graal.compiler.lir.amd64.AMD64ReadTimestampCounterWithProcid;
 import jdk.graal.compiler.lir.amd64.AMD64RestoreRegistersOp;
 import jdk.graal.compiler.lir.amd64.AMD64SaveRegistersOp;
 import jdk.graal.compiler.lir.amd64.AMD64VZeroUpper;
@@ -628,6 +635,7 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
     }
 
     @Override
+
     public int getArrayLengthOffset() {
         return config.arrayLengthOffsetInBytes;
     }
@@ -635,6 +643,47 @@ public class AMD64HotSpotLIRGenerator extends AMD64LIRGenerator implements HotSp
     @Override
     public boolean isReservedRegister(Register r) {
         return getProviders().getRegisters().isReservedRegister(r);
+    }
+
+    @Override
+    public Value emitGraphStart() {
+            AMD64GraphStartOp op = new AMD64GraphStartOp(this);
+            append(op);
+            return op.getDef();
+    }
+
+    @Override
+    public Value emitLoopStart(int loopId, NodeSourcePosition position) {
+            AMD64LoopStartOp op = new AMD64LoopStartOp(this, loopId, position);
+            append(op);
+            return op.getDef();
+    }
+
+    @Override
+    public Value emitLoopEnd(int loopId, NodeSourcePosition position) {
+            AMD64LoopEndOp op = new AMD64LoopEndOp(this, loopId, position);
+            append(op);
+            return op.getDef();
+    }
+
+    public Value emitTSC() {
+        AMD64ReadTimestampCounter timestamp = new AMD64ReadTimestampCounter();
+        append(timestamp);
+        // Combine RDX and RAX into a single 64-bit register.
+        AllocatableValue lo = timestamp.getLowResult();
+        Value hi = getArithmetic().emitZeroExtend(timestamp.getHighResult(), 32, 64);
+        return combineLoAndHi(lo, hi);
+    }
+
+    @Override
+    public Value emitTimeStamp() {
+        AMD64ReadTimestampCounterWithProcid timestamp = new AMD64ReadTimestampCounterWithProcid();
+        append(timestamp);
+        // Combine RDX and RAX into a single 64-bit register.
+        AllocatableValue lo = timestamp.getLowResult();
+        Value hi = getArithmetic().emitZeroExtend(timestamp.getHighResult(), 32, 64);
+        return combineLoAndHi(lo, hi);
+
     }
 
     // no need to call super because HotSpot already overrides the value according to the CPU

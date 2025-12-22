@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config version="14.0.2">
+  <sessions>
+    <session id="147" name="New session (3)" jvmConfigurationId="107" methodCallRecordingType="instrumentation" recordArrayAlloc="false" autoTuneInstrumentation="false" recordingProfileId="10">
+      <triggers logTarget="stdout" logFile="">
+        <jvmStart>
+          <actions>
+            <startRecording>
+              <cpu enabled="true" />
+            </startRecording>
+            <startProbeRecording name="builtin.AllCustom" events="true" />
+          </actions>
+        </jvmStart>
+        <jvmStop>
+          <actions>
+            <saveSnapshot file="JprofilerDump" number="true" />
+          </actions>
+        </jvmStop>
+      </triggers>
+    </session>
+  </sessions>
+</config>

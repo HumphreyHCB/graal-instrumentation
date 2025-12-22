@@ -652,7 +652,8 @@ public final class GraphState {
         FINAL_CANONICALIZATION,
         REMOVE_OPAQUE_VALUES,
         TARGET_VECTOR_LOWERING,
-        FINAL_SCHEDULE
+        FINAL_SCHEDULE,
+        CUSTOMINSTRUMENTATION_TIER
     }
 
     /**

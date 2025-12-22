@@ -56,6 +56,7 @@ import jdk.graal.compiler.graph.NodeBitMap;
 import jdk.graal.compiler.graph.NodeMap;
 import jdk.graal.compiler.graph.NodeSourcePosition;
 import jdk.graal.compiler.graph.iterators.NodeIterable;
+import jdk.graal.compiler.nodeinfo.Verbosity;
 import jdk.graal.compiler.nodes.GraphState.StageFlag;
 import jdk.graal.compiler.nodes.calc.FloatingNode;
 import jdk.graal.compiler.nodes.cfg.ControlFlowGraph;
@@ -677,6 +678,14 @@ public final class StructuredGraph extends Graph implements JavaMethodContext {
     public CompilationIdentifier compilationId() {
         return compilationId;
     }
+
+    public int getCompilationId() {
+        if (compilationId == null || compilationId == CompilationIdentifier.INVALID_COMPILATION_ID) {
+            return -1;
+        }
+        return Integer.parseInt(compilationId.toString(jdk.graal.compiler.core.common.CompilationIdentifier.Verbosity.ID).split("-")[1]);
+    }
+
 
     public void setStart(StartNode start) {
         this.start = start;

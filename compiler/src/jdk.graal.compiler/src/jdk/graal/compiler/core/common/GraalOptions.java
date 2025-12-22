@@ -351,6 +351,21 @@ public final class GraalOptions {
     @Option(help = "Enables target-specific lowering and legalization of SIMD operations. Required for SIMD code generation.", type = OptionType.Debug)
     public static final OptionKey<Boolean> TargetVectorLowering = new OptionKey<>(true);
 
+    @Option(help = "Enable Instrumentation to collect profile information", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableProfiler = new OptionKey<>(false);
+
+    @Option(help = "Min graph size to start instrumenting", type = OptionType.Debug)
+    public static final OptionKey<Integer> MinGraphSize = new OptionKey<>(1);
+
+    @Option(help = "Enable Instrumentation to count the amount of Compiled Methods", type = OptionType.Debug)
+    public static final OptionKey<Boolean> CountCompiledMethods = new OptionKey<>(false);
+
+    @Option(help = "Enable Bubo DebugMode to collect profile information, such as gragh stats", type = OptionType.Debug)
+    public static final OptionKey<Boolean> BuboDebugMode = new OptionKey<>(false);
+
+    @Option(help = "Enable Bubo Dump, print results to the parse file location", type = OptionType.Debug)
+    public static final OptionKey<String> BuboDump = new OptionKey<>("");
+  
     @Option(help = "Enables caching of data structures like control flow graph or schedule across compiler phases.", type = OptionType.Debug)
     public static final OptionKey<Boolean> CacheCompilerDataStructures = new OptionKey<>(true);
 
@@ -359,4 +374,31 @@ public final class GraalOptions {
     @Option(help = "The Compiler will generate addation Debug Information for IR that is gernetedted by the compiler ( Glue Code ) This" +
     " may increase memory ussage and compile time", type = OptionType.Debug)
     public static final OptionKey<Boolean> AdditionalCompilerDebugInformation = new OptionKey<>(false);
+
+        @Option(help = "Enable GroundTruth Slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> EnableGTSlowDown = new OptionKey<>(false);
+
+    @Option(help = "Enables the ground truth slowdown", type = OptionType.Debug)
+    public static final OptionKey<Boolean> LIRGTSlowDown = new OptionKey<Boolean>( false);
+
+    @Option(help = "The name of the JSON file containing LIR instruction costs.", type = OptionType.Debug)
+    public static final OptionKey<String> LIRCostFileName = new OptionKey<>("LIRCostVaware5.json");
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<String> LIRBlockSlowdownFileName = new OptionKey<>("BlockSlowdown.json");
+
+    @Option(help = "Inserts pointless nodes with numbered ID, these will be picked up but Vtune for later analysis", type = OptionType.Debug)
+    public static final OptionKey<Boolean> GTMarkBasicBlocks = new OptionKey<Boolean>( false);
+
+    @Option(help = "Disable codeEntryAlignment", type = OptionType.Debug)
+    public static final OptionKey<Boolean> DisableCodeEntryAlignment = new OptionKey<Boolean>(false);
+
+    @Option(help = "WHen we perform Slowdown, we attempet to mix the slowdown as much as psosible, this should reduce Skidding in the sampler", type = OptionType.Debug)
+    public static final OptionKey<Integer> MixGTSlowdown = new OptionKey<Integer>(-1);
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> GTAssignDebug = new OptionKey<Boolean>( false);
+
+    @Option(help = "", type = OptionType.Debug)
+    public static final OptionKey<Boolean> HumphreysDebugData = new OptionKey<Boolean>( false);
 }

@@ -4673,6 +4673,11 @@ public class AMD64Assembler extends AMD64BaseAssembler implements MemoryReadInte
         emitByte(0xEE);
     }
 
+    public final void rdpmc() {
+        emitByte(0x0F);
+        emitByte(0x33);
+    }
+
     public final void rdtsc() {
         emitByte(0x0F);
         emitByte(0x31);
@@ -5926,6 +5931,10 @@ public class AMD64Assembler extends AMD64BaseAssembler implements MemoryReadInte
 
     public final void subss(Register dst, Register src) {
         SSEOp.SUB.emit(this, OperandSize.SS, dst, src);
+    }
+
+    public final void subq(AMD64Address dst, Register src) {
+    AMD64BinaryArithmetic.SUB.mrOp.emit(this, OperandSize.QWORD, dst, src);
     }
 
     public final void subss(Register dst, AMD64Address src) {

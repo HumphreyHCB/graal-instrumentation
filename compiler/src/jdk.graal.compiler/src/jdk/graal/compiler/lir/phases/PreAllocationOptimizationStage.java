@@ -44,6 +44,11 @@ public class PreAllocationOptimizationStage extends LIRPhaseSuite<PreAllocationO
         if (ConstantLoadOptimization.Options.LIROptConstantLoadOptimization.getValue(options)) {
             appendPhase(new ConstantLoadOptimization());
         }
+
+        if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options)) {
+            appendPhase(new BuboLIRPhase());
+        }
+
         appendPhase(new SaveCalleeSaveRegisters());
     }
 }
