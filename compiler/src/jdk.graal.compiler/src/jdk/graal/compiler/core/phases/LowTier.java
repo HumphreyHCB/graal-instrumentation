@@ -131,9 +131,6 @@ public class LowTier extends BaseTier<LowTierContext> {
             appendPhase(new BuboInstrumentationGraphMarkersLowTierPhase(options));
         }
 
-        if (GraalOptions.GTAssignDebug.getValue(options)) {
-            appendPhase(new GTCollectCompilerMarkers(options));
-        }
 
         appendPhase(new SchedulePhase.FinalSchedulePhase());
 

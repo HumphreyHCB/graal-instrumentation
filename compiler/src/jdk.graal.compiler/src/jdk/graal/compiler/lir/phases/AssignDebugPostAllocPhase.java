@@ -39,40 +39,29 @@ import jdk.graal.compiler.phases.common.GTCollectCompilerMarkers;
 
 public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationPhase {
 
-    private static String compName;
 
+    // private static ResolvedJavaMethod resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
 
-    // Cache is fine, BUT do not initialize it in <clinit>.
-    // It will be null at image-build time and filled at runtime.
-    private static volatile ResolvedJavaMethod STRING_HASHCODE;
+    //     // Everything here runs at *runtime* (inside the isolate), not at native-image build time.
+    //     HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
+    //     ResolvedJavaType stringType = (ResolvedJavaType) rt.lookupType("Lmy/custom/BuboAgentCompilerMarkers;", accessingType, true);
 
-    private static ResolvedJavaMethod resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
-        ResolvedJavaMethod cached = STRING_HASHCODE;
-        if (cached != null) {
-            return cached;
-        }
+    //     ResolvedJavaMethod found = null;
+    //     for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
+    //         if (m.getName().equals("Marker0")
+    //                 && m.getSignature().getParameterCount(false) == 0) {
+    //             found = m;
+    //             break;
+    //         }
+    //     }
 
-        // Everything here runs at *runtime* (inside the isolate), not at native-image build time.
-        HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
-        ResolvedJavaType stringType = (ResolvedJavaType) rt.lookupType("Ljava/lang/String;", accessingType, true);
+    //     if (found == null) {
+    //         throw new IllegalStateException("Did not find Lmy/custom/BuboAgentCompilerMarkers;");
+    //     }
 
-        ResolvedJavaMethod found = null;
-        for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
-            if (m.getName().equals("hashCode")
-                    && m.getSignature().getParameterCount(false) == 0
-                    && m.getSignature().getReturnType(null).getName().equals("I")) {
-                found = m;
-                break;
-            }
-        }
-
-        if (found == null) {
-            throw new IllegalStateException("Did not find java/lang/String.hashCode()I");
-        }
-
-        STRING_HASHCODE = found;
-        return found;
-    }
+    //     STRING_HASHCODE = found;
+    //     return found;
+    // }
 
 
 
@@ -84,9 +73,10 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
         if (lirGenRes.getCompilationUnitName().contains("Stub")) {
             return;
         }
+
         
         // context.
-        compName = lirGenRes.getCompilationUnitName();
+        //compName = lirGenRes.getCompilationUnitName();
 
         // System.out.println("In : " + compName + " Delmi is: " +
         // GTCollectCompilerMarkers.Delimter);
@@ -99,6 +89,22 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
         assingDebugingInformation(loopIdMap, lir, lirGenRes);
 
     }
+
+    private static boolean isHotSpotOnlyChain(NodeSourcePosition pos) {
+    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+        ResolvedJavaMethod m = p.getMethod();
+        if (m == null) {
+            continue;
+        }
+        // If ANY method in the chain is not a real HotSpotResolvedJavaMethod,
+        // HotSpotCompiledCodeStream may crash when writing debug info.
+        if (!(m instanceof HotSpotResolvedJavaMethod)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 
     private void assingDebugingInformation(Map<Integer, CFGLoop<?>> loopIdMap,
             LIR lir,
@@ -113,25 +119,35 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
 
                 for (LIRInstruction instr : instructions) {
                     if (instr.getPosition() != null) {
- NodeSourcePosition oldPos = instr.getPosition();
+                    NodeSourcePosition oldPos = instr.getPosition();
                     if (oldPos == null) {
                         continue;
                     }
 
+                    // THIS is the crucial guard:
+                    if (!isHotSpotOnlyChain(oldPos)) {
+                        continue;
+                    }
+
+                     accessingType = findFirstNonSnippetHotSpotType(oldPos);
+
+                     GTCollectCompilerMarkers.initializeMarkers(accessingType);
+
+
                     
-                    accessingType = findFirstNonSnippetHotSpotType(oldPos);
+                    //accessingType = findFirstNonSnippetHotSpotType(oldPos);
 
-                    ResolvedJavaMethod hashCode = resolveStringHashCode(accessingType);
+                    //ResolvedJavaMethod hashCode = resolveStringHashCode(accessingType);
 
-                    NodeSourcePosition pos = new NodeSourcePosition(
-                            null,   // or null, but keeping chain is usually nicer
-                            oldPos,
-                            hashCode,
-                            -1);
+                    // NodeSourcePosition pos = new NodeSourcePosition(
+                    //         null,   // or null, but keeping chain is usually nicer
+                    //         oldPos,
+                    //         hashCode,
+                    //         -1);
 
-                    instr.setPosition(pos);
-                    // instr.setPosition(buildDebugPositionChain(instr.getPosition(),
-                    // lirGenRes.getCompilationId(), LoopID));
+                    //instr.setPosition(pos);
+                     instr.setPosition(buildDebugPositionChain(instr.getPosition(),
+                     lirGenRes.getCompilationId(), LoopID));
 
                 }
             }
@@ -245,44 +261,44 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
     private static NodeSourcePosition buildDebugPositionChain(NodeSourcePosition ogPos,
             int compID,
             int loopId) {
-        return null;
+
         // start from the original position
-        // NodeSourcePosition pos = null;
-        // if (GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS -
-        // 1] == null) {
-        // //System.out.println("Maxed out markers on : " + compName);
-        // return ogPos;
-        // }
+        NodeSourcePosition pos = null;
+        if (GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS -
+                1] == null) {
+            // System.out.println("Maxed out markers on : " + compName);
+            return ogPos;
+        }
 
-        // // push each digit of compID as a marker
-        // int[] digits = Integer.toString(compID).chars().map(c -> c - '0').toArray();
-        // for (int d : digits) {
-        // if (d >= 0 && d < GTCollectCompilerMarkers.MARKERS.length) {
-        // pos = new NodeSourcePosition(
-        // null,
-        // pos,
-        // GTCollectCompilerMarkers.MARKERS[d],
-        // -1);
-        // }
-        // }
+        // push each digit of compID as a marker
+        int[] digits = Integer.toString(compID).chars().map(c -> c - '0').toArray();
+        for (int d : digits) {
+            if (d >= 0 && d < GTCollectCompilerMarkers.MARKERS.length) {
+                pos = new NodeSourcePosition(
+                        null,
+                        pos,
+                        GTCollectCompilerMarkers.MARKERS[d],
+                        -1);
+            }
+        }
 
-        // // delimiter
-        // pos = new NodeSourcePosition(
-        // null,
-        // pos,
-        // GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS - 1],
-        // -1);
+        // delimiter
+        pos = new NodeSourcePosition(
+                null,
+                pos,
+                GTCollectCompilerMarkers.MARKERS[GTCollectCompilerMarkers.MAX_MARKERS - 1],
+                -1);
 
-        // // push the loop marker
-        // if (loopId >= 0 && loopId < GTCollectCompilerMarkers.MARKERS.length) {
-        // pos = new NodeSourcePosition(
-        // null,
-        // pos,
-        // GTCollectCompilerMarkers.MARKERS[loopId],
-        // -1);
-        // }
+        // push the loop marker
+        if (loopId >= 0 && loopId < GTCollectCompilerMarkers.MARKERS.length) {
+            pos = new NodeSourcePosition(
+                    null,
+                    pos,
+                    GTCollectCompilerMarkers.MARKERS[loopId],
+                    -1);
+        }
 
-        // return pos;
+        return pos;
     }
 
 }

@@ -29,272 +29,82 @@ import jdk.graal.compiler.phases.tiers.LowTierContext;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.meta.ResolvedJavaType;
 import jdk.vm.ci.meta.MetaAccessProvider;
+import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
+import jdk.vm.ci.hotspot.HotSpotResolvedObjectType;
+import jdk.vm.ci.meta.ResolvedJavaType;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
 
-public class GTCollectCompilerMarkers extends BasePhase<LowTierContext> {
+/**
+ * Helper class that collects the marker methods defined in {@link BuboAgentCompilerMarkers}
+ * and stores them in a static array for use by compiler phases.  At runtime,
+ * call {@link #initializeMarkers(HotSpotResolvedObjectType)} once to populate
+ * the {@link #MARKERS} array.  The array indices correspond to the marker
+ * numbers: Marker0 is stored at index {@code 0}, Marker1 at index {@code 1},
+ * …​, Marker20 at index {@code 20}, and the special delimiter method
+ * {@code MarkerDelimiter} is stored at index {@link #MAX_MARKERS} – 1.
+ */
+public final class GTCollectCompilerMarkers {
 
-    private final OptionValues options;
-
-    public GTCollectCompilerMarkers(OptionValues options) {
-        this.options = options;
-    }
-
-    @Override
-    public boolean checkContract() {
-        return false;
-    }
-
-    @Override
-    public Optional<NotApplicable> notApplicableTo(GraphState graphState) {
-        return ALWAYS_APPLICABLE;
-    }
-
+    /**
+     * Total number of marker slots: there are 21 numbered markers (0–20) plus
+     * one delimiter marker at the end.  Adjust this value if you add more
+     * markers to {@link BuboAgentCompilerMarkers}.
+     */
     public static final int MAX_MARKERS = 22;
-    private static volatile String MARKER_TYPE_SIG = null;
-    private static final ConcurrentHashMap<String, String> METHOD_SIGS = new ConcurrentHashMap<>();
-    
-    @Override
-    protected void run(StructuredGraph graph, LowTierContext context) {
-                if (graph.compilationId().toString(Verbosity.NAME).contains("Stub")
-                || graph.compilationId().toString(Verbosity.NAME).contains("HotSpotOSRCompilation")) {
+
+    /**
+     * Array holding references to the marker methods.  Index {@code i}
+     * contains the {@link ResolvedJavaMethod} corresponding to {@code Marker<i>}
+     * for {@code i} in [0..20], and index {@code MAX_MARKERS – 1} contains the
+     * delimiter method {@code MarkerDelimiter}.  The array is populated by
+     * {@link #initializeMarkers(HotSpotResolvedObjectType)}.
+     */
+    public static final ResolvedJavaMethod[] MARKERS = new ResolvedJavaMethod[MAX_MARKERS];
+
+    /**
+     * Initialize the {@link #MARKERS} array by resolving the methods of
+     * {@link BuboAgentCompilerMarkers}.  This method is idempotent: if the
+     * array is already populated (MARKERS[0] != null), it returns without
+     * performing work.  If a marker method cannot be resolved, the
+     * corresponding array entry will remain {@code null}.
+     *
+     * @param accessingType the type used to perform the class lookup.  This
+     *                      should be the non-snippet HotSpot type associated
+     *                      with the calling context; passing {@code null} is
+     *                      allowed but may restrict access depending on the
+     *                      module system.  See {@link HotSpotJVMCIRuntime#lookupType}.
+     */
+    public static void initializeMarkers(HotSpotResolvedObjectType accessingType) {
+        // Avoid re-initialisation.
+        if (MARKERS[0] != null) {
             return;
         }
 
-        ResolvedJavaMethod method = graph.method();
-        String name = method.getName();
-        
-        if (name.startsWith("Marker")) {
-            // Store the full signature
-            String fullSig = method.format("%H.%n(%p)%R");
-            
-            if (MARKER_TYPE_SIG == null) {
-                MARKER_TYPE_SIG = method.getDeclaringClass().toJavaName();
-            }
-            
-            if (name.contains("MarkerDelimiter")) {
-                METHOD_SIGS.put("MarkerDelimiter", fullSig);
-               // System.err.println("Stored MarkerDelimiter sig: " + fullSig);
-                return;
-            }
-            
-            try {
-                int idx = Integer.parseInt(name.substring("Marker".length()));
-                if (idx >= 0 && idx < MAX_MARKERS) {
-                    METHOD_SIGS.put("Marker" + idx, fullSig);
-                    //System.err.println("Stored Marker" + idx + " sig: " + fullSig);
+        HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
+        // Resolve the custom marker class.
+        ResolvedJavaType markerType = (ResolvedJavaType) rt.lookupType("Lmy/custom/BuboAgentCompilerMarkers;", accessingType, true);
+
+        for (ResolvedJavaMethod m : markerType.getDeclaredMethods()) {
+            String name = m.getName();
+            if (name.startsWith("Marker")) {
+                String suffix = name.substring("Marker".length());
+                int idx = -1;
+                if ("Delimiter".equals(suffix)) {
+                    idx = MAX_MARKERS - 1;
+                } else {
+                    try {
+                        idx = Integer.parseInt(suffix);
+                    } catch (NumberFormatException nfe) {
+                        // Ignore methods that do not follow the MarkerN naming convention.
+                    }
                 }
-            } catch (NumberFormatException ignore) {
+                if (idx >= 0 && idx < MAX_MARKERS) {
+                    MARKERS[idx] = m;
+                }
             }
         }
     }
-    
-    public static ResolvedJavaMethod getMarker(StructuredGraph currentGraph, int idx) {
-        String methodName = (idx == MAX_MARKERS - 1) ? "MarkerDelimiter" : ("Marker" + idx);
-        String targetSig = METHOD_SIGS.get(methodName);
-        
-        if (targetSig == null) {
-            System.err.println("Signature for " + methodName + " not yet captured");
-            return null;
-        }
-        
-        // Search in the current graph's reachable methods
-        for (ResolvedJavaMethod m : getAllReachableMethods(currentGraph)) {
-            if (m.format("%H.%n(%p)%R").equals(targetSig)) {
-                return m;
-            }
-        }
-        
-        return null;
-    }
-    
-    private static Set<ResolvedJavaMethod> getAllReachableMethods(StructuredGraph graph) {
-        Set<ResolvedJavaMethod> methods = new HashSet<>();
-        for (Invoke invoke : graph.getInvokes()) {
-            if (invoke.callTarget() != null && invoke.callTarget().targetMethod() != null) {
-                methods.add(invoke.callTarget().targetMethod());
-            }
-        }
-        return methods;
-    }
 
-    // private void computeNesting(StructuredGraph graph,
-    //                             List<LoopBeginNode> begins,
-    //                             Map<LoopBeginNode, Integer> beginToId, LowTierContext context) {
-
-    //     ControlFlowGraph cfga = ControlFlowGraph.computeForSchedule(graph);
-    //     graph.setLastCFG(cfga);
-
-    //     ControlFlowGraph cfg = graph.getLastCFG();
-    //     List<? extends CFGLoop<?>> loops = cfg.getLoops();
-    //     if (loops == null || loops.isEmpty()) {
-    //         return;
-    //     }
-
-    //     IdentityHashMap<CFGLoop<?>, Integer> loopToIda = new IdentityHashMap<>();
-
-    //     // for each begin loop, find its ida, e.g the arbitrary id we gave it earlier
-    //     for (LoopBeginNode begin : begins) {
-    //         BasicBlock<?> block = cfg.blockFor(begin);
-    //         if (block == null) {
-    //             continue;
-    //         }
-
-    //         CFGLoop<?> loop = block.getLoop();
-    //         if (loop == null) {
-    //             continue;
-    //         }
-
-    //         Integer ida = beginToId.get(begin);
-    //         if (ida != null) {
-    //             loopToIda.put(loop, ida);
-    //         }
-    //     }
-
-    //     if (loopToIda.isEmpty()) {
-    //         return;
-    //     }
-
-    //     // Build or get a schedule so we know, for each block, all nodes that execute there
-    //     ScheduleResult schedule = graph.getLastSchedule();
-    //     if (schedule == null) {
-    //         SchedulePhase schedulePhase = new SchedulePhase(SchedulePhase.SchedulingStrategy.LATEST);
-    //         schedulePhase.apply(graph, context.getProviders());
-    //         schedule = graph.getLastSchedule();
-    //     }
-
-    //     // Encode the numeric part of the compilation id once
-    //     int compId = Integer.parseInt(graph.compilationId().toString(Verbosity.ID).split("-")[1]);
-
-    //     assignLoopMarkersFromOuterToInner(graph, cfg, schedule, loopToIda, compId);
-    // }
-
-    // private static void assignLoopMarkersFromOuterToInner(StructuredGraph graph,
-    //                                                       ControlFlowGraph cfg,
-    //                                                       ScheduleResult schedule,
-    //                                                       IdentityHashMap<CFGLoop<?>, Integer> loopToIda,
-    //                                                       int compId) {
-
-    //     if (loopToIda.isEmpty()) {
-    //         return;
-    //     }
-
-    //     // Compute depth of each loop: 0 = outermost
-    //     IdentityHashMap<CFGLoop<?>, Integer> depthMap = new IdentityHashMap<>();
-    //     for (CFGLoop<?> loop : loopToIda.keySet()) {
-    //         computeLoopDepth(loop, depthMap);
-    //     }
-
-    //     // Sort loops by depth: outermost (depth 0) first, then inner loops
-    //     List<CFGLoop<?>> orderedLoops = new ArrayList<>(loopToIda.keySet());
-    //     orderedLoops.sort(Comparator.comparingInt(depthMap::get));
-
-    //     // Now assign NodeSourcePosition markers in that order
-    //     for (CFGLoop<?> loop : orderedLoops) {
-    //         Integer ida = loopToIda.get(loop);
-    //         if (ida == null) {
-    //             continue;
-    //         }
-
-    //         ResolvedJavaMethod marker = safeMarkerAt(ida);
-    //         if (marker == null) {
-    //             continue;
-    //         }
-
-    //         // lookup set of blocks belonging to this loop
-    //         @SuppressWarnings("unchecked")
-    //         List<HIRBlock> blocksInLoop = new ArrayList<>((List<HIRBlock>) loop.getBlocks());
-    //         blocksInLoop.add((HIRBlock) loop.getHeader());
-    //         loop.getLoopExits().forEach(exit -> {
-    //             blocksInLoop.add((HIRBlock) exit);
-    //         });
-
-    //         IdentityHashMap<HIRBlock, Boolean> blockSet = new IdentityHashMap<>();
-    //         for (HIRBlock b : blocksInLoop) {
-    //             blockSet.put(b, Boolean.TRUE);
-    //         }
-
-    //         // For each block in the loop, use the SCHEDULE to get ALL nodes in that block
-    //         for (HIRBlock b : blocksInLoop) {
-    //             HIRBlock block = b;
-
-    //             for (Node node : schedule.nodesFor(block)) {
-    //                 if (!blockSet.containsKey(b)) {
-    //                     continue;
-    //                 }
-
-    //                 NodeSourcePosition pos = node.getNodeSourcePosition();
-    //                 if (pos != null) {
-    //                     node.setNodeSourcePosition(
-    //                             buildDebugPositionChain(
-    //                                     pos.getCaller(),
-    //                                     compId,
-    //                                     ida));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
-    // private static NodeSourcePosition buildDebugPositionChain(NodeSourcePosition ogPos,
-    //                                                           int compID,
-    //                                                           int loopId) {
-    //     // start from the original position
-    //     NodeSourcePosition pos = null;
-    //     if (MARKERS[MAX_MARKERS - 1] == null) {
-    //         return ogPos;
-    //     }
-
-    //     // push each digit of compID as a marker
-    //     int[] digits = Integer.toString(compID).chars().map(c -> c - '0').toArray();
-    //     for (int d : digits) {
-    //         if (d >= 0 && d < MARKERS.length) {
-    //             pos = new NodeSourcePosition(
-    //                     null,
-    //                     pos,
-    //                     MARKERS[d],
-    //                     -1
-    //             );
-    //         }
-    //     }
-
-    //     // delimiter
-    //     pos = new NodeSourcePosition(
-    //             null,
-    //             pos,
-    //             MARKERS[MAX_MARKERS - 1],
-    //             -1
-    //     );
-
-    //     // push the loop marker
-    //     if (loopId >= 0 && loopId < MARKERS.length) {
-    //         pos = new NodeSourcePosition(
-    //                 null,            
-    //                 pos,               
-    //                 MARKERS[loopId],   
-    //                 -1                 
-    //         );
-    //     }
-
-    //     return pos;
-    // }
-
-    /**
-     * Recursively computes the nesting depth of a loop.
-     * Depth 0 = no parent; depth N = N parents up the chain.
-     */
-    private static int computeLoopDepth(CFGLoop<?> loop,
-                                        IdentityHashMap<CFGLoop<?>, Integer> depthMap) {
-        Integer cached = depthMap.get(loop);
-        if (cached != null) {
-            return cached;
-        }
-
-        CFGLoop<?> parent = loop.getParent();
-        int depth = (parent == null) ? 0 : computeLoopDepth(parent, depthMap) + 1;
-        depthMap.put(loop, depth);
-        return depth;
-    }
-
-    // private static ResolvedJavaMethod safeMarkerAt(int idx) {
-    //     return (idx >= 0 && idx < MARKERS.length) ? MARKERS[idx] : null;
-    // }
+    // This class is not meant to be instantiated.
+    private GTCollectCompilerMarkers() {}
 }
