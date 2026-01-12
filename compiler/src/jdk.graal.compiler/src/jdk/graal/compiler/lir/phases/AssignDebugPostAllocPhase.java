@@ -39,31 +39,32 @@ import jdk.graal.compiler.phases.common.GTCollectCompilerMarkers;
 
 public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationPhase {
 
+    // private static ResolvedJavaMethod
+    // resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
 
-    // private static ResolvedJavaMethod resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
+    // // Everything here runs at *runtime* (inside the isolate), not at
+    // native-image build time.
+    // HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
+    // ResolvedJavaType stringType = (ResolvedJavaType)
+    // rt.lookupType("Lmy/custom/BuboAgentCompilerMarkers;", accessingType, true);
 
-    //     // Everything here runs at *runtime* (inside the isolate), not at native-image build time.
-    //     HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
-    //     ResolvedJavaType stringType = (ResolvedJavaType) rt.lookupType("Lmy/custom/BuboAgentCompilerMarkers;", accessingType, true);
-
-    //     ResolvedJavaMethod found = null;
-    //     for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
-    //         if (m.getName().equals("Marker0")
-    //                 && m.getSignature().getParameterCount(false) == 0) {
-    //             found = m;
-    //             break;
-    //         }
-    //     }
-
-    //     if (found == null) {
-    //         throw new IllegalStateException("Did not find Lmy/custom/BuboAgentCompilerMarkers;");
-    //     }
-
-    //     STRING_HASHCODE = found;
-    //     return found;
+    // ResolvedJavaMethod found = null;
+    // for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
+    // if (m.getName().equals("Marker0")
+    // && m.getSignature().getParameterCount(false) == 0) {
+    // found = m;
+    // break;
+    // }
     // }
 
+    // if (found == null) {
+    // throw new IllegalStateException("Did not find
+    // Lmy/custom/BuboAgentCompilerMarkers;");
+    // }
 
+    // STRING_HASHCODE = found;
+    // return found;
+    // }
 
     @Override
     protected void run(TargetDescription target,
@@ -74,9 +75,8 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
             return;
         }
 
-        
         // context.
-        //compName = lirGenRes.getCompilationUnitName();
+        // compName = lirGenRes.getCompilationUnitName();
 
         // System.out.println("In : " + compName + " Delmi is: " +
         // GTCollectCompilerMarkers.Delimter);
@@ -91,107 +91,99 @@ public final class AssignDebugPostAllocPhase extends PostAllocationOptimizationP
     }
 
     private static boolean isHotSpotOnlyChain(NodeSourcePosition pos) {
-    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
-        ResolvedJavaMethod m = p.getMethod();
-        if (m == null) {
-            continue;
+        for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+            ResolvedJavaMethod m = p.getMethod();
+            if (m == null) {
+                continue;
+            }
+            // If ANY method in the chain is not a real HotSpotResolvedJavaMethod,
+            // HotSpotCompiledCodeStream may crash when writing debug info.
+            if (!(m instanceof HotSpotResolvedJavaMethod)) {
+                return false;
+            }
         }
-        // If ANY method in the chain is not a real HotSpotResolvedJavaMethod,
-        // HotSpotCompiledCodeStream may crash when writing debug info.
-        if (!(m instanceof HotSpotResolvedJavaMethod)) {
-            return false;
-        }
+        return true;
     }
-    return true;
-}
-
 
     private void assingDebugingInformation(Map<Integer, CFGLoop<?>> loopIdMap,
             LIR lir,
             LIRGenerationResult lirGenRes) {
 
-        for (Integer LoopID : loopIdMap.keySet()) {
-            CFGLoop<?> loop = loopIdMap.get(LoopID);
-            HotSpotResolvedObjectType accessingType;
-            HotSpotResolvedObjectType lastaccessingType;
+        for (Integer loopID : loopIdMap.keySet()) {
+            CFGLoop<?> loop = loopIdMap.get(loopID);
+
+            // Initialise markers once (lazily) the first time we find a usable HotSpot-only
+            // chain.
+            boolean markersReady = GTCollectCompilerMarkers.MARKERS != null
+                    && GTCollectCompilerMarkers.MARKERS[0] != null;
+
+            HotSpotResolvedObjectType cachedAccessingType = null;
+
             for (BasicBlock<?> block : loop.getBlocks()) {
                 ArrayList<LIRInstruction> instructions = lir.getLIRforBlock(block);
 
                 for (LIRInstruction instr : instructions) {
-                    if (instr.getPosition() != null) {
-                    NodeSourcePosition oldPos = instr.getPosition();
-                    if (oldPos == null) {
-                        continue;
+
+                    // If markers are not ready yet, try to bootstrap them from the first valid
+                    // position we see.
+                    if (!markersReady) {
+                        NodeSourcePosition p = instr.getPosition();
+                        if (p != null && isHotSpotOnlyChain(p)) {
+                            cachedAccessingType = findFirstNonSnippetHotSpotType(p);
+                            if (cachedAccessingType != null) {
+                                GTCollectCompilerMarkers.initializeMarkers(cachedAccessingType);
+                                markersReady = GTCollectCompilerMarkers.MARKERS != null
+                                        && GTCollectCompilerMarkers.MARKERS[0] != null;
+                            }
+                        }
                     }
 
-                    // THIS is the crucial guard:
-                    if (!isHotSpotOnlyChain(oldPos)) {
+                    if (!markersReady) {
                         continue;
                     }
-
-                     accessingType = findFirstNonSnippetHotSpotType(oldPos);
-
-                     GTCollectCompilerMarkers.initializeMarkers(accessingType);
-
-
-                    
-                    //accessingType = findFirstNonSnippetHotSpotType(oldPos);
-
-                    //ResolvedJavaMethod hashCode = resolveStringHashCode(accessingType);
-
-                    // NodeSourcePosition pos = new NodeSourcePosition(
-                    //         null,   // or null, but keeping chain is usually nicer
-                    //         oldPos,
-                    //         hashCode,
-                    //         -1);
-
-                    //instr.setPosition(pos);
-                     instr.setPosition(buildDebugPositionChain(instr.getPosition(),
-                     lirGenRes.getCompilationId(), LoopID));
-
+                    instr.setPosition(buildDebugPositionChain(
+                            instr.getPosition(),
+                            lirGenRes.getCompilationId(),
+                            loopID));
                 }
             }
-
         }
-
-    }
-
     }
 
     private static HotSpotResolvedObjectType findFirstNonSnippetHotSpotType(NodeSourcePosition pos) {
-    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
-        ResolvedJavaMethod m = p.getMethod();
-        if (m == null) {
-            continue;
-        }
+        for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+            ResolvedJavaMethod m = p.getMethod();
+            if (m == null) {
+                continue;
+            }
 
-        // Skip snippet wrapper methods explicitly
-        if (m instanceof SnippetResolvedJavaMethod) {
-            continue;
-        }
+            // Skip snippet wrapper methods explicitly
+            if (m instanceof SnippetResolvedJavaMethod) {
+                continue;
+            }
 
-        // Only accept real HotSpot methods (safe for lookupType context)
-        if (m instanceof HotSpotResolvedJavaMethod) {
-            return (HotSpotResolvedObjectType) ((HotSpotResolvedJavaMethod) m).getDeclaringClass();
-        }
+            // Only accept real HotSpot methods (safe for lookupType context)
+            if (m instanceof HotSpotResolvedJavaMethod) {
+                return (HotSpotResolvedObjectType) ((HotSpotResolvedJavaMethod) m).getDeclaringClass();
+            }
 
-        // Any other non-HotSpot method types (wrappers) are ignored.
+            // Any other non-HotSpot method types (wrappers) are ignored.
+        }
+        return null;
     }
-    return null;
-}
 
     private static HotSpotResolvedObjectType findHotSpotAccessingType(NodeSourcePosition pos) {
-    for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
-        if (p.getMethod() == null) {
-            continue;
+        for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+            if (p.getMethod() == null) {
+                continue;
+            }
+            ResolvedJavaType t = p.getMethod().getDeclaringClass();
+            if (t instanceof HotSpotResolvedObjectType) {
+                return (HotSpotResolvedObjectType) t;
+            }
         }
-        ResolvedJavaType t = p.getMethod().getDeclaringClass();
-        if (t instanceof HotSpotResolvedObjectType) {
-            return (HotSpotResolvedObjectType) t;
-        }
+        return null;
     }
-    return null;
-}
 
     private Map<Integer, CFGLoop<?>> orderLoopsByNesting(Map<Integer, CFGLoop<?>> loopIdMap) {
         if (loopIdMap == null || loopIdMap.isEmpty()) {
