@@ -56,6 +56,7 @@ import jdk.graal.compiler.lir.amd64.AMD64Move.UncompressPointerOp;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboRDTSCToSlot;
 import jdk.graal.compiler.lir.amd64.Bubo.AMD64BuboWriteDeltaRDTSC;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.RangeTableSwitchOp;
 
 public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
 
@@ -189,7 +190,7 @@ public class LIRGTSlowdownPhasePost extends PostAllocationOptimizationPhase {
                     || instructions.get(i) instanceof UncompressPointerOp 
                     || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp
                     || instructions.get(i) instanceof AMD64HotSpotSafepointOp
-                    || instructions.get(i) instanceof AMD64PrefetchOp ){
+                    || instructions.get(i) instanceof AMD64PrefetchOp){
 
                     if (instructions.get(i) instanceof CompressPointerOp) {
                         CompressPointerOp toTest = (CompressPointerOp) instructions.get(i);

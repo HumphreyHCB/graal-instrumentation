@@ -38,6 +38,7 @@ import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.TestByteBranchOp;
 import jdk.graal.compiler.lir.amd64.AMD64Move.CompressPointerOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PostWriteBarrierOp;
 import jdk.graal.compiler.lir.amd64.g1.AMD64G1PreWriteBarrierOp;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow;
 import jdk.graal.compiler.lir.amd64.AMD64GTBackendMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64GTMarkerOp;
 import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
@@ -50,6 +51,7 @@ import jdk.graal.compiler.options.OptionValues;
 import jdk.vm.ci.code.RegisterValue;
 import jdk.vm.ci.code.TargetDescription;
 import jdk.graal.compiler.core.common.CompilationIdentifier;
+import jdk.graal.compiler.lir.amd64.AMD64ControlFlow.RangeTableSwitchOp;
 
 public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
 
@@ -67,7 +69,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
             return;
         }
         // System.out.println();
-        //System.out.println("CompName : " + lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED));
+        // System.out.println("CompName : " + lirGenRes.getCompilationUnitName(CompilationIdentifier.Verbosity.DETAILED));
 
         outerLoop: for (int blockId : lirGenRes.getLIR().codeEmittingOrder()) {
 
@@ -102,7 +104,7 @@ public class LIRGTSlowdownMarkerPhase extends PostAllocationOptimizationPhase {
                     || instructions.get(i) instanceof UncompressPointerOp 
                     || instructions.get(i) instanceof AMD64G1PreWriteBarrierOp
                     || instructions.get(i) instanceof AMD64HotSpotSafepointOp
-                    || instructions.get(i) instanceof AMD64PrefetchOp ){
+                    || instructions.get(i) instanceof AMD64PrefetchOp) {
 
 
                     if (instructions.get(i) instanceof CompressPointerOp) {

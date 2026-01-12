@@ -65,9 +65,6 @@ public final class AMD64GTBackendMarkerOp extends AMD64LIRInstruction {
         asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8, AVXSize.XMM); // Upper 8 bits of the marker ID
         asm.vpblendd(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, uniqueID, AVXSize.XMM); // Upper 8 bits of the marker ID
 
-        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, lower8); // Redundant shuffle operation, results in no change
-        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, upper8); // Redundant shuffle operation, results in no change
-        // asm.vshufps(AMD64.xmm0, AMD64.xmm0, AMD64.xmm0, uniqueID); // Redundant shuffle operation, results in no change
         asm.sfence();
 
     }
