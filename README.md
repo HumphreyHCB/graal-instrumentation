@@ -1,18 +1,18 @@
-# Bubo — Late‑Stage Instrumentation Profiler for Graal JIT
+# BuboC — Late‑Stage Instrumentation Profiler for Graal JIT
 
-Bubo is an experimental implementation of **late‑compiler‑stage instrumentation** for the [Graal](https://github.com/oracle/graal) just‑in‑time compiler.  
+BuboC is an experimental implementation of **late‑compiler‑stage instrumentation** for the [Graal](https://github.com/oracle/graal) just‑in‑time compiler.  
 It injects probes only in the *low‑tier* Graal IR, after almost all high‑ and mid‑tier optimisations have run, so the collected profile resembles an uninstrumented run‑time execution. The idea originates from work by _**Optimization-Aware Compiler-Level Event Profiling**_ and _**Towards Realistic Results for Instrumentation-Based Profilers for JIT-Compiled Systems**_
 
 ---
 
 ## Why another profiler?
 
-| Challenge with traditional profilers | How Bubo addresses it |
+| Challenge with traditional profilers | How BuboC addresses it |
 |-------------------------------------|------------------------|
 | Probes inserted at bytecode or high‑tier IR interfere with inlining and other optimisations. | Probes are added in the final Graal low tier, so prior optimisations stay intact. |
-| Instrument‑everything profilers often impose 80× overhead. | With an cycle threshold for “tiny” methods, Bubo shows a a much lower overhead on the AWFY suite |
-| Tiny hot methods suffer when the probe is costlier than the code. | For units whose estimated cost is below 80 cycles, Bubo merely counts activations and estimates cycles from Graal’s own per‑node model |
-| Sampling profilers avoid overhead but can miss short‑lived hot spots and suffer safepoint bias. | Bubo records nearly all cycles exactly (`RDTSC`), while still keeping low overhead. |
+| Instrument‑everything profilers often impose 80× overhead. | With an cycle threshold for “tiny” methods, BuboC shows a a much lower overhead on the AWFY suite |
+| Tiny hot methods suffer when the probe is costlier than the code. | For units whose estimated cost is below 80 cycles, BuboC merely counts activations and estimates cycles from Graal’s own per‑node model |
+| Sampling profilers avoid overhead but can miss short‑lived hot spots and suffer safepoint bias. | BuboC records nearly all cycles exactly (`RDTSC`), while still keeping low overhead. |
 
 ---
 
