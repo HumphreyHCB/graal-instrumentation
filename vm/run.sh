@@ -14,18 +14,14 @@ BUBO_JAR=/home/hburchell/Repos/graal-dev/graal-instrumentation/compiler/bubo-run
   -Djdk.graal.GTAssignDebug=false \
   -Djdk.graal.HumphreysDebugData=false \
   -Djdk.graal.StrictProfiles=false \
-  -Djdk.graal.WarnAboutCodeSignatureMismatch=false \
   -Djdk.graal.TrackNodeSourcePosition=true \
   --enable-native-access=ALL-UNNAMED \
   -XX:-TieredCompilation \
   -XX:-BackgroundCompilation \
   -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar \
-  -javaagent:/home/hb478/repos/graal-instrumentation/Bubo-Agent/target/JavaAgent-1.0-SNAPSHOT-jar-with-dependencies.jar \
   -Djdk.graal.LIRGTSlowDown=false \
   -Djdk.graal.BuboLIRPhase=true \
-  -Djdk.graal.GTMarkBasicBlocks=true \
-  -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/FinalBuboTests/LoopBenchmarks/Final_LoopBenchmarks.json \
-  Harness LoopBenchmarks 12000
+  Harness Bounce 50 10000
 
   
 

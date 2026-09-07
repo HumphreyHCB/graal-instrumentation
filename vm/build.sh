@@ -3,9 +3,13 @@
 # /home/hb478/repos/labs-openjdk-25-37-jvmci-b06/build/linux-x86_64-server-release/images/graal-builder-jdk
 
 #### as of the 22nd of dec use this /home/hb478/repos/labs-openjdk-25-37-jvmci-b06/build/linux-x86_64-server-release/images/graal-builder-jdk 
-#mx --java-home /home/hb478/.mx/jdks/labsjdk-ce-latest-jvmci-25.1-b13_amd64 <-- used to run benchamrks
-mx --java-home /home/hb478/repos/labs-openjdk-jvmci-25.1-b13/build/linux-x86_64-server-fastdebug/images/graal-builder-jdk \
-   --env libgraal build
+#mx --java-home /home/hb478/.mx/jdks/labsjdk-ce-latest-jvmci-25.1-b13_amd64 --env libgraal build
+mx -c 4 \
+  -J-Xms4g -J-Xmx8g \
+  --java-home /home/hb478/repos/labs-openjdk-jvmci-25.1-b13/build/linux-x86_64-server-release/images/graal-builder-jdk \
+  --env libgraal \
+  --extra-image-builder-argument=--parallelism=4 \
+  build --no-daemon
 
 ### the one i use /home/hburchell/Downloads/labsjdk-ce-25-jvmci-b06
 
