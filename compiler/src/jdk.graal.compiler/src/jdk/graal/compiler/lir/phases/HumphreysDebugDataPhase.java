@@ -29,6 +29,7 @@ import java.util.Map;
 
 import jdk.graal.compiler.lir.amd64.AMD64LoopEndOp;
 import jdk.graal.compiler.lir.amd64.AMD64LoopStartOp;
+import jdk.graal.compiler.hotspot.amd64.AMD64HotSpotSafepointOp;
 
 public final class HumphreysDebugDataPhase extends PostAllocationOptimizationPhase {
 
@@ -115,6 +116,9 @@ public final class HumphreysDebugDataPhase extends PostAllocationOptimizationPha
 
             System.out.println(" BuboLoopMakers: ");
             for (LIRInstruction instr : instrs) {
+                if(instr instanceof AMD64HotSpotSafepointOp){
+                    System.out.println(" Found AMD64HotSpotSafepointOp in this block");
+                }
                 if (instr instanceof AMD64BuboRDTSCToSlot || instr instanceof AMD64BuboWriteDeltaRDTSC) {
                     System.out.println(" Found in this block : " + instr.getClass());
                     if (instr instanceof AMD64BuboWriteDeltaRDTSC) {
