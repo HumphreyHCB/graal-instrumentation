@@ -37,6 +37,14 @@ import jdk.graal.compiler.options.OptionType;
 import jdk.vm.ci.amd64.AMD64Kind;
 import jdk.vm.ci.code.TargetDescription;
 
+
+import jdk.graal.compiler.graph.NodeSourcePosition;
+import jdk.vm.ci.hotspot.HotSpotJVMCIRuntime;
+import jdk.vm.ci.hotspot.HotSpotResolvedObjectType;
+import jdk.vm.ci.meta.ResolvedJavaMethod;
+import jdk.vm.ci.meta.ResolvedJavaType;
+
+
 public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
     public static class Options {
@@ -65,6 +73,9 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         }
     }
 
+    //private static ResolvedJavaMethod stringHashCode;      // cached String.hashCode()I
+
+
     @Override
     protected void run(TargetDescription target,
             LIRGenerationResult lirGenRes,
@@ -72,6 +83,37 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         if (shouldSkip(lirGenRes)) {
             return;
         }
+        // // Tee up String.hashCode()I so this.stringHashCode is ready for later use.
+        // if (this.stringHashCode == null) {
+        //     HotSpotResolvedObjectType accessingType = null;
+
+        //     // Fast path: try to find any NodeSourcePosition from existing LIR ops.
+        //     LIR tmpLir = lirGenRes.getLIR();
+        //     BasicBlock<?>[] tmpBlocks = tmpLir.getControlFlowGraph().getBlocks();
+
+        //     outer:
+        //     for (int b = 0; b < tmpBlocks.length; b++) {
+        //         List<LIRInstruction> insns = tmpLir.getLIRforBlock(tmpBlocks[b]);
+        //         for (int i = 0; i < insns.size(); i++) {
+        //             NodeSourcePosition p = insns.get(i).getPosition();
+        //             if (p != null) {
+        //                 accessingType = findHotSpotAccessingType(p);
+        //                 if (accessingType != null) {
+        //                     break outer;
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     // Resolve and cache on the instance (and your existing static cache gets filled too).
+        //     if (accessingType != null) {
+        //         this.stringHashCode = resolveStringHashCode(accessingType);
+        //     } else {
+        //             throw new IllegalStateException("Could not find a HotSpot accessing type to resolve String.hashCode()I");
+                
+        //     }
+        // }
+
 
         final LIR lir = lirGenRes.getLIR();
         final LIRGeneratorTool lirGen = context.lirGen;
@@ -81,6 +123,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         List<MarkerPos> markers = new ArrayList<>();
         BasicBlock<?>[] blocks = lir.getControlFlowGraph().getBlocks();
 
+        //System.out.println("--- BuboLIRPhase for compilationId " + lirGenRes.getCompilationUnitName() + " ---");
+
         // collect all markers, all starts and ends
         for (int block = 0; block < blocks.length; block++) {
             List<LIRInstruction> insns = lir.getLIRforBlock(blocks[block]);
@@ -88,14 +132,24 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 LIRInstruction op = insns.get(instruction);
 
                 if (op instanceof AMD64LoopStartOp) {
+                    
                     AMD64LoopStartOp StartOp = (AMD64LoopStartOp) op;
+                    // if (StartOp.loopId == 0) {
+                    //     System.out.println("Found 0 op start");
+                    // }
                     markers.add(new MarkerPos(block, instruction, StartOp.loopId, StartOp.position, true));
                 } else if (op instanceof AMD64LoopEndOp) {
+                    
                     AMD64LoopEndOp EndOp = (AMD64LoopEndOp) op;
+                    // if (EndOp.loopId == 0) {
+                    //     System.out.println("Found 0 op end");
+                    // }
                     markers.add(new MarkerPos(block, instruction, EndOp.loopId, EndOp.position, false));
                 }
             }
         }
+
+        
 
         if (markers.isEmpty()) {
             return;
@@ -113,9 +167,23 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         FindAllCallsInloop(lir, lirGen, lirGenRes, compilationId);
 
+        AbstractControlFlowGraph<?> cfg = lir.getControlFlowGraph();
+
+        Map<Integer, CFGLoop<?>> loopIdMap = mapLoopIdsToLoops(cfg, lir);
+
+        ensureEndMarkersFromCFGIfMissing(
+                lir,
+                cfg,
+                loopIdMap,
+                markers, 0);
+        /// here
+
         // insert starts only
         for (MarkerPos marker : markers) {
             if (marker.LoopStart) {
+                // if (isNestedLoop(marker.loopId, mapLoopIdsToLoops(lir.getControlFlowGraph(), lir))) {
+                //     continue;  
+                // }
                 insertStartBeforeMarker(lir, lirGen, loopSlots.get(marker.loopId), compilationId, marker, lirGenRes);
             }
         }
@@ -123,6 +191,9 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
         // insert ends only for instrumentable ids
         for (MarkerPos marker : markers) {
             if (!marker.LoopStart) {
+                //  if (isNestedLoop(marker.loopId, mapLoopIdsToLoops(lir.getControlFlowGraph(), lir))) {
+                //     continue;   
+                // }
                 instrumentLoopEnds(lir, lirGen, loopSlots.get(marker.loopId), baseAddress, compilationId, marker, lirGenRes);
             }
         }
@@ -154,9 +225,11 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         LIRInsertionBuffer buf = new LIRInsertionBuffer();
         buf.init(insns);
-        buf.append(insns.size()-1, new AMD64BuboRDTSCToSlot(lirGen, slot,marker.loopId));
+       AMD64BuboRDTSCToSlot toSlot =  new AMD64BuboRDTSCToSlot(lirGen, slot,marker.loopId);
+       //toSlot.setPosition(new NodeSourcePosition(null,null, stringHashCode, -1));
+        buf.append(insns.size()-1, toSlot);
        // buf.append(marker.insnIndex, new AMD64BuboRDTSCToSlot(lirGen, slot,marker.loopId));
-        //buf.append(marker.insnIndex, new AMD64BuboIncActivationOp(lirGen, compilationId, marker.loopId));
+        //buf.append(insns.size()-1, new AMD64BuboIncActivationOp(lirGen, compilationId, marker.loopId));
         buf.finish();
     }
 
@@ -180,7 +253,8 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
                 compilationId,
                 marker.loopId,
                 true);
-
+        
+        //endDelta.setPosition(new NodeSourcePosition(null,null, stringHashCode, -1));
         buf.append(1, endDelta);
 
         String startSrc = loopStartSources.get(marker.loopId);
@@ -297,5 +371,138 @@ public final class BuboLIRPhase extends PreAllocationOptimizationPhase {
 
         return loopsFromStarts;
     }
+
+private static boolean isNestedLoop(int loopId, Map<Integer, CFGLoop<?>> loopsByNesting) {
+    if (loopsByNesting == null) {
+        return false;
+    }
+
+    CFGLoop<?> loop = loopsByNesting.get(loopId);
+    if (loop == null) {
+        return false;
+    }
+
+    CFGLoop<?> parent = loop.getParent(); // or getParentLoop()
+
+    // No parent → not nested
+    if (parent == null) {
+        return false;
+    }
+
+    // // If parent is the outermost loop (usually loopId 0), treat as not nested
+    // for (Map.Entry<Integer, CFGLoop<?>> e : loopsByNesting.entrySet()) {
+    //     if (e.getKey() == 0 && e.getValue() == parent) {
+    //         return false;
+    //     }
+    // }
+
+    // Otherwise, this loop is genuinely nested
+    return true;
+}
+
+private static void ensureEndMarkersFromCFGIfMissing(
+        LIR lir,
+        AbstractControlFlowGraph<?> cfg,
+        Map<Integer, CFGLoop<?>> loopIdMap,
+        List<MarkerPos> markers,
+        int loopId) {
+
+    // Do we already have at least one end marker for this loopId?
+    boolean hasEnd = false;
+    for (MarkerPos m : markers) {
+        if (!m.LoopStart && m.loopId == loopId) {
+            hasEnd = true;
+            break;
+        }
+    }
+    if (hasEnd) {
+        return;
+    }
+
+    CFGLoop<?> loop = loopIdMap.get(loopId);
+    if (loop == null) {
+        return;
+    }
+
+    // Prefer CFGLoop.getLoopExits(), fall back to getNaturalExits() if empty.
+    List<? extends BasicBlock<?>> exits = loop.getLoopExits();
+    if (exits == null || exits.isEmpty()) {
+        exits = loop.getNaturalExits();
+    }
+    if (exits == null || exits.isEmpty()) {
+        return;
+    }
+
+    // Map BasicBlock -> blockIndex in cfg.getBlocks()
+    BasicBlock<?>[] blocks = cfg.getBlocks();
+    Map<BasicBlock<?>, Integer> blockToIndex = new HashMap<>(blocks.length * 2);
+    for (int i = 0; i < blocks.length; i++) {
+        blockToIndex.put(blocks[i], i);
+    }
+
+    for (BasicBlock<?> exitBlock : exits) {
+        Integer blockIndex = blockToIndex.get(exitBlock);
+        if (blockIndex == null) {
+            continue;
+        }
+
+        List<LIRInstruction> insns = lir.getLIRforBlock(exitBlock);
+        if (insns == null || insns.isEmpty()) {
+            continue;
+        }
+
+        // Pick an insertion point inside the exit block.
+        // We want the end probe to run when we are exiting the loop.
+        // A decent generic choice is just before the block terminator (often the last LIR op).
+        int insnIndex = Math.max(0, insns.size() - 1);
+
+        // Try to steal a position from the chosen instruction, if any.
+        NodeSourcePosition pos = insns.get(insnIndex).getPosition();
+
+        markers.add(new MarkerPos(blockIndex, insnIndex, loopId, pos, false));
+    }
+}
+
+
+
+
+    // Minimal helper: create a NodeSourcePosition that references java/lang/String.hashCode()I
+    // (which implies the declaring class is Ljava/lang/String;).
+    //
+    // Safe for native-image: no <clinit> work, the lookup happens lazily at runtime.
+
+
+//     private static ResolvedJavaMethod resolveStringHashCode(HotSpotResolvedObjectType accessingType) {
+//         HotSpotJVMCIRuntime rt = HotSpotJVMCIRuntime.runtime();
+
+//         ResolvedJavaType stringType =
+//                 (ResolvedJavaType) rt.lookupType("Ljava/lang/String;", accessingType, true);
+
+//         for (ResolvedJavaMethod m : stringType.getDeclaredMethods()) {
+//             if ("hashCode".equals(m.getName())
+//                     && m.getSignature().getParameterCount(false) == 0
+//                     && "I".equals(m.getSignature().getReturnType(null).getName())) {
+//                 return m;
+//             }
+//         }
+
+//         throw new IllegalStateException("Did not find java/lang/String.hashCode()I");
+//     }
+
+//     private static HotSpotResolvedObjectType findHotSpotAccessingType(NodeSourcePosition pos) {
+//     for (NodeSourcePosition p = pos; p != null; p = p.getCaller()) {
+//         ResolvedJavaMethod m = p.getMethod();
+//         if (m == null) {
+//             continue;
+//         }
+//         ResolvedJavaType t = m.getDeclaringClass();
+//         if (t instanceof HotSpotResolvedObjectType) {
+//             return (HotSpotResolvedObjectType) t;
+//         }
+//     }
+//     return null;
+// }
+
+
 
 }
