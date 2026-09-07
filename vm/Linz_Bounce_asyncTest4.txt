@@ -1,0 +1,1680 @@
+--- Execution profile ---
+Total samples       : 103305
+
+--- 498968232 ns (47.96%), 49685 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 42608643 ns (4.10%), 4242 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 32268861 ns (3.10%), 3214 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 28077950 ns (2.70%), 2797 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 20356124 ns (1.96%), 2027 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 20033481 ns (1.93%), 1994 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 18621336 ns (1.79%), 1854 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 18150467 ns (1.74%), 1809 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 8281096 ns (0.80%), 824 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 7589162 ns (0.73%), 756 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6421224 ns (0.62%), 641 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 5738125 ns (0.55%), 572 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 5445324 ns (0.52%), 543 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3818404 ns (0.37%), 380 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3538054 ns (0.34%), 352 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3336747 ns (0.32%), 331 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3085328 ns (0.30%), 306 samples
+  [ 0] Bounce.lambda$benchmark$0
+  [ 1] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 2] java.util.Arrays.setAll
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 2934216 ns (0.28%), 291 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 2894973 ns (0.28%), 287 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 2522987 ns (0.24%), 250 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 2411276 ns (0.23%), 240 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2163100 ns (0.21%), 215 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 2125408 ns (0.20%), 212 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 2106382 ns (0.20%), 210 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1629047 ns (0.16%), 162 samples
+  [ 0] LinearScan::build_intervals
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 1503716 ns (0.14%), 150 samples
+  [ 0] FieldInfoReader::read_field_info
+  [ 1] InstanceKlass::find_local_field
+  [ 2] InstanceKlass::find_field
+  [ 3] LinkResolver::resolve_field
+  [ 4] LinkResolver::resolve_field_access
+  [ 5] InterpreterRuntime::resolve_get_put
+  [ 6] InterpreterRuntime::resolve_from_cache
+  [ 7] sun.security.util.KnownOIDs.register
+  [ 8] sun.security.util.KnownOIDs.<clinit>
+  [ 9] sun.security.util.SecurityProviderConstants.<clinit>
+  [10] sun.security.provider.SunEntries.addWithAlias
+  [11] sun.security.provider.SunEntries.<init>
+  [12] sun.security.provider.Sun.<init>
+  [13] sun.security.jca.ProviderConfig.getProvider
+  [14] sun.security.jca.ProviderList.getProvider
+  [15] sun.security.jca.ProviderList$3.get
+  [16] sun.security.jca.ProviderList$3.get
+  [17] java.util.AbstractList$Itr.next
+  [18] java.security.SecureRandom.getDefaultPRNG
+  [19] java.security.SecureRandom.<init>
+  [20] java.io.File$TempDirectory.<clinit>
+  [21] java.io.File.createTempFile
+  [22] java.io.File.createTempFile
+  [23] Tsc.loadNativeFromJar
+  [24] Tsc.<clinit>
+  [25] Harness.main
+
+--- 1471625 ns (0.14%), 146 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 1469022 ns (0.14%), 146 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1466745 ns (0.14%), 146 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1425019 ns (0.14%), 142 samples
+  [ 0] FieldInfoReader::read_field_info
+  [ 1] InstanceKlass::find_local_field
+  [ 2] InstanceKlass::find_field
+  [ 3] LinkResolver::resolve_field
+  [ 4] LinkResolver::resolve_field_access
+  [ 5] InterpreterRuntime::resolve_get_put
+  [ 6] InterpreterRuntime::resolve_from_cache
+  [ 7] sun.security.util.KnownOIDs.register
+  [ 8] sun.security.util.KnownOIDs.<clinit>
+  [ 9] sun.security.util.SecurityProviderConstants.<clinit>
+  [10] sun.security.provider.SunEntries.addWithAlias
+  [11] sun.security.provider.SunEntries.<init>
+  [12] sun.security.provider.Sun.<init>
+  [13] sun.security.jca.ProviderConfig.getProvider
+  [14] sun.security.jca.ProviderList.getProvider
+  [15] sun.security.jca.ProviderList$3.get
+  [16] sun.security.jca.ProviderList$3.get
+  [17] java.util.AbstractList$Itr.next
+  [18] java.security.SecureRandom.getDefaultPRNG
+  [19] java.security.SecureRandom.<init>
+  [20] java.io.File$TempDirectory.<clinit>
+  [21] java.io.File.createTempFile
+  [22] java.io.File.createTempFile
+  [23] Tsc.loadNativeFromJar
+  [24] Tsc.<clinit>
+  [25] Harness.main
+
+--- 1421675 ns (0.14%), 141 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 1414520 ns (0.14%), 141 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1407182 ns (0.14%), 140 samples
+  [ 0] FieldInfoReader::read_field_info
+  [ 1] InstanceKlass::find_local_field
+  [ 2] InstanceKlass::find_field
+  [ 3] LinkResolver::resolve_field
+  [ 4] LinkResolver::resolve_field_access
+  [ 5] InterpreterRuntime::resolve_get_put
+  [ 6] InterpreterRuntime::resolve_from_cache
+  [ 7] sun.security.util.KnownOIDs.register
+  [ 8] sun.security.util.KnownOIDs.<clinit>
+  [ 9] sun.security.util.SecurityProviderConstants.<clinit>
+  [10] sun.security.provider.SunEntries.addWithAlias
+  [11] sun.security.provider.SunEntries.<init>
+  [12] sun.security.provider.Sun.<init>
+  [13] sun.security.jca.ProviderConfig.getProvider
+  [14] sun.security.jca.ProviderList.getProvider
+  [15] sun.security.jca.ProviderList$3.get
+  [16] sun.security.jca.ProviderList$3.get
+  [17] java.util.AbstractList$Itr.next
+  [18] java.security.SecureRandom.getDefaultPRNG
+  [19] java.security.SecureRandom.<init>
+  [20] java.io.File$TempDirectory.<clinit>
+  [21] java.io.File.createTempFile
+  [22] java.io.File.createTempFile
+  [23] Tsc.loadNativeFromJar
+  [24] Tsc.<clinit>
+  [25] Harness.main
+
+--- 1371031 ns (0.13%), 136 samples
+  [ 0] FieldInfoReader::read_field_info
+  [ 1] InstanceKlass::find_local_field
+  [ 2] InstanceKlass::find_field
+  [ 3] LinkResolver::resolve_field
+  [ 4] LinkResolver::resolve_field_access
+  [ 5] InterpreterRuntime::resolve_get_put
+  [ 6] InterpreterRuntime::resolve_from_cache
+  [ 7] sun.security.util.KnownOIDs.register
+  [ 8] sun.security.util.KnownOIDs.<clinit>
+  [ 9] sun.security.util.SecurityProviderConstants.<clinit>
+  [10] sun.security.provider.SunEntries.addWithAlias
+  [11] sun.security.provider.SunEntries.<init>
+  [12] sun.security.provider.Sun.<init>
+  [13] sun.security.jca.ProviderConfig.getProvider
+  [14] sun.security.jca.ProviderList.getProvider
+  [15] sun.security.jca.ProviderList$3.get
+  [16] sun.security.jca.ProviderList$3.get
+  [17] java.util.AbstractList$Itr.next
+  [18] java.security.SecureRandom.getDefaultPRNG
+  [19] java.security.SecureRandom.<init>
+  [20] java.io.File$TempDirectory.<clinit>
+  [21] java.io.File.createTempFile
+  [22] java.io.File.createTempFile
+  [23] Tsc.loadNativeFromJar
+  [24] Tsc.<clinit>
+  [25] Harness.main
+
+--- 1364456 ns (0.13%), 136 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1331893 ns (0.13%), 133 samples
+  [ 0] LinearScan::allocate_registers
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 1157804 ns (0.11%), 115 samples
+  [ 0] LinearScan::assign_reg_num
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 1092962 ns (0.11%), 109 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1031590 ns (0.10%), 102 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 985646 ns (0.09%), 99 samples
+  [ 0] LinearScanWalker::alloc_free_reg
+  [ 1] LinearScanWalker::activate_current
+  [ 2] LinearScan::allocate_registers
+  [ 3] LinearScan::do_linear_scan
+  [ 4] Compilation::emit_lir
+  [ 5] Compilation::compile_java_method
+  [ 6] Compilation::compile_method
+  [ 7] Compilation::Compilation
+  [ 8] Compiler::compile_method
+  [ 9] CompileBroker::invoke_compiler_on_method
+  [10] CompileBroker::compiler_thread_loop
+  [11] JavaThread::thread_main_inner
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 952156 ns (0.09%), 95 samples
+  [ 0] LinearScan::compute_local_live_sets
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 945861 ns (0.09%), 94 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x00007f2220007000.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 915455 ns (0.09%), 91 samples
+  [ 0] java.lang.invoke.DirectMethodHandle.allocateInstance
+  [ 1] java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+  [ 2] java.lang.invoke.Invokers$Holder.linkToTargetMethod
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 876728 ns (0.08%), 87 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::find_local_field
+  [ 3] InstanceKlass::find_field
+  [ 4] LinkResolver::resolve_field
+  [ 5] LinkResolver::resolve_field_access
+  [ 6] InterpreterRuntime::resolve_get_put
+  [ 7] InterpreterRuntime::resolve_from_cache
+  [ 8] sun.security.util.KnownOIDs.register
+  [ 9] sun.security.util.KnownOIDs.<clinit>
+  [10] sun.security.util.SecurityProviderConstants.<clinit>
+  [11] sun.security.provider.SunEntries.addWithAlias
+  [12] sun.security.provider.SunEntries.<init>
+  [13] sun.security.provider.Sun.<init>
+  [14] sun.security.jca.ProviderConfig.getProvider
+  [15] sun.security.jca.ProviderList.getProvider
+  [16] sun.security.jca.ProviderList$3.get
+  [17] sun.security.jca.ProviderList$3.get
+  [18] java.util.AbstractList$Itr.next
+  [19] java.security.SecureRandom.getDefaultPRNG
+  [20] java.security.SecureRandom.<init>
+  [21] java.io.File$TempDirectory.<clinit>
+  [22] java.io.File.createTempFile
+  [23] java.io.File.createTempFile
+  [24] Tsc.loadNativeFromJar
+  [25] Tsc.<clinit>
+  [26] Harness.main
+
+--- 843301 ns (0.08%), 84 samples
+  [ 0] java.util.Properties$LineReader.readLine
+  [ 1] java.util.Properties.load0
+  [ 2] java.util.Properties.load
+  [ 3] java.security.Security.loadProps
+  [ 4] java.security.Security.initialize
+  [ 5] java.security.Security.lambda$static$0
+  [ 6] java.security.Security$$Lambda.0x80000000b.run
+  [ 7] java.security.AccessController.executePrivileged
+  [ 8] java.security.AccessController.doPrivileged
+  [ 9] java.security.Security.<clinit>
+  [10] sun.security.jca.ProviderList.<init>
+  [11] sun.security.jca.ProviderList$2.run
+  [12] sun.security.jca.ProviderList$2.run
+  [13] java.security.AccessController.executePrivileged
+  [14] java.security.AccessController.doPrivileged
+  [15] sun.security.jca.ProviderList.fromSecurityProperties
+  [16] sun.security.jca.Providers.<clinit>
+  [17] java.security.SecureRandom.getDefaultPRNG
+  [18] java.security.SecureRandom.<init>
+  [19] java.io.File$TempDirectory.<clinit>
+  [20] java.io.File.createTempFile
+  [21] java.io.File.createTempFile
+  [22] Tsc.loadNativeFromJar
+  [23] Tsc.<clinit>
+  [24] Harness.main
+
+--- 813193 ns (0.08%), 81 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::find_local_field
+  [ 3] InstanceKlass::find_field
+  [ 4] LinkResolver::resolve_field
+  [ 5] LinkResolver::resolve_field_access
+  [ 6] InterpreterRuntime::resolve_get_put
+  [ 7] InterpreterRuntime::resolve_from_cache
+  [ 8] sun.security.util.KnownOIDs.register
+  [ 9] sun.security.util.KnownOIDs.<clinit>
+  [10] sun.security.util.SecurityProviderConstants.<clinit>
+  [11] sun.security.provider.SunEntries.addWithAlias
+  [12] sun.security.provider.SunEntries.<init>
+  [13] sun.security.provider.Sun.<init>
+  [14] sun.security.jca.ProviderConfig.getProvider
+  [15] sun.security.jca.ProviderList.getProvider
+  [16] sun.security.jca.ProviderList$3.get
+  [17] sun.security.jca.ProviderList$3.get
+  [18] java.util.AbstractList$Itr.next
+  [19] java.security.SecureRandom.getDefaultPRNG
+  [20] java.security.SecureRandom.<init>
+  [21] java.io.File$TempDirectory.<clinit>
+  [22] java.io.File.createTempFile
+  [23] java.io.File.createTempFile
+  [24] Tsc.loadNativeFromJar
+  [25] Tsc.<clinit>
+  [26] Harness.main
+
+--- 805802 ns (0.08%), 79 samples
+  [ 0] flush_icache_stub
+  [ 1] CodeBuffer::copy_code_to
+  [ 2] nmethod::nmethod
+  [ 3] nmethod::new_nmethod
+  [ 4] ciEnv::register_method
+  [ 5] Compilation::install_code
+  [ 6] Compilation::compile_method
+  [ 7] Compilation::Compilation
+  [ 8] Compiler::compile_method
+  [ 9] CompileBroker::invoke_compiler_on_method
+  [10] CompileBroker::compiler_thread_loop
+  [11] JavaThread::thread_main_inner
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 753742 ns (0.07%), 75 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::find_local_field
+  [ 3] InstanceKlass::find_field
+  [ 4] LinkResolver::resolve_field
+  [ 5] LinkResolver::resolve_field_access
+  [ 6] InterpreterRuntime::resolve_get_put
+  [ 7] InterpreterRuntime::resolve_from_cache
+  [ 8] sun.security.util.KnownOIDs.register
+  [ 9] sun.security.util.KnownOIDs.<clinit>
+  [10] sun.security.util.SecurityProviderConstants.<clinit>
+  [11] sun.security.provider.SunEntries.addWithAlias
+  [12] sun.security.provider.SunEntries.<init>
+  [13] sun.security.provider.Sun.<init>
+  [14] sun.security.jca.ProviderConfig.getProvider
+  [15] sun.security.jca.ProviderList.getProvider
+  [16] sun.security.jca.ProviderList$3.get
+  [17] sun.security.jca.ProviderList$3.get
+  [18] java.util.AbstractList$Itr.next
+  [19] java.security.SecureRandom.getDefaultPRNG
+  [20] java.security.SecureRandom.<init>
+  [21] java.io.File$TempDirectory.<clinit>
+  [22] java.io.File.createTempFile
+  [23] java.io.File.createTempFile
+  [24] Tsc.loadNativeFromJar
+  [25] Tsc.<clinit>
+  [26] Harness.main
+
+--- 751191 ns (0.07%), 75 samples
+  [ 0] LinearScanWalker::free_collect_inactive_fixed
+  [ 1] LinearScanWalker::alloc_free_reg
+  [ 2] LinearScanWalker::activate_current
+  [ 3] LinearScan::allocate_registers
+  [ 4] LinearScan::do_linear_scan
+  [ 5] Compilation::emit_lir
+  [ 6] Compilation::compile_java_method
+  [ 7] Compilation::compile_method
+  [ 8] Compilation::Compilation
+  [ 9] Compiler::compile_method
+  [10] CompileBroker::invoke_compiler_on_method
+  [11] CompileBroker::compiler_thread_loop
+  [12] JavaThread::thread_main_inner
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 722932 ns (0.07%), 72 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 713363 ns (0.07%), 71 samples
+  [ 0] PhaseChaitin::gather_lrg_masks
+  [ 1] PhaseChaitin::Register_Allocate
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 694019 ns (0.07%), 69 samples
+  [ 0] FieldInfoReader::read_field_info
+  [ 1] InstanceKlass::find_local_field
+  [ 2] InstanceKlass::find_field
+  [ 3] Rewriter::scan_method
+  [ 4] Rewriter::rewrite_bytecodes
+  [ 5] Rewriter::Rewriter
+  [ 6] Rewriter::rewrite
+  [ 7] InstanceKlass::link_class_impl
+  [ 8] InstanceKlass::initialize_impl
+  [ 9] LinkResolver::resolve_field
+  [10] LinkResolver::resolve_field_access
+  [11] InterpreterRuntime::resolve_get_put
+  [12] InterpreterRuntime::resolve_from_cache
+  [13] sun.security.util.SecurityProviderConstants.<clinit>
+  [14] sun.security.provider.SunEntries.addWithAlias
+  [15] sun.security.provider.SunEntries.<init>
+  [16] sun.security.provider.Sun.<init>
+  [17] sun.security.jca.ProviderConfig.getProvider
+  [18] sun.security.jca.ProviderList.getProvider
+  [19] sun.security.jca.ProviderList$3.get
+  [20] sun.security.jca.ProviderList$3.get
+  [21] java.util.AbstractList$Itr.next
+  [22] java.security.SecureRandom.getDefaultPRNG
+  [23] java.security.SecureRandom.<init>
+  [24] java.io.File$TempDirectory.<clinit>
+  [25] java.io.File.createTempFile
+  [26] java.io.File.createTempFile
+  [27] Tsc.loadNativeFromJar
+  [28] Tsc.<clinit>
+  [29] Harness.main
+
+--- 691598 ns (0.07%), 69 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 681579 ns (0.07%), 68 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::find_local_field
+  [ 3] InstanceKlass::find_field
+  [ 4] LinkResolver::resolve_field
+  [ 5] LinkResolver::resolve_field_access
+  [ 6] InterpreterRuntime::resolve_get_put
+  [ 7] InterpreterRuntime::resolve_from_cache
+  [ 8] sun.security.util.KnownOIDs.register
+  [ 9] sun.security.util.KnownOIDs.<clinit>
+  [10] sun.security.util.SecurityProviderConstants.<clinit>
+  [11] sun.security.provider.SunEntries.addWithAlias
+  [12] sun.security.provider.SunEntries.<init>
+  [13] sun.security.provider.Sun.<init>
+  [14] sun.security.jca.ProviderConfig.getProvider
+  [15] sun.security.jca.ProviderList.getProvider
+  [16] sun.security.jca.ProviderList$3.get
+  [17] sun.security.jca.ProviderList$3.get
+  [18] java.util.AbstractList$Itr.next
+  [19] java.security.SecureRandom.getDefaultPRNG
+  [20] java.security.SecureRandom.<init>
+  [21] java.io.File$TempDirectory.<clinit>
+  [22] java.io.File.createTempFile
+  [23] java.io.File.createTempFile
+  [24] Tsc.loadNativeFromJar
+  [25] Tsc.<clinit>
+  [26] Harness.main
+
+--- 640943 ns (0.06%), 64 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 2] G1RemSet::scan_heap_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 619968 ns (0.06%), 62 samples
+  [ 0] PhaseLive::compute
+  [ 1] PhaseChaitin::Register_Allocate
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 610959 ns (0.06%), 61 samples
+  [ 0] PhaseChaitin::post_allocate_copy_removal
+  [ 1] PhaseChaitin::Register_Allocate
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 549268 ns (0.05%), 55 samples
+  [ 0] LinearScan::add_use
+  [ 1] LinearScan::build_intervals
+  [ 2] LinearScan::do_linear_scan
+  [ 3] Compilation::emit_lir
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 512433 ns (0.05%), 51 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 491025 ns (0.05%), 49 samples
+  [ 0] LIR_OpVisitState::visit
+  [ 1] LinearScan::compute_local_live_sets
+  [ 2] LinearScan::do_linear_scan
+  [ 3] Compilation::emit_lir
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 480822 ns (0.05%), 48 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 480782 ns (0.05%), 48 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 473183 ns (0.05%), 47 samples
+  [ 0] PhaseChaitin::interfere_with_live
+  [ 1] PhaseChaitin::build_ifg_physical
+  [ 2] PhaseChaitin::Register_Allocate
+  [ 3] Compile::Code_Gen
+  [ 4] Compile::Compile
+  [ 5] C2Compiler::compile_method
+  [ 6] CompileBroker::invoke_compiler_on_method
+  [ 7] CompileBroker::compiler_thread_loop
+  [ 8] JavaThread::thread_main_inner
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 465128 ns (0.04%), 46 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 460683 ns (0.04%), 46 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 453721 ns (0.04%), 45 samples
+  [ 0] PhaseChaitin::Split
+  [ 1] PhaseChaitin::Register_Allocate
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 445999 ns (0.04%), 45 samples
+  [ 0] Matcher::xform
+  [ 1] Matcher::match
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 433517 ns (0.04%), 42 samples
+  [ 0] ElfParser::parseProgramHeaders
+  [ 1] Symbols::parseLibraries
+  [ 2] Profiler::dlopen_hook
+  [ 3] os::Linux::dlopen_helper
+  [ 4] os::dll_load
+  [ 5] JVM_LoadLibrary
+  [ 6] Java_jdk_internal_loader_NativeLibraries_load
+  [ 7] jdk.internal.loader.NativeLibraries.load
+  [ 8] jdk.internal.loader.NativeLibraries$NativeLibraryImpl.open
+  [ 9] jdk.internal.loader.NativeLibraries.loadLibrary
+  [10] jdk.internal.loader.NativeLibraries.loadLibrary
+  [11] java.lang.ClassLoader.loadLibrary
+  [12] java.lang.Runtime.load0
+  [13] java.lang.System.load
+  [14] Tsc.loadNativeFromJar
+  [15] Tsc.<clinit>
+  [16] Harness.main
+
+--- 432439 ns (0.04%), 43 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::find_local_field
+  [ 3] InstanceKlass::find_field
+  [ 4] Rewriter::scan_method
+  [ 5] Rewriter::rewrite_bytecodes
+  [ 6] Rewriter::Rewriter
+  [ 7] Rewriter::rewrite
+  [ 8] InstanceKlass::link_class_impl
+  [ 9] InstanceKlass::initialize_impl
+  [10] LinkResolver::resolve_field
+  [11] LinkResolver::resolve_field_access
+  [12] InterpreterRuntime::resolve_get_put
+  [13] InterpreterRuntime::resolve_from_cache
+  [14] sun.security.util.SecurityProviderConstants.<clinit>
+  [15] sun.security.provider.SunEntries.addWithAlias
+  [16] sun.security.provider.SunEntries.<init>
+  [17] sun.security.provider.Sun.<init>
+  [18] sun.security.jca.ProviderConfig.getProvider
+  [19] sun.security.jca.ProviderList.getProvider
+  [20] sun.security.jca.ProviderList$3.get
+  [21] sun.security.jca.ProviderList$3.get
+  [22] java.util.AbstractList$Itr.next
+  [23] java.security.SecureRandom.getDefaultPRNG
+  [24] java.security.SecureRandom.<init>
+  [25] java.io.File$TempDirectory.<clinit>
+  [26] java.io.File.createTempFile
+  [27] java.io.File.createTempFile
+  [28] Tsc.loadNativeFromJar
+  [29] Tsc.<clinit>
+  [30] Harness.main
+
+--- 422347 ns (0.04%), 42 samples
+  [ 0] PhaseChaitin::build_ifg_physical
+  [ 1] PhaseChaitin::Register_Allocate
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 411947 ns (0.04%), 41 samples
+  [ 0] InstanceKlass::field
+  [ 1] fieldDescriptor::reinitialize
+  [ 2] InstanceKlass::do_local_static_fields
+  [ 3] java_lang_Class::initialize_mirror_fields
+  [ 4] java_lang_Class::allocate_mirror
+  [ 5] java_lang_Class::create_mirror
+  [ 6] ClassFileParser::fill_instance_klass
+  [ 7] ClassFileParser::create_instance_klass
+  [ 8] KlassFactory::create_from_stream
+  [ 9] ClassLoader::load_class
+  [10] SystemDictionary::load_instance_class_impl
+  [11] SystemDictionary::load_instance_class
+  [12] SystemDictionary::resolve_instance_class_or_null
+  [13] SystemDictionary::resolve_or_fail
+  [14] ConstantPool::klass_at_impl
+  [15] ConstantPool::klass_ref_at
+  [16] LinkResolver::resolve_field_access
+  [17] InterpreterRuntime::resolve_get_put
+  [18] InterpreterRuntime::resolve_from_cache
+  [19] sun.security.util.SecurityProviderConstants.<clinit>
+  [20] sun.security.provider.SunEntries.addWithAlias
+  [21] sun.security.provider.SunEntries.<init>
+  [22] sun.security.provider.Sun.<init>
+  [23] sun.security.jca.ProviderConfig.getProvider
+  [24] sun.security.jca.ProviderList.getProvider
+  [25] sun.security.jca.ProviderList$3.get
+  [26] sun.security.jca.ProviderList$3.get
+  [27] java.util.AbstractList$Itr.next
+  [28] java.security.SecureRandom.getDefaultPRNG
+  [29] java.security.SecureRandom.<init>
+  [30] java.io.File$TempDirectory.<clinit>
+  [31] java.io.File.createTempFile
+  [32] java.io.File.createTempFile
+  [33] Tsc.loadNativeFromJar
+  [34] Tsc.<clinit>
+  [35] Harness.main
+
+--- 402731 ns (0.04%), 40 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 392210 ns (0.04%), 39 samples
+  [ 0] DebugInformationRecorder::find_sharable_decode_offset
+  [ 1] DebugInformationRecorder::describe_scope
+  [ 2] LIR_Assembler::record_non_safepoint_debug_info
+  [ 3] LIR_Assembler::process_debug_info
+  [ 4] LIR_Assembler::emit_lir_list
+  [ 5] LIR_Assembler::emit_code
+  [ 6] Compilation::emit_code_body
+  [ 7] Compilation::compile_java_method
+  [ 8] Compilation::compile_method
+  [ 9] Compilation::Compilation
+  [10] Compiler::compile_method
+  [11] CompileBroker::invoke_compiler_on_method
+  [12] CompileBroker::compiler_thread_loop
+  [13] JavaThread::thread_main_inner
+  [14] Thread::call_run
+  [15] thread_native_entry
+  [16] start_thread
+  [17] clone3
+
+--- 392012 ns (0.04%), 39 samples
+  [ 0] PhaseIdealLoop::build_loop_late
+  [ 1] PhaseIdealLoop::build_and_optimize
+  [ 2] Compile::Optimize
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 388463 ns (0.04%), 39 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParCopyClosure<(G1Barrier)1, false>::do_oop
+  [ 2] ClassLoaderData::oops_do
+  [ 3] G1CLDScanClosure::do_cld
+  [ 4] ClassLoaderDataGraph::roots_cld_do
+  [ 5] G1RootProcessor::process_java_roots
+  [ 6] G1RootProcessor::evacuate_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 381925 ns (0.04%), 38 samples
+  [ 0] LIR_OpVisitState::visit
+  [ 1] LinearScan::assign_reg_num
+  [ 2] LinearScan::do_linear_scan
+  [ 3] Compilation::emit_lir
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 381728 ns (0.04%), 38 samples
+  [ 0] PhaseIdealLoop::build_loop_late
+  [ 1] PhaseIdealLoop::build_and_optimize
+  [ 2] PhaseIdealLoop::optimize
+  [ 3] Compile::Optimize
+  [ 4] Compile::Compile
+  [ 5] C2Compiler::compile_method
+  [ 6] CompileBroker::invoke_compiler_on_method
+  [ 7] CompileBroker::compiler_thread_loop
+  [ 8] JavaThread::thread_main_inner
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 377795 ns (0.04%), 38 samples
+  [ 0] IntervalWalker::walk_to
+  [ 1] LinearScan::compute_oop_map
+  [ 2] LinearScan::compute_oop_map
+  [ 3] LinearScan::assign_reg_num
+  [ 4] LinearScan::do_linear_scan
+  [ 5] Compilation::emit_lir
+  [ 6] Compilation::compile_java_method
+  [ 7] Compilation::compile_method
+  [ 8] Compilation::Compilation
+  [ 9] Compiler::compile_method
+  [10] CompileBroker::invoke_compiler_on_method
+  [11] CompileBroker::compiler_thread_loop
+  [12] JavaThread::thread_main_inner
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 365085 ns (0.04%), 36 samples
+  [ 0] java.util.Properties$LineReader.readLine
+  [ 1] java.util.Properties.load0
+  [ 2] java.util.Properties.load
+  [ 3] java.security.Security.loadProps
+  [ 4] java.security.Security.initialize
+  [ 5] java.security.Security.lambda$static$0
+  [ 6] java.security.Security$$Lambda.0x80000000b.run
+  [ 7] java.security.AccessController.executePrivileged
+  [ 8] java.security.AccessController.doPrivileged
+  [ 9] java.security.Security.<clinit>
+  [10] sun.security.jca.ProviderList.<init>
+  [11] sun.security.jca.ProviderList$2.run
+  [12] sun.security.jca.ProviderList$2.run
+  [13] java.security.AccessController.executePrivileged
+  [14] java.security.AccessController.doPrivileged
+  [15] sun.security.jca.ProviderList.fromSecurityProperties
+  [16] sun.security.jca.Providers.<clinit>
+  [17] java.security.SecureRandom.getDefaultPRNG
+  [18] java.security.SecureRandom.<init>
+  [19] java.io.File$TempDirectory.<clinit>
+  [20] java.io.File.createTempFile
+  [21] java.io.File.createTempFile
+  [22] Tsc.loadNativeFromJar
+  [23] Tsc.<clinit>
+  [24] Harness.main
+
+--- 362356 ns (0.03%), 36 samples
+  [ 0] GraphBuilder::iterate_bytecodes_for_block
+  [ 1] GraphBuilder::iterate_all_blocks
+  [ 2] GraphBuilder::GraphBuilder
+  [ 3] IRScope::IRScope
+  [ 4] IR::IR
+  [ 5] Compilation::build_hir
+  [ 6] Compilation::compile_java_method
+  [ 7] Compilation::compile_method
+  [ 8] Compilation::Compilation
+  [ 9] Compiler::compile_method
+  [10] CompileBroker::invoke_compiler_on_method
+  [11] CompileBroker::compiler_thread_loop
+  [12] JavaThread::thread_main_inner
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 361832 ns (0.03%), 36 samples
+  [ 0] PhaseIdealLoop::build_loop_early
+  [ 1] PhaseIdealLoop::build_and_optimize
+  [ 2] PhaseIdealLoop::optimize
+  [ 3] Compile::Optimize
+  [ 4] Compile::Compile
+  [ 5] C2Compiler::compile_method
+  [ 6] CompileBroker::invoke_compiler_on_method
+  [ 7] CompileBroker::compiler_thread_loop
+  [ 8] JavaThread::thread_main_inner
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 361362 ns (0.03%), 36 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 354239 ns (0.03%), 35 samples
+  [ 0] LIR_Assembler::process_debug_info
+  [ 1] LIR_Assembler::emit_lir_list
+  [ 2] LIR_Assembler::emit_code
+  [ 3] Compilation::emit_code_body
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 349277 ns (0.03%), 35 samples
+  [ 0] GlobalValueNumbering::GlobalValueNumbering
+  [ 1] Compilation::build_hir
+  [ 2] Compilation::compile_java_method
+  [ 3] Compilation::compile_method
+  [ 4] Compilation::Compilation
+  [ 5] Compiler::compile_method
+  [ 6] CompileBroker::invoke_compiler_on_method
+  [ 7] CompileBroker::compiler_thread_loop
+  [ 8] JavaThread::thread_main_inner
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 341578 ns (0.03%), 34 samples
+  [ 0] LinearScan::eliminate_spill_moves
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 335278 ns (0.03%), 34 samples
+  [ 0] PhaseOutput::BuildOopMaps
+  [ 1] PhaseOutput::Output
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 330999 ns (0.03%), 33 samples
+  [ 0] NullCheckEliminator::iterate_one
+  [ 1] Optimizer::eliminate_null_checks
+  [ 2] IR::eliminate_null_checks
+  [ 3] Compilation::build_hir
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 320772 ns (0.03%), 32 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 318960 ns (0.03%), 32 samples
+  [ 0] PhaseIdealLoop::build_loop_early
+  [ 1] PhaseIdealLoop::build_and_optimize
+  [ 2] Compile::Optimize
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 310609 ns (0.03%), 31 samples
+  [ 0] Dependencies::assert_evol_method
+  [ 1] Compilation::compile_method
+  [ 2] Compilation::Compilation
+  [ 3] Compiler::compile_method
+  [ 4] CompileBroker::invoke_compiler_on_method
+  [ 5] CompileBroker::compiler_thread_loop
+  [ 6] JavaThread::thread_main_inner
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 310464 ns (0.03%), 31 samples
+  [ 0] Node_Backward_Iterator::next
+  [ 1] PhaseCFG::schedule_late
+  [ 2] PhaseCFG::global_code_motion
+  [ 3] PhaseCFG::do_global_code_motion
+  [ 4] Compile::Code_Gen
+  [ 5] Compile::Compile
+  [ 6] C2Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 310458 ns (0.03%), 31 samples
+  [ 0] I2C/C2I adapters(0xb)
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 310026 ns (0.03%), 31 samples
+  [ 0] LIR_OpVisitState::visit
+  [ 1] LinearScan::build_intervals
+  [ 2] LinearScan::do_linear_scan
+  [ 3] Compilation::emit_lir
+  [ 4] Compilation::compile_java_method
+  [ 5] Compilation::compile_method
+  [ 6] Compilation::Compilation
+  [ 7] Compiler::compile_method
+  [ 8] CompileBroker::invoke_compiler_on_method
+  [ 9] CompileBroker::compiler_thread_loop
+  [10] JavaThread::thread_main_inner
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 300832 ns (0.03%), 30 samples
+  [ 0] LinearScan::compute_global_live_sets
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 298579 ns (0.03%), 30 samples
+  [ 0] RelocIterator::reloc
+  [ 1] CodeBuffer::relocate_code_to
+  [ 2] CodeBuffer::copy_code_to
+  [ 3] nmethod::nmethod
+  [ 4] nmethod::new_nmethod
+  [ 5] ciEnv::register_method
+  [ 6] Compilation::install_code
+  [ 7] Compilation::compile_method
+  [ 8] Compilation::Compilation
+  [ 9] Compiler::compile_method
+  [10] CompileBroker::invoke_compiler_on_method
+  [11] CompileBroker::compiler_thread_loop
+  [12] JavaThread::thread_main_inner
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 291589 ns (0.03%), 29 samples
+  [ 0] PhaseChaitin::add_input_to_liveout
+  [ 1] PhaseChaitin::build_ifg_physical
+  [ 2] PhaseChaitin::Register_Allocate
+  [ 3] Compile::Code_Gen
+  [ 4] Compile::Compile
+  [ 5] C2Compiler::compile_method
+  [ 6] CompileBroker::invoke_compiler_on_method
+  [ 7] CompileBroker::compiler_thread_loop
+  [ 8] JavaThread::thread_main_inner
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 290862 ns (0.03%), 29 samples
+  [ 0] Matcher::find_shared
+  [ 1] Matcher::match
+  [ 2] Compile::Code_Gen
+  [ 3] Compile::Compile
+  [ 4] C2Compiler::compile_method
+  [ 5] CompileBroker::invoke_compiler_on_method
+  [ 6] CompileBroker::compiler_thread_loop
+  [ 7] JavaThread::thread_main_inner
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 283525 ns (0.03%), 28 samples
+  [ 0] LinearScan::number_instructions
+  [ 1] LinearScan::do_linear_scan
+  [ 2] Compilation::emit_lir
+  [ 3] Compilation::compile_java_method
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 280000 ns (0.03%), 23 samples
+  [ 0] mem_cgroup_handle_over_high_[k]
+  [ 1] exit_to_user_mode_loop_[k]
+  [ 2] exit_to_user_mode_prepare_[k]
+  [ 3] syscall_exit_to_user_mode_[k]
+  [ 4] do_syscall_64_[k]
+  [ 5] entry_SYSCALL_64_after_hwframe_[k]
+  [ 6] __futex_abstimed_wait_common
+  [ 7] __GI___pthread_cond_timedwait
+  [ 8] PlatformMonitor::wait
+  [ 9] Monitor::wait
+  [10] CompileQueue::get
+  [11] CompileBroker::compiler_thread_loop
+  [12] JavaThread::thread_main_inner
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 272358 ns (0.03%), 27 samples
+  [ 0] CodeBuffer::finalize_oop_references
+  [ 1] nmethod::new_nmethod
+  [ 2] ciEnv::register_method
+  [ 3] Compilation::install_code
+  [ 4] Compilation::compile_method
+  [ 5] Compilation::Compilation
+  [ 6] Compiler::compile_method
+  [ 7] CompileBroker::invoke_compiler_on_method
+  [ 8] CompileBroker::compiler_thread_loop
+  [ 9] JavaThread::thread_main_inner
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+   578533992   55.60%    57608  Bounce.benchmark
+   163675156   15.73%    16302  Bounce$Ball.bounce
+     9635204    0.93%      959  FieldInfoReader::read_field_info
+     8358168    0.80%      829  Bounce$Ball.<init>
+     6067325    0.58%      604  InstanceKlass::field
+     4177013    0.40%      414  java.util.Arrays.setAll
+     3194690    0.31%      317  Benchmark.innerBenchmarkLoop
+     3166401    0.30%      314  Bounce.lambda$benchmark$0
+     3164444    0.30%      313  InstanceKlass::find_method_index
+     3131022    0.30%      311  som.Random.next
+     2257854    0.22%      225  __memset_avx2_unaligned_erms
+     2160808    0.21%      222  SymbolTable::lookup_shared
+     2144280    0.21%      212  __tls_get_addr
+     2029709    0.20%      203  resource_allocate_bytes
+     1831370    0.18%      183  G1ParScanThreadState::trim_queue_to_threshold
+     1629297    0.16%      162  InstanceKlass::find_local_field
+     1629047    0.16%      162  LinearScan::build_intervals
+     1444877    0.14%      144  java.util.Properties$LineReader.readLine
+     1400037    0.13%      139  java.lang.invoke.DirectMethodHandle.allocateInstance
+     1348699    0.13%      136  __memcpy_avx_unaligned_erms
+     1331893    0.13%      133  LinearScan::allocate_registers
+     1275757    0.12%      127  DebugInformationRecorder::find_sharable_decode_offset
+     1182976    0.11%      118  LIR_OpVisitState::visit
+     1157804    0.11%      115  LinearScan::assign_reg_num
+     1139227    0.11%       95  _raw_spin_unlock_irqrestore_[k]
+     1137391    0.11%      115  I2C/C2I adapters(0xb)
+     1115376    0.11%      111  PhaseChaitin::gather_lrg_masks
+     1028815    0.10%       97  do_user_addr_fault_[k]
+     1009669    0.10%       98  ciObjectFactory::get_metadata
+      985646    0.09%       99  LinearScanWalker::alloc_free_reg
+      964262    0.09%       95  flush_icache_stub
+      952156    0.09%       95  LinearScan::compute_local_live_sets
+      914270    0.09%       91  vmSymbols::find_sid
+      886384    0.09%       73  syscall_enter_from_user_mode_[k]
+      857170    0.08%       81  __vfprintf_internal
+      821923    0.08%       82  LIR_OpVisitState::append
+      816352    0.08%       81  __GI___libc_malloc
+      781886    0.08%       79  pthread_mutex_lock@@GLIBC_2.2.5
+      779858    0.07%       77  Dictionary::find
+      773740    0.07%       77  PhaseIdealLoop::build_loop_late
+      762256    0.07%       76  java.util.concurrent.ConcurrentHashMap.transfer
+      760801    0.07%       76  PhaseLive::compute
+      751191    0.07%       75  LinearScanWalker::free_collect_inactive_fixed
+      727256    0.07%       70  __GI___pthread_mutex_unlock_usercnt
+      717043    0.07%       71  ValueStack::values_do
+      703973    0.07%       71  ___pthread_mutex_trylock
+      689528    0.07%       69  SymbolTable::do_lookup
+      680792    0.07%       68  PhaseIdealLoop::build_loop_early
+      640655    0.06%       64  CodeCache::find_blob
+      632205    0.06%       64  methodHandle::~methodHandle
+      623132    0.06%       62  IndexSetIterator::advance_and_next
+      610959    0.06%       61  PhaseChaitin::post_allocate_copy_removal
+      583480    0.06%       58  PhaseChaitin::interfere_with_live
+      567395    0.05%       57  ConstantPool::klass_at_impl
+      549818    0.05%       56  SymbolTable::lookup_only
+      549268    0.05%       55  LinearScan::add_use
+      546915    0.05%       55  _int_malloc
+      543178    0.05%       54  GraphBuilder::iterate_bytecodes_for_block
+      541745    0.05%       54  GrowableBitMap<ResourceBitMap>::resize
+      539185    0.05%       46  [vdso]
+      531201    0.05%       53  Dict::Insert
+      523780    0.05%       52  constantPoolHandle::~constantPoolHandle
+      503681    0.05%       50  Interval::split_child_at_op_id
+      502189    0.05%       49  ElfParser::parseProgramHeaders
+      498154    0.05%       50  AdapterHandlerLibrary::get_adapter
+      490679    0.05%       49  msort_with_tmp.part.0
+      477453    0.05%       46  Rewriter::scan_method
+      474027    0.05%       48  Assembler::emit_operand_helper
+      471473    0.05%       47  jdk.internal.org.objectweb.asm.Frame.execute
+      465873    0.04%       46  MemAllocator::allocate
+      460887    0.04%       46  InterpreterRuntime::resolve_get_put
+      460144    0.04%       46  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+      453721    0.04%       45  PhaseChaitin::Split
+      450330    0.04%       45  java.util.Arrays.copyOf
+      449073    0.04%       45  java.lang.AbstractStringBuilder.append
+      445999    0.04%       45  Matcher::xform
+      441595    0.04%       44  Dependencies::assert_evol_method
+      430806    0.04%       43  PhaseIdealLoop::build_loop_late_post_work
+      422382    0.04%       42  DebugInformationRecorder::describe_scope
+      422347    0.04%       42  PhaseChaitin::build_ifg_physical
+      421954    0.04%       42  java.lang.String.<init>
+      415126    0.04%       42  CodeHeap::find_blob
+      411470    0.04%       41  jdk.internal.org.objectweb.asm.ByteVector.putUTF8
+      409140    0.04%       41  RelocIterator::reloc
+      403662    0.04%       40  jdk.internal.org.objectweb.asm.MethodWriter.visitVarInsn
+      402602    0.04%       40  PhaseIterGVN::transform_old
+      402545    0.04%       40  MethodLiveness::BasicBlock::compute_gen_kill_single
+      401550    0.04%       40  java.lang.invoke.InvokerBytecodeGenerator.emitStaticInvoke
+      400826    0.04%       40  jdk.internal.org.objectweb.asm.ClassWriter.toByteArray
+      400215    0.04%       40  OopMapStream::find_next
+      395846    0.04%       40  ValueStack::ValueStack
+      391827    0.04%       39  __memcmp_avx2_movbe
+      391599    0.04%       39  Type::cmp
+      385611    0.04%       39  ClassFileParser::parse_method
+      380721    0.04%       38  I2C/C2I adapters(0xbb)
+      380411    0.04%       38  PhaseIdealLoop::build_loop_tree
+      379956    0.04%       38  GraphBuilder::append_with_bci
+      377795    0.04%       38  IntervalWalker::walk_to
+      376770    0.04%       38  Assembler::movq
+      376379    0.04%       33  clear_page_erms_[k]
+      374240    0.04%       37  StringTable::intern
+      373135    0.04%       38  __strlen_avx2
+      354239    0.03%       35  LIR_Assembler::process_debug_info
+      352312    0.03%       35  InstanceKlass::uncached_lookup_method
+      351751    0.03%       35  Relocation::copy_into
+      349277    0.03%       35  GlobalValueNumbering::GlobalValueNumbering
+      341578    0.03%       34  LinearScan::eliminate_spill_moves
+      340944    0.03%       34  LinkResolver::resolve_method
+      339415    0.03%       34  Compile::identify_useful_nodes
+      337628    0.03%       33  java.lang.invoke.LambdaForm.normalizeNames
+      337423    0.03%       34  MethodLiveness::init_basic_blocks
+      335278    0.03%       34  PhaseOutput::BuildOopMaps
+      333077    0.03%       33  InstanceKlass::allocate_instance
+      330999    0.03%       33  NullCheckEliminator::iterate_one
+      329181    0.03%       33  fieldDescriptor::reinitialize
+      322551    0.03%       32  java.lang.invoke.InvokerBytecodeGenerator.clinit
+      321138    0.03%       32  ValueMap::find_insert
+      318736    0.03%       32  java.lang.invoke.InvokerBytecodeGenerator.addMethod
+      317586    0.03%       28  mtree_range_walk_[k]
+      313422    0.03%       31  java.lang.StringLatin1.toLowerCase
+      313023    0.03%       32  SymbolTable::do_add_if_needed
+      312422    0.03%       31  CodeBuffer::finalize_oop_references
+      311576    0.03%       31  PhaseIdealLoop::Dominators
+      310978    0.03%       31  java.lang.invoke.MethodType.makeImpl
+      310464    0.03%       31  Node_Backward_Iterator::next
+      308270    0.03%       31  ConstantPool::name_and_type_ref_index_at
+      301562    0.03%       30  __tls_get_addr@plt
+      301044    0.03%       30  PhaseIdealLoop::split_if_with_blocks
+      301004    0.03%       30  java.lang.invoke.LambdaForm$Name.<init>
+      300948    0.03%       30  MethodLiveness::get_liveness_at
+      300832    0.03%       30  LinearScan::compute_global_live_sets
+      299318    0.03%       30  Rewriter::compute_index_maps
+      296182    0.03%       29  ClassFileParser::parse_constant_pool_entries
+      294140    0.03%       24  mem_cgroup_handle_over_high_[k]
+      293767    0.03%       28  java.lang.invoke.MethodType.insertParameterTypes
+      293575    0.03%       29  java.lang.StringLatin1.toUpperCase
+      292996    0.03%       29  InterpreterRuntime::resolve_invoke
+      292638    0.03%       27  _IO_default_xsputn
+      292180    0.03%       21  __futex_abstimed_wait_common
+      291991    0.03%       29  PhaseIdealLoop::get_ctrl
+      291589    0.03%       29  PhaseChaitin::add_input_to_liveout
+      291395    0.03%       29  PhaseIterGVN::add_users_to_worklist
+      291112    0.03%       29  InterpreterRuntime::ldc
+      290862    0.03%       29  Matcher::find_shared
+      290435    0.03%       29  jdk.internal.org.objectweb.asm.SymbolTable.addConstantMemberReference
+      289418    0.03%       29  Assembler::locate_operand
+      287980    0.03%       29  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ul>::oop_access_barrier
+      284680    0.03%       23  get_page_from_freelist_[k]
+      283525    0.03%       28  LinearScan::number_instructions
+      281271    0.03%       28  jdk.internal.org.objectweb.asm.Type.getArgumentsAndReturnSizes
+      281120    0.03%       28  InterpreterRuntime::resolve_from_cache
+      280789    0.03%       28  NodeHash::hash_find_insert
+      279933    0.03%       28  LinearScan::add_def
+      279850    0.03%       28  PhaseLive::add_liveout
+      279170    0.03%       28  do_lookup_x
+      274506    0.03%       28  inflate_fast
+      273849    0.03%       23  __clock_gettime_2
+      272084    0.03%       27  LIR_Assembler::emit_lir_list
+      271268    0.03%       23  kmem_cache_alloc_[k]
+      271153    0.03%       27  PhaseChaitin::merge_multidefs
+      270628    0.03%       27  Node::Node
+      270270    0.03%       27  java.lang.invoke.MemberName.<init>
+      269797    0.03%       26  smp_call_function_single_[k]
+      268134    0.03%       27  __strchr_avx2
+      266599    0.03%       26  TypeArrayKlass::allocate_common
+      265517    0.03%       27  ClassFileParser::parse_constant_pool
+      262602    0.03%       26  ciMethodData::load_data
+      262345    0.03%       26  java.lang.invoke.MethodTypeForm.<init>
+      262269    0.03%       26  java.lang.invoke.MemberName$Factory.resolve
+      261536    0.03%       27  metaspace::MetaspaceArena::allocate_inner
+      261433    0.03%       26  ciMethodBlocks::do_analysis
+      259933    0.02%       26  BlockBegin::iterate_preorder
+      259234    0.02%       26  Matcher::Label_Root
+      258509    0.02%       26  LinearScan::use_kind_of_input_operand
+      258181    0.02%       26  BlockBegin::try_merge
+      254255    0.02%       24  __strchrnul_avx2
+      252750    0.02%       25  java.lang.invoke.MethodType.checkPtypes
+      252711    0.02%       25  jdk.internal.org.objectweb.asm.Frame.push
+      252098    0.02%       25  LinkInfo::LinkInfo
+      252089    0.02%       25  jdk.internal.org.objectweb.asm.SymbolTable.addConstantUtf8Reference
+      251982    0.02%       25  java.lang.String.indexOf
+      251804    0.02%       25  methodHandle::operator=
+      251374    0.02%       25  jdk.internal.org.objectweb.asm.Frame.pop
+      251285    0.02%       25  ciMethodData::bci_to_data
+      250617    0.02%       25  PhaseCCP::transform
+      250289    0.02%       25  LinearScan::sort_intervals_before_allocation
+      243419    0.02%       24  JavaThread::pd_last_frame
+      242102    0.02%       24  LIRGenerator::state_for
+      241400    0.02%       20  futex_wake_[k]
+      241337    0.02%       24  MethodData::compute_allocation_size_in_bytes
+      241179    0.02%       24  ArgumentSizeComputer::ArgumentSizeComputer
+      240807    0.02%       24  jdk.internal.org.objectweb.asm.SymbolTable.addType
+      240788    0.02%       24  vframeStream::vframeStream
+      240713    0.02%       24  Bounce.verifyResult
+      240084    0.02%       24  sun.security.util.KnownOIDs.register
+      240004    0.02%       24  RelocIterator::initialize
+      237498    0.02%       24  inflate
+      235845    0.02%       17  syscall_exit_work_[k]
+      232088    0.02%       23  Label::patch_instructions
+      231838    0.02%       23  java.lang.invoke.DirectMethodHandle.makePreparedLambdaForm

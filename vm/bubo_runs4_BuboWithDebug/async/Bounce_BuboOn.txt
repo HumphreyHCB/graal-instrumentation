@@ -1,0 +1,1188 @@
+--- Execution profile ---
+Total samples       : 8913545
+
+--- 8639184383 ns (9.64%), 860298 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 8295952762 ns (9.26%), 826139 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 6848712808 ns (7.65%), 681878 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 5661403623 ns (6.32%), 563292 samples
+  [ 0] java.lang.String.hashCode
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 5645068304 ns (6.30%), 562173 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 5500787697 ns (6.14%), 547793 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 5062772250 ns (5.65%), 504177 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 4586228406 ns (5.12%), 456701 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 4507900728 ns (5.03%), 448923 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 4401322113 ns (4.91%), 438305 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 4057845224 ns (4.53%), 404077 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 3550906004 ns (3.96%), 353599 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2575353444 ns (2.87%), 256478 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2435788216 ns (2.72%), 242569 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2237703687 ns (2.50%), 222872 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2144689039 ns (2.39%), 213581 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1339872347 ns (1.50%), 132369 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 1086203875 ns (1.21%), 107298 samples
+  [ 0] Bounce.lambda$benchmark$0
+  [ 1] Bounce$$Lambda.0x0000000058044200.apply
+  [ 2] java.util.Arrays.setAll
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 822829415 ns (0.92%), 81297 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 721873532 ns (0.81%), 71870 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 721385517 ns (0.81%), 71832 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 715547477 ns (0.80%), 71252 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 701748198 ns (0.78%), 69854 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 605809179 ns (0.68%), 60311 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 527061266 ns (0.59%), 52474 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 412086957 ns (0.46%), 40719 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 386592699 ns (0.43%), 38484 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 351404325 ns (0.39%), 34731 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 283814427 ns (0.32%), 28264 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 280036402 ns (0.31%), 27865 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 276550261 ns (0.31%), 27545 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 263624327 ns (0.29%), 26257 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 236726284 ns (0.26%), 23568 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 229099425 ns (0.26%), 22805 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 216520615 ns (0.24%), 21549 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 210000690 ns (0.23%), 20748 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 207634516 ns (0.23%), 20514 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 206678900 ns (0.23%), 20416 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 205745914 ns (0.23%), 20328 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 201772716 ns (0.23%), 19941 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 201342920 ns (0.22%), 19892 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 182121076 ns (0.20%), 18131 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 158731764 ns (0.18%), 15779 samples
+  [ 0] java.lang.Integer.valueOf
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 147616450 ns (0.16%), 14693 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 147529059 ns (0.16%), 14691 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 144048510 ns (0.16%), 14344 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 61465065 ns (0.07%), 6072 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 58972266 ns (0.07%), 5818 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 36259920 ns (0.04%), 3610 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 35469774 ns (0.04%), 3530 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 28798598 ns (0.03%), 2852 samples
+  [ 0] Bounce.verifyResult
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 28441589 ns (0.03%), 2816 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 27020874 ns (0.03%), 2688 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 23756165 ns (0.03%), 2366 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 23122343 ns (0.03%), 2301 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 22620083 ns (0.03%), 2251 samples
+  [ 0] java.lang.String.hashCode
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 21958710 ns (0.02%), 2186 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 20324019 ns (0.02%), 2024 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 18611564 ns (0.02%), 1853 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 18208602 ns (0.02%), 1813 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 17376325 ns (0.02%), 1721 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 17108534 ns (0.02%), 1703 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 15546048 ns (0.02%), 1548 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 14087369 ns (0.02%), 1392 samples
+  [ 0] jdk.internal.misc.Unsafe.allocateInstance
+  [ 1] java.lang.invoke.DirectMethodHandle.allocateInstance
+  [ 2] java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+  [ 3] java.lang.invoke.Invokers$Holder.linkToTargetMethod
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 12614567 ns (0.01%), 1256 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 2] G1RemSet::scan_heap_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 11109122 ns (0.01%), 1106 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 10646283 ns (0.01%), 1052 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 10068624 ns (0.01%), 1002 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 9509209 ns (0.01%), 946 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 9395202 ns (0.01%), 936 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 8897652 ns (0.01%), 802 samples
+  [ 0] G1HeapRegionManager::par_iterate
+  [ 1] G1PrepareEvacuationTask::work
+  [ 2] WorkerThread::run
+  [ 3] Thread::call_run
+  [ 4] thread_native_entry
+  [ 5] start_thread
+  [ 6] clone3
+
+--- 7642466 ns (0.01%), 759 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 6497116 ns (0.01%), 642 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 5225770 ns (0.01%), 520 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParCopyClosure<(G1Barrier)1, false>::do_oop
+  [ 2] ClassLoaderData::oops_do
+  [ 3] G1CLDScanClosure::do_cld
+  [ 4] ClassLoaderDataGraph::roots_cld_do
+  [ 5] G1RootProcessor::process_java_roots
+  [ 6] G1RootProcessor::evacuate_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 5142765 ns (0.01%), 508 samples
+  [ 0] Bounce$Ball.<init>
+  [ 1] Bounce.lambda$benchmark$0
+  [ 2] Bounce$$Lambda.0x0000000058044200.apply
+  [ 3] java.util.Arrays.setAll
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 4936279 ns (0.01%), 487 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 4325831 ns (0.00%), 429 samples
+  [ 0] G1ParScanThreadState::steal_and_trim_queue
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 4084311 ns (0.00%), 403 samples
+  [ 0] Bounce.lambda$benchmark$0
+  [ 1] Bounce$$Lambda.0x0000000058044200.apply
+  [ 2] java.util.Arrays.setAll
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 3968883 ns (0.00%), 393 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 3957751 ns (0.00%), 390 samples
+  [ 0] som.Random.next
+  [ 1] Bounce$Ball.<init>
+  [ 2] Bounce.lambda$benchmark$0
+  [ 3] Bounce$$Lambda.0x0000000058044200.apply
+  [ 4] java.util.Arrays.setAll
+  [ 5] Bounce.benchmark
+  [ 6] Benchmark.innerBenchmarkLoop
+  [ 7] Run.measure
+  [ 8] Run.doRuns
+  [ 9] Run.runBenchmark
+  [10] Harness.main
+
+--- 3371851 ns (0.00%), 335 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 3335945 ns (0.00%), 332 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 3306779 ns (0.00%), 326 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 3191653 ns (0.00%), 239 samples
+  [ 0] void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+  [ 1] WorkerThread::run
+  [ 2] Thread::call_run
+  [ 3] thread_native_entry
+  [ 4] start_thread
+  [ 5] clone3
+
+--- 3118451 ns (0.00%), 310 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 3018051 ns (0.00%), 300 samples
+  [ 0] java.lang.Math.abs
+  [ 1] Bounce$Ball.bounce
+  [ 2] Bounce.benchmark
+  [ 3] Benchmark.innerBenchmarkLoop
+  [ 4] Run.measure
+  [ 5] Run.doRuns
+  [ 6] Run.runBenchmark
+  [ 7] Harness.main
+
+--- 2799827 ns (0.00%), 279 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 2765794 ns (0.00%), 221 samples
+  [ 0] __futex_abstimed_wait_common
+  [ 1] __new_sem_wait_slow64.constprop.0
+  [ 2] PosixSemaphore::wait
+  [ 3] WorkerThread::run
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+  [ 7] clone3
+
+--- 2720360 ns (0.00%), 254 samples
+  [ 0] __memset_avx2_unaligned_erms
+  [ 1] G1RemSetScanState::G1ClearCardTableTask::do_work
+  [ 2] G1BatchedTask::work
+  [ 3] WorkerThread::run
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+  [ 7] clone3
+
+--- 2692215 ns (0.00%), 268 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 3] G1RemSet::scan_heap_roots
+  [ 4] G1EvacuateRegionsTask::scan_roots
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 2553554 ns (0.00%), 253 samples
+  [ 0] java.lang.Integer.valueOf
+  [ 1] Bounce.benchmark
+  [ 2] [unknown]
+
+--- 2368619 ns (0.00%), 235 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 2353102 ns (0.00%), 169 samples
+  [ 0] blkcg_maybe_throttle_current_[k]
+  [ 1] exit_to_user_mode_loop_[k]
+  [ 2] exit_to_user_mode_prepare_[k]
+  [ 3] syscall_exit_to_user_mode_[k]
+  [ 4] do_syscall_64_[k]
+  [ 5] entry_SYSCALL_64_after_hwframe_[k]
+  [ 6] __futex_abstimed_wait_common
+  [ 7] __new_sem_wait_slow64.constprop.0
+  [ 8] PosixSemaphore::wait
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2296534 ns (0.00%), 169 samples
+  [ 0] mem_cgroup_handle_over_high_[k]
+  [ 1] exit_to_user_mode_loop_[k]
+  [ 2] exit_to_user_mode_prepare_[k]
+  [ 3] syscall_exit_to_user_mode_[k]
+  [ 4] do_syscall_64_[k]
+  [ 5] entry_SYSCALL_64_after_hwframe_[k]
+  [ 6] __futex_abstimed_wait_common
+  [ 7] __new_sem_wait_slow64.constprop.0
+  [ 8] PosixSemaphore::wait
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2273878 ns (0.00%), 178 samples
+  [ 0] G1CodeRootSet::reset_table_scanner
+  [ 1] G1HeapRegionRemSet::reset_table_scanner
+  [ 2] G1RemSet::prepare_region_for_scan
+  [ 3] G1PrepareEvacuationTask::G1PrepareRegionsClosure::do_heap_region
+  [ 4] G1HeapRegionManager::par_iterate
+  [ 5] G1PrepareEvacuationTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 2242522 ns (0.00%), 223 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 2178672 ns (0.00%), 215 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 1987464 ns (0.00%), 198 samples
+  [ 0] Bounce$Ball.bounce
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 1920805 ns (0.00%), 192 samples
+  [ 0] void G1ScanCardClosure::do_oop_work<narrowOop>
+  [ 1] void OopOopIterateDispatch<G1ScanCardClosure>::Table::oop_oop_iterate<InstanceMirrorKlass, narrowOop>
+  [ 2] G1ScanHRForRegionClosure::scan_heap_roots
+  [ 3] G1RemSet::scan_heap_roots
+  [ 4] G1EvacuateRegionsTask::scan_roots
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 1800273 ns (0.00%), 133 samples
+  [ 0] exit_to_user_mode_loop_[k]
+  [ 1] exit_to_user_mode_prepare_[k]
+  [ 2] syscall_exit_to_user_mode_[k]
+  [ 3] do_syscall_64_[k]
+  [ 4] entry_SYSCALL_64_after_hwframe_[k]
+  [ 5] __futex_abstimed_wait_common
+  [ 6] __new_sem_wait_slow64.constprop.0
+  [ 7] PosixSemaphore::wait
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+ 51488998632   57.48%  5127398  Bounce$Ball.bounce
+ 23659813443   26.41%  2355654  Bounce.benchmark
+  5684374679    6.35%   565578  java.lang.String.hashCode
+  2873426837    3.21%   286088  java.lang.Math.abs
+  2235817676    2.50%   220893  Bounce$Ball.<init>
+  1090318417    1.22%   107704  Bounce.lambda$benchmark$0
+  1034313579    1.15%   102187  java.util.Arrays.setAll
+   645648454    0.72%    63794  som.Random.next
+   161927772    0.18%    16096  java.lang.Integer.valueOf
+    52933460    0.06%     5242  Benchmark.innerBenchmarkLoop
+    29333990    0.03%     2905  Bounce.verifyResult
+    28149028    0.03%     2798  G1ParScanThreadState::trim_queue_to_threshold
+    14198786    0.02%     1403  jdk.internal.misc.Unsafe.allocateInstance
+     8897652    0.01%      802  G1HeapRegionManager::par_iterate
+     7190393    0.01%      695  do_user_addr_fault_[k]
+     7029388    0.01%      665  __memset_avx2_unaligned_erms
+     6380815    0.01%      503  _raw_spin_unlock_irqrestore_[k]
+     6088301    0.01%      606  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+     5907274    0.01%      461  __futex_abstimed_wait_common
+     4527148    0.01%      450  G1ParScanThreadState::steal_and_trim_queue
+     4095912    0.00%      414  java.lang.AbstractStringBuilder* java.lang.AbstractStringBuilder::append
+     4092540    0.00%      366  [vdso]
+     3960595    0.00%      286  blkcg_maybe_throttle_current_[k]
+     3940029    0.00%      315  syscall_enter_from_user_mode_[k]
+     3759335    0.00%      275  mem_cgroup_handle_over_high_[k]
+     3191653    0.00%      239  void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+     2771185    0.00%      206  exit_to_user_mode_loop_[k]
+     2649297    0.00%      265  int org.graalvm.collections.EconomicMapImpl::findLinear
+     2579214    0.00%      183  __audit_syscall_exit_[k]
+     2499647    0.00%      224  __tls_get_addr
+     2401596    0.00%      239  void com.oracle.svm.core.genscavenge.GreyToBlackObjRefVisitor::visitObjectReferences
+     2331306    0.00%      165  __get_user_8_[k]
+     2315109    0.00%      231  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator::forward
+     2273878    0.00%      178  G1CodeRootSet::reset_table_scanner
+     2246840    0.00%      225  java.lang.String* com.oracle.svm.core.util.Utf8::utf8ToString
+     2145742    0.00%      216  void com.oracle.svm.core.graal.jdk.SubstrateArraycopySnippets::doArraycopy
+     2041942    0.00%      178  G1FromCardCache::clear
+     1971216    0.00%      197  void G1ScanCardClosure::do_oop_work<narrowOop>
+     1952139    0.00%      195  InstanceKlass::find_method_index
+     1928203    0.00%      196  void com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsForward
+     1894658    0.00%      189  void com.oracle.svm.core.genscavenge.GreyToBlackObjectVisitor::visitObject
+     1878599    0.00%      181  next_uptodate_page_[k]
+     1851866    0.00%      187  void com.oracle.svm.core.c.function.CEntryPointSetup$LeaveEpilogue::leave
+     1842155    0.00%      185  int LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeIdAccessor::getNodeId
+     1811216    0.00%      164  clear_page_erms_[k]
+     1718027    0.00%      139  G1HeapRegionClaimer::claim_region
+     1717901    0.00%      167  __GI___libc_malloc
+     1599961    0.00%      160  void java.util.ArrayList::add
+     1556121    0.00%      123  G1ConcurrentMark::clear_statistics
+     1539089    0.00%      154  SpinPause
+     1499901    0.00%      150  void LibGraalClassLoader_6d026701::jdk.graal.compiler.lir.LIRIntrospection::visitEach
+     1492445    0.00%      122  __clock_gettime_2
+     1469369    0.00%      126  __new_sem_wait_slow64.constprop.0
+     1453316    0.00%      144  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeUsageIterator::advance
+     1433552    0.00%      142  pthread_mutex_lock@@GLIBC_2.2.5
+     1412405    0.00%      144  java.lang.Object* com.oracle.svm.core.graal.jdk.SubstrateObjectCloneSnippets::doClone
+     1403542    0.00%      143  void com.oracle.svm.core.UnmanagedMemoryUtil::copyForward
+     1334766    0.00%      133  boolean org.graalvm.collections.EconomicMapImpl::compareKeys
+     1330930    0.00%      153  Run.measure
+     1326926    0.00%      121  G1ParCopyClosure<(G1Barrier)0, false>::do_oop
+     1301586    0.00%      133  __vfprintf_internal
+     1293915    0.00%      116  __list_del_entry_valid_[k]
+     1270712    0.00%      131  __memcpy_avx_unaligned_erms
+     1249360    0.00%      127  SymbolTable::lookup_shared
+     1240164    0.00%      111  futex_wake_[k]
+     1238796    0.00%      121  MemAllocator::mem_allocate_inside_tlab_slow
+     1211065    0.00%      121  void sun.security.provider.SHA2::implCompress0
+     1207282    0.00%      123  ConstantPool::name_and_type_ref_index_at
+     1190917    0.00%      117  __memmove_sse2_unaligned_erms
+     1168586    0.00%      116  java.lang.String.getBytes
+     1157385    0.00%      116  sun.nio.cs.UTF_8$Encoder.encodeArrayLoop
+     1149360    0.00%      113  G1CollectedHeap::allocate_new_tlab
+     1148027    0.00%      115  void OopOopIterateDispatch<G1ScanCardClosure>::Table::oop_oop_iterate<InstanceMirrorKlass, narrowOop>
+     1144417    0.00%      114  java.io.BufferedWriter.write
+     1132721    0.00%      114  boolean com.oracle.svm.core.code.IsolateEnterStub::JNIFunctions_ExceptionCheck_wwAepBoMjPEWDN8NR0UL5D
+     1131837    0.00%      111  ThreadLocalAllocBuffer::fill
+     1129744    0.00%      113  java.lang.Object* org.graalvm.collections.EconomicMapImpl::put
+     1125547    0.00%      111  G1CodeRootSet::nmethods_do
+     1121583    0.00%      112  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeMap::set
+     1116648    0.00%      112  int org.graalvm.collections.EconomicMapImpl::getHashIndex
+     1093635    0.00%       94  TruncatedSeq::add
+     1091450    0.00%       90  WorkerThread::run
+     1091356    0.00%      107  _int_malloc
+     1048108    0.00%      105  readConfiguration0
+     1047369    0.00%      103  java.lang.String$$StringConcat.0x0000000058046400.concat
+     1044369    0.00%      104  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::getAndAdvanceInput
+     1043097    0.00%       94  mtree_range_walk_[k]
+     1033538    0.00%       76  __pthread_disable_asynccancel
+     1025338    0.00%      102  java.util.concurrent.ConcurrentHashMap.putVal
+     1015737    0.00%      100  CardTableBarrierSet::on_slowpath_allocation_exit
+     1011831    0.00%      101  LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.FixedNode* LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.AbstractBeginNode$BlockNodeIterator::next
+     1011728    0.00%       94  frame::oops_interpreted_do
+     1011364    0.00%       92  memchr_[k]
+      991999    0.00%       99  java.lang.Object* java.util.ArrayList$Itr::next
+      991812    0.00%       97  G1CollectedHeap::fill_with_dummy_object
+      990199    0.00%      100  void com.oracle.svm.core.JavaMemoryUtil::copyPrimitiveArrayForward
+      980340    0.00%       98  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeMap::get
+      961529    0.00%       66  G1DirtyCardQueueSet::concatenate_log_and_stats
+      960537    0.00%       96  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::scheduleEarliestIterative
+      953018    0.00%       95  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.options.OptionValues::get
+      952518    0.00%       70  futex_q_lock_[k]
+      945931    0.00%       94  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::forward
+      945783    0.00%       95  int java.nio.Buffer::nextGetIndex
+      942716    0.00%       94  sun.nio.cs.StreamEncoder.implWrite
+      938631    0.00%       94  jdk.internal.util.DecimalDigits.uncheckedGetCharsLatin1
+      932434    0.00%       92  InstanceKlass::allocate_objArray
+      928773    0.00%       94  org.graalvm.nativeimage.ObjectHandle com.oracle.svm.core.handles.ThreadLocalHandles::tryCreateNonNull
+      919663    0.00%       90  G1HeapRegionManager::allocate_free_region
+      914972    0.00%       89  jdk.internal.util.DecimalDigits.stringSize
+      912123    0.00%       90  java.util.concurrent.ConcurrentHashMap.transfer
+      908949    0.00%       90  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.NodeIterable* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::inputs
+      894642    0.00%       73  get_page_from_freelist_[k]
+      891829    0.00%       61  syscall_exit_work_[k]
+      888848    0.00%       89  java.lang.StringCoding.implEncodeAsciiArray
+      864370    0.00%       86  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator::dropDeleted
+      863673    0.00%       87  java.util.HashMap$Node* java.util.HashMap::getNode
+      855299    0.00%       44  G1CollectedHeap::prepare_for_mutator_after_young_collection
+      841446    0.00%       80  G1RebuildFreeListTask::work
+      841231    0.00%       84  void LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.util.CompilationAlarm::checkProgress
+      839573    0.00%       82  __GI___pthread_mutex_unlock_usercnt
+      836681    0.00%       76  os::elapsed_counter
+      833424    0.00%       76  get_mem_cgroup_from_mm_[k]
+      832423    0.00%       82  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<598116ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 598116ul>::oop_access_barrier
+      831483    0.00%       82  ClassLoaderData::holder
+      828625    0.00%       83  int org.graalvm.collections.EconomicMapImpl::findHash
+      825429    0.00%       80  ___pthread_mutex_trylock
+      824905    0.00%       81  G1Allocator::unsafe_max_tlab_alloc
+      811352    0.00%       81  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.BasePhase::apply
+      805252    0.00%       79  I2C/C2I adapters(0xb)
+      801804    0.00%       80  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.CanonicalizerPhase::tryCanonicalize
+      799191    0.00%       69  CodeCache::find_blob
+      797229    0.00%       58  rseq_ip_fixup_[k]
+      791708    0.00%       74  ThreadLocalAllocBuffer::retire
+      791555    0.00%       81  G1ParScanThreadState::copy_to_survivor_space
+      788200    0.00%       79  java.lang.StringLatin1.inflate
+      787012    0.00%       74  CodeHeap::find_blob
+      780366    0.00%       78  long LibGraalClassLoader_6d026701::jdk.graal.compiler.hotspot.meta.Bubo.BuboNativeBuffers::readCyclesAt
+      775232    0.00%       79  byte[]* java.util.Arrays::copyOfRange
+      774779    0.00%       77  boolean java.util.RegularEnumSet::contains
+      772177    0.00%       77  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.NodePredicates$PositiveTypePredicate::apply
+      770105    0.00%       56  G1MergeHeapRootsTask::G1ClearBitmapClosure::do_heap_region
+      768141    0.00%       62  _raw_spin_lock_[k]
+      765940    0.00%       78  _int_free
+      764869    0.00%       67  Rdtsc::elapsed_counter
+      751773    0.00%       75  _IO_default_xsputn
+      744511    0.00%       65  do_futex_[k]
+      740828    0.00%       74  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.CanonicalizerPhase::processNode
+      733806    0.00%       83  java.io.PrintStream.writeln
+      726229    0.00%       73  java.lang.Object* org.graalvm.collections.EconomicMapImpl::get
+      720851    0.00%       72  java.lang.Object[]* java.util.ArrayList::grow
+      719227    0.00%       72  JVMCIEnv::has_pending_exception
+      713241    0.00%       62  __x64_sys_futex_[k]
+      710911    0.00%       55  plist_add_[k]
+      710625    0.00%       71  java.lang.Object* java.util.concurrent.ConcurrentHashMap::get
+      709607    0.00%       70  G1HeapRegionRemSet::clear_fcc
+      700075    0.00%       70  java.lang.String.getChars
+      695239    0.00%       53  __radix_tree_lookup_[k]
+      694717    0.00%       65  filldir64_[k]
+      694316    0.00%       69  java.lang.AbstractStringBuilder.append
+      688044    0.00%       70  LibGraalClassLoader_6d026701::jdk.vm.ci.meta.ResolvedJavaMethod* LibGraalClassLoader_6d026701::jdk.graal.compiler.replacements.SnippetTemplate$AbstractTemplates::findMethod
+      687378    0.00%       69  org.graalvm.word.Pointer com.oracle.svm.core.genscavenge.TlabSupport::allocateRawMemoryInTlabSlow
+      686631    0.00%       69  char java.lang.String::charAt
+      679863    0.00%       68  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::sortNodesLatestWithinBlock
+      679472    0.00%       68  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeBitMap::isMarked
+      679379    0.00%       68  int org.graalvm.collections.EconomicMapImpl::find
+      667303    0.00%       65  ObjAllocator::initialize
+      665776    0.00%       66  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::getNodeInfo
+      664501    0.00%       72  sun.nio.cs.StreamEncoder.writeBytes
+      661766    0.00%       66  void java.util.ArrayDeque::addLast
+      660851    0.00%       73  __strlen_avx2
+      659756    0.00%       68  void com.oracle.svm.core.monitor.MultiThreadedMonitorSupport::monitorEnter
+      653964    0.00%       65  G1GCPhaseTimes::reset
+      650184    0.00%       65  char java.lang.StringLatin1::charAt
+      646126    0.00%       65  boolean java.lang.String::equals
+      644189    0.00%       62  Mutex::lock_without_safepoint_check
+      640863    0.00%       50  update_sg_lb_stats_[k]
+      639648    0.00%       47  __rseq_handle_notify_resume_[k]
+      635202    0.00%       50  FreeCSetClosure::do_heap_region
+      617720    0.00%       52  Method::bcp_from
+      612657    0.00%       61  long LibGraalClassLoader_6d026701::jdk.graal.compiler.serviceprovider.GlobalAtomicLong::getAddress
+      612272    0.00%       63  HandleMark::initialize
+      611481    0.00%       53  blk_cgroup_congested_[k]
+      611218    0.00%       58  __handle_mm_fault_[k]
+      609242    0.00%       61  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.TypedGraphNodeIterator::forward
+      601070    0.00%       60  java.lang.Object* java.util.concurrent.ConcurrentHashMap::computeIfAbsent
+      600574    0.00%       60  LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$MicroBlock* LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::processInputs
+      598845    0.00%       60  Dictionary::find_class
+      597617    0.00%       60  jdk.internal.util.ArraysSupport.unsignedHashCode
+      591129    0.00%       58  G1CollectionSet::add_eden_region
+      589898    0.00%       47  JNIHandleBlock::oops_do
+      582961    0.00%       54  CompositeElapsedCounterSource::now
+      581204    0.00%       58  java.util.Properties$LineReader.readLine
+      571690    0.00%       55  java.lang.StringConcatHelper.stringSize
+      571635    0.00%       58  LibGraalClassLoader_6d026701::jdk.vm.ci.code.CallingConvention* LibGraalClassLoader_6d026701::jdk.vm.ci.hotspot.amd64.AMD64HotSpotRegisterConfig::callingConvention
+      570766    0.00%       57  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeBitMap::mark
+      569930    0.00%       58  Run.printResult
+      568313    0.00%       57  ConstantPool::klass_at_impl
+      566142    0.00%       49  G1CollectedHeap::par_iterate_regions_array
+      563931    0.00%       55  MemAllocator::allocate
+      562915    0.00%       56  java.lang.Object* java.util.ArrayList::get

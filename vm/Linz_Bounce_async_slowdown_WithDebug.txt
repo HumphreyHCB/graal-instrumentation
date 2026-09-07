@@ -1,0 +1,1607 @@
+--- Execution profile ---
+Total samples       : 16629006
+skipped             : 13338 (0.08%)
+
+--- 132407576814 ns (79.27%), 13182552 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 14719337201 ns (8.81%), 1460450 samples
+  [ 0] SpaceMangler::mangle_region
+  [ 1] G1CollectedHeap::free_region
+  [ 2] FreeCSetClosure::do_heap_region
+  [ 3] G1CollectedHeap::par_iterate_regions_array
+  [ 4] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 5] G1BatchedTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 8894043807 ns (5.32%), 881131 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 2761713166 ns (1.65%), 274976 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 2680247767 ns (1.60%), 266850 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker0
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 1372758117 ns (0.82%), 136104 samples
+  [ 0] MemAllocator::mem_allocate_inside_tlab_slow
+  [ 1] MemAllocator::mem_allocate
+  [ 2] MemAllocator::allocate
+  [ 3] InstanceKlass::allocate_instance
+  [ 4] JVMCIRuntime::new_instance_or_null
+  [ 5] Stub<new_instance_or_null(KlassPointer)Object>
+  [ 6] java.util.Arrays.setAll
+  [ 7] Bounce.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 1358094846 ns (0.81%), 134797 samples
+  [ 0] MemAllocator::mem_allocate_inside_tlab_slow
+  [ 1] MemAllocator::mem_allocate
+  [ 2] MemAllocator::allocate
+  [ 3] InstanceKlass::allocate_objArray
+  [ 4] oopFactory::new_objArray
+  [ 5] JVMCIRuntime::new_array_or_null
+  [ 6] Stub<new_array_or_null(KlassPointer,int)Object>
+  [ 7] Bounce.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 547933456 ns (0.33%), 54554 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 188772746 ns (0.11%), 18684 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker3
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 110525538 ns (0.07%), 10949 samples
+  [ 0] java.util.Arrays.setAll
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 78406552 ns (0.05%), 7684 samples
+  [ 0] MarkBitMap::get_next_marked_addr
+  [ 1] G1MergeHeapRootsTask::G1ClearBitmapClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1MergeHeapRootsTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 67420953 ns (0.04%), 6710 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 56232175 ns (0.03%), 5564 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 45061660 ns (0.03%), 4469 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker0
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker4
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker4
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 39536373 ns (0.02%), 3910 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 37352707 ns (0.02%), 3687 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 25934952 ns (0.02%), 2582 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 25253038 ns (0.02%), 2501 samples
+  [ 0] Bounce.lambda$benchmark$0
+  [ 1] Bounce$$Lambda.0x0000000027044210.apply
+  [ 2] java.util.Arrays.setAll
+  [ 3] Bounce.benchmark
+  [ 4] Benchmark.innerBenchmarkLoop
+  [ 5] Run.measure
+  [ 6] Run.doRuns
+  [ 7] Run.runBenchmark
+  [ 8] Harness.main
+
+--- 19792611 ns (0.01%), 1962 samples
+  [ 0] Benchmark.innerBenchmarkLoop
+  [ 1] Run.measure
+  [ 2] Run.doRuns
+  [ 3] Run.runBenchmark
+  [ 4] Harness.main
+
+--- 15847519 ns (0.01%), 1475 samples
+  [ 0] G1HeapRegionManager::par_iterate
+  [ 1] G1PrepareEvacuationTask::work
+  [ 2] WorkerThread::run
+  [ 3] Thread::call_run
+  [ 4] thread_native_entry
+  [ 5] start_thread
+  [ 6] clone3
+
+--- 14703338 ns (0.01%), 1459 samples
+  [ 0] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::steal_and_trim_queue
+  [ 4] G1ParEvacuateFollowersClosure::do_void
+  [ 5] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 14170930 ns (0.01%), 1405 samples
+  [ 0] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 14098268 ns (0.01%), 1395 samples
+  [ 0] jdk.internal.misc.Unsafe.allocateInstance
+  [ 1] java.lang.invoke.DirectMethodHandle.allocateInstance
+  [ 2] java.lang.invoke.DirectMethodHandle$Holder.newInvokeSpecial
+  [ 3] java.lang.invoke.Invokers$Holder.linkToTargetMethod
+  [ 4] Bounce.benchmark
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 12068606 ns (0.01%), 1202 samples
+  [ 0] Bounce.benchmark
+  [ 1] Benchmark.innerBenchmarkLoop
+  [ 2] Run.measure
+  [ 3] Run.doRuns
+  [ 4] Run.runBenchmark
+  [ 5] Harness.main
+
+--- 11085104 ns (0.01%), 1102 samples
+  [ 0] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParScanThreadState::trim_queue_partially
+  [ 3] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 4] G1RemSet::scan_heap_roots
+  [ 5] G1EvacuateRegionsTask::scan_roots
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 10955193 ns (0.01%), 1091 samples
+  [ 0] my.custom.BuboAgentCompilerMarkers.Marker0
+  [ 1] my.custom.BuboAgentCompilerMarkers.MarkerDelimiter
+  [ 2] my.custom.BuboAgentCompilerMarkers.Marker6
+  [ 3] my.custom.BuboAgentCompilerMarkers.Marker2
+  [ 4] my.custom.BuboAgentCompilerMarkers.Marker1
+  [ 5] Benchmark.innerBenchmarkLoop
+  [ 6] Run.measure
+  [ 7] Run.doRuns
+  [ 8] Run.runBenchmark
+  [ 9] Harness.main
+
+--- 10941626 ns (0.01%), 1052 samples
+  [ 0] G1FreeRegionList::verify_list
+  [ 1] G1FreeRegionList::verify
+  [ 2] G1HeapRegionManager::allocate_free_region
+  [ 3] G1CollectedHeap::new_region
+  [ 4] G1CollectedHeap::new_mutator_alloc_region
+  [ 5] G1AllocRegion::new_alloc_region_and_allocate
+  [ 6] G1CollectedHeap::attempt_allocation_slow
+  [ 7] G1CollectedHeap::attempt_allocation
+  [ 8] MemAllocator::mem_allocate_inside_tlab_slow
+  [ 9] MemAllocator::mem_allocate
+  [10] MemAllocator::allocate
+  [11] InstanceKlass::allocate_objArray
+  [12] oopFactory::new_objArray
+  [13] JVMCIRuntime::new_array_or_null
+  [14] Stub<new_array_or_null(KlassPointer,int)Object>
+  [15] Bounce.benchmark
+  [16] Benchmark.innerBenchmarkLoop
+  [17] Run.measure
+  [18] Run.doRuns
+  [19] Run.runBenchmark
+  [20] Harness.main
+
+--- 10904569 ns (0.01%), 1083 samples
+  [ 0] java.lang.Integer.valueOf
+  [ 1] Bounce.benchmark
+  [ 2] Benchmark.innerBenchmarkLoop
+  [ 3] Run.measure
+  [ 4] Run.doRuns
+  [ 5] Run.runBenchmark
+  [ 6] Harness.main
+
+--- 10602537 ns (0.01%), 1054 samples
+  [ 0] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParScanThreadState::steal_and_trim_queue
+  [ 3] G1ParEvacuateFollowersClosure::do_void
+  [ 4] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 10027507 ns (0.01%), 964 samples
+  [ 0] G1HeapRegionSetBase::verify_region
+  [ 1] G1FreeRegionList::verify_list
+  [ 2] G1FreeRegionList::verify
+  [ 3] G1HeapRegionManager::allocate_free_region
+  [ 4] G1CollectedHeap::new_region
+  [ 5] G1CollectedHeap::new_mutator_alloc_region
+  [ 6] G1AllocRegion::new_alloc_region_and_allocate
+  [ 7] G1CollectedHeap::attempt_allocation_slow
+  [ 8] G1CollectedHeap::attempt_allocation
+  [ 9] MemAllocator::mem_allocate_inside_tlab_slow
+  [10] MemAllocator::mem_allocate
+  [11] MemAllocator::allocate
+  [12] InstanceKlass::allocate_objArray
+  [13] oopFactory::new_objArray
+  [14] JVMCIRuntime::new_array_or_null
+  [15] Stub<new_array_or_null(KlassPointer,int)Object>
+  [16] Bounce.benchmark
+  [17] Benchmark.innerBenchmarkLoop
+  [18] Run.measure
+  [19] Run.doRuns
+  [20] Run.runBenchmark
+  [21] Harness.main
+
+--- 8124117 ns (0.00%), 806 samples
+  [ 0] oop::on_construction
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::steal_and_trim_queue
+  [ 4] G1ParEvacuateFollowersClosure::do_void
+  [ 5] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 7877533 ns (0.00%), 781 samples
+  [ 0] oop::on_construction
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 6982255 ns (0.00%), 715 samples
+  [ 0] FreeCSetClosure::do_heap_region
+  [ 1] G1CollectedHeap::par_iterate_regions_array
+  [ 2] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 3] G1BatchedTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 6513798 ns (0.00%), 647 samples
+  [ 0] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 1] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 2] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 3] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 4] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 5] G1ParScanThreadState::trim_queue_to_threshold
+  [ 6] G1ParScanThreadState::trim_queue_partially
+  [ 7] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 8] G1RemSet::scan_heap_roots
+  [ 9] G1EvacuateRegionsTask::scan_roots
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 5893699 ns (0.00%), 600 samples
+  [ 0] G1SurvRateGroup::record_surviving_words
+  [ 1] FreeCSetClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 4] G1BatchedTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 5843422 ns (0.00%), 581 samples
+  [ 0] CompressedOops::encode_not_null
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::steal_and_trim_queue
+  [ 4] G1ParEvacuateFollowersClosure::do_void
+  [ 5] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 5699793 ns (0.00%), 567 samples
+  [ 0] MemAllocator::mem_allocate_inside_tlab_slow
+  [ 1] MemAllocator::mem_allocate
+  [ 2] MemAllocator::allocate
+  [ 3] InstanceKlass::allocate_instance
+  [ 4] JVMCIRuntime::new_instance_or_null
+  [ 5] Stub<new_instance_or_null(KlassPointer)Object>
+  [ 6] java.util.Arrays.setAll
+  [ 7] Bounce.benchmark
+  [ 8] Benchmark.innerBenchmarkLoop
+  [ 9] Run.measure
+  [10] Run.doRuns
+  [11] Run.runBenchmark
+  [12] Harness.main
+
+--- 5407890 ns (0.00%), 538 samples
+  [ 0] CompressedOops::encode_not_null
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 5128786 ns (0.00%), 509 samples
+  [ 0] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 1] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 2] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 3] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 4] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 5] G1ParScanThreadState::trim_queue_to_threshold
+  [ 6] G1ParScanThreadState::steal_and_trim_queue
+  [ 7] G1ParEvacuateFollowersClosure::do_void
+  [ 8] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 9] G1EvacuateRegionsBaseTask::work
+  [10] WorkerThread::run
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 5038985 ns (0.00%), 489 samples
+  [ 0] G1FromCardCache::clear
+  [ 1] G1HeapRegionRemSet::clear
+  [ 2] G1HeapRegion::hr_clear
+  [ 3] G1CollectedHeap::free_region
+  [ 4] FreeCSetClosure::do_heap_region
+  [ 5] G1CollectedHeap::par_iterate_regions_array
+  [ 6] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 7] G1BatchedTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 4894256 ns (0.00%), 487 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::steal_and_trim_queue
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 4747802 ns (0.00%), 472 samples
+  [ 0] G1CodeRootSet::nmethods_do
+  [ 1] G1ScanCodeRootsClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1RemSet::scan_collection_set_code_roots
+  [ 4] G1EvacuateRegionsTask::scan_roots
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 4702846 ns (0.00%), 467 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 2] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 3] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 4] G1ParScanThreadState::trim_queue_to_threshold
+  [ 5] G1ParScanThreadState::trim_queue_partially
+  [ 6] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 7] G1RemSet::scan_heap_roots
+  [ 8] G1EvacuateRegionsTask::scan_roots
+  [ 9] G1EvacuateRegionsBaseTask::work
+  [10] WorkerThread::run
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 4670457 ns (0.00%), 463 samples
+  [ 0] void G1ScanCardClosure::do_oop_work<narrowOop>
+  [ 1] void OopOopIterateDispatch<G1ScanCardClosure>::Table::oop_oop_iterate<InstanceMirrorKlass, narrowOop>
+  [ 2] HeapWordImpl** G1HeapRegion::oops_on_memregion_iterate<G1ScanCardClosure, true>
+  [ 3] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 4] G1RemSet::scan_heap_roots
+  [ 5] G1EvacuateRegionsTask::scan_roots
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 4527234 ns (0.00%), 337 samples
+  [ 0] __futex_abstimed_wait_common
+  [ 1] __new_sem_wait_slow64.constprop.0
+  [ 2] PosixSemaphore::wait
+  [ 3] WorkerThread::run
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+  [ 7] clone3
+
+--- 4323837 ns (0.00%), 429 samples
+  [ 0] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ParCopyClosure<(G1Barrier)1, false>::do_oop_work<oop>
+  [ 5] ClassLoaderData::oops_do
+  [ 6] G1CLDScanClosure::do_cld
+  [ 7] ClassLoaderDataGraph::roots_cld_do
+  [ 8] G1RootProcessor::process_java_roots
+  [ 9] G1RootProcessor::evacuate_roots
+  [10] G1EvacuateRegionsTask::scan_roots
+  [11] G1EvacuateRegionsBaseTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 4199461 ns (0.00%), 418 samples
+  [ 0] G1ParScanThreadState::steal_and_trim_queue
+  [ 1] G1ParEvacuateFollowersClosure::do_void
+  [ 2] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 3] G1EvacuateRegionsBaseTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 3947510 ns (0.00%), 392 samples
+  [ 0] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 1] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 2] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 3] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 4] G1ParScanThreadState::trim_queue_to_threshold
+  [ 5] G1ParScanThreadState::steal_and_trim_queue
+  [ 6] G1ParEvacuateFollowersClosure::do_void
+  [ 7] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 3916172 ns (0.00%), 387 samples
+  [ 0] G1HeapRegionManager::at
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 3906979 ns (0.00%), 388 samples
+  [ 0] G1ParScanThreadState::trim_queue_to_threshold
+  [ 1] G1ParScanThreadState::trim_queue_partially
+  [ 2] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 3] G1RemSet::scan_heap_roots
+  [ 4] G1EvacuateRegionsTask::scan_roots
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 3553786 ns (0.00%), 363 samples
+  [ 0] TruncatedSeq::add
+  [ 1] FreeCSetClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 4] G1BatchedTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 3549626 ns (0.00%), 230 samples
+  [ 0] __audit_syscall_exit_[k]
+  [ 1] syscall_exit_work_[k]
+  [ 2] syscall_exit_to_user_mode_[k]
+  [ 3] do_syscall_64_[k]
+  [ 4] entry_SYSCALL_64_after_hwframe_[k]
+  [ 5] __futex_abstimed_wait_common
+  [ 6] __new_sem_wait_slow64.constprop.0
+  [ 7] PosixSemaphore::wait
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 3542702 ns (0.00%), 352 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 2] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 3] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 4] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 5] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 6] G1ParScanThreadState::trim_queue_to_threshold
+  [ 7] G1ParScanThreadState::trim_queue_partially
+  [ 8] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 9] G1RemSet::scan_heap_roots
+  [10] G1EvacuateRegionsTask::scan_roots
+  [11] G1EvacuateRegionsBaseTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 3511452 ns (0.00%), 337 samples
+  [ 0] G1HeapRegionType::is_valid
+  [ 1] G1HeapRegionSetBase::verify_region
+  [ 2] G1FreeRegionList::verify_list
+  [ 3] G1FreeRegionList::verify
+  [ 4] G1HeapRegionManager::allocate_free_region
+  [ 5] G1CollectedHeap::new_region
+  [ 6] G1CollectedHeap::new_mutator_alloc_region
+  [ 7] G1AllocRegion::new_alloc_region_and_allocate
+  [ 8] G1CollectedHeap::attempt_allocation_slow
+  [ 9] G1CollectedHeap::attempt_allocation
+  [10] MemAllocator::mem_allocate_inside_tlab_slow
+  [11] MemAllocator::mem_allocate
+  [12] MemAllocator::allocate
+  [13] InstanceKlass::allocate_objArray
+  [14] oopFactory::new_objArray
+  [15] JVMCIRuntime::new_array_or_null
+  [16] Stub<new_array_or_null(KlassPointer,int)Object>
+  [17] Bounce.benchmark
+  [18] Benchmark.innerBenchmarkLoop
+  [19] Run.measure
+  [20] Run.doRuns
+  [21] Run.runBenchmark
+  [22] Harness.main
+
+--- 3456423 ns (0.00%), 343 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 2] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 3] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 4] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 5] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 6] G1ParScanThreadState::trim_queue_to_threshold
+  [ 7] G1ParScanThreadState::steal_and_trim_queue
+  [ 8] G1ParEvacuateFollowersClosure::do_void
+  [ 9] G1EvacuateRegionsTask::evacuate_live_objects
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 3433163 ns (0.00%), 341 samples
+  [ 0] G1ParScanThreadState::verify_task
+  [ 1] G1ParScanThreadState::dispatch_task
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 3413324 ns (0.00%), 339 samples
+  [ 0] oop::on_construction
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 3395456 ns (0.00%), 153 samples
+  [ 0] _raw_spin_unlock_irq_[k]
+  [ 1] __x64_sys_rt_sigreturn_[k]
+  [ 2] do_syscall_64_[k]
+  [ 3] entry_SYSCALL_64_after_hwframe_[k]
+  [ 4] SpaceMangler::mangle_region
+  [ 5] G1CollectedHeap::free_region
+  [ 6] FreeCSetClosure::do_heap_region
+  [ 7] G1CollectedHeap::par_iterate_regions_array
+  [ 8] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 9] G1BatchedTask::work
+  [10] WorkerThread::run
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 3378281 ns (0.00%), 336 samples
+  [ 0] G1HeapRegionManager::at
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 3375315 ns (0.00%), 335 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 3] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 4] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 5] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 6] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 7] G1ParScanThreadState::trim_queue_to_threshold
+  [ 8] G1ParScanThreadState::trim_queue_partially
+  [ 9] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [10] G1RemSet::scan_heap_roots
+  [11] G1EvacuateRegionsTask::scan_roots
+  [12] G1EvacuateRegionsBaseTask::work
+  [13] WorkerThread::run
+  [14] Thread::call_run
+  [15] thread_native_entry
+  [16] start_thread
+  [17] clone3
+
+--- 3339241 ns (0.00%), 325 samples
+  [ 0] _raw_spin_unlock_irq_[k]
+  [ 1] do_sigaltstack.constprop.0_[k]
+  [ 2] restore_altstack_[k]
+  [ 3] __x64_sys_rt_sigreturn_[k]
+  [ 4] do_syscall_64_[k]
+  [ 5] entry_SYSCALL_64_after_hwframe_[k]
+  [ 6] SpaceMangler::mangle_region
+  [ 7] G1CollectedHeap::free_region
+  [ 8] FreeCSetClosure::do_heap_region
+  [ 9] G1CollectedHeap::par_iterate_regions_array
+  [10] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [11] G1BatchedTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 3297982 ns (0.00%), 328 samples
+  [ 0] oop::on_construction
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 3294009 ns (0.00%), 328 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 3] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 4] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 5] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 6] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 7] G1ParScanThreadState::trim_queue_to_threshold
+  [ 8] G1ParScanThreadState::steal_and_trim_queue
+  [ 9] G1ParEvacuateFollowersClosure::do_void
+  [10] G1EvacuateRegionsTask::evacuate_live_objects
+  [11] G1EvacuateRegionsBaseTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 3280067 ns (0.00%), 293 samples
+  [ 0] void OopStorage::BasicParState::iterate<false, OopStorage::OopFn<WeakProcessor::CountingClosure<G1STWIsAliveClosure, G1KeepAliveClosure> > >
+  [ 1] void WeakProcessor::Task::work<G1STWIsAliveClosure, G1KeepAliveClosure>
+  [ 2] WorkerThread::run
+  [ 3] Thread::call_run
+  [ 4] thread_native_entry
+  [ 5] start_thread
+  [ 6] clone3
+
+--- 3099816 ns (0.00%), 288 samples
+  [ 0] G1CodeRootSet::reset_table_scanner
+  [ 1] G1HeapRegionRemSet::reset_table_scanner
+  [ 2] G1RemSet::prepare_region_for_scan
+  [ 3] G1PrepareEvacuationTask::G1PrepareRegionsClosure::do_heap_region
+  [ 4] G1HeapRegionManager::par_iterate
+  [ 5] G1PrepareEvacuationTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 3050643 ns (0.00%), 293 samples
+  [ 0] G1MasterFreeRegionListChecker::is_correct_type
+  [ 1] G1HeapRegionSetBase::verify_region
+  [ 2] G1FreeRegionList::verify_list
+  [ 3] G1FreeRegionList::verify
+  [ 4] G1HeapRegionManager::allocate_free_region
+  [ 5] G1CollectedHeap::new_region
+  [ 6] G1CollectedHeap::new_mutator_alloc_region
+  [ 7] G1AllocRegion::new_alloc_region_and_allocate
+  [ 8] G1CollectedHeap::attempt_allocation_slow
+  [ 9] G1CollectedHeap::attempt_allocation
+  [10] MemAllocator::mem_allocate_inside_tlab_slow
+  [11] MemAllocator::mem_allocate
+  [12] MemAllocator::allocate
+  [13] InstanceKlass::allocate_objArray
+  [14] oopFactory::new_objArray
+  [15] JVMCIRuntime::new_array_or_null
+  [16] Stub<new_array_or_null(KlassPointer,int)Object>
+  [17] Bounce.benchmark
+  [18] Benchmark.innerBenchmarkLoop
+  [19] Run.measure
+  [20] Run.doRuns
+  [21] Run.runBenchmark
+  [22] Harness.main
+
+--- 3039777 ns (0.00%), 200 samples
+  [ 0] exit_to_user_mode_loop_[k]
+  [ 1] exit_to_user_mode_prepare_[k]
+  [ 2] syscall_exit_to_user_mode_[k]
+  [ 3] do_syscall_64_[k]
+  [ 4] entry_SYSCALL_64_after_hwframe_[k]
+  [ 5] __futex_abstimed_wait_common
+  [ 6] __new_sem_wait_slow64.constprop.0
+  [ 7] PosixSemaphore::wait
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2933557 ns (0.00%), 258 samples
+  [ 0] G1ConcurrentMark::clear_statistics
+  [ 1] G1MergeHeapRootsTask::G1ClearBitmapClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1MergeHeapRootsTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 2927095 ns (0.00%), 290 samples
+  [ 0] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParEvacuateFollowersClosure::do_void
+  [ 4] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 5] G1EvacuateRegionsBaseTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 2922960 ns (0.00%), 290 samples
+  [ 0] oopDesc::size_given_klass
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2901326 ns (0.00%), 288 samples
+  [ 0] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 2833407 ns (0.00%), 281 samples
+  [ 0] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 1] G1ParScanThreadState::trim_queue_to_threshold
+  [ 2] G1ParScanThreadState::trim_queue_partially
+  [ 3] void G1ParCopyClosure<(G1Barrier)1, false>::do_oop_work<oop>
+  [ 4] ClassLoaderData::oops_do
+  [ 5] G1CLDScanClosure::do_cld
+  [ 6] ClassLoaderDataGraph::roots_cld_do
+  [ 7] G1RootProcessor::process_java_roots
+  [ 8] G1RootProcessor::evacuate_roots
+  [ 9] G1EvacuateRegionsTask::scan_roots
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 2773205 ns (0.00%), 275 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2763499 ns (0.00%), 274 samples
+  [ 0] G1ParScanThreadState::verify_task
+  [ 1] G1ParScanThreadState::dispatch_task
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::steal_and_trim_queue
+  [ 4] G1ParEvacuateFollowersClosure::do_void
+  [ 5] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 2718732 ns (0.00%), 270 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] G1ParScanThreadState::verify_task
+  [ 3] G1ParScanThreadState::dispatch_task
+  [ 4] G1ParScanThreadState::trim_queue_to_threshold
+  [ 5] G1ParScanThreadState::steal_and_trim_queue
+  [ 6] G1ParEvacuateFollowersClosure::do_void
+  [ 7] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2712320 ns (0.00%), 280 samples
+  [ 0] G1HeapRegionManager::at
+  [ 1] G1CollectedHeap::par_iterate_regions_array
+  [ 2] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 3] G1BatchedTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 2646365 ns (0.00%), 264 samples
+  [ 0] SpinPause
+  [ 1] TaskTerminator::offer_termination
+  [ 2] G1ParEvacuateFollowersClosure::do_void
+  [ 3] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 2623355 ns (0.00%), 260 samples
+  [ 0] void G1ParScanThreadState::write_ref_field_post<narrowOop>
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2548050 ns (0.00%), 253 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] G1ParScanThreadState::verify_task
+  [ 3] G1ParScanThreadState::dispatch_task
+  [ 4] G1ParScanThreadState::trim_queue_to_threshold
+  [ 5] G1ParScanThreadState::trim_queue_partially
+  [ 6] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 7] G1RemSet::scan_heap_roots
+  [ 8] G1EvacuateRegionsTask::scan_roots
+  [ 9] G1EvacuateRegionsBaseTask::work
+  [10] WorkerThread::run
+  [11] Thread::call_run
+  [12] thread_native_entry
+  [13] start_thread
+  [14] clone3
+
+--- 2533088 ns (0.00%), 227 samples
+  [ 0] WorkerThread::run
+  [ 1] Thread::call_run
+  [ 2] thread_native_entry
+  [ 3] start_thread
+  [ 4] clone3
+
+--- 2521476 ns (0.00%), 251 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::steal_and_trim_queue
+  [ 4] G1ParEvacuateFollowersClosure::do_void
+  [ 5] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 6] G1EvacuateRegionsBaseTask::work
+  [ 7] WorkerThread::run
+  [ 8] Thread::call_run
+  [ 9] thread_native_entry
+  [10] start_thread
+  [11] clone3
+
+--- 2507107 ns (0.00%), 249 samples
+  [ 0] oopDesc::size_given_klass
+  [ 1] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2438997 ns (0.00%), 242 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] G1ParScanThreadState::verify_task
+  [ 2] G1ParScanThreadState::dispatch_task
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2426455 ns (0.00%), 235 samples
+  [ 0] G1CodeRootSet::clear
+  [ 1] G1HeapRegionRemSet::clear
+  [ 2] G1HeapRegion::hr_clear
+  [ 3] G1CollectedHeap::free_region
+  [ 4] FreeCSetClosure::do_heap_region
+  [ 5] G1CollectedHeap::par_iterate_regions_array
+  [ 6] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 7] G1BatchedTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2377270 ns (0.00%), 237 samples
+  [ 0] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 1] void objArrayOopDesc::oop_iterate_range<G1ScanEvacuatedObjClosure>
+  [ 2] G1ParScanThreadState::start_partial_objarray
+  [ 3] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 4] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 5] G1ParScanThreadState::trim_queue_to_threshold
+  [ 6] G1ParScanThreadState::trim_queue_partially
+  [ 7] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 8] G1RemSet::scan_heap_roots
+  [ 9] G1EvacuateRegionsTask::scan_roots
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 2366221 ns (0.00%), 235 samples
+  [ 0] G1CollectedHeap::is_in
+  [ 1] CompressedOops::decode_not_null
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2332012 ns (0.00%), 232 samples
+  [ 0] bool G1HeapRegion::is_in_same_region<narrowOop>
+  [ 1] void G1ParScanThreadState::write_ref_field_post<narrowOop>
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::steal_and_trim_queue
+  [ 5] G1ParEvacuateFollowersClosure::do_void
+  [ 6] G1EvacuateRegionsTask::evacuate_live_objects
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2313939 ns (0.00%), 241 samples
+  [ 0] G1HeapRegionClaimer::claim_region
+  [ 1] G1CollectedHeap::par_iterate_regions_array
+  [ 2] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 3] G1BatchedTask::work
+  [ 4] WorkerThread::run
+  [ 5] Thread::call_run
+  [ 6] thread_native_entry
+  [ 7] start_thread
+  [ 8] clone3
+
+--- 2298252 ns (0.00%), 228 samples
+  [ 0] G1ParScanThreadState::verify_task
+  [ 1] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 2] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 3] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 4] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 5] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 6] G1ParScanThreadState::trim_queue_to_threshold
+  [ 7] G1ParScanThreadState::steal_and_trim_queue
+  [ 8] G1ParEvacuateFollowersClosure::do_void
+  [ 9] G1EvacuateRegionsTask::evacuate_live_objects
+  [10] G1EvacuateRegionsBaseTask::work
+  [11] WorkerThread::run
+  [12] Thread::call_run
+  [13] thread_native_entry
+  [14] start_thread
+  [15] clone3
+
+--- 2256878 ns (0.00%), 224 samples
+  [ 0] bool G1HeapRegion::is_in_same_region<narrowOop>
+  [ 1] void G1ParScanThreadState::write_ref_field_post<narrowOop>
+  [ 2] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+--- 2192290 ns (0.00%), 218 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 5] G1RemSet::scan_heap_roots
+  [ 6] G1EvacuateRegionsTask::scan_roots
+  [ 7] G1EvacuateRegionsBaseTask::work
+  [ 8] WorkerThread::run
+  [ 9] Thread::call_run
+  [10] thread_native_entry
+  [11] start_thread
+  [12] clone3
+
+--- 2180390 ns (0.00%), 204 samples
+  [ 0] __memset_avx2_unaligned_erms
+  [ 1] G1RemSetScanState::G1ClearCardTableTask::do_work
+  [ 2] G1BatchedTask::work
+  [ 3] WorkerThread::run
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+  [ 7] clone3
+
+--- 2157377 ns (0.00%), 217 samples
+  [ 0] G1HeapRegion::hr_clear
+  [ 1] G1CollectedHeap::free_region
+  [ 2] FreeCSetClosure::do_heap_region
+  [ 3] G1CollectedHeap::par_iterate_regions_array
+  [ 4] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 5] G1BatchedTask::work
+  [ 6] WorkerThread::run
+  [ 7] Thread::call_run
+  [ 8] thread_native_entry
+  [ 9] start_thread
+  [10] clone3
+
+--- 2148043 ns (0.00%), 222 samples
+  [ 0] G1CollectedHeap::free_region
+  [ 1] FreeCSetClosure::do_heap_region
+  [ 2] G1CollectedHeap::par_iterate_regions_array
+  [ 3] G1PostEvacuateCollectionSetCleanupTask2::FreeCollectionSetTask::do_work
+  [ 4] G1BatchedTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 2143531 ns (0.00%), 202 samples
+  [ 0] BitMap::verify_index
+  [ 1] G1HeapRegionManager::par_iterate
+  [ 2] G1PrepareEvacuationTask::work
+  [ 3] WorkerThread::run
+  [ 4] Thread::call_run
+  [ 5] thread_native_entry
+  [ 6] start_thread
+  [ 7] clone3
+
+--- 2113962 ns (0.00%), 169 samples
+  [ 0] __futex_abstimed_wait_common
+  [ 1] __GI___pthread_cond_timedwait
+  [ 2] PlatformMonitor::wait
+  [ 3] Monitor::wait_without_safepoint_check
+  [ 4] MonitorDeflationThread::monitor_deflation_thread_entry
+  [ 5] JavaThread::thread_main_inner
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 2107018 ns (0.00%), 210 samples
+  [ 0] G1HeapRegionManager::at
+  [ 1] G1CollectedHeap::par_iterate_regions_array
+  [ 2] G1RemSet::scan_collection_set_code_roots
+  [ 3] G1EvacuateRegionsTask::scan_roots
+  [ 4] G1EvacuateRegionsBaseTask::work
+  [ 5] WorkerThread::run
+  [ 6] Thread::call_run
+  [ 7] thread_native_entry
+  [ 8] start_thread
+  [ 9] clone3
+
+--- 2095792 ns (0.00%), 208 samples
+  [ 0] oop::on_construction
+  [ 1] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 2] G1ParScanThreadState::trim_queue_to_threshold
+  [ 3] G1ParScanThreadState::trim_queue_partially
+  [ 4] void G1ParCopyClosure<(G1Barrier)1, false>::do_oop_work<oop>
+  [ 5] ClassLoaderData::oops_do
+  [ 6] G1CLDScanClosure::do_cld
+  [ 7] ClassLoaderDataGraph::roots_cld_do
+  [ 8] G1RootProcessor::process_java_roots
+  [ 9] G1RootProcessor::evacuate_roots
+  [10] G1EvacuateRegionsTask::scan_roots
+  [11] G1EvacuateRegionsBaseTask::work
+  [12] WorkerThread::run
+  [13] Thread::call_run
+  [14] thread_native_entry
+  [15] start_thread
+  [16] clone3
+
+--- 2010427 ns (0.00%), 200 samples
+  [ 0] G1CollectedHeap::addr_to_region
+  [ 1] G1CollectedHeap::is_in
+  [ 2] CompressedOops::decode_not_null
+  [ 3] void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+  [ 4] void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+  [ 5] void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+  [ 6] G1ParScanThreadState::do_copy_to_survivor_space
+  [ 7] void G1ParScanThreadState::do_oop_evac<narrowOop>
+  [ 8] G1ParScanThreadState::trim_queue_to_threshold
+  [ 9] G1ParScanThreadState::trim_queue_partially
+  [10] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [11] G1RemSet::scan_heap_roots
+  [12] G1EvacuateRegionsTask::scan_roots
+  [13] G1EvacuateRegionsBaseTask::work
+  [14] WorkerThread::run
+  [15] Thread::call_run
+  [16] thread_native_entry
+  [17] start_thread
+  [18] clone3
+
+--- 1989285 ns (0.00%), 198 samples
+  [ 0] CompressedOops::decode_not_null
+  [ 1] G1ParScanThreadState::verify_task
+  [ 2] G1ParScanThreadState::dispatch_task
+  [ 3] G1ParScanThreadState::trim_queue_to_threshold
+  [ 4] G1ParScanThreadState::trim_queue_partially
+  [ 5] void G1ScanHRForRegionClosure::ChunkScanner::on_dirty_cards<G1ScanHRForRegionClosure::scan_heap_roots(G1HeapRegion*)::{lambda(unsigned char*, unsigned char*)#1}>
+  [ 6] G1RemSet::scan_heap_roots
+  [ 7] G1EvacuateRegionsTask::scan_roots
+  [ 8] G1EvacuateRegionsBaseTask::work
+  [ 9] WorkerThread::run
+  [10] Thread::call_run
+  [11] thread_native_entry
+  [12] start_thread
+  [13] clone3
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+132955599834   79.60%  13237115  my.custom.BuboAgentCompilerMarkers.Marker1
+ 14719337201    8.81%  1460450  SpaceMangler::mangle_region
+  8931457331    5.35%   884824  my.custom.BuboAgentCompilerMarkers.Marker2
+  2964452646    1.77%   295098  Bounce.benchmark
+  2737819115    1.64%   271594  MemAllocator::mem_allocate_inside_tlab_slow
+  2736355703    1.64%   272419  my.custom.BuboAgentCompilerMarkers.Marker0
+   189615822    0.11%    18767  my.custom.BuboAgentCompilerMarkers.Marker3
+   110940633    0.07%    10990  java.util.Arrays.setAll
+    78406552    0.05%     7684  MarkBitMap::get_next_marked_addr
+    61416933    0.04%     6099  oop::on_construction
+    40248105    0.02%     3998  G1CollectedHeap::is_in
+    38928475    0.02%     3861  G1ParScanThreadState::do_copy_to_survivor_space
+    35663515    0.02%     3541  CompressedOops::decode_not_null
+    30465676    0.02%     3026  G1CollectedHeap::addr_to_region
+    29012731    0.02%     2883  void G1ParScanThreadState::do_oop_evac<narrowOop>
+    25334357    0.02%     2509  Bounce.lambda$benchmark$0
+    25188347    0.02%     2500  void G1ScanEvacuatedObjClosure::do_oop_work<narrowOop>
+    23443713    0.01%     2322  G1HeapRegionManager::at
+    23384679    0.01%     2318  Benchmark.innerBenchmarkLoop
+    20845291    0.01%     2069  G1ParScanThreadState::verify_task
+    19338890    0.01%     1891  __memset_avx2_unaligned_erms
+    16509991    0.01%     1639  CompressedKlassPointers::decode_not_null
+    15847519    0.01%     1475  G1HeapRegionManager::par_iterate
+    15147628    0.01%     1506  CompressedOops::encode_not_null
+    14148749    0.01%     1400  jdk.internal.misc.Unsafe.allocateInstance
+    13886639    0.01%     1344  __tls_get_addr
+    13858546    0.01%     1358  BitMap::verify_index
+    12859089    0.01%     1245  BitMap::verify_limit
+    11991911    0.01%     1146  G1FreeRegionList::verify_list
+    11923747    0.01%     1135  G1HeapRegionSetBase::verify_region
+    11914481    0.01%     1183  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+    11257768    0.01%     1118  java.lang.Integer.valueOf
+    10791453    0.01%     1072  G1ParScanThreadState::trim_queue_to_threshold
+     9761331    0.01%      970  Klass::next_sibling
+     9224660    0.01%      915  oopDesc::size_given_klass
+     8915383    0.01%      858  G1HeapRegionType::is_valid
+     8852889    0.01%      706  __futex_abstimed_wait_common
+     8462164    0.01%      635  _raw_spin_unlock_irq_[k]
+     8308423    0.00%      826  bool G1HeapRegion::is_in_same_region<narrowOop>
+     8116185    0.00%      644  _raw_spin_unlock_irqrestore_[k]
+     7281558    0.00%      700  do_user_addr_fault_[k]
+     6982255    0.00%      715  FreeCSetClosure::do_heap_region
+     6935758    0.00%      691  oopDesc::klass
+     6705084    0.00%      394  __audit_syscall_exit_[k]
+     6524133    0.00%      631  G1FromCardCache::clear
+     6247511    0.00%      620  void G1ParScanThreadState::write_ref_field_post<narrowOop>
+     5893699    0.00%      600  G1SurvRateGroup::record_surviving_words
+     5172560    0.00%      515  OverflowTaskQueue<ScannerTask, (MemTag)5, 131072u>::push
+     5057548    0.00%      501  Universe::is_in_heap
+     4883822    0.00%      484  void G1ScanCardClosure::do_oop_work<narrowOop>
+     4794274    0.00%      439  [vdso]
+     4747802    0.00%      472  G1CodeRootSet::nmethods_do
+     4546840    0.00%      441  JavaThread::is_Java_thread
+     4509279    0.00%      392  syscall_enter_from_user_mode_[k]
+     4498958    0.00%      448  G1ParScanThreadState::steal_and_trim_queue
+     4424140    0.00%      439  oopDesc::forwardee
+     4360775    0.00%      433  LockStack::verify
+     4300093    0.00%      285  exit_to_user_mode_loop_[k]
+     4253966    0.00%      437  G1HeapRegionClaimer::claim_region
+     4214017    0.00%      420  CodeHeap::next_used
+     4150196    0.00%      412  Klass::subklass
+     4138756    0.00%      410  oop::operator==
+     4032891    0.00%      399  G1BiasedMappedArrayBase::verify_biased_index
+     4023759    0.00%      399  G1HeapRegionType::get
+     3948854    0.00%      396  java.lang.AbstractStringBuilder* java.lang.AbstractStringBuilder::append
+     3744312    0.00%      372  __memcpy_avx_unaligned_erms
+     3679090    0.00%      366  G1HeapRegionManager::iterate
+     3653332    0.00%      374  TruncatedSeq::add
+     3649570    0.00%      347  G1MasterFreeRegionListChecker::is_correct_type
+     3585628    0.00%      357  Mutex::owned_by_self
+     3503677    0.00%      347  oopDesc::is_oop
+     3482069    0.00%      344  CollectedHeap::is_oop
+     3423682    0.00%      340  MemAllocator::finish
+     3393733    0.00%      337  void oopDesc::oop_iterate_backwards<G1ScanEvacuatedObjClosure>
+     3280067    0.00%      293  void OopStorage::BasicParState::iterate<false, OopStorage::OopFn<WeakProcessor::CountingClosure<G1STWIsAliveClosure, G1KeepAliveClosure> > >
+     3241133    0.00%      322  ClassHierarchyIterator::next
+     3150773    0.00%      313  arrayOopDesc::max_array_length
+     3099816    0.00%      288  G1CodeRootSet::reset_table_scanner
+     3094931    0.00%      314  Mutex::set_owner_implementation
+     3029290    0.00%      303  G1BiasedMappedArrayBase::verify_index
+     3007328    0.00%      298  int alignment_mask<int, 0>
+     2993844    0.00%      187  __get_user_8_[k]
+     2933557    0.00%      258  G1ConcurrentMark::clear_statistics
+     2897509    0.00%      186  syscall_exit_work_[k]
+     2867548    0.00%      283  G1CollectedHeap* CollectedHeap::named_heap<G1CollectedHeap>
+     2671090    0.00%      253  __GI___libc_malloc
+     2670407    0.00%      266  void com.oracle.svm.core.genscavenge.GreyToBlackObjRefVisitor::visitObjectReferences
+     2646365    0.00%      264  SpinPause
+     2625946    0.00%      262  ClassLoaderData::is_alive
+     2548596    0.00%      255  Dependencies::DepStream::argument
+     2539238    0.00%      161  mem_cgroup_handle_over_high_[k]
+     2533088    0.00%      227  WorkerThread::run
+     2516188    0.00%      250  G1PLABAllocator::alloc_buffer
+     2514320    0.00%      250  Dependencies::find_finalizable_subclass
+     2444132    0.00%      243  _int_malloc
+     2441280    0.00%      241  __clock_gettime_2
+     2436497    0.00%      241  InstanceKlass::quick_search
+     2431117    0.00%      239  __tls_get_addr@plt
+     2426455    0.00%      235  G1CodeRootSet::clear
+     2415289    0.00%      239  G1ParScanThreadState::dispatch_task
+     2407714    0.00%      240  Klass::is_array_klass_slow
+     2330399    0.00%      234  void com.oracle.svm.core.graal.jdk.SubstrateArraycopySnippets::doArraycopy
+     2320039    0.00%      227  CollectedHeap::zap_filler_array_with
+     2306456    0.00%      231  MemAllocator::allocate
+     2298979    0.00%      229  Klass::is_array_klass
+     2287370    0.00%      229  void LibGraalClassLoader_30c8681::jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator::forward
+     2285999    0.00%      226  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<598116ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 598116ul>::oop_access_barrier
+     2267782    0.00%      227  Mutex::lock_without_safepoint_check
+     2245793    0.00%      149  blkcg_maybe_throttle_current_[k]
+     2218056    0.00%      219  G1ParScanThreadState::start_partial_objarray
+     2217152    0.00%      198  clear_page_erms_[k]
+     2185765    0.00%      217  void G1ParScanThreadState::enqueue_card_if_tracked<narrowOop>
+     2184898    0.00%      219  java.lang.String* com.oracle.svm.core.util.Utf8::utf8ToString
+     2157377    0.00%      217  G1HeapRegion::hr_clear
+     2155070    0.00%      213  void objArrayOopDesc::oop_iterate_range<G1ScanEvacuatedObjClosure>
+     2148043    0.00%      222  G1CollectedHeap::free_region
+     2101323    0.00%      206  os::free
+     2085981    0.00%      209  Dependencies::DepStream::next
+     2084828    0.00%      207  TypeArrayKlass::oop_size
+     2072787    0.00%      206  void com.oracle.svm.core.genscavenge.GreyToBlackObjectVisitor::visitObject
+     2063365    0.00%      214  Run.measure
+     2062605    0.00%      206  CodeBlobIterator<nmethod, NMethodFilter, false>::next_impl
+     2046860    0.00%      207  ThreadLocalAllocBuffer::fill
+     2036840    0.00%      191  MallocTracker::record_malloc
+     2010613    0.00%      201  int org.graalvm.collections.EconomicMapImpl::getHashIndex
+     2007606    0.00%      200  G1CollectedHeap::par_iterate_regions_array
+     2000984    0.00%      201  void com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsForward
+     1982812    0.00%      197  G1MergeHeapRootsTask::G1ClearBitmapClosure::do_heap_region
+     1943463    0.00%      194  int LibGraalClassLoader_30c8681::jdk.graal.compiler.graph.NodeIdAccessor::getNodeId
+     1919134    0.00%      190  ArrayKlass::is_array_klass_slow
+     1918594    0.00%      190  void OopOopIterateDispatch<G1ScanCardClosure>::Table::oop_oop_iterate<InstanceMirrorKlass, narrowOop>
+     1851584    0.00%      164  __new_sem_wait_slow64.constprop.0
+     1847029    0.00%      184  int org.graalvm.collections.EconomicMapImpl::findHash
+     1836242    0.00%      135  __pthread_disable_asynccancel
+     1783798    0.00%      178  TypeArrayKlass::copy_array
+     1779342    0.00%      178  assert_locked_or_safepoint
+     1776724    0.00%      177  java.lang.String.getBytes
+     1773152    0.00%      178  void com.oracle.svm.core.c.function.CEntryPointSetup$LeaveEpilogue::leave
+     1746499    0.00%      173  CompressedOops::is_in
+     1742611    0.00%      174  void java.util.ArrayList::add
+     1738708    0.00%      172  JVMCIRuntime::new_instance_or_null
+     1733037    0.00%      138  BitMap::par_at
+     1716599    0.00%      175  SymbolTable::lookup_shared
+     1714417    0.00%      166  G1CollectedHeap::attempt_allocation
+     1703451    0.00%      165  G1CollectedHeap::kind
+     1694827    0.00%      167  CollectedHeap::fill_with_array
+     1675969    0.00%      165  ConstantPool::symbol_at
+     1648682    0.00%      164  sun.nio.cs.UTF_8$Encoder.encodeArrayLoop
+     1645506    0.00%      131  native_queued_spin_lock_slowpath_[k]
+     1637550    0.00%      162  HandleMark::~HandleMark
+     1623841    0.00%      161  GCId::current
+     1620342    0.00%      163  ResourceMark::ResourceMark
+     1617058    0.00%      136  futex_wake_[k]
+     1612043    0.00%      160  JVMCIRuntime::new_array_or_null
+     1571735    0.00%      159  java.lang.Object* com.oracle.svm.core.graal.jdk.SubstrateObjectCloneSnippets::doClone
+     1566372    0.00%      156  ThreadInVMfromNative::ThreadInVMfromNative
+     1539868    0.00%      153  ContinuationGCSupport::transform_stack_chunk
+     1538706    0.00%      154  ThreadInVMfromJava::~ThreadInVMfromJava
+     1537525    0.00%      154  VMError::is_error_reported
+     1532092    0.00%      153  JavaThread::set_thread_state
+     1531694    0.00%      152  JavaThread::check_for_valid_safepoint_state
+     1525843    0.00%      149  G1Allocator::unsafe_max_tlab_alloc
+     1522318    0.00%      154  pthread_mutex_lock@@GLIBC_2.2.5
+     1499277    0.00%      153  void com.oracle.svm.core.UnmanagedMemoryUtil::copyForward
+     1494441    0.00%      149  java.util.concurrent.ConcurrentHashMap.putVal
+     1493754    0.00%      148  InstanceKlass::allocate_objArray
+     1491783    0.00%      149  unsigned long align_up<unsigned long, int, 0>
+     1491591    0.00%      148  ObjArrayKlass::oop_size
+     1491432    0.00%      148  java.lang.String$$StringConcat.0x0000000027046400.concat
+     1469200    0.00%      147  ThreadToNativeFromVM::~ThreadToNativeFromVM
+     1464655    0.00%      146  readConfiguration0
+     1462960    0.00%      122  get_page_from_freelist_[k]
+     1449770    0.00%      143  arrayOopDesc::base
+     1448994    0.00%      145  resource_allocate_bytes
+     1447865    0.00%      145  CodeCache::mark_for_deoptimization
+     1445801    0.00%      144  AccessInternal::check_access_thread_state
+     1444157    0.00%      141  os::elapsed_counter
+     1442520    0.00%      144  HandleMark::pop_and_restore
+     1429309    0.00%      147  G1GCPhaseTimes::phase_name
+     1423042    0.00%      144  __vfprintf_internal
+     1422157    0.00%      112  schedule_debug.constprop.0_[k]
+     1414934    0.00%      140  Mutex::check_rank
+     1413544    0.00%      139  G1HeapRegionRemSet::clear
+     1406681    0.00%      140  jdk.internal.util.DecimalDigits.uncheckedGetCharsLatin1
+     1402361    0.00%      139  G1HeapRegionType::get_trace_type
+     1395633    0.00%      140  void LibGraalClassLoader_30c8681::jdk.graal.compiler.graph.NodeUsageIterator::advance
+     1389048    0.00%      153  restore_fpregs_from_user_[k]
+     1362577    0.00%      134  ResourceMarkImpl::~ResourceMarkImpl
+     1359250    0.00%      135  JavaThread::current
+     1356214    0.00%      135  frame::interpreter_frame_method
+     1351099    0.00%      134  HandleArea::allocate_handle
+     1349049    0.00%      135  char java.lang.String::charAt
+     1334506    0.00%      133  sun.nio.cs.StreamEncoder.implWrite
+     1327459    0.00%      129  G1HeapRegionManager::allocate_free_region
+     1327307    0.00%      102  update_sg_lb_stats_[k]
+     1314537    0.00%      127  oop RawAccessBarrier<68ul>::oop_load<oop>
+     1306434    0.00%      120  Rdtsc::elapsed_counter
+     1294669    0.00%      129  jdk.internal.util.DecimalDigits.stringSize
+     1291538    0.00%      129  methodHandle::methodHandle
+     1272107    0.00%      126  Mutex::unlock

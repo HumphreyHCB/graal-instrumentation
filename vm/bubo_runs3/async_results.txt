@@ -1,0 +1,12 @@
+NBody BuboOn  ./bubo_runs3/async/NBody_BuboOn.txt
+NBody BuboOff ./bubo_runs3/async/NBody_BuboOff.txt
+Json BuboOn  ./bubo_runs3/async/Json_BuboOn.txt
+Json BuboOff ./bubo_runs3/async/Json_BuboOff.txt
+Bounce BuboOn  ./bubo_runs3/async/Bounce_BuboOn.txt
+Bounce BuboOff ./bubo_runs3/async/Bounce_BuboOff.txt
+Sieve BuboOn  ./bubo_runs3/async/Sieve_BuboOn.txt
+Sieve BuboOff ./bubo_runs3/async/Sieve_BuboOff.txt
+LoopBenchmarks BuboOn  ./bubo_runs3/async/LoopBenchmarks_BuboOn.txt
+LoopBenchmarks BuboOff ./bubo_runs3/async/LoopBenchmarks_BuboOff.txt
+Mandelbrot BuboOn  ./bubo_runs3/async/Mandelbrot_BuboOn.txt
+Mandelbrot BuboOff ./bubo_runs3/async/Mandelbrot_BuboOff.txt

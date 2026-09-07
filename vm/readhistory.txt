@@ -1,0 +1,1000 @@
+   14  java -jar '/home/hb478/.vscode-server/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+   15  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+   16  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+   17  sudo reboot
+   18  java -jar '/home/hb478/.vscode-server/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+   19  cd vm
+   20  bash build.sh 
+   21  bash run.sh
+   22  bash run.sh > out.txt
+   23  bash build.sh 
+   24  bash run.sh
+   25  bash build.sh 
+   26  bash run.sh
+   27  bash build.sh 
+   28  bash run.sh
+   29  bash build.sh 
+   30  bash run.sh
+   31  bash build.sh 
+   32  bash run.sh
+   33  bash build.sh 
+   34  bash run.sh
+   35  bash runDump.sh 
+   36  bash build.sh 
+   37  bash run.sh > needtoread.txt
+   38  bash build.sh 
+   39  bash run.sh 
+   40  bash build.sh 
+   41  bash run.sh 
+   42  bash build.sh 
+   43  bash run.sh 
+   44  bash build.sh 
+   45  bash run.sh 
+   46  bash build.sh 
+   47  bash run.sh 
+   48  bash build.sh 
+   49  bash run.sh 
+   50  bash build.sh 
+   51  mx  --java-home /home/hb478/repos/labs-openjdk-25-37-jvmci-b06/build/linux-x86_64-server-release/images/graal-builder-jdk  --env libgraal clean
+   52  bash build.sh 
+   53  bash run.sh 
+   54  bash BenchmarkRunner.sh 
+   55  ls /home/hb478/repos/GTSlowdownSchedular/FinalBuboTests/NBody/NBody_CompilerReplay
+   56  bash BenchmarkRunner.sh 
+   57  ls /home/hb478/repos/GTSlowdownSchedular/FinalBuboTests/Towers/Towers_CompilerReplay
+   58  bash BenchmarkRunner.sh 
+   59  ls /home/hb478/repos/are-we-fast-yet/benchmarks/Java/
+   60  bash BenchmarkRunner.sh 
+   61  nohup bash BenchmarkRunner.sh 
+   62  cd Bubo-Agent/
+   63  mvn clean build
+   64  mvn clean package
+   65  ls FinalBuboTests
+   66  ls FinalBuboTests/Bounce/
+   67  pwd
+   68  bash implementations/build-java.sh
+   69  nohup bash BenchmarkRunner.sh 
+   70  cd vm
+   71  nohup bash BenchmarkRunner.sh 
+   72  cd vm
+   73  bash run.sh
+   74  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+   75  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+   76  sudo reboot
+   77   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=localhost:37983 @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+   78  java -jar '/home/hb478/.vscode-server/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+   79  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+   80  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+   81  sudo reboot
+   82   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+   83  vtune -collect hotspots -r /home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_NormalRun_1 -knob sampling-mode=hw -quiet -knob enable-stack-collection=true --app-working-dir=/home/hb478/repos/are-we-fast-yet/benchmarks/Java/src -- /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   84  vtune -collect hotspots -r /home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41 -knob sampling-mode=hw -knob enable-stack-collection=true -- /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.DisableCodeEntryAlignment=true -Xms8g -Xmx8g -Djdk.graal.SaveProfiles=true -Djdk.graal.OverrideProfiles=true -Djdk.graal.SaveProfilesPath=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   85  vtune -collect hotspots -r /home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_1 -knob sampling-mode=hw -knob enable-stack-collection=true -- /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.DisableCodeEntryAlignment=true -Xms8g -Xmx8g -Djdk.graal.SaveProfiles=true -Djdk.graal.OverrideProfiles=true -Djdk.graal.SaveProfilesPath=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   86  java -jar '/home/hb478/.vscode-server/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+   87  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   88  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   89  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   90  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   91   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   92   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilatio -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   93   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+   94   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+   95   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+   96   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:+UseJVMCICompiler -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+   97   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -Djdk.graal.StrictProfiles=false -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+   98   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.StrictProfiles=false -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+   99   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Djdk.graal.StrictProfiles=false -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+  100   /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.StrictProfiles=false -XX:-TieredCompilation -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 15000
+  101  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-TieredCompilation -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+  102  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=false -Xms8g -Xmx8g -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_25_00_57_41_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Havlak 500 1500
+  103  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  104  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  105  sudo reboot
+  106  ls LoopProfiling/SecondTest_Async/Bounce
+  107  cd LoopProfiling/
+  108  ls
+  109  cd SecondTest_Async/
+  110  python marker_sample_extractor.py
+  111  ls
+  112  python marker_sample_extractor.py
+  113  cd vm
+  114  bash build.sh 
+  115  bash run.sh
+  116  bash build.sh 
+  117  bash run.sh
+  118  bash build.sh 
+  119  bash run.sh
+  120  bash build.sh 
+  121  bash run.sh
+  122  bash build.sh 
+  123  bash run.sh
+  124  bash build.sh 
+  125  bash run.sh
+  126  bash build.sh 
+  127  bash run.sh
+  128  bash build.sh 
+  129  bash run.sh
+  130  bash build.sh 
+  131  bash run.sh
+  132  bash build.sh 
+  133  bash run.sh
+  134  bash build.sh 
+  135  bash run.sh
+  136  bash BenchmarkRunner.sh 
+  137  bash build.sh 
+  138  bash run.sh
+  139  bash build.sh 
+  140  bash run.sh
+  141  bash build.sh 
+  142  bash run.sh
+  143  bash build.sh 
+  144  bash run.sh
+  145  bash runDump.sh 
+  146  bash build.sh 
+  147  bash run.sh
+  148  bash build.sh 
+  149  bash run.sh
+  150  bash runDump.sh 
+  151  bash build.sh 
+  152  bash run.sh
+  153  bash runDump.sh 
+  154  bash build.sh 
+  155  bash run.sh
+  156  bash build.sh 
+  157  bash run.sh
+  158  bash nohup BenchmarkRunner.sh 
+  159  nohup bash BenchmarkRunner.sh 
+  160  cd cm
+  161  nohup bash BenchmarkRunner.sh 
+  162  cd vm
+  163  nohup bash BenchmarkRunner.sh 
+  164  python marker_sample_extractor.py
+  165  ls LoopProfiling/FirstTest/Permute
+  166  cd ..
+  167  ls LoopProfiling/FirstTest/Permute
+  168  cd ..
+  169  ls LoopProfiling/FirstTest/Permute
+  170  ls LoopProfiling/FirstTest/Mandelbrot
+  171  cd Loop
+  172  cd LoopProfiling/
+  173  ;s
+  174  cd FirstTest/
+  175  python loop_slowdown_analysis.py
+  176  cd ..
+  177  ls
+  178  ls FirstTest
+  179  ls SecondTest_Async
+  180  python bubo_vs_async.py 
+  181  cd FirstTest/
+  182  python loop_slowdown_analysis.py
+  183  cd ..
+  184  python bubo_vs_async.py 
+  185  ls LoopProfiling/ThirdTest_SimRuns/Bounce
+  186  cd Loop
+  187  cd LoopProfiling/
+  188  cd ThirdTest_SimRuns/
+  189  python bubo_async_compare.py 
+  190  cd vm
+  191  bash run.sh > BuboSlowdown.txt
+  192  bash build.sh 
+  193  bash run.sh
+  194  bash build.sh 
+  195  bash run.sh > log.out
+  196  bash build.sh 
+  197  bash run.sh > log.out
+  198  bash build.sh 
+  199  bash run.sh > log.out
+  200  bash build.sh 
+  201  bash run.sh > log.out
+  202  bash build.sh 
+  203  bash run.sh > log2.out
+  204  bash build.sh 
+  205  bash run.sh > log3.out
+  206  bash build.sh 
+  207  bash run.sh 
+  208  bash build.sh 
+  209  bash run.sh 
+  210  bash build.sh 
+  211  bash run.sh 
+  212  bash build.sh 
+  213  bash run.sh 
+  214  bash build.sh 
+  215  bash run.sh 
+  216  bash build.sh 
+  217  bash run.sh 
+  218  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  219   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  220  java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner > debugout.txt
+  221  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  222  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  223  sudo reboot
+  224  cd vm
+  225  bash build.sh 
+  226  bash run.sh 
+  227  bash build.sh 
+  228  bash run.sh 
+  229  bash build.sh 
+  230  bash run.sh 
+  231  bash build.sh 
+  232  bash run.sh 
+  233  bash build.sh 
+  234  bash run.sh 
+  235  bash build.sh 
+  236  bash run.sh 
+  237  bash run.sh > needtoread.txt
+  238  bash build.sh 
+  239  bash run.sh 
+  240  bash build.sh 
+  241  bash run.sh 
+  242  bash build.sh 
+  243  bash run.sh 
+  244  bash build.sh 
+  245  bash run.sh 
+  246  bash build.sh 
+  247  bash run.sh 
+  248  bash build.sh 
+  249  bash run.sh 
+  250  bash build.sh 
+  251  bash run.sh 
+  252  bash build.sh 
+  253  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  254  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  255  cd vm
+  256  bash build.sh 
+  257  bash run.sh
+  258  bash build.sh 
+  259  bash run.sh
+  260  bash build.sh 
+  261  bash run.sh
+  262  bash build.sh 
+  263  cd LoopProfiling/
+  264  cd THi
+  265  cd ThirdTest_SimRuns/
+  266  ls
+  267  python bubo_async_compare.py 
+  268  ls
+  269  cd Bounce/
+  270  ls
+  271  cd ..
+  272  python bubo_async_compare.py 
+  273  cd vm
+  274  bash BenchmarkRunner.sh 
+  275  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  276  bash StartVTuneServer.sh 
+  277  exit
+  278  bash StartVTuneServer.sh 
+  279  vtune -collect hotspots -r /home/hb478/repos/GTSlowdownSchedular/Data/2025_9999 -knob sampling-mode=hw -quiet -knob enable-stack-collection=false --app-working-dir=/home/hb478/repos/are-we-fast-yet/benchmarks/Java/src -- /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=true -Djdk.graal.GTMarkBasicBlocks=false -Djdk.graal.LIRBlockSlowdownFileName=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_28_00_57_47_SlowDown_Data/_Iter2_Bounce::benchmark.json -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_28_00_57_47_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Bounce 100 10000
+  280  vtune -collect hotspots -r /home/hb478/repos/GTSlowdownSchedular/Data/2025_9999_1 -knob sampling-mode=hw -quiet -knob enable-stack-collection=false --app-working-dir=/home/hb478/repos/are-we-fast-yet/benchmarks/Java/src -- /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Bounce 100 10000
+  281   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_c1mg00cd0p42tdvth1usuy2uu.argfile VTune.VTuneAnalyzer 
+  282   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_c1mg00cd0p42tdvth1usuy2uu.argfile VTune.VTuneAnalyzer 
+  283  ash build.sh 
+  284   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_c1mg00cd0p42tdvth1usuy2uu.argfile VTune.VTuneAnalyzer 
+  285  cd LoopProfiling/CFG_Verification
+  286  ls
+  287  python debug2dot.py BounceCFGinfo.txt > cfg.dot
+  288  dot 
+  289  dot -Tpdf cfg.dot -o cfg.pdf
+  290  python debug2dot.py BounceCFGinfo.txt > cfg.dot
+  291  dot -Tpdf cfg.dot -o cfg.pdf
+  292  bash run_cfg.sh 
+  293  cd Loop
+  294  cd LoopProfiling/
+  295  ls
+  296  cd ThirdTest_SimRuns/
+  297  python bubo_async_compare.py 
+  298  cd vm
+  299  bash build.sh 
+  300  bash runSimple.sh 
+  301  bash runSimple.sh > BounceCFGinfo.txt
+  302  cd vm
+  303  bash build.sh 
+  304  bash runSimple.sh 
+  305   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  306  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  307  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  308  cd vm
+  309  bash build.sh 
+  310  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=true -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_29_11_15_39_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Storage 500 1800
+  311  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=true -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_29_11_15_39_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Storage 500 1800 > toread.txt
+  312  bash build.sh 
+  313  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=true -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_29_11_15_39_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Storage 500 1800 > toread2.txt
+  314  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=true -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation  -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Storage 500 1800 > toread2.txt
+  315  /home/hb478/repos/graal-instrumentation/vm/latest_graalvm_home/bin/java -Djdk.graal.LIRGTSlowDown=false -Djdk.graal.GTMarkBasicBlocks=true -Djdk.graal.IsolatedLoopHeaderAlignment=0 -Djdk.graal.LoopHeaderAlignment=0 -Djdk.graal.DisableCodeEntryAlignment=true -XX:+UseJVMCICompiler -XX:+UseJVMCINativeLibrary -XX:-BackgroundCompilation -Djdk.graal.StrictProfiles=false -Djdk.graal.OverrideProfiles=true -Djdk.graal.LoadProfiles=/home/hb478/repos/GTSlowdownSchedular/Data/2025_11_29_11_15_39_CompilerReplay -cp /home/hb478/repos/are-we-fast-yet/benchmarks/Java/benchmarks.jar Harness Storage 500 1800 > toread2.txt
+  316  bash build.sh 
+  317  cd vm
+  318  bash build.sh 
+  319  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  320  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  321  sudo reboot
+  322   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  323  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  324   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  325  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  326  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  327  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  328  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  329  sudo reboot
+  330  cd LoopProfiling/FourthTest_SimRuns_WithCallCount/Bounce
+  331  cd ..
+  332  python bubo_async_compare.py 
+  333  cd LoopProfiling/CFG_Verification
+  334  cd /home/hb478/repos/BuboExperiments/LoopProfiling/CFG_Verification
+  335  ls
+  336  bash run_cfg.sh 
+  337  cd vm
+  338  bash build.sh 
+  339  bash runSimple.sh 
+  340  bash build.sh 
+  341  bash runSimple.sh 
+  342  bash runSimpleRunAll.sh 
+  343  bash build.sh 
+  344  bash BenchmarkRunner.sh 
+  345  bash build.sh 
+  346  bash runSimpleRunAll.sh 
+  347  bash runSimple.sh 
+  348  bash build.sh 
+  349  bash runSimple.sh 
+  350  bash runSimpleRunAll.sh 
+  351  bash build.sh 
+  352  bash runSimpleRunAll.sh 
+  353  bash build.sh 
+  354  bash runSimpleRunAll.sh 
+  355  bash build.sh 
+  356  bash runSimpleRunAll.sh 
+  357  bash build.sh 
+  358  bash runSimpleRunAll.sh 
+  359  bash BenchmarkRunner.sh 
+  360  bash run.sh > Mandelbrot
+  361  bash run.sh > Mandelbrot.txt
+  362  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  363  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  364  java -jar '/home/hb478/.vscode/extensions/stg.java-bytecode-workbench-0.2.1/OPALCommandServer.jar' -Xmx4G
+  365  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  366  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  367  cd vm
+  368  ls
+  369  history
+  370  bash runSourceVerifyer.sh 
+  371  bash runSourceVerifyer.sh > mandelBrot.txt
+  372  cd LoopProfiling/CFG_Verification
+  373  bash run_cfg.sh 
+  374  cd FinalBuboTests
+  375  ls
+  376  cd Async
+  377  wget https://github.com/async-profiler/async-profiler/releases/download/v4.2.1/async-profiler-4.2.1-linux-x64.tar.gz
+  378  tar -zxvf async-profiler-4.2.1-linux-x64.tar.gz
+  379  cd /home/hb478/repos/are-we-fast-yet/Async
+  380  ls
+  381  cd vm
+  382  bash MandelbrotTests.sh 
+  383  bash MandelExtrabaselines.sh 
+  384  bash BenchmarkRunnerAsyncBuboJFR.sh 
+  385  cd LoopProfiling/MandelbrotTest_Different_SlowdownSpeeds
+  386  ls
+  387  python Mandelbrot_BuboAsync_Analysis.py 
+  388  python Mandelbrot_AsyncOnly_Analysis.py 
+  389  cd ..
+  390  cd MandelbrotTest_NewAsync_Bubo_JFR/
+  391  ls
+  392  jfr
+  393  jfr print --events ExecutionSample Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr | head -n 80
+  394  python Bubo_Async_JFR.py 
+  395  ls
+  396  cd ..
+  397  history
+  398  fr print --events ExecutionSample /home/hb478/repos/graal-instrumentation/vm/allDebugSet/Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr | head -n 80
+  399  jfr print --events ExecutionSample /home/hb478/repos/graal-instrumentation/vm/allDebugSet/Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr | head -n 80
+  400  cd LoopProfiling/MandelbrotTest_NewAsync_Bubo_JFR_AllDebugSet
+  401  python Bubo_Async_JFR.py 
+  402  history
+  403  jfr print --events ExecutionSample Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr | head -n 80
+  404  python Bubo_Async_JFR.py 
+  405  jfr print --events ExecutionSample Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr | head -n 80
+  406  jfr print --events ExecutionSample Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_Slowdown_BuboOff.jfr
+  407  python Bubo_Async_JFR.py 
+  408  jfr print --events ExecutionSample "$JFR" | awk '
+  409  /^jdk\.ExecutionSample \{/ {in_event=1; buf=$0 "\n"; next}
+  410  in_event {
+  411    buf = buf $0 "\n";
+  412    if ($0 ~ /^}/) {
+  413      if (buf ~ /BuboAgentCompilerMarkers/) {
+  414        print "===== SAMPLE WITH BUBO MARKERS =====";
+  415        print buf;
+  416      }
+  417      in_event=0;
+  418    }
+  419  }
+  420  '
+  421  JFR=Mandelbrot_JFRRuns/Mandelbrot200/Mandelbrot_200_JFR_Slowdown_BuboOff.jfr
+  422  jfr print --events ExecutionSample "$JFR" | awk '
+  423  /^jdk\.ExecutionSample \{/ {in_event=1; buf=$0 "\n"; next}
+  424  in_event {
+  425    buf = buf $0 "\n";
+  426    if ($0 ~ /^}/) {
+  427      if (buf ~ /BuboAgentCompilerMarkers/) {
+  428        print "===== SAMPLE WITH BUBO MARKERS =====";
+  429        print buf;
+  430      }
+  431      in_event=0;
+  432    }
+  433  }
+  434  '
+  435  jfr print --events ExecutionSample "$JFR" | awk '
+  436  /^jdk\.ExecutionSample \{/ {in_event=1; has_bubo=0; next}
+  437  in_event {
+  438    if ($0 ~ /BuboAgentCompilerMarkers/) has_bubo=1;
+  439    if ($0 ~ /^}/) {
+  440      in_event=0;
+  441    }
+  442  }
+  443  /stackTrace = \[/ && has_bubo {
+  444    print "===== STACKTRACE WITH BUBO =====";
+  445    print $0;
+  446    in_stack=1;
+  447    next;
+  448  }
+  449  in_stack {
+  450    print $0;
+  451    if ($0 ~ /^\]/) {
+  452      in_stack=0;
+  453      print "";
+  454    }
+  455  }
+  456  '
+  457  jfr print --events ExecutionSample "$JFR" | awk '
+  458  /^jdk\.ExecutionSample \{/ {in_event=1; has_bubo=0; next}
+  459  in_event {
+  460    if ($0 ~ /BuboAgentCompilerMarkers/) has_bubo=1;
+  461    if ($0 ~ /^}/) {
+  462      in_event=0;
+  463    }
+  464  }
+  465  /stackTrace = \[/ && has_bubo {
+  466    print "===== STACKTRACE WITH BUBO =====";
+  467    print $0;
+  468    in_stack=1;
+  469    next;
+  470  }
+  471  in_stack {
+  472    print $0;
+  473    if ($0 ~ /^\]/) {
+  474      in_stack=0;
+  475      print "";
+  476    }
+  477  }
+  478  '
+  479  jfr print --events ExecutionSample "$JFR" | awk '
+  480  /^jdk\.ExecutionSample \{/ {in_event=1; has_bubo=0; next}
+  481  in_event {
+  482    if ($0 ~ /BuboAgentCompilerMarkers/) has_bubo=1;
+  483    if ($0 ~ /^}/) {
+  484      in_event=0;
+  485    }
+  486  }
+  487  /stackTrace = \[/ && has_bubo {
+  488    print "===== STACKTRACE WITH BUBO =====";
+  489    print $0;
+  490    in_stack=1;
+  491    next;
+  492  }
+  493  in_stack {
+  494    print $0;
+  495    if ($0 ~ /^\]/) {
+  496      in_stack=0;
+  497      print "";
+  498    }
+  499  }
+  500  '
+  501  bash jfrprint.sh 
+  502  jfr print --events ExecutionSample "$JFR" | grep -n "BuboAgentCompilerMarkers" | head -n 40
+  503  python Bubo_Async_JFR.py 
+  504  JFR=/home/hb478/repos/BuboExperiments/LoopProfiling/MandelbrotTest_NewAsync_Bubo_JFR_AllDebugSet/Mandelbrot_JFRRuns/Mandelbrot50/Mandelbrot_50_JFR_NoSlowdown_BuboOff.jfr
+  505  jfr print --events ExecutionSample "$JFR" | grep -n "BuboAgentCompilerMarkers" | head -n 40
+  506  jfr print --events ExecutionSample "$JFR" | awk '
+  507  /^jdk\.ExecutionSample \{/ {in_event=1; buf=$0 "\n"; next}
+  508  in_event {
+  509    buf = buf $0 "\n";
+  510    if ($0 ~ /^}/) {
+  511      if (buf ~ /BuboAgentCompilerMarkers/) {
+  512        print "===== SAMPLE WITH BUBO MARKERS =====";
+  513        print buf;
+  514      }
+  515      in_event=0;
+  516    }
+  517  }
+  518  '
+  519  ls /home/hb478/repos/BuboExperiments/LoopProfiling/MandelbrotTest_NewAsync_Bubo_JFR_AllDebugSet/Mandelbrot_JFRRuns/Mandelbrot50
+  520  python Bubo_Async_JFR.py 
+  521  cd vm
+  522  bash build.sh 
+  523  bash run.sh
+  524  bash BenchmarkRunnerAsyncBuboJFR.sh 
+  525   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  526   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  527  bash implementations/build-java.sh
+  528  bash Scripts/AsyncRunner.sh
+  529  bash run.sh 
+  530  bash implementations/build-java.sh
+  531  bash run.sh 
+  532  bash implementations/build-java.sh
+  533  bash run.sh 
+  534  bash implementations/build-java.sh
+  535  bash run.sh 
+  536  cd benchmarks/Java/src
+  537  gcc -shared -fPIC     -o libtsc.so     -I"$JAVA_HOME/include"     -I"$JAVA_HOME/include/linux"     tsc.c
+  538  ls src/native/linux-x86_64/
+  539  ls /src/native/linux-x86_64/
+  540  gcc -shared -fPIC -O2     -o libtsc.so     -I"$JAVA_HOME/include"     -I"$JAVA_HOME/include/linux"     tsc.c
+  541  ls
+  542  mkdir -p src/native/linux-x86_64
+  543  mv libtsc.so src/native/linux-x86_64/
+  544  ant clean jar
+  545  cd ..
+  546  ant clean jar
+  547  ant clean 
+  548  cd LoopProfiling/AsyncJfrAndBuboSlowdownRuns_WithFullSetDebug
+  549  python bubo_async_compare.py 
+  550  ls LoopProfiling/AsyncJfrAndBuboSlowdownRuns_WithFullSetDebug/Mandelbrot
+  551  ls /Mandelbrot
+  552  ls Mandelbrot
+  553  bash pre_dump_jfr.sh 
+  554  python bubo_async_compare.py 
+  555  cd vm
+  556  bash FundimentalsNormalSlowdownBubo.sh 
+  557  nohup bash FundimentalsNormalSlowdownBubo.sh 
+  558  sudo reboot
+  559  cd vm
+  560  bash MandelbrotTests.sh > slowdown.txt
+  561  bash MandelbrotTests.sh > Noslowdown.txt
+  562  bash FundimentalsNormalSlowdownBubo.sh 
+  563  bash BenchmarkRunnerAsyncJFR.sh 
+  564  ls /home/hb478/repos/graal-instrumentation/vm/AsyncJfrSlowdownRuns_WithFullSetDebug/Bounce
+  565  bash build.sh 
+  566  bash run.sh
+  567  bash build.sh 
+  568  bash run.sh
+  569  bash build.sh 
+  570  bash run.sh
+  571  bash build.sh 
+  572  bash run.sh
+  573  bash build.sh 
+  574  bash run.sh
+  575  bash build.sh 
+  576  bash run.sh
+  577  bash build.sh 
+  578  bash run.sh
+  579  bash build.sh 
+  580  bash run.sh
+  581  cd LoopOverhead/BuboLoopOverheadAndSlowdown
+  582  ls
+  583  ls LoopOverhead/BuboLoopOverheadAndSlowdown/FourPhase_BuboSlowdownRuns/Bounce
+  584  ls
+  585  ls FourPhase_BuboSlowdownRuns//Bounce
+  586  ls
+  587  python plot_bubo_overhead.py 
+  588  cd /home/hb478/repos/BuboExperiments/LoopProfiling/FinalComparisonOfLoopSlowdown
+  589  ls
+  590  ls /Data/BuboData/FourPhase_BuboSlowdownRuns
+  591  ls Data/BuboData/FourPhase_BuboSlowdownRuns
+  592  ls /home/hb478/repos/BuboExperiments/LoopProfiling/FinalComparisonOfLoopSlowdown/Data/BuboData/FourPhase_BuboSlowdownRuns/Bounce
+  593  python run_all_tools.py 
+  594  ls LoopProfiling/FinalComparisonOfLoopSlowdown/Data/AsyncJfrSlowdownRuns_WithFullSetDebug/Bounce
+  595  ls /home/hb478/repos/BuboExperiments/LoopProfiling/FinalComparisonOfLoopSlowdown/Data/AsyncJfrSlowdownRuns_WithFullSetDebug/Bounce
+  596  bash async_loop_slowdowns.py 
+  597  python async_loop_slowdowns.py 
+  598  python JFR_loop_slowdowns.py 
+  599  python plot_bubo_overhead.py 
+  600  python bubo_loop_slowdowns.py 
+  601  ls
+  602  python run_all_tools.py 
+  603   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  604   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  605  bash StartVTuneServer.sh 
+  606   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  607   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  608  bash reboot
+  609  sudo reboot
+  610  cd LoopProfiling/CFG_Verification
+  611  ls
+  612  bash ./run_cfg.sh
+  613   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  614  cd vm
+  615  bash build.sh 
+  616  bash ./run.sh
+  617  bash build.sh 
+  618  bash ./run.sh
+  619  bash build.sh 
+  620  bash ./run.sh
+  621  bash build.sh 
+  622  bash ./run.sh
+  623  bash ./run.sh > RichardsCallAware.txt
+  624  bash ./run.sh 
+  625  bash build.sh 
+  626  bash ./run.sh 
+  627  bash ./run.sh > RichardsCallAwareNoSlowdown.txt
+  628  bash ./run.sh > RichardsCallAwareSlowdown.txt
+  629  bash build.sh 
+  630  bash ./run.sh > RichardsCallAwareNoSlowdown.txt
+  631  bash ./run.sh > RichardsCallAwareSlowdown.txt
+  632  bash ./run.sh > JsonCallAwareNoSlowdown.txt
+  633  bash ./run.sh > JsonCallAwareSlowdown.txt
+  634  bash build.sh 
+  635  bash ./run.sh > JsonCallAwareNoSlowdownCheckITstillAllWorks.txt
+  636  bash ./run.sh > JsonCallAwareSlowdownCheckITstillAllWorks.txt
+  637  bash build.sh 
+  638  bash r./run.sh > sieveCFG.txt
+  639  bash ./run.sh > sieveCFG.txt
+  640  bash build.sh 
+  641  bash ./run.sh > sieveCFG.txt
+  642  bash ./run.sh 
+  643  ls
+  644  pwd
+  645  bash ./run.sh 
+  646  cd vm
+  647  bash ./FundimentalsNormalSlowdownBubo.sh
+  648  bash build.sh 
+  649  bash ./FundimentalsNormalSlowdownBubo.sh
+  650  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  651  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  652  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  653  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  654   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  655   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  656  cd LoopOverhead/BuboLoopOverheadAndSlowdown/FourPhase_BuboSlowdownRuns
+  657  python plot_bubo_overhead.py
+  658  ls
+  659  cd ..
+  660  python plot_bubo_overhead.py
+  661  cd LoopProfiling/FinalComparisonOfLoopSlowdown
+  662  ls
+  663  python ./bubo_loop_slowdowns.py
+  664  cd LoopProfiling/CustomMadeLoopTest
+  665  cd ..
+  666  cd CustomMadeLoopTest
+  667  ls
+  668  python ./plotter.py
+  669  cd /home/hb478/repos/BuboExperiments/LoopProfiling/CustomMadeLoopTest/Data/VTuneData
+  670  python ./median_per_method.py
+  671   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  672   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  673  cd LoopProfiling/CFG_Verification
+  674  bash ./run_cfg.sh
+  675  cd LoopProfiling/CustomMadeLoopTest/Data/VTuneData/
+  676  ls
+  677  python ./median_per_method.py
+  678  ls
+  679  python ./median_per_method.py
+  680  cd vm
+  681  bash build.sh 
+  682  bash ./BenchmarkRunnerAsyncBuboJFR.sh
+  683  bash ./BenchmarkRunnerAsyncJFR.sh
+  684  bash build.sh 
+  685  bash ./BenchmarkRunnerAsyncJFR.sh
+  686  bash ./build.sh
+  687  bash ./run.sh
+  688  bash ./build.sh
+  689  bash ./run.sh
+  690  bash ./build.sh
+  691  bash ./run.sh
+  692  bash ./build.sh
+  693  bash ./FundimentalsNormalSlowdownBubo.sh
+  694  bash build.sh 
+  695  bash ./FundimentalsNormalSlowdownBubo.sh
+  696  bash build.sh 
+  697  bash ./FundimentalsNormalSlowdownBubo.sh
+  698  bash build.sh 
+  699  bash ./FundimentalsNormalSlowdownBubo.sh
+  700  cd vm bash build/
+  701  cd vm 
+  702  bahs build.sh 
+  703  bash build.sh 
+  704  bash ./FundimentalsNormalSlowdownBubo.sh
+  705  bash build.sh 
+  706  bash ./FundimentalsNormalSlowdownBubo.sh
+  707  cd LoopProfiling/CustomMadeLoopTest
+  708  python ./plotter.py
+  709  python ./plot_loops_bubo_async_jfr.py
+  710   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.TestASlowdown 
+  711  sudo rebot
+  712  sudo reboot
+  713  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  714  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  715  cd vm
+  716  bash build.sh 
+  717  bash ./run.sh
+  718  bash build.sh 
+  719  bash ./run.sh
+  720  bash build.sh 
+  721  bash ./run.sh
+  722  bash build.sh 
+  723  bash ./run.sh
+  724   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  725   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  726  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  727  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  728  cd vm
+  729  bash ./FundimentalsNormalSlowdownBubo.sh
+  730  bash build.sh 
+  731  bash ./run.sh
+  732   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  733  sudo reboot
+  734   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  735   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  736  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  737  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  738  cd vm
+  739  bash build.sh 
+  740  bash ./FundimentalsNormalSlowdownBubo.sh
+  741  bash build.sh 
+  742  sudo reboot
+  743   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  744  java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner > findBrokenBlock.txt
+  745  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  746  java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  747   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  748   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  749  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  750  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  751  cd vm
+  752  bash build.sh 
+  753  bash ./FundimentalsNormalSlowdownBubo.sh
+  754  bash build.sh 
+  755  bash run.sh > findBrokenBlock.txt
+  756  bash build.sh 
+  757  bash run.sh
+  758  bash build.sh 
+  759  bash run.sh
+  760  bash build.sh 
+  761  bash run.sh
+  762  bash ./FundimentalsNormalSlowdownBubo.sh
+  763  bash build.sh 
+  764  bash run.sh
+  765  bash build.sh 
+  766  bash run.sh
+  767  bash build.sh 
+  768  bash run.sh
+  769  bash build.sh 
+  770  bash run.sh
+  771  bash build.sh 
+  772  bash run.sh
+  773  bash build.sh 
+  774  bash run.sh
+  775  bash build.sh 
+  776  bash run.sh
+  777  bash build.sh 
+  778  cd LoopProfiling/CustomMadeLoopTest
+  779  ls
+  780  python ./plotter.py
+  781  cd LoopProfiling/CFG_Verification
+  782  bash ./run_cfg.sh
+  783  python dot_cfg_to_loops_csv.py /home/hb478/repos/BuboExperiments/LoopProfiling/CFG_Verification/BuboOwnSlowdownCFG2_bubo2/LoopBenchmarks/LoopBenchmarks_slowdown_withBubo/143_214_LoopBenchmarks.editDistanceLoop_char_char_.dot -o CFG_143_loops.csv
+  784  python dot_cfg_to_loops_csv.py /home/hb478/repos/BuboExperiments/LoopProfiling/CFG_Verification/BuboOwnSlowdownCFG2_bubo2/LoopBenchmarks/LoopBenchmarks_slowdown_withBubo/ -o loops.csv
+  785  cd LoopProfiling/CustomMadeLoopTest
+  786  cd LoopProfiling/CustomMadeLoopTest/Data/VTuneData
+  787  cd Data/VTuneData
+  788  ls
+  789  python median_per_method.py 
+  790  cd ..
+  791  python ./plotter.py
+  792  cd /home/hb478/repos/BuboExperiments/LoopProfiling/CustomMadeLoopTest/Data/VTuneData
+  793  python ./median_per_loop.py
+  794   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  795   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  796  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  797  java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner > toRead.txt
+  798  cd vm
+  799  bash build.sh 
+  800  bash ./FundimentalsNormalSlowdownBubo.sh
+  801  bash build.sh 
+  802  bash ./FundimentalsNormalSlowdownBubo.sh
+  803  bash build.sh 
+  804   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  805   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  806  sudo reboot
+  807  cd LoopProfiling/CustomMadeLoopTest
+  808  python ./plotter.py
+  809   /usr/bin/env /usr/lib/jvm/java-21-openjdk-21.0.5.0.10-3.el9.x86_64/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  810  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  811  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  812  cd LoopProfiling/CustomMadeLoopTest/Data/VTuneData
+  813  python ./median_per_loop.py
+  814  cd LoopProfiling/CustomMadeLoopTest
+  815  ls
+  816  python ./plotter.py
+  817  cd LoopProfiling/TestBuboRunToPlot
+  818  cd ..
+  819  cd ./TestBuboRunToPlot/
+  820  ls
+  821  bash ./run_all.sh
+  822  cd LoopProfiling/CFG_Verification
+  823  bash ru
+  824  bash run_cfg.sh 
+  825  history
+  826  python dot_cfg_to_loops_csv.py /home/hb478/repos/BuboExperiments/LoopProfiling/CFG_Verification/BuboOwnSlowdown_bubo6_DevineWithProbe_cfg/LoopBenchmarks/LoopBenchmarks_baseline_withBubo -o loops3.csv
+  827  cd vm
+  828  bash ./FundimentalsNormalSlowdownBubo.sh
+  829  cd LoopProfiling/TestBuboRunToPlot
+  830  bash ./run_all.sh
+  831  sudo bash ./run_all.sh
+  832  bash ./run_all.sh
+  833  head -n 5 /home/hb478/repos/GTSlowdownSchedular/Tests/SlowdownTest.java
+  834  find /home/hb478/repos/GTSlowdownSchedular/build_pipeline -name "SlowdownTest.class" -print
+  835  bash ./run_all.sh
+  836  ls /home/hb478/repos/BuboExperiments/LoopProfiling/TestBuboRunToPlot/plots
+  837  python scripts/plot_loopbenchmarks_with_errorbars.py
+  838  bash ./run_all.sh
+  839  python scripts/plot_loopbenchmarks_with_errorbars.py
+  840  bash ./run_all.sh > toRead.txt
+  841  bash ./run_all.sh
+  842  cd LoopProfiling/CustomMadeLoopTest
+  843  python plot_loops_bubo_async_jfr.py
+  844  cd vm
+  845  bash build.sh 
+  846  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  847  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  848  pwd
+  849  cd LoopProfiling/TestBuboRunToPlot
+  850  bash ./run_all.sh
+  851  python scripts/plot_loopbenchmarks_with_errorbars.py
+  852  bash ./run_all.sh
+  853  cd ..
+  854  ls
+  855  cd ..
+  856  ls
+  857  cd ..
+  858  ls
+  859  cd renaissance/
+  860  ls
+  861  cd ..
+  862  rm -r ./renaissance/
+  863  y
+  864  wget https://github.com/renaissance-benchmarks/renaissance/releases/download/v0.16.1/renaissance-gpl-0.16.1.jar
+  865  ls
+  866  bash run
+  867  bash ./run_all.sh
+  868  cd Bubo-Agent
+  869  mvn clean package
+  870  cd vm
+  871  bash ./runAsync.sh
+  872  bash build.sh 
+  873  bash ./runAsync.sh
+  874  bash build.sh 
+  875  bash ./runAsync.sh
+  876  bash build.sh 
+  877  bash ./runAsync.sh
+  878  bash build.sh 
+  879  bash ./runAsync.sh
+  880  bash build.sh 
+  881  bash ./runAsync.sh
+  882  bash build.sh 
+  883  bash ./runAsync.sh
+  884  bash build.sh 
+  885  bash ./runAsync.sh
+  886  bash build.sh 
+  887  bash clean.sh 
+  888  bash build.sh 
+  889  bash ./runAsync.sh
+  890  bash build.sh 
+  891  bash ./runAsync.sh
+  892  bash build.sh 
+  893  bash ./runAsync.sh
+  894  bash build.sh 
+  895  bash ./runAsync.sh
+  896  bash build.sh 
+  897  bash ./runAsync.sh
+  898  bash build.sh 
+  899  bash ./runAsync.sh
+  900  bash build.sh 
+  901  bash ./runAsync.sh
+  902  bash build.sh 
+  903  bash ./runAsync.sh
+  904  bash build.sh 
+  905  bash ./runAsync.sh
+  906   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=localhost:42621 @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile VTune.VTuneAnalyzer 
+  907  vtune -report hotspots -r "/home/hb478/repos/GTSlowdownSchedular/Data/2025_12_18_12_08_12_NormalRun" -source-object 'function=LoopBenchmarks::editDistanceLoop' -group-by=basic-block,address -column 'block,CPU Time:Self,assembly' | sed -n '1,200p'
+  908  vtune -report hotspots -r "/home/hb478/repos/GTSlowdownSchedular/Data/2025_12_18_12_08_12_NormalRun" -source-object 'function=LoopBenchmarks::editDistanceLoop' -group-by=basic-block,address -column=block,"CPU Time:Self",assembly | grep -E '[0-9]+(\.[0-9]+)?s$' | head -n 40
+  909  vtune -report hotspots -r "/home/hb478/repos/GTSlowdownSchedular/Data/2025_12_18_12_08_12_NormalRun" -source-object 'function=LoopBenchmarks::editDistanceLoop' -group-by=basic-block,address -column 'block,CPU Time:Self,assembly' | awk 'match($0, /[0-9]+(\.[0-9]+)?s[[:space:]]*$/){ if (c++ < 40) print }'
+  910   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile VTune.VTuneAnalyzer 
+  911   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile VTune.VTuneAnalyzer 
+  912   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  913   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile Tests.SlowdownTest 
+  914  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  915  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  916  bash run_all.sh 
+  917  bash r./run_sections.sh
+  918  bash ./run_sections.sh
+  919  cd FinalDataRefined100
+  920  ls
+  921  cd ./Bounce/
+  922  ls
+  923  cd .
+  924  cd ..
+  925  cd ./Data/
+  926  ls
+  927  cd ..
+  928  bash ./CopyDatatoFinalDataFolders.sh --dry-run
+  929  bash ./CopyDatatoFinalDataFolders.sh
+  930  cd FinalBuboDeveinWithProbe
+  931  ls
+  932  cd ./2025_12_19_01_13_06/
+  933  ls
+  934  cd ./Permute/
+  935  ls
+  936  pwd
+  937  CD ..
+  938  cd ..
+  939  bash ./CopyDatatoFinalDataFolders.sh
+  940  cd vm
+  941  bash build.sh 
+  942  bash clean.sh 
+  943  bash ./build.sh
+  944  mx ./FourPhase_BuboSlowdownRuns/
+  945  mx update
+  946  bash ./build.sh
+  947  mx -v --version
+  948  mx --java-home
+  949  mx fetch-jdk labsjdk-ce-latest
+  950  JAVA_HOME=/home/hb478/.mx/jdks/labsjdk-ce-latest-jvmci-25.1-b13_amd64
+  951  mx --env libgraal clean
+  952  bash clean.sh 
+  953  bash ./build.sh
+  954  bash run.sh
+  955  sudo reboot
+  956  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  957  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  958  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  959  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  960  sudo reboot
+  961  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  962  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  963  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  964  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  965  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  966  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  967  sudo reboot
+  968  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  969  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  970  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  971  nohup java -cp .:GTResources/org.json-1.6-20240205.jar GodRunner
+  972  sudo reboot
+  973  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  974  cd FinalBuboTests/WithProbe/AWFY
+  975  ls
+  976  cd ..
+  977  cd ./Renaissance/
+  978  ls
+  979  ls LoopProfiling/TestBuboRunToPlot/scripts
+  980  ls
+  981  cd LoopProfiling/TestBuboRunToPlot
+  982  bash run_all.sh 
+  983  bash ./run_all.sh
+  984  bash ./run_all_everything_withprobe.sh
+  985  nohup bash ./run_all_everything_withprobe.sh 
+  986  ls
+  987  cd LoopProfiling/TestBuboRunToPlot/
+  988  bash ./run_all.sh
+  989  bash ./run_all.sh --benchmark LoopBenchmarks --suite AWFY --probe WithProbe --iter 1
+  990  bash ./run_all.sh --benchmark LoopBenchmarks --suite AWFY --probe WithProbe --iter 12000
+  991  history
+  992  nohup bash ./run_all_everything_withprobe.sh
+  993   /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  994   cd /home/hb478/repos/GTSlowdownSchedular ; /usr/bin/env /home/hburchell/Downloads/labsjdk-ce-26-jvmci-b01/bin/java @/tmp/cp_3vsive6s58c4oexvc5vcbixou.argfile GodRunner 
+  995  javac -cp .:GTResources/org.json-1.6-20240205.jar $(find . -name "*.java")
+  996  cd LoopProfiling/TestBuboRunToPlot
+  997  nohup bash ./run_all_everything_withprobe.sh
+  998  cd LoopProfiling/TestBuboRunToPlot
+  999  nohup bash ./run_all_everything_withprobe.sh
+ 1000  cd vm
+ 1001  bahs ./runAsync.sh
+ 1002  bash ./runAsync.sh
+ 1003  ls
+ 1004  bash clean.sh 
+ 1005  bash build.sh 
+ 1006  bash clean.sh 
+ 1007  bash build.sh 
+ 1008  bash ./run.sh
+ 1009  bash ./runAsync.sh
+ 1010  bash build.sh 
+ 1011  bash ./runAsync.sh
+ 1012  hisotry
+ 1013  history > readhistory.txt

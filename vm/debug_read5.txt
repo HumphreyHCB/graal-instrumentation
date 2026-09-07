@@ -1,0 +1,415 @@
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+Could not locate BlockSlowdown.json
+Skipping Loading (this might cause a fatal crash if GTSlowdown is on)
+SINK_L=1218744095412241922
+SINK_D=278.7961484890173
+Bubo.RDTSC.Harness.main Total RDTSC cycles: 202732485222
+Comp 52 (java.util.ImmutableCollections$SetN$SetNIterator.next()) loops:
+Found Encoding : 0:-1
+└── Loop 0
+  loop 0 Cycles: 379270 || Activation Count:4407 | LoopCallCount: 0 |  Source: -at java.util.ImmutableCollections$SetN$SetNIterator.next(ImmutableCollections.java:1213) [bci: 21] | -at java.util.ImmutableCollections$SetN$SetNIterator.next(ImmutableCollections.java:1223) [bci: 65]
+Comp 56 (java.util.HashMap.putVal(int,) loops:
+Found Encoding : 0:-1
+└── Loop 0
+  loop 0 Cycles: 11118 || Activation Count:161 | LoopCallCount: 0 |  Source: -at java.util.HashMap.putVal(HashMap.java:648) [bci: 134] | -at java.util.HashMap.putVal(HashMap.java:649) [bci: 145]
+Comp 57 (java.lang.String.equals(Object)) loops:
+Found Encoding : 0:-1
+└── Loop 0
+  loop 0 Cycles: 9028 || Activation Count:73 | LoopCallCount: 0 |  Source: -at java.lang.StringLatin1.equals(StringLatin1.java:100) [bci: 9]
+-at java.lang.String.equals(String.java:1926) [bci: 44] | -at java.lang.StringLatin1.equals(StringLatin1.java:105) [bci: 32]
+-at java.lang.String.equals(String.java:1926) [bci: 44]
+Comp 75 (java.util.HashMap.resize()) loops:
+Found Encoding : 2:-1,0:-1,1:0
+├── Loop 2
+└── Loop 0
+    └── Loop 1
+  loop 0 Cycles: 29478 || Activation Count:7 | LoopCallCount: 0 |  Source: -at java.util.HashMap.resize(HashMap.java:714) [bci: 151] | -at java.util.HashMap.resize(HashMap.java:755) [bci: 353]
+  loop 1 Cycles: 8634 || Activation Count:68 | LoopCallCount: 0 |  Source: -at java.util.HashMap.resize(HashMap.java:727) [bci: 235] | -at java.util.HashMap.resize(HashMap.java:743) [bci: 309]
+  loop 2 Cycles: 22236 || Activation Count:241 | LoopCallCount: 0 |  Source: -at jdk.graal.compiler.hotspot.replacements.HotSpotAllocationSnippets.allocateArray(KlassPointer, int, int, int, AllocationSnippets$FillContent, int, boolean, boolean, boolean, boolean, HotSpotAllocationSnippets$HotSpotAllocationProfilingData, boolea
+Comp 88 (java.util.Properties$LineReader.readLine()) loops:
+Found Encoding : 5:-1,3:-1,4:3,0:-1,1:0,2:1
+├── Loop 5
+├── Loop 3
+│   └── Loop 4
+└── Loop 0
+    └── Loop 1
+        └── Loop 2
+  loop 1 Cycles: 248630 || Activation Count:90 | LoopCallCount: 1 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:538) [bci: 219] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 2 Cycles: 15246 || Activation Count:91 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 5 Cycles: 792 || Activation Count:1 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+Comp 89 (java.util.Properties$LineReader.readLine()-Re-Comp) loops:
+Found Encoding : 0:-1,1:0,2:1
+└── Loop 0
+    └── Loop 1
+        └── Loop 2
+  loop 1 Cycles: 4352 || Activation Count:14 | LoopCallCount: 1 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:538) [bci: 219] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 2 Cycles: 2296 || Activation Count:14 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:545) [bci: 262]
+Comp 90 (java.util.Properties$LineReader.readLine()-Re-Comp) loops:
+Found Encoding : 5:-1,3:-1,4:3,0:-1,1:0,2:1
+├── Loop 5
+├── Loop 3
+│   └── Loop 4
+└── Loop 0
+    └── Loop 1
+        └── Loop 2
+  loop 0 Cycles: 48116 || Activation Count:1 | LoopCallCount: 2 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:504) [bci: 53] | -at java.util.Properties$LineReader.readLine(Properties.java:615) [bci: 577]
+  loop 1 Cycles: 35986 || Activation Count:131 | LoopCallCount: 1 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:538) [bci: 219] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 2 Cycles: 20034 || Activation Count:131 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 5 Cycles: 970 || Activation Count:1 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+Comp 91 (java.util.Properties$LineReader.readLine()-Re-Comp) loops:
+Found Encoding : 0:-1,1:0,2:1
+└── Loop 0
+    └── Loop 1
+        └── Loop 2
+  loop 0 Cycles: 347136 || Activation Count:6 | LoopCallCount: 2 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:504) [bci: 53] | -at java.util.Properties$LineReader.readLine(Properties.java:615) [bci: 577]
+  loop 1 Cycles: 418232 || Activation Count:374 | LoopCallCount: 1 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:538) [bci: 219] | -at java.util.Properties$LineReader.readLine(Properties.java:543) [bci: 259]
+  loop 2 Cycles: 59850 || Activation Count:377 | LoopCallCount: 0 |  Source: -at java.util.Properties$LineReader.readLine(Properties.java:540) [bci: 224] | -at java.util.Properties$LineReader.readLine(Properties.java:545) [bci: 262]
+Comp 94 (jdk.internal.util.ArraysSupport.unsignedHashCode(int,) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 62044 || Activation Count:822 | LoopCallCount: 0 |  Source: -at jdk.internal.util.ArraysSupport.unsignedHashCode(ArraysSupport.java:378) [bci: 8] | -at jdk.internal.util.ArraysSupport.unsignedHashCode(ArraysSupport.java:381) [bci: 34]
+  loop 1 Cycles: 84048 || Activation Count:822 | LoopCallCount: 0 |  Source: Source Missing | -at jdk.internal.util.ArraysSupport.unsignedHashCode(ArraysSupport.java:381) [bci: 34]
+  loop 2 Cycles: 72556 || Activation Count:822 | LoopCallCount: 0 |  Source: Source Missing | -at jdk.internal.util.ArraysSupport.unsignedHashCode(ArraysSupport.java:381) [bci: 34]
+Comp 115 (InnerLoopStepBenchmark.bench1()) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 1328782 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench1() [bci: 12] | -at InnerLoopStepBenchmark.bench1() [bci: 17]
+  loop 1 Cycles: 60406 || Activation Count:797 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench1() [bci: 71] | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+  loop 2 Cycles: 738 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench1() [bci: 71] | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+  loop 3 Cycles: 438 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+  loop 4 Cycles: 144 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+  loop 5 Cycles: 1005404 || Activation Count:797 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+  loop 6 Cycles: 73568 || Activation Count:797 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench1() [bci: 163]
+Comp 117 (InnerLoopStepBenchmark.bench2()) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 185694 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 12] | -at InnerLoopStepBenchmark.bench2() [bci: 17]
+  loop 1 Cycles: 2042 || Activation Count:24 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 71] | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 2 Cycles: 690 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 71] | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 3 Cycles: 1888 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 4 Cycles: 118 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 5 Cycles: 175762 || Activation Count:24 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 6 Cycles: 2708 || Activation Count:24 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+Comp 119 (InnerLoopStepBenchmark.bench2()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 5898296 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 12] | -at InnerLoopStepBenchmark.bench2() [bci: 17]
+  loop 1 Cycles: 68178 || Activation Count:904 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 71] | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 2 Cycles: 374 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench2() [bci: 71] | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 3 Cycles: 2170 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 4 Cycles: 194 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 5 Cycles: 5530370 || Activation Count:904 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+  loop 6 Cycles: 83318 || Activation Count:904 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench2() [bci: 163]
+Comp 120 (InnerLoopStepBenchmark.bench3()) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 551402 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 12] | -at InnerLoopStepBenchmark.bench3() [bci: 17]
+  loop 1 Cycles: 3444 || Activation Count:44 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 71] | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 2 Cycles: 684 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 71] | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 3 Cycles: 6582 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 4 Cycles: 96 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 5 Cycles: 531400 || Activation Count:44 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 6 Cycles: 6704 || Activation Count:44 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+Comp 122 (InnerLoopStepBenchmark.bench3()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 11548990 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 12] | -at InnerLoopStepBenchmark.bench3() [bci: 17]
+  loop 1 Cycles: 69150 || Activation Count:919 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 71] | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 2 Cycles: 580 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench3() [bci: 71] | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 3 Cycles: 7940 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 4 Cycles: 164 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 5 Cycles: 11131962 || Activation Count:919 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+  loop 6 Cycles: 128732 || Activation Count:919 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench3() [bci: 163]
+Comp 123 (InnerLoopStepBenchmark.bench4()) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 3666728 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 12] | -at InnerLoopStepBenchmark.bench4() [bci: 17]
+  loop 1 Cycles: 4668 || Activation Count:60 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 71] | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 2 Cycles: 792 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 71] | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 3 Cycles: 93934 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 4 Cycles: 94 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 5 Cycles: 3640480 || Activation Count:60 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 6 Cycles: 9210 || Activation Count:60 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+Comp 125 (InnerLoopStepBenchmark.bench4()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 56718166 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 12] | -at InnerLoopStepBenchmark.bench4() [bci: 17]
+  loop 1 Cycles: 70270 || Activation Count:931 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 71] | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 2 Cycles: 586 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench4() [bci: 71] | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 3 Cycles: 56088 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 4 Cycles: 96 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 5 Cycles: 56295296 || Activation Count:931 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+  loop 6 Cycles: 130294 || Activation Count:931 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench4() [bci: 163]
+Comp 126 (InnerLoopStepBenchmark.bench5()) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 121028890 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench5() [bci: 12] | -at InnerLoopStepBenchmark.bench5() [bci: 17]
+  loop 1 Cycles: 75362 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench5() [bci: 71] | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+  loop 2 Cycles: 818 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench5() [bci: 71] | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+  loop 3 Cycles: 150248 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+  loop 4 Cycles: 198 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+  loop 5 Cycles: 120576750 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+  loop 6 Cycles: 139558 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench5() [bci: 163]
+Comp 128 (InnerLoopStepBenchmark.bench6()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 580 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench6() [bci: 71] |  No Source
+Comp 130 (InnerLoopStepBenchmark.bench6()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 638 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench6() [bci: 71] | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 3 Cycles: 418186 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 4 Cycles: 168 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+Comp 131 (InnerLoopStepBenchmark.bench6()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 603162372 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench6() [bci: 12] | -at InnerLoopStepBenchmark.bench6() [bci: 17]
+  loop 1 Cycles: 86056 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench6() [bci: 71] | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 2 Cycles: 572 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench6() [bci: 71] | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 3 Cycles: 477840 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 4 Cycles: 176 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 5 Cycles: 602688068 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+  loop 6 Cycles: 150624 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench6() [bci: 163]
+Comp 132 (InnerLoopStepBenchmark.bench7()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 542 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench7() [bci: 71] |  No Source
+Comp 134 (InnerLoopStepBenchmark.bench7()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 560 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench7() [bci: 71] | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 3 Cycles: 1081490 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 4 Cycles: 170 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+Comp 135 (InnerLoopStepBenchmark.bench7()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 1205739884 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench7() [bci: 12] | -at InnerLoopStepBenchmark.bench7() [bci: 17]
+  loop 1 Cycles: 75786 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench7() [bci: 71] | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 2 Cycles: 596 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench7() [bci: 71] | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 3 Cycles: 1058952 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 4 Cycles: 168 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 5 Cycles: 1205274910 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+  loop 6 Cycles: 151046 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench7() [bci: 163]
+Comp 136 (InnerLoopStepBenchmark.bench8()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 574 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench8() [bci: 71] |  No Source
+Comp 138 (InnerLoopStepBenchmark.bench8()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 770 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench8() [bci: 71] | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 3 Cycles: 5867238 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 4 Cycles: 172 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+Comp 139 (InnerLoopStepBenchmark.bench8()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 6027670356 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench8() [bci: 12] | -at InnerLoopStepBenchmark.bench8() [bci: 17]
+  loop 1 Cycles: 101934 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench8() [bci: 71] | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 2 Cycles: 628 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench8() [bci: 71] | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 3 Cycles: 5908448 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 4 Cycles: 178 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 5 Cycles: 6027150788 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+  loop 6 Cycles: 155804 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench8() [bci: 163]
+Comp 140 (InnerLoopStepBenchmark.bench9()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 604 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench9() [bci: 71] |  No Source
+Comp 142 (InnerLoopStepBenchmark.bench9()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 570 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench9() [bci: 71] | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 3 Cycles: 11949194 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 4 Cycles: 174 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+Comp 143 (InnerLoopStepBenchmark.bench9()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 12054724208 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench9() [bci: 12] | -at InnerLoopStepBenchmark.bench9() [bci: 17]
+  loop 1 Cycles: 83372 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench9() [bci: 71] | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 2 Cycles: 754 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench9() [bci: 71] | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 3 Cycles: 11952136 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 4 Cycles: 170 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 5 Cycles: 12054197044 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+  loop 6 Cycles: 155926 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench9() [bci: 163]
+Comp 144 (InnerLoopStepBenchmark.bench10()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 922 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench10() [bci: 71] |  No Source
+Comp 146 (InnerLoopStepBenchmark.bench10()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 700 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench10() [bci: 71] | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 3 Cycles: 60298994 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 4 Cycles: 172 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+Comp 147 (InnerLoopStepBenchmark.bench10()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 60360674298 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench10() [bci: 12] | -at InnerLoopStepBenchmark.bench10() [bci: 17]
+  loop 1 Cycles: 87284 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench10() [bci: 71] | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 2 Cycles: 636 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench10() [bci: 71] | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 3 Cycles: 60302982 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 4 Cycles: 168 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 5 Cycles: 60360093186 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+  loop 6 Cycles: 167500 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench10() [bci: 163]
+Comp 148 (InnerLoopStepBenchmark.bench11()) loops:
+Found Encoding : 0:-1,1:-1,2:-1
+├── Loop 0
+├── Loop 1
+└── Loop 2
+  loop 0 Cycles: 620 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench11() [bci: 71] |  No Source
+Comp 150 (InnerLoopStepBenchmark.bench11()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 2 Cycles: 620 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench11() [bci: 71] | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 3 Cycles: 120770662 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 4 Cycles: 174 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+Comp 151 (InnerLoopStepBenchmark.bench11()-Re-Comp) loops:
+Found Encoding : 2:-1,3:-1,4:-1,0:-1,1:0,5:0,6:0
+├── Loop 2
+├── Loop 3
+├── Loop 4
+└── Loop 0
+    ├── Loop 1
+    ├── Loop 5
+    └── Loop 6
+  loop 0 Cycles: 120609156488 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench11() [bci: 12] | -at InnerLoopStepBenchmark.bench11() [bci: 17]
+  loop 1 Cycles: 85066 || Activation Count:997 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench11() [bci: 71] | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 2 Cycles: 734 || Activation Count:1 | LoopCallCount: 0 |  Source: -at InnerLoopStepBenchmark.bench11() [bci: 71] | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 3 Cycles: 120767000 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 4 Cycles: 174 || Activation Count:1 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 5 Cycles: 120608517680 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]
+  loop 6 Cycles: 169064 || Activation Count:997 | LoopCallCount: 0 |  Source: Source Missing | -at InnerLoopStepBenchmark.bench11() [bci: 163]

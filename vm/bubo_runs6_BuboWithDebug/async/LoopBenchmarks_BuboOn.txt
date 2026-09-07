@@ -1,0 +1,690 @@
+--- Execution profile ---
+Total samples       : 9010321
+
+--- 5388440452 ns (5.95%), 536088 samples
+  [ 0] LoopBenchmarks.fibonacciLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 4817923627 ns (5.32%), 479455 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 3999081103 ns (4.42%), 398182 samples
+  [ 0] LoopBenchmarks.bubbleSortLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 3574593343 ns (3.95%), 355726 samples
+  [ 0] java.lang.String.hashCode
+  [ 1] Harness.main
+
+--- 3281679339 ns (3.62%), 326724 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2598736890 ns (2.87%), 258699 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2522890532 ns (2.79%), 251167 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2519634769 ns (2.78%), 250751 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2349475427 ns (2.59%), 233756 samples
+  [ 0] java.lang.String.hashCode
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2238641257 ns (2.47%), 222856 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 2128680956 ns (2.35%), 211681 samples
+  [ 0] LoopBenchmarks.matrixMultiplyLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1966032530 ns (2.17%), 195565 samples
+  [ 0] LoopBenchmarks.polynomialLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1853833066 ns (2.05%), 184356 samples
+  [ 0] LoopBenchmarks.histogramLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1679445754 ns (1.85%), 167145 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1571393627 ns (1.74%), 156404 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1512620266 ns (1.67%), 150607 samples
+  [ 0] LoopBenchmarks.bubbleSortLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1500334442 ns (1.66%), 149384 samples
+  [ 0] LoopBenchmarks.bubbleSortLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1409078461 ns (1.56%), 140162 samples
+  [ 0] LoopBenchmarks.polynomialLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1151532142 ns (1.27%), 114511 samples
+  [ 0] LoopBenchmarks.matrixMultiplyLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1096605355 ns (1.21%), 109072 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1076511943 ns (1.19%), 107063 samples
+  [ 0] LoopBenchmarks.matrixMultiplyLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 1050684241 ns (1.16%), 104580 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 999137628 ns (1.10%), 99450 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 977284627 ns (1.08%), 97281 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 948375072 ns (1.05%), 94395 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 927382612 ns (1.02%), 92309 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 878187315 ns (0.97%), 87344 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 861992562 ns (0.95%), 85794 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 815596030 ns (0.90%), 81197 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 765574580 ns (0.85%), 76204 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 763980817 ns (0.84%), 76060 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 748539473 ns (0.83%), 74456 samples
+  [ 0] LoopBenchmarks.histogramLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 725290415 ns (0.80%), 72191 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 722365175 ns (0.80%), 71900 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 708481020 ns (0.78%), 70509 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 680614497 ns (0.75%), 67756 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 660779736 ns (0.73%), 65787 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 606632529 ns (0.67%), 60370 samples
+  [ 0] LoopBenchmarks.blurLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 587223491 ns (0.65%), 58433 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 568754554 ns (0.63%), 56535 samples
+  [ 0] LoopBenchmarks.matrixMultiplyLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 568676943 ns (0.63%), 56591 samples
+  [ 0] LoopBenchmarks.blurLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 563120652 ns (0.62%), 56061 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 560267151 ns (0.62%), 55771 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 531696221 ns (0.59%), 52939 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 515307493 ns (0.57%), 51208 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 494885038 ns (0.55%), 49265 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 476036034 ns (0.53%), 47352 samples
+  [ 0] LoopBenchmarks.polynomialLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 466808256 ns (0.52%), 46479 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 442416596 ns (0.49%), 44041 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 431556441 ns (0.48%), 42963 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 426701809 ns (0.47%), 42475 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 421281068 ns (0.47%), 41880 samples
+  [ 0] java.lang.String.hashCode
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 381609881 ns (0.42%), 37980 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 380679629 ns (0.42%), 37901 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 378314213 ns (0.42%), 37664 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 374414342 ns (0.41%), 37261 samples
+  [ 0] LoopBenchmarks.blurLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 366566495 ns (0.40%), 36443 samples
+  [ 0] LoopBenchmarks.histogramLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 359534711 ns (0.40%), 35770 samples
+  [ 0] LoopBenchmarks.fibonacciLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 357822799 ns (0.40%), 35591 samples
+  [ 0] LoopBenchmarks.histogramLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 356589754 ns (0.39%), 35501 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 343671603 ns (0.38%), 34219 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 339442006 ns (0.37%), 33786 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 336202015 ns (0.37%), 33461 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 320473061 ns (0.35%), 31878 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 310571015 ns (0.34%), 30920 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 286541536 ns (0.32%), 28509 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 280065851 ns (0.31%), 27864 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 279724113 ns (0.31%), 27843 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 274809132 ns (0.30%), 27358 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 262166174 ns (0.29%), 26101 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 255337667 ns (0.28%), 25426 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 246474813 ns (0.27%), 24541 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 232739226 ns (0.26%), 23161 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 208687269 ns (0.23%), 20770 samples
+  [ 0] LoopBenchmarks.mandelbrotLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 205032259 ns (0.23%), 20418 samples
+  [ 0] LoopBenchmarks.editDistanceLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 193403445 ns (0.21%), 19238 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 191128141 ns (0.21%), 19026 samples
+  [ 0] LoopBenchmarks.sieveLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 188328880 ns (0.21%), 18742 samples
+  [ 0] LoopBenchmarks.blurLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 187501002 ns (0.21%), 18663 samples
+  [ 0] LoopBenchmarks.parseJsonLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 184521825 ns (0.20%), 18371 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 183708696 ns (0.20%), 18288 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 173579205 ns (0.19%), 17276 samples
+  [ 0] LoopBenchmarks.base64EncodeLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 173482442 ns (0.19%), 17264 samples
+  [ 0] LoopBenchmarks.base64EncodeLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 171781667 ns (0.19%), 17098 samples
+  [ 0] LoopBenchmarks.base64EncodeLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 169481485 ns (0.19%), 16840 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 165734594 ns (0.18%), 16472 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 160977060 ns (0.18%), 15998 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 160792393 ns (0.18%), 16007 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 158618436 ns (0.18%), 15762 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 157258594 ns (0.17%), 15629 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 156720358 ns (0.17%), 15587 samples
+  [ 0] LoopBenchmarks.histogramLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 149377028 ns (0.16%), 14863 samples
+  [ 0] LoopBenchmarks.blurLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 148788375 ns (0.16%), 14812 samples
+  [ 0] LoopBenchmarks.monteCarloPiLoop
+  [ 1] [break_interpreted]
+
+--- 136555856 ns (0.15%), 13571 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 135803234 ns (0.15%), 13496 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 135394187 ns (0.15%), 13456 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 135125698 ns (0.15%), 13430 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 134720933 ns (0.15%), 13388 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 132408763 ns (0.15%), 13182 samples
+  [ 0] LoopBenchmarks.crc32Loop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+--- 131750241 ns (0.15%), 13092 samples
+  [ 0] LoopBenchmarks.raySphereLoop
+  [ 1] LoopBenchmarks.main
+  [ 2] Harness.main
+
+          ns  percent  samples  top
+  ----------  -------  -------  ---
+ 12605590714   13.92%  1254928  LoopBenchmarks.crc32Loop
+ 11567521362   12.77%  1151310  LoopBenchmarks.editDistanceLoop
+  7778264967    8.59%   774101  LoopBenchmarks.mandelbrotLoop
+  7135111039    7.88%   710422  LoopBenchmarks.bubbleSortLoop
+  6502083390    7.18%   646967  java.lang.String.hashCode
+  6308154540    6.97%   627991  LoopBenchmarks.monteCarloPiLoop
+  5894329196    6.51%   586422  LoopBenchmarks.fibonacciLoop
+  5265064377    5.81%   524029  LoopBenchmarks.parseJsonLoop
+  4967806158    5.49%   493998  LoopBenchmarks.matrixMultiplyLoop
+  4805617205    5.31%   478183  LoopBenchmarks.sieveLoop
+  4002446254    4.42%   398131  LoopBenchmarks.polynomialLoop
+  3522637056    3.89%   350325  LoopBenchmarks.histogramLoop
+  3238018587    3.58%   321787  LoopBenchmarks.raySphereLoop
+  3079628877    3.40%   306474  LoopBenchmarks.base64EncodeLoop
+  2064546439    2.28%   205455  LoopBenchmarks.blurLoop
+   352255672    0.39%    35058  LoopBenchmarks.main
+    39498665    0.04%     3786  do_user_addr_fault_[k]
+    32816589    0.04%     3282  void com.oracle.svm.core.genscavenge.GreyToBlackObjRefVisitor::visitObjectReferences
+    20801102    0.02%     2084  void com.oracle.svm.core.genscavenge.GreyToBlackObjectVisitor::visitObject
+    13940245    0.02%     1401  java.lang.AbstractStringBuilder* java.lang.AbstractStringBuilder::append
+    13260370    0.01%     1320  G1ParScanThreadState::trim_queue_to_threshold
+    13163390    0.01%     1200  clear_page_erms_[k]
+    12139536    0.01%      887  _raw_spin_unlock_irqrestore_[k]
+    12076306    0.01%     1212  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.PredicatedProxyNodeIterator::forward
+    11962576    0.01%     1204  void com.oracle.svm.core.UnmanagedMemoryUtil::copyLongsForward
+    11870591    0.01%     1189  int org.graalvm.collections.EconomicMapImpl::findLinear
+    10718976    0.01%     1076  void com.oracle.svm.core.graal.jdk.SubstrateArraycopySnippets::doArraycopy
+    10151884    0.01%     1018  int LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeIdAccessor::getNodeId
+     7917056    0.01%      794  void java.util.ArrayList::add
+     7819489    0.01%      784  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeUsageIterator::advance
+     7283053    0.01%      653  __list_del_entry_valid_[k]
+     6897224    0.01%      692  int org.graalvm.collections.EconomicMapImpl::getHashIndex
+     6739412    0.01%      674  boolean org.graalvm.collections.EconomicMapImpl::compareKeys
+     6633200    0.01%      665  java.lang.String* com.oracle.svm.core.util.Utf8::utf8ToString
+     6435816    0.01%      646  void LibGraalClassLoader_6d026701::jdk.graal.compiler.lir.LIRIntrospection::visitEach
+     6426332    0.01%      648  java.lang.Object* com.oracle.svm.core.graal.jdk.SubstrateObjectCloneSnippets::doClone
+     6391061    0.01%      641  java.lang.Object* org.graalvm.collections.EconomicMapImpl::put
+     6086992    0.01%      563  get_mem_cgroup_from_mm_[k]
+     6078649    0.01%      609  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::getAndAdvanceInput
+     6077592    0.01%      612  void com.oracle.svm.core.UnmanagedMemoryUtil::copyForward
+     5773554    0.01%      582  void com.oracle.svm.core.JavaMemoryUtil::copyPrimitiveArrayForward
+     5741500    0.01%      578  void com.oracle.svm.core.c.function.CEntryPointSetup$LeaveEpilogue::leave
+     5462758    0.01%      547  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.NodeIterable* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::inputs
+     5375817    0.01%      536  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.CanonicalizerPhase::tryCanonicalize
+     5271358    0.01%      527  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph::findDuplicate
+     5108527    0.01%      512  void sun.security.provider.SHA2::implCompress0
+     5072119    0.01%      511  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeMap::get
+     5071492    0.01%      508  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::forward
+     4967886    0.01%      499  int org.graalvm.collections.EconomicMapImpl::findHash
+     4955143    0.01%      493  InstanceKlass::find_method_index
+     4952625    0.01%      465  mtree_range_walk_[k]
+     4939673    0.01%      497  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeMap::set
+     4910349    0.01%      474  next_uptodate_page_[k]
+     4679494    0.01%      469  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.CanonicalizerPhase::processNode
+     4662455    0.01%      466  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeWorkList$QueueConsumingIterator::dropDeleted
+     4643170    0.01%      463  java.lang.Object* java.util.ArrayList$Itr::next
+     4451479    0.00%      446  boolean java.util.RegularEnumSet::contains
+     4394555    0.00%      442  void LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.util.CompilationAlarm::checkProgress
+     4339511    0.00%      436  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeBitMap::isMarked
+     4252614    0.00%      426  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.util.EconomicSetNodeEventListener::changed
+     4205181    0.00%      424  LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.FixedNode* LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.AbstractBeginNode$BlockNodeIterator::next
+     4094606    0.00%      377  charge_memcg_[k]
+     4092383    0.00%      410  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.options.OptionValues::get
+     4066288    0.00%      390  __handle_mm_fault_[k]
+     3873051    0.00%      358  blk_cgroup_congested_[k]
+     3775059    0.00%      378  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.NodePredicates$PositiveTypePredicate::apply
+     3662506    0.00%      368  org.graalvm.nativeimage.ObjectHandle com.oracle.svm.core.handles.ThreadLocalHandles::tryCreateNonNull
+     3610645    0.00%      363  void org.graalvm.collections.EconomicMapImpl::putHashEntry
+     3586420    0.00%      361  void java.util.ArrayDeque::addLast
+     3430734    0.00%      344  java.lang.Object* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::getNodeInfo
+     3416263    0.00%      336  __tls_get_addr
+     3354000    0.00%      338  java.lang.Object* org.graalvm.collections.EconomicMapImpl::get
+     3332541    0.00%      331  zap_pte_range_[k]
+     3325393    0.00%      333  boolean com.oracle.svm.core.code.IsolateEnterStub::JNIFunctions_ExceptionCheck_wwAepBoMjPEWDN8NR0UL5D
+     3315901    0.00%      332  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph$NodeEventListener::event
+     3306759    0.00%      331  int org.graalvm.collections.EconomicMapImpl::find
+     3283081    0.00%      328  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass::dataEquals
+     3263258    0.00%      326  java.lang.Object* java.util.ArrayList::get
+     3258755    0.00%      328  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::addUsage
+     3252034    0.00%      327  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.TypedGraphNodeIterator::forward
+     3195819    0.00%      299  vma_alloc_folio_[k]
+     3193280    0.00%      322  LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance$MicroBlock* LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::processInputs
+     3183389    0.00%      319  int org.graalvm.collections.EconomicMapImpl::getHashTableSize
+     3164278    0.00%      319  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ReversePostOrder::compute
+     3133543    0.00%      316  java.lang.Object[]* java.util.ArrayList::grow
+     3027703    0.00%      304  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::scheduleEarliestIterative
+     3026087    0.00%      303  long LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.type.IntegerStamp::setOptionalBits
+     3025305    0.00%      303  int org.graalvm.collections.EconomicMapImpl::getHashArray
+     2962216    0.00%      295  LibGraalClassLoader_6d026701::jdk.vm.ci.hotspot.HotSpotJVMCIRuntime* LibGraalClassLoader_6d026701::jdk.vm.ci.hotspot.HotSpotJVMCIRuntime::runtime
+     2907085    0.00%      293  int java.nio.Buffer::nextGetIndex
+     2904205    0.00%      296  SymbolTable::lookup_shared
+     2855520    0.00%      287  byte[]* java.util.Arrays::copyOfRange
+     2829818    0.00%      269  mm_account_fault_[k]
+     2826181    0.00%      281  void OopOopIterateBackwardsDispatch<G1ScanEvacuatedObjClosure>::Table::oop_oop_iterate_backwards<InstanceKlass, narrowOop>
+     2768212    0.00%      277  java.util.HashMap$Node* java.util.HashMap::getNode
+     2740561    0.00%      275  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::sortNodesLatestWithinBlock
+     2738137    0.00%      277  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::processStack
+     2711123    0.00%      271  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeUsageIterator::next
+     2690739    0.00%      241  get_page_from_freelist_[k]
+     2690650    0.00%      262  [vdso]
+     2659552    0.00%      268  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeBitMap::mark
+     2654297    0.00%      266  char java.lang.String::charAt
+     2610122    0.00%      262  org.graalvm.word.Pointer com.oracle.svm.core.genscavenge.TlabSupport::allocateRawMemoryInTlabSlow
+     2579047    0.00%      257  void com.oracle.svm.core.genscavenge.remset.AlignedChunkRememberedSet::walkObjects
+     2564678    0.00%      258  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.loop.LoopFragment::computeNodes
+     2545498    0.00%      257  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.loop.LoopFragment::markFloating
+     2525785    0.00%      253  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass::registerAtInputsAsUsage
+     2480598    0.00%      248  boolean java.lang.String::equals
+     2455385    0.00%      247  readConfiguration0
+     2455251    0.00%      245  void LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.BasePhase::apply
+     2417655    0.00%      242  JVMCIEnv::has_pending_exception
+     2397898    0.00%      240  void com.oracle.svm.core.genscavenge.GreyObjectsWalker::walkGreyObjects
+     2384690    0.00%      240  int LibGraalClassLoader_6d026701::jdk.graal.compiler.util.json.JsonParser::next
+     2378341    0.00%      238  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Edges::verifyUpdateValid
+     2335118    0.00%      234  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ControlFlowGraph::perBasicBlockFrequencyAction
+     2326485    0.00%      234  void LibGraalClassLoader_6d026701::jdk.graal.compiler.debug.GraalError::guarantee
+     2295016    0.00%      231  char java.nio.HeapCharBuffer::get
+     2288961    0.00%      230  void org.graalvm.collections.EconomicMapImpl::setValue
+     2252605    0.00%      204  __next_zones_zonelist_[k]
+     2231988    0.00%      224  LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.type.IntegerStamp* LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.type.IntegerStamp::create
+     2213686    0.00%      227  __memcpy_avx_unaligned_erms
+     2212715    0.00%      221  java.lang.Object[]* java.util.Arrays::copyOf
+     2187468    0.00%      219  java.lang.Object* java.util.concurrent.ConcurrentHashMap::get
+     2162139    0.00%      217  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.FilteredNodeIterable* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.FilteredNodeIterable::and
+     2129647    0.00%      214  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.HIRBlock::assignPredecessorsAndSuccessors
+     2122842    0.00%      212  int LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.CanonicalizerPhase::processWorkSet
+     2121784    0.00%      214  java.lang.Object* java.util.ArrayDeque$DeqIterator::next
+     2116233    0.00%      212  LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.ValueNode* LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.PhiNode::valueAt
+     2096630    0.00%      213  java.lang.Object* com.oracle.svm.core.genscavenge.ThreadLocalAllocation::allocateArraySlow
+     2079364    0.00%      209  byte[]* java.lang.AbstractStringBuilder::ensureCapacityNewCoder
+     2070655    0.00%      207  void com.oracle.svm.core.util.ArrayUtil::boundsCheckInSnippet
+     2056501    0.00%      206  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph::register
+     2052313    0.00%      193  folio_add_lru_[k]
+     2028934    0.00%      144  e1000_irq_enable?[e1000e]_[k]
+     2008677    0.00%      198  __memset_avx2_unaligned_erms
+     1998576    0.00%      185  memchr_[k]
+     1996984    0.00%      200  LibGraalClassLoader_6d026701::jdk.graal.compiler.debug.DebugCloseable* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph::withNodeSourcePosition
+     1958622    0.00%      165  __do_softirq_[k]
+     1919709    0.00%      192  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::clone
+     1912675    0.00%      192  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::next
+     1905527    0.00%      191  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ControlFlowGraph::rpoInnerLoopsFirst
+     1898139    0.00%      174  prepare_alloc_pages.constprop.0_[k]
+     1897363    0.00%      181  handle_mm_fault_[k]
+     1883723    0.00%      188  void LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.Fields::copy
+     1851022    0.00%      186  int LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::pushUnprocessedInputs
+     1845032    0.00%      185  boolean java.lang.String::startsWith
+     1825294    0.00%      182  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph::updateNodeCaches
+     1818525    0.00%      182  int LibGraalClassLoader_6d026701::jdk.vm.ci.hotspot.HotSpotResolvedObjectTypeImpl::layoutHelper
+     1815312    0.00%      181  boolean java.util.BitSet::get
+     1810088    0.00%      181  java.util.Iterator* LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.iterators.FilteredNodeIterable::iterator
+     1794304    0.00%      181  char java.lang.StringLatin1::charAt
+     1787994    0.00%      179  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph::fireNodeEvent
+     1782505    0.00%      179  void org.graalvm.collections.EconomicMapImpl::grow
+     1779270    0.00%      179  int LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.HIRBlock$ModifiableBlock::getPredecessorCount
+     1764972    0.00%      179  java.lang.String::String
+     1763502    0.00%      179  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ControlFlowGraph::identifyBlock
+     1760993    0.00%      176  org.graalvm.word.PointerBase com.oracle.svm.core.jni.access.JNINativeLinkage::getOrFindEntryPoint
+     1753604    0.00%      175  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Edges::copy
+     1739544    0.00%      175  LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.extended.AnchoringNode* LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.common.LoweringPhase::process
+     1720149    0.00%      173  LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.cfg.BlockMap* LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::calcLatestBlocks
+     1701753    0.00%      155  __mod_node_page_state_[k]
+     1679164    0.00%      169  void LibGraalClassLoader_6d026701::jdk.graal.compiler.java.BytecodeParser::iterateBytecodesForBlock
+     1678641    0.00%      167  java.lang.Object* java.util.concurrent.ConcurrentHashMap::computeIfAbsent
+     1671039    0.00%      168  int LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass::valueNumber
+     1661779    0.00%      166  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass::applyEdges
+     1655465    0.00%      154  __alloc_pages_[k]
+     1649003    0.00%      166  com.oracle.svm.core.jni.headers.JNIObjectHandle com.oracle.svm.core.jni.JNIObjectHandles::createLocal
+     1645565    0.00%      165  void com.oracle.svm.core.monitor.MultiThreadedMonitorSupport::monitorEnter
+     1637432    0.00%      164  long LibGraalClassLoader_6d026701::jdk.vm.ci.hotspot.HotSpotResolvedJavaMethodImpl::getMethodPointer
+     1620505    0.00%      143  syscall_enter_from_user_mode_[k]
+     1617993    0.00%      161  Dictionary::find_class
+     1610409    0.00%      161  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ControlFlowGraph::computeLoopInformationImpl
+     1603257    0.00%      161  LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Graph* LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.ValueNode::graph
+     1595258    0.00%      160  int LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.HIRBlock$ModifiableBlock::getSuccessorCount
+     1592220    0.00%      161  java.lang.String* java.lang.StringLatin1::replace
+     1586084    0.00%      159  java.lang.Object* com.oracle.svm.core.genscavenge.ThreadLocalAllocation::slowPathNewInstance
+     1580135    0.00%      158  java.util.List* java.util.Formatter::parse
+     1578847    0.00%      158  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeWorkList::addAll
+     1562675    0.00%      136  _raw_spin_lock_[k]
+     1550276    0.00%      156  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::removeUsage
+     1528218    0.00%      154  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass$RawEdgesIterator::hasNext
+     1516080    0.00%      152  void org.graalvm.collections.EconomicMapImpl::createHash
+     1496107    0.00%      135  _raw_spin_trylock_[k]
+     1490671    0.00%      150  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeWorkList$IterativeNodeWorkList::add
+     1480628    0.00%      148  LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.HIRBlock* LibGraalClassLoader_6d026701::jdk.graal.compiler.phases.schedule.SchedulePhase$Instance::calcLatestBlockForUsage
+     1471380    0.00%      138  copy_mc_enhanced_fast_string_[k]
+     1465949    0.00%      146  void LibGraalClassLoader_6d026701::jdk.graal.compiler.java.BytecodeParser::processBytecode
+     1446550    0.00%      145  long LibGraalClassLoader_6d026701::jdk.graal.compiler.core.common.type.IntegerStamp::computeLowerBound
+     1433655    0.00%      143  JVMCI::compilation_tick
+     1428373    0.00%      144  int jdk.internal.util.ArraysSupport::hashCodeOfUnsigned
+     1425085    0.00%      133  __mod_lruvec_page_state_[k]
+     1419551    0.00%      144  LibGraalClassLoader_6d026701::jdk.vm.ci.meta.ResolvedJavaMethod* LibGraalClassLoader_6d026701::jdk.graal.compiler.replacements.SnippetTemplate$AbstractTemplates::findMethod
+     1418258    0.00%      135  filldir64_[k]
+     1401724    0.00%      140  void LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeClass::registerAtSuccessorsAsPredecessor
+     1397130    0.00%      141  void LibGraalClassLoader_6d026701::jdk.graal.compiler.nodes.cfg.ControlFlowGraph::identifyBlocksImpl
+     1395690    0.00%      140  java.lang.Object* java.util.ArrayDeque::pollFirst
+     1386429    0.00%      126  rmqueue_[k]
+     1379801    0.00%      139  boolean LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.NodeUsageIterator::hasNext
+     1379543    0.00%      139  int LibGraalClassLoader_6d026701::jdk.graal.compiler.graph.Node::hashCode
+     1378786    0.00%      130  mt_find_[k]
