@@ -43,7 +43,7 @@ public abstract class CFGLoop<T extends BasicBlock<T>> {
     private final ArrayList<CFGLoop<T>> children;
 
     private final int depth;
-    private final int index;
+    public int index;
     private final T header;
     private final ArrayList<T> blocks;
     private final ArrayList<T> exits;
