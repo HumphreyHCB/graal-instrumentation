@@ -40,6 +40,7 @@ import jdk.graal.compiler.phases.common.AddressLoweringPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierDebugPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLowTierPhase;
 import jdk.graal.compiler.phases.common.BuboInstrumentationGraphMarkersLowTierPhase;
+import jdk.graal.compiler.phases.common.HumphreyDebugDataInstrumentationGraphMarkersLowTierPhase;
 import jdk.graal.compiler.phases.common.GTCollectCompilerMarkers;
 import jdk.graal.compiler.phases.common.BuboInstrumentationLoweringPhase;
 import jdk.graal.compiler.phases.common.CanonicalizerPhase;
@@ -129,6 +130,10 @@ public class LowTier extends BaseTier<LowTierContext> {
         
         if (BuboLIRPhase.Options.BuboLIRPhase.getValue(options) || GraalOptions.GTAssignDebug.getValue(options)) {
             appendPhase(new BuboInstrumentationGraphMarkersLowTierPhase(options));
+        }
+
+        if (GraalOptions.HumphreysDebugData.getValue(options)) {
+         appendPhase(new HumphreyDebugDataInstrumentationGraphMarkersLowTierPhase( options));
         }
 
 
